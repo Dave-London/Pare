@@ -150,3 +150,257 @@ describe("parseListJson", () => {
     expect(result.total).toBe(0);
   });
 });
+
+// ─── Branch coverage ────────────────────────────────────────────────────────
+
+describe("parseInstallOutput branch coverage", () => {
+  it("parses 0 vulnerabilities text", () => {
+    const output = "added 87 packages in 4s\n\nfound 0 vulnerabilities";
+    const result = parseInstallOutput(output, 4.0);
+
+    expect(result.added).toBe(87);
+    // "0 vulnerabilities" matches the regex, so vulnerabilities object is created with total=0
+    expect(result.vulnerabilities).toBeDefined();
+    expect(result.vulnerabilities!.total).toBe(0);
+    expect(result.vulnerabilities!.critical).toBe(0);
+    expect(result.vulnerabilities!.high).toBe(0);
+    expect(result.vulnerabilities!.moderate).toBe(0);
+    expect(result.vulnerabilities!.low).toBe(0);
+    expect(result.vulnerabilities!.info).toBe(0);
+  });
+
+  it("omits funding when no funding message is present", () => {
+    const output = "added 10 packages in 1s";
+    const result = parseInstallOutput(output, 1.0);
+
+    expect(result.added).toBe(10);
+    expect(result.funding).toBeUndefined();
+  });
+
+  it("omits vulnerabilities when no vulnerability text is present", () => {
+    const output = "added 5 packages in 2s\n3 packages are looking for funding";
+    const result = parseInstallOutput(output, 2.0);
+
+    expect(result.added).toBe(5);
+    expect(result.vulnerabilities).toBeUndefined();
+    expect(result.funding).toBe(3);
+  });
+
+  it("handles completely empty output", () => {
+    const result = parseInstallOutput("", 0);
+
+    expect(result.added).toBe(0);
+    expect(result.removed).toBe(0);
+    expect(result.changed).toBe(0);
+    expect(result.packages).toBe(0);
+    expect(result.vulnerabilities).toBeUndefined();
+    expect(result.funding).toBeUndefined();
+  });
+});
+
+describe("parseAuditJson branch coverage", () => {
+  it("handles missing metadata.vulnerabilities structure", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        lodash: {
+          severity: "high",
+          title: "Prototype Pollution",
+          via: [{ title: "Prototype Pollution" }],
+          range: "<4.17.21",
+          fixAvailable: true,
+        },
+      },
+      metadata: {},
+    });
+
+    const result = parseAuditJson(json);
+
+    // Should fall back to counting vulnerabilities array length for total
+    expect(result.summary.total).toBe(1);
+    expect(result.summary.critical).toBe(0);
+    expect(result.summary.high).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(1);
+    expect(result.vulnerabilities[0].name).toBe("lodash");
+  });
+
+  it("handles missing via array (uses title fallback)", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        "bad-pkg": {
+          severity: "moderate",
+          title: "XSS Vulnerability",
+          range: "<2.0.0",
+          fixAvailable: false,
+        },
+      },
+      metadata: {
+        vulnerabilities: { total: 1, critical: 0, high: 0, moderate: 1, low: 0, info: 0 },
+      },
+    });
+
+    const result = parseAuditJson(json);
+
+    expect(result.vulnerabilities).toHaveLength(1);
+    expect(result.vulnerabilities[0].title).toBe("XSS Vulnerability");
+    expect(result.vulnerabilities[0].url).toBeUndefined();
+  });
+
+  it("handles via array with no url", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        glob: {
+          severity: "low",
+          title: "ReDoS",
+          via: [{ title: "ReDoS in glob" }],
+          range: "<7.2.0",
+          fixAvailable: true,
+        },
+      },
+      metadata: {
+        vulnerabilities: { total: 1, critical: 0, high: 0, moderate: 0, low: 1, info: 0 },
+      },
+    });
+
+    const result = parseAuditJson(json);
+
+    expect(result.vulnerabilities[0].title).toBe("ReDoS");
+    expect(result.vulnerabilities[0].url).toBeUndefined();
+  });
+
+  it("handles missing severity (defaults to info)", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        "unknown-pkg": {
+          via: [{ title: "Some Issue" }],
+          range: "*",
+          fixAvailable: false,
+        },
+      },
+      metadata: {
+        vulnerabilities: { total: 1, critical: 0, high: 0, moderate: 0, low: 0, info: 1 },
+      },
+    });
+
+    const result = parseAuditJson(json);
+
+    expect(result.vulnerabilities[0].severity).toBe("info");
+    expect(result.vulnerabilities[0].title).toBe("Some Issue");
+  });
+
+  it("handles completely missing metadata key", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {},
+    });
+
+    const result = parseAuditJson(json);
+
+    expect(result.summary.total).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(0);
+  });
+
+  it("throws on invalid JSON string", () => {
+    expect(() => parseAuditJson("not valid json")).toThrow();
+  });
+});
+
+describe("parseOutdatedJson branch coverage", () => {
+  it("handles packages missing optional location and type fields", () => {
+    const json = JSON.stringify({
+      "some-pkg": {
+        current: "1.0.0",
+        wanted: "1.1.0",
+        latest: "2.0.0",
+      },
+    });
+
+    const result = parseOutdatedJson(json);
+
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages[0].name).toBe("some-pkg");
+    expect(result.packages[0].current).toBe("1.0.0");
+    expect(result.packages[0].wanted).toBe("1.1.0");
+    expect(result.packages[0].latest).toBe("2.0.0");
+    expect(result.packages[0].location).toBeUndefined();
+    expect(result.packages[0].type).toBeUndefined();
+  });
+
+  it("handles packages missing version fields (defaults to N/A)", () => {
+    const json = JSON.stringify({
+      "broken-pkg": {},
+    });
+
+    const result = parseOutdatedJson(json);
+
+    expect(result.packages[0].current).toBe("N/A");
+    expect(result.packages[0].wanted).toBe("N/A");
+    expect(result.packages[0].latest).toBe("N/A");
+  });
+
+  it("throws on invalid JSON string", () => {
+    expect(() => parseOutdatedJson("{invalid")).toThrow();
+  });
+});
+
+describe("parseListJson branch coverage", () => {
+  it("defaults name to 'unknown' when missing from JSON", () => {
+    const json = JSON.stringify({
+      version: "1.0.0",
+      dependencies: { a: { version: "1.0.0" } },
+    });
+
+    const result = parseListJson(json);
+
+    expect(result.name).toBe("unknown");
+    expect(result.version).toBe("1.0.0");
+    expect(result.total).toBe(1);
+  });
+
+  it("defaults version to '0.0.0' when missing from JSON", () => {
+    const json = JSON.stringify({
+      name: "my-pkg",
+      dependencies: {},
+    });
+
+    const result = parseListJson(json);
+
+    expect(result.name).toBe("my-pkg");
+    expect(result.version).toBe("0.0.0");
+  });
+
+  it("defaults both name and version when missing", () => {
+    const json = JSON.stringify({
+      dependencies: { a: { version: "1.0.0" } },
+    });
+
+    const result = parseListJson(json);
+
+    expect(result.name).toBe("unknown");
+    expect(result.version).toBe("0.0.0");
+  });
+
+  it("handles missing dependencies key entirely", () => {
+    const json = JSON.stringify({ name: "bare", version: "0.1.0" });
+
+    const result = parseListJson(json);
+
+    expect(result.name).toBe("bare");
+    expect(result.dependencies).toEqual({});
+    expect(result.total).toBe(0);
+  });
+
+  it("defaults dependency version to 'unknown' when missing", () => {
+    const json = JSON.stringify({
+      name: "test",
+      version: "1.0.0",
+      dependencies: { "no-version": {} },
+    });
+
+    const result = parseListJson(json);
+
+    expect(result.dependencies["no-version"].version).toBe("unknown");
+  });
+
+  it("throws on invalid JSON string", () => {
+    expect(() => parseListJson("<<<not json>>>")).toThrow();
+  });
+});

@@ -12,6 +12,9 @@ import {
   parseAuditJson,
   parseOutdatedJson,
   parseListJson,
+  parseRunOutput,
+  parseTestOutput,
+  parseInitOutput,
 } from "../src/lib/parsers.js";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -461,5 +464,156 @@ describe("fidelity: npm list", () => {
     expect(result.version).toBe("0.0.1");
     expect(result.dependencies).toEqual({});
     expect(result.total).toBe(0);
+  });
+});
+
+// ─── Run Fixtures ─────────────────────────────────────────────────────────────
+
+const RUN_BUILD_SUCCESS_STDOUT =
+  "> my-app@1.0.0 build\n> tsc && node esbuild.config.js\n\nBuild complete.\nOutput: dist/index.js (42 KB)";
+
+const RUN_BUILD_FAILURE_STDERR =
+  "> my-app@1.0.0 build\n> tsc\n\nsrc/index.ts(15,3): error TS2322: Type 'string' is not assignable to type 'number'.\nsrc/lib/utils.ts(8,1): error TS2345: Argument of type 'null' is not assignable.\nnpm error code ELIFECYCLE\nnpm error errno 2";
+
+const RUN_MISSING_SCRIPT_STDERR =
+  'npm error Missing script: "deploy"\nnpm error\nnpm error To see a list of scripts, run:\nnpm error   npm run\nnpm error A complete list of scripts is available when running `npm run --json`.';
+
+// ─── Test Fixtures ────────────────────────────────────────────────────────────
+
+const TEST_PASSING_STDOUT =
+  "> my-app@1.0.0 test\n> vitest run\n\n ✓ src/index.test.ts (5 tests) 120ms\n ✓ src/lib/utils.test.ts (12 tests) 85ms\n\nTest Files  2 passed (2)\n     Tests  17 passed (17)\n  Start at  10:30:00\n  Duration  1.23s";
+
+const TEST_FAILING_STDOUT =
+  "> my-app@1.0.0 test\n> vitest run\n\n ✓ src/index.test.ts (5 tests) 120ms\n ✗ src/lib/utils.test.ts (2 failed | 10 passed)\n\nTest Files  1 failed | 1 passed (2)\n     Tests  2 failed | 15 passed (17)";
+
+const TEST_FAILING_STDERR =
+  "FAIL src/lib/utils.test.ts > parseInput > handles null\nAssertionError: expected null to be 'default'\n  at src/lib/utils.test.ts:25:10";
+
+const TEST_NO_SCRIPT_STDERR =
+  'npm error Missing script: "test"\nnpm error\nnpm error To see a list of scripts, run:\nnpm error   npm run';
+
+// ─── Fidelity: npm run ───────────────────────────────────────────────────────
+
+describe("fidelity: npm run", () => {
+  it("preserves stdout from successful build script", () => {
+    const result = parseRunOutput("build", 0, RUN_BUILD_SUCCESS_STDOUT, "", 3.2);
+
+    expect(result.script).toBe("build");
+    expect(result.exitCode).toBe(0);
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("Build complete");
+    expect(result.stdout).toContain("dist/index.js");
+    expect(result.stdout).toContain("42 KB");
+    expect(result.stderr).toBe("");
+    expect(result.duration).toBe(3.2);
+  });
+
+  it("preserves stderr from failed build script", () => {
+    const result = parseRunOutput("build", 2, "", RUN_BUILD_FAILURE_STDERR, 1.8);
+
+    expect(result.script).toBe("build");
+    expect(result.exitCode).toBe(2);
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain("error TS2322");
+    expect(result.stderr).toContain("error TS2345");
+    expect(result.stderr).toContain("ELIFECYCLE");
+    expect(result.stdout).toBe("");
+    expect(result.duration).toBe(1.8);
+  });
+
+  it("preserves error details for missing script", () => {
+    const result = parseRunOutput("deploy", 1, "", RUN_MISSING_SCRIPT_STDERR, 0.1);
+
+    expect(result.script).toBe("deploy");
+    expect(result.exitCode).toBe(1);
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain('Missing script: "deploy"');
+    expect(result.stderr).toContain("npm run");
+    expect(result.stdout).toBe("");
+  });
+
+  it("preserves both stdout and stderr when script emits both", () => {
+    const stdout = "Compiling 15 files...\nDone.";
+    const stderr = "Warning: deprecated API usage in lib/compat.ts";
+    const result = parseRunOutput("build", 0, stdout, stderr, 2.5);
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("Compiling 15 files");
+    expect(result.stdout).toContain("Done.");
+    expect(result.stderr).toContain("deprecated API usage");
+  });
+});
+
+// ─── Fidelity: npm test ──────────────────────────────────────────────────────
+
+describe("fidelity: npm test", () => {
+  it("preserves output from passing test run", () => {
+    const result = parseTestOutput(0, TEST_PASSING_STDOUT, "", 1.23);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("17 passed");
+    expect(result.stdout).toContain("2 passed (2)");
+    expect(result.stderr).toBe("");
+    expect(result.duration).toBe(1.23);
+  });
+
+  it("preserves output from failing test run", () => {
+    const result = parseTestOutput(1, TEST_FAILING_STDOUT, TEST_FAILING_STDERR, 2.1);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.success).toBe(false);
+    expect(result.stdout).toContain("2 failed");
+    expect(result.stdout).toContain("15 passed");
+    expect(result.stderr).toContain("FAIL src/lib/utils.test.ts");
+    expect(result.stderr).toContain("AssertionError");
+    expect(result.stderr).toContain("expected null to be 'default'");
+    expect(result.duration).toBe(2.1);
+  });
+
+  it("preserves error when no test script defined", () => {
+    const result = parseTestOutput(1, "", TEST_NO_SCRIPT_STDERR, 0.2);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.success).toBe(false);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain('Missing script: "test"');
+  });
+});
+
+// ─── Fidelity: npm init ──────────────────────────────────────────────────────
+
+describe("fidelity: npm init", () => {
+  it("preserves package.json metadata from successful init", () => {
+    const result = parseInitOutput(true, "my-new-app", "1.0.0", "/home/user/projects/my-new-app/package.json");
+
+    expect(result.success).toBe(true);
+    expect(result.packageName).toBe("my-new-app");
+    expect(result.version).toBe("1.0.0");
+    expect(result.path).toBe("/home/user/projects/my-new-app/package.json");
+  });
+
+  it("preserves scoped package name from init", () => {
+    const result = parseInitOutput(true, "@company/shared-utils", "0.1.0", "/workspace/shared-utils/package.json");
+
+    expect(result.success).toBe(true);
+    expect(result.packageName).toBe("@company/shared-utils");
+    expect(result.version).toBe("0.1.0");
+  });
+
+  it("preserves failure state when init fails", () => {
+    const result = parseInitOutput(false, "unknown", "0.0.0", "/readonly-dir/package.json");
+
+    expect(result.success).toBe(false);
+    expect(result.packageName).toBe("unknown");
+    expect(result.version).toBe("0.0.0");
+    expect(result.path).toBe("/readonly-dir/package.json");
+  });
+
+  it("preserves default version from npm init -y", () => {
+    const result = parseInitOutput(true, "test-project", "1.0.0", "/tmp/test-project/package.json");
+
+    expect(result.success).toBe(true);
+    expect(result.version).toBe("1.0.0");
   });
 });
