@@ -6,7 +6,13 @@
  * then verify that parsed structured output retains every important field.
  */
 import { describe, it, expect } from "vitest";
-import { parseEslintJson, parsePrettierCheck } from "../src/lib/parsers.js";
+import {
+  parseEslintJson,
+  parsePrettierCheck,
+  parseBiomeJson,
+  parseBiomeFormat,
+  parsePrettierWrite,
+} from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
 // ESLint fixtures
@@ -306,5 +312,368 @@ describe("fidelity: parsePrettierCheck", () => {
     expect(result.total).toBe(4);
     expect(result.files).toEqual(["src/a.ts", "src/b.tsx", "src/c.js", "lib/d.mjs"]);
     expect(result.formatted).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Biome check fixtures
+// ---------------------------------------------------------------------------
+
+/** Realistic Biome check output with mixed lint and format diagnostics. */
+const biomeCheckMixed = JSON.stringify({
+  diagnostics: [
+    {
+      category: "lint/suspicious/noDoubleEquals",
+      severity: "error",
+      description: "Use === instead of ==.\n\n  == is only allowed when comparing against null",
+      location: {
+        path: { file: "src/components/App.tsx" },
+        span: { start: 450, end: 452 },
+        sourceCode: { lineNumber: 18, columnNumber: 12 },
+      },
+      tags: ["fixable"],
+    },
+    {
+      category: "lint/style/useConst",
+      severity: "warning",
+      description: "This let declaration can be made const.",
+      location: {
+        path: { file: "src/components/App.tsx" },
+        span: { start: 200, end: 203 },
+        sourceCode: { lineNumber: 8, columnNumber: 5 },
+      },
+      tags: ["fixable"],
+    },
+    {
+      category: "lint/correctness/noUnusedImports",
+      severity: "warning",
+      description: "This import is unused.",
+      location: {
+        path: { file: "src/utils/helpers.ts" },
+        span: { start: 0, end: 30 },
+        sourceCode: { lineNumber: 1, columnNumber: 1 },
+      },
+      tags: ["fixable"],
+    },
+    {
+      category: "format",
+      severity: "error",
+      description: "File not formatted. Run `biome format --write` to fix.",
+      location: {
+        path: { file: "src/utils/helpers.ts" },
+        span: { start: 0, end: 500 },
+        sourceCode: { lineNumber: 1, columnNumber: 1 },
+      },
+      tags: ["fixable"],
+    },
+    {
+      category: "lint/suspicious/noExplicitAny",
+      severity: "error",
+      description: "Unexpected any. Specify a different type.",
+      location: {
+        path: { file: "src/lib/api.ts" },
+        span: { start: 1200, end: 1203 },
+        sourceCode: { lineNumber: 42, columnNumber: 30 },
+      },
+      tags: [],
+    },
+    {
+      category: "lint/nursery/noConsole",
+      severity: "information",
+      description: "Don't use console.log.",
+      location: {
+        path: { file: "src/lib/api.ts" },
+        span: { start: 800, end: 811 },
+        sourceCode: { lineNumber: 25, columnNumber: 3 },
+      },
+      tags: [],
+    },
+  ],
+});
+
+/** Biome check with only format diagnostics (no lint issues). */
+const biomeCheckFormatOnly = JSON.stringify({
+  diagnostics: [
+    {
+      category: "format",
+      severity: "error",
+      description: "File not formatted.",
+      location: {
+        path: { file: "src/index.ts" },
+        sourceCode: { lineNumber: 1, columnNumber: 1 },
+      },
+      tags: ["fixable"],
+    },
+    {
+      category: "format",
+      severity: "error",
+      description: "File not formatted.",
+      location: {
+        path: { file: "src/config.ts" },
+        sourceCode: { lineNumber: 1, columnNumber: 1 },
+      },
+      tags: ["fixable"],
+    },
+  ],
+});
+
+/** Biome check with fatal severity. */
+const biomeCheckFatal = JSON.stringify({
+  diagnostics: [
+    {
+      category: "parse",
+      severity: "fatal",
+      description:
+        "Expected a semicolon or an implicit semicolon after a statement, but found none.",
+      location: {
+        path: { file: "src/broken.ts" },
+        span: { start: 50, end: 51 },
+        sourceCode: { lineNumber: 3, columnNumber: 10 },
+      },
+      tags: [],
+    },
+  ],
+});
+
+// ---------------------------------------------------------------------------
+// Biome check fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseBiomeJson", () => {
+  it("preserves file, line, column, severity, rule, and message for each diagnostic", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+
+    const first = result.diagnostics[0];
+    expect(first.file).toBe("src/components/App.tsx");
+    expect(first.line).toBe(18);
+    expect(first.column).toBe(12);
+    expect(first.severity).toBe("error");
+    expect(first.rule).toBe("lint/suspicious/noDoubleEquals");
+    expect(first.message).toContain("Use === instead of ==");
+    expect(first.fixable).toBe(true);
+  });
+
+  it("captures all diagnostics from mixed lint + format output", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+
+    expect(result.diagnostics).toHaveLength(6);
+    expect(result.total).toBe(6);
+  });
+
+  it("correctly counts errors, warnings, and fixable across mixed output", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+
+    // errors: noDoubleEquals (error), format (error), noExplicitAny (error) = 3
+    // warnings: useConst (warning), noUnusedImports (warning) = 2
+    // info: noConsole (information) = 1
+    expect(result.errors).toBe(3);
+    expect(result.warnings).toBe(2);
+    // fixable: noDoubleEquals, useConst, noUnusedImports, format = 4
+    expect(result.fixable).toBe(4);
+  });
+
+  it("counts unique files correctly when same file has multiple diagnostics", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+
+    // src/components/App.tsx (2 diags), src/utils/helpers.ts (2 diags), src/lib/api.ts (2 diags)
+    expect(result.filesChecked).toBe(3);
+  });
+
+  it("maps Biome severity 'error' to 'error'", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+    const errorDiags = result.diagnostics.filter((d) => d.severity === "error");
+
+    expect(errorDiags.length).toBe(3);
+    expect(errorDiags.map((d) => d.rule)).toContain("lint/suspicious/noDoubleEquals");
+    expect(errorDiags.map((d) => d.rule)).toContain("format");
+    expect(errorDiags.map((d) => d.rule)).toContain("lint/suspicious/noExplicitAny");
+  });
+
+  it("maps Biome severity 'warning' to 'warning'", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+    const warningDiags = result.diagnostics.filter((d) => d.severity === "warning");
+
+    expect(warningDiags.length).toBe(2);
+    expect(warningDiags.map((d) => d.rule)).toContain("lint/style/useConst");
+    expect(warningDiags.map((d) => d.rule)).toContain("lint/correctness/noUnusedImports");
+  });
+
+  it("maps Biome severity 'information' to 'info'", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+    const infoDiags = result.diagnostics.filter((d) => d.severity === "info");
+
+    expect(infoDiags.length).toBe(1);
+    expect(infoDiags[0].rule).toBe("lint/nursery/noConsole");
+  });
+
+  it("maps Biome severity 'fatal' to 'error'", () => {
+    const result = parseBiomeJson(biomeCheckFatal);
+
+    expect(result.diagnostics[0].severity).toBe("error");
+    expect(result.errors).toBe(1);
+  });
+
+  it("correctly handles format-only diagnostics", () => {
+    const result = parseBiomeJson(biomeCheckFormatOnly);
+
+    expect(result.total).toBe(2);
+    expect(result.errors).toBe(2);
+    expect(result.warnings).toBe(0);
+    expect(result.fixable).toBe(2);
+    expect(result.filesChecked).toBe(2);
+    expect(result.diagnostics.every((d) => d.rule === "format")).toBe(true);
+  });
+
+  it("preserves non-fixable flag for diagnostics without fixable tag", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+
+    const noExplicitAny = result.diagnostics.find(
+      (d) => d.rule === "lint/suspicious/noExplicitAny",
+    )!;
+    expect(noExplicitAny.fixable).toBe(false);
+
+    const noConsole = result.diagnostics.find((d) => d.rule === "lint/nursery/noConsole")!;
+    expect(noConsole.fixable).toBe(false);
+  });
+
+  it("preserves multi-line description messages", () => {
+    const result = parseBiomeJson(biomeCheckMixed);
+    const first = result.diagnostics[0];
+    // The description contains a newline
+    expect(first.message).toContain("== is only allowed when comparing against null");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Biome format fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseBiomeFormat", () => {
+  it("captures all formatted file paths from realistic output", () => {
+    const stdout = [
+      "src/components/App.tsx",
+      "src/utils/helpers.ts",
+      "src/lib/api.ts",
+      "src/index.ts",
+      "Formatted 4 files in 120ms. Fixed 4 files.",
+    ].join("\n");
+
+    const result = parseBiomeFormat(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(4);
+    expect(result.files).toEqual([
+      "src/components/App.tsx",
+      "src/utils/helpers.ts",
+      "src/lib/api.ts",
+      "src/index.ts",
+    ]);
+  });
+
+  it("filters out all summary line variants", () => {
+    const stdout = [
+      "src/a.ts",
+      "src/b.ts",
+      "Formatted 2 files in 50ms.",
+      "Fixed 2 files.",
+      "Checked 10 files in 30ms. No fixes needed.",
+    ].join("\n");
+
+    const result = parseBiomeFormat(stdout, "", 0);
+
+    expect(result.files).toEqual(["src/a.ts", "src/b.ts"]);
+    expect(result.filesChanged).toBe(2);
+  });
+
+  it("returns empty files when Biome reports nothing to format", () => {
+    const stdout = "Checked 5 files in 20ms. No fixes needed.";
+
+    const result = parseBiomeFormat(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toEqual([]);
+  });
+
+  it("handles stderr content without affecting file list", () => {
+    const stdout = "src/index.ts\nsrc/utils.ts";
+    const stderr = "Some warning about configuration";
+
+    const result = parseBiomeFormat(stdout, stderr, 0);
+
+    // stderr content without file extension won't be included
+    expect(result.filesChanged).toBe(2);
+    expect(result.files).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Prettier --write fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parsePrettierWrite", () => {
+  it("captures all formatted file paths from realistic output", () => {
+    const stdout = [
+      "src/components/App.tsx",
+      "src/utils/helpers.ts",
+      "src/lib/api.ts",
+      "src/styles/main.css",
+      "package.json",
+    ].join("\n");
+
+    const result = parsePrettierWrite(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(5);
+    expect(result.files).toEqual([
+      "src/components/App.tsx",
+      "src/utils/helpers.ts",
+      "src/lib/api.ts",
+      "src/styles/main.css",
+      "package.json",
+    ]);
+  });
+
+  it("filters out [warn] lines and informational messages", () => {
+    const stdout = [
+      "src/index.ts",
+      "[warn] src/index.ts was not formatted",
+      "src/utils.ts",
+      "Checking formatting...",
+      "All matched files use Prettier code style!",
+    ].join("\n");
+
+    const result = parsePrettierWrite(stdout, "", 0);
+
+    expect(result.files).toEqual(["src/index.ts", "src/utils.ts"]);
+    expect(result.filesChanged).toBe(2);
+  });
+
+  it("returns success=false with non-zero exit code", () => {
+    const result = parsePrettierWrite("", "error: unexpected token", 2);
+
+    expect(result.success).toBe(false);
+    expect(result.filesChanged).toBe(0);
+  });
+
+  it("handles various file extensions correctly", () => {
+    const stdout = [
+      "src/app.tsx",
+      "styles/main.css",
+      "config/settings.json",
+      "docs/guide.md",
+      "scripts/build.mjs",
+    ].join("\n");
+
+    const result = parsePrettierWrite(stdout, "", 0);
+
+    expect(result.filesChanged).toBe(5);
+    expect(result.files).toEqual([
+      "src/app.tsx",
+      "styles/main.css",
+      "config/settings.json",
+      "docs/guide.md",
+      "scripts/build.mjs",
+    ]);
   });
 });
