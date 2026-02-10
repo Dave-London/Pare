@@ -7,3 +7,7 @@ export async function eslint(args: string[], cwd?: string): Promise<RunResult> {
 export async function prettier(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["prettier", ...args], { cwd });
 }
+
+export async function biome(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["@biomejs/biome", ...args], { cwd });
+}

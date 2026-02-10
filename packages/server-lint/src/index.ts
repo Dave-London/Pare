@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/lint", version: "0.2.0" },
   {
     instructions:
-      "Structured linting operations (ESLint, Prettier format check). Use instead of running lint commands via bash. Returns typed JSON with structured violation details and counts.",
+      "Structured linting and formatting operations (ESLint, Prettier, Biome). Use instead of running lint/format commands via bash. Returns typed JSON with structured violation details and counts.",
   },
 );
 
