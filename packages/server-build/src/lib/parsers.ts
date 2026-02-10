@@ -3,6 +3,7 @@ import type { TscResult, TscDiagnostic, BuildResult } from "../schemas/index.js"
 // tsc output format: file(line,col): error TSxxxx: message
 const TSC_DIAGNOSTIC_RE = /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+TS(\d+):\s+(.+)$/;
 
+/** Parses TypeScript compiler (`tsc`) output into structured diagnostics with file, line, and error code. */
 export function parseTscOutput(stdout: string, stderr: string, exitCode: number): TscResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
@@ -34,6 +35,7 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
   };
 }
 
+/** Parses generic build command output into structured results with success status, errors, and warnings. */
 export function parseBuildCommandOutput(
   stdout: string,
   stderr: string,

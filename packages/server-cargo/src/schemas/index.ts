@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// cargo build --message-format=json
+/** Zod schema for a single Rust compiler diagnostic with file location, severity, and optional lint code. */
 export const CargoDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
@@ -10,6 +10,7 @@ export const CargoDiagnosticSchema = z.object({
   message: z.string(),
 });
 
+/** Zod schema for structured cargo build output including success status, diagnostics, and error/warning counts. */
 export const CargoBuildResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(CargoDiagnosticSchema),
@@ -20,13 +21,14 @@ export const CargoBuildResultSchema = z.object({
 
 export type CargoBuildResult = z.infer<typeof CargoBuildResultSchema>;
 
-// cargo test -- output
+/** Zod schema for a single cargo test case with name, status (ok/FAILED/ignored), and optional duration. */
 export const CargoTestCaseSchema = z.object({
   name: z.string(),
   status: z.enum(["ok", "FAILED", "ignored"]),
   duration: z.string().optional(),
 });
 
+/** Zod schema for structured cargo test output with test list, pass/fail/ignored counts. */
 export const CargoTestResultSchema = z.object({
   success: z.boolean(),
   tests: z.array(CargoTestCaseSchema),
@@ -38,7 +40,7 @@ export const CargoTestResultSchema = z.object({
 
 export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
 
-// cargo clippy --message-format=json (same shape as build diagnostics)
+/** Zod schema for structured cargo clippy output with diagnostics and error/warning counts. */
 export const CargoClippyResultSchema = z.object({
   diagnostics: z.array(CargoDiagnosticSchema),
   total: z.number(),

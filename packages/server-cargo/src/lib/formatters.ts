@@ -1,5 +1,6 @@
 import type { CargoBuildResult, CargoTestResult, CargoClippyResult } from "../schemas/index.js";
 
+/** Formats structured cargo build results into a human-readable diagnostic summary. */
 export function formatCargoBuild(data: CargoBuildResult): string {
   if (data.success && data.total === 0) return "cargo build: success, no diagnostics.";
 
@@ -12,6 +13,7 @@ export function formatCargoBuild(data: CargoBuildResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured cargo test results into a human-readable test summary with pass/fail status. */
 export function formatCargoTest(data: CargoTestResult): string {
   const status = data.success ? "ok" : "FAILED";
   const lines = [
@@ -23,6 +25,7 @@ export function formatCargoTest(data: CargoTestResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured cargo clippy results into a human-readable lint warning summary. */
 export function formatCargoClippy(data: CargoClippyResult): string {
   if (data.total === 0) return "clippy: no warnings.";
 

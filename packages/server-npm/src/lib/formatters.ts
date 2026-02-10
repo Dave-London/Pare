@@ -1,5 +1,6 @@
 import type { NpmInstall, NpmAudit, NpmOutdated, NpmList } from "../schemas/index.js";
 
+/** Formats structured npm install data into a human-readable summary of added/removed packages. */
 export function formatInstall(data: NpmInstall): string {
   const parts = [];
   if (data.added) parts.push(`added ${data.added}`);
@@ -21,6 +22,7 @@ export function formatInstall(data: NpmInstall): string {
   return lines.join("\n");
 }
 
+/** Formats structured npm audit data into a human-readable vulnerability report. */
 export function formatAudit(data: NpmAudit): string {
   if (data.summary.total === 0) return "No vulnerabilities found.";
 
@@ -35,6 +37,7 @@ export function formatAudit(data: NpmAudit): string {
   return lines.join("\n");
 }
 
+/** Formats structured npm outdated data into a human-readable list of packages needing updates. */
 export function formatOutdated(data: NpmOutdated): string {
   if (data.total === 0) return "All packages are up to date.";
 
@@ -45,6 +48,7 @@ export function formatOutdated(data: NpmOutdated): string {
   return lines.join("\n");
 }
 
+/** Formats structured npm list data into a human-readable dependency tree summary. */
 export function formatList(data: NpmList): string {
   const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
   for (const [name, dep] of Object.entries(data.dependencies)) {

@@ -1,5 +1,6 @@
 import type { PipInstall, MypyResult, RuffResult, PipAuditResult } from "../schemas/index.js";
 
+/** Formats structured pip install results into a human-readable summary of installed packages. */
 export function formatPipInstall(data: PipInstall): string {
   if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
   if (!data.success) return "pip install failed.";
@@ -11,6 +12,7 @@ export function formatPipInstall(data: PipInstall): string {
   return lines.join("\n");
 }
 
+/** Formats structured mypy type-check results into a human-readable diagnostic summary. */
 export function formatMypy(data: MypyResult): string {
   if (data.success && data.total === 0) return "mypy: no errors found.";
 
@@ -23,6 +25,7 @@ export function formatMypy(data: MypyResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured ruff lint results into a human-readable diagnostic listing. */
 export function formatRuff(data: RuffResult): string {
   if (data.total === 0) return "ruff: no issues found.";
 
@@ -33,6 +36,7 @@ export function formatRuff(data: RuffResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured pip-audit vulnerability results into a human-readable security report. */
 export function formatPipAudit(data: PipAuditResult): string {
   if (data.total === 0) return "No vulnerabilities found.";
 

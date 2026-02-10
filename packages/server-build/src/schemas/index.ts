@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** Zod schema for a single TypeScript compiler diagnostic with file location, severity, and error code. */
 export const TscDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
@@ -9,6 +10,7 @@ export const TscDiagnosticSchema = z.object({
   message: z.string(),
 });
 
+/** Zod schema for structured tsc output including success status, diagnostics array, and error/warning counts. */
 export const TscResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(TscDiagnosticSchema),
@@ -20,6 +22,7 @@ export const TscResultSchema = z.object({
 export type TscResult = z.infer<typeof TscResultSchema>;
 export type TscDiagnostic = z.infer<typeof TscDiagnosticSchema>;
 
+/** Zod schema for structured build command output with success status, duration, errors, and warnings. */
 export const BuildResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),

@@ -8,6 +8,7 @@ const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
   C: "copied",
 };
 
+/** Parses `git status --porcelain=v1` output into structured status data with branch, staged, modified, and untracked files. */
 export function parseStatus(stdout: string, branchLine: string): GitStatus {
   const lines = stdout.split("\n").filter(Boolean);
   const staged: GitStatus["staged"] = [];
@@ -96,6 +97,7 @@ function parseBranchFromPorcelain(line: string): {
   };
 }
 
+/** Parses custom-formatted `git log` output (delimited by `@@`) into structured commit entries. */
 export function parseLog(stdout: string): GitLog {
   // Format: hash|hashShort|author|email|date|refs|message
   const DELIMITER = "@@";
@@ -116,6 +118,7 @@ export function parseLog(stdout: string): GitLog {
   return { commits, total: commits.length };
 }
 
+/** Parses `git diff --numstat` output into structured file-level diff statistics. */
 export function parseDiffStat(stdout: string): GitDiff {
   // Parse --numstat output: additions\tdeletions\tfilename
   const lines = stdout.trim().split("\n").filter(Boolean);
@@ -152,6 +155,7 @@ export function parseDiffStat(stdout: string): GitDiff {
   };
 }
 
+/** Parses `git branch` output into a structured list of branches with the current branch marked. */
 export function parseBranch(stdout: string): GitBranch {
   const lines = stdout.trim().split("\n").filter(Boolean);
   let current = "";
@@ -168,6 +172,7 @@ export function parseBranch(stdout: string): GitBranch {
   return { branches, current };
 }
 
+/** Parses custom-formatted `git show` output and `--numstat` diff into structured commit details. */
 export function parseShow(stdout: string, diffStdout: string): GitShow {
   // stdout is the formatted commit info, diffStdout is the numstat
   const DELIMITER = "@@";

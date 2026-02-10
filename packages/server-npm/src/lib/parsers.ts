@@ -1,5 +1,6 @@
 import type { NpmInstall, NpmAudit, NpmOutdated, NpmList } from "../schemas/index.js";
 
+/** Parses `npm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
   // npm install doesn't have a great --json output, so we parse the summary line
   // "added X packages, removed Y packages, changed Z packages in Ns"
@@ -40,6 +41,7 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
   };
 }
 
+/** Parses `npm audit --json` output into structured vulnerability data with severity breakdown. */
 export function parseAuditJson(jsonStr: string): NpmAudit {
   const data = JSON.parse(jsonStr);
 
@@ -67,6 +69,7 @@ export function parseAuditJson(jsonStr: string): NpmAudit {
   return { vulnerabilities, summary };
 }
 
+/** Parses `npm outdated --json` output into structured data with current, wanted, and latest versions. */
 export function parseOutdatedJson(jsonStr: string): NpmOutdated {
   const data = JSON.parse(jsonStr);
 
@@ -83,6 +86,7 @@ export function parseOutdatedJson(jsonStr: string): NpmOutdated {
   return { packages, total: packages.length };
 }
 
+/** Parses `npm list --json` output into a structured dependency list with versions. */
 export function parseListJson(jsonStr: string): NpmList {
   const data = JSON.parse(jsonStr);
 

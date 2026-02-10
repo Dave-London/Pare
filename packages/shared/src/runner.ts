@@ -1,12 +1,14 @@
 import { execFile } from "node:child_process";
 import { stripAnsi } from "./ansi.js";
 
+/** Options for the command runner, including working directory, timeout, and environment overrides. */
 export interface RunOptions {
   cwd?: string;
   timeout?: number;
   env?: Record<string, string>;
 }
 
+/** Result of a command execution, containing the exit code and ANSI-stripped stdout/stderr. */
 export interface RunResult {
   exitCode: number;
   stdout: string;

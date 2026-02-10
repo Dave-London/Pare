@@ -1,5 +1,6 @@
 import type { TscResult, BuildResult } from "../schemas/index.js";
 
+/** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
 export function formatTsc(data: TscResult): string {
   if (data.success && data.total === 0) return "TypeScript: no errors found.";
 
@@ -10,6 +11,7 @@ export function formatTsc(data: TscResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured build command results into a human-readable success/failure summary. */
 export function formatBuildCommand(data: BuildResult): string {
   if (data.success) {
     const parts = [`Build succeeded in ${data.duration}s`];

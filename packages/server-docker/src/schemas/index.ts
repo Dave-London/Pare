@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** Zod schema for a single Docker container with ID, name, image, state, and port mappings. */
 export const ContainerSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -16,6 +17,7 @@ export const ContainerSchema = z.object({
   created: z.string(),
 });
 
+/** Zod schema for structured docker ps output with container list and running/stopped counts. */
 export const DockerPsSchema = z.object({
   containers: z.array(ContainerSchema),
   total: z.number(),
@@ -25,6 +27,7 @@ export const DockerPsSchema = z.object({
 
 export type DockerPs = z.infer<typeof DockerPsSchema>;
 
+/** Zod schema for structured docker build output with success status, image ID, and build errors. */
 export const DockerBuildSchema = z.object({
   success: z.boolean(),
   imageId: z.string().optional(),
@@ -35,6 +38,7 @@ export const DockerBuildSchema = z.object({
 
 export type DockerBuild = z.infer<typeof DockerBuildSchema>;
 
+/** Zod schema for structured docker logs output with container name, log lines, and total count. */
 export const DockerLogsSchema = z.object({
   container: z.string(),
   lines: z.array(z.string()),
@@ -43,6 +47,7 @@ export const DockerLogsSchema = z.object({
 
 export type DockerLogs = z.infer<typeof DockerLogsSchema>;
 
+/** Zod schema for a single Docker image with ID, repository, tag, size, and creation time. */
 export const ImageSchema = z.object({
   id: z.string(),
   repository: z.string(),
@@ -51,6 +56,7 @@ export const ImageSchema = z.object({
   created: z.string(),
 });
 
+/** Zod schema for structured docker images output with image list and total count. */
 export const DockerImagesSchema = z.object({
   images: z.array(ImageSchema),
   total: z.number(),

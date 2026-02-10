@@ -1,5 +1,6 @@
 import type { LintResult, FormatCheckResult } from "../schemas/index.js";
 
+/** Formats structured ESLint results into a human-readable diagnostic summary with file locations. */
 export function formatLint(data: LintResult): string {
   if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
 
@@ -12,6 +13,7 @@ export function formatLint(data: LintResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured Prettier check results into a human-readable list of unformatted files. */
 export function formatFormatCheck(data: FormatCheckResult): string {
   if (data.formatted) return "All files are formatted.";
 
