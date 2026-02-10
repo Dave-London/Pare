@@ -26,10 +26,10 @@ describe("@paretools/go integration", () => {
     await transport.close();
   });
 
-  it("lists all 3 tools", async () => {
+  it("lists all 7 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["build", "test", "vet"]);
+    expect(names).toEqual(["build", "fmt", "generate", "mod-tidy", "run", "test", "vet"]);
   });
 
   it("each tool has an outputSchema", async () => {

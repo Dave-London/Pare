@@ -1,4 +1,12 @@
-import type { GoBuildResult, GoTestResult, GoVetResult } from "../schemas/index.js";
+import type {
+  GoBuildResult,
+  GoTestResult,
+  GoVetResult,
+  GoRunResult,
+  GoModTidyResult,
+  GoFmtResult,
+  GoGenerateResult,
+} from "../schemas/index.js";
 
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
 
@@ -114,4 +122,77 @@ export function parseGoVetOutput(stdout: string, stderr: string): GoVetResult {
   }
 
   return { diagnostics, total: diagnostics.length };
+}
+
+/** Parses `go run` output into structured result with stdout, stderr, and exit code. */
+export function parseGoRunOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): GoRunResult {
+  return {
+    exitCode,
+    stdout: stdout.trimEnd(),
+    stderr: stderr.trimEnd(),
+    success: exitCode === 0,
+  };
+}
+
+/** Parses `go mod tidy` output into structured result with success status and summary. */
+export function parseGoModTidyOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): GoModTidyResult {
+  if (exitCode === 0) {
+    const combined = (stdout + "\n" + stderr).trim();
+    return {
+      success: true,
+      summary: combined || "go.mod and go.sum are already tidy.",
+    };
+  }
+
+  const combined = (stderr + "\n" + stdout).trim();
+  return {
+    success: false,
+    summary: combined || "go mod tidy failed.",
+  };
+}
+
+/** Parses `gofmt -l` or `gofmt -w` output into structured result with file list. */
+export function parseGoFmtOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  checkMode: boolean,
+): GoFmtResult {
+  // In check mode (-l), stdout lists files that need formatting (one per line).
+  // In fix mode (-w), stdout is typically empty (files are rewritten in place).
+  // stderr may contain error messages.
+  const output = checkMode ? stdout : stdout;
+  const files = output
+    .split("\n")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const hasErrors = exitCode !== 0 || (checkMode && files.length > 0);
+
+  return {
+    success: !hasErrors,
+    filesChanged: files.length,
+    files,
+  };
+}
+
+/** Parses `go generate` output into structured result with success status and output text. */
+export function parseGoGenerateOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): GoGenerateResult {
+  const combined = (stdout + "\n" + stderr).trim();
+  return {
+    success: exitCode === 0,
+    output: combined,
+  };
 }

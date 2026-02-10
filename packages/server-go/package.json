@@ -2,7 +2,7 @@
   "name": "@paretools/go",
   "version": "0.3.0",
   "mcpName": "io.github.Dave-London/go",
-  "description": "MCP server for Go tools (build, test, vet) with structured, token-efficient output",
+  "description": "MCP server for Go tools (build, test, vet, run, mod-tidy, fmt, generate) with structured, token-efficient output",
   "license": "MIT",
   "keywords": [
     "mcp",

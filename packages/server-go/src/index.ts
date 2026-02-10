@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/go", version: "0.2.0" },
   {
     instructions:
-      "Structured Go toolchain operations (build, test, vet). Use instead of running go commands via bash. Returns typed JSON with structured compiler errors, test results, and vet warnings.",
+      "Structured Go toolchain operations (build, test, vet, run, mod-tidy, fmt, generate). Use instead of running go commands via bash. Returns typed JSON with structured compiler errors, test results, vet warnings, run output, and more.",
   },
 );
 
