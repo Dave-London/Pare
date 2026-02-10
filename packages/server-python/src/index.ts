@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/python", version: "0.2.0" },
   {
     instructions:
-      "Structured Python tool operations (pip install, mypy, ruff, pip-audit). Use instead of running Python tool commands via bash. Returns typed JSON with structured type errors, lint violations, and vulnerability data.",
+      "Structured Python tool operations (pip install, mypy, ruff, pip-audit, pytest, uv, black). Use instead of running Python tool commands via bash. Returns typed JSON with structured type errors, lint violations, vulnerability data, test results, and formatting status.",
   },
 );
 

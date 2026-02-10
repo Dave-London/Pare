@@ -73,3 +73,60 @@ export const PipAuditResultSchema = z.object({
 });
 
 export type PipAuditResult = z.infer<typeof PipAuditResultSchema>;
+
+/** Zod schema for a single pytest failure with test name and failure message. */
+export const PytestFailureSchema = z.object({
+  test: z.string(),
+  message: z.string(),
+});
+
+/** Zod schema for structured pytest output with pass/fail/error/skip counts and failure details. */
+export const PytestResultSchema = z.object({
+  success: z.boolean(),
+  passed: z.number(),
+  failed: z.number(),
+  errors: z.number(),
+  skipped: z.number(),
+  total: z.number(),
+  duration: z.number(),
+  failures: z.array(PytestFailureSchema),
+});
+
+export type PytestResult = z.infer<typeof PytestResultSchema>;
+
+/** Zod schema for structured uv install output with installed packages and count. */
+export const UvInstallSchema = z.object({
+  success: z.boolean(),
+  installed: z.array(
+    z.object({
+      name: z.string(),
+      version: z.string(),
+    }),
+  ),
+  total: z.number(),
+  duration: z.number(),
+});
+
+export type UvInstall = z.infer<typeof UvInstallSchema>;
+
+/** Zod schema for structured uv run output with exit code and stdout/stderr. */
+export const UvRunSchema = z.object({
+  exitCode: z.number(),
+  stdout: z.string(),
+  stderr: z.string(),
+  success: z.boolean(),
+  duration: z.number(),
+});
+
+export type UvRun = z.infer<typeof UvRunSchema>;
+
+/** Zod schema for structured Black formatter output with file counts and reformat list. */
+export const BlackResultSchema = z.object({
+  filesChanged: z.number(),
+  filesUnchanged: z.number(),
+  filesChecked: z.number(),
+  success: z.boolean(),
+  wouldReformat: z.array(z.string()),
+});
+
+export type BlackResult = z.infer<typeof BlackResultSchema>;

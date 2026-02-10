@@ -26,10 +26,19 @@ describe("@paretools/python integration", () => {
     await transport.close();
   });
 
-  it("lists all 4 tools", async () => {
+  it("lists all 8 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["mypy", "pip-audit", "pip-install", "ruff-check"]);
+    expect(names).toEqual([
+      "black",
+      "mypy",
+      "pip-audit",
+      "pip-install",
+      "pytest",
+      "ruff-check",
+      "uv-install",
+      "uv-run",
+    ]);
   });
 
   it("each tool has an outputSchema", async () => {
