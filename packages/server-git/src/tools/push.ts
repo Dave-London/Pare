@@ -15,22 +15,10 @@ export function registerPushTool(server: McpServer) {
         "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, and summary. Use instead of running `git push` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
-        remote: z
-          .string()
-          .optional()
-          .default("origin")
-          .describe('Remote name (default: "origin")'),
+        remote: z.string().optional().default("origin").describe('Remote name (default: "origin")'),
         branch: z.string().optional().describe("Branch to push (default: current branch)"),
-        force: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Force push (--force)"),
-        setUpstream: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Set upstream tracking (-u)"),
+        force: z.boolean().optional().default(false).describe("Force push (--force)"),
+        setUpstream: z.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
       },
       outputSchema: GitPushSchema,
     },

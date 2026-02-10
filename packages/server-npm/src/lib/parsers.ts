@@ -1,4 +1,12 @@
-import type { NpmInstall, NpmAudit, NpmOutdated, NpmList, NpmRun, NpmTest, NpmInit } from "../schemas/index.js";
+import type {
+  NpmInstall,
+  NpmAudit,
+  NpmOutdated,
+  NpmList,
+  NpmRun,
+  NpmTest,
+  NpmInit,
+} from "../schemas/index.js";
 
 /** Parses `npm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {

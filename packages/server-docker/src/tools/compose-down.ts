@@ -25,10 +25,7 @@ export function registerComposeDownTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Remove orphan containers (default: false)"),
-        file: z
-          .string()
-          .optional()
-          .describe("Compose file path (default: docker-compose.yml)"),
+        file: z.string().optional().describe("Compose file path (default: docker-compose.yml)"),
       },
       outputSchema: DockerComposeDownSchema,
     },

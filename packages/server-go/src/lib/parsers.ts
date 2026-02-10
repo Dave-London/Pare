@@ -125,11 +125,7 @@ export function parseGoVetOutput(stdout: string, stderr: string): GoVetResult {
 }
 
 /** Parses `go run` output into structured result with stdout, stderr, and exit code. */
-export function parseGoRunOutput(
-  stdout: string,
-  stderr: string,
-  exitCode: number,
-): GoRunResult {
+export function parseGoRunOutput(stdout: string, stderr: string, exitCode: number): GoRunResult {
   return {
     exitCode,
     stdout: stdout.trimEnd(),

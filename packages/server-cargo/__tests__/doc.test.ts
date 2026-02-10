@@ -62,10 +62,7 @@ describe("parseCargoDocOutput", () => {
   });
 
   it("parses warning with code bracket format", () => {
-    const stderr = [
-      "warning[E0599]: no method named `foo`",
-      "  --> src/main.rs:5:10",
-    ].join("\n");
+    const stderr = ["warning[E0599]: no method named `foo`", "  --> src/main.rs:5:10"].join("\n");
 
     const result = parseCargoDocOutput(stderr, 0);
 

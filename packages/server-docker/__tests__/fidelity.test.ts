@@ -341,7 +341,8 @@ describe("fidelity: parseBuildOutput", () => {
   });
 
   it("image ID from stderr (BuildKit): captured correctly", () => {
-    const stderr = "writing image sha256:ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00 done";
+    const stderr =
+      "writing image sha256:ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00 done";
     const result = parseBuildOutput("", stderr, 0, 10.0);
 
     expect(result.success).toBe(true);

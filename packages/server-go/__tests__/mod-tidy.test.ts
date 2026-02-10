@@ -29,7 +29,7 @@ describe("parseGoModTidyOutput", () => {
 
   it("parses failed tidy with version conflict", () => {
     const stderr =
-      "go: example.com/foo@v1.2.3 requires\n\texample.com/bar@v2.0.0: version \"v2.0.0\" invalid\n";
+      'go: example.com/foo@v1.2.3 requires\n\texample.com/bar@v2.0.0: version "v2.0.0" invalid\n';
     const result = parseGoModTidyOutput("", stderr, 1);
 
     expect(result.success).toBe(false);

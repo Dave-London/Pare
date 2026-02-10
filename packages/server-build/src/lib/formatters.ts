@@ -48,13 +48,19 @@ export function formatEsbuild(data: EsbuildResult): string {
 
   const lines: string[] = [];
   if (data.success) {
-    lines.push(`esbuild: build succeeded in ${data.duration}s with ${data.warnings.length} warnings`);
+    lines.push(
+      `esbuild: build succeeded in ${data.duration}s with ${data.warnings.length} warnings`,
+    );
   } else {
-    lines.push(`esbuild: build failed (${data.duration}s) — ${data.errors.length} errors, ${data.warnings.length} warnings`);
+    lines.push(
+      `esbuild: build failed (${data.duration}s) — ${data.errors.length} errors, ${data.warnings.length} warnings`,
+    );
   }
 
   for (const err of data.errors) {
-    const loc = err.file ? `${err.file}${err.line ? `:${err.line}` : ""}${err.column ? `:${err.column}` : ""}` : "";
+    const loc = err.file
+      ? `${err.file}${err.line ? `:${err.line}` : ""}${err.column ? `:${err.column}` : ""}`
+      : "";
     lines.push(`  ERROR${loc ? ` ${loc}` : ""}: ${err.message}`);
   }
   for (const warn of data.warnings) {

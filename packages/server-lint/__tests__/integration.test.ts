@@ -29,7 +29,13 @@ describe("@paretools/lint integration", () => {
   it("lists all 5 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["biome-check", "biome-format", "format-check", "lint", "prettier-format"]);
+    expect(names).toEqual([
+      "biome-check",
+      "biome-format",
+      "format-check",
+      "lint",
+      "prettier-format",
+    ]);
   });
 
   it("each tool has an outputSchema", async () => {

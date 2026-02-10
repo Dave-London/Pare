@@ -15,14 +15,8 @@ export function registerUvInstallTool(server: McpServer) {
         "Runs uv pip install and returns a structured summary of installed packages. Use instead of running `uv pip install` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Working directory (default: cwd)"),
-        packages: z
-          .array(z.string())
-          .optional()
-          .describe("Packages to install"),
-        requirements: z
-          .string()
-          .optional()
-          .describe("Path to requirements file"),
+        packages: z.array(z.string()).optional().describe("Packages to install"),
+        requirements: z.string().optional().describe("Path to requirements file"),
       },
       outputSchema: UvInstallSchema,
     },

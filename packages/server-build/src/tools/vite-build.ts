@@ -20,11 +20,7 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default("production")
           .describe("Build mode (default: production)"),
-        args: z
-          .array(z.string())
-          .optional()
-          .default([])
-          .describe("Additional Vite build flags"),
+        args: z.array(z.string()).optional().default([]).describe("Additional Vite build flags"),
       },
       outputSchema: ViteBuildResultSchema,
     },

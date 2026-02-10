@@ -16,11 +16,7 @@ export function registerCommitTool(server: McpServer) {
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         message: z.string().describe("Commit message"),
-        amend: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Amend the previous commit"),
+        amend: z.boolean().optional().default(false).describe("Amend the previous commit"),
       },
       outputSchema: GitCommitSchema,
     },

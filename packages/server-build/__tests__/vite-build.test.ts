@@ -29,7 +29,7 @@ const VITE_EMPTY_OUTPUT = [
 const VITE_ERROR_OUTPUT = [
   "vite v6.3.5 building for production...",
   "transforming...",
-  'error during build:',
+  "error during build:",
   'Error: Could not resolve "./missing" from "src/index.ts"',
   "    at file:///node_modules/rollup/dist/es/rollup.js:1234:56",
 ].join("\n");
@@ -45,9 +45,7 @@ const VITE_WARNING_OUTPUT = [
   "✓ built in 3.45s",
 ].join("\n");
 
-const VITE_SINGLE_FILE = [
-  "dist/bundle.js     12.50 kB │ gzip: 4.20 kB",
-].join("\n");
+const VITE_SINGLE_FILE = ["dist/bundle.js     12.50 kB │ gzip: 4.20 kB"].join("\n");
 
 // ---------------------------------------------------------------------------
 // Parser tests

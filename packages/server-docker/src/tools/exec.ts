@@ -16,10 +16,7 @@ export function registerExecTool(server: McpServer) {
       inputSchema: {
         container: z.string().describe("Container name or ID"),
         command: z.array(z.string()).describe('Command to execute (e.g., ["ls", "-la"])'),
-        workdir: z
-          .string()
-          .optional()
-          .describe("Working directory inside the container"),
+        workdir: z.string().optional().describe("Working directory inside the container"),
         env: z
           .array(z.string())
           .optional()

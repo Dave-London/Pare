@@ -5,11 +5,7 @@ import type { GitAdd } from "../src/schemas/index.js";
 
 describe("parseAdd", () => {
   it("parses staged files from porcelain status output", () => {
-    const statusOutput = [
-      "A  src/new-file.ts",
-      "M  src/index.ts",
-      "?? untracked.log",
-    ].join("\n");
+    const statusOutput = ["A  src/new-file.ts", "M  src/index.ts", "?? untracked.log"].join("\n");
 
     const result = parseAdd(statusOutput);
 
@@ -67,12 +63,7 @@ describe("parseAdd", () => {
   });
 
   it("handles all files staged via git add -A", () => {
-    const statusOutput = [
-      "A  src/a.ts",
-      "A  src/b.ts",
-      "M  src/c.ts",
-      "D  src/old.ts",
-    ].join("\n");
+    const statusOutput = ["A  src/a.ts", "A  src/b.ts", "M  src/c.ts", "D  src/old.ts"].join("\n");
 
     const result = parseAdd(statusOutput);
 

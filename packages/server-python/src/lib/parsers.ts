@@ -207,7 +207,10 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     const block = endMatch ? remaining.slice(0, endMatch.index) : remaining;
 
     // Extract the most relevant error line
-    const blockLines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    const blockLines = block
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     let message = "";
 
     // Look for assertion errors, E lines, or the last meaningful line
@@ -259,12 +262,6 @@ export function parseUvInstall(stdout: string, stderr: string, exitCode: number)
       duration = parseFloat(summaryMatch[2]);
     }
   }
-
-  // If uv reports packages but we couldn't parse individual lines, use summary count
-  const alreadySatisfied =
-    output.includes("already satisfied") ||
-    output.includes("Audited") ||
-    output.includes("No changes");
 
   return {
     success: exitCode === 0,

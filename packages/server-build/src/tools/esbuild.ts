@@ -25,11 +25,7 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Bundle dependencies (default: true)"),
-        minify: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Minify output (default: false)"),
+        minify: z.boolean().optional().default(false).describe("Minify output (default: false)"),
         format: z
           .enum(["esm", "cjs", "iife"])
           .optional()
@@ -43,15 +39,22 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Generate source maps (default: false)"),
-        args: z
-          .array(z.string())
-          .optional()
-          .default([])
-          .describe("Additional esbuild flags"),
+        args: z.array(z.string()).optional().default([]).describe("Additional esbuild flags"),
       },
       outputSchema: EsbuildResultSchema,
     },
-    async ({ path, entryPoints, outdir, outfile, bundle, minify, format, platform, sourcemap, args }) => {
+    async ({
+      path,
+      entryPoints,
+      outdir,
+      outfile,
+      bundle,
+      minify,
+      format,
+      platform,
+      sourcemap,
+      args,
+    }) => {
       const cwd = path || process.cwd();
 
       // Validate entry points to prevent flag injection

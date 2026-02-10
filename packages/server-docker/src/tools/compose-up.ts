@@ -20,20 +20,13 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Specific services to start (default: all)"),
-        detach: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe("Run in background (default: true)"),
+        detach: z.boolean().optional().default(true).describe("Run in background (default: true)"),
         build: z
           .boolean()
           .optional()
           .default(false)
           .describe("Build images before starting (default: false)"),
-        file: z
-          .string()
-          .optional()
-          .describe("Compose file path (default: docker-compose.yml)"),
+        file: z.string().optional().describe("Compose file path (default: docker-compose.yml)"),
       },
       outputSchema: DockerComposeUpSchema,
     },

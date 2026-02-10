@@ -161,13 +161,7 @@ const CLIPPY_MIXED = [
     "clippy::needless_return",
   ),
   compilerMessage("error", "mismatched types", "src/main.rs", 10, 5, "E0308"),
-  compilerMessage(
-    "warning",
-    "unused variable `x`",
-    "src/lib.rs",
-    20,
-    9,
-  ),
+  compilerMessage("warning", "unused variable `x`", "src/lib.rs", 20, 9),
 ].join("\n");
 
 const CLIPPY_CLEAN = [
@@ -200,14 +194,7 @@ const CLIPPY_SAME_FILE = [
     9,
     "clippy::unused_mut",
   ),
-  compilerMessage(
-    "error",
-    "cannot find value `z`",
-    "src/main.rs",
-    45,
-    3,
-    "E0425",
-  ),
+  compilerMessage("error", "cannot find value `z`", "src/main.rs", 45, 3, "E0425"),
 ].join("\n");
 
 // ---------------------------------------------------------------------------

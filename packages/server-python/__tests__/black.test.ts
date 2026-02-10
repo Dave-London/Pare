@@ -73,10 +73,7 @@ describe("parseBlackOutput", () => {
   });
 
   it("parses single file reformatted", () => {
-    const stderr = [
-      "reformatted app.py",
-      "All done! 1 file reformatted.",
-    ].join("\n");
+    const stderr = ["reformatted app.py", "All done! 1 file reformatted."].join("\n");
 
     const result = parseBlackOutput("", stderr, 0);
 

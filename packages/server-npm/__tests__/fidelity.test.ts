@@ -31,10 +31,7 @@ const INSTALL_WITH_VULNS =
   "To address all issues, run:\n" +
   "  npm audit fix";
 
-const INSTALL_CLEAN =
-  "added 87 packages in 4s\n" +
-  "\n" +
-  "found 0 vulnerabilities";
+const INSTALL_CLEAN = "added 87 packages in 4s\n" + "\n" + "found 0 vulnerabilities";
 
 const INSTALL_FUNDING_ONLY =
   "added 200 packages, changed 1 package in 15s\n" +
@@ -51,7 +48,9 @@ const AUDIT_MULTIPLE_VULNS = JSON.stringify({
       name: "lodash",
       severity: "critical",
       title: "Prototype Pollution",
-      via: [{ title: "Prototype Pollution", url: "https://github.com/advisories/GHSA-jf85-cpcp-j695" }],
+      via: [
+        { title: "Prototype Pollution", url: "https://github.com/advisories/GHSA-jf85-cpcp-j695" },
+      ],
       range: "<4.17.21",
       fixAvailable: true,
     },
@@ -72,7 +71,12 @@ const AUDIT_MULTIPLE_VULNS = JSON.stringify({
       name: "minimist",
       severity: "moderate",
       title: "Prototype Pollution",
-      via: [{ title: "Prototype Pollution in minimist", url: "https://github.com/advisories/GHSA-xvch-5gv4-984h" }],
+      via: [
+        {
+          title: "Prototype Pollution in minimist",
+          url: "https://github.com/advisories/GHSA-xvch-5gv4-984h",
+        },
+      ],
       range: "<1.2.6",
       fixAvailable: false,
     },
@@ -117,7 +121,12 @@ const AUDIT_NO_FIX = JSON.stringify({
       name: "tough-cookie",
       severity: "moderate",
       title: "Prototype Pollution",
-      via: [{ title: "Prototype Pollution in tough-cookie", url: "https://github.com/advisories/GHSA-72xf-g2v4-qvf3" }],
+      via: [
+        {
+          title: "Prototype Pollution in tough-cookie",
+          url: "https://github.com/advisories/GHSA-72xf-g2v4-qvf3",
+        },
+      ],
       range: "<4.1.3",
       fixAvailable: false,
     },
@@ -167,7 +176,10 @@ const LIST_BASIC = JSON.stringify({
   name: "my-app",
   version: "1.2.3",
   dependencies: {
-    express: { version: "4.18.2", resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
+    express: {
+      version: "4.18.2",
+      resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz",
+    },
     zod: { version: "3.22.4", resolved: "https://registry.npmjs.org/zod/-/zod-3.22.4.tgz" },
     typescript: { version: "5.3.3" },
   },

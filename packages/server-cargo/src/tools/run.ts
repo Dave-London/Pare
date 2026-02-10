@@ -15,19 +15,9 @@ export function registerRunTool(server: McpServer) {
         "Runs a cargo binary and returns structured output (exit code, stdout, stderr). Use instead of running `cargo run` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        args: z
-          .array(z.string())
-          .optional()
-          .describe("Arguments to pass to the binary (after --)"),
-        release: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Run in release mode"),
-        package: z
-          .string()
-          .optional()
-          .describe("Package to run in a workspace"),
+        args: z.array(z.string()).optional().describe("Arguments to pass to the binary (after --)"),
+        release: z.boolean().optional().default(false).describe("Run in release mode"),
+        package: z.string().optional().describe("Package to run in a workspace"),
       },
       outputSchema: CargoRunResultSchema,
     },

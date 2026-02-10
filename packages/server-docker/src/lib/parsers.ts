@@ -144,11 +144,7 @@ export function parseRunOutput(
 }
 
 /** Parses `docker exec` output into structured data with exit code, stdout, stderr, and success. */
-export function parseExecOutput(
-  stdout: string,
-  stderr: string,
-  exitCode: number,
-): DockerExec {
+export function parseExecOutput(stdout: string, stderr: string, exitCode: number): DockerExec {
   return {
     exitCode,
     stdout,

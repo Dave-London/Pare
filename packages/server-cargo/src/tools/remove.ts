@@ -15,14 +15,8 @@ export function registerRemoveTool(server: McpServer) {
         "Removes dependencies from a Rust project and returns structured output. Use instead of running `cargo remove` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        packages: z
-          .array(z.string())
-          .describe("Package names to remove"),
-        dev: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Remove from dev dependencies (--dev)"),
+        packages: z.array(z.string()).describe("Package names to remove"),
+        dev: z.boolean().optional().default(false).describe("Remove from dev dependencies (--dev)"),
       },
       outputSchema: CargoRemoveResultSchema,
     },

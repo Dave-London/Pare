@@ -5,8 +5,7 @@ import type { DockerRun } from "../src/schemas/index.js";
 
 describe("parseRunOutput", () => {
   it("parses detached container output", () => {
-    const stdout =
-      "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\n";
+    const stdout = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\n";
     const result = parseRunOutput(stdout, "nginx:latest", true, "my-web");
 
     expect(result.containerId).toBe("a1b2c3d4e5f6");

@@ -225,9 +225,7 @@ export function parseCommit(stdout: string): GitCommit {
   // Example output:
   // "[main abc1234] Fix the bug\n 1 file changed, 2 insertions(+), 1 deletion(-)"
   // "[main (root-commit) abc1234] Initial commit\n 1 file changed, 1 insertion(+)"
-  const headerMatch = stdout.match(
-    /\[[\w/.-]+\s+(?:\(root-commit\)\s+)?([a-f0-9]+)\]\s+(.+)/,
-  );
+  const headerMatch = stdout.match(/\[[\w/.-]+\s+(?:\(root-commit\)\s+)?([a-f0-9]+)\]\s+(.+)/);
 
   const hash = headerMatch?.[1] ?? "";
   const message = headerMatch?.[2] ?? "";
@@ -247,12 +245,7 @@ export function parseCommit(stdout: string): GitCommit {
 }
 
 /** Parses `git push` output into structured push result data. */
-export function parsePush(
-  stdout: string,
-  stderr: string,
-  remote: string,
-  branch: string,
-): GitPush {
+export function parsePush(stdout: string, stderr: string, remote: string, branch: string): GitPush {
   // Git push output goes to stderr typically
   const combined = `${stdout}\n${stderr}`.trim();
 

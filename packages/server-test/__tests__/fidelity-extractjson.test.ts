@@ -89,9 +89,7 @@ describe("fidelity: extractJson with real-world output", () => {
 
     const result = extractJson(output);
     const parsed = JSON.parse(result);
-    expect(parsed.l1.l2.l3.l4.l5.l6.l7.l8.l9.l10.l11.value).toBe(
-      "deep-leaf",
-    );
+    expect(parsed.l1.l2.l3.l4.l5.l6.l7.l8.l9.l10.l11.value).toBe("deep-leaf");
   });
 
   it("handles JSON with escaped characters inside strings", () => {
@@ -112,8 +110,7 @@ describe("fidelity: extractJson with real-world output", () => {
   });
 
   it("extracts JSON from output with CRLF line endings", () => {
-    const output =
-      'Starting...\r\n{"result":"ok","count":5}\r\nFinished.\r\n';
+    const output = 'Starting...\r\n{"result":"ok","count":5}\r\nFinished.\r\n';
 
     const result = extractJson(output);
     const parsed = JSON.parse(result);
@@ -167,8 +164,8 @@ describe("fidelity: extractJson with real-world output", () => {
     expect(parsed.numFailedTests).toBe(1);
     expect(parsed.testResults[0].assertionResults).toHaveLength(3);
     expect(parsed.testResults[0].assertionResults[2].status).toBe("failed");
-    expect(
-      parsed.testResults[0].assertionResults[2].failureMessages[0],
-    ).toContain("AssertionError");
+    expect(parsed.testResults[0].assertionResults[2].failureMessages[0]).toContain(
+      "AssertionError",
+    );
   });
 });

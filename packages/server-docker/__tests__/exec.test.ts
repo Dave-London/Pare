@@ -14,7 +14,11 @@ describe("parseExecOutput", () => {
   });
 
   it("parses failed exec", () => {
-    const result = parseExecOutput("", "ls: cannot access '/nonexistent': No such file or directory", 2);
+    const result = parseExecOutput(
+      "",
+      "ls: cannot access '/nonexistent': No such file or directory",
+      2,
+    );
 
     expect(result.exitCode).toBe(2);
     expect(result.stdout).toBe("");

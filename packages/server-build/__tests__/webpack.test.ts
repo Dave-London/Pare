@@ -15,11 +15,7 @@ const WEBPACK_JSON_SUCCESS = JSON.stringify({
   ],
   errors: [],
   warnings: [],
-  modules: [
-    { name: "./src/index.ts" },
-    { name: "./src/app.ts" },
-    { name: "./src/utils.ts" },
-  ],
+  modules: [{ name: "./src/index.ts" }, { name: "./src/app.ts" }, { name: "./src/utils.ts" }],
 });
 
 const WEBPACK_JSON_WITH_ERRORS = JSON.stringify({
@@ -36,7 +32,10 @@ const WEBPACK_JSON_WITH_WARNINGS = JSON.stringify({
   assets: [{ name: "bundle.js", size: 524288 }],
   errors: [],
   warnings: [
-    { message: "asset size limit: The following asset(s) exceed the recommended size limit (244 KiB)" },
+    {
+      message:
+        "asset size limit: The following asset(s) exceed the recommended size limit (244 KiB)",
+    },
     "Critical dependency: the request of a dependency is an expression",
   ],
   modules: [{ name: "./src/index.ts" }],
@@ -44,10 +43,7 @@ const WEBPACK_JSON_WITH_WARNINGS = JSON.stringify({
 
 const WEBPACK_JSON_WITH_STRING_ERRORS = JSON.stringify({
   assets: [],
-  errors: [
-    "Module not found: './missing'",
-    "Compilation failed",
-  ],
+  errors: ["Module not found: './missing'", "Compilation failed"],
   warnings: ["Deprecation warning: use new API"],
   modules: 42,
 });
@@ -182,10 +178,7 @@ describe("parseWebpackOutput", () => {
   });
 
   it("handles text fallback with warnings", () => {
-    const stdout = [
-      "Build output",
-      "WARNING in ./src/utils.ts: unused export",
-    ].join("\n");
+    const stdout = ["Build output", "WARNING in ./src/utils.ts: unused export"].join("\n");
     const result = parseWebpackOutput(stdout, "", 0, 0.5);
 
     expect(result.success).toBe(true);

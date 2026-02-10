@@ -34,14 +34,14 @@ const PIP_INSTALL_FAILURE_STDERR =
 // ─── mypy fixtures ────────────────────────────────────────────────────────────
 
 const MYPY_SINGLE_ERROR =
-  "src/main.py:10:5: error: Incompatible types in assignment (expression has type \"str\", variable has type \"int\") [assignment]\n" +
+  'src/main.py:10:5: error: Incompatible types in assignment (expression has type "str", variable has type "int") [assignment]\n' +
   "Found 1 error in 1 file (checked 3 source files)";
 
 const MYPY_MULTIPLE_DIAGNOSTICS =
   'src/main.py:10: error: Argument 1 to "foo" has incompatible type "str"; expected "int"  [arg-type]\n' +
   'src/main.py:20:5: error: Name "bar" is not defined  [name-defined]\n' +
-  "src/utils.py:3:1: error: Cannot find implementation or library stub for module named \"missing\"  [import-not-found]\n" +
-  "src/models.py:45:10: error: Incompatible return value type (got \"None\", expected \"str\")  [return-value]\n" +
+  'src/utils.py:3:1: error: Cannot find implementation or library stub for module named "missing"  [import-not-found]\n' +
+  'src/models.py:45:10: error: Incompatible return value type (got "None", expected "str")  [return-value]\n' +
   "Found 4 errors in 3 files (checked 10 source files)";
 
 const MYPY_WARNINGS_AND_NOTES =
@@ -152,7 +152,8 @@ const PIP_AUDIT_MULTI_VULN_SAME_PKG = JSON.stringify({
       vulns: [
         {
           id: "CVE-2023-36053",
-          description: "Potential regular expression denial of service in EmailValidator/URLValidator",
+          description:
+            "Potential regular expression denial of service in EmailValidator/URLValidator",
           fix_versions: ["3.2.20", "4.1.10", "4.2.3"],
         },
         {

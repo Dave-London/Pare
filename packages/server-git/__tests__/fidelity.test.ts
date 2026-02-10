@@ -375,10 +375,7 @@ describe("fidelity: edge cases", () => {
 
 describe("fidelity: status edge cases (expanded)", () => {
   it("parseStatus handles quoted paths with spaces in rename", () => {
-    const status = parseStatus(
-      'R  "old name.ts" -> "new name.ts"',
-      "## main",
-    );
+    const status = parseStatus('R  "old name.ts" -> "new name.ts"', "## main");
     expect(status.staged).toHaveLength(1);
     expect(status.staged[0].file).toBe('"new name.ts"');
     expect(status.staged[0].oldFile).toBe('"old name.ts"');
@@ -433,10 +430,7 @@ describe("fidelity: status edge cases (expanded)", () => {
   });
 
   it("parseStatus handles files with special characters in names", () => {
-    const status = parseStatus(
-      "?? file-with-special_chars!@#$.txt",
-      "## main",
-    );
+    const status = parseStatus("?? file-with-special_chars!@#$.txt", "## main");
     expect(status.untracked).toContain("file-with-special_chars!@#$.txt");
   });
 
@@ -559,10 +553,9 @@ describe("fidelity: diff edge cases (expanded)", () => {
   });
 
   it("parseDiffStat handles very large counts (10000+)", () => {
-    const lines = [
-      "15000\t0\tsrc/vendor/large-lib.js",
-      "0\t12000\tsrc/vendor/old-lib.js",
-    ].join("\n");
+    const lines = ["15000\t0\tsrc/vendor/large-lib.js", "0\t12000\tsrc/vendor/old-lib.js"].join(
+      "\n",
+    );
     const diff = parseDiffStat(lines);
     expect(diff.files).toHaveLength(2);
     expect(diff.files[0].additions).toBe(15000);
@@ -637,9 +630,7 @@ describe("fidelity: show edge cases (expanded)", () => {
     const diffOutput = "3\t1\tsrc/parsers.ts";
     const show = parseShow(metadata, diffOutput);
     expect(show.hash).toBe("def456");
-    expect(show.message).toBe(
-      "fix: handle @@ -1,5 +1,7 @@ diff markers in commit messages",
-    );
+    expect(show.message).toBe("fix: handle @@ -1,5 +1,7 @@ diff markers in commit messages");
     expect(show.diff.files).toHaveLength(1);
     expect(show.diff.files[0].file).toBe("src/parsers.ts");
   });
@@ -649,9 +640,7 @@ describe("fidelity: show edge cases (expanded)", () => {
     const metadata = `ghi789${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}3 days ago${DELIMITER}test: verify @@ delimiter @@ handling @@ in messages`;
     const show = parseShow(metadata, "");
     expect(show.hash).toBe("ghi789");
-    expect(show.message).toBe(
-      "test: verify @@ delimiter @@ handling @@ in messages",
-    );
+    expect(show.message).toBe("test: verify @@ delimiter @@ handling @@ in messages");
   });
 
   it("parseShow handles commit with large diff", () => {

@@ -22,10 +22,9 @@ describe("parseComposeUpOutput", () => {
   });
 
   it("parses compose up with already running services", () => {
-    const stderr = [
-      " ✔ Container myapp-db-1   Running",
-      " ✔ Container myapp-web-1  Started",
-    ].join("\n");
+    const stderr = [" ✔ Container myapp-db-1   Running", " ✔ Container myapp-web-1  Started"].join(
+      "\n",
+    );
 
     const result = parseComposeUpOutput("", stderr, 0);
 
@@ -36,7 +35,7 @@ describe("parseComposeUpOutput", () => {
   });
 
   it("parses compose up failure", () => {
-    const stderr = 'no configuration file provided: not found';
+    const stderr = "no configuration file provided: not found";
 
     const result = parseComposeUpOutput("", stderr, 1);
 
@@ -46,9 +45,7 @@ describe("parseComposeUpOutput", () => {
   });
 
   it("parses compose up with Created status", () => {
-    const stderr = [
-      " ✔ Container myapp-init-1  Created",
-    ].join("\n");
+    const stderr = [" ✔ Container myapp-init-1  Created"].join("\n");
 
     const result = parseComposeUpOutput("", stderr, 0);
 
@@ -66,10 +63,9 @@ describe("parseComposeUpOutput", () => {
   });
 
   it("does not double-count duplicate service entries", () => {
-    const stderr = [
-      " ✔ Container myapp-web-1  Created",
-      " ✔ Container myapp-web-1  Started",
-    ].join("\n");
+    const stderr = [" ✔ Container myapp-web-1  Created", " ✔ Container myapp-web-1  Started"].join(
+      "\n",
+    );
 
     const result = parseComposeUpOutput("", stderr, 0);
 

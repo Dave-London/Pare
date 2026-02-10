@@ -15,10 +15,7 @@ export function registerCheckTool(server: McpServer) {
         "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking. Use instead of running `cargo check` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        package: z
-          .string()
-          .optional()
-          .describe("Package to check in a workspace"),
+        package: z.string().optional().describe("Package to check in a workspace"),
       },
       outputSchema: CargoBuildResultSchema,
     },

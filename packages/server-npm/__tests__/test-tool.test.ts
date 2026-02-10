@@ -5,12 +5,7 @@ import type { NpmTest } from "../src/schemas/index.js";
 
 describe("parseTestOutput", () => {
   it("parses successful test output", () => {
-    const result = parseTestOutput(
-      0,
-      "Tests: 42 passed, 42 total\nTime: 3.5s",
-      "",
-      3.5,
-    );
+    const result = parseTestOutput(0, "Tests: 42 passed, 42 total\nTime: 3.5s", "", 3.5);
 
     expect(result.exitCode).toBe(0);
     expect(result.success).toBe(true);

@@ -5,10 +5,7 @@ import type { PytestResult } from "../src/schemas/index.js";
 
 describe("parsePytestOutput", () => {
   it("parses all tests passing", () => {
-    const stdout = [
-      "....",
-      "4 passed in 0.52s",
-    ].join("\n");
+    const stdout = ["....", "4 passed in 0.52s"].join("\n");
 
     const result = parsePytestOutput(stdout, "", 0);
 

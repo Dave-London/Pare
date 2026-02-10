@@ -15,14 +15,8 @@ export function registerCheckoutTool(server: McpServer) {
         "Switches branches or restores files. Returns structured data with ref, previous ref, and whether a new branch was created. Use instead of running `git checkout` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
-        ref: z
-          .string()
-          .describe("Branch name, tag, or commit to checkout"),
-        create: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Create a new branch (-b)"),
+        ref: z.string().describe("Branch name, tag, or commit to checkout"),
+        create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
       },
       outputSchema: GitCheckoutSchema,
     },
@@ -46,13 +40,7 @@ export function registerCheckoutTool(server: McpServer) {
         throw new Error(`git checkout failed: ${result.stderr}`);
       }
 
-      const checkoutResult = parseCheckout(
-        result.stdout,
-        result.stderr,
-        ref,
-        previousRef,
-        create,
-      );
+      const checkoutResult = parseCheckout(result.stdout, result.stderr, ref, previousRef, create);
       return dualOutput(checkoutResult, formatCheckout);
     },
   );

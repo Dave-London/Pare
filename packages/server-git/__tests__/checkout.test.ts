@@ -5,13 +5,7 @@ import type { GitCheckout } from "../src/schemas/index.js";
 
 describe("parseCheckout", () => {
   it("parses branch switch", () => {
-    const result = parseCheckout(
-      "",
-      "Switched to branch 'feature'",
-      "feature",
-      "main",
-      false,
-    );
+    const result = parseCheckout("", "Switched to branch 'feature'", "feature", "main", false);
 
     expect(result.ref).toBe("feature");
     expect(result.previousRef).toBe("main");
@@ -33,13 +27,7 @@ describe("parseCheckout", () => {
   });
 
   it("handles detached HEAD as previous ref", () => {
-    const result = parseCheckout(
-      "",
-      "Switched to branch 'main'",
-      "main",
-      "HEAD",
-      false,
-    );
+    const result = parseCheckout("", "Switched to branch 'main'", "main", "HEAD", false);
 
     expect(result.ref).toBe("main");
     expect(result.previousRef).toBe("HEAD");
@@ -47,13 +35,7 @@ describe("parseCheckout", () => {
   });
 
   it("handles unknown previous ref", () => {
-    const result = parseCheckout(
-      "",
-      "Switched to branch 'dev'",
-      "dev",
-      "unknown",
-      false,
-    );
+    const result = parseCheckout("", "Switched to branch 'dev'", "dev", "unknown", false);
 
     expect(result.ref).toBe("dev");
     expect(result.previousRef).toBe("unknown");

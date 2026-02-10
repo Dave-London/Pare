@@ -21,7 +21,8 @@ describe("parseGoGenerateOutput", () => {
   });
 
   it("parses failed generate", () => {
-    const stderr = "main.go:3: running \"mockgen\": exec: \"mockgen\": executable file not found in $PATH\n";
+    const stderr =
+      'main.go:3: running "mockgen": exec: "mockgen": executable file not found in $PATH\n';
     const result = parseGoGenerateOutput("", stderr, 1);
 
     expect(result.success).toBe(false);

@@ -34,8 +34,7 @@ describe("fidelity: stripAnsi", () => {
 
   it("strips nested/interleaved ANSI codes correctly", () => {
     // Red bg, white fg, bold text with interspersed resets
-    const input =
-      "\x1b[41m\x1b[37m\x1b[1m FAIL \x1b[22m\x1b[39m\x1b[49m src/app.test.ts";
+    const input = "\x1b[41m\x1b[37m\x1b[1m FAIL \x1b[22m\x1b[39m\x1b[49m src/app.test.ts";
     expect(stripAnsi(input)).toBe(" FAIL  src/app.test.ts");
   });
 
@@ -143,9 +142,9 @@ describe("fidelity: run", () => {
   });
 
   it("rejects with a clear message for a non-existent command", async () => {
-    await expect(
-      run("__nonexistent_command_that_does_not_exist__", ["--version"]),
-    ).rejects.toThrow(/[Cc]ommand not found|is not recognized/);
+    await expect(run("__nonexistent_command_that_does_not_exist__", ["--version"])).rejects.toThrow(
+      /[Cc]ommand not found|is not recognized/,
+    );
   });
 
   it("respects the cwd option", async () => {
@@ -171,9 +170,7 @@ describe("fidelity: assertNoFlagInjection", () => {
   });
 
   it("throws for a value starting with single dash", () => {
-    expect(() => assertNoFlagInjection("-v", "flag")).toThrow(
-      /must not start with "-"/,
-    );
+    expect(() => assertNoFlagInjection("-v", "flag")).toThrow(/must not start with "-"/);
   });
 
   it("throws for a value starting with double dash", () => {

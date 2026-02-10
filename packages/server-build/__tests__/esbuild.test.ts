@@ -10,17 +10,17 @@ import type { EsbuildResult } from "../src/schemas/index.js";
 const ESBUILD_SUCCESS_EMPTY = "";
 
 const ESBUILD_HEADER_ERROR = [
-  "✘ [ERROR] Could not resolve \"./missing\"",
+  '✘ [ERROR] Could not resolve "./missing"',
   "    src/index.ts:3:21:",
   "",
   "1 error",
 ].join("\n");
 
 const ESBUILD_HEADER_MULTIPLE_ERRORS = [
-  "✘ [ERROR] Could not resolve \"./missing\"",
+  '✘ [ERROR] Could not resolve "./missing"',
   "    src/index.ts:3:21:",
   "",
-  "✘ [ERROR] Expected \";\" but found \"}\"",
+  '✘ [ERROR] Expected ";" but found "}"',
   "    src/app.ts:10:5:",
   "",
   "2 errors",
@@ -36,7 +36,7 @@ const ESBUILD_HEADER_MIXED = [
   "▲ [WARNING] This import is never used",
   "    src/utils.ts:1:8:",
   "",
-  "✘ [ERROR] Cannot assign to \"x\" because it is a constant",
+  '✘ [ERROR] Cannot assign to "x" because it is a constant',
   "    src/index.ts:15:3:",
   "",
   "1 warning and 1 error",
@@ -53,7 +53,7 @@ const ESBUILD_INLINE_MIXED = [
 ].join("\n");
 
 const ESBUILD_ERROR_NO_LOCATION = [
-  "✘ [ERROR] No matching export in \"node_modules/missing/index.js\"",
+  '✘ [ERROR] No matching export in "node_modules/missing/index.js"',
   "",
 ].join("\n");
 
@@ -107,11 +107,9 @@ describe("parseEsbuildOutput", () => {
   });
 
   it("parses header-style warning with X marker", () => {
-    const stderr = [
-      "X [WARNING] This import is never used",
-      "    src/utils.ts:1:8:",
-      "",
-    ].join("\n");
+    const stderr = ["X [WARNING] This import is never used", "    src/utils.ts:1:8:", ""].join(
+      "\n",
+    );
     const result = parseEsbuildOutput("", stderr, 0, 0.1);
 
     expect(result.success).toBe(true);
@@ -127,7 +125,7 @@ describe("parseEsbuildOutput", () => {
       "X [WARNING] This import is never used",
       "    src/utils.ts:1:8:",
       "",
-      "X [ERROR] Cannot assign to \"x\" because it is a constant",
+      'X [ERROR] Cannot assign to "x" because it is a constant',
       "    src/index.ts:15:3:",
       "",
     ].join("\n");
@@ -174,10 +172,9 @@ describe("parseEsbuildOutput", () => {
 
   it("parses error without location info", () => {
     // Use X marker version
-    const stderr = [
-      'X [ERROR] No matching export in "node_modules/missing/index.js"',
-      "",
-    ].join("\n");
+    const stderr = ['X [ERROR] No matching export in "node_modules/missing/index.js"', ""].join(
+      "\n",
+    );
     const result = parseEsbuildOutput("", stderr, 1, 0.1);
 
     expect(result.success).toBe(false);

@@ -29,7 +29,17 @@ describe("@paretools/cargo integration", () => {
   it("lists all 9 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["add", "build", "check", "clippy", "doc", "fmt", "remove", "run", "test"]);
+    expect(names).toEqual([
+      "add",
+      "build",
+      "check",
+      "clippy",
+      "doc",
+      "fmt",
+      "remove",
+      "run",
+      "test",
+    ]);
   });
 
   it("each tool has an outputSchema", async () => {

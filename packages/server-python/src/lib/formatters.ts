@@ -120,9 +120,7 @@ export function formatBlack(data: BlackResult): string {
       lines.push(`  ${f}`);
     }
   } else {
-    lines.push(
-      `black: ${data.filesChanged} files reformatted, ${data.filesUnchanged} unchanged`,
-    );
+    lines.push(`black: ${data.filesChanged} files reformatted, ${data.filesUnchanged} unchanged`);
   }
 
   return lines.join("\n");

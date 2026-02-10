@@ -29,7 +29,17 @@ describe("@paretools/docker integration", () => {
   it("lists all 4 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["build", "compose-down", "compose-up", "exec", "images", "logs", "ps", "pull", "run"]);
+    expect(names).toEqual([
+      "build",
+      "compose-down",
+      "compose-up",
+      "exec",
+      "images",
+      "logs",
+      "ps",
+      "pull",
+      "run",
+    ]);
   });
 
   it("each tool has an outputSchema", async () => {

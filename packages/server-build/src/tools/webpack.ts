@@ -20,11 +20,7 @@ export function registerWebpackTool(server: McpServer) {
           .enum(["production", "development", "none"])
           .optional()
           .describe("Build mode (production, development, none)"),
-        args: z
-          .array(z.string())
-          .optional()
-          .default([])
-          .describe("Additional webpack flags"),
+        args: z.array(z.string()).optional().default([]).describe("Additional webpack flags"),
       },
       outputSchema: WebpackResultSchema,
     },

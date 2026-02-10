@@ -88,9 +88,7 @@ export function registerRunTool(server: McpServer) {
       // causing "No JSON output found" errors.
       // Mocha outputs JSON to stdout, so we don't use --outputFile for it.
       const useOutputFile = detected === "jest" || detected === "vitest";
-      const tempPath = useOutputFile
-        ? join(tmpdir(), `pare-test-${randomUUID()}.json`)
-        : "";
+      const tempPath = useOutputFile ? join(tmpdir(), `pare-test-${randomUUID()}.json`) : "";
 
       const { cmd, cmdArgs } = getRunCommand(detected, extraArgs);
 

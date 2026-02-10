@@ -192,7 +192,13 @@ export function parseCargoFmtOutput(
 
       // Some versions just list the file path directly
       const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith("+") && !trimmed.startsWith("-") && !trimmed.startsWith("@") && trimmed.endsWith(".rs")) {
+      if (
+        trimmed &&
+        !trimmed.startsWith("+") &&
+        !trimmed.startsWith("-") &&
+        !trimmed.startsWith("@") &&
+        trimmed.endsWith(".rs")
+      ) {
         if (!files.includes(trimmed)) {
           files.push(trimmed);
         }
@@ -212,10 +218,7 @@ export function parseCargoFmtOutput(
  * Counts "warning:" or "warning[" lines from stderr,
  * excluding the summary line "warning: N warnings emitted".
  */
-export function parseCargoDocOutput(
-  stderr: string,
-  exitCode: number,
-): CargoDocResult {
+export function parseCargoDocOutput(stderr: string, exitCode: number): CargoDocResult {
   const lines = stderr.split("\n");
   let warnings = 0;
 

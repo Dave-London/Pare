@@ -46,10 +46,8 @@ export function parseMochaJson(jsonStr: string): TestRun {
   const failures: TestRun["failures"] = [];
 
   for (const test of data.failures) {
-    const expected =
-      test.err.expected !== undefined ? String(test.err.expected) : undefined;
-    const actual =
-      test.err.actual !== undefined ? String(test.err.actual) : undefined;
+    const expected = test.err.expected !== undefined ? String(test.err.expected) : undefined;
+    const actual = test.err.actual !== undefined ? String(test.err.actual) : undefined;
 
     failures.push({
       name: test.fullTitle,

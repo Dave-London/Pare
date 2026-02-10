@@ -19,11 +19,7 @@ export function registerAddTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe("File paths to stage (required unless all is true)"),
-        all: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Stage all changes (git add -A)"),
+        all: z.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
       },
       outputSchema: GitAddSchema,
     },

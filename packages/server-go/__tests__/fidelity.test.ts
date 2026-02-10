@@ -7,11 +7,7 @@
  * result contains every piece of information present in the input.
  */
 import { describe, it, expect } from "vitest";
-import {
-  parseGoBuildOutput,
-  parseGoTestJson,
-  parseGoVetOutput,
-} from "../src/lib/parsers.js";
+import { parseGoBuildOutput, parseGoTestJson, parseGoVetOutput } from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
 // go build
@@ -79,7 +75,7 @@ describe("fidelity: go build", () => {
 
   it("parses errors from stdout when stderr is empty", () => {
     // The parser concatenates stdout + stderr, so errors in either stream are found
-    const stdout = "main.go:7:3: imported and not used: \"fmt\"";
+    const stdout = 'main.go:7:3: imported and not used: "fmt"';
     const result = parseGoBuildOutput(stdout, "", 2);
 
     expect(result.success).toBe(false);
@@ -88,7 +84,7 @@ describe("fidelity: go build", () => {
       file: "main.go",
       line: 7,
       column: 3,
-      message: "imported and not used: \"fmt\"",
+      message: 'imported and not used: "fmt"',
     });
   });
 
@@ -116,7 +112,12 @@ describe("fidelity: go test", () => {
   it("parses all passing tests", () => {
     const stdout = [
       JSON.stringify({ Action: "run", Package: "myapp", Test: "TestAdd" }),
-      JSON.stringify({ Action: "output", Package: "myapp", Test: "TestAdd", Output: "--- PASS: TestAdd (0.00s)\n" }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestAdd",
+        Output: "--- PASS: TestAdd (0.00s)\n",
+      }),
       JSON.stringify({ Action: "pass", Package: "myapp", Test: "TestAdd", Elapsed: 0.001 }),
       JSON.stringify({ Action: "run", Package: "myapp", Test: "TestSub" }),
       JSON.stringify({ Action: "pass", Package: "myapp", Test: "TestSub", Elapsed: 0.002 }),

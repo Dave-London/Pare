@@ -152,8 +152,7 @@ describe("parseCargoRemoveOutput", () => {
   });
 
   it("handles failure (package not a dependency)", () => {
-    const stderr =
-      "error: the dependency `nonexistent` could not be found in `dependencies`";
+    const stderr = "error: the dependency `nonexistent` could not be found in `dependencies`";
     const result = parseCargoRemoveOutput("", stderr, 101);
 
     expect(result.success).toBe(false);

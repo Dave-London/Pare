@@ -19,16 +19,9 @@ export function registerPytestTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe("Test files or directories to run (default: auto-discover)"),
-        markers: z
-          .string()
-          .optional()
-          .describe('Pytest marker expression (e.g. "not slow")'),
+        markers: z.string().optional().describe('Pytest marker expression (e.g. "not slow")'),
         verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
-        exitFirst: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Stop on first failure (-x)"),
+        exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
       },
       outputSchema: PytestResultSchema,
     },

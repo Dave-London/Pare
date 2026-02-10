@@ -63,11 +63,9 @@ export function formatAdd(a: GitAdd): string {
 
 /** Formats structured git commit data into a human-readable commit summary. */
 export function formatCommit(c: GitCommit): string {
-  const stats = [
-    `${c.filesChanged} file(s) changed`,
-    `+${c.insertions}`,
-    `-${c.deletions}`,
-  ].join(", ");
+  const stats = [`${c.filesChanged} file(s) changed`, `+${c.insertions}`, `-${c.deletions}`].join(
+    ", ",
+  );
   return `[${c.hashShort}] ${c.message}\n${stats}`;
 }
 

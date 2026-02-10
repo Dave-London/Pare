@@ -15,11 +15,7 @@ export function registerRunTool(server: McpServer) {
         "Runs a Go program and returns structured output (stdout, stderr, exit code). Use instead of running `go run` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        file: z
-          .string()
-          .optional()
-          .default(".")
-          .describe("Go file or package to run (default: .)"),
+        file: z.string().optional().default(".").describe("Go file or package to run (default: .)"),
         args: z
           .array(z.string())
           .optional()

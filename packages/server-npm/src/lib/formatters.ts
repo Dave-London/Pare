@@ -1,4 +1,12 @@
-import type { NpmInstall, NpmAudit, NpmOutdated, NpmList, NpmRun, NpmTest, NpmInit } from "../schemas/index.js";
+import type {
+  NpmInstall,
+  NpmAudit,
+  NpmOutdated,
+  NpmList,
+  NpmRun,
+  NpmTest,
+  NpmInit,
+} from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
 export function formatInstall(data: NpmInstall): string {

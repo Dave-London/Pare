@@ -22,10 +22,7 @@ export function registerInitTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Use -y flag for non-interactive init with defaults (default: true)"),
-        scope: z
-          .string()
-          .optional()
-          .describe("npm scope for the package (e.g., '@myorg')"),
+        scope: z.string().optional().describe("npm scope for the package (e.g., '@myorg')"),
       },
       outputSchema: NpmInitSchema,
     },

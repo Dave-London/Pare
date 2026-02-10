@@ -44,10 +44,7 @@ describe("parseBiomeFormat", () => {
   });
 
   it("filters out Checked summary lines", () => {
-    const stdout = [
-      "src/app.tsx",
-      "Checked 5 files in 20ms. No fixes needed.",
-    ].join("\n");
+    const stdout = ["src/app.tsx", "Checked 5 files in 20ms. No fixes needed."].join("\n");
 
     const result = parseBiomeFormat(stdout, "", 0);
 
@@ -56,12 +53,7 @@ describe("parseBiomeFormat", () => {
   });
 
   it("handles various file extensions", () => {
-    const stdout = [
-      "src/app.tsx",
-      "styles/main.css",
-      "config.json",
-      "lib/helpers.js",
-    ].join("\n");
+    const stdout = ["src/app.tsx", "styles/main.css", "config.json", "lib/helpers.js"].join("\n");
 
     const result = parseBiomeFormat(stdout, "", 0);
 
