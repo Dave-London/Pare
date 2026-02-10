@@ -26,6 +26,6 @@ This policy covers all packages published under the `@paretools` npm scope.
 
 ## Supported Versions
 
-| Package                      | Supported |
-| ---------------------------- | --------- |
-| `@paretools/*` >= 0.2.0 | Yes |
+| Package                 | Supported |
+| ----------------------- | --------- |
+| `@paretools/*` >= 0.2.0 | Yes       |

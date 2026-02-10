@@ -4,11 +4,11 @@ Pare MCP server for **Go**. Returns structured output from go build, test, and v
 
 ## Tools
 
-| Tool    | Description                                            |
-| ------- | ------------------------------------------------------ |
-| `build` | Build errors (file, line, column, message)             |
-| `test`  | Test results (name, status, package, elapsed)          |
-| `vet`   | Static analysis diagnostics                            |
+| Tool    | Description                                   |
+| ------- | --------------------------------------------- |
+| `build` | Build errors (file, line, column, message)    |
+| `test`  | Test results (name, status, package, elapsed) |
+| `vet`   | Static analysis diagnostics                   |
 
 ## Setup
 
