@@ -1,5 +1,6 @@
 import type { TestRun, Coverage } from "../schemas/index.js";
 
+/** Formats structured test run results into a human-readable summary with pass/fail counts and failure details. */
 export function formatTestRun(r: TestRun): string {
   const status = r.summary.failed > 0 ? "FAIL" : "PASS";
   const parts = [
@@ -14,6 +15,7 @@ export function formatTestRun(r: TestRun): string {
   return parts.join("\n");
 }
 
+/** Formats structured coverage data into a human-readable summary with per-file line coverage. */
 export function formatCoverage(c: Coverage): string {
   const parts = [`Coverage (${c.framework}): ${c.summary.lines}% lines`];
 

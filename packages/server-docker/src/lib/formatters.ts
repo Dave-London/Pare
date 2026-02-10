@@ -1,5 +1,6 @@
 import type { DockerPs, DockerBuild, DockerLogs, DockerImages } from "../schemas/index.js";
 
+/** Formats structured Docker container data into a human-readable listing with state and ports. */
 export function formatPs(data: DockerPs): string {
   const lines = [`${data.total} containers (${data.running} running, ${data.stopped} stopped)`];
   for (const c of data.containers) {
@@ -11,6 +12,7 @@ export function formatPs(data: DockerPs): string {
   return lines.join("\n");
 }
 
+/** Formats structured Docker build results into a human-readable success/failure summary. */
 export function formatBuild(data: DockerBuild): string {
   if (data.success) {
     const parts = [`Build succeeded in ${data.duration}s`];
@@ -26,10 +28,12 @@ export function formatBuild(data: DockerBuild): string {
   return lines.join("\n");
 }
 
+/** Formats structured Docker logs data into a human-readable output with container name and line count. */
 export function formatLogs(data: DockerLogs): string {
   return `${data.container} (${data.total} lines)\n${data.lines.join("\n")}`;
 }
 
+/** Formats structured Docker image data into a human-readable listing with repository, tag, and size. */
 export function formatImages(data: DockerImages): string {
   if (data.total === 0) return "No images found.";
 

@@ -42,6 +42,7 @@ const ALLOWED_BUILD_COMMANDS = new Set([
   "bazel",
 ]);
 
+/** Validates that a command is in the allowlist of safe build tools to prevent arbitrary command execution. */
 export function assertAllowedCommand(command: string): void {
   // Extract the base command name (handle paths like /usr/bin/npm or C:\npm.cmd)
   const base =

@@ -9,7 +9,7 @@ import { z } from "zod";
 
 type MypyDiagnostic = z.infer<typeof MypyDiagnosticSchema>;
 
-// pip install output: "Successfully installed pkg1-1.0 pkg2-2.0" or "Requirement already satisfied"
+/** Parses `pip install` output into structured data with installed packages and satisfaction status. */
 export function parsePipInstall(stdout: string, stderr: string, exitCode: number): PipInstall {
   const output = stdout + "\n" + stderr;
   const alreadySatisfied = output.includes("already satisfied");
@@ -37,9 +37,9 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
   };
 }
 
-// mypy output: file:line: severity: message  [code]
 const MYPY_RE = /^(.+?):(\d+)(?::(\d+))?: (error|warning|note): (.+?)(?:\s+\[([^\]]+)\])?$/;
 
+/** Parses mypy type-checker output into structured diagnostics with file locations and error codes. */
 export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
   const lines = stdout.split("\n");
   const diagnostics: MypyDiagnostic[] = [];
@@ -72,7 +72,7 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
   };
 }
 
-// ruff check --output-format json returns JSON array
+/** Parses `ruff check --output-format json` output into structured lint diagnostics with fixability info. */
 export function parseRuffJson(stdout: string): RuffResult {
   let entries: RuffJsonEntry[];
   try {
@@ -106,7 +106,7 @@ interface RuffJsonEntry {
   fix?: unknown;
 }
 
-// pip-audit --format json
+/** Parses `pip-audit --format json` output into structured vulnerability data with fix versions. */
 export function parsePipAuditJson(stdout: string): PipAuditResult {
   let data: PipAuditJson;
   try {

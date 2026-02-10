@@ -1,8 +1,8 @@
 import type { GoBuildResult, GoTestResult, GoVetResult } from "../schemas/index.js";
 
-// go build errors: file.go:line:col: message
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
 
+/** Parses `go build` stderr output into structured error data with file locations. */
 export function parseGoBuildOutput(
   stdout: string,
   stderr: string,
@@ -95,7 +95,7 @@ interface GoTestEvent {
   Output?: string;
 }
 
-// go vet output: file.go:line:col: message
+/** Parses `go vet` output into structured diagnostics with file locations and messages. */
 export function parseGoVetOutput(stdout: string, stderr: string): GoVetResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");

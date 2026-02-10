@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** Zod schema for structured npm install output including package counts, vulnerabilities, and duration. */
 export const NpmInstallSchema = z.object({
   added: z.number(),
   removed: z.number(),
@@ -21,6 +22,7 @@ export const NpmInstallSchema = z.object({
 
 export type NpmInstall = z.infer<typeof NpmInstallSchema>;
 
+/** Zod schema for a single npm audit vulnerability entry with severity, title, and fix availability. */
 export const NpmAuditVulnSchema = z.object({
   name: z.string(),
   severity: z.enum(["critical", "high", "moderate", "low", "info"]),
@@ -30,6 +32,7 @@ export const NpmAuditVulnSchema = z.object({
   fixAvailable: z.boolean(),
 });
 
+/** Zod schema for structured npm audit output with vulnerability list and severity summary. */
 export const NpmAuditSchema = z.object({
   vulnerabilities: z.array(NpmAuditVulnSchema),
   summary: z.object({
@@ -44,6 +47,7 @@ export const NpmAuditSchema = z.object({
 
 export type NpmAudit = z.infer<typeof NpmAuditSchema>;
 
+/** Zod schema for a single outdated package entry with current, wanted, and latest versions. */
 export const NpmOutdatedEntrySchema = z.object({
   name: z.string(),
   current: z.string(),
@@ -53,6 +57,7 @@ export const NpmOutdatedEntrySchema = z.object({
   type: z.string().optional(),
 });
 
+/** Zod schema for structured npm outdated output with a list of packages needing updates. */
 export const NpmOutdatedSchema = z.object({
   packages: z.array(NpmOutdatedEntrySchema),
   total: z.number(),
@@ -60,16 +65,19 @@ export const NpmOutdatedSchema = z.object({
 
 export type NpmOutdated = z.infer<typeof NpmOutdatedSchema>;
 
+/** Zod schema for a single dependency entry in an npm list with version and optional resolved URL. */
 export const NpmListDepSchema: z.ZodType<NpmListDep> = z.object({
   version: z.string(),
   resolved: z.string().optional(),
 });
 
+/** A single dependency entry in the npm dependency list. */
 export interface NpmListDep {
   version: string;
   resolved?: string;
 }
 
+/** Zod schema for structured npm list output with project name, version, and dependency map. */
 export const NpmListSchema = z.object({
   name: z.string(),
   version: z.string(),

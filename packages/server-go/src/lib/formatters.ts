@@ -1,5 +1,6 @@
 import type { GoBuildResult, GoTestResult, GoVetResult } from "../schemas/index.js";
 
+/** Formats structured go build results into a human-readable error summary. */
 export function formatGoBuild(data: GoBuildResult): string {
   if (data.success) return "go build: success.";
 
@@ -11,6 +12,7 @@ export function formatGoBuild(data: GoBuildResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured go test results into a human-readable test summary with pass/fail counts. */
 export function formatGoTest(data: GoTestResult): string {
   const status = data.success ? "ok" : "FAIL";
   const lines = [
@@ -23,6 +25,7 @@ export function formatGoTest(data: GoTestResult): string {
   return lines.join("\n");
 }
 
+/** Formats structured go vet results into a human-readable diagnostic listing. */
 export function formatGoVet(data: GoVetResult): string {
   if (data.total === 0) return "go vet: no issues found.";
 

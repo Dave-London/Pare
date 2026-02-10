@@ -1,5 +1,6 @@
 import type { DockerPs, DockerBuild, DockerLogs, DockerImages } from "../schemas/index.js";
 
+/** Parses `docker ps --format json` output into structured container data with ports and state. */
 export function parsePsJson(stdout: string): DockerPs {
   // docker ps --format json returns one JSON object per line
   const lines = stdout.trim().split("\n").filter(Boolean);
@@ -56,6 +57,7 @@ function parsePorts(
     });
 }
 
+/** Parses `docker build` output into structured results with success status, image ID, and errors. */
 export function parseBuildOutput(
   stdout: string,
   stderr: string,
@@ -87,6 +89,7 @@ export function parseBuildOutput(
   };
 }
 
+/** Parses `docker logs` output into structured data with container name and log lines. */
 export function parseLogsOutput(stdout: string, container: string): DockerLogs {
   const lines = stdout.split("\n").filter(Boolean);
   return {
@@ -96,6 +99,7 @@ export function parseLogsOutput(stdout: string, container: string): DockerLogs {
   };
 }
 
+/** Parses `docker images --format json` output into structured image data with repository, tag, and size. */
 export function parseImagesJson(stdout: string): DockerImages {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const images = lines.map((line) => {
