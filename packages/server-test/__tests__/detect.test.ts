@@ -76,6 +76,36 @@ describe("detectFramework", () => {
     await cleanup();
   });
 
+  it("detects mocha from .mocharc.yml", async () => {
+    const dir = await createTempDir();
+    await writeFile(join(dir, ".mocharc.yml"), "timeout: 5000");
+
+    const result = await detectFramework(dir);
+    expect(result).toBe("mocha");
+    await cleanup();
+  });
+
+  it("detects mocha from .mocharc.json", async () => {
+    const dir = await createTempDir();
+    await writeFile(join(dir, ".mocharc.json"), JSON.stringify({ timeout: 5000 }));
+
+    const result = await detectFramework(dir);
+    expect(result).toBe("mocha");
+    await cleanup();
+  });
+
+  it("detects mocha from package.json dependency", async () => {
+    const dir = await createTempDir();
+    await writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ devDependencies: { mocha: "^10.0.0" } }),
+    );
+
+    const result = await detectFramework(dir);
+    expect(result).toBe("mocha");
+    await cleanup();
+  });
+
   it("throws for unknown framework", async () => {
     const dir = await createTempDir();
     // Empty dir — no framework markers
@@ -93,6 +123,18 @@ describe("detectFramework", () => {
 
     const result = await detectFramework(dir);
     expect(result).toBe("vitest");
+    await cleanup();
+  });
+
+  it("prioritizes jest over mocha when both present", async () => {
+    const dir = await createTempDir();
+    await writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ devDependencies: { jest: "^29.0.0", mocha: "^10.0.0" } }),
+    );
+
+    const result = await detectFramework(dir);
+    expect(result).toBe("jest");
     await cleanup();
   });
 });

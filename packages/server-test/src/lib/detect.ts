@@ -1,7 +1,7 @@
 import { readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 
-export type Framework = "pytest" | "jest" | "vitest";
+export type Framework = "pytest" | "jest" | "vitest" | "mocha";
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -29,7 +29,7 @@ function hasDep(pkg: Record<string, unknown>, name: string): boolean {
 
 /**
  * Auto-detects the test framework in use at the given directory.
- * Priority: vitest > jest > pytest (check most specific first).
+ * Priority: vitest > jest > mocha > pytest (check most specific first).
  */
 export async function detectFramework(cwd: string): Promise<Framework> {
   const pkg = await readPackageJson(cwd);
@@ -54,6 +54,18 @@ export async function detectFramework(cwd: string): Promise<Framework> {
     return "jest";
   }
 
+  // Mocha: config file or dependency
+  if (
+    (await exists(join(cwd, ".mocharc.yml"))) ||
+    (await exists(join(cwd, ".mocharc.yaml"))) ||
+    (await exists(join(cwd, ".mocharc.json"))) ||
+    (await exists(join(cwd, ".mocharc.js"))) ||
+    (await exists(join(cwd, ".mocharc.cjs"))) ||
+    (pkg && hasDep(pkg, "mocha"))
+  ) {
+    return "mocha";
+  }
+
   // Pytest: Python project markers
   if (
     (await exists(join(cwd, "pytest.ini"))) ||
@@ -65,7 +77,7 @@ export async function detectFramework(cwd: string): Promise<Framework> {
   }
 
   throw new Error(
-    "No supported test framework detected. Supported: vitest, jest, pytest. " +
+    "No supported test framework detected. Supported: vitest, jest, mocha, pytest. " +
       "Ensure the project has the framework installed or a config file present.",
   );
 }

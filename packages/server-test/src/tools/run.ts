@@ -9,6 +9,7 @@ import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
 import { parseVitestJson } from "../lib/parsers/vitest.js";
+import { parseMochaJson } from "../lib/parsers/mocha.js";
 import { formatTestRun } from "../lib/formatters.js";
 import { TestRunSchema } from "../schemas/index.js";
 
@@ -20,6 +21,8 @@ function getRunCommand(framework: Framework, args: string[]): { cmd: string; cmd
       return { cmd: "npx", cmdArgs: ["jest", "--json", ...args] };
     case "vitest":
       return { cmd: "npx", cmdArgs: ["vitest", "run", "--reporter=json", ...args] };
+    case "mocha":
+      return { cmd: "npx", cmdArgs: ["mocha", "--reporter", "json", ...args] };
   }
 }
 
@@ -29,17 +32,22 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Run Tests",
       description:
-        "Auto-detects test framework (pytest/jest/vitest), runs tests, returns structured results with failures. Use instead of running pytest/jest/vitest in the terminal.",
+        "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures. Use instead of running pytest/jest/vitest/mocha in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         framework: z
-          .enum(["pytest", "jest", "vitest"])
+          .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
         filter: z
           .string()
           .optional()
           .describe("Test filter pattern (file path or test name pattern)"),
+        updateSnapshots: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Update snapshots (vitest/jest only, adds -u flag)"),
         args: z
           .array(z.string())
           .optional()
@@ -48,7 +56,7 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: TestRunSchema,
     },
-    async ({ path, framework, filter, args }) => {
+    async ({ path, framework, filter, updateSnapshots, args }) => {
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const extraArgs = [...(args || [])];
@@ -64,13 +72,22 @@ export function registerRunTool(server: McpServer) {
           case "vitest":
             extraArgs.push(filter);
             break;
+          case "mocha":
+            extraArgs.push("--grep", filter);
+            break;
         }
+      }
+
+      // Snapshot update support (vitest/jest only)
+      if (updateSnapshots && (detected === "vitest" || detected === "jest")) {
+        extraArgs.push("-u");
       }
 
       // For vitest/jest, write JSON to a temp file instead of relying on
       // stdout capture. On Windows, npx.cmd can swallow or mangle stdout,
       // causing "No JSON output found" errors.
-      const useOutputFile = detected !== "pytest";
+      // Mocha outputs JSON to stdout, so we don't use --outputFile for it.
+      const useOutputFile = detected === "jest" || detected === "vitest";
       const tempPath = useOutputFile
         ? join(tmpdir(), `pare-test-${randomUUID()}.json`)
         : "";
@@ -99,6 +116,11 @@ export function registerRunTool(server: McpServer) {
         case "vitest": {
           const jsonStr = await readJsonOutput(tempPath, output);
           testRun = parseVitestJson(jsonStr);
+          break;
+        }
+        case "mocha": {
+          const jsonStr = extractJson(output);
+          testRun = parseMochaJson(jsonStr);
           break;
         }
       }

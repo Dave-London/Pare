@@ -15,7 +15,7 @@ export type TestFailure = z.infer<typeof TestFailureSchema>;
 
 /** Zod schema for structured test run output including framework, summary counts, and failure details. */
 export const TestRunSchema = z.object({
-  framework: z.enum(["pytest", "jest", "vitest"]),
+  framework: z.enum(["pytest", "jest", "vitest", "mocha"]),
   summary: z.object({
     total: z.number(),
     passed: z.number(),
@@ -39,7 +39,7 @@ export const CoverageFileSchema = z.object({
 
 /** Zod schema for structured coverage output including framework, summary totals, and per-file details. */
 export const CoverageSchema = z.object({
-  framework: z.enum(["pytest", "jest", "vitest"]),
+  framework: z.enum(["pytest", "jest", "vitest", "mocha"]),
   summary: z.object({
     lines: z.number(),
     branches: z.number().optional(),

@@ -5,6 +5,7 @@ import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage } from "../lib/parsers/pytest.js";
 import { parseJestCoverage } from "../lib/parsers/jest.js";
 import { parseVitestCoverage } from "../lib/parsers/vitest.js";
+import { parseMochaCoverage } from "../lib/parsers/mocha.js";
 import { formatCoverage } from "../lib/formatters.js";
 import { CoverageSchema } from "../schemas/index.js";
 
@@ -19,6 +20,8 @@ function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: strin
       return { cmd: "npx", cmdArgs: ["jest", "--coverage", "--coverageReporters=text"] };
     case "vitest":
       return { cmd: "npx", cmdArgs: ["vitest", "run", "--coverage", "--reporter=default"] };
+    case "mocha":
+      return { cmd: "npx", cmdArgs: ["nyc", "--reporter=text", "mocha"] };
   }
 }
 
@@ -32,7 +35,7 @@ export function registerCoverageTool(server: McpServer) {
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         framework: z
-          .enum(["pytest", "jest", "vitest"])
+          .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
       },
@@ -56,6 +59,9 @@ export function registerCoverageTool(server: McpServer) {
           break;
         case "vitest":
           coverage = parseVitestCoverage(output);
+          break;
+        case "mocha":
+          coverage = parseMochaCoverage(output);
           break;
       }
 

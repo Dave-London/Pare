@@ -1,0 +1,73 @@
+{
+  "stats": {
+    "suites": 3,
+    "tests": 8,
+    "passes": 5,
+    "failures": 2,
+    "pending": 1,
+    "duration": 1250
+  },
+  "passes": [
+    {
+      "title": "should connect to database",
+      "fullTitle": "Database should connect to database",
+      "file": "test/db.test.js",
+      "duration": 45
+    },
+    {
+      "title": "should insert a record",
+      "fullTitle": "Database should insert a record",
+      "file": "test/db.test.js",
+      "duration": 12
+    },
+    {
+      "title": "should return 200",
+      "fullTitle": "API GET /health should return 200",
+      "file": "test/api.test.js",
+      "duration": 8
+    },
+    {
+      "title": "should require auth",
+      "fullTitle": "API POST /data should require auth",
+      "file": "test/api.test.js",
+      "duration": 5
+    },
+    {
+      "title": "should format date",
+      "fullTitle": "Utils should format date",
+      "file": "test/utils.test.js",
+      "duration": 2
+    }
+  ],
+  "failures": [
+    {
+      "title": "should delete a record",
+      "fullTitle": "Database should delete a record",
+      "file": "test/db.test.js",
+      "duration": 30,
+      "err": {
+        "message": "expected 0 to equal 1",
+        "stack": "AssertionError: expected 0 to equal 1\n    at Context.<anonymous> (test/db.test.js:45:18)",
+        "expected": 1,
+        "actual": 0
+      }
+    },
+    {
+      "title": "should parse config",
+      "fullTitle": "Utils should parse config",
+      "file": "test/utils.test.js",
+      "duration": 3,
+      "err": {
+        "message": "Cannot read properties of null (reading 'key')",
+        "stack": "TypeError: Cannot read properties of null (reading 'key')\n    at Context.<anonymous> (test/utils.test.js:22:14)"
+      }
+    }
+  ],
+  "pending": [
+    {
+      "title": "should handle concurrent writes",
+      "fullTitle": "Database should handle concurrent writes",
+      "file": "test/db.test.js"
+    }
+  ]
+}
