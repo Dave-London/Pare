@@ -8,3 +8,6 @@ coverage/
 .env
 .env.*
 CLAUDE.md
+.claude/
+.mcp.json
+nul
