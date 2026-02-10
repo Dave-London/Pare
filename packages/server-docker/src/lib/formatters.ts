@@ -1,4 +1,14 @@
-import type { DockerPs, DockerBuild, DockerLogs, DockerImages } from "../schemas/index.js";
+import type {
+  DockerPs,
+  DockerBuild,
+  DockerLogs,
+  DockerImages,
+  DockerRun,
+  DockerExec,
+  DockerComposeUp,
+  DockerComposeDown,
+  DockerPull,
+} from "../schemas/index.js";
 
 /** Formats structured Docker container data into a human-readable listing with state and ports. */
 export function formatPs(data: DockerPs): string {
@@ -43,4 +53,40 @@ export function formatImages(data: DockerImages): string {
     lines.push(`  ${img.repository}${tag} (${img.size}, ${img.created})`);
   }
   return lines.join("\n");
+}
+
+/** Formats structured Docker run output into a human-readable summary. */
+export function formatRun(data: DockerRun): string {
+  const name = data.name ? ` (${data.name})` : "";
+  const mode = data.detached ? "detached" : "attached";
+  return `Container ${data.containerId}${name} started from ${data.image} [${mode}]`;
+}
+
+/** Formats structured Docker exec output into a human-readable summary. */
+export function formatExec(data: DockerExec): string {
+  const status = data.success ? "succeeded" : `failed (exit code ${data.exitCode})`;
+  const lines = [`Exec ${status}`];
+  if (data.stdout) lines.push(data.stdout);
+  if (data.stderr) lines.push(`stderr: ${data.stderr}`);
+  return lines.join("\n");
+}
+
+/** Formats structured Docker Compose up output into a human-readable summary. */
+export function formatComposeUp(data: DockerComposeUp): string {
+  if (!data.success) return "Compose up failed";
+  if (data.started === 0) return "Compose up succeeded (no new services started)";
+  return `Compose up: ${data.started} services started (${data.services.join(", ")})`;
+}
+
+/** Formats structured Docker Compose down output into a human-readable summary. */
+export function formatComposeDown(data: DockerComposeDown): string {
+  if (!data.success) return "Compose down failed";
+  return `Compose down: ${data.stopped} stopped, ${data.removed} removed`;
+}
+
+/** Formats structured Docker pull output into a human-readable summary. */
+export function formatPull(data: DockerPull): string {
+  if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
+  const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
+  return `Pulled ${data.image}:${data.tag}${digest}`;
 }

@@ -1,7 +1,8 @@
 import { run, type RunResult } from "@paretools/shared";
 
 export async function docker(args: string[], cwd?: string): Promise<RunResult> {
-  // Docker build/pull operations can take minutes; use 5-minute timeout
-  const isBuild = args[0] === "build" || args[0] === "pull";
-  return run("docker", args, { cwd, timeout: isBuild ? 300_000 : 30_000 });
+  // Docker build/pull/run/compose operations can take minutes; use 5-minute timeout
+  const longOps = new Set(["build", "pull", "run", "compose"]);
+  const isLong = longOps.has(args[0]);
+  return run("docker", args, { cwd, timeout: isLong ? 300_000 : 30_000 });
 }

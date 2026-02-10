@@ -63,3 +63,51 @@ export const DockerImagesSchema = z.object({
 });
 
 export type DockerImages = z.infer<typeof DockerImagesSchema>;
+
+/** Zod schema for structured docker run output with container ID, image, and detach status. */
+export const DockerRunSchema = z.object({
+  containerId: z.string(),
+  image: z.string(),
+  detached: z.boolean(),
+  name: z.string().optional(),
+});
+
+export type DockerRun = z.infer<typeof DockerRunSchema>;
+
+/** Zod schema for structured docker exec output with exit code, stdout, stderr, and success flag. */
+export const DockerExecSchema = z.object({
+  exitCode: z.number(),
+  stdout: z.string(),
+  stderr: z.string(),
+  success: z.boolean(),
+});
+
+export type DockerExec = z.infer<typeof DockerExecSchema>;
+
+/** Zod schema for structured docker compose up output with service list and started count. */
+export const DockerComposeUpSchema = z.object({
+  success: z.boolean(),
+  services: z.array(z.string()),
+  started: z.number(),
+});
+
+export type DockerComposeUp = z.infer<typeof DockerComposeUpSchema>;
+
+/** Zod schema for structured docker compose down output with stopped and removed counts. */
+export const DockerComposeDownSchema = z.object({
+  success: z.boolean(),
+  stopped: z.number(),
+  removed: z.number(),
+});
+
+export type DockerComposeDown = z.infer<typeof DockerComposeDownSchema>;
+
+/** Zod schema for structured docker pull output with image, tag, digest, and success flag. */
+export const DockerPullSchema = z.object({
+  image: z.string(),
+  tag: z.string(),
+  digest: z.string().optional(),
+  success: z.boolean(),
+});
+
+export type DockerPull = z.infer<typeof DockerPullSchema>;
