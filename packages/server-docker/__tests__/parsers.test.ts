@@ -84,6 +84,120 @@ describe("parsePsJson", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// parsePorts() indirect tests via parsePsJson — edge cases
+// ---------------------------------------------------------------------------
+
+describe("parsePorts (via parsePsJson)", () => {
+  /** Helper to extract parsed ports from a Ports string via parsePsJson */
+  function portsFor(portsStr: string) {
+    const stdout = JSON.stringify({
+      ID: "test123456789",
+      Names: "ports-test",
+      Image: "test:1",
+      Status: "Up",
+      State: "running",
+      Ports: portsStr,
+      CreatedAt: "2024-01-01",
+    });
+    return parsePsJson(stdout).containers[0].ports;
+  }
+
+  it("returns empty array for empty string", () => {
+    expect(portsFor("")).toEqual([]);
+  });
+
+  it("parses simple host:container format '8080:80' as container-only (no arrow)", () => {
+    // "8080:80" without "->" is parsed as a bare port string
+    // The parser expects "host->container" with "->"; "8080:80" lacks a protocol, defaults to tcp
+    const ports = portsFor("8080:80");
+    // Without "->", the parser treats the whole thing as a container-only port
+    expect(ports).toHaveLength(1);
+    expect(ports[0].protocol).toBe("tcp");
+  });
+
+  it("parses bare port number '80' as container-only", () => {
+    // "80" without protocol defaults to tcp
+    const ports = portsFor("80");
+    expect(ports).toHaveLength(1);
+    expect(ports[0].container).toBe(80);
+    expect(ports[0].protocol).toBe("tcp");
+    expect(ports[0].host).toBeUndefined();
+  });
+
+  it("parses standard Docker format '0.0.0.0:8080->80/tcp'", () => {
+    const ports = portsFor("0.0.0.0:8080->80/tcp");
+    expect(ports).toHaveLength(1);
+    expect(ports[0]).toEqual({ host: 8080, container: 80, protocol: "tcp" });
+  });
+
+  it("parses mixed format '443->443/tcp, 53/udp'", () => {
+    const ports = portsFor("443->443/tcp, 53/udp");
+    expect(ports).toHaveLength(2);
+    expect(ports[0]).toEqual({ host: 443, container: 443, protocol: "tcp" });
+    expect(ports[1]).toEqual({ container: 53, protocol: "udp" });
+  });
+
+  it("parses port with udp protocol '53/udp'", () => {
+    const ports = portsFor("53/udp");
+    expect(ports).toHaveLength(1);
+    expect(ports[0]).toEqual({ container: 53, protocol: "udp" });
+  });
+
+  it("parses multiple comma-separated ports", () => {
+    const ports = portsFor(
+      "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:8080->8080/tcp",
+    );
+    expect(ports).toHaveLength(3);
+    expect(ports[0]).toEqual({ host: 80, container: 80, protocol: "tcp" });
+    expect(ports[1]).toEqual({ host: 443, container: 443, protocol: "tcp" });
+    expect(ports[2]).toEqual({ host: 8080, container: 8080, protocol: "tcp" });
+  });
+
+  it("parses IPv6 binding format ':::8080->80/tcp'", () => {
+    const ports = portsFor(":::8080->80/tcp");
+    expect(ports).toHaveLength(1);
+    expect(ports[0].host).toBe(8080);
+    expect(ports[0].container).toBe(80);
+    expect(ports[0].protocol).toBe("tcp");
+  });
+
+  it("parses port range-like string without crashing", () => {
+    // Docker can output port ranges; parser should not crash
+    const ports = portsFor("0.0.0.0:9000->9000/tcp");
+    expect(ports).toHaveLength(1);
+    expect(ports[0]).toEqual({ host: 9000, container: 9000, protocol: "tcp" });
+  });
+
+  it("handles port with no protocol specified (defaults to tcp)", () => {
+    const ports = portsFor("3000");
+    expect(ports).toHaveLength(1);
+    expect(ports[0].container).toBe(3000);
+    expect(ports[0].protocol).toBe("tcp");
+  });
+
+  it("handles NaN port gracefully (non-numeric string)", () => {
+    const ports = portsFor("abc/tcp");
+    expect(ports).toHaveLength(1);
+    // parseInt("abc") returns NaN
+    expect(ports[0].container).toBeNaN();
+    expect(ports[0].protocol).toBe("tcp");
+  });
+
+  it("parses port > 65535 without error (parser does not validate range)", () => {
+    const ports = portsFor("99999/tcp");
+    expect(ports).toHaveLength(1);
+    expect(ports[0].container).toBe(99999);
+    expect(ports[0].protocol).toBe("tcp");
+  });
+
+  it("handles whitespace-only port string", () => {
+    const ports = portsFor("   ");
+    // After trim and filter(Boolean), an all-whitespace segment is empty
+    expect(ports).toEqual([]);
+  });
+});
+
 describe("parseBuildOutput", () => {
   it("parses successful build", () => {
     const stdout = `#1 [internal] load build definition

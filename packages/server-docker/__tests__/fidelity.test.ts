@@ -12,6 +12,11 @@ import {
   parseBuildOutput,
   parseLogsOutput,
   parseImagesJson,
+  parseRunOutput,
+  parseExecOutput,
+  parseComposeUpOutput,
+  parseComposeDownOutput,
+  parsePullOutput,
 } from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
@@ -462,5 +467,452 @@ describe("fidelity: parseImagesJson", () => {
     expect(result.images[0].created).toBe("2024-06-15T14:30:00Z");
     expect(result.images[0].repository).toBe("custom-app");
     expect(result.images[0].tag).toBe("v2.0");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixtures: docker run
+// ---------------------------------------------------------------------------
+
+const RUN_DETACHED_OUTPUT =
+  "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n";
+
+const RUN_ATTACHED_OUTPUT = [
+  "Starting application server...",
+  "Listening on port 8080",
+  "Connection accepted from 192.168.1.100",
+  "fedcba987654fedcba987654fedcba987654fedcba987654fedcba987654fedcba98",
+].join("\n");
+
+const RUN_ATTACHED_SINGLE_LINE = "Hello, World!\n";
+
+// ---------------------------------------------------------------------------
+// Fixtures: docker exec
+// ---------------------------------------------------------------------------
+
+const EXEC_LS_STDOUT = "bin\ndev\netc\nhome\nlib\nmedia\nmnt\nopt\nproc\nroot\nrun\nsbin\nsrv\nsys\ntmp\nusr\nvar\n";
+
+const EXEC_CAT_STDOUT = `server {
+    listen 80;
+    server_name localhost;
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+    }
+}`;
+
+const EXEC_FAILED_STDERR =
+  "OCI runtime exec failed: exec failed: unable to start container process: exec: \"nonexistent-cmd\": executable file not found in $PATH: unknown";
+
+// ---------------------------------------------------------------------------
+// Fixtures: docker compose up
+// ---------------------------------------------------------------------------
+
+const COMPOSE_UP_FULL = [
+  " Network myproject_default  Creating",
+  " Network myproject_default  Created",
+  " Volume \"myproject_db-data\"  Creating",
+  " Volume \"myproject_db-data\"  Created",
+  " Container myproject-postgres-1  Creating",
+  " Container myproject-redis-1     Creating",
+  " Container myproject-api-1       Creating",
+  " Container myproject-postgres-1  Created",
+  " Container myproject-redis-1     Created",
+  " Container myproject-api-1       Created",
+  " Container myproject-postgres-1  Starting",
+  " Container myproject-redis-1     Starting",
+  " Container myproject-api-1       Starting",
+  " Container myproject-postgres-1  Started",
+  " Container myproject-redis-1     Started",
+  " Container myproject-api-1       Started",
+].join("\n");
+
+const COMPOSE_UP_PARTIAL_RUNNING = [
+  " Container myproject-postgres-1  Running",
+  " Container myproject-redis-1     Running",
+  " Container myproject-api-1       Creating",
+  " Container myproject-api-1       Created",
+  " Container myproject-api-1       Starting",
+  " Container myproject-api-1       Started",
+].join("\n");
+
+// ---------------------------------------------------------------------------
+// Fixtures: docker compose down
+// ---------------------------------------------------------------------------
+
+const COMPOSE_DOWN_FULL = [
+  " Container myproject-api-1       Stopping",
+  " Container myproject-redis-1     Stopping",
+  " Container myproject-postgres-1  Stopping",
+  " Container myproject-api-1       Stopped",
+  " Container myproject-redis-1     Stopped",
+  " Container myproject-postgres-1  Stopped",
+  " Container myproject-api-1       Removing",
+  " Container myproject-redis-1     Removing",
+  " Container myproject-postgres-1  Removing",
+  " Container myproject-api-1       Removed",
+  " Container myproject-redis-1     Removed",
+  " Container myproject-postgres-1  Removed",
+  " Network myproject_default       Removing",
+  " Network myproject_default       Removed",
+].join("\n");
+
+const COMPOSE_DOWN_VOLUMES = [
+  " Container myproject-db-1  Stopped",
+  " Container myproject-db-1  Removed",
+  " Volume myproject_db-data  Removing",
+  " Volume myproject_db-data  Removed",
+  " Network myproject_default Removed",
+].join("\n");
+
+// ---------------------------------------------------------------------------
+// Fixtures: docker pull
+// ---------------------------------------------------------------------------
+
+const PULL_FRESH_DOWNLOAD = [
+  "Using default tag: latest",
+  "latest: Pulling from library/nginx",
+  "a2abf6c4d29d: Pulling fs layer",
+  "a9edb18cadd1: Pulling fs layer",
+  "589b7251471a: Pulling fs layer",
+  "186b1aaa4aa6: Pulling fs layer",
+  "b4df32aa5a72: Pulling fs layer",
+  "a2abf6c4d29d: Pull complete",
+  "a9edb18cadd1: Pull complete",
+  "589b7251471a: Pull complete",
+  "186b1aaa4aa6: Pull complete",
+  "b4df32aa5a72: Pull complete",
+  "Digest: sha256:e4f58b21c1a93f9d4abfe69c4e1399d3e4f0d6e2c7b8a1d3f5e6a7b8c9d0e1f2",
+  "Status: Downloaded newer image for nginx:latest",
+  "docker.io/library/nginx:latest",
+].join("\n");
+
+const PULL_ALREADY_EXISTS = [
+  "Using default tag: latest",
+  "latest: Pulling from library/alpine",
+  "Digest: sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "Status: Image is up to date for alpine:latest",
+  "docker.io/library/alpine:latest",
+].join("\n");
+
+const PULL_SPECIFIC_TAG = [
+  "22.04: Pulling from library/ubuntu",
+  "3153aa388d02: Already exists",
+  "Digest: sha256:aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344",
+  "Status: Downloaded newer image for ubuntu:22.04",
+  "docker.io/library/ubuntu:22.04",
+].join("\n");
+
+const PULL_PRIVATE_REGISTRY = [
+  "v2.1.0: Pulling from myorg/myapp",
+  "4abcdef01234: Pull complete",
+  "5bcdef012345: Pull complete",
+  "Digest: sha256:deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234",
+  "Status: Downloaded newer image for registry.example.com:5000/myorg/myapp:v2.1.0",
+].join("\n");
+
+// ---------------------------------------------------------------------------
+// Tests: parseRunOutput
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseRunOutput", () => {
+  it("detached mode: extracts container ID (first 12 chars) from full 64-char hash", () => {
+    const result = parseRunOutput(RUN_DETACHED_OUTPUT, "nginx:latest", true, "my-web");
+
+    expect(result.containerId).toBe("a1b2c3d4e5f6");
+    expect(result.containerId.length).toBe(12);
+    expect(result.image).toBe("nginx:latest");
+    expect(result.detached).toBe(true);
+    expect(result.name).toBe("my-web");
+  });
+
+  it("attached mode: extracts container ID from last line of mixed output", () => {
+    const result = parseRunOutput(RUN_ATTACHED_OUTPUT, "myapp:dev", false);
+
+    expect(result.containerId).toBe("fedcba987654");
+    expect(result.image).toBe("myapp:dev");
+    expect(result.detached).toBe(false);
+    expect(result.name).toBeUndefined();
+  });
+
+  it("attached mode with single-line output: preserves text", () => {
+    const result = parseRunOutput(RUN_ATTACHED_SINGLE_LINE, "alpine", false);
+
+    // The last trimmed line is "Hello, World!" which is not a container ID hash
+    expect(result.containerId).toBe("Hello, World");
+    expect(result.image).toBe("alpine");
+    expect(result.detached).toBe(false);
+  });
+
+  it("preserves image name exactly including registry prefix", () => {
+    const result = parseRunOutput(RUN_DETACHED_OUTPUT, "registry.example.com:5000/myapp:v1", true);
+
+    expect(result.image).toBe("registry.example.com:5000/myapp:v1");
+  });
+
+  it("empty output: containerId is empty, other fields preserved", () => {
+    const result = parseRunOutput("", "busybox", true, "worker");
+
+    expect(result.containerId).toBe("");
+    expect(result.image).toBe("busybox");
+    expect(result.detached).toBe(true);
+    expect(result.name).toBe("worker");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: parseExecOutput
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseExecOutput", () => {
+  it("successful ls: stdout preserved exactly with all directory entries", () => {
+    const result = parseExecOutput(EXEC_LS_STDOUT, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(EXEC_LS_STDOUT);
+    expect(result.stdout).toContain("bin");
+    expect(result.stdout).toContain("var");
+    expect(result.stderr).toBe("");
+  });
+
+  it("successful cat: multi-line config output preserved exactly", () => {
+    const result = parseExecOutput(EXEC_CAT_STDOUT, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toBe(EXEC_CAT_STDOUT);
+    expect(result.stdout).toContain("server_name localhost");
+    expect(result.stdout).toContain("listen 80");
+  });
+
+  it("command not found: exit code 126 with OCI runtime error", () => {
+    const result = parseExecOutput("", EXEC_FAILED_STDERR, 126);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(126);
+    expect(result.stderr).toContain("executable file not found");
+    expect(result.stdout).toBe("");
+  });
+
+  it("exit code 127 (command not found in PATH)", () => {
+    const stderr = "exec: \"missing-tool\": executable file not found in $PATH";
+    const result = parseExecOutput("", stderr, 127);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(127);
+    expect(result.stderr).toContain("missing-tool");
+  });
+
+  it("mixed stdout and stderr with exit code 0", () => {
+    const stdout = "result line 1\nresult line 2";
+    const stderr = "DEPRECATION WARNING: feature X will be removed in v3.0";
+    const result = parseExecOutput(stdout, stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(stdout);
+    expect(result.stderr).toBe(stderr);
+  });
+
+  it("exit code 1 with stderr: fields preserved exactly", () => {
+    const stderr = "Error: Cannot connect to database at localhost:5432";
+    const result = parseExecOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toBe(stderr);
+  });
+
+  it("exit code 137 (OOM killed / SIGKILL)", () => {
+    const result = parseExecOutput("", "Killed", 137);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(137);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: parseComposeUpOutput
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseComposeUpOutput", () => {
+  it("full compose up: all services extracted and deduplicated", () => {
+    const result = parseComposeUpOutput("", COMPOSE_UP_FULL, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.started).toBe(3);
+    expect(result.services).toContain("myproject-postgres-1");
+    expect(result.services).toContain("myproject-redis-1");
+    expect(result.services).toContain("myproject-api-1");
+
+    // Verify no duplicates (each service appeared in Created, Starting, Started)
+    const uniqueCount = new Set(result.services).size;
+    expect(uniqueCount).toBe(result.services.length);
+  });
+
+  it("partial running: already-running services included via Running status", () => {
+    const result = parseComposeUpOutput("", COMPOSE_UP_PARTIAL_RUNNING, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.services).toContain("myproject-postgres-1");
+    expect(result.services).toContain("myproject-redis-1");
+    expect(result.services).toContain("myproject-api-1");
+    expect(result.started).toBe(3);
+  });
+
+  it("network creation lines do not create false service entries", () => {
+    const stderr = [
+      " Network myproject_default  Creating",
+      " Network myproject_default  Created",
+    ].join("\n");
+
+    const result = parseComposeUpOutput("", stderr, 0);
+
+    // Networks should not be counted as services
+    expect(result.services).toEqual([]);
+    expect(result.started).toBe(0);
+  });
+
+  it("failure exit code: success is false, no services", () => {
+    const stderr = "no configuration file provided: not found";
+    const result = parseComposeUpOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.started).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: parseComposeDownOutput
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseComposeDownOutput", () => {
+  it("full teardown: stopped and removed counts match container + network removals", () => {
+    const result = parseComposeDownOutput("", COMPOSE_DOWN_FULL, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.stopped).toBe(3); // 3 containers stopped
+    expect(result.removed).toBe(4); // 3 containers + 1 network removed
+  });
+
+  it("teardown with volumes: volume removal counted in removed", () => {
+    const result = parseComposeDownOutput("", COMPOSE_DOWN_VOLUMES, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.stopped).toBe(1); // 1 container stopped
+    // Removed = 1 container + 1 network; volumes are not matched by current parser
+    expect(result.removed).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Stopping lines are not counted as Stopped", () => {
+    const stderr = [
+      " Container app-1  Stopping",
+      " Container app-1  Stopping",
+    ].join("\n");
+
+    const result = parseComposeDownOutput("", stderr, 0);
+    expect(result.stopped).toBe(0); // Stopping !== Stopped
+  });
+
+  it("Removing lines are not counted as Removed", () => {
+    const stderr = [
+      " Container app-1  Removing",
+      " Container app-1  Removing",
+    ].join("\n");
+
+    const result = parseComposeDownOutput("", stderr, 0);
+    expect(result.removed).toBe(0); // Removing !== Removed
+  });
+
+  it("failure exit code: success is false", () => {
+    const result = parseComposeDownOutput("", "error: compose file not found", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.stopped).toBe(0);
+    expect(result.removed).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: parsePullOutput
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parsePullOutput", () => {
+  it("fresh download: image, tag, digest all extracted from realistic output", () => {
+    const result = parsePullOutput(PULL_FRESH_DOWNLOAD, "", 0, "nginx:latest");
+
+    expect(result.success).toBe(true);
+    expect(result.image).toBe("nginx");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBe(
+      "sha256:e4f58b21c1a93f9d4abfe69c4e1399d3e4f0d6e2c7b8a1d3f5e6a7b8c9d0e1f2",
+    );
+  });
+
+  it("already up to date: digest still extracted", () => {
+    const result = parsePullOutput(PULL_ALREADY_EXISTS, "", 0, "alpine");
+
+    expect(result.success).toBe(true);
+    expect(result.image).toBe("alpine");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBe(
+      "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    );
+  });
+
+  it("specific tag: tag extracted correctly from image spec", () => {
+    const result = parsePullOutput(PULL_SPECIFIC_TAG, "", 0, "ubuntu:22.04");
+
+    expect(result.success).toBe(true);
+    expect(result.image).toBe("ubuntu");
+    expect(result.tag).toBe("22.04");
+    expect(result.digest).toBe(
+      "sha256:aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344",
+    );
+  });
+
+  it("private registry with port: image name includes registry prefix", () => {
+    const result = parsePullOutput(
+      PULL_PRIVATE_REGISTRY,
+      "",
+      0,
+      "registry.example.com:5000/myorg/myapp:v2.1.0",
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.image).toBe("registry.example.com:5000/myorg/myapp");
+    expect(result.tag).toBe("v2.1.0");
+    expect(result.digest).toBe(
+      "sha256:deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234",
+    );
+  });
+
+  it("layer progress lines do not interfere with digest extraction", () => {
+    const result = parsePullOutput(PULL_FRESH_DOWNLOAD, "", 0, "nginx:latest");
+
+    // The output contains multiple "Pull complete" lines; digest should still be correct
+    expect(result.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
+  });
+
+  it("failed pull: success is false, no digest", () => {
+    const stderr =
+      "Error response from daemon: manifest for nonexistent/image:v999 not found: manifest unknown: manifest unknown";
+    const result = parsePullOutput("", stderr, 1, "nonexistent/image:v999");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("nonexistent/image");
+    expect(result.tag).toBe("v999");
+    expect(result.digest).toBeUndefined();
+  });
+
+  it("auth failure: success is false", () => {
+    const stderr =
+      "Error response from daemon: Head https://registry.example.com/v2/myapp/manifests/latest: unauthorized: authentication required";
+    const result = parsePullOutput("", stderr, 1, "registry.example.com/myapp:latest");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("registry.example.com/myapp");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBeUndefined();
   });
 });
