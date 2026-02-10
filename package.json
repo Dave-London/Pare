@@ -1,0 +1,30 @@
+{
+  "name": "pare",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev tools, optimized for agents. ~85% fewer tokens, 100% structured output.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dave-London/pare.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "prettier": "^3.4.0",
+    "turbo": "^2.4.0"
+  }
+}
