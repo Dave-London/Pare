@@ -49,3 +49,54 @@ export const CargoClippyResultSchema = z.object({
 });
 
 export type CargoClippyResult = z.infer<typeof CargoClippyResultSchema>;
+
+/** Zod schema for structured cargo run output with exit code, stdout, stderr, and success flag. */
+export const CargoRunResultSchema = z.object({
+  exitCode: z.number(),
+  stdout: z.string(),
+  stderr: z.string(),
+  success: z.boolean(),
+});
+
+export type CargoRunResult = z.infer<typeof CargoRunResultSchema>;
+
+/** Zod schema for a single added dependency entry. */
+export const CargoAddedPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+});
+
+/** Zod schema for structured cargo add output with added packages list. */
+export const CargoAddResultSchema = z.object({
+  success: z.boolean(),
+  added: z.array(CargoAddedPackageSchema),
+  total: z.number(),
+});
+
+export type CargoAddResult = z.infer<typeof CargoAddResultSchema>;
+
+/** Zod schema for structured cargo remove output with removed package names. */
+export const CargoRemoveResultSchema = z.object({
+  success: z.boolean(),
+  removed: z.array(z.string()),
+  total: z.number(),
+});
+
+export type CargoRemoveResult = z.infer<typeof CargoRemoveResultSchema>;
+
+/** Zod schema for structured cargo fmt output with changed files list. */
+export const CargoFmtResultSchema = z.object({
+  success: z.boolean(),
+  filesChanged: z.number(),
+  files: z.array(z.string()),
+});
+
+export type CargoFmtResult = z.infer<typeof CargoFmtResultSchema>;
+
+/** Zod schema for structured cargo doc output with success flag and warning count. */
+export const CargoDocResultSchema = z.object({
+  success: z.boolean(),
+  warnings: z.number(),
+});
+
+export type CargoDocResult = z.infer<typeof CargoDocResultSchema>;

@@ -1,0 +1,51 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { cargo } from "../lib/cargo-runner.js";
+import { parseCargoAddOutput } from "../lib/parsers.js";
+import { formatCargoAdd } from "../lib/formatters.js";
+import { CargoAddResultSchema } from "../schemas/index.js";
+
+export function registerAddTool(server: McpServer) {
+  server.registerTool(
+    "add",
+    {
+      title: "Cargo Add",
+      description:
+        "Adds dependencies to a Rust project and returns structured output. Use instead of running `cargo add` in the terminal.",
+      inputSchema: {
+        path: z.string().optional().describe("Project root path (default: cwd)"),
+        packages: z
+          .array(z.string())
+          .describe('Packages to add (e.g. ["serde", "tokio@1.0"])'),
+        dev: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Add as dev dependency (--dev)"),
+        features: z
+          .array(z.string())
+          .optional()
+          .describe("Features to enable (e.g. [\"derive\", \"full\"])"),
+      },
+      outputSchema: CargoAddResultSchema,
+    },
+    async ({ path, packages, dev, features }) => {
+      const cwd = path || process.cwd();
+
+      for (const pkg of packages) {
+        assertNoFlagInjection(pkg, "packages");
+      }
+
+      const args = ["add", ...packages];
+      if (dev) args.push("--dev");
+      if (features && features.length > 0) {
+        args.push("--features", features.join(","));
+      }
+
+      const result = await cargo(args, cwd);
+      const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode);
+      return dualOutput(data, formatCargoAdd);
+    },
+  );
+}
