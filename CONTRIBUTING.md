@@ -1,6 +1,6 @@
-# Contributing to pare
+# Contributing to Pare
 
-Thanks for your interest in contributing! pare is designed to make contributing easy — each server is a self-contained package that wraps a single dev tool.
+Thanks for your interest in contributing! Pare is designed to make contributing easy — each server is a self-contained package that wraps a single dev tool.
 
 ## Development Setup
 
@@ -120,7 +120,7 @@ Select your new package, choose `minor` version bump, and write a brief descript
 
 ## Key Principles
 
-1. **Always use `outputSchema` + `structuredContent`** — This is pare's core differentiator.
+1. **Always use `outputSchema` + `structuredContent`** — This is Pare's core differentiator.
 2. **Always include human-readable `content`** — Fallback for clients without structuredContent support.
 3. **Strip aggressively** — Only include data an agent would act on. No hints, no decorations.
 4. **Use `execFile`, not `exec`** — Prevents shell injection.
