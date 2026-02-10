@@ -3,6 +3,16 @@
   "version": "0.2.0",
   "description": "Shared utilities for Pare MCP servers",
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output"
+  ],
+  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/shared",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "exports": {
     ".": {

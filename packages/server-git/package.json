@@ -3,6 +3,17 @@
   "version": "0.2.0",
   "description": "MCP server for git with structured, token-efficient output",
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output",
+    "git"
+  ],
+  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-git",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "bin": {
     "pare-git": "./dist/index.js"

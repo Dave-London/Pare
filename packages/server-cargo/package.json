@@ -3,6 +3,19 @@
   "version": "0.2.0",
   "description": "MCP server for Rust cargo (build, test, clippy) with structured, token-efficient output",
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output",
+    "rust",
+    "cargo",
+    "clippy"
+  ],
+  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-cargo",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "bin": {
     "pare-cargo": "./dist/index.js"

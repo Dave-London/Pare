@@ -3,6 +3,18 @@
   "version": "0.2.0",
   "description": "MCP server for npm/pnpm with structured, token-efficient output",
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output",
+    "npm",
+    "pnpm"
+  ],
+  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-npm",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "bin": {
     "pare-npm": "./dist/index.js"

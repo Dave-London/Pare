@@ -3,6 +3,19 @@
   "version": "0.2.0",
   "description": "MCP server for linters (ESLint, Prettier) with structured, token-efficient output",
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output",
+    "eslint",
+    "prettier",
+    "linting"
+  ],
+  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-lint",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "bin": {
     "pare-lint": "./dist/index.js"
