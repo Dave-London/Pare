@@ -12,3 +12,15 @@ export async function runBuildCommand(
   // Build commands can take minutes for large projects
   return run(cmd, args, { cwd, timeout: 300_000 });
 }
+
+export async function esbuildCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["esbuild", ...args], { cwd, timeout: 120_000 });
+}
+
+export async function viteCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["vite", "build", ...args], { cwd, timeout: 300_000 });
+}
+
+export async function webpackCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["webpack", ...args], { cwd, timeout: 300_000 });
+}
