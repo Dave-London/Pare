@@ -21,6 +21,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
+    "changelog": "tsx scripts/aggregate-changelog.ts",
     "benchmark": "tsx scripts/benchmark.ts",
     "docs:api": "typedoc"
   },
