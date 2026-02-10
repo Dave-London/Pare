@@ -219,7 +219,7 @@ async function benchmarkTest(): Promise<BenchmarkResult[]> {
 
 function printTable(results: BenchmarkResult[]) {
   console.log("\n## Token Benchmark Results\n");
-  console.log("| Command | Description | Raw Tokens | pare Tokens | Reduction |");
+  console.log("| Command | Description | Raw Tokens | Pare Tokens | Reduction |");
   console.log("|---|---|---:|---:|---:|");
 
   let totalRaw = 0;
@@ -247,7 +247,7 @@ function printDetails(results: BenchmarkResult[]) {
     console.log(r.rawOutput.slice(0, 2000));
     if (r.rawOutput.length > 2000) console.log("... (truncated)");
     console.log("```\n");
-    console.log(`**pare output (${r.pareTokens} tokens, ${r.pareOutput.length} chars):**`);
+    console.log(`**Pare output (${r.pareTokens} tokens, ${r.pareOutput.length} chars):**`);
     console.log("```json");
     console.log(r.pareOutput.slice(0, 2000));
     console.log("```\n");
@@ -255,7 +255,7 @@ function printDetails(results: BenchmarkResult[]) {
 }
 
 async function main() {
-  console.log("# pare Token Benchmark\n");
+  console.log("# Pare Token Benchmark\n");
   console.log(`Date: ${new Date().toISOString().split("T")[0]}`);
   console.log(`Platform: ${process.platform}`);
   console.log(`Node: ${process.version}\n`);

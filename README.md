@@ -1,6 +1,6 @@
 # Pare
 
-**Dev tools, optimized for agents. ~85% fewer tokens, 100% structured output.**
+**Dev tools, optimized for agents. Up to 92% fewer tokens, 100% structured output.**
 
 Pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap popular developer tools with structured, token-efficient, schema-validated output optimized for AI coding agents.
 
@@ -8,14 +8,14 @@ Pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap
 
 AI coding agents spend most of their tokens reading tool output designed for humans — ANSI colors, progress bars, ASCII art, instructional hints. This is wasteful and expensive.
 
-| Tool Command                  | Raw Tokens | Pare Tokens | Reduction |
-| ----------------------------- | ---------: | ----------: | --------: |
-| `pytest` (47 tests, all pass) |        186 |           8 |   **96%** |
-| `pytest` (47 tests, 1 fail)   |      1,008 |          46 |   **95%** |
-| `npm install` (large project) |        526 |          55 |   **90%** |
-| `git log` (3 commits)         |        501 |          71 |   **86%** |
-| `git status` (dirty)          |        118 |          28 |   **76%** |
-| **Weighted average**          |          — |           — |  **~85%** |
+| Tool Command                             | Raw Tokens | Pare Tokens | Reduction |
+| ---------------------------------------- | ---------: | ----------: | --------: |
+| `git log --stat` (5 commits, verbose)    |      4,992 |         382 |   **92%** |
+| `vitest run` (28 tests, all pass)        |        196 |          39 |   **80%** |
+| `git status` (working tree)              |         62 |          51 |   **18%** |
+| `git log --oneline` (5 commits, compact) |         59 |         382 |     -547% |
+
+> Token counts measured with `~4 chars/token` approximation. Savings are highest on verbose, human-formatted output (test runners, build logs, detailed git history). Compact output like `--oneline` is already token-efficient — structured JSON adds overhead there.
 
 ## How It Works
 
@@ -61,7 +61,7 @@ Add to your MCP client config (e.g., Claude Code `~/.claude.json`):
 
 ## Example: `git status`
 
-**Raw git output (118 tokens):**
+**Raw git output (~118 tokens):**
 
 ```
 On branch main
@@ -83,7 +83,7 @@ Untracked files:
         temp.log
 ```
 
-**Pare structured output (28 tokens):**
+**Pare structured output (~59 tokens):**
 
 ```json
 {
@@ -102,7 +102,7 @@ Untracked files:
 }
 ```
 
-76% fewer tokens. Zero information lost. Fully typed.
+50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
 
 ## Contributing
 

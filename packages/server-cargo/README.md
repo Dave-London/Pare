@@ -4,11 +4,11 @@ Pare MCP server for **Rust/Cargo**. Returns structured output from cargo build, 
 
 ## Tools
 
-| Tool     | Description                                                |
-| -------- | ---------------------------------------------------------- |
-| `build`  | Build diagnostics (file, line, code, severity, message)    |
-| `test`   | Test results (name, status, pass/fail counts)              |
-| `clippy` | Lint diagnostics from clippy                               |
+| Tool     | Description                                             |
+| -------- | ------------------------------------------------------- |
+| `build`  | Build diagnostics (file, line, code, severity, message) |
+| `test`   | Test results (name, status, pass/fail counts)           |
+| `clippy` | Lint diagnostics from clippy                            |
 
 ## Setup
 

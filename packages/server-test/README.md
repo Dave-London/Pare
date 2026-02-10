@@ -4,8 +4,8 @@ Pare MCP server for **test runners**. Auto-detects pytest, jest, or vitest and r
 
 ## Tools
 
-| Tool       | Description                                            |
-| ---------- | ------------------------------------------------------ |
+| Tool       | Description                                             |
+| ---------- | ------------------------------------------------------- |
 | `run`      | Run tests, returns pass/fail counts and failure details |
 | `coverage` | Run tests with coverage, returns per-file summary       |
 

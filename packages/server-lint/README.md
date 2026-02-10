@@ -7,7 +7,7 @@ Pare MCP server for **linters**. Returns structured output from ESLint and Prett
 | Tool           | Description                                              |
 | -------------- | -------------------------------------------------------- |
 | `lint`         | ESLint diagnostics (file, line, rule, severity, message) |
-| `format-check` | Prettier check — list of files needing formatting       |
+| `format-check` | Prettier check — list of files needing formatting        |
 
 ## Setup
 

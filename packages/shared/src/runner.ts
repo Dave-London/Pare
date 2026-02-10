@@ -18,9 +18,12 @@ export interface RunResult {
  * Uses execFile (not exec) to avoid shell injection. On Windows, shell is
  * enabled so that .cmd/.bat wrappers (like npx) can be executed — args are
  * still passed as an array so they remain properly escaped.
+ *
+ * Throws on system-level errors (command not found, permission denied).
+ * Normal non-zero exit codes are returned in the result, not thrown.
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     execFile(
       cmd,
       args,
@@ -32,8 +35,37 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
         shell: process.platform === "win32",
       },
       (error, stdout, stderr) => {
+        if (error) {
+          const errno = error as NodeJS.ErrnoException;
+
+          // Unix: direct ENOENT from execFile (no shell wrapping)
+          if (errno.code === "ENOENT") {
+            reject(
+              new Error(
+                `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+              ),
+            );
+            return;
+          }
+          if (errno.code === "EACCES" || errno.code === "EPERM") {
+            reject(new Error(`Permission denied executing "${cmd}": ${errno.message}`));
+            return;
+          }
+
+          // Windows: cmd.exe masks ENOENT — detect via stderr message
+          const cleanStderr = stripAnsi(stderr);
+          if (cleanStderr.includes("is not recognized")) {
+            reject(
+              new Error(
+                `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+              ),
+            );
+            return;
+          }
+        }
+
         resolve({
-          exitCode: error && "code" in error ? (error.code as number) : error ? 1 : 0,
+          exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
           stdout: stripAnsi(stdout),
           stderr: stripAnsi(stderr),
         });

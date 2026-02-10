@@ -4,10 +4,10 @@ Pare MCP server for **build tools**. Returns structured diagnostics from TypeScr
 
 ## Tools
 
-| Tool    | Description                                                  |
-| ------- | ------------------------------------------------------------ |
-| `tsc`   | TypeScript compiler diagnostics (file, line, column, code)   |
-| `build` | Generic build command with structured error/warning output   |
+| Tool    | Description                                                |
+| ------- | ---------------------------------------------------------- |
+| `tsc`   | TypeScript compiler diagnostics (file, line, column, code) |
+| `build` | Generic build command with structured error/warning output |
 
 ## Setup
 
