@@ -166,9 +166,20 @@ describe("fidelity: git log", () => {
   });
 });
 
+/** Check if repo has enough history for diff tests (CI may shallow-clone) */
+function hasParentCommit(): boolean {
+  try {
+    gitRaw(["rev-parse", "--verify", "HEAD~1"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 describe("fidelity: git diff", () => {
   it("preserves every changed file from numstat", () => {
-    // Compare HEAD~1 to HEAD
+    if (!hasParentCommit()) return; // shallow clone in CI
+
     const rawNumstat = gitRaw(["diff", "--numstat", "HEAD~1"]);
 
     if (!rawNumstat.trim()) return; // No diff to compare
@@ -191,6 +202,8 @@ describe("fidelity: git diff", () => {
   });
 
   it("preserves addition/deletion counts", () => {
+    if (!hasParentCommit()) return; // shallow clone in CI
+
     const rawNumstat = gitRaw(["diff", "--numstat", "HEAD~1"]);
 
     if (!rawNumstat.trim()) return;
@@ -209,6 +222,8 @@ describe("fidelity: git diff", () => {
   });
 
   it("totalAdditions/totalDeletions match sum of per-file counts", () => {
+    if (!hasParentCommit()) return; // shallow clone in CI
+
     const rawNumstat = gitRaw(["diff", "--numstat", "HEAD~1"]);
 
     if (!rawNumstat.trim()) return;
