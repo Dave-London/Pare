@@ -1,4 +1,4 @@
-import type { NpmInstall, NpmAudit, NpmOutdated, NpmList } from "../schemas/index.js";
+import type { NpmInstall, NpmAudit, NpmOutdated, NpmList, NpmRun, NpmTest, NpmInit } from "../schemas/index.js";
 
 /** Parses `npm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
@@ -104,5 +104,54 @@ export function parseListJson(jsonStr: string): NpmList {
     version: data.version ?? "0.0.0",
     dependencies: deps,
     total: Object.keys(deps).length,
+  };
+}
+
+/** Parses `npm run <script>` output into structured data with exit code, stdout/stderr, and duration. */
+export function parseRunOutput(
+  script: string,
+  exitCode: number,
+  stdout: string,
+  stderr: string,
+  duration: number,
+): NpmRun {
+  return {
+    script,
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+    success: exitCode === 0,
+    duration,
+  };
+}
+
+/** Parses `npm test` output into structured data with exit code, stdout/stderr, and duration. */
+export function parseTestOutput(
+  exitCode: number,
+  stdout: string,
+  stderr: string,
+  duration: number,
+): NpmTest {
+  return {
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+    success: exitCode === 0,
+    duration,
+  };
+}
+
+/** Parses `npm init` result by reading the generated package.json. */
+export function parseInitOutput(
+  success: boolean,
+  packageName: string,
+  version: string,
+  packageJsonPath: string,
+): NpmInit {
+  return {
+    success,
+    packageName,
+    version,
+    path: packageJsonPath,
   };
 }
