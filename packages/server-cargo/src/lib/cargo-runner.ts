@@ -1,5 +1,6 @@
 import { run, type RunResult } from "@paretools/shared";
 
 export async function cargo(args: string[], cwd?: string): Promise<RunResult> {
-  return run("cargo", args, { cwd });
+  // cargo build/test can take minutes for large projects
+  return run("cargo", args, { cwd, timeout: 300_000 });
 }

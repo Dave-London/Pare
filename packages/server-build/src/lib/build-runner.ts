@@ -1,7 +1,7 @@
 import { run, type RunResult } from "@paretools/shared";
 
 export async function tsc(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["tsc", ...args], { cwd });
+  return run("npx", ["tsc", ...args], { cwd, timeout: 120_000 });
 }
 
 export async function runBuildCommand(
@@ -9,5 +9,6 @@ export async function runBuildCommand(
   args: string[],
   cwd?: string,
 ): Promise<RunResult> {
-  return run(cmd, args, { cwd });
+  // Build commands can take minutes for large projects
+  return run(cmd, args, { cwd, timeout: 300_000 });
 }
