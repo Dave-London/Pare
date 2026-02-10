@@ -1,6 +1,7 @@
 {
   "name": "@paretools/npm",
   "version": "0.2.0",
+  "mcpName": "io.github.Dave-London/npm",
   "description": "MCP server for npm/pnpm with structured, token-efficient output",
   "license": "MIT",
   "keywords": [
