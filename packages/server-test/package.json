@@ -1,6 +1,6 @@
 {
   "name": "@paretools/test",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "mcpName": "io.github.Dave-London/test",
   "description": "MCP server for test runners with structured, token-efficient output",
   "license": "MIT",
