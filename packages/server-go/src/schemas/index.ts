@@ -53,3 +53,38 @@ export const GoVetResultSchema = z.object({
 });
 
 export type GoVetResult = z.infer<typeof GoVetResultSchema>;
+
+/** Zod schema for structured go run output with stdout, stderr, and exit code. */
+export const GoRunResultSchema = z.object({
+  exitCode: z.number(),
+  stdout: z.string(),
+  stderr: z.string(),
+  success: z.boolean(),
+});
+
+export type GoRunResult = z.infer<typeof GoRunResultSchema>;
+
+/** Zod schema for structured go mod tidy output with success status and summary. */
+export const GoModTidyResultSchema = z.object({
+  success: z.boolean(),
+  summary: z.string(),
+});
+
+export type GoModTidyResult = z.infer<typeof GoModTidyResultSchema>;
+
+/** Zod schema for structured gofmt output with file list and count. */
+export const GoFmtResultSchema = z.object({
+  success: z.boolean(),
+  filesChanged: z.number(),
+  files: z.array(z.string()),
+});
+
+export type GoFmtResult = z.infer<typeof GoFmtResultSchema>;
+
+/** Zod schema for structured go generate output with success status and output text. */
+export const GoGenerateResultSchema = z.object({
+  success: z.boolean(),
+  output: z.string(),
+});
+
+export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
