@@ -86,3 +86,36 @@ export const NpmListSchema = z.object({
 });
 
 export type NpmList = z.infer<typeof NpmListSchema>;
+
+/** Zod schema for structured npm run output with script name, exit code, and captured output. */
+export const NpmRunSchema = z.object({
+  script: z.string().describe("The script that was executed"),
+  exitCode: z.number().describe("Process exit code (0 = success)"),
+  stdout: z.string().describe("Standard output from the script"),
+  stderr: z.string().describe("Standard error from the script"),
+  success: z.boolean().describe("Whether the script exited with code 0"),
+  duration: z.number().describe("Execution duration in seconds"),
+});
+
+export type NpmRun = z.infer<typeof NpmRunSchema>;
+
+/** Zod schema for structured npm test output with exit code and captured output. */
+export const NpmTestSchema = z.object({
+  exitCode: z.number().describe("Process exit code (0 = success)"),
+  stdout: z.string().describe("Standard output from the test run"),
+  stderr: z.string().describe("Standard error from the test run"),
+  success: z.boolean().describe("Whether tests passed (exit code 0)"),
+  duration: z.number().describe("Execution duration in seconds"),
+});
+
+export type NpmTest = z.infer<typeof NpmTestSchema>;
+
+/** Zod schema for structured npm init output with package metadata. */
+export const NpmInitSchema = z.object({
+  success: z.boolean().describe("Whether package.json was created successfully"),
+  packageName: z.string().describe("The name field from the generated package.json"),
+  version: z.string().describe("The version field from the generated package.json"),
+  path: z.string().describe("Path to the generated package.json"),
+});
+
+export type NpmInit = z.infer<typeof NpmInitSchema>;

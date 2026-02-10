@@ -1,4 +1,4 @@
-import type { NpmInstall, NpmAudit, NpmOutdated, NpmList } from "../schemas/index.js";
+import type { NpmInstall, NpmAudit, NpmOutdated, NpmList, NpmRun, NpmTest, NpmInit } from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
 export function formatInstall(data: NpmInstall): string {
@@ -55,4 +55,38 @@ export function formatList(data: NpmList): string {
     lines.push(`  ${name}@${dep.version}`);
   }
   return lines.join("\n");
+}
+
+/** Formats structured npm run output into a human-readable script execution summary. */
+export function formatRun(data: NpmRun): string {
+  const status = data.success ? "completed successfully" : `failed (exit code ${data.exitCode})`;
+  const lines = [`Script "${data.script}" ${status} in ${data.duration}s`];
+  if (data.stdout) {
+    lines.push("", "stdout:", data.stdout);
+  }
+  if (data.stderr) {
+    lines.push("", "stderr:", data.stderr);
+  }
+  return lines.join("\n");
+}
+
+/** Formats structured npm test output into a human-readable test result summary. */
+export function formatTest(data: NpmTest): string {
+  const status = data.success ? "passed" : `failed (exit code ${data.exitCode})`;
+  const lines = [`Tests ${status} in ${data.duration}s`];
+  if (data.stdout) {
+    lines.push("", "stdout:", data.stdout);
+  }
+  if (data.stderr) {
+    lines.push("", "stderr:", data.stderr);
+  }
+  return lines.join("\n");
+}
+
+/** Formats structured npm init output into a human-readable initialization summary. */
+export function formatInit(data: NpmInit): string {
+  if (!data.success) {
+    return `Failed to initialize package.json at ${data.path}`;
+  }
+  return `Created ${data.packageName}@${data.version} at ${data.path}`;
 }
