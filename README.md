@@ -6,16 +6,20 @@ Pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap
 
 ## The Problem
 
-AI coding agents spend most of their tokens reading tool output designed for humans — ANSI colors, progress bars, ASCII art, instructional hints. This is wasteful and expensive.
+AI coding agents waste tokens on output designed for humans — ANSI colors, progress bars, download indicators, help suggestions, decorative formatting. This is expensive and error-prone to parse.
 
-| Tool Command                             | Raw Tokens | Pare Tokens | Reduction |
-| ---------------------------------------- | ---------: | ----------: | --------: |
-| `git log --stat` (5 commits, verbose)    |      4,992 |         382 |   **92%** |
-| `vitest run` (28 tests, all pass)        |        196 |          39 |   **80%** |
-| `git status` (working tree)              |         62 |          51 |   **18%** |
-| `git log --oneline` (5 commits, compact) |         59 |         382 |     -547% |
+| Tool Command                              | Raw Tokens | Pare Tokens | Reduction |
+| ----------------------------------------- | ---------: | ----------: | --------: |
+| `docker build` (multi-stage, 11 steps)    |        373 |          20 |   **95%** |
+| `git log --stat` (5 commits, verbose)     |      4,992 |         382 |   **92%** |
+| `npm install` (487 packages, warnings)    |        241 |          41 |   **83%** |
+| `vitest run` (28 tests, all pass)         |        196 |          39 |   **80%** |
+| `cargo build` (2 errors, help text)       |        436 |         138 |   **68%** |
+| `pip install` (9 packages, progress bars) |        288 |         101 |   **65%** |
+| `cargo test` (12 tests, 2 failures)       |        351 |         190 |   **46%** |
+| `npm audit` (4 vulnerabilities)           |        287 |         185 |   **36%** |
 
-> Token counts measured with `~4 chars/token` approximation. Savings are highest on verbose, human-formatted output (test runners, build logs, detailed git history). Compact output like `--oneline` is already token-efficient — structured JSON adds overhead there.
+> Token counts estimated at ~4 chars/token. Savings are highest on verbose, human-formatted output — build logs, install progress, test runners, and detailed history. For compact diagnostic tools like `eslint` or `tsc` (one line per issue), Pare's value is structured reliability over token savings: agents get typed JSON they can consume directly instead of regex-parsing human text.
 
 ## How It Works
 
@@ -288,7 +292,7 @@ Pare tools return structured JSON with fewer tokens than CLI output.
 | ----------------------------------- | ----------------------------------------------------------------------------------------- |
 | `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see Windows config above)                                       |
 | Slow first start                    | Run `npx -y @paretools/git` once to cache, or install globally: `npm i -g @paretools/git` |
-| Node.js version error               | Pare requires Node.js >= 18                                                               |
+| Node.js version error               | Pare requires Node.js >= 20                                                               |
 | NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                      |
 | MCP connection timeout              | Set `MCP_TIMEOUT=30000` for Claude Code, or increase `initTimeout` in client config       |
 | Too many tools filling context      | Only install the Pare servers relevant to your project, not all 9                         |
