@@ -137,4 +137,24 @@ describe("detectFramework", () => {
     expect(result).toBe("jest");
     await cleanup();
   });
+
+  it("handles corrupted package.json (invalid JSON) gracefully", async () => {
+    const dir = await createTempDir();
+    await writeFile(join(dir, "package.json"), "{ this is not valid json !!!");
+
+    // No config files, corrupted package.json => should throw "No supported test framework"
+    await expect(detectFramework(dir)).rejects.toThrow("No supported test framework detected");
+    await cleanup();
+  });
+
+  it("detects framework from config file even with corrupted package.json", async () => {
+    const dir = await createTempDir();
+    await writeFile(join(dir, "package.json"), "not json at all");
+    await writeFile(join(dir, "vitest.config.ts"), "export default {}");
+
+    // Config file should be detected even though package.json is corrupted
+    const result = await detectFramework(dir);
+    expect(result).toBe("vitest");
+    await cleanup();
+  });
 });

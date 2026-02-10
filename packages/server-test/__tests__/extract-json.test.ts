@@ -54,4 +54,22 @@ describe("extractJson", () => {
     const result = extractJson(output);
     expect(JSON.parse(result)).toEqual({ a: { b: 1 } });
   });
+
+  it("returns a string for truncated JSON (missing closing brace) that may not parse", () => {
+    // extractJson just extracts between first { and last }, so incomplete
+    // JSON with only an opening brace should throw
+    expect(() => extractJson('prefix { "key": "value"')).toThrow(/No JSON output found/);
+  });
+
+  it("handles truncated JSON where last } is from a nested object", () => {
+    // This tests that extractJson returns a substring even when JSON is incomplete
+    // The extracted string may not be valid JSON but extractJson doesn't validate
+    const output = 'prefix {"a": {"b": 1}, "c": "truncated... suffix';
+    // There is no } after the opening {, except inside the nested object
+    // First { is at "prefix " position, last } is after "1"
+    const result = extractJson(output);
+    // extractJson should return something (first { to last })
+    expect(result).toContain('"a"');
+    expect(result).toContain('"b"');
+  });
 });
