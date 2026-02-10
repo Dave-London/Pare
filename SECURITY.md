@@ -28,6 +28,4 @@ This policy covers all packages published under the `@paretools` npm scope.
 
 | Package                      | Supported |
 | ---------------------------- | --------- |
-| `@paretools/git` >= 0.1.0    | Yes       |
-| `@paretools/test` >= 0.1.0   | Yes       |
-| `@paretools/shared` >= 0.1.0 | Yes       |
+| `@paretools/*` >= 0.2.0 | Yes |

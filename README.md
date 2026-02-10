@@ -1,14 +1,14 @@
-# pare
+# Pare
 
 **Dev tools, optimized for agents. ~85% fewer tokens, 100% structured output.**
 
-pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap popular developer tools with structured, token-efficient, schema-validated output optimized for AI coding agents.
+Pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap popular developer tools with structured, token-efficient, schema-validated output optimized for AI coding agents.
 
 ## The Problem
 
 AI coding agents spend most of their tokens reading tool output designed for humans — ANSI colors, progress bars, ASCII art, instructional hints. This is wasteful and expensive.
 
-| Tool Command                  | Raw Tokens | pare Tokens | Reduction |
+| Tool Command                  | Raw Tokens | Pare Tokens | Reduction |
 | ----------------------------- | ---------: | ----------: | --------: |
 | `pytest` (47 tests, all pass) |        186 |           8 |   **96%** |
 | `pytest` (47 tests, 1 fail)   |      1,008 |          46 |   **95%** |
@@ -19,12 +19,12 @@ AI coding agents spend most of their tokens reading tool output designed for hum
 
 ## How It Works
 
-Every pare tool returns dual output:
+Every Pare tool returns dual output:
 
 - **`content`** — Human-readable text (for MCP clients that display it)
 - **`structuredContent`** — Typed, schema-validated JSON (for agents)
 
-pare uses MCP's `structuredContent` + `outputSchema` spec features to deliver type-safe, validated structured output that agents can consume directly.
+Pare uses MCP's `structuredContent` + `outputSchema` spec features to deliver type-safe, validated structured output that agents can consume directly.
 
 ## Available Servers
 
@@ -83,7 +83,7 @@ Untracked files:
         temp.log
 ```
 
-**pare structured output (28 tokens):**
+**Pare structured output (28 tokens):**
 
 ```json
 {

@@ -1,7 +1,7 @@
 {
   "name": "@paretools/shared",
   "version": "0.2.0",
-  "description": "Shared utilities for pare MCP servers",
+  "description": "Shared utilities for Pare MCP servers",
   "license": "MIT",
   "type": "module",
   "exports": {
