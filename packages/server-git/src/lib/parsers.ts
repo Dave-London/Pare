@@ -98,7 +98,7 @@ function parseBranchFromPorcelain(line: string): {
 
 export function parseLog(stdout: string): GitLog {
   // Format: hash|hashShort|author|email|date|refs|message
-  const DELIMITER = "\x1f";
+  const DELIMITER = "@@";
   const lines = stdout.trim().split("\n").filter(Boolean);
   const commits = lines.map((line) => {
     const [hash, hashShort, author, email, date, refs, ...messageParts] = line.split(DELIMITER);
@@ -170,7 +170,7 @@ export function parseBranch(stdout: string): GitBranch {
 
 export function parseShow(stdout: string, diffStdout: string): GitShow {
   // stdout is the formatted commit info, diffStdout is the numstat
-  const DELIMITER = "\x1f";
+  const DELIMITER = "@@";
   const parts = stdout.trim().split(DELIMITER);
   const [hash, author, email, date, ...messageParts] = parts;
   const diff = parseDiffStat(diffStdout);

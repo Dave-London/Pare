@@ -84,7 +84,7 @@ describe("parseStatus", () => {
 
 describe("parseLog", () => {
   it("parses formatted log output", () => {
-    const DELIM = "\x1f";
+    const DELIM = "@@";
     const stdout = [
       `abc1234567890${DELIM}abc1234${DELIM}Jane Doe${DELIM}jane@example.com${DELIM}2 hours ago${DELIM}HEAD -> main${DELIM}Fix the bug`,
       `def5678901234${DELIM}def5678${DELIM}John Smith${DELIM}john@example.com${DELIM}1 day ago${DELIM}${DELIM}Add feature X`,
@@ -169,7 +169,7 @@ describe("parseBranch", () => {
 
 describe("parseShow", () => {
   it("parses commit info and diff stats", () => {
-    const DELIM = "\x1f";
+    const DELIM = "@@";
     const commitInfo = `abc123${DELIM}Jane Doe${DELIM}jane@example.com${DELIM}2 hours ago${DELIM}Fix critical bug in parser`;
     const diffStat = "5\t2\tsrc/parser.ts\n1\t1\ttests/parser.test.ts";
 

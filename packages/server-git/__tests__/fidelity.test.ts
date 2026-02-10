@@ -100,7 +100,7 @@ describe("fidelity: git status", () => {
 
 describe("fidelity: git log", () => {
   it("preserves every commit hash from raw log", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=5"]);
 
@@ -126,7 +126,7 @@ describe("fidelity: git log", () => {
   });
 
   it("preserves commit messages", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=5"]);
 
@@ -144,7 +144,7 @@ describe("fidelity: git log", () => {
   });
 
   it("preserves author name and email", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=3"]);
 
@@ -277,7 +277,7 @@ describe("fidelity: git branch", () => {
 
 describe("fidelity: git show", () => {
   it("preserves commit metadata from raw show", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const FORMAT = `%H${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%B`;
 
     const rawFormatted = gitRaw(["show", "--no-patch", `--format=${FORMAT}`, "HEAD"]);
@@ -296,7 +296,7 @@ describe("fidelity: git show", () => {
   });
 
   it("preserves file list from show diff", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const FORMAT = `%H${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%B`;
 
     const rawFormatted = gitRaw(["show", "--no-patch", `--format=${FORMAT}`, "HEAD"]);
@@ -366,7 +366,7 @@ describe("fidelity: edge cases", () => {
   });
 
   it("parseLog handles commit message with special characters", () => {
-    const DELIMITER = "\x1f";
+    const DELIMITER = "@@";
     const line = `abc123${DELIMITER}abc${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}1 day ago${DELIMITER}HEAD -> main${DELIMITER}fix: handle "quotes" & <brackets>`;
     const log = parseLog(line);
     expect(log.commits[0].message).toBe('fix: handle "quotes" & <brackets>');
