@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@paretools/tsconfig", "@paretools/eslint-config"]
+  "ignore": []
 }
