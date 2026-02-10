@@ -42,22 +42,121 @@ Pare uses MCP's `structuredContent` + `outputSchema` spec features to deliver ty
 
 ## Quick Start
 
-Add to your MCP client config (e.g., Claude Code `~/.claude.json`):
+**Claude Code (recommended):**
+
+```bash
+claude mcp add --transport stdio pare-git -- npx -y @paretools/git
+claude mcp add --transport stdio pare-test -- npx -y @paretools/test
+```
+
+**Claude Code / Claude Desktop / Cursor / Windsurf / Cline / Roo Code / Gemini CLI** (`mcpServers` format):
 
 ```json
 {
   "mcpServers": {
     "pare-git": {
       "command": "npx",
-      "args": ["@paretools/git"]
+      "args": ["-y", "@paretools/git"]
     },
     "pare-test": {
       "command": "npx",
-      "args": ["@paretools/test"]
+      "args": ["-y", "@paretools/test"]
     }
   }
 }
 ```
+
+<details>
+<summary><strong>VS Code / GitHub Copilot</strong> (<code>.vscode/mcp.json</code>)</summary>
+
+```json
+{
+  "servers": {
+    "pare-git": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@paretools/git"]
+    },
+    "pare-test": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@paretools/test"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Zed</strong> (<code>settings.json</code>)</summary>
+
+```json
+{
+  "context_servers": {
+    "pare-git": {
+      "command": "npx",
+      "args": ["-y", "@paretools/git"],
+      "env": {}
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>OpenAI Codex</strong> (<code>.codex/config.toml</code>)</summary>
+
+```toml
+[mcp_servers.pare-git]
+command = "npx"
+args = ["-y", "@paretools/git"]
+
+[mcp_servers.pare-test]
+command = "npx"
+args = ["-y", "@paretools/test"]
+```
+
+</details>
+
+<details>
+<summary><strong>Continue.dev</strong> (<code>.continue/mcpServers/pare.yaml</code>)</summary>
+
+```yaml
+name: Pare Tools
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: pare-git
+    type: stdio
+    command: npx
+    args: ["-y", "@paretools/git"]
+  - name: pare-test
+    type: stdio
+    command: npx
+    args: ["-y", "@paretools/test"]
+```
+
+</details>
+
+<details>
+<summary><strong>Windows (all JSON clients)</strong></summary>
+
+On Windows, wrap `npx` with `cmd /c`:
+
+```json
+{
+  "mcpServers": {
+    "pare-git": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@paretools/git"]
+    }
+  }
+}
+```
+
+</details>
 
 ## Example: `git status`
 
@@ -103,6 +202,96 @@ Untracked files:
 ```
 
 50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
+
+## Telling Agents to Use Pare
+
+Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands:
+
+<details>
+<summary><strong>CLAUDE.md</strong> (Claude Code)</summary>
+
+```markdown
+## MCP Tools
+
+When Pare MCP tools are available (prefixed with mcp\_\_pare-\*), prefer them over
+running raw CLI commands via Bash. Pare tools return structured JSON with ~85%
+fewer tokens than CLI output.
+
+- Git: mcp**pare-git**status, mcp**pare-git**log, mcp**pare-git**diff, etc.
+- Tests: mcp**pare-test**run, mcp**pare-test**coverage
+- Builds: mcp**pare-build**tsc, mcp**pare-build**build
+- Linting: mcp**pare-lint**lint, mcp**pare-lint**format_check
+```
+
+</details>
+
+<details>
+<summary><strong>AGENTS.md</strong> (OpenAI Codex, Gemini CLI, Claude Code)</summary>
+
+```markdown
+## MCP Servers
+
+This project uses Pare MCP servers for structured, token-efficient dev tool output.
+Prefer Pare MCP tools over raw CLI commands for git, testing, building, and linting.
+Pare tools return typed JSON, saving tokens and preventing parsing errors.
+```
+
+</details>
+
+<details>
+<summary><strong>.cursor/rules/pare.mdc</strong> (Cursor)</summary>
+
+```markdown
+---
+description: Use Pare MCP tools for structured dev tool output
+globs: ["**/*"]
+alwaysApply: true
+---
+
+When Pare MCP tools are available, prefer them over running CLI commands in the
+terminal. Pare tools (pare-git, pare-test, pare-build, pare-lint, etc.) return
+structured JSON with ~85% fewer tokens than raw CLI output.
+```
+
+</details>
+
+<details>
+<summary><strong>.github/copilot-instructions.md</strong> (GitHub Copilot)</summary>
+
+```markdown
+## Tool Preferences
+
+This project uses Pare MCP servers (@paretools/\*) for structured dev tool output.
+When available, prefer pare-git, pare-test, pare-build, and pare-lint over raw CLI commands.
+```
+
+</details>
+
+<details>
+<summary><strong>GEMINI.md / .windsurfrules / .clinerules / .amazonq/rules/</strong></summary>
+
+```markdown
+When Pare MCP tools are available, prefer them over raw CLI commands.
+Pare tools return structured JSON with fewer tokens than CLI output.
+
+- pare-git: git status, log, diff, branch, show
+- pare-test: pytest, jest, vitest (run, coverage)
+- pare-build: tsc, generic builds
+- pare-lint: ESLint, Prettier
+```
+
+</details>
+
+## Troubleshooting
+
+| Issue                               | Solution                                                                                  |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see Windows config above)                                       |
+| Slow first start                    | Run `npx -y @paretools/git` once to cache, or install globally: `npm i -g @paretools/git` |
+| Node.js version error               | Pare requires Node.js >= 18                                                               |
+| NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                      |
+| MCP connection timeout              | Set `MCP_TIMEOUT=30000` for Claude Code, or increase `initTimeout` in client config       |
+| Too many tools filling context      | Only install the Pare servers relevant to your project, not all 9                         |
 
 ## Contributing
 
