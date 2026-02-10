@@ -1,0 +1,34 @@
+{
+  "name": "@paretools/build",
+  "version": "0.1.0",
+  "description": "MCP server for build tools (tsc, esbuild, etc.) with structured, token-efficient output",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pare-build": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@paretools/shared": "workspace:*",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@paretools/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
