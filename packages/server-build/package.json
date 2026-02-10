@@ -1,6 +1,6 @@
 {
   "name": "@paretools/build",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for build tools (tsc, esbuild, etc.) with structured, token-efficient output",
   "license": "MIT",
   "type": "module",
