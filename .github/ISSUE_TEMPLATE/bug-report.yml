@@ -10,6 +10,13 @@ body:
       options:
         - "@paretools/git"
         - "@paretools/test"
+        - "@paretools/build"
+        - "@paretools/npm"
+        - "@paretools/docker"
+        - "@paretools/lint"
+        - "@paretools/python"
+        - "@paretools/cargo"
+        - "@paretools/go"
         - "@paretools/shared"
         - Other
     validations:
