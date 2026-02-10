@@ -1,6 +1,6 @@
 {
   "name": "@paretools/cargo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "mcpName": "io.github.Dave-London/cargo",
   "description": "MCP server for Rust cargo (build, test, clippy) with structured, token-efficient output",
   "license": "MIT",
