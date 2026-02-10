@@ -210,4 +210,126 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
     expect(result.files[2].file).toBe("utils.js");
     expect(result.files[2].lines).toBe(80);
   });
+
+  it("parses many files with varying percentages", () => {
+    const output = [
+      "----------|---------|----------|---------|---------|-------------------",
+      "File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
+      "----------|---------|----------|---------|---------|-------------------",
+      "All files |   72.50 |    60.00 |   80.00 |   75.00 |",
+      " a.js     |  100.00 |   100.00 |  100.00 |  100.00 |",
+      " b.js     |   90.00 |    85.00 |   95.00 |   92.00 | 5",
+      " c.js     |   75.00 |    50.00 |   80.00 |   78.00 | 10-12",
+      " d.js     |   60.00 |    40.00 |   70.00 |   65.00 | 3-8,15",
+      " e.js     |   50.00 |    30.00 |   55.00 |   52.00 | 1-20",
+      " f.js     |   40.00 |    25.00 |   45.00 |   42.00 | 2-30",
+      " g.js     |   85.71 |    66.67 |   83.33 |   87.50 | 22",
+      "----------|---------|----------|---------|---------|-------------------",
+    ].join("\n");
+
+    const result = parseMochaCoverage(output);
+    expect(result.framework).toBe("mocha");
+    expect(result.summary.lines).toBe(75);
+    expect(result.summary.branches).toBe(60);
+    expect(result.summary.functions).toBe(80);
+    expect(result.files).toHaveLength(7);
+
+    expect(result.files[0].file).toBe("a.js");
+    expect(result.files[0].lines).toBe(100);
+    expect(result.files[6].file).toBe("g.js");
+    expect(result.files[6].lines).toBe(87.5);
+    expect(result.files[6].branches).toBe(66.67);
+    expect(result.files[6].functions).toBe(83.33);
+  });
+
+  it("parses decimal percentages accurately", () => {
+    const output = [
+      "----------|---------|----------|---------|---------|",
+      "File      | % Stmts | % Branch | % Funcs | % Lines |",
+      "----------|---------|----------|---------|---------|",
+      "All files |   33.33 |    16.67 |   66.67 |   33.33 |",
+      " math.js  |   33.33 |    16.67 |   66.67 |   33.33 |",
+      "----------|---------|----------|---------|---------|",
+    ].join("\n");
+
+    const result = parseMochaCoverage(output);
+    expect(result.summary.lines).toBe(33.33);
+    expect(result.summary.branches).toBe(16.67);
+    expect(result.summary.functions).toBe(66.67);
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].lines).toBe(33.33);
+    expect(result.files[0].branches).toBe(16.67);
+    expect(result.files[0].functions).toBe(66.67);
+  });
+
+  it("returns empty results for empty output", () => {
+    const result = parseMochaCoverage("");
+    expect(result.framework).toBe("mocha");
+    expect(result.summary.lines).toBe(0);
+    expect(result.summary.branches).toBe(0);
+    expect(result.summary.functions).toBe(0);
+    expect(result.files).toHaveLength(0);
+  });
+
+  it("returns empty results for non-table text", () => {
+    const result = parseMochaCoverage("some random output with no coverage table");
+    expect(result.framework).toBe("mocha");
+    expect(result.files).toHaveLength(0);
+    expect(result.summary.lines).toBe(0);
+  });
+
+  it("handles single file coverage", () => {
+    const output = [
+      "----------|---------|----------|---------|---------|",
+      "File      | % Stmts | % Branch | % Funcs | % Lines |",
+      "----------|---------|----------|---------|---------|",
+      "All files |   95.00 |    90.00 |  100.00 |   95.00 |",
+      " index.js |   95.00 |    90.00 |  100.00 |   95.00 |",
+      "----------|---------|----------|---------|---------|",
+    ].join("\n");
+
+    const result = parseMochaCoverage(output);
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].file).toBe("index.js");
+    expect(result.files[0].lines).toBe(95);
+    expect(result.files[0].branches).toBe(90);
+    expect(result.files[0].functions).toBe(100);
+    expect(result.summary.lines).toBe(95);
+  });
+
+  it("handles 100% coverage across all metrics", () => {
+    const output = [
+      "----------|---------|----------|---------|---------|",
+      "File      | % Stmts | % Branch | % Funcs | % Lines |",
+      "----------|---------|----------|---------|---------|",
+      "All files |  100.00 |   100.00 |  100.00 |  100.00 |",
+      " lib.js   |  100.00 |   100.00 |  100.00 |  100.00 |",
+      "----------|---------|----------|---------|---------|",
+    ].join("\n");
+
+    const result = parseMochaCoverage(output);
+    expect(result.summary.lines).toBe(100);
+    expect(result.summary.branches).toBe(100);
+    expect(result.summary.functions).toBe(100);
+    expect(result.files[0].lines).toBe(100);
+  });
+
+  it("handles 0% coverage across all metrics", () => {
+    const output = [
+      "----------|---------|----------|---------|---------|",
+      "File      | % Stmts | % Branch | % Funcs | % Lines |",
+      "----------|---------|----------|---------|---------|",
+      "All files |    0.00 |     0.00 |    0.00 |    0.00 |",
+      " empty.js |    0.00 |     0.00 |    0.00 |    0.00 | 1-50",
+      "----------|---------|----------|---------|---------|",
+    ].join("\n");
+
+    const result = parseMochaCoverage(output);
+    expect(result.summary.lines).toBe(0);
+    expect(result.summary.branches).toBe(0);
+    expect(result.summary.functions).toBe(0);
+    expect(result.files[0].lines).toBe(0);
+    expect(result.files[0].branches).toBe(0);
+    expect(result.files[0].functions).toBe(0);
+  });
 });

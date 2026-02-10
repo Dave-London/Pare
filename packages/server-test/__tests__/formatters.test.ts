@@ -41,6 +41,93 @@ describe("formatTestRun", () => {
     expect(output).toContain("api.test.ts:15");
     expect(output).toContain("should parse config");
   });
+
+  it("formats run with large failure array (10+ failures)", () => {
+    const failures: TestRun["failures"] = [];
+    for (let i = 1; i <= 12; i++) {
+      failures.push({
+        name: `test case ${i}`,
+        file: `suite${i}.test.ts`,
+        line: i * 10,
+        message: `Error in test ${i}`,
+      });
+    }
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 50, passed: 38, failed: 12, skipped: 0, duration: 5.2 },
+      failures,
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("50 tests");
+    expect(output).toContain("12 failed");
+    // All 12 failures should appear
+    for (let i = 1; i <= 12; i++) {
+      expect(output).toContain(`test case ${i}`);
+      expect(output).toContain(`suite${i}.test.ts:${i * 10}`);
+    }
+  });
+
+  it("formats run with zero duration", () => {
+    const run: TestRun = {
+      framework: "mocha",
+      summary: { total: 1, passed: 1, failed: 0, skipped: 0, duration: 0 },
+      failures: [],
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("PASS");
+    expect(output).toContain("0s");
+  });
+
+  it("formats failures with missing optional fields (no file/line)", () => {
+    const run: TestRun = {
+      framework: "jest",
+      summary: { total: 3, passed: 1, failed: 2, skipped: 0, duration: 0.5 },
+      failures: [
+        { name: "anonymous test 1", message: "Something broke" },
+        { name: "anonymous test 2", message: "Another error" },
+      ],
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("anonymous test 1");
+    expect(output).toContain("Something broke");
+    expect(output).toContain("anonymous test 2");
+    // Should not have file:line notation
+    expect(output).not.toContain("undefined");
+  });
+
+  it("formats run with very long test names", () => {
+    const longName =
+      "deeply nested describe > inner describe > should handle a very specific edge case when the input is extremely long and contains special characters like quotes and brackets";
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 1, passed: 0, failed: 1, skipped: 0, duration: 0.1 },
+      failures: [{ name: longName, file: "edge.test.ts", line: 99, message: "Timeout" }],
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain(longName);
+    expect(output).toContain("edge.test.ts:99");
+  });
+
+  it("formats all-skip results (0 passed, 0 failed, N skipped)", () => {
+    const run: TestRun = {
+      framework: "pytest",
+      summary: { total: 5, passed: 0, failed: 0, skipped: 5, duration: 0.02 },
+      failures: [],
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("PASS");
+    expect(output).toContain("5 tests");
+    expect(output).toContain("0 passed");
+    expect(output).toContain("0 failed");
+    expect(output).toContain("5 skipped");
+  });
 });
 
 describe("formatCoverage", () => {
@@ -71,5 +158,74 @@ describe("formatCoverage", () => {
     expect(output).toContain("87.5% lines");
     expect(output).toContain("66.67% branches");
     expect(output).toContain("100% functions");
+  });
+
+  it("formats 0% coverage", () => {
+    const cov: Coverage = {
+      framework: "mocha",
+      summary: { lines: 0, branches: 0, functions: 0 },
+      files: [{ file: "empty.js", lines: 0, branches: 0, functions: 0 }],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("0% lines");
+    expect(output).toContain("0% branches");
+    expect(output).toContain("0% functions");
+    expect(output).toContain("empty.js: 0% lines");
+  });
+
+  it("formats 100% coverage", () => {
+    const cov: Coverage = {
+      framework: "vitest",
+      summary: { lines: 100, branches: 100, functions: 100 },
+      files: [{ file: "perfect.ts", lines: 100, branches: 100, functions: 100 }],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("100% lines");
+    expect(output).toContain("100% branches");
+    expect(output).toContain("100% functions");
+    expect(output).toContain("perfect.ts: 100% lines");
+  });
+
+  it("formats coverage with undefined branches and functions", () => {
+    const cov: Coverage = {
+      framework: "pytest",
+      summary: { lines: 75 },
+      files: [{ file: "src/main.py", lines: 75 }],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("75% lines");
+    // Should not contain branches or functions info
+    expect(output).not.toContain("branches");
+    expect(output).not.toContain("functions");
+  });
+
+  it("formats coverage with no files", () => {
+    const cov: Coverage = {
+      framework: "jest",
+      summary: { lines: 0, branches: 0, functions: 0 },
+      files: [],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("Coverage (jest)");
+    expect(output).toContain("0% lines");
+    // Output should be a single line (summary only, no file entries)
+    expect(output.split("\n")).toHaveLength(1);
+  });
+
+  it("formats coverage with single file", () => {
+    const cov: Coverage = {
+      framework: "vitest",
+      summary: { lines: 85.5, branches: 70, functions: 90 },
+      files: [{ file: "index.ts", lines: 85.5, branches: 70, functions: 90 }],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("85.5% lines");
+    expect(output).toContain("index.ts: 85.5% lines");
+    expect(output.split("\n")).toHaveLength(2);
   });
 });

@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import { parseVitestJson, parseVitestCoverage } from "../src/lib/parsers/vitest.js";
 import { parseJestJson, parseJestCoverage } from "../src/lib/parsers/jest.js";
 import { parsePytestOutput, parsePytestCoverage } from "../src/lib/parsers/pytest.js";
+import { parseMochaCoverage } from "../src/lib/parsers/mocha.js";
 
 const GIT_PKG = process.cwd().replace(/packages[\\/]server-test$/, "packages/server-git");
 
@@ -768,5 +769,283 @@ describe("fidelity: pytest coverage parser (fixture-based)", () => {
     expect(parsed.framework).toBe("pytest");
     expect(parsed.files).toHaveLength(0);
     expect(parsed.summary.lines).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Jest coverage: fixture-based fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: jest coverage parser (fixture-based, expanded)", () => {
+  it("preserves all file percentages from a realistic multi-file coverage report", () => {
+    const coverageOutput = [
+      "----------|---------|----------|---------|---------|-------------------",
+      "File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
+      "----------|---------|----------|---------|---------|-------------------",
+      "All files |   78.26 |    62.50 |   83.33 |   76.47 |                  ",
+      " auth.ts  |   95.00 |    90.00 |  100.00 |   94.44 | 38               ",
+      " api.ts   |   72.73 |    50.00 |   80.00 |   70.00 | 12-18,25,30-35   ",
+      " db.ts    |  100.00 |   100.00 |  100.00 |  100.00 |                  ",
+      " utils.ts |   60.00 |    33.33 |   66.67 |   57.14 | 5-10,22-28,40    ",
+      " config.ts|   45.00 |    25.00 |   50.00 |   42.86 | 3-20             ",
+      "----------|---------|----------|---------|---------|-------------------",
+    ].join("\n");
+
+    const parsed = parseJestCoverage(coverageOutput);
+    expect(parsed.framework).toBe("jest");
+    expect(parsed.files).toHaveLength(5);
+
+    // Verify summary
+    expect(parsed.summary.lines).toBe(76.47);
+    expect(parsed.summary.branches).toBe(62.5);
+    expect(parsed.summary.functions).toBe(83.33);
+
+    // Verify each file's coverage is preserved
+    const auth = parsed.files.find((f) => f.file === "auth.ts")!;
+    expect(auth).toBeDefined();
+    expect(auth.lines).toBe(94.44);
+    expect(auth.branches).toBe(90);
+    expect(auth.functions).toBe(100);
+
+    const api = parsed.files.find((f) => f.file === "api.ts")!;
+    expect(api).toBeDefined();
+    expect(api.lines).toBe(70);
+    expect(api.branches).toBe(50);
+    expect(api.functions).toBe(80);
+
+    const db = parsed.files.find((f) => f.file === "db.ts")!;
+    expect(db).toBeDefined();
+    expect(db.lines).toBe(100);
+    expect(db.branches).toBe(100);
+    expect(db.functions).toBe(100);
+
+    const utils = parsed.files.find((f) => f.file === "utils.ts")!;
+    expect(utils).toBeDefined();
+    expect(utils.lines).toBe(57.14);
+    expect(utils.branches).toBe(33.33);
+    expect(utils.functions).toBe(66.67);
+
+    const config = parsed.files.find((f) => f.file.includes("config"))!;
+    expect(config).toBeDefined();
+    expect(config.lines).toBe(42.86);
+    expect(config.branches).toBe(25);
+    expect(config.functions).toBe(50);
+  });
+
+  it("preserves line/branch/function percentages from jest --coverage --json styled text output", () => {
+    // Simulates output from jest --coverage with text reporter including subdirectories
+    const coverageOutput = [
+      "---------------|---------|----------|---------|---------|-------------------",
+      "File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
+      "---------------|---------|----------|---------|---------|-------------------",
+      "All files      |   85.71 |    66.67 |   90.91 |   85.71 |                  ",
+      " index.ts      |  100.00 |   100.00 |  100.00 |  100.00 |                  ",
+      " middleware.ts  |   80.00 |    50.00 |   85.71 |   80.00 | 15,22-25         ",
+      " routes.ts     |   77.78 |    55.56 |   87.50 |   77.78 | 8,30-35          ",
+      "---------------|---------|----------|---------|---------|-------------------",
+    ].join("\n");
+
+    const parsed = parseJestCoverage(coverageOutput);
+    expect(parsed.summary.lines).toBe(85.71);
+    expect(parsed.summary.branches).toBe(66.67);
+    expect(parsed.summary.functions).toBe(90.91);
+    expect(parsed.files).toHaveLength(3);
+
+    // Verify every file from the table is present
+    const fileNames = parsed.files.map((f) => f.file);
+    expect(fileNames).toContain("index.ts");
+    expect(fileNames).toContain("middleware.ts");
+    expect(fileNames).toContain("routes.ts");
+
+    // Verify specific values are not rounded or altered
+    const routes = parsed.files.find((f) => f.file === "routes.ts")!;
+    expect(routes.lines).toBe(77.78);
+    expect(routes.branches).toBe(55.56);
+    expect(routes.functions).toBe(87.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pytest coverage: expanded fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: pytest coverage parser (expanded)", () => {
+  it("preserves all file coverage from a realistic multi-module project", () => {
+    const output = [
+      "---------- coverage: platform linux, python 3.12.1 ----------",
+      "Name                      Stmts   Miss  Cover",
+      "-----------------------------------------------",
+      "src/__init__.py               5      0   100%",
+      "src/auth.py                  45      3    93%",
+      "src/api/routes.py            80     12    85%",
+      "src/api/middleware.py         35      7    80%",
+      "src/db/connection.py          20      2    90%",
+      "src/db/models.py             60     15    75%",
+      "src/utils/helpers.py         30      0   100%",
+      "src/utils/validators.py      25      5    80%",
+      "-----------------------------------------------",
+      "TOTAL                       300     44    85%",
+    ].join("\n");
+
+    const parsed = parsePytestCoverage(output);
+    expect(parsed.framework).toBe("pytest");
+    expect(parsed.summary.lines).toBe(85);
+    expect(parsed.files).toHaveLength(8);
+
+    // Verify specific files
+    const authFile = parsed.files.find((f) => f.file === "src/auth.py")!;
+    expect(authFile).toBeDefined();
+    expect(authFile.lines).toBe(93);
+
+    const routesFile = parsed.files.find((f) => f.file === "src/api/routes.py")!;
+    expect(routesFile).toBeDefined();
+    expect(routesFile.lines).toBe(85);
+
+    const helpersFile = parsed.files.find((f) => f.file === "src/utils/helpers.py")!;
+    expect(helpersFile).toBeDefined();
+    expect(helpersFile.lines).toBe(100);
+
+    const modelsFile = parsed.files.find((f) => f.file === "src/db/models.py")!;
+    expect(modelsFile).toBeDefined();
+    expect(modelsFile.lines).toBe(75);
+  });
+
+  it("parsePytestCoverage handles single file coverage", () => {
+    const output = [
+      "---------- coverage: platform win32, python 3.11.0 ----------",
+      "Name          Stmts   Miss  Cover",
+      "---------------------------------",
+      "main.py          10      0   100%",
+      "---------------------------------",
+      "TOTAL            10      0   100%",
+    ].join("\n");
+
+    const parsed = parsePytestCoverage(output);
+    expect(parsed.summary.lines).toBe(100);
+    expect(parsed.files).toHaveLength(1);
+    expect(parsed.files[0].file).toBe("main.py");
+    expect(parsed.files[0].lines).toBe(100);
+  });
+
+  it("parsePytestCoverage handles 0% coverage", () => {
+    const output = [
+      "---------- coverage: platform linux, python 3.11.5 ----------",
+      "Name          Stmts   Miss  Cover",
+      "---------------------------------",
+      "empty.py         20     20     0%",
+      "---------------------------------",
+      "TOTAL            20     20     0%",
+    ].join("\n");
+
+    const parsed = parsePytestCoverage(output);
+    expect(parsed.summary.lines).toBe(0);
+    expect(parsed.files).toHaveLength(1);
+    expect(parsed.files[0].lines).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mocha/nyc coverage: fixture-based fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: mocha/nyc coverage parser (fixture-based)", () => {
+  it("preserves all files and percentages from realistic nyc text output", () => {
+    const coverageOutput = [
+      "----------|---------|----------|---------|---------|-------------------",
+      "File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
+      "----------|---------|----------|---------|---------|-------------------",
+      "All files |   79.41 |    65.22 |   85.00 |   78.79 |                  ",
+      " app.js   |   90.00 |    80.00 |  100.00 |   88.89 | 45               ",
+      " auth.js  |   85.71 |    66.67 |   90.00 |   84.62 | 12,28-30         ",
+      " db.js    |  100.00 |   100.00 |  100.00 |  100.00 |                  ",
+      " routes.js|   60.00 |    40.00 |   66.67 |   57.14 | 5-15,22-30       ",
+      " utils.js |   55.56 |    33.33 |   75.00 |   53.33 | 8-20,35-40       ",
+      "----------|---------|----------|---------|---------|-------------------",
+    ].join("\n");
+
+    const parsed = parseMochaCoverage(coverageOutput);
+    expect(parsed.framework).toBe("mocha");
+    expect(parsed.files).toHaveLength(5);
+
+    // Verify summary
+    expect(parsed.summary.lines).toBe(78.79);
+    expect(parsed.summary.branches).toBe(65.22);
+    expect(parsed.summary.functions).toBe(85);
+
+    // Verify each file
+    const app = parsed.files.find((f) => f.file === "app.js")!;
+    expect(app).toBeDefined();
+    expect(app.lines).toBe(88.89);
+    expect(app.branches).toBe(80);
+    expect(app.functions).toBe(100);
+
+    const auth = parsed.files.find((f) => f.file === "auth.js")!;
+    expect(auth).toBeDefined();
+    expect(auth.lines).toBe(84.62);
+    expect(auth.branches).toBe(66.67);
+    expect(auth.functions).toBe(90);
+
+    const db = parsed.files.find((f) => f.file === "db.js")!;
+    expect(db).toBeDefined();
+    expect(db.lines).toBe(100);
+    expect(db.branches).toBe(100);
+    expect(db.functions).toBe(100);
+
+    const utils = parsed.files.find((f) => f.file === "utils.js")!;
+    expect(utils).toBeDefined();
+    expect(utils.lines).toBe(53.33);
+    expect(utils.branches).toBe(33.33);
+    expect(utils.functions).toBe(75);
+  });
+
+  it("parseMochaCoverage handles output with surrounding nyc banner text", () => {
+    const coverageOutput = [
+      "",
+      "  8 passing (1s)",
+      "  1 failing",
+      "",
+      "----------|---------|----------|---------|---------|-------------------",
+      "File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
+      "----------|---------|----------|---------|---------|-------------------",
+      "All files |   92.31 |    85.71 |   95.00 |   91.67 |                  ",
+      " index.js |   92.31 |    85.71 |   95.00 |   91.67 | 18,22            ",
+      "----------|---------|----------|---------|---------|-------------------",
+      "",
+    ].join("\n");
+
+    const parsed = parseMochaCoverage(coverageOutput);
+    expect(parsed.summary.lines).toBe(91.67);
+    expect(parsed.summary.branches).toBe(85.71);
+    expect(parsed.summary.functions).toBe(95);
+    expect(parsed.files).toHaveLength(1);
+    expect(parsed.files[0].file).toBe("index.js");
+  });
+
+  it("parseMochaCoverage preserves decimal precision in all percentages", () => {
+    const coverageOutput = [
+      "----------|---------|----------|---------|---------|",
+      "File      | % Stmts | % Branch | % Funcs | % Lines |",
+      "----------|---------|----------|---------|---------|",
+      "All files |   33.33 |    16.67 |   66.67 |   33.33 |",
+      " a.js     |   33.33 |    16.67 |   66.67 |   33.33 |",
+      " b.js     |   14.29 |     8.33 |   42.86 |   14.29 |",
+      "----------|---------|----------|---------|---------|",
+    ].join("\n");
+
+    const parsed = parseMochaCoverage(coverageOutput);
+
+    // Verify decimal precision is preserved, not rounded
+    expect(parsed.summary.lines).toBe(33.33);
+    expect(parsed.summary.branches).toBe(16.67);
+    expect(parsed.summary.functions).toBe(66.67);
+
+    const a = parsed.files.find((f) => f.file === "a.js")!;
+    expect(a.lines).toBe(33.33);
+    expect(a.branches).toBe(16.67);
+
+    const b = parsed.files.find((f) => f.file === "b.js")!;
+    expect(b.lines).toBe(14.29);
+    expect(b.branches).toBe(8.33);
+    expect(b.functions).toBe(42.86);
   });
 });
