@@ -1,6 +1,6 @@
 {
   "name": "@paretools/go",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "mcpName": "io.github.Dave-London/go",
   "description": "MCP server for Go tools (build, test, vet, run, mod-tidy, fmt, generate) with structured, token-efficient output",
   "license": "MIT",
@@ -9,8 +9,18 @@
     "mcp-server",
     "model-context-protocol",
     "structured-output",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
     "go",
-    "golang"
+    "golang",
+    "gofmt",
+    "go-test"
   ],
   "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-go",
   "engines": {

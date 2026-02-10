@@ -21,9 +21,7 @@ describe("assertNoFlagInjection — run tool (image param)", () => {
   });
 
   it("accepts an image with sha256 digest", () => {
-    expect(() =>
-      assertNoFlagInjection("nginx@sha256:abc123def456", "image"),
-    ).not.toThrow();
+    expect(() => assertNoFlagInjection("nginx@sha256:abc123def456", "image")).not.toThrow();
   });
 
   it("rejects --privileged", () => {
@@ -89,9 +87,7 @@ describe("assertNoFlagInjection — exec tool (container param)", () => {
   });
 
   it("rejects --workdir=/tmp", () => {
-    expect(() => assertNoFlagInjection("--workdir=/tmp", "container")).toThrow(
-      /Invalid container/,
-    );
+    expect(() => assertNoFlagInjection("--workdir=/tmp", "container")).toThrow(/Invalid container/);
   });
 
   it("rejects -e (env injection)", () => {
@@ -109,9 +105,7 @@ describe("assertNoFlagInjection — pull tool (image param)", () => {
   });
 
   it("accepts a private registry image", () => {
-    expect(() =>
-      assertNoFlagInjection("ghcr.io/owner/repo:latest", "image"),
-    ).not.toThrow();
+    expect(() => assertNoFlagInjection("ghcr.io/owner/repo:latest", "image")).not.toThrow();
   });
 
   it("rejects --all-tags", () => {

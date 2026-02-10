@@ -89,8 +89,7 @@ describe("parseComposeUpOutput", () => {
   });
 
   it("parses missing compose file error", () => {
-    const stderr =
-      "no configuration file provided: not found\nvalidating: no compose file found";
+    const stderr = "no configuration file provided: not found\nvalidating: no compose file found";
 
     const result = parseComposeUpOutput("", stderr, 14);
 

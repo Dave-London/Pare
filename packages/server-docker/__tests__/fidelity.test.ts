@@ -474,8 +474,7 @@ describe("fidelity: parseImagesJson", () => {
 // Fixtures: docker run
 // ---------------------------------------------------------------------------
 
-const RUN_DETACHED_OUTPUT =
-  "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n";
+const RUN_DETACHED_OUTPUT = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n";
 
 const RUN_ATTACHED_OUTPUT = [
   "Starting application server...",
@@ -490,7 +489,8 @@ const RUN_ATTACHED_SINGLE_LINE = "Hello, World!\n";
 // Fixtures: docker exec
 // ---------------------------------------------------------------------------
 
-const EXEC_LS_STDOUT = "bin\ndev\netc\nhome\nlib\nmedia\nmnt\nopt\nproc\nroot\nrun\nsbin\nsrv\nsys\ntmp\nusr\nvar\n";
+const EXEC_LS_STDOUT =
+  "bin\ndev\netc\nhome\nlib\nmedia\nmnt\nopt\nproc\nroot\nrun\nsbin\nsrv\nsys\ntmp\nusr\nvar\n";
 
 const EXEC_CAT_STDOUT = `server {
     listen 80;
@@ -502,7 +502,7 @@ const EXEC_CAT_STDOUT = `server {
 }`;
 
 const EXEC_FAILED_STDERR =
-  "OCI runtime exec failed: exec failed: unable to start container process: exec: \"nonexistent-cmd\": executable file not found in $PATH: unknown";
+  'OCI runtime exec failed: exec failed: unable to start container process: exec: "nonexistent-cmd": executable file not found in $PATH: unknown';
 
 // ---------------------------------------------------------------------------
 // Fixtures: docker compose up
@@ -511,8 +511,8 @@ const EXEC_FAILED_STDERR =
 const COMPOSE_UP_FULL = [
   " Network myproject_default  Creating",
   " Network myproject_default  Created",
-  " Volume \"myproject_db-data\"  Creating",
-  " Volume \"myproject_db-data\"  Created",
+  ' Volume "myproject_db-data"  Creating',
+  ' Volume "myproject_db-data"  Created',
   " Container myproject-postgres-1  Creating",
   " Container myproject-redis-1     Creating",
   " Container myproject-api-1       Creating",
@@ -695,7 +695,7 @@ describe("fidelity: parseExecOutput", () => {
   });
 
   it("exit code 127 (command not found in PATH)", () => {
-    const stderr = "exec: \"missing-tool\": executable file not found in $PATH";
+    const stderr = 'exec: "missing-tool": executable file not found in $PATH';
     const result = parseExecOutput("", stderr, 127);
 
     expect(result.success).toBe(false);
@@ -805,20 +805,14 @@ describe("fidelity: parseComposeDownOutput", () => {
   });
 
   it("Stopping lines are not counted as Stopped", () => {
-    const stderr = [
-      " Container app-1  Stopping",
-      " Container app-1  Stopping",
-    ].join("\n");
+    const stderr = [" Container app-1  Stopping", " Container app-1  Stopping"].join("\n");
 
     const result = parseComposeDownOutput("", stderr, 0);
     expect(result.stopped).toBe(0); // Stopping !== Stopped
   });
 
   it("Removing lines are not counted as Removed", () => {
-    const stderr = [
-      " Container app-1  Removing",
-      " Container app-1  Removing",
-    ].join("\n");
+    const stderr = [" Container app-1  Removing", " Container app-1  Removing"].join("\n");
 
     const result = parseComposeDownOutput("", stderr, 0);
     expect(result.removed).toBe(0); // Removing !== Removed

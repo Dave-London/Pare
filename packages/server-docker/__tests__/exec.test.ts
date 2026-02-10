@@ -70,8 +70,7 @@ describe("parseExecOutput", () => {
   });
 
   it("parses container not running error (exit 1)", () => {
-    const stderr =
-      "Error response from daemon: container abc123 is not running";
+    const stderr = "Error response from daemon: container abc123 is not running";
     const result = parseExecOutput("", stderr, 1);
 
     expect(result.exitCode).toBe(1);

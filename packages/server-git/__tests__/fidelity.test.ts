@@ -867,7 +867,15 @@ describe("fidelity: git checkout (write tool)", () => {
 
   it("parseCheckout captures branch switch", () => {
     repo.git(["checkout", "-b", "dev"]);
-    repo.git(["checkout", repo.git(["branch"]).trim().split("\n").find((l) => !l.startsWith("*"))?.trim() || "master"]);
+    repo.git([
+      "checkout",
+      repo
+        .git(["branch"])
+        .trim()
+        .split("\n")
+        .find((l) => !l.startsWith("*"))
+        ?.trim() || "master",
+    ]);
 
     const previousBranch = repo.git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
     const stderr = repo.git(["checkout", "dev"]);

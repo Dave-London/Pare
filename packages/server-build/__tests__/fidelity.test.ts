@@ -285,7 +285,7 @@ const ESBUILD_REALISTIC_ERROR = [
   "      1 │ import React from 'react';",
   "        ╵                   ~~~~~~~",
   "",
-  "  You can mark the path \"react\" as external to exclude it from the bundle. You",
+  '  You can mark the path "react" as external to exclude it from the bundle. You',
   '  can also use the "alias" feature to substitute a different package for this one.',
   "",
   '✘ [ERROR] Expected ";" but found "}"',
@@ -480,13 +480,8 @@ const WEBPACK_REALISTIC_ERROR_JSON = JSON.stringify({
     },
     { message: "Module build failed (from ./node_modules/ts-loader/index.js):\nSyntaxError" },
   ],
-  warnings: [
-    "Critical dependency: the request of a dependency is an expression",
-  ],
-  modules: [
-    { name: "./src/index.ts" },
-    { name: "./src/broken.ts" },
-  ],
+  warnings: ["Critical dependency: the request of a dependency is an expression"],
+  modules: [{ name: "./src/index.ts" }, { name: "./src/broken.ts" }],
 });
 
 // ---------------------------------------------------------------------------

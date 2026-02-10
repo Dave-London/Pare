@@ -150,7 +150,7 @@ describe("error paths: non-ASCII characters", () => {
   });
 
   it("parseGoBuildOutput handles CJK characters in error messages", () => {
-    const stderr = 'main.go:12:7: \u672a\u5b9a\u7fa9\u306e\u5909\u6570: x';
+    const stderr = "main.go:12:7: \u672a\u5b9a\u7fa9\u306e\u5909\u6570: x";
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
@@ -239,7 +239,7 @@ describe("error paths: parseGoBuildOutput multi-line errors", () => {
   });
 
   it("handles errors with colons in the message", () => {
-    const stderr = 'main.go:1:1: expected \'package\', found \'EOF\'';
+    const stderr = "main.go:1:1: expected 'package', found 'EOF'";
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);

@@ -1,6 +1,6 @@
 {
   "name": "@paretools/build",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "mcpName": "io.github.Dave-London/build",
   "description": "MCP server for build tools (tsc, esbuild, etc.) with structured, token-efficient output",
   "license": "MIT",
@@ -9,8 +9,20 @@
     "mcp-server",
     "model-context-protocol",
     "structured-output",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
     "build",
-    "typescript"
+    "typescript",
+    "esbuild",
+    "vite",
+    "webpack",
+    "bundler"
   ],
   "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-build",
   "engines": {

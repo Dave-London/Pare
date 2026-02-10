@@ -1,6 +1,6 @@
 {
   "name": "@paretools/python",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "mcpName": "io.github.Dave-London/python",
   "description": "MCP server for Python tools (pip, mypy, ruff) with structured, token-efficient output",
   "license": "MIT",
@@ -9,9 +9,21 @@
     "mcp-server",
     "model-context-protocol",
     "structured-output",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
     "python",
     "mypy",
-    "ruff"
+    "ruff",
+    "pytest",
+    "uv",
+    "black",
+    "pip"
   ],
   "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-python",
   "engines": {

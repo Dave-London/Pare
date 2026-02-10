@@ -1,6 +1,6 @@
 {
   "name": "@paretools/git",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "mcpName": "io.github.Dave-London/git",
   "description": "MCP server for git with structured, token-efficient output",
   "license": "MIT",
@@ -9,7 +9,17 @@
     "mcp-server",
     "model-context-protocol",
     "structured-output",
-    "git"
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
+    "git",
+    "github",
+    "version-control"
   ],
   "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-git",
   "engines": {

@@ -44,9 +44,7 @@ describe("assertNoFlagInjection", () => {
   describe("rejects all flag-like inputs", () => {
     for (const input of MALICIOUS_INPUTS) {
       it(`throws for "${input}"`, () => {
-        expect(() => assertNoFlagInjection(input, "test param")).toThrow(
-          /must not start with "-"/,
-        );
+        expect(() => assertNoFlagInjection(input, "test param")).toThrow(/must not start with "-"/);
       });
     }
   });
@@ -94,17 +92,13 @@ describe("security: commit tool — message validation", () => {
 describe("security: push tool — remote and branch validation", () => {
   it("rejects flag-like remote names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "remote")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "remote")).toThrow(/must not start with "-"/);
     }
   });
 
   it("rejects flag-like branch names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(/must not start with "-"/);
     }
   });
 });
@@ -112,17 +106,13 @@ describe("security: push tool — remote and branch validation", () => {
 describe("security: pull tool — remote and branch validation", () => {
   it("rejects flag-like remote names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "remote")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "remote")).toThrow(/must not start with "-"/);
     }
   });
 
   it("rejects flag-like branch names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(/must not start with "-"/);
     }
   });
 });
@@ -130,9 +120,7 @@ describe("security: pull tool — remote and branch validation", () => {
 describe("security: checkout tool — ref validation", () => {
   it("rejects flag-like refs", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(/must not start with "-"/);
     }
   });
 });
@@ -140,9 +128,7 @@ describe("security: checkout tool — ref validation", () => {
 describe("security: diff tool — ref validation", () => {
   it("rejects flag-like refs", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(
-        /must not start with "-"/,
-      );
+      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(/must not start with "-"/);
     }
   });
 });

@@ -1,6 +1,9 @@
 # @paretools/shared
 
-Shared utilities for Pare MCP servers.
+[![npm](https://img.shields.io/npm/v/@paretools/shared.svg)](https://www.npmjs.com/package/@paretools/shared)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/pare/blob/main/LICENSE)
+
+Shared utilities for [Pare](https://github.com/Dave-London/pare) MCP servers.
 
 ## Exports
 

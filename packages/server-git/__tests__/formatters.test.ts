@@ -332,9 +332,7 @@ describe("formatDiff (expanded)", () => {
 
   it("formats diff with renamed file", () => {
     const diff: GitDiff = {
-      files: [
-        { file: "{old => new}/index.ts", status: "renamed", additions: 3, deletions: 1 },
-      ],
+      files: [{ file: "{old => new}/index.ts", status: "renamed", additions: 3, deletions: 1 }],
       totalAdditions: 3,
       totalDeletions: 1,
       totalFiles: 1,

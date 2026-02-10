@@ -585,7 +585,12 @@ describe("fidelity: npm test", () => {
 
 describe("fidelity: npm init", () => {
   it("preserves package.json metadata from successful init", () => {
-    const result = parseInitOutput(true, "my-new-app", "1.0.0", "/home/user/projects/my-new-app/package.json");
+    const result = parseInitOutput(
+      true,
+      "my-new-app",
+      "1.0.0",
+      "/home/user/projects/my-new-app/package.json",
+    );
 
     expect(result.success).toBe(true);
     expect(result.packageName).toBe("my-new-app");
@@ -594,7 +599,12 @@ describe("fidelity: npm init", () => {
   });
 
   it("preserves scoped package name from init", () => {
-    const result = parseInitOutput(true, "@company/shared-utils", "0.1.0", "/workspace/shared-utils/package.json");
+    const result = parseInitOutput(
+      true,
+      "@company/shared-utils",
+      "0.1.0",
+      "/workspace/shared-utils/package.json",
+    );
 
     expect(result.success).toBe(true);
     expect(result.packageName).toBe("@company/shared-utils");

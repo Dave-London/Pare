@@ -324,12 +324,7 @@ describe("parseCargoTestOutput edge cases", () => {
 
 describe("parseCargoFmtOutput edge cases", () => {
   it("ignores non-.rs file paths in direct listing mode", () => {
-    const stdout = [
-      "src/main.rs",
-      "src/config.toml",
-      "README.md",
-      "src/lib.rs",
-    ].join("\n");
+    const stdout = ["src/main.rs", "src/config.toml", "README.md", "src/lib.rs"].join("\n");
 
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 
@@ -341,10 +336,7 @@ describe("parseCargoFmtOutput edge cases", () => {
   });
 
   it("ignores .rs.bak and other non-.rs extensions", () => {
-    const stdout = [
-      "src/gen/file.rs.bak",
-      "src/main.rs",
-    ].join("\n");
+    const stdout = ["src/gen/file.rs.bak", "src/main.rs"].join("\n");
 
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 
@@ -354,10 +346,9 @@ describe("parseCargoFmtOutput edge cases", () => {
   });
 
   it("handles nested paths in Diff format", () => {
-    const stdout = [
-      "Diff in src/gen/deeply/nested/file.rs at line 5:",
-      "+    let x = 1;",
-    ].join("\n");
+    const stdout = ["Diff in src/gen/deeply/nested/file.rs at line 5:", "+    let x = 1;"].join(
+      "\n",
+    );
 
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 

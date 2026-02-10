@@ -23,6 +23,305 @@ Run `pnpm changelog` to regenerate the sections below from per-package changelog
 
 <!-- BEGIN AGGREGATED CHANGELOG -->
 
+### 0.5.0
+
+#### @paretools/build
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/cargo
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/docker
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/git
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/go
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/lint
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/npm
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/python
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+#### @paretools/shared
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+#### @paretools/test
+
+### Minor Changes
+
+- v0.5.0 release — 62 tools across 9 language servers.
+
+  ### New Tools (since v0.3.0)
+  - **git**: add, commit, push, pull, checkout (full git workflow)
+  - **docker**: run, exec, compose-up, compose-down, pull (full container lifecycle)
+  - **cargo**: run, add, remove, fmt, doc, check (full Rust workflow)
+  - **python**: pytest, uv-install, uv-run, black (testing + formatting)
+  - **npm**: run, test, init (script execution + project scaffolding)
+  - **go**: run, mod-tidy, fmt, generate (full Go workflow)
+  - **build**: esbuild, vite-build, webpack (bundler support)
+  - **lint**: prettier-format, biome-check, biome-format (Biome + write mode)
+
+  ### Testing
+  - Expanded test suite from 305 to 1,334 tests across 80+ files
+  - Added fidelity, integration, and runner tests for all packages
+
+  ### Discoverability
+  - Updated all per-package READMEs with complete tool listings, badges, and cross-references
+  - Expanded npm keywords for better search visibility
+  - Added CI, version, license, and Node.js badges to root README
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.5.0
+
+---
+
 ### 0.3.0
 
 #### @paretools/build

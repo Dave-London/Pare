@@ -376,10 +376,7 @@ describe("fidelity: go run", () => {
   });
 
   it("parses failed run with compile error", () => {
-    const stderr = [
-      "# command-line-arguments",
-      "./main.go:5:2: undefined: fmt.Prinln",
-    ].join("\n");
+    const stderr = ["# command-line-arguments", "./main.go:5:2: undefined: fmt.Prinln"].join("\n");
     const result = parseGoRunOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
@@ -464,7 +461,7 @@ describe("fidelity: go mod tidy", () => {
   it("reports failure with dependency resolution conflict", () => {
     const stderr = [
       "go: example.com/foo@v1.2.3 requires",
-      "\texample.com/bar@v2.0.0: version \"v2.0.0\" invalid: unknown revision v2.0.0",
+      '\texample.com/bar@v2.0.0: version "v2.0.0" invalid: unknown revision v2.0.0',
     ].join("\n");
     const result = parseGoModTidyOutput("", stderr, 1);
 
@@ -487,21 +484,14 @@ describe("fidelity: go mod tidy", () => {
 // ---------------------------------------------------------------------------
 describe("fidelity: gofmt", () => {
   it("lists unformatted files in check mode (-l)", () => {
-    const stdout = [
-      "main.go",
-      "cmd/server/handler.go",
-      "internal/util/helpers.go",
-    ].join("\n") + "\n";
+    const stdout =
+      ["main.go", "cmd/server/handler.go", "internal/util/helpers.go"].join("\n") + "\n";
 
     const result = parseGoFmtOutput(stdout, "", 0, true);
 
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(3);
-    expect(result.files).toEqual([
-      "main.go",
-      "cmd/server/handler.go",
-      "internal/util/helpers.go",
-    ]);
+    expect(result.files).toEqual(["main.go", "cmd/server/handler.go", "internal/util/helpers.go"]);
   });
 
   it("returns success when no files need formatting (check mode)", () => {
@@ -550,10 +540,10 @@ describe("fidelity: go generate", () => {
   });
 
   it("preserves generator stdout output", () => {
-    const stdout = [
-      "mockgen -source=service.go -destination=mock_service.go",
-      "stringer -type=Color",
-    ].join("\n") + "\n";
+    const stdout =
+      ["mockgen -source=service.go -destination=mock_service.go", "stringer -type=Color"].join(
+        "\n",
+      ) + "\n";
     const result = parseGoGenerateOutput(stdout, "", 0);
 
     expect(result.success).toBe(true);
@@ -582,10 +572,11 @@ describe("fidelity: go generate", () => {
   });
 
   it("parses generate failure with bad directive syntax", () => {
-    const stderr = [
-      "main.go:3: bad flag syntax in //go:generate directive",
-      "types.go:7: invalid go:generate directive",
-    ].join("\n") + "\n";
+    const stderr =
+      [
+        "main.go:3: bad flag syntax in //go:generate directive",
+        "types.go:7: invalid go:generate directive",
+      ].join("\n") + "\n";
     const result = parseGoGenerateOutput("", stderr, 1);
 
     expect(result.success).toBe(false);

@@ -1,17 +1,27 @@
 {
   "name": "@paretools/lint",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "mcpName": "io.github.Dave-London/lint",
-  "description": "MCP server for linters (ESLint, Prettier) with structured, token-efficient output",
+  "description": "MCP server for linters (ESLint, Prettier, Biome) with structured, token-efficient output",
   "license": "MIT",
   "keywords": [
     "mcp",
     "mcp-server",
     "model-context-protocol",
     "structured-output",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
     "eslint",
     "prettier",
-    "linting"
+    "biome",
+    "linting",
+    "formatter"
   ],
   "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-lint",
   "engines": {

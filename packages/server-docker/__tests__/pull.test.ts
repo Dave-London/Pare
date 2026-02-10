@@ -105,7 +105,7 @@ describe("parsePullOutput", () => {
 
   it("parses auth failure (unauthorized)", () => {
     const stderr =
-      "Error response from daemon: Head \"https://registry.example.com/v2/myapp/manifests/latest\": unauthorized: authentication required";
+      'Error response from daemon: Head "https://registry.example.com/v2/myapp/manifests/latest": unauthorized: authentication required';
 
     const result = parsePullOutput("", stderr, 1, "registry.example.com/myapp:latest");
 
@@ -141,7 +141,7 @@ describe("parsePullOutput", () => {
 
   it("parses network timeout error", () => {
     const stderr =
-      "Error response from daemon: Get \"https://registry-1.docker.io/v2/\": net/http: request canceled while waiting for connection";
+      'Error response from daemon: Get "https://registry-1.docker.io/v2/": net/http: request canceled while waiting for connection';
 
     const result = parsePullOutput("", stderr, 1, "alpine:3.19");
 

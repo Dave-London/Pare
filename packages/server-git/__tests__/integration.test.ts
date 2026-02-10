@@ -207,7 +207,7 @@ describe("@paretools/git write-tool integration", () => {
       expect(sc).toBeDefined();
       expect(sc.staged).toEqual(expect.any(Number));
       expect(Array.isArray(sc.files)).toBe(true);
-      expect((sc.staged as number)).toBeGreaterThanOrEqual(1);
+      expect(sc.staged as number).toBeGreaterThanOrEqual(1);
     });
 
     it("stages all files with all=true", async () => {
@@ -220,7 +220,7 @@ describe("@paretools/git write-tool integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect((sc.staged as number)).toBeGreaterThanOrEqual(1);
+      expect(sc.staged as number).toBeGreaterThanOrEqual(1);
     });
 
     it("rejects flag-injection in file paths", async () => {
@@ -289,8 +289,11 @@ describe("@paretools/git write-tool integration", () => {
 
     it("switches back to an existing branch", async () => {
       // Get the default branch name
-      const defaultBranch = gitInTemp(["branch"]).trim().split("\n")
-        .find((l) => !l.startsWith("*"))?.trim();
+      const defaultBranch = gitInTemp(["branch"])
+        .trim()
+        .split("\n")
+        .find((l) => !l.startsWith("*"))
+        ?.trim();
 
       if (defaultBranch) {
         const result = await client.callTool({

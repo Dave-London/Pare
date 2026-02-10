@@ -208,7 +208,7 @@ describe("parseMypyOutput — error paths", () => {
   it("strips ANSI color codes from output", () => {
     // mypy with --color-output may include ANSI codes
     const stdout =
-      '\x1b[1m\x1b[31msrc/main.py:10:5: error: Incompatible types in assignment\x1b[0m  [assignment]';
+      "\x1b[1m\x1b[31msrc/main.py:10:5: error: Incompatible types in assignment\x1b[0m  [assignment]";
     const result = parseMypyOutput(stdout, 1);
 
     // The ANSI codes may or may not be stripped by the runner before reaching the parser.
@@ -263,9 +263,7 @@ describe("parsePipAuditJson — error paths", () => {
 
   it("handles dependencies with missing vulns arrays", () => {
     const json = JSON.stringify({
-      dependencies: [
-        { name: "requests", version: "2.31.0" },
-      ],
+      dependencies: [{ name: "requests", version: "2.31.0" }],
     });
     const result = parsePipAuditJson(json);
     expect(result.total).toBe(0);
@@ -298,7 +296,8 @@ describe("parsePytestOutput — error paths", () => {
   });
 
   it("handles exit code 1 for failed tests", () => {
-    const stdout = "========================= 5 passed, 2 failed in 1.00s =========================";
+    const stdout =
+      "========================= 5 passed, 2 failed in 1.00s =========================";
     const result = parsePytestOutput(stdout, "", 1);
     expect(result.success).toBe(false);
     expect(result.passed).toBe(5);
@@ -307,7 +306,8 @@ describe("parsePytestOutput — error paths", () => {
   });
 
   it("handles exit code 2 for internal errors", () => {
-    const stdout = "========================= 3 passed, 1 errors in 0.50s =========================";
+    const stdout =
+      "========================= 3 passed, 1 errors in 0.50s =========================";
     const result = parsePytestOutput(stdout, "", 2);
     expect(result.success).toBe(false);
     expect(result.errors).toBe(1);
@@ -348,10 +348,7 @@ describe("parseBlackOutput — error paths", () => {
   });
 
   it("handles summary with only reformatted count and no unchanged", () => {
-    const stderr = [
-      "reformatted app.py",
-      "All done! 1 file reformatted.",
-    ].join("\n");
+    const stderr = ["reformatted app.py", "All done! 1 file reformatted."].join("\n");
     const result = parseBlackOutput("", stderr, 0);
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(1);
@@ -368,11 +365,9 @@ describe("parseUvInstall — error paths", () => {
   });
 
   it("handles malformed package lines", () => {
-    const stderr = [
-      "Some random output",
-      " + malformed-no-version",
-      " + valid-pkg==1.0.0",
-    ].join("\n");
+    const stderr = ["Some random output", " + malformed-no-version", " + valid-pkg==1.0.0"].join(
+      "\n",
+    );
     const result = parseUvInstall("", stderr, 0);
     // The malformed line without == should not be parsed
     expect(result.installed).toHaveLength(1);
@@ -380,10 +375,7 @@ describe("parseUvInstall — error paths", () => {
   });
 
   it("handles malformed duration strings in summary", () => {
-    const stderr = [
-      "Installed 1 package in abc",
-      " + flask==3.0.0",
-    ].join("\n");
+    const stderr = ["Installed 1 package in abc", " + flask==3.0.0"].join("\n");
     const result = parseUvInstall("", stderr, 0);
     // The summary regex expects a number, so "abc" won't match
     expect(result.success).toBe(true);

@@ -145,9 +145,7 @@ describe("parsePorts (via parsePsJson)", () => {
   });
 
   it("parses multiple comma-separated ports", () => {
-    const ports = portsFor(
-      "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:8080->8080/tcp",
-    );
+    const ports = portsFor("0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:8080->8080/tcp");
     expect(ports).toHaveLength(3);
     expect(ports[0]).toEqual({ host: 80, container: 80, protocol: "tcp" });
     expect(ports[1]).toEqual({ host: 443, container: 443, protocol: "tcp" });

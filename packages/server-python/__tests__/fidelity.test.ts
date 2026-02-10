@@ -487,7 +487,7 @@ const PYTEST_MIXED_RESULTS = [
   "test_math.py:12: AssertionError",
   "_____________________________ test_upper _____________________________",
   "",
-  '    def test_upper():',
+  "    def test_upper():",
   '>       assert "hello".upper() == "WORLD"',
   "E       AssertionError: assert 'HELLO' == 'WORLD'",
   "E         - WORLD",
@@ -517,9 +517,7 @@ const UV_INSTALL_SUCCESS = [
   " + itsdangerous==2.1.2",
 ].join("\n");
 
-const UV_INSTALL_ALREADY_SATISFIED = [
-  "Audited 5 packages in 10ms",
-].join("\n");
+const UV_INSTALL_ALREADY_SATISFIED = ["Audited 5 packages in 10ms"].join("\n");
 
 // ─── uv run fixtures ────────────────────────────────────────────────────────
 
@@ -661,7 +659,8 @@ describe("fidelity: uv run", () => {
   });
 
   it("captures failed command exit code and stderr", () => {
-    const stderr = "Traceback (most recent call last):\n  File \"script.py\", line 5\nNameError: name 'x' is not defined\n";
+    const stderr =
+      "Traceback (most recent call last):\n  File \"script.py\", line 5\nNameError: name 'x' is not defined\n";
     const result = parseUvRun("", stderr, 1, 800);
 
     expect(result.success).toBe(false);
