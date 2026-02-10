@@ -11,6 +11,11 @@ import {
   parseCargoBuildJson,
   parseCargoTestOutput,
   parseCargoClippyJson,
+  parseCargoRunOutput,
+  parseCargoAddOutput,
+  parseCargoRemoveOutput,
+  parseCargoFmtOutput,
+  parseCargoDocOutput,
 } from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
@@ -497,5 +502,211 @@ describe("fidelity: parseCargoClippyJson", () => {
 
     expect(result.total).toBe(1);
     expect(result.diagnostics[0].message).toBe("unused variable");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Run fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseCargoRunOutput", () => {
+  it("successful run preserves stdout, stderr, and exit code", () => {
+    const result = parseCargoRunOutput("Hello, world!\nLine 2\n", "Compiling...\n", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("Hello, world!\nLine 2\n");
+    expect(result.stderr).toBe("Compiling...\n");
+  });
+
+  it("failed run preserves non-zero exit code", () => {
+    const result = parseCargoRunOutput("", "error: cannot find binary", 101);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(101);
+    expect(result.stderr).toContain("cannot find binary");
+  });
+
+  it("runtime panic captured in stderr with non-zero exit", () => {
+    const stderr = [
+      "thread 'main' panicked at 'index out of bounds: the len is 0 but the index is 0'",
+      "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+    ].join("\n");
+
+    const result = parseCargoRunOutput("", stderr, 101);
+
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain("panicked at");
+    expect(result.stderr).toContain("index out of bounds");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Add fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseCargoAddOutput", () => {
+  it("multiple packages: all names and versions preserved", () => {
+    const stderr = [
+      "    Updating crates.io index",
+      "      Adding serde v1.0.217 to dependencies",
+      "      Adding serde_json v1.0.135 to dependencies",
+      "      Adding tokio v1.41.1 to dependencies",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(3);
+    expect(result.added).toHaveLength(3);
+
+    const names = result.added.map((p) => p.name);
+    expect(names).toContain("serde");
+    expect(names).toContain("serde_json");
+    expect(names).toContain("tokio");
+
+    const versions = result.added.map((p) => p.version);
+    expect(versions).toContain("1.0.217");
+    expect(versions).toContain("1.0.135");
+    expect(versions).toContain("1.41.1");
+  });
+
+  it("dev dependency: same parsing, version preserved", () => {
+    const stderr = "      Adding mockall v0.13.1 to dev-dependencies";
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.total).toBe(1);
+    expect(result.added[0].name).toBe("mockall");
+    expect(result.added[0].version).toBe("0.13.1");
+  });
+
+  it("non-Adding lines (Updating, Locking) are ignored", () => {
+    const stderr = [
+      "    Updating crates.io index",
+      "      Locking 25 packages to latest Rust 1.82.0 compatible versions",
+      "      Adding serde v1.0.217 to dependencies",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 0);
+    expect(result.total).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Remove fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseCargoRemoveOutput", () => {
+  it("multiple packages: all names preserved", () => {
+    const stderr = [
+      "      Removing serde from dependencies",
+      "      Removing tokio from dependencies",
+      "      Removing anyhow from dependencies",
+    ].join("\n");
+
+    const result = parseCargoRemoveOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(3);
+    expect(result.removed).toEqual(["serde", "tokio", "anyhow"]);
+  });
+
+  it("dev dependency removal: name preserved", () => {
+    const stderr = "      Removing mockall from dev-dependencies";
+    const result = parseCargoRemoveOutput("", stderr, 0);
+
+    expect(result.total).toBe(1);
+    expect(result.removed).toEqual(["mockall"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fmt fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseCargoFmtOutput", () => {
+  it("check mode: all unformatted files captured", () => {
+    const stdout = [
+      "Diff in src/main.rs at line 1:",
+      "+fn main() {",
+      "-fn main(){",
+      "Diff in src/lib.rs at line 5:",
+      "+    let x = 1;",
+      "-let x = 1;",
+      "Diff in src/utils.rs at line 10:",
+      "+    fn helper() -> bool {",
+      "-fn helper() -> bool{",
+    ].join("\n");
+
+    const result = parseCargoFmtOutput(stdout, "", 1, true);
+
+    expect(result.success).toBe(false);
+    expect(result.filesChanged).toBe(3);
+    expect(result.files).toContain("src/main.rs");
+    expect(result.files).toContain("src/lib.rs");
+    expect(result.files).toContain("src/utils.rs");
+  });
+
+  it("check mode clean: no files listed", () => {
+    const result = parseCargoFmtOutput("", "", 0, true);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toEqual([]);
+  });
+
+  it("fix mode: returns empty files (formatting happens in-place)", () => {
+    const result = parseCargoFmtOutput("", "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Doc fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseCargoDocOutput", () => {
+  it("doc with warnings: all warnings counted", () => {
+    const stderr = [
+      "   Compiling myapp v0.1.0",
+      " Documenting myapp v0.1.0",
+      "warning: missing docs for function",
+      "  --> src/lib.rs:10:1",
+      "warning: missing docs for struct",
+      "  --> src/lib.rs:20:1",
+      "warning: missing docs for module",
+      "  --> src/lib.rs:1:1",
+      "warning: 3 warnings emitted",
+    ].join("\n");
+
+    const result = parseCargoDocOutput(stderr, 0);
+
+    expect(result.success).toBe(true);
+    // The "warning:" lines that match the pattern (colon or bracket after "warning")
+    expect(result.warnings).toBe(3);
+  });
+
+  it("clean doc: zero warnings", () => {
+    const stderr = [
+      "   Compiling myapp v0.1.0",
+      " Documenting myapp v0.1.0",
+      "    Finished `dev` profile in 1.5s",
+    ].join("\n");
+
+    const result = parseCargoDocOutput(stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.warnings).toBe(0);
+  });
+
+  it("failed doc: success is false", () => {
+    const stderr = "error[E0308]: mismatched types\n  --> src/main.rs:5:10";
+
+    const result = parseCargoDocOutput(stderr, 101);
+
+    expect(result.success).toBe(false);
   });
 });
