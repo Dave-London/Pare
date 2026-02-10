@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { readFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, run } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
@@ -63,7 +67,20 @@ export function registerRunTool(server: McpServer) {
         }
       }
 
+      // For vitest/jest, write JSON to a temp file instead of relying on
+      // stdout capture. On Windows, npx.cmd can swallow or mangle stdout,
+      // causing "No JSON output found" errors.
+      const useOutputFile = detected !== "pytest";
+      const tempPath = useOutputFile
+        ? join(tmpdir(), `pare-test-${randomUUID()}.json`)
+        : "";
+
       const { cmd, cmdArgs } = getRunCommand(detected, extraArgs);
+
+      if (useOutputFile) {
+        cmdArgs.push(`--outputFile=${tempPath}`);
+      }
+
       const result = await run(cmd, cmdArgs, { cwd, timeout: 120_000 });
 
       // Combine stdout and stderr for parsing (some frameworks write to stderr)
@@ -74,17 +91,40 @@ export function registerRunTool(server: McpServer) {
         case "pytest":
           testRun = parsePytestOutput(output);
           break;
-        case "jest":
-          testRun = parseJestJson(extractJson(output));
+        case "jest": {
+          const jsonStr = await readJsonOutput(tempPath, output);
+          testRun = parseJestJson(jsonStr);
           break;
-        case "vitest":
-          testRun = parseVitestJson(extractJson(output));
+        }
+        case "vitest": {
+          const jsonStr = await readJsonOutput(tempPath, output);
+          testRun = parseVitestJson(jsonStr);
           break;
+        }
       }
 
       return dualOutput(testRun, formatTestRun);
     },
   );
+}
+
+/**
+ * Reads JSON output from a temp file, falling back to extracting it from
+ * stdout if the file was not created. Always cleans up the temp file.
+ */
+async function readJsonOutput(tempPath: string, output: string): Promise<string> {
+  try {
+    return await readFile(tempPath, "utf-8");
+  } catch {
+    // Temp file wasn't created — fall back to stdout extraction
+    return extractJson(output);
+  } finally {
+    try {
+      await unlink(tempPath);
+    } catch {
+      /* ignore cleanup errors */
+    }
+  }
 }
 
 /**
