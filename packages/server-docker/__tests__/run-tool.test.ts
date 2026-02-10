@@ -47,6 +47,49 @@ describe("parseRunOutput", () => {
     expect(result.containerId).toBe("aaaaaaaaaaaa");
     expect(result.containerId.length).toBe(12);
   });
+
+  it("handles error output with exit code 125 (docker daemon error)", () => {
+    // When docker run fails (e.g., invalid image), stderr contains the error
+    // and stdout may be empty. The parser still returns a result.
+    const stdout = "";
+    const result = parseRunOutput(stdout, "invalid!!!image", true);
+
+    expect(result.containerId).toBe("");
+    expect(result.image).toBe("invalid!!!image");
+    expect(result.detached).toBe(true);
+  });
+
+  it("handles exit code 127 (command not found in container)", () => {
+    // docker run exits 127 when the entrypoint/cmd is not found
+    const stdout = "";
+    const result = parseRunOutput(stdout, "alpine", false);
+
+    expect(result.containerId).toBe("");
+    expect(result.image).toBe("alpine");
+    expect(result.detached).toBe(false);
+  });
+
+  it("handles missing container ID when output has only error text", () => {
+    const stdout = "docker: Error response from daemon: No such image: fake:latest\n";
+    const result = parseRunOutput(stdout, "fake:latest", true);
+
+    // Last line after trim is the error message, not a container ID
+    expect(result.containerId.length).toBe(12);
+    expect(result.image).toBe("fake:latest");
+  });
+
+  it("handles multi-line error output (attached mode)", () => {
+    const stdout = [
+      "Error: Unable to locate package xyz",
+      "E: Package 'xyz' has no installation candidate",
+    ].join("\n");
+    const result = parseRunOutput(stdout, "ubuntu:22.04", false);
+
+    // Last line is the error message, sliced to 12 chars
+    expect(result.containerId.length).toBe(12);
+    expect(result.image).toBe("ubuntu:22.04");
+    expect(result.detached).toBe(false);
+  });
 });
 
 describe("formatRun", () => {

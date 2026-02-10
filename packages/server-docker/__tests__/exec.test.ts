@@ -57,6 +57,44 @@ describe("parseExecOutput", () => {
     expect(result.stderr).toBe("");
     expect(result.success).toBe(true);
   });
+
+  it("parses command not found in container (exit 127)", () => {
+    const stderr =
+      'OCI runtime exec failed: exec failed: unable to start container process: exec: "nonexistent-cmd": executable file not found in $PATH: unknown';
+    const result = parseExecOutput("", stderr, 127);
+
+    expect(result.exitCode).toBe(127);
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain("executable file not found");
+    expect(result.stdout).toBe("");
+  });
+
+  it("parses container not running error (exit 1)", () => {
+    const stderr =
+      "Error response from daemon: container abc123 is not running";
+    const result = parseExecOutput("", stderr, 1);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain("is not running");
+  });
+
+  it("parses exit code 137 (SIGKILL / OOM killed)", () => {
+    const result = parseExecOutput("partial output", "Killed", 137);
+
+    expect(result.exitCode).toBe(137);
+    expect(result.success).toBe(false);
+    expect(result.stdout).toBe("partial output");
+    expect(result.stderr).toBe("Killed");
+  });
+
+  it("parses exit code 139 (SIGSEGV)", () => {
+    const result = parseExecOutput("", "Segmentation fault", 139);
+
+    expect(result.exitCode).toBe(139);
+    expect(result.success).toBe(false);
+    expect(result.stderr).toContain("Segmentation fault");
+  });
 });
 
 describe("formatExec", () => {

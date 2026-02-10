@@ -102,6 +102,54 @@ describe("parsePullOutput", () => {
     expect(result.digest).toBeUndefined();
     expect(result.success).toBe(true);
   });
+
+  it("parses auth failure (unauthorized)", () => {
+    const stderr =
+      "Error response from daemon: Head \"https://registry.example.com/v2/myapp/manifests/latest\": unauthorized: authentication required";
+
+    const result = parsePullOutput("", stderr, 1, "registry.example.com/myapp:latest");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("registry.example.com/myapp");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBeUndefined();
+  });
+
+  it("parses nonexistent image (manifest not found)", () => {
+    const stderr =
+      "Error response from daemon: manifest for library/totallynotarealimage:latest not found: manifest unknown: manifest unknown";
+
+    const result = parsePullOutput("", stderr, 1, "totallynotarealimage:latest");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("totallynotarealimage");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBeUndefined();
+  });
+
+  it("parses rate limit error", () => {
+    const stderr =
+      "Error response from daemon: toomanyrequests: You have reached your pull rate limit. You may increase the limit by authenticating.";
+
+    const result = parsePullOutput("", stderr, 1, "nginx:latest");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("nginx");
+    expect(result.tag).toBe("latest");
+    expect(result.digest).toBeUndefined();
+  });
+
+  it("parses network timeout error", () => {
+    const stderr =
+      "Error response from daemon: Get \"https://registry-1.docker.io/v2/\": net/http: request canceled while waiting for connection";
+
+    const result = parsePullOutput("", stderr, 1, "alpine:3.19");
+
+    expect(result.success).toBe(false);
+    expect(result.image).toBe("alpine");
+    expect(result.tag).toBe("3.19");
+    expect(result.digest).toBeUndefined();
+  });
 });
 
 describe("formatPull", () => {

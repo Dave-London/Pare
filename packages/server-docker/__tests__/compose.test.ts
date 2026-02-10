@@ -73,6 +73,43 @@ describe("parseComposeUpOutput", () => {
     // Set deduplication means it should appear only once
     expect(result.services.filter((s) => s === "myapp-web-1")).toHaveLength(1);
   });
+
+  it("parses partial failure (some services started, non-zero exit)", () => {
+    const stderr = [
+      " ✔ Container myapp-db-1   Started",
+      " ✗ Container myapp-web-1  Error",
+      "dependency failed to start: container myapp-web-1 is unhealthy",
+    ].join("\n");
+
+    const result = parseComposeUpOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.services).toContain("myapp-db-1");
+    expect(result.started).toBeGreaterThanOrEqual(1);
+  });
+
+  it("parses missing compose file error", () => {
+    const stderr =
+      "no configuration file provided: not found\nvalidating: no compose file found";
+
+    const result = parseComposeUpOutput("", stderr, 14);
+
+    expect(result.success).toBe(false);
+    expect(result.started).toBe(0);
+    expect(result.services).toEqual([]);
+  });
+
+  it("parses build failure during compose up", () => {
+    const stderr = [
+      " Container myapp-db-1  Started",
+      "failed to solve: process '/bin/sh -c npm install' did not complete successfully",
+    ].join("\n");
+
+    const result = parseComposeUpOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.services).toContain("myapp-db-1");
+  });
 });
 
 describe("parseComposeDownOutput", () => {
@@ -118,6 +155,30 @@ describe("parseComposeDownOutput", () => {
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(0);
     expect(result.removed).toBe(0);
+  });
+
+  it("parses compose down with missing compose file (non-zero exit)", () => {
+    const stderr = "no configuration file provided: not found";
+
+    const result = parseComposeDownOutput("", stderr, 14);
+
+    expect(result.success).toBe(false);
+    expect(result.stopped).toBe(0);
+    expect(result.removed).toBe(0);
+  });
+
+  it("parses partial failure (some containers stopped, error removing)", () => {
+    const stderr = [
+      " ✔ Container myapp-web-1  Stopped",
+      " ✗ Container myapp-db-1   Error while Stopping",
+      " ✔ Container myapp-web-1  Removed",
+    ].join("\n");
+
+    const result = parseComposeDownOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.stopped).toBe(1);
+    expect(result.removed).toBe(1);
   });
 });
 
