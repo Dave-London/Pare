@@ -39,4 +39,26 @@ describe("@paretools/python integration", () => {
       expect(tool.outputSchema!.type).toBe("object");
     }
   });
+
+  describe("ruff-check", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "ruff-check",
+        arguments: { path: resolve(__dirname, "../../..") },
+      });
+
+      if (result.isError) {
+        // ruff not installed — verify meaningful error
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/ruff|command|not found/i);
+      } else {
+        // ruff is available — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.fixable).toEqual(expect.any(Number));
+        expect(Array.isArray(sc.diagnostics)).toBe(true);
+      }
+    });
+  });
 });

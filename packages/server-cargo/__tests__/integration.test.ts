@@ -39,4 +39,27 @@ describe("@paretools/cargo integration", () => {
       expect(tool.outputSchema!.type).toBe("object");
     }
   });
+
+  describe("clippy", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "clippy",
+        arguments: { path: resolve(__dirname, "../../..") },
+      });
+
+      if (result.isError) {
+        // cargo not installed — verify meaningful error
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/cargo|command|not found/i);
+      } else {
+        // cargo is available — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.errors).toEqual(expect.any(Number));
+        expect(sc.warnings).toEqual(expect.any(Number));
+        expect(Array.isArray(sc.diagnostics)).toBe(true);
+      }
+    });
+  });
 });

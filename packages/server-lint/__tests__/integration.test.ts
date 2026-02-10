@@ -39,4 +39,26 @@ describe("@paretools/lint integration", () => {
       expect(tool.outputSchema!.type).toBe("object");
     }
   });
+
+  describe("lint", () => {
+    it("returns structured ESLint diagnostics", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool({
+        name: "lint",
+        arguments: { path: pkgPath, patterns: ["src/"] },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.total).toEqual(expect.any(Number));
+      expect(sc.errors).toEqual(expect.any(Number));
+      expect(sc.warnings).toEqual(expect.any(Number));
+      expect(sc.fixable).toEqual(expect.any(Number));
+      expect(sc.filesChecked).toEqual(expect.any(Number));
+      expect(Array.isArray(sc.diagnostics)).toBe(true);
+    }, 30_000);
+  });
 });

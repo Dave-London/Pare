@@ -39,4 +39,27 @@ describe("@paretools/docker integration", () => {
       expect(tool.outputSchema!.type).toBe("object");
     }
   });
+
+  describe("ps", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "ps",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        // Docker not installed — verify we get a meaningful error
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|command|not found/i);
+      } else {
+        // Docker is available — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.containers)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.running).toEqual(expect.any(Number));
+        expect(sc.stopped).toEqual(expect.any(Number));
+      }
+    });
+  });
 });

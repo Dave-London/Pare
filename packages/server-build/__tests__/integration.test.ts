@@ -39,4 +39,25 @@ describe("@paretools/build integration", () => {
       expect(tool.outputSchema!.type).toBe("object");
     }
   });
+
+  describe("tsc", () => {
+    it("returns structured TypeScript diagnostics", async () => {
+      const repoRoot = resolve(__dirname, "../../..");
+      const result = await client.callTool({
+        name: "tsc",
+        arguments: { path: repoRoot, noEmit: true },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(typeof sc.success).toBe("boolean");
+      expect(Array.isArray(sc.diagnostics)).toBe(true);
+      expect(sc.total).toEqual(expect.any(Number));
+      expect(sc.errors).toEqual(expect.any(Number));
+      expect(sc.warnings).toEqual(expect.any(Number));
+    }, 60_000);
+  });
 });
