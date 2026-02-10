@@ -4,10 +4,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerAllTools } from "./tools/index.js";
 
-const server = new McpServer({
-  name: "@paretools/test",
-  version: "0.1.0",
-});
+const server = new McpServer(
+  { name: "@paretools/test", version: "0.2.0" },
+  {
+    instructions:
+      "Structured test runner operations (run, coverage). Auto-detects pytest, jest, and vitest. Use instead of running test commands via bash. Returns typed JSON with structured pass/fail results and failure details.",
+  },
+);
 
 registerAllTools(server);
 

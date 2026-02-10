@@ -4,10 +4,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerAllTools } from "./tools/index.js";
 
-const server = new McpServer({
-  name: "@paretools/npm",
-  version: "0.1.0",
-});
+const server = new McpServer(
+  { name: "@paretools/npm", version: "0.2.0" },
+  {
+    instructions:
+      "Structured npm/pnpm operations (install, audit, outdated, list). Use instead of running npm commands via bash. Returns typed JSON with structured dependency and vulnerability data.",
+  },
+);
 
 registerAllTools(server);
 
