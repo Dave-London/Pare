@@ -1,4 +1,15 @@
-import type { GitStatus, GitLog, GitDiff, GitBranch, GitShow } from "../schemas/index.js";
+import type {
+  GitStatus,
+  GitLog,
+  GitDiff,
+  GitBranch,
+  GitShow,
+  GitAdd,
+  GitCommit,
+  GitPull,
+  GitPush,
+  GitCheckout,
+} from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
   A: "added",
@@ -187,5 +198,128 @@ export function parseShow(stdout: string, diffStdout: string): GitShow {
     date,
     message: messageParts.join(DELIMITER),
     diff,
+  };
+}
+
+/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files. */
+export function parseAdd(statusStdout: string): GitAdd {
+  const lines = statusStdout.split("\n").filter(Boolean);
+  const files: string[] = [];
+
+  for (const line of lines) {
+    const index = line[0];
+    // Staged files have a non-space, non-? character in the index position
+    if (index && index !== " " && index !== "?") {
+      const file = line.slice(3).trim();
+      // Handle renames: "old -> new"
+      const parts = file.split(" -> ");
+      files.push(parts[parts.length - 1]);
+    }
+  }
+
+  return { staged: files.length, files };
+}
+
+/** Parses `git commit` output into structured commit data with hash, message, and change statistics. */
+export function parseCommit(stdout: string): GitCommit {
+  // Example output:
+  // "[main abc1234] Fix the bug\n 1 file changed, 2 insertions(+), 1 deletion(-)"
+  // "[main (root-commit) abc1234] Initial commit\n 1 file changed, 1 insertion(+)"
+  const headerMatch = stdout.match(
+    /\[[\w/.-]+\s+(?:\(root-commit\)\s+)?([a-f0-9]+)\]\s+(.+)/,
+  );
+
+  const hash = headerMatch?.[1] ?? "";
+  const message = headerMatch?.[2] ?? "";
+
+  const filesMatch = stdout.match(/(\d+)\s+files?\s+changed/);
+  const insertionsMatch = stdout.match(/(\d+)\s+insertions?\(\+\)/);
+  const deletionsMatch = stdout.match(/(\d+)\s+deletions?\(-\)/);
+
+  return {
+    hash,
+    hashShort: hash.slice(0, 7),
+    message,
+    filesChanged: filesMatch ? parseInt(filesMatch[1], 10) : 0,
+    insertions: insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0,
+    deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
+  };
+}
+
+/** Parses `git push` output into structured push result data. */
+export function parsePush(
+  stdout: string,
+  stderr: string,
+  remote: string,
+  branch: string,
+): GitPush {
+  // Git push output goes to stderr typically
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Extract branch from output if not provided
+  // e.g., "To github.com:user/repo.git\n * [new branch]      main -> main"
+  // or "   abc1234..def5678  main -> main"
+  const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
+  const resolvedBranch = branch || branchMatch?.[1] || "unknown";
+
+  return {
+    success: true,
+    remote,
+    branch: resolvedBranch,
+    summary: combined || "Push completed successfully",
+  };
+}
+
+/** Parses `git pull` output into structured pull result data with change stats and conflict detection. */
+export function parsePull(stdout: string, stderr: string): GitPull {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Check for conflicts
+  const conflicts: string[] = [];
+  const conflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+  let match;
+  while ((match = conflictPattern.exec(combined)) !== null) {
+    conflicts.push(match[1]);
+  }
+
+  // Parse change stats: "3 files changed, 10 insertions(+), 2 deletions(-)"
+  const filesMatch = combined.match(/(\d+)\s+files?\s+changed/);
+  const insertionsMatch = combined.match(/(\d+)\s+insertions?\(\+\)/);
+  const deletionsMatch = combined.match(/(\d+)\s+deletions?\(-\)/);
+
+  // Check for "Already up to date."
+  const alreadyUpToDate = /Already up to date/i.test(combined);
+
+  let summary: string;
+  if (conflicts.length > 0) {
+    summary = `Pull completed with ${conflicts.length} conflict(s)`;
+  } else if (alreadyUpToDate) {
+    summary = "Already up to date";
+  } else {
+    summary = combined.split("\n")[0] || "Pull completed successfully";
+  }
+
+  return {
+    success: conflicts.length === 0,
+    summary,
+    filesChanged: filesMatch ? parseInt(filesMatch[1], 10) : 0,
+    insertions: insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0,
+    deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
+    conflicts,
+  };
+}
+
+/** Parses `git checkout` output into structured checkout result data. */
+export function parseCheckout(
+  stdout: string,
+  stderr: string,
+  ref: string,
+  previousRef: string,
+  created: boolean,
+): GitCheckout {
+  return {
+    ref,
+    previousRef,
+    created,
   };
 }
