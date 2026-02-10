@@ -31,7 +31,10 @@ export function parsePytestOutput(stdout: string): TestRun {
   );
 
   if (summaryStart >= 0) {
-    const failLines = lines.slice(summaryStart + 1, summaryEnd > summaryStart ? summaryEnd : undefined);
+    const failLines = lines.slice(
+      summaryStart + 1,
+      summaryEnd > summaryStart ? summaryEnd : undefined,
+    );
     for (const line of failLines) {
       const match = line.match(/^FAILED\s+(.+?)(?:::(.+?))?\s*-\s*(.+)/);
       if (match) {
@@ -99,7 +102,7 @@ export function parsePytestCoverage(stdout: string): Coverage {
 
     const match = line.match(/^(\S+)\s+(\d+)\s+(\d+)\s+(\d+)%/);
     if (match) {
-      const [, file, stmts, miss, cover] = match;
+      const [, file, , , cover] = match;
       const pct = parseInt(cover, 10);
 
       if (file === "TOTAL") {

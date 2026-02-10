@@ -1,11 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { parsePsJson, parseBuildOutput, parseLogsOutput, parseImagesJson } from "../src/lib/parsers.js";
+import {
+  parsePsJson,
+  parseBuildOutput,
+  parseLogsOutput,
+  parseImagesJson,
+} from "../src/lib/parsers.js";
 
 describe("parsePsJson", () => {
   it("parses multiple containers", () => {
     const stdout = [
-      JSON.stringify({ ID: "abc123def456", Names: "web-app", Image: "nginx:latest", Status: "Up 2 hours", State: "running", Ports: "0.0.0.0:8080->80/tcp", CreatedAt: "2024-01-01 10:00:00" }),
-      JSON.stringify({ ID: "def456abc789", Names: "db", Image: "postgres:16", Status: "Exited (0) 3 hours ago", State: "exited", Ports: "", CreatedAt: "2024-01-01 09:00:00" }),
+      JSON.stringify({
+        ID: "abc123def456",
+        Names: "web-app",
+        Image: "nginx:latest",
+        Status: "Up 2 hours",
+        State: "running",
+        Ports: "0.0.0.0:8080->80/tcp",
+        CreatedAt: "2024-01-01 10:00:00",
+      }),
+      JSON.stringify({
+        ID: "def456abc789",
+        Names: "db",
+        Image: "postgres:16",
+        Status: "Exited (0) 3 hours ago",
+        State: "exited",
+        Ports: "",
+        CreatedAt: "2024-01-01 09:00:00",
+      }),
     ].join("\n");
 
     const result = parsePsJson(stdout);
@@ -87,7 +108,7 @@ describe("parseBuildOutput", () => {
     const stdout = `#1 [internal] load build definition
 #2 [1/2] FROM docker.io/library/node:20
 #3 [2/2] RUN npm install`;
-    const stderr = "ERROR: process \"/bin/sh -c npm install\" did not complete successfully";
+    const stderr = 'ERROR: process "/bin/sh -c npm install" did not complete successfully';
 
     const result = parseBuildOutput(stdout, stderr, 1, 8.0);
 
@@ -106,7 +127,8 @@ describe("parseBuildOutput", () => {
 
 describe("parseLogsOutput", () => {
   it("parses log lines", () => {
-    const stdout = "2024-01-01 Starting app\n2024-01-01 Listening on port 3000\n2024-01-01 Request received";
+    const stdout =
+      "2024-01-01 Starting app\n2024-01-01 Listening on port 3000\n2024-01-01 Request received";
     const result = parseLogsOutput(stdout, "web-app");
 
     expect(result.container).toBe("web-app");
@@ -126,8 +148,20 @@ describe("parseLogsOutput", () => {
 describe("parseImagesJson", () => {
   it("parses multiple images", () => {
     const stdout = [
-      JSON.stringify({ ID: "sha256:abc123def456abc123", Repository: "nginx", Tag: "latest", Size: "187MB", CreatedSince: "2 weeks ago" }),
-      JSON.stringify({ ID: "sha256:def456abc789def456", Repository: "node", Tag: "20-alpine", Size: "126MB", CreatedSince: "3 weeks ago" }),
+      JSON.stringify({
+        ID: "sha256:abc123def456abc123",
+        Repository: "nginx",
+        Tag: "latest",
+        Size: "187MB",
+        CreatedSince: "2 weeks ago",
+      }),
+      JSON.stringify({
+        ID: "sha256:def456abc789def456",
+        Repository: "node",
+        Tag: "20-alpine",
+        Size: "126MB",
+        CreatedSince: "3 weeks ago",
+      }),
     ].join("\n");
 
     const result = parseImagesJson(stdout);

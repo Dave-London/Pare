@@ -14,7 +14,9 @@ export function formatCargoBuild(data: CargoBuildResult): string {
 
 export function formatCargoTest(data: CargoTestResult): string {
   const status = data.success ? "ok" : "FAILED";
-  const lines = [`test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`];
+  const lines = [
+    `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`,
+  ];
   for (const t of data.tests) {
     lines.push(`  ${t.status.padEnd(7)} ${t.name}`);
   }

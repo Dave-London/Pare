@@ -34,7 +34,12 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
   };
 }
 
-export function parseBuildCommandOutput(stdout: string, stderr: string, exitCode: number, duration: number): BuildResult {
+export function parseBuildCommandOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): BuildResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n").filter(Boolean);
 

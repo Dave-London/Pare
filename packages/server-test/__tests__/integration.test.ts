@@ -53,7 +53,7 @@ describe("@paretools/test integration", () => {
       expect(summary.failed).toEqual(expect.any(Number));
       expect(summary.skipped).toEqual(expect.any(Number));
       expect(summary.duration).toEqual(expect.any(Number));
-      expect((summary.total as number)).toBeGreaterThan(0);
+      expect(summary.total as number).toBeGreaterThan(0);
       expect(summary.failed).toBe(0);
 
       expect(Array.isArray(sc.failures)).toBe(true);

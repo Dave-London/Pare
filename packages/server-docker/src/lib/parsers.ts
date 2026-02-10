@@ -26,33 +26,45 @@ export function parsePsJson(stdout: string): DockerPs {
   };
 }
 
-function parsePorts(portsStr: string): { host?: number; container: number; protocol: "tcp" | "udp" }[] {
+function parsePorts(
+  portsStr: string,
+): { host?: number; container: number; protocol: "tcp" | "udp" }[] {
   if (!portsStr) return [];
 
   // "0.0.0.0:8080->80/tcp, 443/tcp"
-  return portsStr.split(",").map((p) => p.trim()).filter(Boolean).map((p) => {
-    const protoMatch = p.match(/\/(tcp|udp)/);
-    const protocol = (protoMatch?.[1] ?? "tcp") as "tcp" | "udp";
-    const arrowParts = p.split("->");
+  return portsStr
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      const protoMatch = p.match(/\/(tcp|udp)/);
+      const protocol = (protoMatch?.[1] ?? "tcp") as "tcp" | "udp";
+      const arrowParts = p.split("->");
 
-    if (arrowParts.length === 2) {
-      const hostPort = arrowParts[0].split(":").pop();
-      const containerPort = arrowParts[1].replace(/\/(tcp|udp)/, "");
-      return {
-        host: parseInt(hostPort ?? "0", 10),
-        container: parseInt(containerPort, 10),
-        protocol,
-      };
-    }
+      if (arrowParts.length === 2) {
+        const hostPort = arrowParts[0].split(":").pop();
+        const containerPort = arrowParts[1].replace(/\/(tcp|udp)/, "");
+        return {
+          host: parseInt(hostPort ?? "0", 10),
+          container: parseInt(containerPort, 10),
+          protocol,
+        };
+      }
 
-    const port = parseInt(p.replace(/\/(tcp|udp)/, ""), 10);
-    return { container: port, protocol };
-  });
+      const port = parseInt(p.replace(/\/(tcp|udp)/, ""), 10);
+      return { container: port, protocol };
+    });
 }
 
-export function parseBuildOutput(stdout: string, stderr: string, exitCode: number, duration: number): DockerBuild {
+export function parseBuildOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): DockerBuild {
   const errors: string[] = [];
-  const imageIdMatch = stdout.match(/writing image sha256:([a-f0-9]+)/i) ||
+  const imageIdMatch =
+    stdout.match(/writing image sha256:([a-f0-9]+)/i) ||
     stdout.match(/Successfully built ([a-f0-9]+)/) ||
     stderr.match(/writing image sha256:([a-f0-9]+)/i);
 

@@ -13,7 +13,11 @@ export function registerImagesTool(server: McpServer) {
       title: "Docker Images",
       description: "Lists Docker images with structured repository, tag, size, and creation info",
       inputSchema: {
-        all: z.boolean().optional().default(false).describe("Show all images including intermediates"),
+        all: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show all images including intermediates"),
         filter: z.string().optional().describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
       },
       outputSchema: DockerImagesSchema,

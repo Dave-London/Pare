@@ -17,7 +17,11 @@ export function registerLogTool(server: McpServer) {
       description: "Returns commit history as structured data",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
-        maxCount: z.number().optional().default(10).describe("Number of commits to return (default: 10)"),
+        maxCount: z
+          .number()
+          .optional()
+          .default(10)
+          .describe("Number of commits to return (default: 10)"),
         ref: z.string().optional().describe("Branch, tag, or commit to start from"),
         author: z.string().optional().describe("Filter by author name or email"),
       },

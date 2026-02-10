@@ -11,10 +11,15 @@ export function registerTscTool(server: McpServer) {
     "tsc",
     {
       title: "TypeScript Check",
-      description: "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message)",
+      description:
+        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message)",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        noEmit: z.boolean().optional().default(true).describe("Skip emitting output files (default: true)"),
+        noEmit: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Skip emitting output files (default: true)"),
         project: z.string().optional().describe("Path to tsconfig.json"),
       },
       outputSchema: TscResultSchema,

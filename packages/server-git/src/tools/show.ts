@@ -17,7 +17,11 @@ export function registerShowTool(server: McpServer) {
       description: "Shows commit details and diff statistics for a given ref",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
-        ref: z.string().optional().default("HEAD").describe("Commit hash, branch, or tag (default: HEAD)"),
+        ref: z
+          .string()
+          .optional()
+          .default("HEAD")
+          .describe("Commit hash, branch, or tag (default: HEAD)"),
       },
       outputSchema: GitShowSchema,
     },
@@ -26,7 +30,10 @@ export function registerShowTool(server: McpServer) {
       const commitRef = ref || "HEAD";
 
       // Get commit info
-      const infoResult = await git(["show", "--no-patch", `--format=${SHOW_FORMAT}`, commitRef], cwd);
+      const infoResult = await git(
+        ["show", "--no-patch", `--format=${SHOW_FORMAT}`, commitRef],
+        cwd,
+      );
       if (infoResult.exitCode !== 0) {
         throw new Error(`git show failed: ${infoResult.stderr}`);
       }

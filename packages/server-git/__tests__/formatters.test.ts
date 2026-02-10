@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatStatus, formatLog, formatDiff, formatBranch, formatShow } from "../src/lib/formatters.js";
+import {
+  formatStatus,
+  formatLog,
+  formatDiff,
+  formatBranch,
+  formatShow,
+} from "../src/lib/formatters.js";
 import type { GitStatus, GitLog, GitDiff, GitBranch, GitShow } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -42,8 +48,22 @@ describe("formatLog", () => {
   it("formats commit entries", () => {
     const log: GitLog = {
       commits: [
-        { hash: "abc123", hashShort: "abc1234", author: "Jane", email: "j@e.com", date: "2h ago", message: "Fix bug" },
-        { hash: "def456", hashShort: "def5678", author: "John", email: "j@e.com", date: "1d ago", message: "Add feature" },
+        {
+          hash: "abc123",
+          hashShort: "abc1234",
+          author: "Jane",
+          email: "j@e.com",
+          date: "2h ago",
+          message: "Fix bug",
+        },
+        {
+          hash: "def456",
+          hashShort: "def5678",
+          author: "John",
+          email: "j@e.com",
+          date: "1d ago",
+          message: "Add feature",
+        },
       ],
       total: 2,
     };

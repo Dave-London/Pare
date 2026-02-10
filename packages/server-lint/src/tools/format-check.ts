@@ -11,7 +11,8 @@ export function registerFormatCheckTool(server: McpServer) {
     "format-check",
     {
       title: "Prettier Check",
-      description: "Checks if files are formatted and returns a structured list of files needing formatting",
+      description:
+        "Checks if files are formatted and returns a structured list of files needing formatting",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         patterns: z

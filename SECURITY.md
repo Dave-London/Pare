@@ -9,6 +9,7 @@ If you discover a security vulnerability in any `@paretools` package, please rep
 Instead, please email: **hello@os4us.org**
 
 Include:
+
 - Which package is affected (`@paretools/git`, `@paretools/test`, etc.)
 - A description of the vulnerability
 - Steps to reproduce (if applicable)
@@ -25,8 +26,8 @@ This policy covers all packages published under the `@paretools` npm scope.
 
 ## Supported Versions
 
-| Package | Supported |
-|---|---|
-| `@paretools/git` >= 0.1.0 | Yes |
-| `@paretools/test` >= 0.1.0 | Yes |
-| `@paretools/shared` >= 0.1.0 | Yes |
+| Package                      | Supported |
+| ---------------------------- | --------- |
+| `@paretools/git` >= 0.1.0    | Yes       |
+| `@paretools/test` >= 0.1.0   | Yes       |
+| `@paretools/shared` >= 0.1.0 | Yes       |

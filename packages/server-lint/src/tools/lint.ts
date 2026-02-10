@@ -11,7 +11,8 @@ export function registerLintTool(server: McpServer) {
     "lint",
     {
       title: "ESLint Check",
-      description: "Runs ESLint and returns structured diagnostics (file, line, rule, severity, message)",
+      description:
+        "Runs ESLint and returns structured diagnostics (file, line, rule, severity, message)",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         patterns: z

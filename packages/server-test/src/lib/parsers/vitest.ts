@@ -83,7 +83,7 @@ export function parseVitestCoverage(stdout: string): Coverage {
     );
     if (!match) continue;
 
-    const [, name, stmts, branch, funcs, linePct] = match;
+    const [, name, , branch, funcs, linePct] = match;
     const trimName = name.trim();
 
     if (trimName === "File" || trimName.match(/^-+$/)) continue;

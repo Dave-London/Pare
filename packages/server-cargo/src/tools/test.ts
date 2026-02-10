@@ -11,7 +11,8 @@ export function registerTestTool(server: McpServer) {
     "test",
     {
       title: "Cargo Test",
-      description: "Runs cargo test and returns structured test results (name, status, pass/fail counts)",
+      description:
+        "Runs cargo test and returns structured test results (name, status, pass/fail counts)",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         filter: z.string().optional().describe("Test name filter pattern"),

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput } from "@paretools/shared";
-import { pip } from "../lib/python-runner.js";
 import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";

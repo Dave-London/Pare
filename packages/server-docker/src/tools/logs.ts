@@ -14,8 +14,15 @@ export function registerLogsTool(server: McpServer) {
       description: "Retrieves container logs as structured line arrays",
       inputSchema: {
         container: z.string().describe("Container name or ID"),
-        tail: z.number().optional().default(100).describe("Number of lines to return (default: 100)"),
-        since: z.string().optional().describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
+        tail: z
+          .number()
+          .optional()
+          .default(100)
+          .describe("Number of lines to return (default: 100)"),
+        since: z
+          .string()
+          .optional()
+          .describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
       },
       outputSchema: DockerLogsSchema,
     },

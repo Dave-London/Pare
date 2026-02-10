@@ -14,7 +14,11 @@ export function registerVetTool(server: McpServer) {
       description: "Runs go vet and returns structured static analysis diagnostics",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        packages: z.array(z.string()).optional().default(["./..."]).describe("Packages to vet (default: ./...)"),
+        packages: z
+          .array(z.string())
+          .optional()
+          .default(["./..."])
+          .describe("Packages to vet (default: ./...)"),
       },
       outputSchema: GoVetResultSchema,
     },

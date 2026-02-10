@@ -11,16 +11,13 @@ export function registerBuildTool(server: McpServer) {
     "build",
     {
       title: "Docker Build",
-      description: "Builds a Docker image and returns structured build results including image ID, duration, and errors",
+      description:
+        "Builds a Docker image and returns structured build results including image ID, duration, and errors",
       inputSchema: {
         path: z.string().optional().describe("Build context path (default: cwd)"),
         tag: z.string().optional().describe("Image tag (e.g., myapp:latest)"),
         file: z.string().optional().describe("Dockerfile path (default: Dockerfile)"),
-        args: z
-          .array(z.string())
-          .optional()
-          .default([])
-          .describe("Additional build arguments"),
+        args: z.array(z.string()).optional().default([]).describe("Additional build arguments"),
       },
       outputSchema: DockerBuildSchema,
     },

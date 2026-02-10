@@ -31,14 +31,58 @@ describe("parseGoBuildOutput", () => {
 describe("parseGoTestJson", () => {
   it("parses test JSON output", () => {
     const stdout = [
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "run", Package: "myapp", Test: "TestAdd" }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "output", Package: "myapp", Test: "TestAdd", Output: "--- PASS: TestAdd (0.00s)\n" }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "pass", Package: "myapp", Test: "TestAdd", Elapsed: 0.001 }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "run", Package: "myapp", Test: "TestSub" }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "fail", Package: "myapp", Test: "TestSub", Elapsed: 0.002 }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "run", Package: "myapp", Test: "TestSkipped" }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "skip", Package: "myapp", Test: "TestSkipped", Elapsed: 0 }),
-      JSON.stringify({ Time: "2024-01-01T00:00:00Z", Action: "fail", Package: "myapp", Elapsed: 0.5 }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "run",
+        Package: "myapp",
+        Test: "TestAdd",
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "output",
+        Package: "myapp",
+        Test: "TestAdd",
+        Output: "--- PASS: TestAdd (0.00s)\n",
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "pass",
+        Package: "myapp",
+        Test: "TestAdd",
+        Elapsed: 0.001,
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "run",
+        Package: "myapp",
+        Test: "TestSub",
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "fail",
+        Package: "myapp",
+        Test: "TestSub",
+        Elapsed: 0.002,
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "run",
+        Package: "myapp",
+        Test: "TestSkipped",
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "skip",
+        Package: "myapp",
+        Test: "TestSkipped",
+        Elapsed: 0,
+      }),
+      JSON.stringify({
+        Time: "2024-01-01T00:00:00Z",
+        Action: "fail",
+        Package: "myapp",
+        Elapsed: 0.5,
+      }),
     ].join("\n");
 
     const result = parseGoTestJson(stdout, 1);

@@ -11,10 +11,15 @@ export function registerTestTool(server: McpServer) {
     "test",
     {
       title: "Go Test",
-      description: "Runs go test and returns structured test results (name, status, package, elapsed)",
+      description:
+        "Runs go test and returns structured test results (name, status, package, elapsed)",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        packages: z.array(z.string()).optional().default(["./..."]).describe("Packages to test (default: ./...)"),
+        packages: z
+          .array(z.string())
+          .optional()
+          .default(["./..."])
+          .describe("Packages to test (default: ./...)"),
         run: z.string().optional().describe("Test name filter regex"),
       },
       outputSchema: GoTestResultSchema,

@@ -58,11 +58,13 @@ import { z } from "zod";
 export const MyToolSchema = z.object({
   // Only include fields an agent would act on
   success: z.boolean(),
-  errors: z.array(z.object({
-    file: z.string(),
-    line: z.number(),
-    message: z.string(),
-  })),
+  errors: z.array(
+    z.object({
+      file: z.string(),
+      line: z.number(),
+      message: z.string(),
+    }),
+  ),
 });
 ```
 
@@ -74,15 +76,21 @@ Every tool MUST use `outputSchema` and return dual output:
 import { dualOutput } from "@paretools/shared";
 import { MyToolSchema } from "../schemas/index.js";
 
-server.registerTool("my-command", {
-  title: "My Tool Command",
-  description: "What it does",
-  inputSchema: { /* Zod input params */ },
-  outputSchema: MyToolSchema,
-}, async (params) => {
-  const result = await runMyCommand(params);
-  return dualOutput(result, formatHumanReadable);
-});
+server.registerTool(
+  "my-command",
+  {
+    title: "My Tool Command",
+    description: "What it does",
+    inputSchema: {
+      /* Zod input params */
+    },
+    outputSchema: MyToolSchema,
+  },
+  async (params) => {
+    const result = await runMyCommand(params);
+    return dualOutput(result, formatHumanReadable);
+  },
+);
 ```
 
 ### 5. Write tests
@@ -141,6 +149,7 @@ pnpm format:check   # Check formatting
 ## Commit Messages
 
 Use conventional commits:
+
 - `feat(git): add stash tool`
 - `fix(shared): handle binary file in ANSI strip`
 - `docs: update README with npm server example`

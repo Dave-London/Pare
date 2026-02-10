@@ -12,7 +12,11 @@
       "assertionResults": [
         { "fullName": "parser > parses valid input", "status": "passed", "failureMessages": [] },
         { "fullName": "parser > handles empty input", "status": "passed", "failureMessages": [] },
-        { "fullName": "parser > handles malformed input", "status": "passed", "failureMessages": [] },
+        {
+          "fullName": "parser > handles malformed input",
+          "status": "passed",
+          "failureMessages": []
+        },
         {
           "fullName": "parser > parses nested structures",
           "status": "failed",

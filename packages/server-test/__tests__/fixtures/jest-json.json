@@ -9,28 +9,52 @@
     {
       "testFilePath": "/home/user/project/src/__tests__/auth.test.ts",
       "testResults": [
-        { "fullName": "auth > should login successfully", "status": "passed", "failureMessages": [] },
-        { "fullName": "auth > should reject invalid password", "status": "passed", "failureMessages": [] },
-        { "fullName": "auth > should hash password correctly", "status": "passed", "failureMessages": [] }
+        {
+          "fullName": "auth > should login successfully",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "fullName": "auth > should reject invalid password",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "fullName": "auth > should hash password correctly",
+          "status": "passed",
+          "failureMessages": []
+        }
       ]
     },
     {
       "testFilePath": "/home/user/project/src/__tests__/api.test.ts",
       "testResults": [
-        { "fullName": "api > GET /users should return user list", "status": "passed", "failureMessages": [] },
+        {
+          "fullName": "api > GET /users should return user list",
+          "status": "passed",
+          "failureMessages": []
+        },
         {
           "fullName": "api > POST /users should validate email",
           "status": "failed",
           "failureMessages": ["Expected: \"valid@email.com\"\nReceived: undefined"],
           "location": { "line": 15, "column": 5 }
         },
-        { "fullName": "api > DELETE /users/:id should require auth", "status": "passed", "failureMessages": [] }
+        {
+          "fullName": "api > DELETE /users/:id should require auth",
+          "status": "passed",
+          "failureMessages": []
+        }
       ]
     },
     {
       "testFilePath": "/home/user/project/src/__tests__/utils.test.ts",
       "testResults": [
-        { "fullName": "utils > should format date correctly", "status": "passed", "failureMessages": [] },
+        {
+          "fullName": "utils > should format date correctly",
+          "status": "passed",
+          "failureMessages": []
+        },
         {
           "fullName": "utils > should parse config file",
           "status": "failed",

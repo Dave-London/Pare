@@ -3,10 +3,12 @@ import { z } from "zod";
 // pip install
 export const PipInstallSchema = z.object({
   success: z.boolean(),
-  installed: z.array(z.object({
-    name: z.string(),
-    version: z.string(),
-  })),
+  installed: z.array(
+    z.object({
+      name: z.string(),
+      version: z.string(),
+    }),
+  ),
   alreadySatisfied: z.boolean(),
   total: z.number(),
 });

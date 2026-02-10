@@ -28,10 +28,15 @@ function estimateTokens(text: string): number {
 
 function runCommand(cmd: string, args: string[], cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(cmd, args, { cwd, timeout: 10_000, shell: process.platform === "win32" }, (error, stdout, stderr) => {
-      // We want the output regardless of exit code
-      resolve(stdout + stderr);
-    });
+    execFile(
+      cmd,
+      args,
+      { cwd, timeout: 10_000, shell: process.platform === "win32" },
+      (error, stdout, stderr) => {
+        // We want the output regardless of exit code
+        resolve(stdout + stderr);
+      },
+    );
   });
 }
 
@@ -45,7 +50,9 @@ interface BenchmarkResult {
   reduction: number;
 }
 
-async function connectServer(serverPath: string): Promise<{ client: Client; transport: StdioClientTransport }> {
+async function connectServer(
+  serverPath: string,
+): Promise<{ client: Client; transport: StdioClientTransport }> {
   const transport = new StdioClientTransport({
     command: "node",
     args: [serverPath],
@@ -219,7 +226,9 @@ function printTable(results: BenchmarkResult[]) {
   let totalPare = 0;
 
   for (const r of results) {
-    console.log(`| \`${r.tool}\` | ${r.description} | ${r.rawTokens} | ${r.pareTokens} | **${r.reduction}%** |`);
+    console.log(
+      `| \`${r.tool}\` | ${r.description} | ${r.rawTokens} | ${r.pareTokens} | **${r.reduction}%** |`,
+    );
     totalRaw += r.rawTokens;
     totalPare += r.pareTokens;
   }

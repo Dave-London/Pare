@@ -3,7 +3,11 @@ import type { GoBuildResult, GoTestResult, GoVetResult } from "../schemas/index.
 // go build errors: file.go:line:col: message
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
 
-export function parseGoBuildOutput(stdout: string, stderr: string, exitCode: number): GoBuildResult {
+export function parseGoBuildOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): GoBuildResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const errors: { file: string; line: number; column?: number; message: string }[] = [];
@@ -34,7 +38,16 @@ export function parseGoBuildOutput(stdout: string, stderr: string, exitCode: num
  */
 export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult {
   const lines = stdout.trim().split("\n").filter(Boolean);
-  const testMap = new Map<string, { package: string; name: string; status: "pass" | "fail" | "skip"; elapsed?: number; output?: string }>();
+  const testMap = new Map<
+    string,
+    {
+      package: string;
+      name: string;
+      status: "pass" | "fail" | "skip";
+      elapsed?: number;
+      output?: string;
+    }
+  >();
 
   for (const line of lines) {
     let event: GoTestEvent;

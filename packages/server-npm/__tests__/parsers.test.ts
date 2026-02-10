@@ -1,9 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { parseInstallOutput, parseAuditJson, parseOutdatedJson, parseListJson } from "../src/lib/parsers.js";
+import {
+  parseInstallOutput,
+  parseAuditJson,
+  parseOutdatedJson,
+  parseListJson,
+} from "../src/lib/parsers.js";
 
 describe("parseInstallOutput", () => {
   it("parses install with additions", () => {
-    const output = "added 52 packages, and audited 235 packages in 3s\n\n25 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities";
+    const output =
+      "added 52 packages, and audited 235 packages in 3s\n\n25 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities";
     const result = parseInstallOutput(output, 3.0);
 
     expect(result.added).toBe(52);
@@ -13,7 +19,8 @@ describe("parseInstallOutput", () => {
   });
 
   it("parses install with vulnerabilities", () => {
-    const output = "added 10 packages, and audited 100 packages in 2s\n\n3 vulnerabilities (1 high, 2 moderate)\n";
+    const output =
+      "added 10 packages, and audited 100 packages in 2s\n\n3 vulnerabilities (1 high, 2 moderate)\n";
     const result = parseInstallOutput(output, 2.0);
 
     expect(result.added).toBe(10);
@@ -33,7 +40,8 @@ describe("parseInstallOutput", () => {
   });
 
   it("parses install with removals and changes", () => {
-    const output = "added 3 packages, removed 5 packages, changed 2 packages, and audited 200 packages in 4s";
+    const output =
+      "added 3 packages, removed 5 packages, changed 2 packages, and audited 200 packages in 4s";
     const result = parseInstallOutput(output, 4.0);
 
     expect(result.added).toBe(3);
@@ -87,7 +95,13 @@ describe("parseAuditJson", () => {
 describe("parseOutdatedJson", () => {
   it("parses outdated packages", () => {
     const json = JSON.stringify({
-      typescript: { current: "5.3.0", wanted: "5.7.0", latest: "5.7.0", location: "node_modules/typescript", type: "devDependencies" },
+      typescript: {
+        current: "5.3.0",
+        wanted: "5.7.0",
+        latest: "5.7.0",
+        location: "node_modules/typescript",
+        type: "devDependencies",
+      },
       zod: { current: "3.22.0", wanted: "3.25.0", latest: "3.25.0" },
     });
 
@@ -113,7 +127,10 @@ describe("parseListJson", () => {
       name: "my-project",
       version: "1.0.0",
       dependencies: {
-        express: { version: "4.18.2", resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
+        express: {
+          version: "4.18.2",
+          resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz",
+        },
         zod: { version: "3.25.0" },
       },
     });

@@ -32,7 +32,10 @@ export function registerRunTool(server: McpServer) {
           .enum(["pytest", "jest", "vitest"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
-        filter: z.string().optional().describe("Test filter pattern (file path or test name pattern)"),
+        filter: z
+          .string()
+          .optional()
+          .describe("Test filter pattern (file path or test name pattern)"),
         args: z
           .array(z.string())
           .optional()

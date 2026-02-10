@@ -1,4 +1,10 @@
-import type { PipInstall, MypyResult, MypyDiagnosticSchema, RuffResult, PipAuditResult } from "../schemas/index.js";
+import type {
+  PipInstall,
+  MypyResult,
+  MypyDiagnosticSchema,
+  RuffResult,
+  PipAuditResult,
+} from "../schemas/index.js";
 import { z } from "zod";
 
 type MypyDiagnostic = z.infer<typeof MypyDiagnosticSchema>;
@@ -53,7 +59,9 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter((d) => d.severity === "warning" || d.severity === "note").length;
+  const warnings = diagnostics.filter(
+    (d) => d.severity === "warning" || d.severity === "note",
+  ).length;
 
   return {
     success: exitCode === 0,

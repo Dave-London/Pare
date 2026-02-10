@@ -11,10 +11,14 @@ export function registerBuildTool(server: McpServer) {
     "build",
     {
       title: "Run Build",
-      description: "Runs a build command and returns structured success/failure with errors and warnings",
+      description:
+        "Runs a build command and returns structured success/failure with errors and warnings",
       inputSchema: {
         command: z.string().describe("Build command to run (e.g., 'npm', 'npx', 'pnpm')"),
-        args: z.array(z.string()).default([]).describe("Arguments for the build command (e.g., ['run', 'build'])"),
+        args: z
+          .array(z.string())
+          .default([])
+          .describe("Arguments for the build command (e.g., ['run', 'build'])"),
         path: z.string().optional().describe("Working directory (default: cwd)"),
       },
       outputSchema: BuildResultSchema,

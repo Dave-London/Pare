@@ -11,7 +11,8 @@ export function registerMypyTool(server: McpServer) {
     "mypy",
     {
       title: "mypy Type Check",
-      description: "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code)",
+      description:
+        "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code)",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         targets: z

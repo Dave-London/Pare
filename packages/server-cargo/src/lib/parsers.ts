@@ -81,7 +81,14 @@ export function parseCargoClippyJson(stdout: string): CargoClippyResult {
 
 function parseCompilerMessages(stdout: string) {
   const lines = stdout.trim().split("\n").filter(Boolean);
-  const diagnostics: { file: string; line: number; column: number; severity: "error" | "warning" | "note" | "help"; code?: string; message: string }[] = [];
+  const diagnostics: {
+    file: string;
+    line: number;
+    column: number;
+    severity: "error" | "warning" | "note" | "help";
+    code?: string;
+    message: string;
+  }[] = [];
 
   for (const line of lines) {
     let msg: CargoMessage;
@@ -96,9 +103,11 @@ function parseCompilerMessages(stdout: string) {
     const span = msg.message.spans[0];
     if (!span) continue;
 
-    const severity = (["error", "warning", "note", "help"].includes(msg.message.level)
-      ? msg.message.level
-      : "warning") as "error" | "warning" | "note" | "help";
+    const severity = (
+      ["error", "warning", "note", "help"].includes(msg.message.level)
+        ? msg.message.level
+        : "warning"
+    ) as "error" | "warning" | "note" | "help";
 
     diagnostics.push({
       file: span.file_name,

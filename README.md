@@ -6,31 +6,41 @@ pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap
 
 ## The Problem
 
-AI coding agents spend **76.1% of their tokens reading tool output** designed for humans — ANSI colors, progress bars, ASCII art, instructional hints. This is wasteful and expensive.
+AI coding agents spend most of their tokens reading tool output designed for humans — ANSI colors, progress bars, ASCII art, instructional hints. This is wasteful and expensive.
 
-| Tool Command | Raw Tokens | pare Tokens | Reduction |
-|---|---:|---:|---:|
-| `pytest` (47 tests, all pass) | 186 | 8 | **96%** |
-| `pytest` (47 tests, 1 fail) | 1,008 | 46 | **95%** |
-| `npm install` (large project) | 526 | 55 | **90%** |
-| `git log` (3 commits) | 501 | 71 | **86%** |
-| `git status` (dirty) | 118 | 28 | **76%** |
-| **Weighted average** | — | — | **~85%** |
+| Tool Command                  | Raw Tokens | pare Tokens | Reduction |
+| ----------------------------- | ---------: | ----------: | --------: |
+| `pytest` (47 tests, all pass) |        186 |           8 |   **96%** |
+| `pytest` (47 tests, 1 fail)   |      1,008 |          46 |   **95%** |
+| `npm install` (large project) |        526 |          55 |   **90%** |
+| `git log` (3 commits)         |        501 |          71 |   **86%** |
+| `git status` (dirty)          |        118 |          28 |   **76%** |
+| **Weighted average**          |          — |           — |  **~85%** |
 
 ## How It Works
 
 Every pare tool returns dual output:
+
 - **`content`** — Human-readable text (for MCP clients that display it)
 - **`structuredContent`** — Typed, schema-validated JSON (for agents)
 
 pare uses MCP's `structuredContent` + `outputSchema` spec features to deliver type-safe, validated structured output that agents can consume directly.
 
-## Quick Start
+## Available Servers
 
-```bash
-# Install the git server
-npx @paretools/git
-```
+| Package                                         | Tools                                    | Wraps                |
+| ----------------------------------------------- | ---------------------------------------- | -------------------- |
+| [`@paretools/git`](./packages/server-git)       | status, log, diff, branch, show          | git                  |
+| [`@paretools/test`](./packages/server-test)     | run, coverage                            | pytest, jest, vitest |
+| [`@paretools/npm`](./packages/server-npm)       | install, audit, outdated, list           | npm                  |
+| [`@paretools/docker`](./packages/server-docker) | ps, build, logs, images                  | docker               |
+| [`@paretools/build`](./packages/server-build)   | tsc, build                               | tsc, generic builds  |
+| [`@paretools/lint`](./packages/server-lint)     | lint, format-check                       | eslint, prettier     |
+| [`@paretools/python`](./packages/server-python) | pip-install, mypy, ruff-check, pip-audit | pip, mypy, ruff      |
+| [`@paretools/cargo`](./packages/server-cargo)   | build, test, clippy                      | cargo                |
+| [`@paretools/go`](./packages/server-go)         | build, test, vet                         | go                   |
+
+## Quick Start
 
 Add to your MCP client config (e.g., Claude Code `~/.claude.json`):
 
@@ -40,24 +50,19 @@ Add to your MCP client config (e.g., Claude Code `~/.claude.json`):
     "pare-git": {
       "command": "npx",
       "args": ["@paretools/git"]
+    },
+    "pare-test": {
+      "command": "npx",
+      "args": ["@paretools/test"]
     }
   }
 }
 ```
 
-## Available Servers
-
-| Package | Tools | Status |
-|---|---|---|
-| [`@paretools/git`](./packages/server-git) | status, log, diff, branch, show | Available |
-| [`@paretools/test`](./packages/server-test) | run, coverage (pytest/jest/vitest) | Available |
-| `@paretools/npm` | install, audit, outdated, list | Planned |
-| `@paretools/docker` | ps, build, logs, compose | Planned |
-| `@paretools/build` | tsc, esbuild, vite | Planned |
-
 ## Example: `git status`
 
 **Raw git output (118 tokens):**
+
 ```
 On branch main
 Your branch is ahead of 'origin/main' by 2 commits.
@@ -79,6 +84,7 @@ Untracked files:
 ```
 
 **pare structured output (28 tokens):**
+
 ```json
 {
   "branch": "main",
@@ -100,9 +106,7 @@ Untracked files:
 
 ## Contributing
 
-We'd love your help! The contribution model is simple: **each server is a self-contained package**. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
-
-The easiest way to contribute is to add a new server for your favorite dev tool. Check the [open issues](https://github.com/Dave-London/pare/issues) for "new-server" requests.
+Each server is a self-contained package. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
 
 ## License
 

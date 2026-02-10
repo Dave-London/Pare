@@ -14,7 +14,11 @@ export function registerListTool(server: McpServer) {
       description: "Lists installed packages as structured dependency data",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
-        depth: z.number().optional().default(0).describe("Dependency tree depth (default: 0, top-level only)"),
+        depth: z
+          .number()
+          .optional()
+          .default(0)
+          .describe("Dependency tree depth (default: 0, top-level only)"),
       },
       outputSchema: NpmListSchema,
     },

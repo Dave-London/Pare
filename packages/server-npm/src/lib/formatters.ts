@@ -5,11 +5,15 @@ export function formatInstall(data: NpmInstall): string {
   if (data.added) parts.push(`added ${data.added}`);
   if (data.removed) parts.push(`removed ${data.removed}`);
   if (data.changed) parts.push(`changed ${data.changed}`);
-  const line = parts.length ? parts.join(", ") + ` (${data.packages} packages, ${data.duration}s)` : `up to date (${data.packages} packages)`;
+  const line = parts.length
+    ? parts.join(", ") + ` (${data.packages} packages, ${data.duration}s)`
+    : `up to date (${data.packages} packages)`;
 
   const lines = [line];
   if (data.vulnerabilities && data.vulnerabilities.total > 0) {
-    lines.push(`${data.vulnerabilities.total} vulnerabilities (${data.vulnerabilities.critical} critical, ${data.vulnerabilities.high} high)`);
+    lines.push(
+      `${data.vulnerabilities.total} vulnerabilities (${data.vulnerabilities.critical} critical, ${data.vulnerabilities.high} high)`,
+    );
   }
   if (data.funding) {
     lines.push(`${data.funding} packages looking for funding`);
@@ -20,9 +24,13 @@ export function formatInstall(data: NpmInstall): string {
 export function formatAudit(data: NpmAudit): string {
   if (data.summary.total === 0) return "No vulnerabilities found.";
 
-  const lines = [`${data.summary.total} vulnerabilities (${data.summary.critical} critical, ${data.summary.high} high, ${data.summary.moderate} moderate, ${data.summary.low} low)`];
+  const lines = [
+    `${data.summary.total} vulnerabilities (${data.summary.critical} critical, ${data.summary.high} high, ${data.summary.moderate} moderate, ${data.summary.low} low)`,
+  ];
   for (const v of data.vulnerabilities) {
-    lines.push(`  [${v.severity}] ${v.name}: ${v.title}${v.fixAvailable ? " (fix available)" : ""}`);
+    lines.push(
+      `  [${v.severity}] ${v.name}: ${v.title}${v.fixAvailable ? " (fix available)" : ""}`,
+    );
   }
   return lines.join("\n");
 }

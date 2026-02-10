@@ -11,7 +11,10 @@ import { CoverageSchema } from "../schemas/index.js";
 function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
-      return { cmd: "python", cmdArgs: ["-m", "pytest", "--cov", "--cov-report=term-missing", "-q"] };
+      return {
+        cmd: "python",
+        cmdArgs: ["-m", "pytest", "--cov", "--cov-report=term-missing", "-q"],
+      };
     case "jest":
       return { cmd: "npx", cmdArgs: ["jest", "--coverage", "--coverageReporters=text"] };
     case "vitest":

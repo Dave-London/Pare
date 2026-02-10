@@ -68,7 +68,11 @@ interface EslintJsonEntry {
  * Prettier --check outputs lines like:
  * "Checking formatting...\n[warn] src/index.ts\n[warn] Code style issues found..."
  */
-export function parsePrettierCheck(stdout: string, stderr: string, exitCode: number): FormatCheckResult {
+export function parsePrettierCheck(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): FormatCheckResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n").filter(Boolean);
 

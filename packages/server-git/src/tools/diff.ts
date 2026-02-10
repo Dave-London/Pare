@@ -11,13 +11,18 @@ export function registerDiffTool(server: McpServer) {
     "diff",
     {
       title: "Git Diff",
-      description: "Returns file-level diff statistics as structured data. Use full=true for patch content.",
+      description:
+        "Returns file-level diff statistics as structured data. Use full=true for patch content.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
         ref: z.string().optional().describe("Compare against a specific ref (branch, tag, commit)"),
         file: z.string().optional().describe("Limit diff to a specific file"),
-        full: z.boolean().optional().default(false).describe("Include full patch content in chunks"),
+        full: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Include full patch content in chunks"),
       },
       outputSchema: GitDiffSchema,
     },

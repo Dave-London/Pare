@@ -56,7 +56,12 @@ export function parseStatus(stdout: string, branchLine: string): GitStatus {
     deleted,
     untracked,
     conflicts,
-    clean: staged.length === 0 && modified.length === 0 && deleted.length === 0 && untracked.length === 0 && conflicts.length === 0,
+    clean:
+      staged.length === 0 &&
+      modified.length === 0 &&
+      deleted.length === 0 &&
+      untracked.length === 0 &&
+      conflicts.length === 0,
   };
 }
 
@@ -118,7 +123,8 @@ export function parseDiffStat(stdout: string): GitDiff {
     const [add, del, ...fileParts] = line.split("\t");
     const filePath = fileParts.join("\t");
     // Detect renames: "old => new" or "{old => new}/path"
-    const renameMatch = filePath.match(/(.+)\{(.+) => (.+)\}(.*)/) || filePath.match(/(.+) => (.+)/);
+    const renameMatch =
+      filePath.match(/(.+)\{(.+) => (.+)\}(.*)/) || filePath.match(/(.+) => (.+)/);
     const isRename = !!renameMatch;
     const additions = add === "-" ? 0 : parseInt(add, 10);
     const deletions = del === "-" ? 0 : parseInt(del, 10);

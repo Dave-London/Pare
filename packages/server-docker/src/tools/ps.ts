@@ -13,7 +13,11 @@ export function registerPsTool(server: McpServer) {
       title: "Docker PS",
       description: "Lists Docker containers with structured status, ports, and state information",
       inputSchema: {
-        all: z.boolean().optional().default(true).describe("Show all containers (default: true, includes stopped)"),
+        all: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Show all containers (default: true, includes stopped)"),
       },
       outputSchema: DockerPsSchema,
     },

@@ -10,7 +10,8 @@ export function formatStatus(s: GitStatus): string {
     if (s.behind) tracking.push(`behind ${s.behind}`);
     if (tracking.length) parts[0] += ` [${tracking.join(", ")}]`;
   }
-  if (s.staged.length) parts.push(`Staged: ${s.staged.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`);
+  if (s.staged.length)
+    parts.push(`Staged: ${s.staged.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`);
   if (s.modified.length) parts.push(`Modified: ${s.modified.join(", ")}`);
   if (s.deleted.length) parts.push(`Deleted: ${s.deleted.join(", ")}`);
   if (s.untracked.length) parts.push(`Untracked: ${s.untracked.join(", ")}`);
@@ -20,9 +21,7 @@ export function formatStatus(s: GitStatus): string {
 }
 
 export function formatLog(log: GitLog): string {
-  return log.commits
-    .map((c) => `${c.hashShort} ${c.message} (${c.author}, ${c.date})`)
-    .join("\n");
+  return log.commits.map((c) => `${c.hashShort} ${c.message} (${c.author}, ${c.date})`).join("\n");
 }
 
 export function formatDiff(diff: GitDiff): string {

@@ -11,7 +11,8 @@ export function registerInstallTool(server: McpServer) {
     "install",
     {
       title: "npm Install",
-      description: "Runs npm install and returns a structured summary of added/removed packages and vulnerabilities",
+      description:
+        "Runs npm install and returns a structured summary of added/removed packages and vulnerabilities",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         args: z
@@ -26,7 +27,7 @@ export function registerInstallTool(server: McpServer) {
       const cwd = path || process.cwd();
       const start = Date.now();
       const result = await npm(["install", ...(args || [])], cwd);
-      const duration = Math.round((Date.now() - start) / 1000 * 10) / 10;
+      const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
 
       const output = result.stdout + "\n" + result.stderr;
       const install = parseInstallOutput(output, duration);

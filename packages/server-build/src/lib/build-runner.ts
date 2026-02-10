@@ -4,6 +4,10 @@ export async function tsc(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["tsc", ...args], { cwd });
 }
 
-export async function runBuildCommand(cmd: string, args: string[], cwd?: string): Promise<RunResult> {
+export async function runBuildCommand(
+  cmd: string,
+  args: string[],
+  cwd?: string,
+): Promise<RunResult> {
   return run(cmd, args, { cwd });
 }

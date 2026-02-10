@@ -1,9 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { parsePipInstall, parseMypyOutput, parseRuffJson, parsePipAuditJson } from "../src/lib/parsers.js";
+import {
+  parsePipInstall,
+  parseMypyOutput,
+  parseRuffJson,
+  parsePipAuditJson,
+} from "../src/lib/parsers.js";
 
 describe("parsePipInstall", () => {
   it("parses successful install", () => {
-    const stdout = "Collecting requests\n  Downloading requests-2.31.0.tar.gz\nSuccessfully installed requests-2.31.0 urllib3-2.1.0 charset-normalizer-3.3.0";
+    const stdout =
+      "Collecting requests\n  Downloading requests-2.31.0.tar.gz\nSuccessfully installed requests-2.31.0 urllib3-2.1.0 charset-normalizer-3.3.0";
     const result = parsePipInstall(stdout, "", 0);
 
     expect(result.success).toBe(true);
@@ -14,7 +20,8 @@ describe("parsePipInstall", () => {
   });
 
   it("parses already satisfied", () => {
-    const stdout = "Requirement already satisfied: requests in /usr/lib/python3/site-packages (2.31.0)";
+    const stdout =
+      "Requirement already satisfied: requests in /usr/lib/python3/site-packages (2.31.0)";
     const result = parsePipInstall(stdout, "", 0);
 
     expect(result.success).toBe(true);
@@ -33,7 +40,7 @@ describe("parseMypyOutput", () => {
   it("parses mypy errors", () => {
     const stdout = [
       'src/main.py:10: error: Argument 1 to "foo" has incompatible type "str"; expected "int"  [arg-type]',
-      "src/main.py:20:5: error: Name \"bar\" is not defined  [name-defined]",
+      'src/main.py:20:5: error: Name "bar" is not defined  [name-defined]',
       "src/utils.py:5: note: See https://mypy.readthedocs.io for more info",
       "Found 2 errors in 2 files",
     ].join("\n");
@@ -148,9 +155,7 @@ describe("parsePipAuditJson", () => {
 
   it("parses clean audit", () => {
     const json = JSON.stringify({
-      dependencies: [
-        { name: "requests", version: "2.31.0", vulns: [] },
-      ],
+      dependencies: [{ name: "requests", version: "2.31.0", vulns: [] }],
     });
 
     const result = parsePipAuditJson(json);

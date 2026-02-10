@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parseCargoBuildJson, parseCargoTestOutput, parseCargoClippyJson } from "../src/lib/parsers.js";
+import {
+  parseCargoBuildJson,
+  parseCargoTestOutput,
+  parseCargoClippyJson,
+} from "../src/lib/parsers.js";
 
 describe("parseCargoBuildJson", () => {
   it("parses build with errors", () => {

@@ -7,8 +7,26 @@ describe("parseEslintJson", () => {
       {
         filePath: "/project/src/index.ts",
         messages: [
-          { ruleId: "no-unused-vars", severity: 2, message: "'x' is defined but never used.", line: 5, column: 7, endLine: 5, endColumn: 8, fix: null },
-          { ruleId: "semi", severity: 1, message: "Missing semicolon.", line: 10, column: 20, endLine: 10, endColumn: 20, fix: { range: [100, 100], text: ";" } },
+          {
+            ruleId: "no-unused-vars",
+            severity: 2,
+            message: "'x' is defined but never used.",
+            line: 5,
+            column: 7,
+            endLine: 5,
+            endColumn: 8,
+            fix: null,
+          },
+          {
+            ruleId: "semi",
+            severity: 1,
+            message: "Missing semicolon.",
+            line: 10,
+            column: 20,
+            endLine: 10,
+            endColumn: 20,
+            fix: { range: [100, 100], text: ";" },
+          },
         ],
         errorCount: 1,
         warningCount: 1,
@@ -16,7 +34,14 @@ describe("parseEslintJson", () => {
       {
         filePath: "/project/src/utils.ts",
         messages: [
-          { ruleId: "no-console", severity: 1, message: "Unexpected console statement.", line: 3, column: 1, fix: null },
+          {
+            ruleId: "no-console",
+            severity: 1,
+            message: "Unexpected console statement.",
+            line: 3,
+            column: 1,
+            fix: null,
+          },
         ],
         errorCount: 0,
         warningCount: 1,
@@ -68,7 +93,13 @@ describe("parseEslintJson", () => {
       {
         filePath: "/project/src/index.ts",
         messages: [
-          { ruleId: null, severity: 2, message: "Parsing error: unexpected token.", line: 1, column: 1 },
+          {
+            ruleId: null,
+            severity: 2,
+            message: "Parsing error: unexpected token.",
+            line: 1,
+            column: 1,
+          },
         ],
         errorCount: 1,
         warningCount: 0,

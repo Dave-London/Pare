@@ -23,7 +23,12 @@ describe("formatTestRun", () => {
       framework: "jest",
       summary: { total: 8, passed: 6, failed: 2, skipped: 0, duration: 1.5 },
       failures: [
-        { name: "should validate email", file: "api.test.ts", line: 15, message: "Expected valid@email.com" },
+        {
+          name: "should validate email",
+          file: "api.test.ts",
+          line: 15,
+          message: "Expected valid@email.com",
+        },
         { name: "should parse config", file: "utils.test.ts", message: "Received null" },
       ],
     };

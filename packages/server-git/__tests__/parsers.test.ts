@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseStatus, parseLog, parseDiffStat, parseBranch, parseShow } from "../src/lib/parsers.js";
+import {
+  parseStatus,
+  parseLog,
+  parseDiffStat,
+  parseBranch,
+  parseShow,
+} from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
   it("parses clean repo", () => {

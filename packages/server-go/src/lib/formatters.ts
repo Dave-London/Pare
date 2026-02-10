@@ -13,7 +13,9 @@ export function formatGoBuild(data: GoBuildResult): string {
 
 export function formatGoTest(data: GoTestResult): string {
   const status = data.success ? "ok" : "FAIL";
-  const lines = [`${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`];
+  const lines = [
+    `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`,
+  ];
   for (const t of data.tests) {
     const elapsed = t.elapsed !== undefined ? ` (${t.elapsed}s)` : "";
     lines.push(`  ${t.status.padEnd(4)} ${t.package}/${t.name}${elapsed}`);
