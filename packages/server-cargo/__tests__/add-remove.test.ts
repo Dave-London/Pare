@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseCargoAddOutput, parseCargoRemoveOutput } from "../src/lib/parsers.js";
 import { formatCargoAdd, formatCargoRemove } from "../src/lib/formatters.js";
+import { assertNoFlagInjection } from "@paretools/shared";
 
 // ---------------------------------------------------------------------------
 // cargo add
@@ -200,5 +201,66 @@ describe("formatCargoRemove", () => {
     });
 
     expect(output).toBe("cargo remove: success, no packages removed.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Flag injection security tests
+// ---------------------------------------------------------------------------
+
+describe("assertNoFlagInjection (cargo add/remove security)", () => {
+  it("allows legitimate package names", () => {
+    expect(() => assertNoFlagInjection("serde", "packages")).not.toThrow();
+    expect(() => assertNoFlagInjection("tokio", "packages")).not.toThrow();
+    expect(() => assertNoFlagInjection("serde_json", "packages")).not.toThrow();
+    expect(() => assertNoFlagInjection("my-crate@1.0", "packages")).not.toThrow();
+  });
+
+  it("rejects --git flag injection", () => {
+    expect(() => assertNoFlagInjection("--git", "packages")).toThrow(/must not start with "-"/);
+  });
+
+  it("rejects --git with URL", () => {
+    expect(() => assertNoFlagInjection("--git=https://evil.com", "packages")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects --path flag injection", () => {
+    expect(() => assertNoFlagInjection("--path", "packages")).toThrow(/must not start with "-"/);
+  });
+
+  it("rejects --path with value", () => {
+    expect(() => assertNoFlagInjection("--path=/etc/passwd", "packages")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects -F short flag", () => {
+    expect(() => assertNoFlagInjection("-F", "packages")).toThrow(/must not start with "-"/);
+  });
+
+  it("rejects --features flag injection", () => {
+    expect(() => assertNoFlagInjection("--features", "packages")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects --registry flag injection", () => {
+    expect(() => assertNoFlagInjection("--registry", "packages")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects single dash flag", () => {
+    expect(() => assertNoFlagInjection("-p", "packages")).toThrow(/must not start with "-"/);
+  });
+
+  it("includes the parameter name in the error message", () => {
+    expect(() => assertNoFlagInjection("--evil", "packages")).toThrow(/packages/);
+  });
+
+  it("includes the rejected value in the error message", () => {
+    expect(() => assertNoFlagInjection("--evil", "packages")).toThrow(/--evil/);
   });
 });

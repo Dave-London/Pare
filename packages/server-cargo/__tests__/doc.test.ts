@@ -89,7 +89,7 @@ describe("formatCargoDoc", () => {
       warnings: 0,
     });
 
-    expect(output).toBe("cargo doc: success, no warnings.");
+    expect(output).toBe("cargo doc: success.");
   });
 
   it("formats successful doc build with warnings", () => {
@@ -107,7 +107,7 @@ describe("formatCargoDoc", () => {
       warnings: 0,
     });
 
-    expect(output).toBe("cargo doc: failed, no warnings.");
+    expect(output).toBe("cargo doc: failed.");
   });
 
   it("formats failed doc build with warnings", () => {

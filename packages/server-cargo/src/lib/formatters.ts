@@ -96,6 +96,6 @@ export function formatCargoFmt(data: CargoFmtResult): string {
 /** Formats structured cargo doc output into a human-readable summary. */
 export function formatCargoDoc(data: CargoDocResult): string {
   const status = data.success ? "success" : "failed";
-  if (data.warnings === 0) return `cargo doc: ${status}, no warnings.`;
+  if (data.warnings === 0) return `cargo doc: ${status}.`;
   return `cargo doc: ${status} (${data.warnings} warning(s))`;
 }
