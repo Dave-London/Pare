@@ -5,6 +5,11 @@ import {
   parseDiffStat,
   parseBranch,
   parseShow,
+  parseAdd,
+  parseCommit,
+  parsePush,
+  parsePull,
+  parseCheckout,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -183,5 +188,86 @@ describe("parseShow", () => {
     expect(result.diff.totalFiles).toBe(2);
     expect(result.diff.totalAdditions).toBe(6);
     expect(result.diff.totalDeletions).toBe(3);
+  });
+});
+
+// ── Diff chunk splitting tests (full patch mode logic) ─────────────────
+
+describe("parseDiffStat — chunk scenarios for full=true", () => {
+  it("parseDiffStat correctly detects status for single-file add", () => {
+    const numstat = "50\t0\tsrc/new-module.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.totalFiles).toBe(1);
+    expect(result.files[0].status).toBe("added");
+    expect(result.files[0].additions).toBe(50);
+    expect(result.files[0].deletions).toBe(0);
+  });
+
+  it("parseDiffStat correctly detects status for single-file delete", () => {
+    const numstat = "0\t30\tsrc/old-module.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files[0].status).toBe("deleted");
+  });
+
+  it("parseDiffStat handles multi-file diff with mixed statuses", () => {
+    const numstat = [
+      "10\t5\tsrc/app.ts",
+      "100\t0\tsrc/feature.ts",
+      "0\t80\tsrc/deprecated.ts",
+      "-\t-\tassets/image.png",
+      "3\t1\t{src => lib}/utils.ts",
+    ].join("\n");
+
+    const result = parseDiffStat(numstat);
+
+    expect(result.totalFiles).toBe(5);
+    expect(result.files[0].status).toBe("modified");
+    expect(result.files[1].status).toBe("added");
+    expect(result.files[2].status).toBe("deleted");
+    expect(result.files[3].status).toBe("modified"); // binary: 0 add, 0 del
+    expect(result.files[4].status).toBe("renamed");
+    expect(result.totalAdditions).toBe(113);
+    expect(result.totalDeletions).toBe(86);
+  });
+
+  it("parseDiffStat handles file path with tabs", () => {
+    // Tabs in file paths would split incorrectly; fileParts.join(\t) handles this
+    const numstat = "5\t2\tpath/with\ttab.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].file).toBe("path/with\ttab.ts");
+    expect(result.files[0].additions).toBe(5);
+    expect(result.files[0].deletions).toBe(2);
+  });
+
+  it("parseDiffStat handles zero-change file (0 0) as modified", () => {
+    const numstat = "0\t0\tsrc/unchanged.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].status).toBe("modified");
+    expect(result.files[0].additions).toBe(0);
+    expect(result.files[0].deletions).toBe(0);
+  });
+
+  it("parseDiffStat preserves oldFile for brace-style renames", () => {
+    const numstat = "7\t3\tpackages/{old-name => new-name}/src/index.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files[0].status).toBe("renamed");
+    expect(result.files[0].file).toBe("packages/{old-name => new-name}/src/index.ts");
+    // The parser produces an oldFile from the first capture group
+    expect(result.files[0].oldFile).toBeDefined();
+  });
+
+  it("parseDiffStat preserves oldFile for simple rename", () => {
+    const numstat = "2\t1\told-file.ts => new-file.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files[0].status).toBe("renamed");
+    expect(result.files[0].oldFile).toBeDefined();
   });
 });
