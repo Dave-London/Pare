@@ -11,6 +11,10 @@ import {
   parseMypyOutput,
   parseRuffJson,
   parsePipAuditJson,
+  parsePytestOutput,
+  parseUvInstall,
+  parseUvRun,
+  parseBlackOutput,
 } from "../src/lib/parsers.js";
 
 // ─── pip install fixtures ─────────────────────────────────────────────────────
@@ -458,5 +462,248 @@ describe("fidelity: pip-audit", () => {
     // flask has vulns: [] so should not appear in vulnerabilities
     const flaskVulns = result.vulnerabilities.filter((v) => v.name === "flask");
     expect(flaskVulns).toHaveLength(0);
+  });
+});
+
+// ─── pytest fixtures ─────────────────────────────────────────────────────────
+
+const PYTEST_ALL_PASSING = [
+  "test_math.py .....",
+  "",
+  "========================= 5 passed in 0.32s =========================",
+].join("\n");
+
+const PYTEST_MIXED_RESULTS = [
+  "test_math.py ..F.s",
+  "test_strings.py .F",
+  "",
+  "_____________________________ test_subtract _____________________________",
+  "",
+  "    def test_subtract():",
+  ">       assert 5 - 3 == 1",
+  "E       assert 2 == 1",
+  "E        +  where 2 = 5 - 3",
+  "",
+  "test_math.py:12: AssertionError",
+  "_____________________________ test_upper _____________________________",
+  "",
+  '    def test_upper():',
+  '>       assert "hello".upper() == "WORLD"',
+  "E       AssertionError: assert 'HELLO' == 'WORLD'",
+  "E         - WORLD",
+  "E         + HELLO",
+  "",
+  "test_strings.py:8: AssertionError",
+  "========================= short test summary info =========================",
+  "FAILED test_math.py::test_subtract",
+  "FAILED test_strings.py::test_upper",
+  "==================== 3 passed, 2 failed, 1 skipped in 1.24s ====================",
+].join("\n");
+
+const PYTEST_NO_TESTS_RAN = [
+  "========================= no tests ran in 0.01s =========================",
+].join("\n");
+
+// ─── uv install fixtures ─────────────────────────────────────────────────────
+
+const UV_INSTALL_SUCCESS = [
+  "Resolved 5 packages in 320ms",
+  "Prepared 5 packages in 500ms",
+  "Installed 5 packages in 120ms",
+  " + flask==3.0.0",
+  " + jinja2==3.1.2",
+  " + markupsafe==2.1.3",
+  " + werkzeug==3.0.1",
+  " + itsdangerous==2.1.2",
+].join("\n");
+
+const UV_INSTALL_ALREADY_SATISFIED = [
+  "Audited 5 packages in 10ms",
+].join("\n");
+
+// ─── uv run fixtures ────────────────────────────────────────────────────────
+
+// Simple stdout passthrough
+const UV_RUN_STDOUT = "Hello from Python script!\nProcessed 42 items.\n";
+const UV_RUN_STDERR = "";
+
+// Mixed stdout/stderr
+const UV_RUN_MIXED_STDOUT = "Result: 3.14159\n";
+const UV_RUN_MIXED_STDERR = "DeprecationWarning: use math.tau instead\n";
+
+// ─── black fixtures ──────────────────────────────────────────────────────────
+
+const BLACK_CHECK_MODE_DIRTY = [
+  "would reformat src/main.py",
+  "would reformat src/utils.py",
+  "would reformat tests/test_main.py",
+  "Oh no! 3 files would be reformatted, 7 files would be left unchanged.",
+].join("\n");
+
+const BLACK_FORMAT_MODE_CHANGED = [
+  "reformatted src/main.py",
+  "reformatted src/utils.py",
+  "All done! 2 files reformatted, 5 files left unchanged.",
+].join("\n");
+
+const BLACK_ALL_CLEAN = "All done! 10 files would be left unchanged.";
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe("fidelity: pytest", () => {
+  it("preserves pass count and duration for all-passing suite", () => {
+    const result = parsePytestOutput(PYTEST_ALL_PASSING, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.passed).toBe(5);
+    expect(result.failed).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.total).toBe(5);
+    expect(result.duration).toBe(0.32);
+    expect(result.failures).toEqual([]);
+  });
+
+  it("preserves mixed results with failure details", () => {
+    const result = parsePytestOutput(PYTEST_MIXED_RESULTS, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.passed).toBe(3);
+    expect(result.failed).toBe(2);
+    expect(result.skipped).toBe(1);
+    expect(result.total).toBe(6);
+    expect(result.duration).toBe(1.24);
+
+    // Verify failure details are preserved
+    expect(result.failures).toHaveLength(2);
+
+    const subtractFailure = result.failures.find((f) => f.test === "test_subtract")!;
+    expect(subtractFailure).toBeDefined();
+    expect(subtractFailure.message).toContain("assert 2 == 1");
+
+    const upperFailure = result.failures.find((f) => f.test === "test_upper")!;
+    expect(upperFailure).toBeDefined();
+    expect(upperFailure.message).toContain("assert 'HELLO' == 'WORLD'");
+  });
+
+  it("handles no-tests-ran case with exit code 5", () => {
+    const result = parsePytestOutput(PYTEST_NO_TESTS_RAN, "", 5);
+
+    expect(result.success).toBe(true);
+    expect(result.passed).toBe(0);
+    expect(result.failed).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.total).toBe(0);
+    expect(result.failures).toEqual([]);
+  });
+});
+
+describe("fidelity: uv install", () => {
+  it("preserves all installed package names and versions", () => {
+    const result = parseUvInstall("", UV_INSTALL_SUCCESS, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(5);
+    expect(result.installed).toHaveLength(5);
+
+    const names = result.installed.map((p) => p.name);
+    expect(names).toContain("flask");
+    expect(names).toContain("jinja2");
+    expect(names).toContain("markupsafe");
+    expect(names).toContain("werkzeug");
+    expect(names).toContain("itsdangerous");
+
+    // Verify exact pairings
+    const flask = result.installed.find((p) => p.name === "flask")!;
+    expect(flask.version).toBe("3.0.0");
+
+    const markupsafe = result.installed.find((p) => p.name === "markupsafe")!;
+    expect(markupsafe.version).toBe("2.1.3");
+  });
+
+  it("detects already-satisfied via Audited output", () => {
+    const result = parseUvInstall("", UV_INSTALL_ALREADY_SATISFIED, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.installed).toEqual([]);
+  });
+
+  it("reports failure on non-zero exit code", () => {
+    const stderr = "error: Could not find package 'nonexistent-pkg-xyz'";
+    const result = parseUvInstall("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(0);
+    expect(result.installed).toEqual([]);
+  });
+});
+
+describe("fidelity: uv run", () => {
+  it("preserves stdout/stderr passthrough with exit code", () => {
+    const result = parseUvRun(UV_RUN_STDOUT, UV_RUN_STDERR, 0, 1500);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(UV_RUN_STDOUT);
+    expect(result.stderr).toBe(UV_RUN_STDERR);
+    expect(result.duration).toBe(1.5);
+  });
+
+  it("preserves mixed stdout and stderr", () => {
+    const result = parseUvRun(UV_RUN_MIXED_STDOUT, UV_RUN_MIXED_STDERR, 0, 250);
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toBe(UV_RUN_MIXED_STDOUT);
+    expect(result.stderr).toBe(UV_RUN_MIXED_STDERR);
+    expect(result.duration).toBe(0.25);
+  });
+
+  it("captures failed command exit code and stderr", () => {
+    const stderr = "Traceback (most recent call last):\n  File \"script.py\", line 5\nNameError: name 'x' is not defined\n";
+    const result = parseUvRun("", stderr, 1, 800);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("NameError");
+    expect(result.duration).toBe(0.8);
+  });
+});
+
+describe("fidelity: black", () => {
+  it("preserves check mode with files needing reformat", () => {
+    const result = parseBlackOutput("", BLACK_CHECK_MODE_DIRTY, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.filesChanged).toBe(3);
+    expect(result.filesUnchanged).toBe(7);
+    expect(result.filesChecked).toBe(10);
+
+    expect(result.wouldReformat).toHaveLength(3);
+    expect(result.wouldReformat).toContain("src/main.py");
+    expect(result.wouldReformat).toContain("src/utils.py");
+    expect(result.wouldReformat).toContain("tests/test_main.py");
+  });
+
+  it("preserves format mode with reformatted files", () => {
+    const result = parseBlackOutput("", BLACK_FORMAT_MODE_CHANGED, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(2);
+    expect(result.filesUnchanged).toBe(5);
+    expect(result.filesChecked).toBe(7);
+
+    expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
+  });
+
+  it("preserves all-clean check mode output", () => {
+    const result = parseBlackOutput("", BLACK_ALL_CLEAN, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBe(10);
+    expect(result.filesChecked).toBe(10);
+    expect(result.wouldReformat).toEqual([]);
   });
 });

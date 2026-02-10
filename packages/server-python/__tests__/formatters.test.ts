@@ -1,6 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { formatPipInstall, formatMypy, formatRuff, formatPipAudit } from "../src/lib/formatters.js";
-import type { PipInstall, MypyResult, RuffResult, PipAuditResult } from "../src/schemas/index.js";
+import {
+  formatPipInstall,
+  formatMypy,
+  formatRuff,
+  formatPipAudit,
+  formatPytest,
+  formatBlack,
+} from "../src/lib/formatters.js";
+import type {
+  PipInstall,
+  MypyResult,
+  RuffResult,
+  PipAuditResult,
+  PytestResult,
+  BlackResult,
+} from "../src/schemas/index.js";
 
 describe("formatPipInstall", () => {
   it("formats already satisfied install", () => {
@@ -181,5 +195,126 @@ describe("formatPipAudit", () => {
     expect(output).toContain("flask==1.0.0 CVE-2023-12345: XSS vulnerability in debug mode");
     // No fix version should not show "(fix: ...)"
     expect(output).not.toContain("XSS vulnerability in debug mode (fix:");
+  });
+});
+
+// ─── Formatter edge cases ──────────────────────────────────────────────────────
+
+describe("formatMypy — edge cases", () => {
+  it("formats diagnostic with missing column and code", () => {
+    const data: MypyResult = {
+      success: false,
+      diagnostics: [
+        {
+          file: "src/app.py",
+          line: 42,
+          severity: "error",
+          message: "Cannot find implementation or library stub for module named 'missing'",
+        },
+      ],
+      total: 1,
+      errors: 1,
+      warnings: 0,
+    };
+    const output = formatMypy(data);
+    expect(output).toContain("src/app.py:42 error: Cannot find implementation or library stub");
+    // Should not contain column separator or bracket-code when omitted
+    expect(output).not.toContain(":42:");
+    expect(output).not.toContain("[");
+  });
+
+  it("formats diagnostic with column but no code", () => {
+    const data: MypyResult = {
+      success: false,
+      diagnostics: [
+        {
+          file: "lib.py",
+          line: 5,
+          column: 10,
+          severity: "warning",
+          message: "Unused type: ignore comment",
+        },
+      ],
+      total: 1,
+      errors: 0,
+      warnings: 1,
+    };
+    const output = formatMypy(data);
+    expect(output).toContain("lib.py:5:10 warning: Unused type: ignore comment");
+    expect(output).not.toContain("[");
+  });
+});
+
+describe("formatPytest — edge cases", () => {
+  it("formats large failure list correctly", () => {
+    const failures = Array.from({ length: 20 }, (_, i) => ({
+      test: `test_case_${i}`,
+      message: `assertion failed in case ${i}`,
+    }));
+    const data: PytestResult = {
+      success: false,
+      passed: 80,
+      failed: 20,
+      errors: 0,
+      skipped: 0,
+      total: 100,
+      duration: 15.5,
+      failures,
+    };
+    const output = formatPytest(data);
+
+    expect(output).toContain("80 passed, 20 failed in 15.5s");
+    // All 20 failures should be listed
+    for (let i = 0; i < 20; i++) {
+      expect(output).toContain(`FAILED test_case_${i}: assertion failed in case ${i}`);
+    }
+  });
+
+  it("formats result with only errors and skipped (no passed/failed)", () => {
+    const data: PytestResult = {
+      success: false,
+      passed: 0,
+      failed: 0,
+      errors: 3,
+      skipped: 2,
+      total: 5,
+      duration: 0.5,
+      failures: [],
+    };
+    const output = formatPytest(data);
+    expect(output).toContain("3 errors, 2 skipped in 0.5s");
+    expect(output).not.toContain("passed");
+    expect(output).not.toContain("failed");
+  });
+});
+
+describe("formatBlack — edge cases", () => {
+  it("formats zero filesChecked but non-empty wouldReformat", () => {
+    // Edge case: wouldReformat has entries but filesChecked is 0
+    // This is logically inconsistent but tests the formatter's behavior
+    const data: BlackResult = {
+      filesChanged: 0,
+      filesUnchanged: 0,
+      filesChecked: 0,
+      success: true,
+      wouldReformat: ["orphan.py"],
+    };
+    // With filesChecked === 0, formatter returns "no Python files found"
+    const output = formatBlack(data);
+    expect(output).toBe("black: no Python files found.");
+  });
+
+  it("formats with filesChanged > 0 but empty wouldReformat list", () => {
+    const data: BlackResult = {
+      filesChanged: 3,
+      filesUnchanged: 2,
+      filesChecked: 5,
+      success: true,
+      wouldReformat: [],
+    };
+    const output = formatBlack(data);
+    expect(output).toContain("3 files reformatted, 2 unchanged");
+    // Should not list any files
+    expect(output.split("\n")).toHaveLength(1);
   });
 });

@@ -70,4 +70,156 @@ describe("@paretools/python integration", () => {
       }
     });
   });
+
+  describe("pip-install", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "pip-install",
+        arguments: { packages: ["nonexistent-pkg-xyz-12345"] },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pip|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(Array.isArray(sc.installed)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.alreadySatisfied).toBe("boolean");
+      }
+    });
+  });
+
+  describe("mypy", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "mypy",
+        arguments: { targets: ["nonexistent_dir_xyz"] },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/mypy|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(Array.isArray(sc.diagnostics)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.errors).toBe("number");
+        expect(typeof sc.warnings).toBe("number");
+      }
+    });
+  });
+
+  describe("pip-audit", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "pip-audit",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pip-audit|pip.audit|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.vulnerabilities)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+      }
+    });
+  });
+
+  describe("pytest", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "pytest",
+        arguments: { targets: ["nonexistent_test_dir_xyz"] },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pytest|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.passed).toBe("number");
+        expect(typeof sc.failed).toBe("number");
+        expect(typeof sc.errors).toBe("number");
+        expect(typeof sc.skipped).toBe("number");
+        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.duration).toBe("number");
+        expect(Array.isArray(sc.failures)).toBe(true);
+      }
+    });
+  });
+
+  describe("uv-install", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "uv-install",
+        arguments: { packages: ["nonexistent-pkg-xyz-12345"] },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/uv|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(Array.isArray(sc.installed)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.duration).toBe("number");
+      }
+    });
+  });
+
+  describe("uv-run", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "uv-run",
+        arguments: { command: ["python", "--version"] },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/uv|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.exitCode).toBe("number");
+        expect(typeof sc.stdout).toBe("string");
+        expect(typeof sc.stderr).toBe("string");
+        expect(typeof sc.duration).toBe("number");
+      }
+    });
+  });
+
+  describe("black", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "black",
+        arguments: { targets: ["nonexistent_dir_xyz"], check: true },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/black|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.filesChanged).toBe("number");
+        expect(typeof sc.filesUnchanged).toBe("number");
+        expect(typeof sc.filesChecked).toBe("number");
+        expect(Array.isArray(sc.wouldReformat)).toBe(true);
+      }
+    });
+  });
 });
