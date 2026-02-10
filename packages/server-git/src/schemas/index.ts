@@ -99,3 +99,54 @@ export const GitShowSchema = z.object({
 });
 
 export type GitShow = z.infer<typeof GitShowSchema>;
+
+/** Zod schema for structured git add output with count and list of staged files. */
+export const GitAddSchema = z.object({
+  staged: z.number(),
+  files: z.array(z.string()),
+});
+
+export type GitAdd = z.infer<typeof GitAddSchema>;
+
+/** Zod schema for structured git commit output with hash, message, and change statistics. */
+export const GitCommitSchema = z.object({
+  hash: z.string(),
+  hashShort: z.string(),
+  message: z.string(),
+  filesChanged: z.number(),
+  insertions: z.number(),
+  deletions: z.number(),
+});
+
+export type GitCommit = z.infer<typeof GitCommitSchema>;
+
+/** Zod schema for structured git push output with success status, remote, branch, and summary. */
+export const GitPushSchema = z.object({
+  success: z.boolean(),
+  remote: z.string(),
+  branch: z.string(),
+  summary: z.string(),
+});
+
+export type GitPush = z.infer<typeof GitPushSchema>;
+
+/** Zod schema for structured git pull output with success status, summary, change stats, and conflicts. */
+export const GitPullSchema = z.object({
+  success: z.boolean(),
+  summary: z.string(),
+  filesChanged: z.number(),
+  insertions: z.number(),
+  deletions: z.number(),
+  conflicts: z.array(z.string()),
+});
+
+export type GitPull = z.infer<typeof GitPullSchema>;
+
+/** Zod schema for structured git checkout output with ref, previous ref, and whether a new branch was created. */
+export const GitCheckoutSchema = z.object({
+  ref: z.string(),
+  previousRef: z.string(),
+  created: z.boolean(),
+});
+
+export type GitCheckout = z.infer<typeof GitCheckoutSchema>;

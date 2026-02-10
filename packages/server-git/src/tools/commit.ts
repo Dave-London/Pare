@@ -1,0 +1,46 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { git } from "../lib/git-runner.js";
+import { parseCommit } from "../lib/parsers.js";
+import { formatCommit } from "../lib/formatters.js";
+import { GitCommitSchema } from "../schemas/index.js";
+
+export function registerCommitTool(server: McpServer) {
+  server.registerTool(
+    "commit",
+    {
+      title: "Git Commit",
+      description:
+        "Creates a commit with the given message. Returns structured data with hash, message, and change statistics. Use instead of running `git commit` in the terminal.",
+      inputSchema: {
+        path: z.string().optional().describe("Repository path (default: cwd)"),
+        message: z.string().describe("Commit message"),
+        amend: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Amend the previous commit"),
+      },
+      outputSchema: GitCommitSchema,
+    },
+    async ({ path, message, amend }) => {
+      const cwd = path || process.cwd();
+
+      assertNoFlagInjection(message, "commit message");
+
+      const args = ["commit"];
+      if (amend) args.push("--amend");
+      args.push("-m", message);
+
+      const result = await git(args, cwd);
+
+      if (result.exitCode !== 0) {
+        throw new Error(`git commit failed: ${result.stderr}`);
+      }
+
+      const commitResult = parseCommit(result.stdout);
+      return dualOutput(commitResult, formatCommit);
+    },
+  );
+}
