@@ -21,7 +21,8 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "docs:api": "typedoc"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",
@@ -32,6 +33,8 @@
     "eslint": "^9.39.2",
     "prettier": "^3.4.0",
     "tsx": "^4.21.0",
-    "turbo": "^2.4.0"
+    "turbo": "^2.4.0",
+    "typedoc": "^0.28.16",
+    "typedoc-plugin-markdown": "^4.10.0"
   }
 }

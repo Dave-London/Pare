@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/shared",
+    "packages/server-git",
+    "packages/server-test",
+    "packages/server-npm",
+    "packages/server-build",
+    "packages/server-lint",
+    "packages/server-python",
+    "packages/server-docker",
+    "packages/server-cargo",
+    "packages/server-go"
+  ],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "exclude": ["**/test/**", "**/tests/**", "**/*.test.ts", "**/*.spec.ts"],
+  "excludeInternal": true,
+  "excludePrivate": true
+}
