@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/build", version: "0.2.0" },
   {
     instructions:
-      "Structured build tool operations (tsc, generic build). Use instead of running build commands via bash. Returns typed JSON with structured error diagnostics and build results.",
+      "Structured build tool operations (tsc, esbuild, vite, webpack, generic build). Use instead of running build commands via bash. Returns typed JSON with structured error diagnostics and build results.",
   },
 );
 

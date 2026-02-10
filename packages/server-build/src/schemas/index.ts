@@ -31,3 +31,80 @@ export const BuildResultSchema = z.object({
 });
 
 export type BuildResult = z.infer<typeof BuildResultSchema>;
+
+// ---------------------------------------------------------------------------
+// esbuild
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single esbuild error diagnostic. */
+export const EsbuildErrorSchema = z.object({
+  file: z.string().optional(),
+  line: z.number().optional(),
+  column: z.number().optional(),
+  message: z.string(),
+});
+
+/** Zod schema for a single esbuild warning diagnostic. */
+export const EsbuildWarningSchema = z.object({
+  file: z.string().optional(),
+  line: z.number().optional(),
+  message: z.string(),
+});
+
+/** Zod schema for structured esbuild output including errors, warnings, output files, and duration. */
+export const EsbuildResultSchema = z.object({
+  success: z.boolean(),
+  errors: z.array(EsbuildErrorSchema),
+  warnings: z.array(EsbuildWarningSchema),
+  outputFiles: z.array(z.string()).optional(),
+  duration: z.number(),
+});
+
+export type EsbuildError = z.infer<typeof EsbuildErrorSchema>;
+export type EsbuildWarning = z.infer<typeof EsbuildWarningSchema>;
+export type EsbuildResult = z.infer<typeof EsbuildResultSchema>;
+
+// ---------------------------------------------------------------------------
+// vite-build
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single Vite build output file entry with name and size. */
+export const ViteOutputFileSchema = z.object({
+  file: z.string(),
+  size: z.string(),
+});
+
+/** Zod schema for structured Vite production build output with files, sizes, and duration. */
+export const ViteBuildResultSchema = z.object({
+  success: z.boolean(),
+  duration: z.number(),
+  outputs: z.array(ViteOutputFileSchema),
+  errors: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+
+export type ViteOutputFile = z.infer<typeof ViteOutputFileSchema>;
+export type ViteBuildResult = z.infer<typeof ViteBuildResultSchema>;
+
+// ---------------------------------------------------------------------------
+// webpack
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single webpack asset entry. */
+export const WebpackAssetSchema = z.object({
+  name: z.string(),
+  size: z.number(),
+});
+
+/** Zod schema for structured webpack build output with assets, errors, warnings, and module count. */
+export const WebpackResultSchema = z.object({
+  success: z.boolean(),
+  duration: z.number(),
+  assets: z.array(WebpackAssetSchema),
+  errors: z.array(z.string()),
+  warnings: z.array(z.string()),
+  modules: z.number().optional(),
+});
+
+export type WebpackAsset = z.infer<typeof WebpackAssetSchema>;
+export type WebpackResult = z.infer<typeof WebpackResultSchema>;
