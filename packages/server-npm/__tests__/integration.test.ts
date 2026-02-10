@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
@@ -61,6 +61,83 @@ describe("@paretools/npm integration", () => {
       expect(sc).toBeDefined();
       expect(sc.total).toEqual(expect.any(Number));
       expect(Array.isArray(sc.packages)).toBe(true);
+    });
+  });
+
+  describe("audit", () => {
+    it("returns structured audit data", async () => {
+      const repoRoot = resolve(__dirname, "../../..");
+      const result = await client.callTool({
+        name: "audit",
+        arguments: { path: repoRoot },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.summary).toBeDefined();
+      expect(Array.isArray(sc.vulnerabilities)).toBe(true);
+
+      const summary = sc.summary as Record<string, unknown>;
+      expect(summary.total).toEqual(expect.any(Number));
+      expect(summary.critical).toEqual(expect.any(Number));
+      expect(summary.high).toEqual(expect.any(Number));
+    });
+  });
+
+  describe("run", () => {
+    it("returns structured run data for a valid script", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool({
+        name: "run",
+        arguments: { path: pkgPath, script: "build" },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.script).toBe("build");
+      expect(sc.exitCode).toEqual(expect.any(Number));
+      expect(typeof sc.success).toBe("boolean");
+      expect(typeof sc.stdout).toBe("string");
+      expect(typeof sc.stderr).toBe("string");
+      expect(sc.duration).toEqual(expect.any(Number));
+    });
+
+    it("returns failure for a missing script", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool({
+        name: "run",
+        arguments: { path: pkgPath, script: "nonexistent-script-xyz" },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.script).toBe("nonexistent-script-xyz");
+      expect(sc.success).toBe(false);
+      expect(sc.exitCode).not.toBe(0);
+    });
+  });
+
+  describe("init", () => {
+    it("returns structured init data", async () => {
+      // Use a temporary directory to avoid polluting the repo
+      const { mkdtemp, rm } = await import("node:fs/promises");
+      const { tmpdir } = await import("node:os");
+      const tempDir = await mkdtemp(join(tmpdir(), "pare-npm-init-"));
+      try {
+        const result = await client.callTool({
+          name: "init",
+          arguments: { path: tempDir, yes: true },
+        });
+
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.packageName).toBe("string");
+        expect(typeof sc.version).toBe("string");
+        expect(typeof sc.path).toBe("string");
+      } finally {
+        await rm(tempDir, { recursive: true, force: true });
+      }
     });
   });
 });

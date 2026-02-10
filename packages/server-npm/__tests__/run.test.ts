@@ -141,3 +141,49 @@ describe("formatRun", () => {
     expect(output).toBe('Script "clean" completed successfully in 0.1s');
   });
 });
+
+// ─── Error path tests ────────────────────────────────────────────────────────
+
+describe("parseRunOutput error paths", () => {
+  it("handles permission error in stderr", () => {
+    const result = parseRunOutput(
+      "start",
+      1,
+      "",
+      "Error: EACCES: permission denied, open '/var/log/app.log'\nnpm error code ELIFECYCLE",
+      0.3,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("EACCES");
+    expect(result.stderr).toContain("permission denied");
+  });
+
+  it("handles timeout scenario (empty output, non-zero exit)", () => {
+    const result = parseRunOutput("long-task", 1, "", "", 300.0);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("");
+    expect(result.duration).toBe(300.0);
+  });
+
+  it("handles signal termination (SIGKILL exit code 137)", () => {
+    const result = parseRunOutput("server", 137, "Starting server...", "Killed", 60.0);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(137);
+    expect(result.stderr).toBe("Killed");
+  });
+
+  it("handles very large stdout output", () => {
+    const largeOutput = "line\n".repeat(10000);
+    const result = parseRunOutput("generate", 0, largeOutput, "", 5.0);
+
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("line");
+    expect(result.stdout.length).toBeGreaterThan(0);
+  });
+});

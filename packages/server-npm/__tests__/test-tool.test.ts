@@ -126,3 +126,53 @@ describe("formatTest", () => {
     expect(output).toContain("stderr:");
   });
 });
+
+// ─── Error path tests ────────────────────────────────────────────────────────
+
+describe("parseTestOutput error paths", () => {
+  it("handles permission error", () => {
+    const result = parseTestOutput(
+      1,
+      "",
+      "Error: EACCES: permission denied, open '/tmp/test-results.json'",
+      0.5,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("EACCES");
+    expect(result.stderr).toContain("permission denied");
+  });
+
+  it("handles timeout scenario (empty output, non-zero exit)", () => {
+    const result = parseTestOutput(1, "", "", 300.0);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("");
+    expect(result.duration).toBe(300.0);
+  });
+
+  it("handles signal termination (SIGTERM)", () => {
+    const result = parseTestOutput(143, "Running tests...", "SIGTERM", 60.0);
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(143);
+    expect(result.stderr).toBe("SIGTERM");
+  });
+
+  it("handles out-of-memory crash", () => {
+    const result = parseTestOutput(
+      134,
+      "",
+      "FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory",
+      45.0,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(134);
+    expect(result.stderr).toContain("heap limit");
+    expect(result.stderr).toContain("out of memory");
+  });
+});

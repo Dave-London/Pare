@@ -78,3 +78,46 @@ describe("formatInit", () => {
     expect(output).toBe("Created @myorg/utils@1.0.0 at /tmp/utils/package.json");
   });
 });
+
+// ─── Error path tests ────────────────────────────────────────────────────────
+
+describe("parseInitOutput error paths", () => {
+  it("handles permission denied (read-only directory)", () => {
+    const result = parseInitOutput(false, "unknown", "0.0.0", "/readonly/package.json");
+
+    expect(result.success).toBe(false);
+    expect(result.packageName).toBe("unknown");
+    expect(result.version).toBe("0.0.0");
+    expect(result.path).toBe("/readonly/package.json");
+  });
+
+  it("handles non-existent directory", () => {
+    const result = parseInitOutput(false, "unknown", "0.0.0", "/nonexistent/path/package.json");
+
+    expect(result.success).toBe(false);
+    expect(result.path).toBe("/nonexistent/path/package.json");
+  });
+
+  it("handles existing package.json overwrite", () => {
+    const result = parseInitOutput(true, "existing-project", "2.0.0", "/project/package.json");
+
+    expect(result.success).toBe(true);
+    expect(result.packageName).toBe("existing-project");
+    expect(result.version).toBe("2.0.0");
+  });
+});
+
+describe("formatInit error paths", () => {
+  it("formats failure with long path", () => {
+    const data: NpmInit = {
+      success: false,
+      packageName: "unknown",
+      version: "0.0.0",
+      path: "/very/deeply/nested/directory/structure/package.json",
+    };
+    const output = formatInit(data);
+    expect(output).toBe(
+      "Failed to initialize package.json at /very/deeply/nested/directory/structure/package.json",
+    );
+  });
+});
