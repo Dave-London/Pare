@@ -38,7 +38,9 @@ function skip(server: string, tool: string, details: string) {
   log(`  ⏭️  ${tool}: ${details}`);
 }
 
-async function createClient(serverPackage: string): Promise<{ client: Client; transport: StdioClientTransport }> {
+async function createClient(
+  serverPackage: string,
+): Promise<{ client: Client; transport: StdioClientTransport }> {
   const serverPath = resolve(REPO_ROOT, `packages/${serverPackage}/dist/index.js`);
   const homedir = process.env.HOME || "";
   const extraPath = `${homedir}/Library/Python/3.9/bin:${homedir}/.cargo/bin:/usr/local/bin`;
@@ -59,7 +61,7 @@ async function createClient(serverPackage: string): Promise<{ client: Client; tr
 async function testServer(
   name: string,
   serverPackage: string,
-  tests: (client: Client) => Promise<void>
+  tests: (client: Client) => Promise<void>,
 ) {
   log(`\n🔧 Testing ${name}...`);
   let client: Client | null = null;
@@ -69,7 +71,12 @@ async function testServer(
 
     // Verify tools are discoverable
     const { tools } = await client.listTools();
-    log(`   Tools available: ${tools.map(t => t.name).sort().join(", ")}`);
+    log(
+      `   Tools available: ${tools
+        .map((t) => t.name)
+        .sort()
+        .join(", ")}`,
+    );
 
     await tests(client);
   } catch (err: any) {
@@ -87,7 +94,11 @@ async function testGit() {
       const result = await client.callTool({ name: "status", arguments: { path: REPO_ROOT } });
       const sc = result.structuredContent as any;
       if (sc && sc.branch) {
-        pass("git", "status", `branch=${sc.branch}, staged=${sc.staged?.length ?? 0}, modified=${sc.modified?.length ?? 0}`);
+        pass(
+          "git",
+          "status",
+          `branch=${sc.branch}, staged=${sc.staged?.length ?? 0}, modified=${sc.modified?.length ?? 0}`,
+        );
       } else {
         fail("git", "status", `Unexpected output: ${JSON.stringify(sc)}`);
       }
@@ -97,11 +108,18 @@ async function testGit() {
 
     // log
     try {
-      const result = await client.callTool({ name: "log", arguments: { path: REPO_ROOT, maxCount: 3 } });
+      const result = await client.callTool({
+        name: "log",
+        arguments: { path: REPO_ROOT, maxCount: 3 },
+      });
       const sc = result.structuredContent as any;
       if (sc && Array.isArray(sc.commits) && sc.commits.length > 0) {
         const firstMsg = sc.commits[0].message || sc.commits[0].subject || "";
-        pass("git", "log", `${sc.commits.length} commits returned, first: "${firstMsg.substring(0, 50)}"`);
+        pass(
+          "git",
+          "log",
+          `${sc.commits.length} commits returned, first: "${firstMsg.substring(0, 50)}"`,
+        );
       } else {
         fail("git", "log", `Unexpected output: ${JSON.stringify(sc)}`);
       }
@@ -114,7 +132,11 @@ async function testGit() {
       const result = await client.callTool({ name: "diff", arguments: { path: REPO_ROOT } });
       const sc = result.structuredContent as any;
       if (sc && typeof sc.totalFiles === "number") {
-        pass("git", "diff", `totalFiles=${sc.totalFiles}, +${sc.totalAdditions ?? 0}/-${sc.totalDeletions ?? 0}`);
+        pass(
+          "git",
+          "diff",
+          `totalFiles=${sc.totalFiles}, +${sc.totalAdditions ?? 0}/-${sc.totalDeletions ?? 0}`,
+        );
       } else {
         fail("git", "diff", `Unexpected output: ${JSON.stringify(sc)}`);
       }
@@ -137,7 +159,10 @@ async function testGit() {
 
     // show
     try {
-      const result = await client.callTool({ name: "show", arguments: { path: REPO_ROOT, ref: "HEAD" } });
+      const result = await client.callTool({
+        name: "show",
+        arguments: { path: REPO_ROOT, ref: "HEAD" },
+      });
       const sc = result.structuredContent as any;
       const showMsg = sc?.message || sc?.subject || "";
       if (sc && sc.hash) {
@@ -163,7 +188,11 @@ async function testTestServer() {
       });
       const sc = result.structuredContent as any;
       if (sc && sc.summary && typeof sc.summary.passed === "number") {
-        pass("test", "run", `passed=${sc.summary.passed}, failed=${sc.summary.failed}, total=${sc.summary.total}`);
+        pass(
+          "test",
+          "run",
+          `passed=${sc.summary.passed}, failed=${sc.summary.failed}, total=${sc.summary.total}`,
+        );
       } else {
         fail("test", "run", `Unexpected output: ${JSON.stringify(sc)?.substring(0, 200)}`);
       }
@@ -280,7 +309,11 @@ async function testLint() {
       const sc = result.structuredContent as any;
       if (sc && (Array.isArray(sc.files) || Array.isArray(sc.diagnostics))) {
         const items = sc.files || sc.diagnostics || [];
-        pass("lint", "lint", `${items.length} items returned, errors=${sc.totalErrors ?? 0}, warnings=${sc.totalWarnings ?? 0}`);
+        pass(
+          "lint",
+          "lint",
+          `${items.length} items returned, errors=${sc.totalErrors ?? 0}, warnings=${sc.totalWarnings ?? 0}`,
+        );
       } else {
         fail("lint", "lint", `Unexpected output: ${JSON.stringify(sc)?.substring(0, 200)}`);
       }
@@ -391,7 +424,12 @@ async function testCargo() {
         arguments: { path: cargoPath },
       });
       const sc = result.structuredContent as any;
-      if (sc && (typeof sc.success === "boolean" || Array.isArray(sc.warnings) || Array.isArray(sc.diagnostics))) {
+      if (
+        sc &&
+        (typeof sc.success === "boolean" ||
+          Array.isArray(sc.warnings) ||
+          Array.isArray(sc.diagnostics))
+      ) {
         pass("cargo", "clippy", `output structured correctly`);
       } else {
         fail("cargo", "clippy", `Unexpected output: ${JSON.stringify(sc)?.substring(0, 200)}`);
@@ -471,7 +509,12 @@ async function testPython() {
         arguments: { path: pyPath, targets: ["main.py"] },
       });
       const sc = result.structuredContent as any;
-      if (sc && (typeof sc.success === "boolean" || Array.isArray(sc.errors) || Array.isArray(sc.diagnostics))) {
+      if (
+        sc &&
+        (typeof sc.success === "boolean" ||
+          Array.isArray(sc.errors) ||
+          Array.isArray(sc.diagnostics))
+      ) {
         pass("python", "mypy", `output structured correctly`);
       } else {
         fail("python", "mypy", `Unexpected output: ${JSON.stringify(sc)?.substring(0, 200)}`);
@@ -487,7 +530,12 @@ async function testPython() {
         arguments: { path: pyPath, targets: ["main.py"] },
       });
       const sc = result.structuredContent as any;
-      if (sc && (typeof sc.success === "boolean" || Array.isArray(sc.diagnostics) || Array.isArray(sc.violations))) {
+      if (
+        sc &&
+        (typeof sc.success === "boolean" ||
+          Array.isArray(sc.diagnostics) ||
+          Array.isArray(sc.violations))
+      ) {
         pass("python", "ruff-check", `output structured correctly`);
       } else {
         fail("python", "ruff-check", `Unexpected output: ${JSON.stringify(sc)?.substring(0, 200)}`);
@@ -522,9 +570,9 @@ async function main() {
   log("SUMMARY");
   log("=".repeat(60));
 
-  const passed = results.filter(r => r.status === "PASS");
-  const failed = results.filter(r => r.status === "FAIL");
-  const skipped = results.filter(r => r.status === "SKIP");
+  const passed = results.filter((r) => r.status === "PASS");
+  const failed = results.filter((r) => r.status === "FAIL");
+  const skipped = results.filter((r) => r.status === "SKIP");
 
   log(`✅ Passed: ${passed.length}`);
   log(`❌ Failed: ${failed.length}`);
