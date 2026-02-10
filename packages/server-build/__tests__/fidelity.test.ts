@@ -6,7 +6,13 @@
  * diagnostic field, error/warning count, and metadata without data loss.
  */
 import { describe, it, expect } from "vitest";
-import { parseTscOutput, parseBuildCommandOutput } from "../src/lib/parsers.js";
+import {
+  parseTscOutput,
+  parseBuildCommandOutput,
+  parseEsbuildOutput,
+  parseViteBuildOutput,
+  parseWebpackOutput,
+} from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -265,5 +271,272 @@ describe("fidelity: parseBuildCommandOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.warnings).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// esbuild fidelity fixtures
+// ---------------------------------------------------------------------------
+
+const ESBUILD_REALISTIC_ERROR = [
+  '✘ [ERROR] Could not resolve "react"',
+  "    src/App.tsx:1:18:",
+  "",
+  "      1 │ import React from 'react';",
+  "        ╵                   ~~~~~~~",
+  "",
+  "  You can mark the path \"react\" as external to exclude it from the bundle. You",
+  '  can also use the "alias" feature to substitute a different package for this one.',
+  "",
+  '✘ [ERROR] Expected ";" but found "}"',
+  "    src/utils.ts:42:10:",
+  "",
+  "      42 │ const x = }",
+  "         ╵           ^",
+  "",
+  "▲ [WARNING] This import is never used [unused-imports]",
+  "    src/helpers.ts:3:7:",
+  "",
+  "      3 │ import { unused } from './lib';",
+  "        ╵        ~~~~~~~~",
+  "",
+  "2 errors and 1 warning",
+].join("\n");
+
+const ESBUILD_REALISTIC_SUCCESS_WITH_OUTPUT = [
+  "dist/bundle.js",
+  "dist/bundle.css",
+  "dist/bundle.js.map",
+].join("\n");
+
+// ---------------------------------------------------------------------------
+// esbuild parser fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseEsbuildOutput", () => {
+  it("realistic multi-error + warning output: all diagnostics extracted", () => {
+    const result = parseEsbuildOutput(
+      ESBUILD_REALISTIC_SUCCESS_WITH_OUTPUT,
+      ESBUILD_REALISTIC_ERROR,
+      1,
+      0.4,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(2);
+    expect(result.warnings).toHaveLength(1);
+
+    // First error
+    expect(result.errors[0].file).toBe("src/App.tsx");
+    expect(result.errors[0].line).toBe(1);
+    expect(result.errors[0].column).toBe(18);
+    expect(result.errors[0].message).toBe('Could not resolve "react"');
+
+    // Second error
+    expect(result.errors[1].file).toBe("src/utils.ts");
+    expect(result.errors[1].line).toBe(42);
+    expect(result.errors[1].column).toBe(10);
+    expect(result.errors[1].message).toBe('Expected ";" but found "}"');
+
+    // Warning with ▲ marker
+    expect(result.warnings[0].file).toBe("src/helpers.ts");
+    expect(result.warnings[0].line).toBe(3);
+    expect(result.warnings[0].message).toBe("This import is never used [unused-imports]");
+  });
+
+  it("output files section: all JS/CSS/map files detected", () => {
+    const result = parseEsbuildOutput(ESBUILD_REALISTIC_SUCCESS_WITH_OUTPUT, "", 0, 0.2);
+
+    expect(result.success).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.outputFiles).toEqual(["dist/bundle.js", "dist/bundle.css", "dist/bundle.js.map"]);
+  });
+
+  it("error without location preserves full message", () => {
+    const stderr = [
+      '✘ [ERROR] No matching export in "node_modules/lodash-es/lodash.js" for import "default"',
+      "",
+    ].join("\n");
+    const result = parseEsbuildOutput("", stderr, 1, 0.1);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].file).toBeUndefined();
+    expect(result.errors[0].line).toBeUndefined();
+    expect(result.errors[0].column).toBeUndefined();
+    expect(result.errors[0].message).toBe(
+      'No matching export in "node_modules/lodash-es/lodash.js" for import "default"',
+    );
+  });
+
+  it("duration is preserved exactly", () => {
+    const result = parseEsbuildOutput("", "", 0, 3.142);
+    expect(result.duration).toBe(3.142);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// vite-build fidelity fixtures
+// ---------------------------------------------------------------------------
+
+const VITE_REALISTIC_BUILD = [
+  "vite v6.3.5 building for production...",
+  "transforming...",
+  "✓ 127 modules transformed.",
+  "rendering chunks...",
+  "computing gzip size...",
+  "dist/index.html                    0.46 kB │ gzip:  0.30 kB",
+  "dist/assets/logo-BQ7r2YGf.svg      4.13 kB │ gzip:  2.05 kB",
+  "dist/assets/index-DiwrgTda.css     28.15 kB │ gzip:  5.23 kB",
+  "dist/assets/vendor-C3n0f3kY.js    142.05 kB │ gzip: 45.12 kB",
+  "dist/assets/index-BbVSiOz0.js      52.31 kB │ gzip: 16.89 kB",
+  "✓ built in 2.14s",
+].join("\n");
+
+// ---------------------------------------------------------------------------
+// vite-build parser fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseViteBuildOutput", () => {
+  it("realistic vite build: all output files with sizes preserved", () => {
+    const result = parseViteBuildOutput(VITE_REALISTIC_BUILD, "", 0, 2.1);
+
+    expect(result.success).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.outputs).toHaveLength(5);
+
+    // Verify each file and size is captured
+    expect(result.outputs[0].file).toBe("dist/index.html");
+    expect(result.outputs[0].size).toBe("0.46 kB");
+
+    expect(result.outputs[1].file).toBe("dist/assets/logo-BQ7r2YGf.svg");
+    expect(result.outputs[1].size).toBe("4.13 kB");
+
+    expect(result.outputs[2].file).toBe("dist/assets/index-DiwrgTda.css");
+    expect(result.outputs[2].size).toBe("28.15 kB");
+
+    expect(result.outputs[3].file).toBe("dist/assets/vendor-C3n0f3kY.js");
+    expect(result.outputs[3].size).toBe("142.05 kB");
+
+    expect(result.outputs[4].file).toBe("dist/assets/index-BbVSiOz0.js");
+    expect(result.outputs[4].size).toBe("52.31 kB");
+  });
+
+  it("vite header lines are not treated as output files", () => {
+    const result = parseViteBuildOutput(VITE_REALISTIC_BUILD, "", 0, 2.1);
+
+    // None of the header/status lines should appear as output files
+    const files = result.outputs.map((o) => o.file);
+    for (const f of files) {
+      expect(f).not.toMatch(/^vite /);
+      expect(f).not.toMatch(/^transforming/);
+      expect(f).not.toMatch(/^rendering/);
+      expect(f).not.toMatch(/^computing/);
+    }
+  });
+
+  it("duration is preserved exactly", () => {
+    const result = parseViteBuildOutput("", "", 0, 5.678);
+    expect(result.duration).toBe(5.678);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// webpack fidelity fixtures
+// ---------------------------------------------------------------------------
+
+const WEBPACK_REALISTIC_JSON = JSON.stringify({
+  assets: [
+    { name: "main.abc123.js", size: 153600 },
+    { name: "vendor.def456.js", size: 512000 },
+    { name: "runtime.ghi789.js", size: 2048 },
+    { name: "styles.jkl012.css", size: 32768 },
+  ],
+  errors: [],
+  warnings: [
+    {
+      message:
+        "asset size limit: The following asset(s) exceed the recommended size limit (244 KiB).\n" +
+        "  Assets:\n" +
+        "    vendor.def456.js (500 KiB)",
+    },
+  ],
+  modules: [
+    { name: "./src/index.ts" },
+    { name: "./src/App.tsx" },
+    { name: "./src/utils.ts" },
+    { name: "./node_modules/react/index.js" },
+    { name: "./node_modules/react-dom/index.js" },
+  ],
+});
+
+const WEBPACK_REALISTIC_ERROR_JSON = JSON.stringify({
+  assets: [],
+  errors: [
+    {
+      message:
+        "Module not found: Error: Can't resolve './components/Missing' in '/home/user/project/src'",
+    },
+    { message: "Module build failed (from ./node_modules/ts-loader/index.js):\nSyntaxError" },
+  ],
+  warnings: [
+    "Critical dependency: the request of a dependency is an expression",
+  ],
+  modules: [
+    { name: "./src/index.ts" },
+    { name: "./src/broken.ts" },
+  ],
+});
+
+// ---------------------------------------------------------------------------
+// webpack parser fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseWebpackOutput", () => {
+  it("realistic success JSON: all assets, warnings, and module count preserved", () => {
+    const result = parseWebpackOutput(WEBPACK_REALISTIC_JSON, "", 0, 4.5);
+
+    expect(result.success).toBe(true);
+    expect(result.duration).toBe(4.5);
+    expect(result.errors).toEqual([]);
+
+    // Assets
+    expect(result.assets).toHaveLength(4);
+    expect(result.assets[0]).toEqual({ name: "main.abc123.js", size: 153600 });
+    expect(result.assets[1]).toEqual({ name: "vendor.def456.js", size: 512000 });
+    expect(result.assets[2]).toEqual({ name: "runtime.ghi789.js", size: 2048 });
+    expect(result.assets[3]).toEqual({ name: "styles.jkl012.css", size: 32768 });
+
+    // Warnings
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain("asset size limit");
+
+    // Modules
+    expect(result.modules).toBe(5);
+  });
+
+  it("realistic error JSON: errors and warnings both captured, success false", () => {
+    const result = parseWebpackOutput(WEBPACK_REALISTIC_ERROR_JSON, "", 1, 2.0);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors[0]).toContain("Can't resolve './components/Missing'");
+    expect(result.errors[1]).toContain("Module build failed");
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain("Critical dependency");
+    expect(result.modules).toBe(2);
+  });
+
+  it("webpack JSON with errors marks success=false even with exitCode 0", () => {
+    const result = parseWebpackOutput(WEBPACK_REALISTIC_ERROR_JSON, "", 0, 1.0);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(2);
+  });
+
+  it("duration is preserved exactly", () => {
+    const result = parseWebpackOutput("{}", "", 0, 9.876);
+    expect(result.duration).toBe(9.876);
   });
 });

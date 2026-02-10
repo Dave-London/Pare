@@ -95,15 +95,27 @@ describe("parseEsbuildOutput", () => {
     expect(result.errors[1].line).toBe(10);
   });
 
-  it("parses header-style warning", () => {
-    // Use the X marker variant for warnings too
+  it("parses header-style warning with ▲ marker", () => {
     const result = parseEsbuildOutput("", ESBUILD_HEADER_WARNING, 0, 0.1);
 
-    // The warning uses "▲" which doesn't match the [✘✗X] pattern, so let's
-    // check if the regex handles it. If not, the test will reveal the gap.
-    // The fixture uses ▲ which is NOT in our regex [✘✗X], so it won't match.
-    // Let's test with a proper warning header format.
     expect(result.success).toBe(true);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0].file).toBe("src/utils.ts");
+    expect(result.warnings[0].line).toBe(1);
+    expect(result.warnings[0].message).toBe("This import is never used");
+  });
+
+  it("parses header-style mixed errors and ▲ warnings", () => {
+    const result = parseEsbuildOutput("", ESBUILD_HEADER_MIXED, 1, 0.5);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.errors[0].message).toContain("Cannot assign");
+    expect(result.errors[0].file).toBe("src/index.ts");
+    expect(result.errors[0].line).toBe(15);
+    expect(result.warnings[0].message).toContain("never used");
+    expect(result.warnings[0].file).toBe("src/utils.ts");
   });
 
   it("parses header-style warning with X marker", () => {

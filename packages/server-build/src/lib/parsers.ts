@@ -83,7 +83,7 @@ export function parseBuildCommandOutput(
 //   file:line:col:
 // or: > file.ts:10:5: error: message
 // Simplified: capture "X [ERROR] msg" and "file:line:col:" lines
-const ESBUILD_DIAG_HEADER_RE = /^[✘✗X]\s+\[(ERROR|WARNING)]\s+(.+)$/;
+const ESBUILD_DIAG_HEADER_RE = /^[✘✗X▲]\s+\[(ERROR|WARNING)]\s+(.+)$/;
 const ESBUILD_LOCATION_RE = /^\s+(.+?):(\d+):(\d+):$/;
 // Alternate format from older esbuild / --log-level output
 const ESBUILD_INLINE_RE = /^>\s*(.+?):(\d+):(\d+):\s+(error|warning):\s+(.+)$/;

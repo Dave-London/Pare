@@ -110,6 +110,26 @@ describe("parseViteBuildOutput", () => {
     expect(result.warnings).toEqual([]);
   });
 
+  it("filters lines starting with 'vite' or 'building' but keeps user data", () => {
+    // Lines that look like output files but start with "vite" or "building" should be skipped
+    const stdout = [
+      "vite v6.3.5 building for production...",
+      "building something                100.00 kB │ gzip: 50.00 kB",
+      "dist/vite-plugin-output.js         12.34 kB │ gzip: 4.56 kB",
+      "dist/building-blocks.js            8.00 kB │ gzip: 3.00 kB",
+    ].join("\n");
+    const result = parseViteBuildOutput(stdout, "", 0, 1.0);
+
+    expect(result.success).toBe(true);
+    // "vite v6.3.5 building..." does not match the output regex (no multi-space padding)
+    // "building something" starts with "building" so it is filtered out
+    // "dist/vite-plugin-output.js" does NOT start with "vite" so it is kept
+    // "dist/building-blocks.js" does NOT start with "building" so it is kept
+    expect(result.outputs).toHaveLength(2);
+    expect(result.outputs[0].file).toBe("dist/vite-plugin-output.js");
+    expect(result.outputs[1].file).toBe("dist/building-blocks.js");
+  });
+
   it("handles error in stderr with error details in stdout", () => {
     const stderr = "Error: ENOENT: no such file or directory";
     const result = parseViteBuildOutput("", stderr, 1, 0.1);
