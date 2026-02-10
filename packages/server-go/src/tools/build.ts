@@ -11,7 +11,8 @@ export function registerBuildTool(server: McpServer) {
     "build",
     {
       title: "Go Build",
-      description: "Runs go build and returns structured error list (file, line, column, message)",
+      description:
+        "Runs go build and returns structured error list (file, line, column, message). Use instead of running `go build` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         packages: z

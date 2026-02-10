@@ -27,7 +27,8 @@ export function registerCoverageTool(server: McpServer) {
     "coverage",
     {
       title: "Test Coverage",
-      description: "Runs tests with coverage and returns structured coverage summary per file",
+      description:
+        "Runs tests with coverage and returns structured coverage summary per file. Use instead of running test coverage commands in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         framework: z

@@ -11,7 +11,8 @@ export function registerListTool(server: McpServer) {
     "list",
     {
       title: "npm List",
-      description: "Lists installed packages as structured dependency data",
+      description:
+        "Lists installed packages as structured dependency data. Use instead of running `npm list` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         depth: z

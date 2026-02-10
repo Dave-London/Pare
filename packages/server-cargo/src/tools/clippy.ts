@@ -11,7 +11,8 @@ export function registerClippyTool(server: McpServer) {
     "clippy",
     {
       title: "Cargo Clippy",
-      description: "Runs cargo clippy and returns structured lint diagnostics",
+      description:
+        "Runs cargo clippy and returns structured lint diagnostics. Use instead of running `cargo clippy` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
       },

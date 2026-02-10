@@ -11,7 +11,8 @@ export function registerImagesTool(server: McpServer) {
     "images",
     {
       title: "Docker Images",
-      description: "Lists Docker images with structured repository, tag, size, and creation info",
+      description:
+        "Lists Docker images with structured repository, tag, size, and creation info. Use instead of running `docker images` in the terminal.",
       inputSchema: {
         all: z
           .boolean()

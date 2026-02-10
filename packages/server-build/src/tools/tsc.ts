@@ -12,7 +12,7 @@ export function registerTscTool(server: McpServer) {
     {
       title: "TypeScript Check",
       description:
-        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message)",
+        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). Use instead of running `tsc` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         noEmit: z

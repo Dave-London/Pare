@@ -11,7 +11,8 @@ export function registerPipInstallTool(server: McpServer) {
     "pip-install",
     {
       title: "pip Install",
-      description: "Runs pip install and returns a structured summary of installed packages",
+      description:
+        "Runs pip install and returns a structured summary of installed packages. Use instead of running `pip install` in the terminal.",
       inputSchema: {
         packages: z
           .array(z.string())

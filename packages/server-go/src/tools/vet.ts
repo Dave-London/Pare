@@ -11,7 +11,8 @@ export function registerVetTool(server: McpServer) {
     "vet",
     {
       title: "Go Vet",
-      description: "Runs go vet and returns structured static analysis diagnostics",
+      description:
+        "Runs go vet and returns structured static analysis diagnostics. Use instead of running `go vet` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         packages: z

@@ -25,7 +25,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Run Tests",
       description:
-        "Auto-detects test framework (pytest/jest/vitest), runs tests, returns structured results with failures",
+        "Auto-detects test framework (pytest/jest/vitest), runs tests, returns structured results with failures. Use instead of running pytest/jest/vitest in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         framework: z
@@ -91,7 +91,7 @@ export function registerRunTool(server: McpServer) {
  * Extracts the JSON object from mixed output that may include non-JSON text
  * before or after the actual JSON data.
  */
-function extractJson(output: string): string {
+export function extractJson(output: string): string {
   // Try to find JSON object boundaries
   const start = output.indexOf("{");
   const end = output.lastIndexOf("}");

@@ -11,7 +11,8 @@ export function registerLogsTool(server: McpServer) {
     "logs",
     {
       title: "Docker Logs",
-      description: "Retrieves container logs as structured line arrays",
+      description:
+        "Retrieves container logs as structured line arrays. Use instead of running `docker logs` in the terminal.",
       inputSchema: {
         container: z.string().describe("Container name or ID"),
         tail: z

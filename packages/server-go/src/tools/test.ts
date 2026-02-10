@@ -12,7 +12,7 @@ export function registerTestTool(server: McpServer) {
     {
       title: "Go Test",
       description:
-        "Runs go test and returns structured test results (name, status, package, elapsed)",
+        "Runs go test and returns structured test results (name, status, package, elapsed). Use instead of running `go test` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         packages: z

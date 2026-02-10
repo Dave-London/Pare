@@ -12,7 +12,7 @@ export function registerRuffTool(server: McpServer) {
     {
       title: "ruff Lint",
       description:
-        "Runs ruff check and returns structured lint diagnostics (file, line, code, message)",
+        "Runs ruff check and returns structured lint diagnostics (file, line, code, message). Use instead of running `ruff check` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         targets: z

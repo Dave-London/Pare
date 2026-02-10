@@ -10,7 +10,8 @@ export function registerPipAuditTool(server: McpServer) {
     "pip-audit",
     {
       title: "pip Audit",
-      description: "Runs pip-audit and returns a structured vulnerability report",
+      description:
+        "Runs pip-audit and returns a structured vulnerability report. Use instead of running `pip-audit` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         requirements: z.string().optional().describe("Path to requirements file"),

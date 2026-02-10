@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertAllowedCommand } from "@paretools/shared";
 import { runBuildCommand } from "../lib/build-runner.js";
 import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand } from "../lib/formatters.js";
@@ -12,7 +12,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Run Build",
       description:
-        "Runs a build command and returns structured success/failure with errors and warnings",
+        "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal.",
       inputSchema: {
         command: z.string().describe("Build command to run (e.g., 'npm', 'npx', 'pnpm')"),
         args: z
@@ -24,6 +24,7 @@ export function registerBuildTool(server: McpServer) {
       outputSchema: BuildResultSchema,
     },
     async ({ command, args, path }) => {
+      assertAllowedCommand(command);
       const cwd = path || process.cwd();
       const start = Date.now();
       const result = await runBuildCommand(command, args || [], cwd);

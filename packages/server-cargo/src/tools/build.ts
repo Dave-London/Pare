@@ -12,7 +12,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Cargo Build",
       description:
-        "Runs cargo build and returns structured diagnostics (file, line, code, severity, message)",
+        "Runs cargo build and returns structured diagnostics (file, line, code, severity, message). Use instead of running `cargo build` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),

@@ -11,7 +11,8 @@ export function registerOutdatedTool(server: McpServer) {
     "outdated",
     {
       title: "npm Outdated",
-      description: "Checks for outdated packages and returns structured update information",
+      description:
+        "Checks for outdated packages and returns structured update information. Use instead of running `npm outdated` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
       },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput } from "@paretools/shared";
+import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
 import { formatDiff } from "../lib/formatters.js";
@@ -12,7 +13,7 @@ export function registerDiffTool(server: McpServer) {
     {
       title: "Git Diff",
       description:
-        "Returns file-level diff statistics as structured data. Use full=true for patch content.",
+        "Returns file-level diff statistics as structured data. Use full=true for patch content. Use instead of running `git diff` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
@@ -31,7 +32,10 @@ export function registerDiffTool(server: McpServer) {
       const args = ["diff", "--numstat"];
 
       if (staged) args.push("--cached");
-      if (ref) args.push(ref);
+      if (ref) {
+        assertNoFlagInjection(ref, "ref");
+        args.push(ref);
+      }
       if (file) args.push("--", file);
 
       const result = await git(args, cwd);
@@ -46,7 +50,7 @@ export function registerDiffTool(server: McpServer) {
       if (full && diff.files.length > 0) {
         const patchArgs = ["diff"];
         if (staged) patchArgs.push("--cached");
-        if (ref) patchArgs.push(ref);
+        if (ref) patchArgs.push(ref); // Already validated above
         if (file) patchArgs.push("--", file);
 
         const patchResult = await git(patchArgs, cwd);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput } from "@paretools/shared";
+import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseLog } from "../lib/parsers.js";
 import { formatLog } from "../lib/formatters.js";
@@ -14,7 +15,8 @@ export function registerLogTool(server: McpServer) {
     "log",
     {
       title: "Git Log",
-      description: "Returns commit history as structured data",
+      description:
+        "Returns commit history as structured data. Use instead of running `git log` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         maxCount: z
@@ -32,7 +34,10 @@ export function registerLogTool(server: McpServer) {
       const args = ["log", `--format=${LOG_FORMAT}`, `--max-count=${maxCount ?? 10}`];
 
       if (author) args.push(`--author=${author}`);
-      if (ref) args.push(ref);
+      if (ref) {
+        assertNoFlagInjection(ref, "ref");
+        args.push(ref);
+      }
 
       const result = await git(args, cwd);
 

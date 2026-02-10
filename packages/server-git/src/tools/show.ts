@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput } from "@paretools/shared";
+import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseShow } from "../lib/parsers.js";
 import { formatShow } from "../lib/formatters.js";
@@ -14,7 +15,8 @@ export function registerShowTool(server: McpServer) {
     "show",
     {
       title: "Git Show",
-      description: "Shows commit details and diff statistics for a given ref",
+      description:
+        "Shows commit details and diff statistics for a given ref. Use instead of running `git show` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         ref: z
@@ -28,6 +30,7 @@ export function registerShowTool(server: McpServer) {
     async ({ path, ref }) => {
       const cwd = path || process.cwd();
       const commitRef = ref || "HEAD";
+      assertNoFlagInjection(commitRef, "ref");
 
       // Get commit info
       const infoResult = await git(

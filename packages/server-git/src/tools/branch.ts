@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput } from "@paretools/shared";
+import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch } from "../lib/parsers.js";
 import { formatBranch } from "../lib/formatters.js";
@@ -11,7 +12,8 @@ export function registerBranchTool(server: McpServer) {
     "branch",
     {
       title: "Git Branch",
-      description: "Lists, creates, or deletes branches. Returns structured branch data.",
+      description:
+        "Lists, creates, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Repository path (default: cwd)"),
         create: z.string().optional().describe("Create a new branch with this name"),
@@ -25,6 +27,7 @@ export function registerBranchTool(server: McpServer) {
 
       // Create branch
       if (create) {
+        assertNoFlagInjection(create, "branch name");
         const result = await git(["checkout", "-b", create], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to create branch: ${result.stderr}`);
@@ -33,6 +36,7 @@ export function registerBranchTool(server: McpServer) {
 
       // Delete branch
       if (deleteBranch) {
+        assertNoFlagInjection(deleteBranch, "branch name");
         const result = await git(["branch", "-d", deleteBranch], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to delete branch: ${result.stderr}`);

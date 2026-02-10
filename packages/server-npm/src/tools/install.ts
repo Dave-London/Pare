@@ -12,7 +12,7 @@ export function registerInstallTool(server: McpServer) {
     {
       title: "npm Install",
       description:
-        "Runs npm install and returns a structured summary of added/removed packages and vulnerabilities",
+        "Runs npm install and returns a structured summary of added/removed packages and vulnerabilities. Use instead of running `npm install` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
         args: z

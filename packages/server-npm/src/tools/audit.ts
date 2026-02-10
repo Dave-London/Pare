@@ -11,7 +11,8 @@ export function registerAuditTool(server: McpServer) {
     "audit",
     {
       title: "npm Audit",
-      description: "Runs npm audit and returns structured vulnerability data",
+      description:
+        "Runs npm audit and returns structured vulnerability data. Use instead of running `npm audit` in the terminal.",
       inputSchema: {
         path: z.string().optional().describe("Project root path (default: cwd)"),
       },
