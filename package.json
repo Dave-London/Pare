@@ -20,11 +20,14 @@
     "format:check": "prettier --check .",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "benchmark": "tsx scripts/benchmark.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "prettier": "^3.4.0",
+    "tsx": "^4.21.0",
     "turbo": "^2.4.0"
   }
 }
