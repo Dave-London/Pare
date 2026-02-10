@@ -19,7 +19,7 @@ pnpm build
 pnpm test
 ```
 
-**Requirements**: Node.js >= 18, pnpm >= 9
+**Requirements**: Node.js >= 20, pnpm >= 10
 
 ## Adding a New Server
 
@@ -43,7 +43,7 @@ mkdir -p packages/server-<tool>/__tests__
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@paretools/shared": "workspace:*",
-    "zod": "^3.25.0"
+    "zod": "^4.3.6"
   }
 }
 ```
@@ -130,9 +130,16 @@ Select your new package, choose `minor` version bump, and write a brief descript
 
 ```
 packages/
-  shared/          @paretools/shared  — Dual output helper, command runner, ANSI strip
-  server-git/      @paretools/git     — Git operations
-  server-test/     @paretools/test    — Test runners
+  shared/          @paretools/shared   — Dual output helper, command runner, ANSI strip
+  server-git/      @paretools/git      — Git operations (10 tools)
+  server-test/     @paretools/test     — Test runners (2 tools)
+  server-npm/      @paretools/npm      — npm operations (7 tools)
+  server-build/    @paretools/build    — Build tools (5 tools)
+  server-lint/     @paretools/lint     — Linters & formatters (5 tools)
+  server-python/   @paretools/python   — Python tools (8 tools)
+  server-docker/   @paretools/docker   — Docker operations (9 tools)
+  server-cargo/    @paretools/cargo    — Rust/Cargo tools (9 tools)
+  server-go/       @paretools/go       — Go tools (7 tools)
   tsconfig/        Shared TypeScript config
   eslint-config/   Shared ESLint config
 ```
