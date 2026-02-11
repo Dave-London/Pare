@@ -8,8 +8,14 @@ describe("compactListMap", () => {
       name: "my-app",
       version: "1.0.0",
       dependencies: {
-        express: { version: "4.18.2", resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
-        lodash: { version: "4.17.21", resolved: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz" },
+        express: {
+          version: "4.18.2",
+          resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz",
+        },
+        lodash: {
+          version: "4.17.21",
+          resolved: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+        },
       },
       total: 2,
     };

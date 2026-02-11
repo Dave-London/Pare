@@ -8,7 +8,7 @@ The tool definitions do have an upfront context cost — that's true of any MCP 
 
 ### "JSON is verbose compared to plain text though?"
 
-Raw CLI output isn't minimal either — it's full of whitespace padding, box-drawing characters, ANSI formatting, repeated column headers, and progress indicators. Pare strips all that and returns only the fields an agent actually needs. The savings come from *structured minimal JSON* vs *decorated terminal output*, not raw JSON vs raw text.
+Raw CLI output isn't minimal either — it's full of whitespace padding, box-drawing characters, ANSI formatting, repeated column headers, and progress indicators. Pare strips all that and returns only the fields an agent actually needs. The savings come from _structured minimal JSON_ vs _decorated terminal output_, not raw JSON vs raw text.
 
 ### "If I use frequent intentional compaction, I only make a few tool calls per session. Is it still worth it?"
 
@@ -32,7 +32,7 @@ Pare is a set of standalone MCP servers. Each one (git, npm, cargo, etc.) calls 
 
 ### "Does structured output actually improve agent reasoning, or just save tokens?"
 
-No formal benchmark yet, but from daily usage with Claude Code we've seen no degradation in response quality — if anything it's better. When an agent gets a structured diff with `file`, `additions`, `deletions` fields it doesn't hallucinate line counts from eyeballing patch text. A `success: false` boolean is unambiguous vs the agent trying to grep "FAILED" out of a wall of stdout. Fewer tokens *and* less room for misinterpretation.
+No formal benchmark yet, but from daily usage with Claude Code we've seen no degradation in response quality — if anything it's better. When an agent gets a structured diff with `file`, `additions`, `deletions` fields it doesn't hallucinate line counts from eyeballing patch text. A `success: false` boolean is unambiguous vs the agent trying to grep "FAILED" out of a wall of stdout. Fewer tokens _and_ less room for misinterpretation.
 
 A proper eval comparing agent accuracy on raw CLI vs Pare structured output is planned — see [#110](https://github.com/Dave-London/Pare/issues/110).
 

@@ -30,7 +30,14 @@ describe("compactDualOutput", () => {
   const formatCompact = (d: ReturnType<typeof compactMap>) => `Compact: ${d.total} items`;
 
   it("returns full data when forceFullSchema is true", () => {
-    const result = compactDualOutput(fullData, "short", formatFull, compactMap, formatCompact, true);
+    const result = compactDualOutput(
+      fullData,
+      "short",
+      formatFull,
+      compactMap,
+      formatCompact,
+      true,
+    );
     expect(result.structuredContent).toBe(fullData);
     expect(result.content[0].text).toBe("Full: 1 items");
   });

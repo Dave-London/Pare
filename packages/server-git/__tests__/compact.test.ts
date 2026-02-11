@@ -41,7 +41,11 @@ describe("compactLogMap", () => {
 
     expect(compact.total).toBe(2);
     expect(compact.commits).toHaveLength(2);
-    expect(compact.commits[0]).toEqual({ hashShort: "abc1234", message: "Fix bug", refs: "HEAD -> main" });
+    expect(compact.commits[0]).toEqual({
+      hashShort: "abc1234",
+      message: "Fix bug",
+      refs: "HEAD -> main",
+    });
     expect(compact.commits[1]).toEqual({ hashShort: "def5678", message: "Add feature" });
     // Verify dropped fields are not present
     expect(compact.commits[0]).not.toHaveProperty("hash");
