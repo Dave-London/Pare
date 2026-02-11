@@ -21,7 +21,7 @@
     "github",
     "version-control"
   ],
-  "homepage": "https://github.com/Dave-London/pare/tree/main/packages/server-git",
+  "homepage": "https://github.com/Dave-London/Pare/tree/main/packages/server-git",
   "engines": {
     "node": ">=20"
   },
@@ -40,7 +40,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dave-London/pare.git",
+    "url": "https://github.com/Dave-London/Pare.git",
     "directory": "packages/server-git"
   },
   "files": [

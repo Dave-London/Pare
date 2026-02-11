@@ -5,7 +5,7 @@
   "description": "Dev tools, optimized for agents. ~85% fewer tokens, 100% structured output.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dave-London/pare.git"
+    "url": "https://github.com/Dave-London/Pare.git"
   },
   "license": "MIT",
   "engines": {

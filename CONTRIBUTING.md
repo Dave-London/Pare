@@ -6,7 +6,7 @@ Thanks for your interest in contributing! Pare is designed to make contributing 
 
 ```bash
 # Clone the repo
-git clone https://github.com/Dave-London/pare.git
+git clone https://github.com/Dave-London/Pare.git
 cd pare
 
 # Install dependencies

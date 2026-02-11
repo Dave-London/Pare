@@ -3,7 +3,7 @@
   "name": "io.github.Dave-London/cargo",
   "description": "Structured Rust cargo operations (build, test, clippy) as typed JSON.",
   "repository": {
-    "url": "https://github.com/Dave-London/pare",
+    "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
   "version": "0.3.0",

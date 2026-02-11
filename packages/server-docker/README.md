@@ -1,11 +1,11 @@
 # @paretools/docker
 
 [![npm](https://img.shields.io/npm/v/@paretools/docker.svg)](https://www.npmjs.com/package/@paretools/docker)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/Pare/blob/main/LICENSE)
 
 **Structured, token-efficient Docker output for AI agents.** Up to 95% fewer tokens than raw `docker` CLI output.
 
-Part of the [Pare](https://github.com/Dave-London/pare) suite of MCP servers.
+Part of the [Pare](https://github.com/Dave-London/Pare) suite of MCP servers.
 
 ## Tools (9)
 
@@ -79,9 +79,9 @@ Works with any MCP-compatible client: [Claude Code](https://docs.anthropic.com/e
 
 ## Links
 
-- [Pare monorepo](https://github.com/Dave-London/pare)
+- [Pare monorepo](https://github.com/Dave-London/Pare)
 - [MCP protocol](https://modelcontextprotocol.io)
 
 ## License
 
-[MIT](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[MIT](https://github.com/Dave-London/Pare/blob/main/LICENSE)
