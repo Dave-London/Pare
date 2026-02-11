@@ -3,7 +3,7 @@
   "name": "io.github.Dave-London/npm",
   "description": "Structured npm/pnpm operations (install, audit, outdated, list) as typed JSON.",
   "repository": {
-    "url": "https://github.com/Dave-London/pare",
+    "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
   "version": "0.3.0",

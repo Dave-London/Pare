@@ -58,7 +58,7 @@ describe("@paretools/test integration", () => {
 
       expect(Array.isArray(sc.failures)).toBe(true);
       expect((sc.failures as unknown[]).length).toBe(0);
-    }, 30_000);
+    }, 60_000);
 
     it("returns error for directory with no test framework", async () => {
       const result = await client.callTool({

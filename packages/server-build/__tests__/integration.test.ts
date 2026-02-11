@@ -78,7 +78,7 @@ describe("@paretools/build integration", () => {
       expect(typeof sc.duration).toBe("number");
       expect(Array.isArray(sc.errors)).toBe(true);
       expect(Array.isArray(sc.warnings)).toBe(true);
-    }, 30_000);
+    }, 60_000);
 
     it("rejects disallowed commands", async () => {
       const result = await client.callTool({

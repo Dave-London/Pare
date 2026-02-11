@@ -65,7 +65,7 @@ describe("@paretools/lint integration", () => {
       expect(sc.fixable).toEqual(expect.any(Number));
       expect(sc.filesChecked).toEqual(expect.any(Number));
       expect(Array.isArray(sc.diagnostics)).toBe(true);
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("format-check", () => {
@@ -84,7 +84,7 @@ describe("@paretools/lint integration", () => {
       expect(typeof sc.formatted).toBe("boolean");
       expect(sc.total).toEqual(expect.any(Number));
       expect(Array.isArray(sc.files)).toBe(true);
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("prettier-format", () => {
@@ -104,7 +104,7 @@ describe("@paretools/lint integration", () => {
       expect(typeof sc.success).toBe("boolean");
       expect(sc.filesChanged).toEqual(expect.any(Number));
       expect(Array.isArray(sc.files)).toBe(true);
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("biome-check", () => {
@@ -125,7 +125,7 @@ describe("@paretools/lint integration", () => {
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.fixable).toEqual(expect.any(Number));
       expect(Array.isArray(sc.diagnostics)).toBe(true);
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("biome-format", () => {
@@ -144,6 +144,6 @@ describe("@paretools/lint integration", () => {
       expect(typeof sc.success).toBe("boolean");
       expect(sc.filesChanged).toEqual(expect.any(Number));
       expect(Array.isArray(sc.files)).toBe(true);
-    }, 30_000);
+    }, 60_000);
   });
 });

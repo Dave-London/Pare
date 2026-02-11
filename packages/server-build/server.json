@@ -3,7 +3,7 @@
   "name": "io.github.Dave-London/build",
   "description": "Structured build tool output (tsc, generic commands) as typed JSON diagnostics.",
   "repository": {
-    "url": "https://github.com/Dave-London/pare",
+    "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
   "version": "0.3.0",

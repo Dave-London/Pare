@@ -1,11 +1,11 @@
 # @paretools/test
 
 [![npm](https://img.shields.io/npm/v/@paretools/test.svg)](https://www.npmjs.com/package/@paretools/test)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/Pare/blob/main/LICENSE)
 
 **Structured, token-efficient test runner output for AI agents.** Up to 80% fewer tokens than raw test CLI output.
 
-Part of the [Pare](https://github.com/Dave-London/pare) suite of MCP servers. Auto-detects pytest, jest, vitest, and mocha.
+Part of the [Pare](https://github.com/Dave-London/Pare) suite of MCP servers. Auto-detects pytest, jest, vitest, and mocha.
 
 ## Tools (2)
 
@@ -74,9 +74,9 @@ Works with any MCP-compatible client: [Claude Code](https://docs.anthropic.com/e
 
 ## Links
 
-- [Pare monorepo](https://github.com/Dave-London/pare)
+- [Pare monorepo](https://github.com/Dave-London/Pare)
 - [MCP protocol](https://modelcontextprotocol.io)
 
 ## License
 
-[MIT](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[MIT](https://github.com/Dave-London/Pare/blob/main/LICENSE)

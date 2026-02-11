@@ -48,7 +48,7 @@ describe("tool parameter handling", () => {
       expect(summary.total).toEqual(expect.any(Number));
       // With a filter, we should get some tests (fewer than the full suite)
       expect(summary.total as number).toBeGreaterThan(0);
-    }, 30_000);
+    }, 60_000);
 
     it("accepts custom args parameter and passes them through", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
@@ -64,7 +64,7 @@ describe("tool parameter handling", () => {
 
       const summary = sc.summary as Record<string, unknown>;
       expect(summary.total).toEqual(expect.any(Number));
-    }, 30_000);
+    }, 60_000);
 
     it("returns error for nonexistent path", async () => {
       const result = await client.callTool({

@@ -1,9 +1,9 @@
 # @paretools/shared
 
 [![npm](https://img.shields.io/npm/v/@paretools/shared.svg)](https://www.npmjs.com/package/@paretools/shared)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/Pare/blob/main/LICENSE)
 
-Shared utilities for [Pare](https://github.com/Dave-London/pare) MCP servers.
+Shared utilities for [Pare](https://github.com/Dave-London/Pare) MCP servers.
 
 ## Exports
 
@@ -21,8 +21,8 @@ import { run, dualOutput, stripAnsi } from "@paretools/shared";
 
 ## Links
 
-- [Pare monorepo](https://github.com/Dave-London/pare)
+- [Pare monorepo](https://github.com/Dave-London/Pare)
 
 ## License
 
-[MIT](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[MIT](https://github.com/Dave-London/Pare/blob/main/LICENSE)

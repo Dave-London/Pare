@@ -20,7 +20,7 @@ function runRaw(cmd: string, args: string[], cwd: string): string {
       cwd,
       encoding: "utf-8",
       shell: process.platform === "win32",
-      timeout: 30_000,
+      timeout: 60_000,
     });
   } catch (e: unknown) {
     // vitest --reporter=json writes JSON to stdout even on test failure

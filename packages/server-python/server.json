@@ -3,7 +3,7 @@
   "name": "io.github.Dave-London/python",
   "description": "Structured Python tool output (ruff, mypy, pip-audit, pip-install) as typed JSON.",
   "repository": {
-    "url": "https://github.com/Dave-London/pare",
+    "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
   "version": "0.3.0",

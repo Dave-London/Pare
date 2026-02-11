@@ -1,8 +1,8 @@
 # Pare
 
-[![CI](https://github.com/Dave-London/pare/actions/workflows/ci.yml/badge.svg)](https://github.com/Dave-London/pare/actions/workflows/ci.yml)
+[![CI](https://github.com/Dave-London/Pare/actions/workflows/ci.yml/badge.svg)](https://github.com/Dave-London/Pare/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@paretools/git.svg?label=npm)](https://www.npmjs.com/package/@paretools/git)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/pare/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/Pare/blob/main/LICENSE)
 [![Node.js >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 
 **Dev tools, optimized for agents. Up to 95% fewer tokens, 100% structured output.**
