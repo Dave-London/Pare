@@ -2,7 +2,7 @@ import type {
   GitStatus,
   GitLog,
   GitDiff,
-  GitBranch,
+  GitBranchFull,
   GitShow,
   GitAdd,
   GitCommit,
@@ -167,7 +167,7 @@ export function parseDiffStat(stdout: string): GitDiff {
 }
 
 /** Parses `git branch` output into a structured list of branches with the current branch marked. */
-export function parseBranch(stdout: string): GitBranch {
+export function parseBranch(stdout: string): GitBranchFull {
   const lines = stdout.trim().split("\n").filter(Boolean);
   let current = "";
   const branches = lines.map((line) => {
@@ -193,6 +193,7 @@ export function parseShow(stdout: string, diffStdout: string): GitShow {
 
   return {
     hash,
+    hashShort: hash.slice(0, 7),
     author,
     email,
     date,

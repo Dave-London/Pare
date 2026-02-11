@@ -24,11 +24,11 @@ export type GitStatus = z.infer<typeof GitStatusSchema>;
 
 /** Zod schema for a single git log commit entry with hash, author, date, and message. */
 export const GitLogEntrySchema = z.object({
-  hash: z.string(),
+  hash: z.string().optional(),
   hashShort: z.string(),
-  author: z.string(),
-  email: z.string(),
-  date: z.string(),
+  author: z.string().optional(),
+  email: z.string().optional(),
+  date: z.string().optional(),
   message: z.string(),
   refs: z.string().optional(),
 });
@@ -61,41 +61,51 @@ export const GitDiffFileSchema = z.object({
 /** Zod schema for structured git diff output with per-file stats and aggregate totals. */
 export const GitDiffSchema = z.object({
   files: z.array(GitDiffFileSchema),
-  totalAdditions: z.number(),
-  totalDeletions: z.number(),
+  totalAdditions: z.number().optional(),
+  totalDeletions: z.number().optional(),
   totalFiles: z.number(),
 });
 
 export type GitDiff = z.infer<typeof GitDiffSchema>;
 
+/** Zod schema for a full branch entry with tracking metadata. */
+export const GitBranchEntrySchema = z.object({
+  name: z.string(),
+  current: z.boolean(),
+  upstream: z.string().optional(),
+  lastCommit: z.string().optional(),
+});
+
 /** Zod schema for structured git branch output listing all branches and the current branch. */
 export const GitBranchSchema = z.object({
-  branches: z.array(
-    z.object({
-      name: z.string(),
-      current: z.boolean(),
-      upstream: z.string().optional(),
-      lastCommit: z.string().optional(),
-    }),
-  ),
+  branches: z.union([z.array(GitBranchEntrySchema), z.array(z.string())]),
   current: z.string(),
 });
+
+/** Full branch data (always returned by parser, before compact projection). */
+export type GitBranchFull = {
+  branches: Array<{ name: string; current: boolean; upstream?: string; lastCommit?: string }>;
+  current: string;
+};
 
 export type GitBranch = z.infer<typeof GitBranchSchema>;
 
 /** Zod schema for structured git show output with commit metadata and diff statistics. */
 export const GitShowSchema = z.object({
-  hash: z.string(),
-  author: z.string(),
-  email: z.string(),
-  date: z.string(),
+  hash: z.string().optional(),
+  hashShort: z.string().optional(),
+  author: z.string().optional(),
+  email: z.string().optional(),
+  date: z.string().optional(),
   message: z.string(),
-  diff: z.object({
-    files: z.array(GitDiffFileSchema),
-    totalAdditions: z.number(),
-    totalDeletions: z.number(),
-    totalFiles: z.number(),
-  }),
+  diff: z
+    .object({
+      files: z.array(GitDiffFileSchema),
+      totalAdditions: z.number().optional(),
+      totalDeletions: z.number().optional(),
+      totalFiles: z.number(),
+    })
+    .optional(),
 });
 
 export type GitShow = z.infer<typeof GitShowSchema>;

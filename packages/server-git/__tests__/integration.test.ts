@@ -69,7 +69,7 @@ describe("@paretools/git integration", () => {
     it("returns structured commit history", async () => {
       const result = await client.callTool({
         name: "log",
-        arguments: { maxCount: 3 },
+        arguments: { maxCount: 3, compact: false },
       });
 
       const sc = result.structuredContent as Record<string, unknown>;
@@ -93,7 +93,7 @@ describe("@paretools/git integration", () => {
 
   describe("diff", () => {
     it("returns structured diff statistics", async () => {
-      const result = await client.callTool({ name: "diff", arguments: {} });
+      const result = await client.callTool({ name: "diff", arguments: { compact: false } });
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -106,7 +106,7 @@ describe("@paretools/git integration", () => {
 
   describe("branch", () => {
     it("returns structured branch list with current", async () => {
-      const result = await client.callTool({ name: "branch", arguments: {} });
+      const result = await client.callTool({ name: "branch", arguments: { compact: false } });
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -125,7 +125,7 @@ describe("@paretools/git integration", () => {
     it("returns structured commit details with diff", async () => {
       const result = await client.callTool({
         name: "show",
-        arguments: { ref: "HEAD" },
+        arguments: { ref: "HEAD", compact: false },
       });
 
       const sc = result.structuredContent as Record<string, unknown>;

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { compactDualOutput } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseListJson } from "../lib/parsers.js";
-import { formatList } from "../lib/formatters.js";
+import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { NpmListSchema } from "../schemas/index.js";
 
 export function registerListTool(server: McpServer) {
@@ -20,10 +20,17 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default(0)
           .describe("Dependency tree depth (default: 0, top-level only)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: NpmListSchema,
     },
-    async ({ path, depth }) => {
+    async ({ path, depth, compact }) => {
       const cwd = path || process.cwd();
       const result = await npm(["ls", "--json", `--depth=${depth ?? 0}`], cwd);
 
@@ -32,7 +39,14 @@ export function registerListTool(server: McpServer) {
       }
 
       const list = parseListJson(result.stdout);
-      return dualOutput(list, formatList);
+      return compactDualOutput(
+        list,
+        result.stdout,
+        formatList,
+        compactListMap,
+        formatListCompact,
+        compact === false,
+      );
     },
   );
 }

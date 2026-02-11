@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { compactDualOutput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseLog } from "../lib/parsers.js";
-import { formatLog } from "../lib/formatters.js";
+import { formatLog, compactLogMap, formatLogCompact } from "../lib/formatters.js";
 import { GitLogSchema } from "../schemas/index.js";
 
 const DELIMITER = "@@";
@@ -26,10 +26,17 @@ export function registerLogTool(server: McpServer) {
           .describe("Number of commits to return (default: 10)"),
         ref: z.string().optional().describe("Branch, tag, or commit to start from"),
         author: z.string().optional().describe("Filter by author name or email"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GitLogSchema,
     },
-    async ({ path, maxCount, ref, author }) => {
+    async ({ path, maxCount, ref, author, compact }) => {
       const cwd = path || process.cwd();
       const args = ["log", `--format=${LOG_FORMAT}`, `--max-count=${maxCount ?? 10}`];
 
@@ -46,7 +53,14 @@ export function registerLogTool(server: McpServer) {
       }
 
       const log = parseLog(result.stdout);
-      return dualOutput(log, formatLog);
+      return compactDualOutput(
+        log,
+        result.stdout,
+        formatLog,
+        compactLogMap,
+        formatLogCompact,
+        compact === false,
+      );
     },
   );
 }

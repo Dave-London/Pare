@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { compactDualOutput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch } from "../lib/parsers.js";
-import { formatBranch } from "../lib/formatters.js";
+import { formatBranch, compactBranchMap, formatBranchCompact } from "../lib/formatters.js";
 import { GitBranchSchema } from "../schemas/index.js";
 
 export function registerBranchTool(server: McpServer) {
@@ -19,10 +19,17 @@ export function registerBranchTool(server: McpServer) {
         create: z.string().optional().describe("Create a new branch with this name"),
         delete: z.string().optional().describe("Delete branch with this name"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GitBranchSchema,
     },
-    async ({ path, create, delete: deleteBranch, all }) => {
+    async ({ path, create, delete: deleteBranch, all, compact }) => {
       const cwd = path || process.cwd();
 
       // Create branch
@@ -53,7 +60,14 @@ export function registerBranchTool(server: McpServer) {
       }
 
       const branches = parseBranch(result.stdout);
-      return dualOutput(branches, formatBranch);
+      return compactDualOutput(
+        branches,
+        result.stdout,
+        formatBranch,
+        compactBranchMap,
+        formatBranchCompact,
+        compact === false,
+      );
     },
   );
 }

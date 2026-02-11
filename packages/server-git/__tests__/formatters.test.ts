@@ -15,7 +15,7 @@ import type {
   GitStatus,
   GitLog,
   GitDiff,
-  GitBranch,
+  GitBranchFull,
   GitShow,
   GitAdd,
   GitCommit,
@@ -111,7 +111,7 @@ describe("formatDiff", () => {
 
 describe("formatBranch", () => {
   it("marks current branch with asterisk", () => {
-    const branches: GitBranch = {
+    const branches: GitBranchFull = {
       branches: [
         { name: "dev", current: false },
         { name: "main", current: true },
@@ -371,7 +371,7 @@ describe("formatDiff (expanded)", () => {
 
 describe("formatBranch (expanded)", () => {
   it("formats many branches", () => {
-    const branches: GitBranch = {
+    const branches: GitBranchFull = {
       branches: [
         { name: "dev", current: false },
         { name: "feature/auth", current: false },
@@ -393,7 +393,7 @@ describe("formatBranch (expanded)", () => {
   });
 
   it("formats single branch repo", () => {
-    const branches: GitBranch = {
+    const branches: GitBranchFull = {
       branches: [{ name: "main", current: true }],
       current: "main",
     };
@@ -403,7 +403,7 @@ describe("formatBranch (expanded)", () => {
   });
 
   it("formats branches with no current (detached HEAD scenario)", () => {
-    const branches: GitBranch = {
+    const branches: GitBranchFull = {
       branches: [
         { name: "main", current: false },
         { name: "dev", current: false },

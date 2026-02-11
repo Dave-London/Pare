@@ -98,3 +98,35 @@ export function formatInit(data: NpmInit): string {
   }
   return `Created ${data.packageName}@${data.version} at ${data.path}`;
 }
+
+// ── Compact types, mappers, and formatters ───────────────────────────
+
+/** Compact list: dependencies as name → version string map. */
+export interface NpmListCompact {
+  [key: string]: unknown;
+  name: string;
+  version: string;
+  dependencies: Record<string, string>;
+  total: number;
+}
+
+export function compactListMap(data: NpmList): NpmListCompact {
+  const deps: Record<string, string> = {};
+  for (const [name, dep] of Object.entries(data.dependencies)) {
+    deps[name] = dep.version;
+  }
+  return {
+    name: data.name,
+    version: data.version,
+    dependencies: deps,
+    total: data.total,
+  };
+}
+
+export function formatListCompact(data: NpmListCompact): string {
+  const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
+  for (const [name, version] of Object.entries(data.dependencies)) {
+    lines.push(`  ${name}@${version}`);
+  }
+  return lines.join("\n");
+}

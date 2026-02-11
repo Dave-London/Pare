@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { compactDualOutput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
-import { formatDiff } from "../lib/formatters.js";
+import { formatDiff, compactDiffMap, formatDiffCompact } from "../lib/formatters.js";
 import { GitDiffSchema } from "../schemas/index.js";
 
 export function registerDiffTool(server: McpServer) {
@@ -24,10 +24,17 @@ export function registerDiffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GitDiffSchema,
     },
-    async ({ path, staged, ref, file, full }) => {
+    async ({ path, staged, ref, file, full, compact }) => {
       const cwd = path || process.cwd();
       const args = ["diff", "--numstat"];
 
@@ -76,7 +83,14 @@ export function registerDiffTool(server: McpServer) {
         }
       }
 
-      return dualOutput(diff, formatDiff);
+      return compactDualOutput(
+        diff,
+        result.stdout,
+        formatDiff,
+        compactDiffMap,
+        formatDiffCompact,
+        compact === false,
+      );
     },
   );
 }
