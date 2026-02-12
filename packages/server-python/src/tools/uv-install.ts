@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvInstall } from "../lib/parsers.js";
 import { formatUvInstall } from "../lib/formatters.js";
@@ -22,6 +22,11 @@ export function registerUvInstallTool(server: McpServer) {
     },
     async ({ path, packages, requirements }) => {
       const cwd = path || process.cwd();
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
+      if (requirements) assertNoFlagInjection(requirements, "requirements");
+
       const args = ["pip", "install"];
 
       if (requirements) {

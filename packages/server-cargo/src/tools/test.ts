@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoTestOutput } from "../lib/parsers.js";
 import { formatCargoTest } from "../lib/formatters.js";
@@ -21,6 +21,8 @@ export function registerTestTool(server: McpServer) {
     },
     async ({ path, filter }) => {
       const cwd = path || process.cwd();
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const args = ["test"];
       if (filter) args.push(filter);
 

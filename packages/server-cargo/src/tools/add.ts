@@ -30,6 +30,9 @@ export function registerAddTool(server: McpServer) {
       for (const pkg of packages) {
         assertNoFlagInjection(pkg, "packages");
       }
+      for (const f of features ?? []) {
+        assertNoFlagInjection(f, "features");
+      }
 
       const args = ["add", ...packages];
       if (dev) args.push("--dev");

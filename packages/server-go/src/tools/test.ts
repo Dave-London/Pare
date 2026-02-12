@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoTestJson } from "../lib/parsers.js";
 import { formatGoTest } from "../lib/formatters.js";
@@ -26,6 +26,11 @@ export function registerTestTool(server: McpServer) {
     },
     async ({ path, packages, run: runFilter }) => {
       const cwd = path || process.cwd();
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
+      if (runFilter) assertNoFlagInjection(runFilter, "run");
+
       const args = ["test", "-json", ...(packages || ["./..."])];
       if (runFilter) args.push("-run", runFilter);
 

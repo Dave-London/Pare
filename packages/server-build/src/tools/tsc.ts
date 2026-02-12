@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { tsc } from "../lib/build-runner.js";
 import { parseTscOutput } from "../lib/parsers.js";
 import { formatTsc } from "../lib/formatters.js";
@@ -26,6 +26,8 @@ export function registerTscTool(server: McpServer) {
     },
     async ({ path, noEmit, project }) => {
       const cwd = path || process.cwd();
+      if (project) assertNoFlagInjection(project, "project");
+
       const args: string[] = [];
       if (noEmit !== false) args.push("--noEmit");
       if (project) args.push("--project", project);

@@ -27,6 +27,10 @@ export function registerRunTool(server: McpServer) {
     async ({ path, script, args }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(script, "script");
+      // Defense-in-depth: validate args even though they come after "--" separator
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       const npmArgs = ["run", script];
       if (args && args.length > 0) {

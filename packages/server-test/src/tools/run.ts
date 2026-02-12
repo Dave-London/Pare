@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run } from "@paretools/shared";
+import { dualOutput, run, assertNoFlagInjection } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
@@ -57,6 +57,10 @@ export function registerRunTool(server: McpServer) {
       outputSchema: TestRunSchema,
     },
     async ({ path, framework, filter, updateSnapshots, args }) => {
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const extraArgs = [...(args || [])];

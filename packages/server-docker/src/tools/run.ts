@@ -53,6 +53,11 @@ export function registerRunTool(server: McpServer) {
     async ({ image, name, ports, volumes, env, detach, rm, command, path }) => {
       assertNoFlagInjection(image, "image");
       if (name) assertNoFlagInjection(name, "name");
+      // Validate first element of command array (the binary name) to prevent flag injection.
+      // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
+      if (command && command.length > 0) {
+        assertNoFlagInjection(command[0], "command");
+      }
 
       const args = ["run"];
       if (detach) args.push("-d");

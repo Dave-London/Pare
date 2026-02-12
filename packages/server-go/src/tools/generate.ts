@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoGenerateOutput } from "../lib/parsers.js";
 import { formatGoGenerate } from "../lib/formatters.js";
@@ -25,6 +25,9 @@ export function registerGenerateTool(server: McpServer) {
     },
     async ({ path, patterns }) => {
       const cwd = path || process.cwd();
+      for (const p of patterns ?? []) {
+        assertNoFlagInjection(p, "patterns");
+      }
       const result = await goCmd(["generate", ...(patterns || ["./..."])], cwd);
       const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode);
       return dualOutput(data, formatGoGenerate);

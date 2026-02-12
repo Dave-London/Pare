@@ -52,10 +52,10 @@ describe("tool parameter handling", () => {
 
     it("accepts custom args parameter and passes them through", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
-      // Pass --bail as a custom arg (stop on first failure)
+      // Pass a safe (non-flag) arg — file path pattern to limit test scope
       const result = await client.callTool({
         name: "run",
-        arguments: { path: gitPkgPath, framework: "vitest", args: ["--bail", "1"] },
+        arguments: { path: gitPkgPath, framework: "vitest", args: ["parsers"] },
       });
 
       const sc = result.structuredContent as Record<string, unknown>;
@@ -65,6 +65,17 @@ describe("tool parameter handling", () => {
       const summary = sc.summary as Record<string, unknown>;
       expect(summary.total).toEqual(expect.any(Number));
     }, 60_000);
+
+    it("rejects flag-like args to prevent argument injection", async () => {
+      const gitPkgPath = resolve(__dirname, "../../server-git");
+      // Flag-like args must be rejected by assertNoFlagInjection
+      const result = await client.callTool({
+        name: "run",
+        arguments: { path: gitPkgPath, framework: "vitest", args: ["--bail", "1"] },
+      });
+
+      expect(result.isError).toBe(true);
+    }, 15_000);
 
     it("returns error for nonexistent path", async () => {
       const result = await client.callTool({

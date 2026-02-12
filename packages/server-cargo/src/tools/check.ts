@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
 import { formatCargoBuild } from "../lib/formatters.js";
@@ -21,6 +21,8 @@ export function registerCheckTool(server: McpServer) {
     },
     async ({ path, package: pkg }) => {
       const cwd = path || process.cwd();
+      if (pkg) assertNoFlagInjection(pkg, "package");
+
       const args = ["check", "--message-format=json"];
       if (pkg) args.push("-p", pkg);
 

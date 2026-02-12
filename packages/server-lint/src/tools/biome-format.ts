@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeFormat } from "../lib/parsers.js";
 import { formatFormatWrite } from "../lib/formatters.js";
@@ -25,6 +25,9 @@ export function registerBiomeFormatTool(server: McpServer) {
     },
     async ({ path, patterns }) => {
       const cwd = path || process.cwd();
+      for (const p of patterns ?? []) {
+        assertNoFlagInjection(p, "patterns");
+      }
       const args = ["format", "--write", ...(patterns || ["."])];
 
       const result = await biome(args, cwd);
