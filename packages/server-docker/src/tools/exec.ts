@@ -38,6 +38,7 @@ export function registerExecTool(server: McpServer) {
       const args = ["exec"];
       if (workdir) args.push("-w", workdir);
       for (const e of env ?? []) {
+        assertNoFlagInjection(e, "env");
         args.push("-e", e);
       }
       args.push(container, ...command);
