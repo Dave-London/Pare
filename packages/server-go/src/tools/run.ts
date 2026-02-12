@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoRunOutput } from "../lib/parsers.js";
-import { formatGoRun } from "../lib/formatters.js";
+import { formatGoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { GoRunResultSchema } from "../schemas/index.js";
 
 export function registerRunTool(server: McpServer) {
@@ -37,10 +37,17 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Build flags to pass to go run (e.g., -race, -tags)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GoRunResultSchema,
     },
-    async ({ path, file, args, buildArgs }) => {
+    async ({ path, file, args, buildArgs, compact }) => {
       const cwd = path || process.cwd();
       const target = file || ".";
       assertNoFlagInjection(target, "file");
@@ -54,7 +61,15 @@ export function registerRunTool(server: McpServer) {
       }
       const result = await goCmd(cmdArgs, cwd);
       const data = parseGoRunOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatGoRun);
+      const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatGoRun,
+        compactRunMap,
+        formatRunCompact,
+        compact === false,
+      );
     },
   );
 }

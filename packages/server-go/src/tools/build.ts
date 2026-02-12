@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoBuildOutput } from "../lib/parsers.js";
-import { formatGoBuild } from "../lib/formatters.js";
+import { formatGoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { GoBuildResultSchema } from "../schemas/index.js";
 
 export function registerBuildTool(server: McpServer) {
@@ -25,17 +25,32 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Packages to build (default: ./...)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GoBuildResultSchema,
     },
-    async ({ path, packages }) => {
+    async ({ path, packages, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
       const result = await goCmd(["build", ...(packages || ["./..."])], cwd);
       const data = parseGoBuildOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatGoBuild);
+      const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatGoBuild,
+        compactBuildMap,
+        formatBuildCompact,
+        compact === false,
+      );
     },
   );
 }

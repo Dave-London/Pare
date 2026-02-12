@@ -11,7 +11,7 @@ export const GoBuildErrorSchema = z.object({
 /** Zod schema for structured go build output with success status and error list. */
 export const GoBuildResultSchema = z.object({
   success: z.boolean(),
-  errors: z.array(GoBuildErrorSchema),
+  errors: z.array(GoBuildErrorSchema).optional(),
   total: z.number(),
 });
 
@@ -29,7 +29,7 @@ export const GoTestCaseSchema = z.object({
 /** Zod schema for structured go test output with test list and pass/fail/skip counts. */
 export const GoTestResultSchema = z.object({
   success: z.boolean(),
-  tests: z.array(GoTestCaseSchema),
+  tests: z.array(GoTestCaseSchema).optional(),
   total: z.number(),
   passed: z.number(),
   failed: z.number(),
@@ -48,7 +48,7 @@ export const GoVetDiagnosticSchema = z.object({
 
 /** Zod schema for structured go vet output with diagnostic list and total count. */
 export const GoVetResultSchema = z.object({
-  diagnostics: z.array(GoVetDiagnosticSchema),
+  diagnostics: z.array(GoVetDiagnosticSchema).optional(),
   total: z.number(),
 });
 
@@ -57,8 +57,8 @@ export type GoVetResult = z.infer<typeof GoVetResultSchema>;
 /** Zod schema for structured go run output with stdout, stderr, and exit code. */
 export const GoRunResultSchema = z.object({
   exitCode: z.number(),
-  stdout: z.string(),
-  stderr: z.string(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
   success: z.boolean(),
 });
 
@@ -67,7 +67,7 @@ export type GoRunResult = z.infer<typeof GoRunResultSchema>;
 /** Zod schema for structured go mod tidy output with success status and summary. */
 export const GoModTidyResultSchema = z.object({
   success: z.boolean(),
-  summary: z.string(),
+  summary: z.string().optional(),
 });
 
 export type GoModTidyResult = z.infer<typeof GoModTidyResultSchema>;
@@ -76,7 +76,7 @@ export type GoModTidyResult = z.infer<typeof GoModTidyResultSchema>;
 export const GoFmtResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
-  files: z.array(z.string()),
+  files: z.array(z.string()).optional(),
 });
 
 export type GoFmtResult = z.infer<typeof GoFmtResultSchema>;
@@ -84,7 +84,7 @@ export type GoFmtResult = z.infer<typeof GoFmtResultSchema>;
 /** Zod schema for structured go generate output with success status and output text. */
 export const GoGenerateResultSchema = z.object({
   success: z.boolean(),
-  output: z.string(),
+  output: z.string().optional(),
 });
 
 export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;

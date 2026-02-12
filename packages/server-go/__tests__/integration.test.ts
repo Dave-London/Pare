@@ -108,7 +108,7 @@ describe("@paretools/go integration", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool({
         name: "run",
-        arguments: { path: resolve(__dirname, "../../.."), file: "." },
+        arguments: { path: resolve(__dirname, "../../.."), file: ".", compact: false },
       });
 
       if (result.isError) {
@@ -129,7 +129,7 @@ describe("@paretools/go integration", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool({
         name: "mod-tidy",
-        arguments: { path: resolve(__dirname, "../../..") },
+        arguments: { path: resolve(__dirname, "../../.."), compact: false },
       });
 
       if (result.isError) {
@@ -148,7 +148,7 @@ describe("@paretools/go integration", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool({
         name: "fmt",
-        arguments: { path: resolve(__dirname, "../../.."), check: true },
+        arguments: { path: resolve(__dirname, "../../.."), check: true, compact: false },
       });
 
       if (result.isError) {
@@ -168,7 +168,7 @@ describe("@paretools/go integration", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool({
         name: "generate",
-        arguments: { path: resolve(__dirname, "../../..") },
+        arguments: { path: resolve(__dirname, "../../.."), compact: false },
       });
 
       if (result.isError) {
