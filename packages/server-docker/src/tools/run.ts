@@ -5,7 +5,7 @@ import { docker } from "../lib/docker-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun } from "../lib/formatters.js";
 import { DockerRunSchema } from "../schemas/index.js";
-import { assertValidPortMapping } from "../lib/validation.js";
+import { assertValidPortMapping, assertSafeVolumeMount } from "../lib/validation.js";
 
 export function registerRunTool(server: McpServer) {
   server.registerTool(
@@ -81,6 +81,7 @@ export function registerRunTool(server: McpServer) {
       }
       for (const v of volumes ?? []) {
         assertNoFlagInjection(v, "volumes");
+        assertSafeVolumeMount(v);
         args.push("-v", v);
       }
       for (const e of env ?? []) {
