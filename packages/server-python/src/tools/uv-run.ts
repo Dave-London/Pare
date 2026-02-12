@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvRun } from "../lib/parsers.js";
-import { formatUvRun } from "../lib/formatters.js";
+import { formatUvRun, compactUvRunMap, formatUvRunCompact } from "../lib/formatters.js";
 import { UvRunSchema } from "../schemas/index.js";
 
 export function registerUvRunTool(server: McpServer) {
@@ -24,10 +24,17 @@ export function registerUvRunTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .min(1)
           .describe("Command and arguments to run (e.g. ['python', 'script.py'])"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: UvRunSchema,
     },
-    async ({ path, command }) => {
+    async ({ path, command, compact }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(command[0], "command");
       const args = ["run", ...command];
@@ -37,7 +44,14 @@ export function registerUvRunTool(server: McpServer) {
       const elapsed = Date.now() - start;
 
       const data = parseUvRun(result.stdout, result.stderr, result.exitCode, elapsed);
-      return dualOutput(data, formatUvRun);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatUvRun,
+        compactUvRunMap,
+        formatUvRunCompact,
+        compact === false,
+      );
     },
   );
 }

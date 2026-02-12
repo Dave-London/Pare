@@ -1,9 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { pip } from "../lib/python-runner.js";
 import { parsePipInstall } from "../lib/parsers.js";
-import { formatPipInstall } from "../lib/formatters.js";
+import {
+  formatPipInstall,
+  compactPipInstallMap,
+  formatPipInstallCompact,
+} from "../lib/formatters.js";
 import { PipInstallSchema } from "../schemas/index.js";
 
 export function registerPipInstallTool(server: McpServer) {
@@ -38,10 +42,17 @@ export function registerPipInstallTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be installed without actually installing (--dry-run)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: PipInstallSchema,
     },
-    async ({ packages, requirements, path, dryRun }) => {
+    async ({ packages, requirements, path, dryRun, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -60,7 +71,14 @@ export function registerPipInstallTool(server: McpServer) {
 
       const result = await pip(args, cwd);
       const data = parsePipInstall(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatPipInstall);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatPipInstall,
+        compactPipInstallMap,
+        formatPipInstallCompact,
+        compact === false,
+      );
     },
   );
 }

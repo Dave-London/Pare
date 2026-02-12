@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvInstall } from "../lib/parsers.js";
-import { formatUvInstall } from "../lib/formatters.js";
+import { formatUvInstall, compactUvInstallMap, formatUvInstallCompact } from "../lib/formatters.js";
 import { UvInstallSchema } from "../schemas/index.js";
 
 export function registerUvInstallTool(server: McpServer) {
@@ -37,10 +37,17 @@ export function registerUvInstallTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be installed without actually installing (--dry-run)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: UvInstallSchema,
     },
-    async ({ path, packages, requirements, dryRun }) => {
+    async ({ path, packages, requirements, dryRun, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -60,7 +67,14 @@ export function registerUvInstallTool(server: McpServer) {
 
       const result = await uv(args, cwd);
       const data = parseUvInstall(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatUvInstall);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatUvInstall,
+        compactUvInstallMap,
+        formatUvInstallCompact,
+        compact === false,
+      );
     },
   );
 }

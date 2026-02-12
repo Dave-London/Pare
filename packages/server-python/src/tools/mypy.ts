@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { mypy } from "../lib/python-runner.js";
 import { parseMypyOutput } from "../lib/parsers.js";
-import { formatMypy } from "../lib/formatters.js";
+import { formatMypy, compactMypyMap, formatMypyCompact } from "../lib/formatters.js";
 import { MypyResultSchema } from "../schemas/index.js";
 
 export function registerMypyTool(server: McpServer) {
@@ -25,10 +25,17 @@ export function registerMypyTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("Files or directories to check (default: ['.'])"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: MypyResultSchema,
     },
-    async ({ path, targets }) => {
+    async ({ path, targets, compact }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
@@ -37,7 +44,14 @@ export function registerMypyTool(server: McpServer) {
 
       const result = await mypy(args, cwd);
       const data = parseMypyOutput(result.stdout, result.exitCode);
-      return dualOutput(data, formatMypy);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatMypy,
+        compactMypyMap,
+        formatMypyCompact,
+        compact === false,
+      );
     },
   );
 }

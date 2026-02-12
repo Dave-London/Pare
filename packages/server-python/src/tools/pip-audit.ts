@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { parsePipAuditJson } from "../lib/parsers.js";
-import { formatPipAudit } from "../lib/formatters.js";
+import { formatPipAudit, compactPipAuditMap, formatPipAuditCompact } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";
 
 export function registerPipAuditTool(server: McpServer) {
@@ -23,10 +23,17 @@ export function registerPipAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to requirements file"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: PipAuditResultSchema,
     },
-    async ({ path, requirements }) => {
+    async ({ path, requirements, compact }) => {
       const cwd = path || process.cwd();
       if (requirements) assertNoFlagInjection(requirements, "requirements");
 
@@ -37,7 +44,14 @@ export function registerPipAuditTool(server: McpServer) {
       const { run } = await import("@paretools/shared");
       const result = await run("pip-audit", args, { cwd });
       const data = parsePipAuditJson(result.stdout);
-      return dualOutput(data, formatPipAudit);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatPipAudit,
+        compactPipAuditMap,
+        formatPipAuditCompact,
+        compact === false,
+      );
     },
   );
 }
