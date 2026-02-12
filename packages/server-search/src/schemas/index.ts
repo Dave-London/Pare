@@ -1,0 +1,55 @@
+import { z } from "zod";
+
+// ── Search (rg --json) ───────────────────────────────────────────────
+
+/** Zod schema for a single search match with file location and matched text. */
+export const SearchMatchSchema = z.object({
+  file: z.string(),
+  line: z.number(),
+  column: z.number(),
+  matchText: z.string(),
+  lineContent: z.string(),
+});
+
+/** Zod schema for structured ripgrep search output with match list and totals. */
+export const SearchResultSchema = z.object({
+  matches: z.array(SearchMatchSchema),
+  totalMatches: z.number(),
+  filesSearched: z.number(),
+});
+
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+
+// ── Find (fd) ────────────────────────────────────────────────────────
+
+/** Zod schema for a single file entry with path, name, and extension. */
+export const FindFileSchema = z.object({
+  path: z.string(),
+  name: z.string(),
+  ext: z.string(),
+});
+
+/** Zod schema for structured fd output with file list and total count. */
+export const FindResultSchema = z.object({
+  files: z.array(FindFileSchema),
+  total: z.number(),
+});
+
+export type FindResult = z.infer<typeof FindResultSchema>;
+
+// ── Count (rg --count) ──────────────────────────────────────────────
+
+/** Zod schema for a single file match count entry. */
+export const CountFileSchema = z.object({
+  file: z.string(),
+  count: z.number(),
+});
+
+/** Zod schema for structured rg --count output with per-file counts and totals. */
+export const CountResultSchema = z.object({
+  files: z.array(CountFileSchema),
+  totalMatches: z.number(),
+  totalFiles: z.number(),
+});
+
+export type CountResult = z.infer<typeof CountResultSchema>;

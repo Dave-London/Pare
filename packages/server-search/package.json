@@ -1,0 +1,69 @@
+{
+  "name": "@paretools/search",
+  "version": "0.7.0",
+  "mcpName": "io.github.Dave-London/search",
+  "description": "MCP server for code search (ripgrep + fd) with structured, token-efficient output",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "structured-output",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "token-efficient",
+    "devtools",
+    "cli",
+    "ripgrep",
+    "rg",
+    "fd",
+    "search",
+    "find",
+    "grep"
+  ],
+  "homepage": "https://github.com/Dave-London/Pare/tree/main/packages/server-search",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "bin": {
+    "pare-search": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dave-London/Pare.git",
+    "directory": "packages/server-search"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@paretools/shared": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@paretools/tsconfig": "workspace:*",
+    "@types/node": "^25.2.3",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
+  }
+}

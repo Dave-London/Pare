@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { registerAllTools } from "./tools/index.js";
+
+const server = new McpServer(
+  { name: "@paretools/search", version: "0.7.0" },
+  {
+    instructions:
+      "Structured code search operations (ripgrep + fd). Returns typed JSON with match locations, file lists, and match counts. Use instead of running rg/fd/grep/find in the terminal.",
+  },
+);
+
+registerAllTools(server);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
