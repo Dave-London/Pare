@@ -99,6 +99,7 @@ export interface DockerPsCompact {
   containers: Array<{ id: string; name: string; image: string; status: string }>;
   total: number;
   running: number;
+  stopped: number;
 }
 
 export function compactPsMap(data: DockerPs): DockerPsCompact {
@@ -111,6 +112,7 @@ export function compactPsMap(data: DockerPs): DockerPsCompact {
     })),
     total: data.total,
     running: data.running,
+    stopped: data.stopped,
   };
 }
 

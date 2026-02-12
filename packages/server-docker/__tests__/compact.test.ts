@@ -63,6 +63,7 @@ describe("compactPsMap", () => {
 
     expect(compact.total).toBe(2);
     expect(compact.running).toBe(1);
+    expect(compact.stopped).toBe(1);
     expect(compact.containers).toHaveLength(2);
     expect(compact.containers[0]).toEqual({
       id: "abc123def456",
@@ -77,7 +78,6 @@ describe("compactPsMap", () => {
       status: "Exited (0) 1 hour ago",
     });
     // Verify dropped fields
-    expect(compact).not.toHaveProperty("stopped");
     expect(compact.containers[0]).not.toHaveProperty("ports");
     expect(compact.containers[0]).not.toHaveProperty("created");
     expect(compact.containers[0]).not.toHaveProperty("state");
