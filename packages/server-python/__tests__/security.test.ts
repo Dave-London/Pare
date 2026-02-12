@@ -8,7 +8,8 @@
  * "--output=/etc/passwd" could be interpreted as a flag.
  */
 import { describe, it, expect } from "vitest";
-import { assertNoFlagInjection } from "@paretools/shared";
+import { z } from "zod";
+import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -141,5 +142,86 @@ describe("security: uv-install — packages and requirements validation", () => 
         /must not start with "-"/,
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// uv-run tool — command[0] validation
+// ---------------------------------------------------------------------------
+
+describe("security: uv-run tool — command[0] validation", () => {
+  it("accepts normal command names", () => {
+    expect(() => assertNoFlagInjection("python", "command")).not.toThrow();
+    expect(() => assertNoFlagInjection("flask", "command")).not.toThrow();
+    expect(() => assertNoFlagInjection("pytest", "command")).not.toThrow();
+    expect(() => assertNoFlagInjection("mypy", "command")).not.toThrow();
+    expect(() => assertNoFlagInjection("uvicorn", "command")).not.toThrow();
+  });
+
+  it("accepts commands with paths", () => {
+    expect(() => assertNoFlagInjection("/usr/bin/python3", "command")).not.toThrow();
+    expect(() => assertNoFlagInjection("./venv/bin/python", "command")).not.toThrow();
+  });
+
+  it("rejects flag-like command names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "command")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("rejects specific dangerous flag injections as command", () => {
+    expect(() => assertNoFlagInjection("--help", "command")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("-c", "command")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--exec=rm -rf /", "command")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod .max() input-limit constraints — Python tool schemas
+// ---------------------------------------------------------------------------
+
+describe("Zod .max() constraints — Python tool schemas", () => {
+  describe("uv-run command array (ARRAY_MAX + STRING_MAX)", () => {
+    const schema = z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from({ length: INPUT_LIMITS.ARRAY_MAX + 1 }, () => "arg");
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects command string exceeding STRING_MAX", () => {
+      const oversized = ["a".repeat(INPUT_LIMITS.STRING_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("path parameter (PATH_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.PATH_MAX);
+
+    it("accepts a path within the limit", () => {
+      expect(schema.safeParse("/home/user/project").success).toBe(true);
+    });
+
+    it("rejects a path exceeding PATH_MAX", () => {
+      const oversized = "p".repeat(INPUT_LIMITS.PATH_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("packages array (SHORT_STRING_MAX)", () => {
+    const schema = z
+      .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+      .max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects package name exceeding SHORT_STRING_MAX", () => {
+      const oversized = ["x".repeat(INPUT_LIMITS.SHORT_STRING_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("accepts normal package names", () => {
+      expect(schema.safeParse(["flask", "requests", "numpy"]).success).toBe(true);
+    });
   });
 });

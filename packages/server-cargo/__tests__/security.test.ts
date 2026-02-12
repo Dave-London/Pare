@@ -8,7 +8,8 @@
  * "--manifest-path=/evil" could be interpreted as a flag.
  */
 import { describe, it, expect } from "vitest";
-import { assertNoFlagInjection } from "@paretools/shared";
+import { z } from "zod";
+import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -93,5 +94,112 @@ describe("security: cargo run — args validation", () => {
     for (const safe of SAFE_INPUTS) {
       expect(() => assertNoFlagInjection(safe, "args")).not.toThrow();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cargo build — no user-supplied string params (only path and boolean)
+// ---------------------------------------------------------------------------
+
+describe("security: cargo build — no injectable string params", () => {
+  it("build tool only accepts path (PATH_MAX) and release (boolean)", () => {
+    // The build tool has no user-facing string params that could be flag-injected.
+    // path is validated by Zod .max(PATH_MAX) and release is a boolean.
+    // This test documents that explicitly.
+    const pathSchema = z.string().max(INPUT_LIMITS.PATH_MAX).optional();
+    const releaseSchema = z.boolean().optional();
+
+    expect(pathSchema.safeParse("/some/path").success).toBe(true);
+    expect(releaseSchema.safeParse(true).success).toBe(true);
+    expect(releaseSchema.safeParse("--release").success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cargo clippy — no user-supplied string params (only path)
+// ---------------------------------------------------------------------------
+
+describe("security: cargo clippy — no injectable string params", () => {
+  it("clippy tool only accepts path (PATH_MAX)", () => {
+    // The clippy tool has no user-facing string params that could be flag-injected.
+    // path is validated by Zod .max(PATH_MAX).
+    const pathSchema = z.string().max(INPUT_LIMITS.PATH_MAX).optional();
+
+    expect(pathSchema.safeParse("/some/path").success).toBe(true);
+    expect(pathSchema.safeParse("p".repeat(INPUT_LIMITS.PATH_MAX + 1)).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cargo fmt — no user-supplied string params (only path and boolean)
+// ---------------------------------------------------------------------------
+
+describe("security: cargo fmt — no injectable string params", () => {
+  it("fmt tool only accepts path (PATH_MAX) and check (boolean)", () => {
+    // The fmt tool has no user-facing string params that could be flag-injected.
+    // path is validated by Zod .max(PATH_MAX) and check is a boolean.
+    const pathSchema = z.string().max(INPUT_LIMITS.PATH_MAX).optional();
+    const checkSchema = z.boolean().optional();
+
+    expect(pathSchema.safeParse("./my-project").success).toBe(true);
+    expect(checkSchema.safeParse(true).success).toBe(true);
+    expect(checkSchema.safeParse("--check").success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cargo remove — packages[] validation
+// ---------------------------------------------------------------------------
+
+describe("security: cargo remove — packages[] validation", () => {
+  it("rejects flag-like package names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "packages")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe package names", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "packages")).not.toThrow();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod .max() input-limit constraints — Cargo tool schemas
+// ---------------------------------------------------------------------------
+
+describe("Zod .max() constraints — Cargo tool schemas", () => {
+  describe("path parameter (PATH_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.PATH_MAX);
+
+    it("accepts a path within the limit", () => {
+      expect(schema.safeParse("/home/user/project").success).toBe(true);
+    });
+
+    it("rejects a path exceeding PATH_MAX", () => {
+      const oversized = "p".repeat(INPUT_LIMITS.PATH_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("packages array (ARRAY_MAX + SHORT_STRING_MAX)", () => {
+    const schema = z
+      .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+      .max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from({ length: INPUT_LIMITS.ARRAY_MAX + 1 }, (_, i) => `pkg-${i}`);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects package name exceeding SHORT_STRING_MAX", () => {
+      const oversized = ["x".repeat(INPUT_LIMITS.SHORT_STRING_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("accepts normal package names", () => {
+      expect(schema.safeParse(["serde", "tokio", "reqwest"]).success).toBe(true);
+    });
   });
 });

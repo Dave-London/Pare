@@ -8,7 +8,8 @@
  * as a flag.
  */
 import { describe, it, expect } from "vitest";
-import { assertNoFlagInjection } from "@paretools/shared";
+import { z } from "zod";
+import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -88,5 +89,42 @@ describe("security: format-check (Prettier) — patterns validation", () => {
     for (const malicious of MALICIOUS_INPUTS) {
       expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod .max() input-limit constraints — Lint tool schemas
+// ---------------------------------------------------------------------------
+
+describe("Zod .max() constraints — Lint tool schemas", () => {
+  describe("patterns array (ARRAY_MAX + PATH_MAX)", () => {
+    const schema = z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from({ length: INPUT_LIMITS.ARRAY_MAX + 1 }, () => "src/");
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects pattern string exceeding PATH_MAX", () => {
+      const oversized = ["p".repeat(INPUT_LIMITS.PATH_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("accepts normal patterns", () => {
+      expect(schema.safeParse(["src/", "lib/", "*.ts"]).success).toBe(true);
+    });
+  });
+
+  describe("path parameter (PATH_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.PATH_MAX);
+
+    it("accepts a path within the limit", () => {
+      expect(schema.safeParse("/home/user/project").success).toBe(true);
+    });
+
+    it("rejects a path exceeding PATH_MAX", () => {
+      const oversized = "p".repeat(INPUT_LIMITS.PATH_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
   });
 });

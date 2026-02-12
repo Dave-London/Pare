@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { assertNoFlagInjection, assertAllowedCommand } from "../src/validation.js";
+import { INPUT_LIMITS } from "../src/limits.js";
 
 describe("assertNoFlagInjection", () => {
   it("throws for values starting with -", () => {
@@ -179,5 +180,26 @@ describe("assertAllowedCommand", () => {
   it("still rejects disallowed commands even with full paths", () => {
     expect(() => assertAllowedCommand("/tmp/evil/rm")).toThrow();
     expect(() => assertAllowedCommand("C:\\evil\\bash")).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// INPUT_LIMITS — exported constant verification
+// ---------------------------------------------------------------------------
+
+describe("INPUT_LIMITS", () => {
+  it("exports the expected limits", () => {
+    expect(INPUT_LIMITS.STRING_MAX).toBe(65_536);
+    expect(INPUT_LIMITS.ARRAY_MAX).toBe(1_000);
+    expect(INPUT_LIMITS.PATH_MAX).toBe(4_096);
+    expect(INPUT_LIMITS.MESSAGE_MAX).toBe(72_000);
+    expect(INPUT_LIMITS.SHORT_STRING_MAX).toBe(255);
+  });
+
+  it("all values are positive integers", () => {
+    for (const [key, value] of Object.entries(INPUT_LIMITS)) {
+      expect(Number.isInteger(value), `${key} should be an integer`).toBe(true);
+      expect(value, `${key} should be positive`).toBeGreaterThan(0);
+    }
   });
 });

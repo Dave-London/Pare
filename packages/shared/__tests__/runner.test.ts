@@ -75,4 +75,42 @@ describe("escapeCmdArg", () => {
   it("does not escape parentheses (safe inside double quotes)", () => {
     expect(escapeCmdArg("(foo)")).toBe("(foo)");
   });
+
+  it("handles strings composed entirely of metacharacters", () => {
+    // &  -> ^&
+    // |  -> ^|
+    // ^  -> ^^ (caret escaped first)
+    // <  -> ^<
+    // >  -> ^>
+    // %  -> %% (percent escaped first)
+    expect(escapeCmdArg("&|^<>%")).toBe("^&^|^^^<^>%%");
+  });
+
+  it("handles very long strings without error", () => {
+    const longArg = "a".repeat(100_000);
+    const result = escapeCmdArg(longArg);
+    expect(result).toBe(longArg);
+    expect(result.length).toBe(100_000);
+  });
+
+  it("handles very long strings with metacharacters", () => {
+    const longArg = "&".repeat(1_000);
+    const result = escapeCmdArg(longArg);
+    // Each & becomes ^& (2 chars)
+    expect(result.length).toBe(2_000);
+    expect(result).toBe("^&".repeat(1_000));
+  });
+
+  it("handles string with only percent signs", () => {
+    expect(escapeCmdArg("%%%")).toBe("%%%%%%");
+  });
+
+  it("handles string with only carets", () => {
+    expect(escapeCmdArg("^^^")).toBe("^^^^^^");
+  });
+
+  it("handles newlines and tabs (not metacharacters, passed through)", () => {
+    expect(escapeCmdArg("line1\nline2")).toBe("line1\nline2");
+    expect(escapeCmdArg("col1\tcol2")).toBe("col1\tcol2");
+  });
 });

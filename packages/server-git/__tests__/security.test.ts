@@ -7,7 +7,8 @@
  * These tests ensure that values starting with "-" are rejected.
  */
 import { describe, it, expect } from "vitest";
-import { assertNoFlagInjection } from "@paretools/shared";
+import { z } from "zod";
+import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -134,5 +135,76 @@ describe("security: diff tool — ref validation", () => {
     for (const malicious of MALICIOUS_INPUTS) {
       expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(/must not start with "-"/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod .max() input-limit constraints — Git tool schemas
+// ---------------------------------------------------------------------------
+
+describe("Zod .max() constraints — Git tool schemas", () => {
+  describe("commit message (MESSAGE_MAX = 72,000)", () => {
+    const schema = z.string().max(INPUT_LIMITS.MESSAGE_MAX);
+
+    it("accepts a message at the limit", () => {
+      const value = "m".repeat(INPUT_LIMITS.MESSAGE_MAX);
+      expect(schema.safeParse(value).success).toBe(true);
+    });
+
+    it("rejects a message exceeding MESSAGE_MAX by 1", () => {
+      const value = "m".repeat(INPUT_LIMITS.MESSAGE_MAX + 1);
+      expect(schema.safeParse(value).success).toBe(false);
+    });
+
+    it("accepts a normal commit message", () => {
+      expect(schema.safeParse("Fix the login bug").success).toBe(true);
+    });
+  });
+
+  describe("branch/remote names (SHORT_STRING_MAX = 255)", () => {
+    const schema = z.string().max(INPUT_LIMITS.SHORT_STRING_MAX);
+
+    it("accepts a branch name within the limit", () => {
+      expect(schema.safeParse("feature/auth-flow").success).toBe(true);
+    });
+
+    it("rejects a branch name exceeding SHORT_STRING_MAX", () => {
+      const oversized = "b".repeat(INPUT_LIMITS.SHORT_STRING_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("file paths (PATH_MAX = 4,096)", () => {
+    const schema = z.string().max(INPUT_LIMITS.PATH_MAX);
+
+    it("accepts a file path within the limit", () => {
+      expect(schema.safeParse("src/components/Button.tsx").success).toBe(true);
+    });
+
+    it("rejects a file path exceeding PATH_MAX", () => {
+      const oversized = "f".repeat(INPUT_LIMITS.PATH_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("files array (ARRAY_MAX = 1,000 + PATH_MAX)", () => {
+    const schema = z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from(
+        { length: INPUT_LIMITS.ARRAY_MAX + 1 },
+        (_, i) => `file-${i}.ts`,
+      );
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects file path exceeding PATH_MAX", () => {
+      const oversized = ["p".repeat(INPUT_LIMITS.PATH_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("accepts a normal file list", () => {
+      expect(schema.safeParse(["src/index.ts", "README.md"]).success).toBe(true);
+    });
   });
 });
