@@ -99,6 +99,32 @@ describe("assertNoFlagInjection — exec tool (container param)", () => {
   });
 });
 
+describe("assertNoFlagInjection — exec tool (command[0] param)", () => {
+  it("accepts a normal command name", () => {
+    expect(() => assertNoFlagInjection("ls", "command")).not.toThrow();
+  });
+
+  it("accepts a command with path", () => {
+    expect(() => assertNoFlagInjection("/usr/bin/env", "command")).not.toThrow();
+  });
+
+  it("accepts a command like bash", () => {
+    expect(() => assertNoFlagInjection("bash", "command")).not.toThrow();
+  });
+
+  it("rejects --help as command name (flag injection)", () => {
+    expect(() => assertNoFlagInjection("--help", "command")).toThrow(/Invalid command/);
+  });
+
+  it("rejects -c as command name (flag injection)", () => {
+    expect(() => assertNoFlagInjection("-c", "command")).toThrow(/Invalid command/);
+  });
+
+  it("rejects --privileged as command name", () => {
+    expect(() => assertNoFlagInjection("--privileged", "command")).toThrow(/Invalid command/);
+  });
+});
+
 describe("assertNoFlagInjection — pull tool (image param)", () => {
   it("accepts a normal image name", () => {
     expect(() => assertNoFlagInjection("ubuntu:22.04", "image")).not.toThrow();

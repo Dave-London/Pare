@@ -12,15 +12,23 @@ export function registerUvInstallTool(server: McpServer) {
     {
       title: "uv Install",
       description:
-        "Runs uv pip install and returns a structured summary of installed packages. Use instead of running `uv pip install` in the terminal.",
+        "Runs uv pip install and returns a structured summary of installed packages. " +
+        "Use instead of running `uv pip install` in the terminal. " +
+        "WARNING: Installing packages may execute arbitrary setup.py code during build. " +
+        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
       inputSchema: {
         path: z.string().optional().describe("Working directory (default: cwd)"),
         packages: z.array(z.string()).optional().describe("Packages to install"),
         requirements: z.string().optional().describe("Path to requirements file"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Preview what would be installed without actually installing (--dry-run)"),
       },
       outputSchema: UvInstallSchema,
     },
-    async ({ path, packages, requirements }) => {
+    async ({ path, packages, requirements, dryRun }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -28,6 +36,7 @@ export function registerUvInstallTool(server: McpServer) {
       if (requirements) assertNoFlagInjection(requirements, "requirements");
 
       const args = ["pip", "install"];
+      if (dryRun) args.push("--dry-run");
 
       if (requirements) {
         args.push("-r", requirements);

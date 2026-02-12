@@ -12,7 +12,10 @@ export function registerPipInstallTool(server: McpServer) {
     {
       title: "pip Install",
       description:
-        "Runs pip install and returns a structured summary of installed packages. Use instead of running `pip install` in the terminal.",
+        "Runs pip install and returns a structured summary of installed packages. " +
+        "Use instead of running `pip install` in the terminal. " +
+        "WARNING: Installing packages may execute arbitrary setup.py code. " +
+        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
       inputSchema: {
         packages: z
           .array(z.string())
@@ -21,10 +24,15 @@ export function registerPipInstallTool(server: McpServer) {
           .describe("Packages to install (empty for requirements.txt)"),
         requirements: z.string().optional().describe("Path to requirements file"),
         path: z.string().optional().describe("Working directory (default: cwd)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Preview what would be installed without actually installing (--dry-run)"),
       },
       outputSchema: PipInstallSchema,
     },
-    async ({ packages, requirements, path }) => {
+    async ({ packages, requirements, path, dryRun }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -32,6 +40,7 @@ export function registerPipInstallTool(server: McpServer) {
       if (requirements) assertNoFlagInjection(requirements, "requirements");
 
       const args = ["install"];
+      if (dryRun) args.push("--dry-run");
       if (requirements) {
         args.push("-r", requirements);
       } else if (packages && packages.length > 0) {
