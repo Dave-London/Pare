@@ -6,6 +6,8 @@ import type {
   NpmRun,
   NpmTest,
   NpmInit,
+  NpmInfo,
+  NpmSearch,
 } from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
@@ -127,6 +129,100 @@ export function formatListCompact(data: NpmListCompact): string {
   const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
   for (const [name, version] of Object.entries(data.dependencies)) {
     lines.push(`  ${name}@${version}`);
+  }
+  return lines.join("\n");
+}
+
+// ── Info formatters ──────────────────────────────────────────────────
+
+/** Formats structured npm info data into a human-readable package summary. */
+export function formatInfo(data: NpmInfo): string {
+  const lines = [`${data.name}@${data.version}`];
+  if (data.description) lines.push(data.description);
+  if (data.license) lines.push(`License: ${data.license}`);
+  if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
+  if (data.dependencies) {
+    const depCount = Object.keys(data.dependencies).length;
+    lines.push(`Dependencies: ${depCount}`);
+    for (const [name, version] of Object.entries(data.dependencies)) {
+      lines.push(`  ${name}: ${version}`);
+    }
+  }
+  if (data.dist) {
+    if (data.dist.fileCount !== undefined) lines.push(`Files: ${data.dist.fileCount}`);
+    if (data.dist.unpackedSize !== undefined)
+      lines.push(`Unpacked size: ${data.dist.unpackedSize}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact info: drop dependencies and dist details. */
+export interface NpmInfoCompact {
+  [key: string]: unknown;
+  name: string;
+  version: string;
+  description: string;
+  license?: string;
+  homepage?: string;
+}
+
+export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
+  const result: NpmInfoCompact = {
+    name: data.name,
+    version: data.version,
+    description: data.description,
+  };
+  if (data.license) result.license = data.license;
+  if (data.homepage) result.homepage = data.homepage;
+  return result;
+}
+
+export function formatInfoCompact(data: NpmInfoCompact): string {
+  const lines = [`${data.name}@${data.version}`];
+  if (data.description) lines.push(data.description);
+  if (data.license) lines.push(`License: ${data.license}`);
+  if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
+  return lines.join("\n");
+}
+
+// ── Search formatters ────────────────────────────────────────────────
+
+/** Formats structured npm search data into a human-readable results list. */
+export function formatSearch(data: NpmSearch): string {
+  if (data.total === 0) return "No packages found.";
+
+  const lines = [`${data.total} packages found:`];
+  for (const pkg of data.packages) {
+    const author = pkg.author ? ` by ${pkg.author}` : "";
+    lines.push(`  ${pkg.name}@${pkg.version} — ${pkg.description}${author}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact search: drop author and date fields. */
+export interface NpmSearchCompact {
+  [key: string]: unknown;
+  packages: { name: string; version: string; description: string }[];
+  total: number;
+}
+
+export function compactSearchMap(data: NpmSearch): NpmSearchCompact {
+  return {
+    packages: data.packages.map((p) => ({
+      name: p.name,
+      version: p.version,
+      description: p.description,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatSearchCompact(data: NpmSearchCompact): string {
+  if (data.total === 0) return "No packages found.";
+
+  const lines = [`${data.total} packages found:`];
+  for (const pkg of data.packages) {
+    lines.push(`  ${pkg.name}@${pkg.version} — ${pkg.description}`);
   }
   return lines.join("\n");
 }

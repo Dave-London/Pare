@@ -6,6 +6,8 @@ import type {
   NpmRun,
   NpmTest,
   NpmInit,
+  NpmInfo,
+  NpmSearch,
 } from "../schemas/index.js";
 
 /** Parses `npm install` summary output into structured data with package counts and vulnerability info. */
@@ -162,4 +164,51 @@ export function parseInitOutput(
     version,
     path: packageJsonPath,
   };
+}
+
+/** Parses `npm info <package> --json` output into structured package metadata. */
+export function parseInfoJson(jsonStr: string): NpmInfo {
+  const data = JSON.parse(jsonStr);
+
+  const result: NpmInfo = {
+    name: data.name ?? "unknown",
+    version: data.version ?? "0.0.0",
+    description: data.description ?? "",
+  };
+
+  if (data.homepage) result.homepage = data.homepage;
+  if (data.license) result.license = data.license;
+  if (data.dependencies && Object.keys(data.dependencies).length > 0) {
+    result.dependencies = data.dependencies;
+  }
+  if (data.dist) {
+    const dist: NpmInfo["dist"] = {};
+    if (data.dist.tarball) dist.tarball = data.dist.tarball;
+    if (data.dist.fileCount !== undefined) dist.fileCount = data.dist.fileCount;
+    if (data.dist.unpackedSize !== undefined) dist.unpackedSize = data.dist.unpackedSize;
+    if (Object.keys(dist).length > 0) result.dist = dist;
+  }
+
+  return result;
+}
+
+/** Parses `npm search <query> --json` output into structured search results. */
+export function parseSearchJson(jsonStr: string): NpmSearch {
+  const data = JSON.parse(jsonStr);
+
+  // npm search --json returns an array of package objects
+  const arr = Array.isArray(data) ? data : [];
+  const packages = arr.map((pkg: any) => ({
+    name: pkg.name ?? "unknown",
+    version: pkg.version ?? "0.0.0",
+    description: pkg.description ?? "",
+    ...(pkg.author?.name
+      ? { author: pkg.author.name }
+      : pkg.author && typeof pkg.author === "string"
+        ? { author: pkg.author }
+        : {}),
+    ...(pkg.date ? { date: pkg.date } : {}),
+  }));
+
+  return { packages, total: packages.length };
 }

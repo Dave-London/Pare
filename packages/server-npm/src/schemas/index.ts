@@ -119,3 +119,39 @@ export const NpmInitSchema = z.object({
 });
 
 export type NpmInit = z.infer<typeof NpmInitSchema>;
+
+/** Zod schema for structured npm info output with package metadata. */
+export const NpmInfoSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  description: z.string(),
+  homepage: z.string().optional(),
+  license: z.string().optional(),
+  dependencies: z.record(z.string(), z.string()).optional(),
+  dist: z
+    .object({
+      tarball: z.string().optional(),
+      fileCount: z.number().optional(),
+      unpackedSize: z.number().optional(),
+    })
+    .optional(),
+});
+
+export type NpmInfo = z.infer<typeof NpmInfoSchema>;
+
+/** Zod schema for a single package entry in npm search results. */
+export const NpmSearchPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  description: z.string(),
+  author: z.string().optional(),
+  date: z.string().optional(),
+});
+
+/** Zod schema for structured npm search output with matching packages. */
+export const NpmSearchSchema = z.object({
+  packages: z.array(NpmSearchPackageSchema),
+  total: z.number(),
+});
+
+export type NpmSearch = z.infer<typeof NpmSearchSchema>;

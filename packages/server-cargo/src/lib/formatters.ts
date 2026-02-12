@@ -7,6 +7,8 @@ import type {
   CargoRemoveResult,
   CargoFmtResult,
   CargoDocResult,
+  CargoUpdateResult,
+  CargoTreeResult,
 } from "../schemas/index.js";
 
 // ── Compact types ────────────────────────────────────────────────────
@@ -279,4 +281,55 @@ export function formatDocCompact(data: CargoDocCompact): string {
   const status = data.success ? "success" : "failed";
   if (data.warnings === 0) return `cargo doc: ${status}.`;
   return `cargo doc: ${status} (${data.warnings} warning(s))`;
+}
+
+// ── Update formatters ────────────────────────────────────────────────
+
+/** Formats structured cargo update output into a human-readable summary. */
+export function formatCargoUpdate(data: CargoUpdateResult): string {
+  const status = data.success ? "success" : "failed";
+  if (!data.output) return `cargo update: ${status}.`;
+  return `cargo update: ${status}\n${data.output}`;
+}
+
+/** Compact update: success flag only, no output text. */
+export interface CargoUpdateCompact {
+  [key: string]: unknown;
+  success: boolean;
+}
+
+export function compactUpdateMap(data: CargoUpdateResult): CargoUpdateCompact {
+  return {
+    success: data.success,
+  };
+}
+
+export function formatUpdateCompact(data: CargoUpdateCompact): string {
+  const status = data.success ? "success" : "failed";
+  return `cargo update: ${status}`;
+}
+
+// ── Tree formatters ──────────────────────────────────────────────────
+
+/** Formats structured cargo tree output into a human-readable summary. */
+export function formatCargoTree(data: CargoTreeResult): string {
+  const lines = [`cargo tree: ${data.packages} unique packages`];
+  if (data.tree) lines.push(data.tree);
+  return lines.join("\n");
+}
+
+/** Compact tree: package count only, no full tree text. */
+export interface CargoTreeCompact {
+  [key: string]: unknown;
+  packages: number;
+}
+
+export function compactTreeMap(data: CargoTreeResult): CargoTreeCompact {
+  return {
+    packages: data.packages,
+  };
+}
+
+export function formatTreeCompact(data: CargoTreeCompact): string {
+  return `cargo tree: ${data.packages} unique packages`;
 }

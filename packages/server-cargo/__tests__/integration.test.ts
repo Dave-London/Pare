@@ -29,7 +29,7 @@ describe("@paretools/cargo integration", () => {
     await transport.close();
   });
 
-  it("lists all 9 tools", async () => {
+  it("lists all 11 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -42,6 +42,8 @@ describe("@paretools/cargo integration", () => {
       "remove",
       "run",
       "test",
+      "tree",
+      "update",
     ]);
   });
 
