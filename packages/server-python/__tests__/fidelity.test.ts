@@ -15,6 +15,9 @@ import {
   parseUvInstall,
   parseUvRun,
   parseBlackOutput,
+  parsePipListJson,
+  parsePipShowOutput,
+  parseRuffFormatOutput,
 } from "../src/lib/parsers.js";
 
 // ─── pip install fixtures ─────────────────────────────────────────────────────
@@ -704,5 +707,142 @@ describe("fidelity: black", () => {
     expect(result.filesUnchanged).toBe(10);
     expect(result.filesChecked).toBe(10);
     expect(result.wouldReformat).toEqual([]);
+  });
+});
+
+// ─── pip list fixtures ────────────────────────────────────────────────────────
+
+const PIP_LIST_JSON = JSON.stringify([
+  { name: "pip", version: "23.3.2" },
+  { name: "setuptools", version: "69.0.3" },
+  { name: "wheel", version: "0.42.0" },
+  { name: "flask", version: "3.0.0" },
+  { name: "requests", version: "2.31.0" },
+]);
+
+const PIP_LIST_EMPTY = "[]";
+
+// ─── pip show fixtures ───────────────────────────────────────────────────────
+
+const PIP_SHOW_REQUESTS = [
+  "Name: requests",
+  "Version: 2.31.0",
+  "Summary: Python HTTP for Humans.",
+  "Home-page: https://requests.readthedocs.io",
+  "Author: Kenneth Reitz",
+  "Author-email: me@kennethreitz.org",
+  "License: Apache-2.0",
+  "Location: /usr/lib/python3.11/site-packages",
+  "Requires: charset-normalizer, idna, urllib3, certifi",
+  "Required-by: flask",
+].join("\n");
+
+const PIP_SHOW_MINIMAL = [
+  "Name: certifi",
+  "Version: 2023.7.22",
+  "Summary: Python package for providing Mozilla's CA Bundle.",
+  "Home-page: https://github.com/certifi/python-certifi",
+  "Author: Kenneth Reitz",
+  "License: MPL-2.0",
+  "Location: /usr/lib/python3.11/site-packages",
+  "Requires: ",
+  "Required-by: requests",
+].join("\n");
+
+// ─── ruff format fixtures ────────────────────────────────────────────────────
+
+const RUFF_FORMAT_CHECK_DIRTY = [
+  "Would reformat: src/main.py",
+  "Would reformat: src/utils.py",
+  "Would reformat: tests/test_main.py",
+  "3 files would be reformatted",
+].join("\n");
+
+const RUFF_FORMAT_CHANGED = [
+  "reformatted: src/main.py",
+  "reformatted: src/utils.py",
+  "2 files reformatted",
+].join("\n");
+
+const RUFF_FORMAT_CLEAN = "0 files reformatted";
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe("fidelity: pip list", () => {
+  it("preserves all package names and versions", () => {
+    const result = parsePipListJson(PIP_LIST_JSON);
+
+    expect(result.total).toBe(5);
+    expect(result.packages).toHaveLength(5);
+
+    const names = result.packages.map((p) => p.name);
+    expect(names).toContain("pip");
+    expect(names).toContain("flask");
+    expect(names).toContain("requests");
+
+    const pip = result.packages.find((p) => p.name === "pip")!;
+    expect(pip.version).toBe("23.3.2");
+
+    const flask = result.packages.find((p) => p.name === "flask")!;
+    expect(flask.version).toBe("3.0.0");
+  });
+
+  it("handles empty package list", () => {
+    const result = parsePipListJson(PIP_LIST_EMPTY);
+
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+});
+
+describe("fidelity: pip show", () => {
+  it("preserves full package metadata", () => {
+    const result = parsePipShowOutput(PIP_SHOW_REQUESTS);
+
+    expect(result.name).toBe("requests");
+    expect(result.version).toBe("2.31.0");
+    expect(result.summary).toBe("Python HTTP for Humans.");
+    expect(result.homepage).toBe("https://requests.readthedocs.io");
+    expect(result.author).toBe("Kenneth Reitz");
+    expect(result.license).toBe("Apache-2.0");
+    expect(result.location).toBe("/usr/lib/python3.11/site-packages");
+    expect(result.requires).toEqual(["charset-normalizer", "idna", "urllib3", "certifi"]);
+  });
+
+  it("handles empty Requires field", () => {
+    const result = parsePipShowOutput(PIP_SHOW_MINIMAL);
+
+    expect(result.name).toBe("certifi");
+    expect(result.version).toBe("2023.7.22");
+    expect(result.requires).toEqual([]);
+  });
+});
+
+describe("fidelity: ruff format", () => {
+  it("preserves check mode with files needing formatting", () => {
+    const result = parseRuffFormatOutput("", RUFF_FORMAT_CHECK_DIRTY, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.filesChanged).toBe(3);
+    expect(result.files).toHaveLength(3);
+    expect(result.files).toContain("src/main.py");
+    expect(result.files).toContain("src/utils.py");
+    expect(result.files).toContain("tests/test_main.py");
+  });
+
+  it("preserves format mode with reformatted files", () => {
+    const result = parseRuffFormatOutput("", RUFF_FORMAT_CHANGED, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(2);
+    expect(result.files).toEqual(["src/main.py", "src/utils.py"]);
+  });
+
+  it("preserves all-clean output", () => {
+    const result = parseRuffFormatOutput("", RUFF_FORMAT_CLEAN, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toBeUndefined();
   });
 });

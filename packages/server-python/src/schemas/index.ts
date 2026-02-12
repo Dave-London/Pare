@@ -130,3 +130,40 @@ export const BlackResultSchema = z.object({
 });
 
 export type BlackResult = z.infer<typeof BlackResultSchema>;
+
+/** Zod schema for a single pip list package entry with name and version. */
+export const PipListPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+});
+
+/** Zod schema for structured pip list output with packages and total count. */
+export const PipListSchema = z.object({
+  packages: z.array(PipListPackageSchema),
+  total: z.number(),
+});
+
+export type PipList = z.infer<typeof PipListSchema>;
+
+/** Zod schema for structured pip show output with package metadata. */
+export const PipShowSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  summary: z.string(),
+  homepage: z.string().optional(),
+  author: z.string().optional(),
+  license: z.string().optional(),
+  location: z.string().optional(),
+  requires: z.array(z.string()),
+});
+
+export type PipShow = z.infer<typeof PipShowSchema>;
+
+/** Zod schema for structured ruff format output with success status, file counts, and file list. */
+export const RuffFormatResultSchema = z.object({
+  success: z.boolean(),
+  filesChanged: z.number(),
+  files: z.array(z.string()).optional(),
+});
+
+export type RuffFormatResult = z.infer<typeof RuffFormatResultSchema>;

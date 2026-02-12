@@ -26,7 +26,7 @@ describe("@paretools/python integration", () => {
     await transport.close();
   });
 
-  it("lists all 8 tools", async () => {
+  it("lists all 11 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -34,8 +34,11 @@ describe("@paretools/python integration", () => {
       "mypy",
       "pip-audit",
       "pip-install",
+      "pip-list",
+      "pip-show",
       "pytest",
       "ruff-check",
+      "ruff-format",
       "uv-install",
       "uv-run",
     ]);
@@ -219,6 +222,65 @@ describe("@paretools/python integration", () => {
         expect(typeof sc.filesUnchanged).toBe("number");
         expect(typeof sc.filesChecked).toBe("number");
         expect(Array.isArray(sc.wouldReformat)).toBe(true);
+      }
+    });
+  });
+
+  describe("pip-list", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "pip-list",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pip|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.packages)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+      }
+    });
+  });
+
+  describe("pip-show", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "pip-show",
+        arguments: { package: "pip" },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pip|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.name).toBe("string");
+        expect(typeof sc.version).toBe("string");
+        expect(typeof sc.summary).toBe("string");
+        expect(Array.isArray(sc.requires)).toBe(true);
+      }
+    });
+  });
+
+  describe("ruff-format", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "ruff-format",
+        arguments: { patterns: ["nonexistent_dir_xyz"], check: true },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/ruff|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.filesChanged).toBe("number");
       }
     });
   });
