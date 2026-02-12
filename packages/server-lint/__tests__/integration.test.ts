@@ -26,7 +26,7 @@ describe("@paretools/lint integration", () => {
     await transport.close();
   });
 
-  it("lists all 5 tools", async () => {
+  it("lists all 7 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -34,7 +34,9 @@ describe("@paretools/lint integration", () => {
       "biome-format",
       "format-check",
       "lint",
+      "oxlint",
       "prettier-format",
+      "stylelint",
     ]);
   });
 
@@ -149,6 +151,50 @@ describe("@paretools/lint integration", () => {
       expect(sc.filesChanged).toEqual(expect.any(Number));
       // files may be omitted in compact mode
       expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
+    }, 60_000);
+  });
+
+  describe("stylelint", () => {
+    it("returns structured result even when stylelint is not configured", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool({
+        name: "stylelint",
+        arguments: { path: pkgPath, patterns: ["."] },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.total).toEqual(expect.any(Number));
+      expect(sc.errors).toEqual(expect.any(Number));
+      expect(sc.warnings).toEqual(expect.any(Number));
+      expect(sc.fixable).toEqual(expect.any(Number));
+      // diagnostics may be omitted in compact mode
+      expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
+    }, 60_000);
+  });
+
+  describe("oxlint", () => {
+    it("returns structured result even when oxlint is not installed", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool({
+        name: "oxlint",
+        arguments: { path: pkgPath, patterns: ["src/"] },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.total).toEqual(expect.any(Number));
+      expect(sc.errors).toEqual(expect.any(Number));
+      expect(sc.warnings).toEqual(expect.any(Number));
+      expect(sc.fixable).toEqual(expect.any(Number));
+      // diagnostics may be omitted in compact mode
+      expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);
   });
 });

@@ -5,7 +5,7 @@ vi.mock("@paretools/shared", () => ({
   run: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
 }));
 
-import { eslint, prettier, biome } from "../src/lib/lint-runner.js";
+import { eslint, prettier, biome, stylelintCmd, oxlintCmd } from "../src/lib/lint-runner.js";
 import { run } from "@paretools/shared";
 
 const mockRun = vi.mocked(run);
@@ -178,5 +178,99 @@ describe("biome()", () => {
     const result = await biome(["check", "--reporter=json", "."], "/project");
 
     expect(result).toEqual({ exitCode: 0, stdout: '{"diagnostics":[]}', stderr: "" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stylelintCmd() argument construction
+// ---------------------------------------------------------------------------
+
+describe("stylelintCmd()", () => {
+  it("passes arguments through to run() with npx stylelint prefix", async () => {
+    await stylelintCmd(["--formatter", "json", "**/*.css"], "/project");
+
+    expect(mockRun).toHaveBeenCalledOnce();
+    expect(mockRun).toHaveBeenCalledWith("npx", ["stylelint", "--formatter", "json", "**/*.css"], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("constructs correct args for default patterns", async () => {
+    await stylelintCmd(["--formatter", "json", "."], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith("npx", ["stylelint", "--formatter", "json", "."], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("constructs correct args with --fix flag", async () => {
+    await stylelintCmd(["--formatter", "json", "**/*.css", "--fix"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith(
+      "npx",
+      ["stylelint", "--formatter", "json", "**/*.css", "--fix"],
+      { cwd: "/project", timeout: 120_000 },
+    );
+  });
+
+  it("passes undefined cwd when not specified", async () => {
+    await stylelintCmd(["--formatter", "json", "."]);
+
+    expect(mockRun).toHaveBeenCalledWith("npx", ["stylelint", "--formatter", "json", "."], {
+      cwd: undefined,
+      timeout: 120_000,
+    });
+  });
+
+  it("returns the RunResult from run()", async () => {
+    mockRun.mockResolvedValue({ exitCode: 0, stdout: "[]", stderr: "" });
+
+    const result = await stylelintCmd(["--formatter", "json", "."], "/project");
+
+    expect(result).toEqual({ exitCode: 0, stdout: "[]", stderr: "" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// oxlintCmd() argument construction
+// ---------------------------------------------------------------------------
+
+describe("oxlintCmd()", () => {
+  it("passes arguments through to run() with npx oxlint prefix", async () => {
+    await oxlintCmd(["--format", "json", "."], "/project");
+
+    expect(mockRun).toHaveBeenCalledOnce();
+    expect(mockRun).toHaveBeenCalledWith("npx", ["oxlint", "--format", "json", "."], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("constructs correct args with multiple patterns", async () => {
+    await oxlintCmd(["--format", "json", "src/", "lib/"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith("npx", ["oxlint", "--format", "json", "src/", "lib/"], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("passes undefined cwd when not specified", async () => {
+    await oxlintCmd(["--format", "json", "."]);
+
+    expect(mockRun).toHaveBeenCalledWith("npx", ["oxlint", "--format", "json", "."], {
+      cwd: undefined,
+      timeout: 120_000,
+    });
+  });
+
+  it("returns the RunResult from run()", async () => {
+    mockRun.mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    const result = await oxlintCmd(["--format", "json", "."], "/project");
+
+    expect(result).toEqual({ exitCode: 0, stdout: "", stderr: "" });
   });
 });

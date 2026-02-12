@@ -12,6 +12,8 @@ import {
   parseBiomeJson,
   parseBiomeFormat,
   parsePrettierWrite,
+  parseStylelintJson,
+  parseOxlintJson,
 } from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
@@ -675,5 +677,216 @@ describe("fidelity: parsePrettierWrite", () => {
       "docs/guide.md",
       "scripts/build.mjs",
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stylelint fixtures
+// ---------------------------------------------------------------------------
+
+/** Multiple files with mixed errors and warnings. */
+const stylelintMixed = JSON.stringify([
+  {
+    source: "/project/src/styles.css",
+    warnings: [
+      {
+        line: 5,
+        column: 3,
+        rule: "color-no-invalid-hex",
+        severity: "error",
+        text: 'Unexpected invalid hex color "#xyz" (color-no-invalid-hex)',
+      },
+      {
+        line: 12,
+        column: 1,
+        rule: "declaration-block-no-duplicate-properties",
+        severity: "warning",
+        text: "Unexpected duplicate property (declaration-block-no-duplicate-properties)",
+      },
+    ],
+    deprecations: [],
+    invalidOptionWarnings: [],
+  },
+  {
+    source: "/project/src/components/button.css",
+    warnings: [
+      {
+        line: 1,
+        column: 1,
+        rule: "block-no-empty",
+        severity: "warning",
+        text: "Unexpected empty block (block-no-empty)",
+      },
+    ],
+    deprecations: [],
+    invalidOptionWarnings: [],
+  },
+]);
+
+/** Clean Stylelint output. */
+const stylelintClean = JSON.stringify([
+  { source: "/project/src/styles.css", warnings: [], deprecations: [], invalidOptionWarnings: [] },
+  {
+    source: "/project/src/components/button.css",
+    warnings: [],
+    deprecations: [],
+    invalidOptionWarnings: [],
+  },
+]);
+
+// ---------------------------------------------------------------------------
+// Stylelint fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseStylelintJson", () => {
+  it("preserves file, line, column, severity, rule, and message for each warning", () => {
+    const result = parseStylelintJson(stylelintMixed);
+    const first = result.diagnostics[0];
+
+    expect(first.file).toBe("/project/src/styles.css");
+    expect(first.line).toBe(5);
+    expect(first.column).toBe(3);
+    expect(first.severity).toBe("error");
+    expect(first.rule).toBe("color-no-invalid-hex");
+    expect(first.message).toContain("Unexpected invalid hex color");
+  });
+
+  it("captures all warnings across multiple files", () => {
+    const result = parseStylelintJson(stylelintMixed);
+
+    expect(result.diagnostics).toHaveLength(3);
+    expect(result.total).toBe(3);
+  });
+
+  it("correctly counts errors and warnings", () => {
+    const result = parseStylelintJson(stylelintMixed);
+
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(2);
+    expect(result.fixable).toBe(0);
+  });
+
+  it("counts unique files correctly", () => {
+    const result = parseStylelintJson(stylelintMixed);
+
+    expect(result.filesChecked).toBe(2);
+  });
+
+  it("returns empty diagnostics and zero counts for clean output", () => {
+    const result = parseStylelintJson(stylelintClean);
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.filesChecked).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Oxlint fixtures
+// ---------------------------------------------------------------------------
+
+/** Multiple diagnostics across files in NDJSON format. */
+const oxlintMixed = [
+  JSON.stringify({
+    file: "/project/src/index.ts",
+    line: 10,
+    column: 5,
+    endLine: 10,
+    endColumn: 6,
+    severity: "error",
+    ruleId: "no-unused-vars",
+    message: "'x' is defined but never used",
+  }),
+  JSON.stringify({
+    file: "/project/src/index.ts",
+    line: 15,
+    column: 1,
+    severity: "warning",
+    ruleId: "no-console",
+    message: "Unexpected console statement",
+    fix: { range: [100, 111], text: "" },
+  }),
+  JSON.stringify({
+    file: "/project/src/utils.ts",
+    line: 7,
+    column: 10,
+    endLine: 7,
+    endColumn: 12,
+    severity: "error",
+    ruleId: "eqeqeq",
+    message: "Expected '===' and instead saw '=='",
+    fix: { range: [50, 52], text: "===" },
+  }),
+].join("\n");
+
+/** Clean Oxlint output (empty). */
+const oxlintClean = "";
+
+// ---------------------------------------------------------------------------
+// Oxlint fidelity tests
+// ---------------------------------------------------------------------------
+
+describe("fidelity: parseOxlintJson", () => {
+  it("preserves file, line, column, severity, rule, and message for each diagnostic", () => {
+    const result = parseOxlintJson(oxlintMixed);
+    const first = result.diagnostics[0];
+
+    expect(first.file).toBe("/project/src/index.ts");
+    expect(first.line).toBe(10);
+    expect(first.column).toBe(5);
+    expect(first.endLine).toBe(10);
+    expect(first.endColumn).toBe(6);
+    expect(first.severity).toBe("error");
+    expect(first.rule).toBe("no-unused-vars");
+    expect(first.message).toBe("'x' is defined but never used");
+  });
+
+  it("captures all diagnostics across multiple files", () => {
+    const result = parseOxlintJson(oxlintMixed);
+    const files = new Set(result.diagnostics.map((d) => d.file));
+
+    expect(result.diagnostics).toHaveLength(3);
+    expect(files.size).toBe(2);
+    expect(files).toContain("/project/src/index.ts");
+    expect(files).toContain("/project/src/utils.ts");
+  });
+
+  it("correctly counts errors, warnings, and fixable", () => {
+    const result = parseOxlintJson(oxlintMixed);
+
+    expect(result.errors).toBe(2);
+    expect(result.warnings).toBe(1);
+    // no-console has fix, eqeqeq has fix = 2 fixable
+    expect(result.fixable).toBe(2);
+  });
+
+  it("preserves the fixable flag for diagnostics with a fix object", () => {
+    const result = parseOxlintJson(oxlintMixed);
+
+    // First diagnostic has no fix => fixable false
+    expect(result.diagnostics[0].fixable).toBe(false);
+    // Second diagnostic has fix object => fixable true
+    expect(result.diagnostics[1].fixable).toBe(true);
+    // Third diagnostic has fix object => fixable true
+    expect(result.diagnostics[2].fixable).toBe(true);
+  });
+
+  it("returns empty diagnostics and zero counts for clean output", () => {
+    const result = parseOxlintJson(oxlintClean);
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.fixable).toBe(0);
+    expect(result.filesChecked).toBe(0);
+  });
+
+  it("counts unique files correctly when same file has multiple diagnostics", () => {
+    const result = parseOxlintJson(oxlintMixed);
+
+    expect(result.filesChecked).toBe(2);
   });
 });

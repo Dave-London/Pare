@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseEslintJson, parsePrettierCheck } from "../src/lib/parsers.js";
+import {
+  parseEslintJson,
+  parsePrettierCheck,
+  parseStylelintJson,
+  parseOxlintJson,
+} from "../src/lib/parsers.js";
 
 describe("parseEslintJson", () => {
   it("parses ESLint JSON with errors and warnings", () => {
@@ -140,5 +145,215 @@ describe("parsePrettierCheck", () => {
     const result = parsePrettierCheck("", "", 0);
     expect(result.formatted).toBe(true);
     expect(result.files).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseStylelintJson
+// ---------------------------------------------------------------------------
+
+describe("parseStylelintJson", () => {
+  it("parses Stylelint JSON with errors and warnings", () => {
+    const json = JSON.stringify([
+      {
+        source: "/project/src/styles.css",
+        warnings: [
+          {
+            line: 5,
+            column: 3,
+            rule: "color-no-invalid-hex",
+            severity: "error",
+            text: 'Unexpected invalid hex color "#xyz" (color-no-invalid-hex)',
+          },
+          {
+            line: 10,
+            column: 1,
+            rule: "declaration-block-no-duplicate-properties",
+            severity: "warning",
+            text: "Unexpected duplicate property (declaration-block-no-duplicate-properties)",
+          },
+        ],
+      },
+      {
+        source: "/project/src/utils.css",
+        warnings: [
+          {
+            line: 3,
+            column: 1,
+            rule: "block-no-empty",
+            severity: "warning",
+            text: "Unexpected empty block (block-no-empty)",
+          },
+        ],
+      },
+    ]);
+
+    const result = parseStylelintJson(json);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(2);
+    expect(result.fixable).toBe(0);
+    expect(result.filesChecked).toBe(2);
+    expect(result.diagnostics[0]).toEqual({
+      file: "/project/src/styles.css",
+      line: 5,
+      column: 3,
+      severity: "error",
+      rule: "color-no-invalid-hex",
+      message: 'Unexpected invalid hex color "#xyz" (color-no-invalid-hex)',
+      fixable: false,
+    });
+    expect(result.diagnostics[1].severity).toBe("warning");
+  });
+
+  it("parses clean Stylelint output", () => {
+    const json = JSON.stringify([{ source: "/project/src/styles.css", warnings: [] }]);
+
+    const result = parseStylelintJson(json);
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.filesChecked).toBe(1);
+  });
+
+  it("handles invalid JSON gracefully", () => {
+    const result = parseStylelintJson("not json");
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles null source", () => {
+    const json = JSON.stringify([
+      {
+        source: null,
+        warnings: [
+          {
+            line: 1,
+            column: 1,
+            rule: "some-rule",
+            severity: "error",
+            text: "Some error.",
+          },
+        ],
+      },
+    ]);
+
+    const result = parseStylelintJson(json);
+    expect(result.diagnostics[0].file).toBe("unknown");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseOxlintJson
+// ---------------------------------------------------------------------------
+
+describe("parseOxlintJson", () => {
+  it("parses Oxlint NDJSON with errors and warnings", () => {
+    const lines = [
+      JSON.stringify({
+        file: "/project/src/index.ts",
+        line: 5,
+        column: 7,
+        endLine: 5,
+        endColumn: 8,
+        severity: "error",
+        ruleId: "no-unused-vars",
+        message: "'x' is defined but never used.",
+      }),
+      JSON.stringify({
+        file: "/project/src/index.ts",
+        line: 10,
+        column: 20,
+        severity: "warning",
+        ruleId: "no-console",
+        message: "Unexpected console statement.",
+        fix: { range: [100, 100], text: "" },
+      }),
+      JSON.stringify({
+        file: "/project/src/utils.ts",
+        line: 3,
+        column: 1,
+        severity: "warning",
+        ruleId: "prefer-const",
+        message: "'y' is never reassigned.",
+      }),
+    ].join("\n");
+
+    const result = parseOxlintJson(lines);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(2);
+    expect(result.fixable).toBe(1);
+    expect(result.filesChecked).toBe(2);
+    expect(result.diagnostics[0]).toEqual({
+      file: "/project/src/index.ts",
+      line: 5,
+      column: 7,
+      endLine: 5,
+      endColumn: 8,
+      severity: "error",
+      rule: "no-unused-vars",
+      message: "'x' is defined but never used.",
+      fixable: false,
+    });
+    expect(result.diagnostics[1].fixable).toBe(true);
+  });
+
+  it("parses clean Oxlint output", () => {
+    const result = parseOxlintJson("");
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.filesChecked).toBe(0);
+  });
+
+  it("handles invalid JSON lines gracefully", () => {
+    const lines = [
+      "not json",
+      JSON.stringify({
+        file: "src/a.ts",
+        line: 1,
+        column: 1,
+        severity: "error",
+        ruleId: "no-var",
+        message: "Use let or const.",
+      }),
+    ].join("\n");
+
+    const result = parseOxlintJson(lines);
+    expect(result.total).toBe(1);
+    expect(result.diagnostics[0].rule).toBe("no-var");
+  });
+
+  it("handles missing ruleId", () => {
+    const json = JSON.stringify({
+      file: "src/a.ts",
+      line: 1,
+      column: 1,
+      severity: "error",
+      message: "Parse error.",
+    });
+
+    const result = parseOxlintJson(json);
+    expect(result.diagnostics[0].rule).toBe("unknown");
+  });
+
+  it("skips summary lines without message", () => {
+    const lines = [
+      JSON.stringify({
+        file: "src/a.ts",
+        line: 1,
+        column: 1,
+        severity: "error",
+        ruleId: "no-var",
+        message: "Use let or const.",
+      }),
+      JSON.stringify({ total: 1, errors: 1, warnings: 0 }),
+    ].join("\n");
+
+    const result = parseOxlintJson(lines);
+    expect(result.total).toBe(1);
   });
 });
