@@ -1,4 +1,4 @@
-import { posix, win32 } from "node:path";
+import { posix } from "node:path";
 
 /**
  * Validates that a string matches a Docker port mapping format.
