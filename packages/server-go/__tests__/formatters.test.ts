@@ -1,6 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { formatGoBuild, formatGoTest, formatGoVet } from "../src/lib/formatters.js";
-import type { GoBuildResult, GoTestResult, GoVetResult } from "../src/schemas/index.js";
+import {
+  formatGoBuild,
+  formatGoTest,
+  formatGoVet,
+  formatGoEnv,
+  formatGoList,
+  formatGoGet,
+} from "../src/lib/formatters.js";
+import type {
+  GoBuildResult,
+  GoTestResult,
+  GoVetResult,
+  GoEnvResult,
+  GoListResult,
+  GoGetResult,
+} from "../src/schemas/index.js";
 
 describe("formatGoBuild", () => {
   it("formats successful build", () => {
@@ -138,5 +152,100 @@ describe("formatGoVet", () => {
     expect(output).toContain("go vet: 2 issues");
     expect(output).toContain("main.go:15:2: unreachable code");
     expect(output).toContain("handler.go:30: possible misuse of unsafe.Pointer");
+  });
+});
+
+describe("formatGoEnv", () => {
+  it("formats env with key fields", () => {
+    const data: GoEnvResult = {
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+        CGO_ENABLED: "1",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+    const output = formatGoEnv(data);
+    expect(output).toContain("GOROOT=/usr/local/go");
+    expect(output).toContain("GOPATH=/home/user/go");
+    expect(output).toContain("GOVERSION=go1.22.0");
+    expect(output).toContain("GOOS=linux");
+    expect(output).toContain("GOARCH=amd64");
+    expect(output).toContain("CGO_ENABLED=1");
+  });
+
+  it("formats env with only key fields", () => {
+    const data: GoEnvResult = {
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+    const output = formatGoEnv(data);
+    const lines = output.split("\n");
+    expect(lines).toHaveLength(5);
+  });
+});
+
+describe("formatGoList", () => {
+  it("formats empty package list", () => {
+    const data: GoListResult = { packages: [], total: 0 };
+    expect(formatGoList(data)).toBe("go list: no packages found.");
+  });
+
+  it("formats package list with entries", () => {
+    const data: GoListResult = {
+      packages: [
+        { dir: "/project", importPath: "github.com/user/project", name: "main" },
+        { dir: "/project/pkg/util", importPath: "github.com/user/project/pkg/util", name: "util" },
+      ],
+      total: 2,
+    };
+    const output = formatGoList(data);
+    expect(output).toContain("go list: 2 packages");
+    expect(output).toContain("github.com/user/project (main)");
+    expect(output).toContain("github.com/user/project/pkg/util (util)");
+  });
+});
+
+describe("formatGoGet", () => {
+  it("formats successful go get", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "go: downloading github.com/pkg/errors v0.9.1",
+    };
+    const output = formatGoGet(data);
+    expect(output).toContain("go get: success.");
+    expect(output).toContain("github.com/pkg/errors");
+  });
+
+  it("formats successful go get with no output", () => {
+    const data: GoGetResult = { success: true };
+    expect(formatGoGet(data)).toBe("go get: success.");
+  });
+
+  it("formats failed go get", () => {
+    const data: GoGetResult = {
+      success: false,
+      output: 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
+    };
+    const output = formatGoGet(data);
+    expect(output).toContain("go get: FAIL");
+    expect(output).toContain("no matching versions");
   });
 });

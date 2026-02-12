@@ -6,6 +6,9 @@ import type {
   GoModTidyResult,
   GoFmtResult,
   GoGenerateResult,
+  GoEnvResult,
+  GoListResult,
+  GoGetResult,
 } from "../schemas/index.js";
 
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
@@ -190,5 +193,82 @@ export function parseGoGenerateOutput(
   return {
     success: exitCode === 0,
     output: combined,
+  };
+}
+
+/** Parses `go env -json` output into structured result with environment variables and key fields. */
+export function parseGoEnvOutput(stdout: string): GoEnvResult {
+  const vars: Record<string, string> = JSON.parse(stdout || "{}");
+  return {
+    vars,
+    goroot: vars.GOROOT ?? "",
+    gopath: vars.GOPATH ?? "",
+    goversion: vars.GOVERSION ?? "",
+    goos: vars.GOOS ?? "",
+    goarch: vars.GOARCH ?? "",
+  };
+}
+
+/**
+ * Parses `go list -json` output into structured result with package list and total count.
+ * go list -json emits concatenated JSON objects (JSONL), one per package.
+ */
+export function parseGoListOutput(stdout: string): GoListResult {
+  const packages: { dir: string; importPath: string; name: string; goFiles?: string[] }[] = [];
+
+  if (!stdout.trim()) {
+    return { packages, total: 0 };
+  }
+
+  // go list -json outputs concatenated JSON objects separated by newlines.
+  // Split by detecting `}\n{` boundary and parse each object individually.
+  const chunks = splitJsonObjects(stdout);
+
+  for (const chunk of chunks) {
+    try {
+      const pkg = JSON.parse(chunk);
+      packages.push({
+        dir: pkg.Dir ?? "",
+        importPath: pkg.ImportPath ?? "",
+        name: pkg.Name ?? "",
+        goFiles: pkg.GoFiles,
+      });
+    } catch {
+      // skip malformed JSON chunks
+    }
+  }
+
+  return { packages, total: packages.length };
+}
+
+/** Splits concatenated JSON objects from go list -json output. */
+function splitJsonObjects(text: string): string[] {
+  const results: string[] = [];
+  let depth = 0;
+  let start = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        results.push(text.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return results;
+}
+
+/** Parses `go get` output into structured result with success status and output text. */
+export function parseGoGetOutput(stdout: string, stderr: string, exitCode: number): GoGetResult {
+  const combined = (stdout + "\n" + stderr).trim();
+  return {
+    success: exitCode === 0,
+    output: combined || undefined,
   };
 }

@@ -26,10 +26,21 @@ describe("@paretools/go integration", () => {
     await transport.close();
   });
 
-  it("lists all 7 tools", async () => {
+  it("lists all 10 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["build", "fmt", "generate", "mod-tidy", "run", "test", "vet"]);
+    expect(names).toEqual([
+      "build",
+      "env",
+      "fmt",
+      "generate",
+      "get",
+      "list",
+      "mod-tidy",
+      "run",
+      "test",
+      "vet",
+    ]);
   });
 
   it("each tool has an outputSchema", async () => {
@@ -179,6 +190,70 @@ describe("@paretools/go integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.output).toBe("string");
+      }
+    });
+  });
+
+  describe("env", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "env",
+        arguments: { compact: false },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/go|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.goroot).toBe("string");
+        expect(typeof sc.gopath).toBe("string");
+        expect(typeof sc.goversion).toBe("string");
+        expect(typeof sc.goos).toBe("string");
+        expect(typeof sc.goarch).toBe("string");
+        expect(typeof sc.vars).toBe("object");
+      }
+    });
+  });
+
+  describe("list", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "list",
+        arguments: { path: resolve(__dirname, "../../.."), compact: false },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/go|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(Array.isArray(sc.packages)).toBe(true);
+      }
+    });
+  });
+
+  describe("get", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "get",
+        arguments: {
+          packages: ["github.com/pkg/errors@v0.9.1"],
+          path: resolve(__dirname, "../../.."),
+          compact: false,
+        },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/go|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
       }
     });
   });

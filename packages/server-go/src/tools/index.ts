@@ -7,6 +7,9 @@ import { registerRunTool } from "./run.js";
 import { registerModTidyTool } from "./mod-tidy.js";
 import { registerFmtTool } from "./fmt.js";
 import { registerGenerateTool } from "./generate.js";
+import { registerEnvTool } from "./env.js";
+import { registerListTool } from "./list.js";
+import { registerGetTool } from "./get.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("go", name);
@@ -17,4 +20,7 @@ export function registerAllTools(server: McpServer) {
   if (s("mod-tidy")) registerModTidyTool(server);
   if (s("fmt")) registerFmtTool(server);
   if (s("generate")) registerGenerateTool(server);
+  if (s("env")) registerEnvTool(server);
+  if (s("list")) registerListTool(server);
+  if (s("get")) registerGetTool(server);
 }

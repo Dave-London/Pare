@@ -14,6 +14,12 @@ import {
   formatGenerateCompact,
   compactModTidyMap,
   formatModTidyCompact,
+  compactEnvMap,
+  formatEnvCompact,
+  compactListMap,
+  formatListCompact,
+  compactGetMap,
+  formatGetCompact,
 } from "../src/lib/formatters.js";
 import type {
   GoBuildResult,
@@ -23,6 +29,9 @@ import type {
   GoRunResult,
   GoGenerateResult,
   GoModTidyResult,
+  GoEnvResult,
+  GoListResult,
+  GoGetResult,
 } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
@@ -323,5 +332,149 @@ describe("formatModTidyCompact", () => {
 
   it("formats failed mod tidy", () => {
     expect(formatModTidyCompact({ success: false })).toBe("go mod tidy: FAIL");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// env
+// ---------------------------------------------------------------------------
+describe("compactEnvMap", () => {
+  it("keeps key fields, drops full vars map", () => {
+    const data: GoEnvResult = {
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+        CGO_ENABLED: "1",
+        GOMODCACHE: "/home/user/go/pkg/mod",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+
+    const compact = compactEnvMap(data);
+
+    expect(compact.goroot).toBe("/usr/local/go");
+    expect(compact.gopath).toBe("/home/user/go");
+    expect(compact.goversion).toBe("go1.22.0");
+    expect(compact.goos).toBe("linux");
+    expect(compact.goarch).toBe("amd64");
+    expect(compact).not.toHaveProperty("vars");
+  });
+
+  it("preserves empty fields", () => {
+    const data: GoEnvResult = {
+      vars: {},
+      goroot: "",
+      gopath: "",
+      goversion: "",
+      goos: "",
+      goarch: "",
+    };
+
+    const compact = compactEnvMap(data);
+
+    expect(compact.goroot).toBe("");
+    expect(compact.goversion).toBe("");
+  });
+});
+
+describe("formatEnvCompact", () => {
+  it("formats env summary", () => {
+    expect(
+      formatEnvCompact({
+        goroot: "/usr/local/go",
+        gopath: "/home/user/go",
+        goversion: "go1.22.0",
+        goos: "linux",
+        goarch: "amd64",
+      }),
+    ).toBe("go env: go1.22.0 linux/amd64");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// list
+// ---------------------------------------------------------------------------
+describe("compactListMap", () => {
+  it("keeps only total count, drops package details", () => {
+    const data: GoListResult = {
+      packages: [
+        {
+          dir: "/project",
+          importPath: "github.com/user/project",
+          name: "main",
+          goFiles: ["main.go"],
+        },
+        { dir: "/project/pkg", importPath: "github.com/user/project/pkg", name: "pkg" },
+      ],
+      total: 2,
+    };
+
+    const compact = compactListMap(data);
+
+    expect(compact.total).toBe(2);
+    expect(compact).not.toHaveProperty("packages");
+  });
+
+  it("preserves zero total for empty list", () => {
+    const data: GoListResult = { packages: [], total: 0 };
+
+    const compact = compactListMap(data);
+
+    expect(compact.total).toBe(0);
+  });
+});
+
+describe("formatListCompact", () => {
+  it("formats empty list", () => {
+    expect(formatListCompact({ total: 0 })).toBe("go list: no packages found.");
+  });
+
+  it("formats list with count", () => {
+    expect(formatListCompact({ total: 5 })).toBe("go list: 5 packages");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// get
+// ---------------------------------------------------------------------------
+describe("compactGetMap", () => {
+  it("keeps only success, drops output", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "go: downloading github.com/pkg/errors v0.9.1",
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact).not.toHaveProperty("output");
+  });
+
+  it("preserves failure state", () => {
+    const data: GoGetResult = {
+      success: false,
+      output: 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact.success).toBe(false);
+  });
+});
+
+describe("formatGetCompact", () => {
+  it("formats successful get", () => {
+    expect(formatGetCompact({ success: true })).toBe("go get: success.");
+  });
+
+  it("formats failed get", () => {
+    expect(formatGetCompact({ success: false })).toBe("go get: FAIL");
   });
 });

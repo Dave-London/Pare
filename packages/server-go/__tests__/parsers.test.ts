@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { parseGoBuildOutput, parseGoTestJson, parseGoVetOutput } from "../src/lib/parsers.js";
+import {
+  parseGoBuildOutput,
+  parseGoTestJson,
+  parseGoVetOutput,
+  parseGoEnvOutput,
+  parseGoListOutput,
+  parseGoGetOutput,
+} from "../src/lib/parsers.js";
 
 describe("parseGoBuildOutput", () => {
   it("parses build errors", () => {
@@ -150,5 +157,141 @@ describe("parseGoVetOutput", () => {
   it("parses clean vet", () => {
     const result = parseGoVetOutput("", "");
     expect(result.total).toBe(0);
+  });
+});
+
+describe("parseGoEnvOutput", () => {
+  it("parses go env -json output with key fields", () => {
+    const stdout = JSON.stringify({
+      GOROOT: "/usr/local/go",
+      GOPATH: "/home/user/go",
+      GOVERSION: "go1.22.0",
+      GOOS: "linux",
+      GOARCH: "amd64",
+      CGO_ENABLED: "1",
+    });
+
+    const result = parseGoEnvOutput(stdout);
+
+    expect(result.goroot).toBe("/usr/local/go");
+    expect(result.gopath).toBe("/home/user/go");
+    expect(result.goversion).toBe("go1.22.0");
+    expect(result.goos).toBe("linux");
+    expect(result.goarch).toBe("amd64");
+    expect(result.vars.CGO_ENABLED).toBe("1");
+    expect(result.vars.GOROOT).toBe("/usr/local/go");
+  });
+
+  it("handles empty output", () => {
+    const result = parseGoEnvOutput("{}");
+
+    expect(result.goroot).toBe("");
+    expect(result.gopath).toBe("");
+    expect(result.goversion).toBe("");
+    expect(result.goos).toBe("");
+    expect(result.goarch).toBe("");
+  });
+
+  it("parses specific variable output", () => {
+    const stdout = JSON.stringify({
+      GOROOT: "/usr/local/go",
+      GOPATH: "/home/user/go",
+    });
+
+    const result = parseGoEnvOutput(stdout);
+
+    expect(result.goroot).toBe("/usr/local/go");
+    expect(result.gopath).toBe("/home/user/go");
+    expect(result.goversion).toBe("");
+  });
+});
+
+describe("parseGoListOutput", () => {
+  it("parses single package", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go", "util.go"],
+    });
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0]).toEqual({
+      dir: "/home/user/project",
+      importPath: "github.com/user/project",
+      name: "main",
+      goFiles: ["main.go", "util.go"],
+    });
+  });
+
+  it("parses multiple packages (JSONL)", () => {
+    const pkg1 = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+    });
+    const pkg2 = JSON.stringify({
+      Dir: "/home/user/project/pkg/util",
+      ImportPath: "github.com/user/project/pkg/util",
+      Name: "util",
+      GoFiles: ["util.go", "helpers.go"],
+    });
+    const stdout = pkg1 + "\n" + pkg2;
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.packages[0].importPath).toBe("github.com/user/project");
+    expect(result.packages[1].importPath).toBe("github.com/user/project/pkg/util");
+    expect(result.packages[1].name).toBe("util");
+  });
+
+  it("handles empty output", () => {
+    const result = parseGoListOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles package without GoFiles", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+    });
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0].goFiles).toBeUndefined();
+  });
+});
+
+describe("parseGoGetOutput", () => {
+  it("parses successful go get", () => {
+    const stderr = "go: downloading github.com/pkg/errors v0.9.1\n";
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("github.com/pkg/errors");
+  });
+
+  it("parses failed go get", () => {
+    const stderr =
+      'go: module github.com/nonexistent/pkg: no matching versions for query "latest"\n';
+    const result = parseGoGetOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("no matching versions");
+  });
+
+  it("handles empty output on success", () => {
+    const result = parseGoGetOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.output).toBeUndefined();
   });
 });
