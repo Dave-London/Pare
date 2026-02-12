@@ -12,7 +12,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { assertValidPortMapping } from "../src/tools/run.js";
+import { assertValidPortMapping } from "../src/lib/validation.js";
 
 describe("assertNoFlagInjection — run tool (image param)", () => {
   it("accepts a normal image name", () => {
