@@ -5,7 +5,7 @@ export const TestFailureSchema = z.object({
   name: z.string(),
   file: z.string().optional(),
   line: z.number().optional(),
-  message: z.string(),
+  message: z.string().optional(),
   expected: z.string().optional(),
   actual: z.string().optional(),
   stack: z.string().optional(),
@@ -45,7 +45,8 @@ export const CoverageSchema = z.object({
     branches: z.number().optional(),
     functions: z.number().optional(),
   }),
-  files: z.array(CoverageFileSchema),
+  files: z.array(CoverageFileSchema).optional(),
+  totalFiles: z.number().optional(),
 });
 
 export type Coverage = z.infer<typeof CoverageSchema>;

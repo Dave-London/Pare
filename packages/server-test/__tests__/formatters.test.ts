@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { formatTestRun, formatCoverage } from "../src/lib/formatters.js";
+import {
+  formatTestRun,
+  formatCoverage,
+  compactTestRunMap,
+  formatTestRunCompact,
+  compactCoverageMap,
+  formatCoverageCompact,
+} from "../src/lib/formatters.js";
 import type { TestRun, Coverage } from "../src/schemas/index.js";
 
 describe("formatTestRun", () => {
@@ -227,5 +234,208 @@ describe("formatCoverage", () => {
     expect(output).toContain("85.5% lines");
     expect(output).toContain("index.ts: 85.5% lines");
     expect(output.split("\n")).toHaveLength(2);
+  });
+});
+
+describe("compactTestRunMap", () => {
+  it("keeps summary, framework, and failure names only (drops messages, stacks, locations)", () => {
+    const run: TestRun = {
+      framework: "jest",
+      summary: { total: 10, passed: 7, failed: 3, skipped: 0, duration: 2.1 },
+      failures: [
+        {
+          name: "should validate email",
+          file: "api.test.ts",
+          line: 15,
+          message: "Expected valid@email.com to be valid",
+          stack: "Error: Expected valid@email.com...\n    at Object.<anonymous> (api.test.ts:15)",
+          expected: "true",
+          actual: "false",
+        },
+        {
+          name: "should parse config",
+          file: "utils.test.ts",
+          message: "Received null instead of config object",
+        },
+        {
+          name: "should handle timeout",
+          message: "Timeout after 5000ms",
+        },
+      ],
+    };
+
+    const compact = compactTestRunMap(run);
+
+    expect(compact.framework).toBe("jest");
+    expect(compact.summary).toEqual({
+      total: 10,
+      passed: 7,
+      failed: 3,
+      skipped: 0,
+      duration: 2.1,
+    });
+    expect(compact.failures).toEqual([
+      { name: "should validate email" },
+      { name: "should parse config" },
+      { name: "should handle timeout" },
+    ]);
+    // Verify verbose fields are stripped from each failure
+    expect(compact.failures[0]).not.toHaveProperty("message");
+    expect(compact.failures[0]).not.toHaveProperty("file");
+    expect(compact.failures[0]).not.toHaveProperty("line");
+    expect(compact.failures[0]).not.toHaveProperty("stack");
+    expect(compact.failures[0]).not.toHaveProperty("expected");
+    expect(compact.failures[0]).not.toHaveProperty("actual");
+  });
+
+  it("returns empty failures for passing run", () => {
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 0.3 },
+      failures: [],
+    };
+
+    const compact = compactTestRunMap(run);
+
+    expect(compact.failures).toEqual([]);
+    expect(compact.summary.failed).toBe(0);
+  });
+});
+
+describe("formatTestRunCompact", () => {
+  it("formats compact test run with failure names only", () => {
+    const compact = {
+      framework: "jest",
+      summary: { total: 10, passed: 7, failed: 3, skipped: 0, duration: 2.1 },
+      failures: [
+        { name: "should validate email" },
+        { name: "should parse config" },
+        { name: "should handle timeout" },
+      ],
+    };
+
+    const output = formatTestRunCompact(compact);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("(jest)");
+    expect(output).toContain("10 tests");
+    expect(output).toContain("3 failed");
+    expect(output).toContain("FAIL should validate email");
+    expect(output).toContain("FAIL should parse config");
+    expect(output).toContain("FAIL should handle timeout");
+    // Should NOT contain verbose failure details
+    expect(output).not.toContain("Expected");
+    expect(output).not.toContain("Received");
+    expect(output).not.toContain("api.test.ts");
+  });
+
+  it("formats compact passing run as PASS with no failure lines", () => {
+    const compact = {
+      framework: "vitest",
+      summary: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 0.3 },
+      failures: [] as Array<{ name: string }>,
+    };
+
+    const output = formatTestRunCompact(compact);
+
+    expect(output).toContain("PASS");
+    expect(output.split("\n")).toHaveLength(1);
+  });
+});
+
+describe("compactCoverageMap", () => {
+  it("keeps summary and totalFiles, drops per-file details", () => {
+    const cov: Coverage = {
+      framework: "jest",
+      summary: { lines: 87.5, branches: 66.67, functions: 100 },
+      files: [
+        { file: "src/auth.ts", lines: 92, branches: 80, functions: 100 },
+        { file: "src/api.ts", lines: 80, branches: 50, functions: 100 },
+        { file: "src/utils.ts", lines: 95, branches: 70, functions: 100 },
+      ],
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact.framework).toBe("jest");
+    expect(compact.summary).toEqual({ lines: 87.5, branches: 66.67, functions: 100 });
+    expect(compact.totalFiles).toBe(3);
+    // Verify per-file details are not present
+    expect(compact).not.toHaveProperty("files");
+  });
+
+  it("returns totalFiles 0 for empty files array", () => {
+    const cov: Coverage = {
+      framework: "pytest",
+      summary: { lines: 0 },
+      files: [],
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact.totalFiles).toBe(0);
+  });
+
+  it("preserves optional summary fields when present", () => {
+    const cov: Coverage = {
+      framework: "mocha",
+      summary: { lines: 50 },
+      files: [{ file: "app.js", lines: 50 }],
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact.summary.lines).toBe(50);
+    expect(compact.summary.branches).toBeUndefined();
+    expect(compact.summary.functions).toBeUndefined();
+    expect(compact.totalFiles).toBe(1);
+  });
+});
+
+describe("formatCoverageCompact", () => {
+  it("formats compact coverage with summary and file count", () => {
+    const compact = {
+      framework: "jest",
+      summary: { lines: 87.5, branches: 66.67, functions: 100 },
+      totalFiles: 3,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).toContain("Coverage (jest)");
+    expect(output).toContain("87.5% lines");
+    expect(output).toContain("66.67% branches");
+    expect(output).toContain("100% functions");
+    expect(output).toContain("3 file(s) analyzed");
+    // Should NOT contain per-file details
+    expect(output).not.toContain("src/auth.ts");
+  });
+
+  it("formats compact coverage without optional branches/functions", () => {
+    const compact = {
+      framework: "pytest",
+      summary: { lines: 75 },
+      totalFiles: 5,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).toContain("75% lines");
+    expect(output).toContain("5 file(s) analyzed");
+    expect(output).not.toContain("branches");
+    expect(output).not.toContain("functions");
+  });
+
+  it("formats compact coverage with zero files", () => {
+    const compact = {
+      framework: "mocha",
+      summary: { lines: 0, branches: 0, functions: 0 },
+      totalFiles: 0,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).toContain("0% lines");
+    expect(output).toContain("0 file(s) analyzed");
   });
 });

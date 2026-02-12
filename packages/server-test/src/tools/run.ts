@@ -4,13 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
 import { parseVitestJson } from "../lib/parsers/vitest.js";
 import { parseMochaJson } from "../lib/parsers/mocha.js";
-import { formatTestRun } from "../lib/formatters.js";
+import { formatTestRun, compactTestRunMap, formatTestRunCompact } from "../lib/formatters.js";
 import { TestRunSchema } from "../schemas/index.js";
 
 function getRunCommand(framework: Framework, args: string[]): { cmd: string; cmdArgs: string[] } {
@@ -59,10 +59,17 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the test runner"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: TestRunSchema,
     },
-    async ({ path, framework, filter, updateSnapshots, args }) => {
+    async ({ path, framework, filter, updateSnapshots, args, compact }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -133,7 +140,14 @@ export function registerRunTool(server: McpServer) {
         }
       }
 
-      return dualOutput(testRun, formatTestRun);
+      return compactDualOutput(
+        testRun,
+        result.stdout,
+        formatTestRun,
+        compactTestRunMap,
+        formatTestRunCompact,
+        compact === false,
+      );
     },
   );
 }
