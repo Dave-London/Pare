@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseBuildOutput } from "../lib/parsers.js";
-import { formatBuild } from "../lib/formatters.js";
+import { formatBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { DockerBuildSchema } from "../schemas/index.js";
 
 export function registerBuildTool(server: McpServer) {
@@ -35,10 +35,17 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional build arguments"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerBuildSchema,
     },
-    async ({ path, tag, file, args }) => {
+    async ({ path, tag, file, args, compact }) => {
       if (tag) assertNoFlagInjection(tag, "tag");
       if (file) assertNoFlagInjection(file, "file");
       for (const a of args ?? []) {
@@ -56,7 +63,14 @@ export function registerBuildTool(server: McpServer) {
       const duration = Math.round((Date.now() - start) / 100) / 10;
 
       const data = parseBuildOutput(result.stdout, result.stderr, result.exitCode, duration);
-      return dualOutput(data, formatBuild);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatBuild,
+        compactBuildMap,
+        formatBuildCompact,
+        compact === false,
+      );
     },
   );
 }

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parsePullOutput } from "../lib/parsers.js";
-import { formatPull } from "../lib/formatters.js";
+import { formatPull, compactPullMap, formatPullCompact } from "../lib/formatters.js";
 import { DockerPullSchema } from "../schemas/index.js";
 
 export function registerPullTool(server: McpServer) {
@@ -28,10 +28,17 @@ export function registerPullTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerPullSchema,
     },
-    async ({ image, platform, path }) => {
+    async ({ image, platform, path, compact }) => {
       assertNoFlagInjection(image, "image");
       if (platform) assertNoFlagInjection(platform, "platform");
 
@@ -47,7 +54,14 @@ export function registerPullTool(server: McpServer) {
       }
 
       const data = parsePullOutput(result.stdout, result.stderr, result.exitCode, image);
-      return dualOutput(data, formatPull);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatPull,
+        compactPullMap,
+        formatPullCompact,
+        compact === false,
+      );
     },
   );
 }

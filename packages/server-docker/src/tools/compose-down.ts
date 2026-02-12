@@ -1,9 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeDownOutput } from "../lib/parsers.js";
-import { formatComposeDown } from "../lib/formatters.js";
+import {
+  formatComposeDown,
+  compactComposeDownMap,
+  formatComposeDownCompact,
+} from "../lib/formatters.js";
 import { DockerComposeDownSchema } from "../schemas/index.js";
 
 export function registerComposeDownTool(server: McpServer) {
@@ -33,10 +37,17 @@ export function registerComposeDownTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerComposeDownSchema,
     },
-    async ({ path, volumes, removeOrphans, file }) => {
+    async ({ path, volumes, removeOrphans, file, compact }) => {
       if (file) assertNoFlagInjection(file, "file");
 
       const args = ["compose"];
@@ -53,7 +64,14 @@ export function registerComposeDownTool(server: McpServer) {
         throw new Error(`docker compose down failed: ${errorMsg.trim()}`);
       }
 
-      return dualOutput(data, formatComposeDown);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatComposeDown,
+        compactComposeDownMap,
+        formatComposeDownCompact,
+        compact === false,
+      );
     },
   );
 }

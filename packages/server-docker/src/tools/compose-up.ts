@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeUpOutput } from "../lib/parsers.js";
-import { formatComposeUp } from "../lib/formatters.js";
+import { formatComposeUp, compactComposeUpMap, formatComposeUpCompact } from "../lib/formatters.js";
 import { DockerComposeUpSchema } from "../schemas/index.js";
 
 export function registerComposeUpTool(server: McpServer) {
@@ -35,10 +35,17 @@ export function registerComposeUpTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerComposeUpSchema,
     },
-    async ({ path, services, detach, build, file }) => {
+    async ({ path, services, detach, build, file, compact }) => {
       if (file) assertNoFlagInjection(file, "file");
       if (services) {
         for (const s of services) {
@@ -63,7 +70,14 @@ export function registerComposeUpTool(server: McpServer) {
         throw new Error(`docker compose up failed: ${errorMsg.trim()}`);
       }
 
-      return dualOutput(data, formatComposeUp);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatComposeUp,
+        compactComposeUpMap,
+        formatComposeUpCompact,
+        compact === false,
+      );
     },
   );
 }

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseLogsOutput } from "../lib/parsers.js";
-import { formatLogs } from "../lib/formatters.js";
+import { formatLogs, compactLogsMap, formatLogsCompact } from "../lib/formatters.js";
 import { DockerLogsSchema } from "../schemas/index.js";
 
 export function registerLogsTool(server: McpServer) {
@@ -25,10 +25,17 @@ export function registerLogsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerLogsSchema,
     },
-    async ({ container, tail, since }) => {
+    async ({ container, tail, since, compact }) => {
       assertNoFlagInjection(container, "container");
       if (since) assertNoFlagInjection(since, "since");
 
@@ -38,7 +45,14 @@ export function registerLogsTool(server: McpServer) {
       const result = await docker(args);
       const output = result.stdout || result.stderr;
       const data = parseLogsOutput(output, container);
-      return dualOutput(data, formatLogs);
+      return compactDualOutput(
+        data,
+        output,
+        formatLogs,
+        compactLogsMap,
+        formatLogsCompact,
+        compact === false,
+      );
     },
   );
 }

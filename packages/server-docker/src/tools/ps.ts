@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { compactDualOutput } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parsePsJson } from "../lib/parsers.js";
-import { formatPs } from "../lib/formatters.js";
+import { formatPs, compactPsMap, formatPsCompact } from "../lib/formatters.js";
 import { DockerPsSchema } from "../schemas/index.js";
 
 export function registerPsTool(server: McpServer) {
@@ -19,15 +19,29 @@ export function registerPsTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Show all containers (default: true, includes stopped)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerPsSchema,
     },
-    async ({ all }) => {
+    async ({ all, compact }) => {
       const args = ["ps", "--format", "json", "--no-trunc"];
       if (all) args.push("-a");
       const result = await docker(args);
       const data = parsePsJson(result.stdout);
-      return dualOutput(data, formatPs);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatPs,
+        compactPsMap,
+        formatPsCompact,
+        compact === false,
+      );
     },
   );
 }
