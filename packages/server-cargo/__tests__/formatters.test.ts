@@ -223,8 +223,8 @@ describe("compactBuildMap", () => {
       warnings: 1,
     };
     const compact = compactBuildMap(data);
-    expect(compact).toEqual({ success: false, errors: 1, warnings: 1, total: 2 });
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact).toEqual({ success: false, diagnostics: [], errors: 1, warnings: 1, total: 2 });
+    expect(compact.diagnostics).toEqual([]);
   });
 
   it("formats compact build output", () => {
@@ -252,8 +252,15 @@ describe("compactTestMap", () => {
       ignored: 1,
     };
     const compact = compactTestMap(data);
-    expect(compact).toEqual({ success: true, total: 3, passed: 1, failed: 1, ignored: 1 });
-    expect(compact).not.toHaveProperty("tests");
+    expect(compact).toEqual({
+      success: true,
+      tests: [],
+      total: 3,
+      passed: 1,
+      failed: 1,
+      ignored: 1,
+    });
+    expect(compact.tests).toEqual([]);
   });
 
   it("formats compact test output", () => {
@@ -284,8 +291,8 @@ describe("compactClippyMap", () => {
       warnings: 1,
     };
     const compact = compactClippyMap(data);
-    expect(compact).toEqual({ errors: 0, warnings: 1, total: 1 });
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact).toEqual({ diagnostics: [], errors: 0, warnings: 1, total: 1 });
+    expect(compact.diagnostics).toEqual([]);
   });
 
   it("formats compact clippy output", () => {

@@ -171,6 +171,7 @@ export function formatCargoDoc(data: CargoDocResult): string {
 export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
   return {
     success: data.success,
+    diagnostics: [],
     errors: data.errors,
     warnings: data.warnings,
     total: data.total,
@@ -180,6 +181,7 @@ export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
 export function compactTestMap(data: CargoTestResult): CargoTestCompact {
   return {
     success: data.success,
+    tests: [],
     total: data.total,
     passed: data.passed,
     failed: data.failed,
@@ -189,6 +191,7 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
 
 export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
   return {
+    diagnostics: [],
     errors: data.errors,
     warnings: data.warnings,
     total: data.total,
