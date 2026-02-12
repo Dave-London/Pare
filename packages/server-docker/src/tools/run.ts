@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
-import { formatRun } from "../lib/formatters.js";
+import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { DockerRunSchema } from "../schemas/index.js";
 import { assertValidPortMapping, assertSafeVolumeMount } from "../lib/validation.js";
 
@@ -59,10 +59,17 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerRunSchema,
     },
-    async ({ image, name, ports, volumes, env, detach, rm, command, path }) => {
+    async ({ image, name, ports, volumes, env, detach, rm, command, path, compact }) => {
       assertNoFlagInjection(image, "image");
       if (name) assertNoFlagInjection(name, "name");
       // Validate first element of command array (the binary name) to prevent flag injection.
@@ -101,7 +108,14 @@ export function registerRunTool(server: McpServer) {
       }
 
       const data = parseRunOutput(result.stdout, image, detach ?? true, name);
-      return dualOutput(data, formatRun);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatRun,
+        compactRunMap,
+        formatRunCompact,
+        compact === false,
+      );
     },
   );
 }

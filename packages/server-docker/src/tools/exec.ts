@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseExecOutput } from "../lib/parsers.js";
-import { formatExec } from "../lib/formatters.js";
+import { formatExec, compactExecMap, formatExecCompact } from "../lib/formatters.js";
 import { DockerExecSchema } from "../schemas/index.js";
 
 export function registerExecTool(server: McpServer) {
@@ -37,10 +37,17 @@ export function registerExecTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Host working directory (default: cwd)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerExecSchema,
     },
-    async ({ container, command, workdir, env, path }) => {
+    async ({ container, command, workdir, env, path, compact }) => {
       if (!command || command.length === 0) {
         throw new Error("command array must not be empty");
       }
@@ -63,7 +70,14 @@ export function registerExecTool(server: McpServer) {
 
       const result = await docker(args, path);
       const data = parseExecOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatExec);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatExec,
+        compactExecMap,
+        formatExecCompact,
+        compact === false,
+      );
     },
   );
 }

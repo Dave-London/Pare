@@ -90,3 +90,220 @@ export function formatPull(data: DockerPull): string {
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
   return `Pulled ${data.image}:${data.tag}${digest}`;
 }
+
+// ── Compact types, mappers, and formatters ───────────────────────────
+
+/** Compact ps: short containerId, name, image, status only. Drop ports, createdAt, state details. */
+export interface DockerPsCompact {
+  [key: string]: unknown;
+  containers: Array<{ id: string; name: string; image: string; status: string }>;
+  total: number;
+  running: number;
+}
+
+export function compactPsMap(data: DockerPs): DockerPsCompact {
+  return {
+    containers: data.containers.map((c) => ({
+      id: c.id.slice(0, 12),
+      name: c.name,
+      image: c.image,
+      status: c.status,
+    })),
+    total: data.total,
+    running: data.running,
+  };
+}
+
+export function formatPsCompact(data: DockerPsCompact): string {
+  const lines = [`${data.total} containers (${data.running} running)`];
+  for (const c of data.containers) {
+    lines.push(`  ${c.id.slice(0, 12)} ${c.name} (${c.image}) ${c.status}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact images: repository, tag, short id, size. Drop createdAt. */
+export interface DockerImagesCompact {
+  [key: string]: unknown;
+  images: Array<{ id: string; repository: string; tag: string; size: string }>;
+  total: number;
+}
+
+export function compactImagesMap(data: DockerImages): DockerImagesCompact {
+  return {
+    images: data.images.map((img) => ({
+      id: img.id.slice(0, 12),
+      repository: img.repository,
+      tag: img.tag,
+      size: img.size,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatImagesCompact(data: DockerImagesCompact): string {
+  if (data.total === 0) return "No images found.";
+  const lines = [`${data.total} images:`];
+  for (const img of data.images) {
+    const tag = img.tag && img.tag !== "<none>" ? `:${img.tag}` : "";
+    lines.push(`  ${img.repository}${tag} (${img.size})`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact build: success, imageId, duration. Drop warnings array details, keep error count. */
+export interface DockerBuildCompact {
+  [key: string]: unknown;
+  success: boolean;
+  imageId?: string;
+  duration: number;
+  errorCount: number;
+}
+
+export function compactBuildMap(data: DockerBuild): DockerBuildCompact {
+  return {
+    success: data.success,
+    ...(data.imageId ? { imageId: data.imageId } : {}),
+    duration: data.duration,
+    errorCount: data.errors.length,
+  };
+}
+
+export function formatBuildCompact(data: DockerBuildCompact): string {
+  if (data.success) {
+    const id = data.imageId ? ` → ${data.imageId}` : "";
+    return `Build succeeded in ${data.duration}s${id}`;
+  }
+  return `Build failed (${data.duration}s, ${data.errorCount} errors)`;
+}
+
+/** Compact logs: container, count, first/last few lines. Drop full lines array if large. */
+export interface DockerLogsCompact {
+  [key: string]: unknown;
+  container: string;
+  total: number;
+  head: string[];
+  tail: string[];
+}
+
+export function compactLogsMap(data: DockerLogs): DockerLogsCompact {
+  const HEAD_SIZE = 5;
+  const TAIL_SIZE = 5;
+  return {
+    container: data.container,
+    total: data.total,
+    head: data.lines.slice(0, HEAD_SIZE),
+    tail: data.total > HEAD_SIZE + TAIL_SIZE ? data.lines.slice(-TAIL_SIZE) : [],
+  };
+}
+
+export function formatLogsCompact(data: DockerLogsCompact): string {
+  const parts = [`${data.container} (${data.total} lines)`];
+  if (data.head.length) parts.push(data.head.join("\n"));
+  if (data.tail.length)
+    parts.push(
+      `  ... ${data.total - data.head.length - data.tail.length} lines omitted ...`,
+      data.tail.join("\n"),
+    );
+  return parts.join("\n");
+}
+
+/** Compact pull: passthrough (already small). */
+export interface DockerPullCompact {
+  [key: string]: unknown;
+  image: string;
+  tag: string;
+  success: boolean;
+}
+
+export function compactPullMap(data: DockerPull): DockerPullCompact {
+  return {
+    image: data.image,
+    tag: data.tag,
+    success: data.success,
+  };
+}
+
+export function formatPullCompact(data: DockerPullCompact): string {
+  if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
+  return `Pulled ${data.image}:${data.tag}`;
+}
+
+/** Compact run: passthrough (already small). */
+export interface DockerRunCompact {
+  [key: string]: unknown;
+  containerId: string;
+  image: string;
+  detached: boolean;
+}
+
+export function compactRunMap(data: DockerRun): DockerRunCompact {
+  return {
+    containerId: data.containerId,
+    image: data.image,
+    detached: data.detached,
+  };
+}
+
+export function formatRunCompact(data: DockerRunCompact): string {
+  const mode = data.detached ? "detached" : "attached";
+  return `Container ${data.containerId} from ${data.image} [${mode}]`;
+}
+
+/** Compact exec: passthrough (already small). */
+export interface DockerExecCompact {
+  [key: string]: unknown;
+  exitCode: number;
+  success: boolean;
+}
+
+export function compactExecMap(data: DockerExec): DockerExecCompact {
+  return {
+    exitCode: data.exitCode,
+    success: data.success,
+  };
+}
+
+export function formatExecCompact(data: DockerExecCompact): string {
+  return data.success ? "Exec succeeded" : `Exec failed (exit code ${data.exitCode})`;
+}
+
+/** Compact compose up: passthrough (already small). */
+export interface DockerComposeUpCompact {
+  [key: string]: unknown;
+  success: boolean;
+  started: number;
+}
+
+export function compactComposeUpMap(data: DockerComposeUp): DockerComposeUpCompact {
+  return {
+    success: data.success,
+    started: data.started,
+  };
+}
+
+export function formatComposeUpCompact(data: DockerComposeUpCompact): string {
+  if (!data.success) return "Compose up failed";
+  return `Compose up: ${data.started} services started`;
+}
+
+/** Compact compose down: passthrough (already small). */
+export interface DockerComposeDownCompact {
+  [key: string]: unknown;
+  success: boolean;
+  stopped: number;
+  removed: number;
+}
+
+export function compactComposeDownMap(data: DockerComposeDown): DockerComposeDownCompact {
+  return {
+    success: data.success,
+    stopped: data.stopped,
+    removed: data.removed,
+  };
+}
+
+export function formatComposeDownCompact(data: DockerComposeDownCompact): string {
+  if (!data.success) return "Compose down failed";
+  return `Compose down: ${data.stopped} stopped, ${data.removed} removed`;
+}

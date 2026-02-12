@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseImagesJson } from "../lib/parsers.js";
-import { formatImages } from "../lib/formatters.js";
+import { formatImages, compactImagesMap, formatImagesCompact } from "../lib/formatters.js";
 import { DockerImagesSchema } from "../schemas/index.js";
 
 export function registerImagesTool(server: McpServer) {
@@ -24,10 +24,17 @@ export function registerImagesTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: DockerImagesSchema,
     },
-    async ({ all, filter }) => {
+    async ({ all, filter, compact }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
 
       const args = ["images", "--format", "json"];
@@ -36,7 +43,14 @@ export function registerImagesTool(server: McpServer) {
 
       const result = await docker(args);
       const data = parseImagesJson(result.stdout);
-      return dualOutput(data, formatImages);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatImages,
+        compactImagesMap,
+        formatImagesCompact,
+        compact === false,
+      );
     },
   );
 }
