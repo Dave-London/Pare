@@ -15,7 +15,7 @@ export const LintDiagnosticSchema = z.object({
 
 /** Zod schema for structured ESLint output including diagnostics, counts, and files checked. */
 export const LintResultSchema = z.object({
-  diagnostics: z.array(LintDiagnosticSchema),
+  diagnostics: z.array(LintDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
@@ -29,7 +29,7 @@ export type LintDiagnostic = z.infer<typeof LintDiagnosticSchema>;
 /** Zod schema for structured Prettier format check output with formatted status and unformatted file list. */
 export const FormatCheckResultSchema = z.object({
   formatted: z.boolean(),
-  files: z.array(z.string()),
+  files: z.array(z.string()).optional(),
   total: z.number(),
 });
 
@@ -38,7 +38,7 @@ export type FormatCheckResult = z.infer<typeof FormatCheckResultSchema>;
 /** Zod schema for structured format-write output (Prettier --write, Biome format --write). */
 export const FormatWriteResultSchema = z.object({
   filesChanged: z.number(),
-  files: z.array(z.string()),
+  files: z.array(z.string()).optional(),
   success: z.boolean(),
 });
 

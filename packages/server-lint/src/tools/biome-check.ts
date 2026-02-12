@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeJson } from "../lib/parsers.js";
-import { formatLint } from "../lib/formatters.js";
+import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
 export function registerBiomeCheckTool(server: McpServer) {
@@ -25,10 +25,17 @@ export function registerBiomeCheckTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns }) => {
+    async ({ path, patterns, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -37,7 +44,14 @@ export function registerBiomeCheckTool(server: McpServer) {
 
       const result = await biome(args, cwd);
       const data = parseBiomeJson(result.stdout);
-      return dualOutput(data, formatLint);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatLint,
+        compactLintMap,
+        formatLintCompact,
+        compact === false,
+      );
     },
   );
 }

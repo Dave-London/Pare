@@ -1,9 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeFormat } from "../lib/parsers.js";
-import { formatFormatWrite } from "../lib/formatters.js";
+import {
+  formatFormatWrite,
+  compactFormatWriteMap,
+  formatFormatWriteCompact,
+} from "../lib/formatters.js";
 import { FormatWriteResultSchema } from "../schemas/index.js";
 
 export function registerBiomeFormatTool(server: McpServer) {
@@ -25,10 +29,17 @@ export function registerBiomeFormatTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to format (default: ['.'])"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: FormatWriteResultSchema,
     },
-    async ({ path, patterns }) => {
+    async ({ path, patterns, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -37,7 +48,14 @@ export function registerBiomeFormatTool(server: McpServer) {
 
       const result = await biome(args, cwd);
       const data = parseBiomeFormat(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatFormatWrite);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatFormatWrite,
+        compactFormatWriteMap,
+        formatFormatWriteCompact,
+        compact === false,
+      );
     },
   );
 }

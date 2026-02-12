@@ -64,7 +64,8 @@ describe("@paretools/lint integration", () => {
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.fixable).toEqual(expect.any(Number));
       expect(sc.filesChecked).toEqual(expect.any(Number));
-      expect(Array.isArray(sc.diagnostics)).toBe(true);
+      // diagnostics may be omitted in compact mode
+      expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);
   });
 
@@ -83,7 +84,8 @@ describe("@paretools/lint integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.formatted).toBe("boolean");
       expect(sc.total).toEqual(expect.any(Number));
-      expect(Array.isArray(sc.files)).toBe(true);
+      // files may be omitted in compact mode
+      expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
     }, 60_000);
   });
 
@@ -103,7 +105,8 @@ describe("@paretools/lint integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(sc.filesChanged).toEqual(expect.any(Number));
-      expect(Array.isArray(sc.files)).toBe(true);
+      // files may be omitted in compact mode
+      expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
     }, 60_000);
   });
 
@@ -124,7 +127,8 @@ describe("@paretools/lint integration", () => {
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.fixable).toEqual(expect.any(Number));
-      expect(Array.isArray(sc.diagnostics)).toBe(true);
+      // diagnostics may be omitted in compact mode
+      expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);
   });
 
@@ -143,7 +147,8 @@ describe("@paretools/lint integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(sc.filesChanged).toEqual(expect.any(Number));
-      expect(Array.isArray(sc.files)).toBe(true);
+      // files may be omitted in compact mode
+      expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
     }, 60_000);
   });
 });
