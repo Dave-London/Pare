@@ -79,6 +79,7 @@ export function registerRunTool(server: McpServer) {
       const extraArgs = [...(args || [])];
 
       if (filter) {
+        assertNoFlagInjection(filter, "filter");
         switch (detected) {
           case "pytest":
             extraArgs.push("-k", filter);

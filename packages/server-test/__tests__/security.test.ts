@@ -40,6 +40,20 @@ const SAFE_INPUTS = [
   "login.spec.js",
 ];
 
+describe("security: test run — filter validation", () => {
+  it("rejects flag-like filter values", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "filter")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe filter values", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "filter")).not.toThrow();
+    }
+  });
+});
+
 describe("security: test run — args validation", () => {
   it("rejects flag-like args", () => {
     for (const malicious of MALICIOUS_INPUTS) {

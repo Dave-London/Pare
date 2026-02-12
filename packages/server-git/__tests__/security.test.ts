@@ -138,6 +138,35 @@ describe("security: diff tool — ref validation", () => {
   });
 });
 
+describe("security: diff tool — file validation", () => {
+  it("rejects flag-like file paths", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "file")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe file paths", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "file")).not.toThrow();
+    }
+  });
+});
+
+describe("security: log tool — author validation", () => {
+  it("rejects flag-like author values", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "author")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe author values", () => {
+    const safeAuthors = ["John Doe", "jane@example.com", "user123", "A B"];
+    for (const safe of safeAuthors) {
+      expect(() => assertNoFlagInjection(safe, "author")).not.toThrow();
+    }
+  });
+});
+
 describe("security: blame tool — file path validation", () => {
   it("rejects flag-like file paths", () => {
     for (const malicious of MALICIOUS_INPUTS) {

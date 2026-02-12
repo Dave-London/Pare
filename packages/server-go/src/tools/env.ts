@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoEnvOutput } from "../lib/parsers.js";
 import { formatGoEnv, compactEnvMap, formatEnvCompact } from "../lib/formatters.js";
@@ -35,6 +35,9 @@ export function registerEnvTool(server: McpServer) {
       outputSchema: GoEnvResultSchema,
     },
     async ({ path, vars, compact }) => {
+      for (const v of vars || []) {
+        assertNoFlagInjection(v, "vars");
+      }
       const cwd = path || process.cwd();
       const args = ["env", "-json", ...(vars || [])];
       const result = await goCmd(args, cwd);
