@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { esbuildCmd } from "../lib/build-runner.js";
 import { parseEsbuildOutput } from "../lib/parsers.js";
-import { formatEsbuild } from "../lib/formatters.js";
+import { formatEsbuild, compactEsbuildMap, formatEsbuildCompact } from "../lib/formatters.js";
 import { EsbuildResultSchema } from "../schemas/index.js";
 
 export function registerEsbuildTool(server: McpServer) {
@@ -54,6 +54,13 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional esbuild flags"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: EsbuildResultSchema,
     },
@@ -68,6 +75,7 @@ export function registerEsbuildTool(server: McpServer) {
       platform,
       sourcemap,
       args,
+      compact,
     }) => {
       const cwd = path || process.cwd();
 
@@ -96,9 +104,17 @@ export function registerEsbuildTool(server: McpServer) {
       const start = Date.now();
       const result = await esbuildCmd(cliArgs, cwd);
       const duration = Math.round((Date.now() - start) / 100) / 10;
+      const rawOutput = result.stdout + "\n" + result.stderr;
 
       const data = parseEsbuildOutput(result.stdout, result.stderr, result.exitCode, duration);
-      return dualOutput(data, formatEsbuild);
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatEsbuild,
+        compactEsbuildMap,
+        formatEsbuildCompact,
+        compact === false,
+      );
     },
   );
 }

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { viteCmd } from "../lib/build-runner.js";
 import { parseViteBuildOutput } from "../lib/parsers.js";
-import { formatViteBuild } from "../lib/formatters.js";
+import { formatViteBuild, compactViteBuildMap, formatViteBuildCompact } from "../lib/formatters.js";
 import { ViteBuildResultSchema } from "../schemas/index.js";
 
 export function registerViteBuildTool(server: McpServer) {
@@ -31,10 +31,17 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional Vite build flags"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: ViteBuildResultSchema,
     },
-    async ({ path, mode, args }) => {
+    async ({ path, mode, args, compact }) => {
       const cwd = path || process.cwd();
       if (mode) assertNoFlagInjection(mode, "mode");
       for (const a of args ?? []) {
@@ -54,9 +61,17 @@ export function registerViteBuildTool(server: McpServer) {
       const start = Date.now();
       const result = await viteCmd(cliArgs, cwd);
       const duration = Math.round((Date.now() - start) / 100) / 10;
+      const rawOutput = result.stdout + "\n" + result.stderr;
 
       const data = parseViteBuildOutput(result.stdout, result.stderr, result.exitCode, duration);
-      return dualOutput(data, formatViteBuild);
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatViteBuild,
+        compactViteBuildMap,
+        formatViteBuildCompact,
+        compact === false,
+      );
     },
   );
 }

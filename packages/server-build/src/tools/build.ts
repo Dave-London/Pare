@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertAllowedCommand, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertAllowedCommand, INPUT_LIMITS } from "@paretools/shared";
 import { runBuildCommand } from "../lib/build-runner.js";
 import { parseBuildCommandOutput } from "../lib/parsers.js";
-import { formatBuildCommand } from "../lib/formatters.js";
+import { formatBuildCommand, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { BuildResultSchema } from "../schemas/index.js";
 
 export function registerBuildTool(server: McpServer) {
@@ -28,18 +28,33 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: BuildResultSchema,
     },
-    async ({ command, args, path }) => {
+    async ({ command, args, path, compact }) => {
       assertAllowedCommand(command);
       const cwd = path || process.cwd();
       const start = Date.now();
       const result = await runBuildCommand(command, args || [], cwd);
       const duration = Math.round((Date.now() - start) / 100) / 10;
+      const rawOutput = result.stdout + "\n" + result.stderr;
 
       const data = parseBuildCommandOutput(result.stdout, result.stderr, result.exitCode, duration);
-      return dualOutput(data, formatBuildCommand);
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatBuildCommand,
+        compactBuildMap,
+        formatBuildCompact,
+        compact === false,
+      );
     },
   );
 }
