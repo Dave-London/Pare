@@ -24,6 +24,10 @@ Include:
 
 This policy covers all packages published under the `@paretools` npm scope.
 
+## Security Audits
+
+- [February 2026 Audit](docs/security/audit-2026-02-12.md) — 18 findings, 14 remediated, 4 accepted risk
+
 ## Supported Versions
 
 | Package                 | Supported |
