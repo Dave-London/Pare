@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertAllowedCommand } from "@paretools/shared";
+import { dualOutput, assertAllowedCommand, INPUT_LIMITS } from "@paretools/shared";
 import { runBuildCommand } from "../lib/build-runner.js";
 import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand } from "../lib/formatters.js";
@@ -14,12 +14,20 @@ export function registerBuildTool(server: McpServer) {
       description:
         "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal.",
       inputSchema: {
-        command: z.string().describe("Build command to run (e.g., 'npm', 'npx', 'pnpm')"),
+        command: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .describe("Build command to run (e.g., 'npm', 'npx', 'pnpm')"),
         args: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .default([])
           .describe("Arguments for the build command (e.g., ['run', 'build'])"),
-        path: z.string().optional().describe("Working directory (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd)"),
       },
       outputSchema: BuildResultSchema,
     },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
 import { parsePrettierCheck } from "../lib/parsers.js";
 import { formatFormatCheck } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerFormatCheckTool(server: McpServer) {
       description:
         "Checks if files are formatted and returns a structured list of files needing formatting. Use instead of running `prettier --check` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         patterns: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { pip } from "../lib/python-runner.js";
 import { parsePipInstall } from "../lib/parsers.js";
 import { formatPipInstall } from "../lib/formatters.js";
@@ -18,12 +18,21 @@ export function registerPipInstallTool(server: McpServer) {
         "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
       inputSchema: {
         packages: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Packages to install (empty for requirements.txt)"),
-        requirements: z.string().optional().describe("Path to requirements file"),
-        path: z.string().optional().describe("Working directory (default: cwd)"),
+        requirements: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to requirements file"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd)"),
         dryRun: z
           .boolean()
           .optional()

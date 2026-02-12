@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parsePull } from "../lib/parsers.js";
 import { formatPull } from "../lib/formatters.js";
@@ -14,9 +14,22 @@ export function registerPullTool(server: McpServer) {
       description:
         "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, and any conflicts. Use instead of running `git pull` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
-        remote: z.string().optional().default("origin").describe('Remote name (default: "origin")'),
-        branch: z.string().optional().describe("Branch to pull (default: current tracking branch)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
+        remote: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .default("origin")
+          .describe('Remote name (default: "origin")'),
+        branch: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Branch to pull (default: current tracking branch)"),
         rebase: z
           .boolean()
           .optional()

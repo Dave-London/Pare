@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoGenerateOutput } from "../lib/parsers.js";
 import { formatGoGenerate } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerGenerateTool(server: McpServer) {
       description:
         "Runs go generate directives in Go source files. Use instead of running `go generate` in the terminal. WARNING: `go generate` executes arbitrary commands embedded in //go:generate directives in source files. Only use this tool on trusted code that you have reviewed.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         patterns: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["./..."])
           .describe("Packages to generate (default: ./...)"),

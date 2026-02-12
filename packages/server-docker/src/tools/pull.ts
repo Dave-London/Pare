@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parsePullOutput } from "../lib/parsers.js";
 import { formatPull } from "../lib/formatters.js";
@@ -14,12 +14,20 @@ export function registerPullTool(server: McpServer) {
       description:
         "Pulls a Docker image from a registry and returns structured result with digest info. Use instead of running `docker pull` in the terminal.",
       inputSchema: {
-        image: z.string().describe("Image to pull (e.g., nginx:latest, ubuntu:22.04)"),
+        image: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .describe("Image to pull (e.g., nginx:latest, ubuntu:22.04)"),
         platform: z
           .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe('Target platform (e.g., "linux/amd64", "linux/arm64")'),
-        path: z.string().optional().describe("Working directory (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd)"),
       },
       outputSchema: DockerPullSchema,
     },

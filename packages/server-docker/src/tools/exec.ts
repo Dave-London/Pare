@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseExecOutput } from "../lib/parsers.js";
 import { formatExec } from "../lib/formatters.js";
@@ -16,15 +16,27 @@ export function registerExecTool(server: McpServer) {
         "Use instead of running `docker exec` in the terminal. " +
         "WARNING: This runs arbitrary commands inside the container. Only use on trusted containers.",
       inputSchema: {
-        container: z.string().describe("Container name or ID"),
-        command: z.array(z.string()).describe('Command to execute (e.g., ["ls", "-la"])'),
-        workdir: z.string().optional().describe("Working directory inside the container"),
+        container: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Container name or ID"),
+        command: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .describe('Command to execute (e.g., ["ls", "-la"])'),
+        workdir: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory inside the container"),
         env: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe('Environment variables (e.g., ["KEY=VALUE"])'),
-        path: z.string().optional().describe("Host working directory (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Host working directory (default: cwd)"),
       },
       outputSchema: DockerExecSchema,
     },

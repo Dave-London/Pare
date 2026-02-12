@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoModTidyOutput } from "../lib/parsers.js";
 import { formatGoModTidy } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerModTidyTool(server: McpServer) {
       description:
         "Runs go mod tidy to add missing and remove unused module dependencies. Use instead of running `go mod tidy` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
       },
       outputSchema: GoModTidyResultSchema,
     },

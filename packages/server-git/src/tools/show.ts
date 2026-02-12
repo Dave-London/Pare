@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseShow } from "../lib/parsers.js";
@@ -18,9 +18,14 @@ export function registerShowTool(server: McpServer) {
       description:
         "Shows commit details and diff statistics for a given ref. Use instead of running `git show` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
         ref: z
           .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .default("HEAD")
           .describe("Commit hash, branch, or tag (default: HEAD)"),

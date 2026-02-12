@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeDownOutput } from "../lib/parsers.js";
 import { formatComposeDown } from "../lib/formatters.js";
@@ -14,7 +14,10 @@ export function registerComposeDownTool(server: McpServer) {
       description:
         "Stops Docker Compose services and returns structured status. Use instead of running `docker compose down` in the terminal.",
       inputSchema: {
-        path: z.string().describe("Directory containing docker-compose.yml"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .describe("Directory containing docker-compose.yml"),
         volumes: z
           .boolean()
           .optional()
@@ -25,7 +28,11 @@ export function registerComposeDownTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Remove orphan containers (default: false)"),
-        file: z.string().optional().describe("Compose file path (default: docker-compose.yml)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Compose file path (default: docker-compose.yml)"),
       },
       outputSchema: DockerComposeDownSchema,
     },

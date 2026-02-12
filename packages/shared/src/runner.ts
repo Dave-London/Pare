@@ -16,6 +16,38 @@ export interface RunResult {
 }
 
 /**
+ * Escapes a single argument for safe use with cmd.exe on Windows.
+ *
+ * When `shell: true` is used with `execFile` on Windows, Node.js wraps each
+ * argument in double quotes. Inside double quotes cmd.exe still interprets:
+ *   - `%VAR%` for environment variable expansion
+ *   - `^` as the escape character itself
+ *   - `&`, `|`, `<`, `>` as pipeline / redirection operators
+ *
+ * We neutralise these by:
+ *   1. Replacing `%` with `%%` (disables env-var expansion inside quotes).
+ *   2. Prefixing `&`, `|`, `^`, `<`, `>` with the cmd.exe escape char `^`.
+ *
+ * Parentheses `(` `)` are NOT escaped here because inside double-quoted
+ * strings they are literal characters and do not affect grouping.
+ */
+export function escapeCmdArg(arg: string): string {
+  // Step 1: Escape % → %% to prevent %VAR% expansion
+  let escaped = arg.replace(/%/g, "%%");
+
+  // Step 2: Caret-escape cmd.exe metacharacters that are dangerous
+  // even inside double quotes. The caret itself must be escaped first
+  // so that carets we insert are not themselves re-escaped.
+  escaped = escaped.replace(/\^/g, "^^");
+  escaped = escaped.replace(/&/g, "^&");
+  escaped = escaped.replace(/\|/g, "^|");
+  escaped = escaped.replace(/</g, "^<");
+  escaped = escaped.replace(/>/g, "^>");
+
+  return escaped;
+}
+
+/**
  * Executes a command and returns cleaned output with ANSI codes stripped.
  * Uses execFile (not exec) to avoid shell injection. On Windows, shell is
  * enabled so that .cmd/.bat wrappers (like npx) can be executed — args are
@@ -26,10 +58,10 @@ export interface RunResult {
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    // On Windows with shell mode, escape % to prevent env variable expansion.
-    // Node.js wraps args in double quotes which prevents most cmd.exe metacharacters,
-    // but %VAR% expansion still works inside double quotes.
-    const safeArgs = process.platform === "win32" ? args.map((a) => a.replace(/%/g, "%%")) : args;
+    // On Windows with shell mode, escape cmd.exe metacharacters to prevent
+    // environment variable expansion and command injection via special chars.
+    // See escapeCmdArg() for details on what is escaped and why.
+    const safeArgs = process.platform === "win32" ? args.map(escapeCmdArg) : args;
 
     execFile(
       cmd,

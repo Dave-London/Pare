@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvInstall } from "../lib/parsers.js";
 import { formatUvInstall } from "../lib/formatters.js";
@@ -17,9 +17,21 @@ export function registerUvInstallTool(server: McpServer) {
         "WARNING: Installing packages may execute arbitrary setup.py code during build. " +
         "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
       inputSchema: {
-        path: z.string().optional().describe("Working directory (default: cwd)"),
-        packages: z.array(z.string()).optional().describe("Packages to install"),
-        requirements: z.string().optional().describe("Path to requirements file"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Packages to install"),
+        requirements: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to requirements file"),
         dryRun: z
           .boolean()
           .optional()

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseInitOutput } from "../lib/parsers.js";
 import { formatInit } from "../lib/formatters.js";
@@ -16,13 +16,21 @@ export function registerInitTool(server: McpServer) {
       description:
         "Initializes a new package.json in the target directory. Returns structured output with the package name, version, and path.",
       inputSchema: {
-        path: z.string().optional().describe("Directory to initialize (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Directory to initialize (default: cwd)"),
         yes: z
           .boolean()
           .optional()
           .default(true)
           .describe("Use -y flag for non-interactive init with defaults (default: true)"),
-        scope: z.string().optional().describe("npm scope for the package (e.g., '@myorg')"),
+        scope: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("npm scope for the package (e.g., '@myorg')"),
       },
       outputSchema: NpmInitSchema,
     },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { webpackCmd } from "../lib/build-runner.js";
 import { parseWebpackOutput } from "../lib/parsers.js";
 import { formatWebpack } from "../lib/formatters.js";
@@ -14,13 +14,26 @@ export function registerWebpackTool(server: McpServer) {
       description:
         "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings. Use instead of running `webpack` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        config: z.string().optional().describe("Path to webpack config file"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to webpack config file"),
         mode: z
           .enum(["production", "development", "none"])
           .optional()
           .describe("Build mode (production, development, none)"),
-        args: z.array(z.string()).optional().default([]).describe("Additional webpack flags"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Additional webpack flags"),
       },
       outputSchema: WebpackResultSchema,
     },

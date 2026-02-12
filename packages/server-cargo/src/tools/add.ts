@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoAddOutput } from "../lib/parsers.js";
 import { formatCargoAdd } from "../lib/formatters.js";
@@ -17,11 +17,19 @@ export function registerAddTool(server: McpServer) {
         "WARNING: Adding crates downloads and compiles third-party code which may include build scripts (build.rs). " +
         "Only add trusted crates. Use dryRun to preview changes before committing.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        packages: z.array(z.string()).describe('Packages to add (e.g. ["serde", "tokio@1.0"])'),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .describe('Packages to add (e.g. ["serde", "tokio@1.0"])'),
         dev: z.boolean().optional().default(false).describe("Add as dev dependency (--dev)"),
         features: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe('Features to enable (e.g. ["derive", "full"])'),
         dryRun: z

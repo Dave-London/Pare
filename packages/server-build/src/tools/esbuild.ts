@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { esbuildCmd } from "../lib/build-runner.js";
 import { parseEsbuildOutput } from "../lib/parsers.js";
 import { formatEsbuild } from "../lib/formatters.js";
@@ -14,12 +14,21 @@ export function registerEsbuildTool(server: McpServer) {
       description:
         "Runs the esbuild bundler and returns structured errors, warnings, and output files. Use instead of running `esbuild` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         entryPoints: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Entry point files to bundle (e.g., ['src/index.ts'])"),
-        outdir: z.string().optional().describe("Output directory"),
-        outfile: z.string().optional().describe("Output file (single entry point)"),
+        outdir: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Output directory"),
+        outfile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Output file (single entry point)"),
         bundle: z
           .boolean()
           .optional()
@@ -39,7 +48,12 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Generate source maps (default: false)"),
-        args: z.array(z.string()).optional().default([]).describe("Additional esbuild flags"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Additional esbuild flags"),
       },
       outputSchema: EsbuildResultSchema,
     },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseTestOutput } from "../lib/parsers.js";
 import { formatTest } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerTestTool(server: McpServer) {
       description:
         "Runs `npm test` and returns structured output with exit code, stdout, stderr, and duration. Shorthand for running the test script defined in package.json.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         args: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the test script"),

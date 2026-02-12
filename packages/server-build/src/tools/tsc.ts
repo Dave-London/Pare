@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { tsc } from "../lib/build-runner.js";
 import { parseTscOutput } from "../lib/parsers.js";
 import { formatTsc } from "../lib/formatters.js";
@@ -14,13 +14,17 @@ export function registerTscTool(server: McpServer) {
       description:
         "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). Use instead of running `tsc` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         noEmit: z
           .boolean()
           .optional()
           .default(true)
           .describe("Skip emitting output files (default: true)"),
-        project: z.string().optional().describe("Path to tsconfig.json"),
+        project: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Path to tsconfig.json"),
       },
       outputSchema: TscResultSchema,
     },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeJson } from "../lib/parsers.js";
 import { formatLint } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerBiomeCheckTool(server: McpServer) {
       description:
         "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `biome check` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         patterns: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseListJson } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerListTool(server: McpServer) {
       description:
         "Lists installed packages as structured dependency data. Use instead of running `npm list` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         depth: z
           .number()
           .optional()

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseCheckout } from "../lib/parsers.js";
 import { formatCheckout } from "../lib/formatters.js";
@@ -14,8 +14,15 @@ export function registerCheckoutTool(server: McpServer) {
       description:
         "Switches branches or restores files. Returns structured data with ref, previous ref, and whether a new branch was created. Use instead of running `git checkout` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
-        ref: z.string().describe("Branch name, tag, or commit to checkout"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
+        ref: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .describe("Branch name, tag, or commit to checkout"),
         create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
       },
       outputSchema: GitCheckoutSchema,

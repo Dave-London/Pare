@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { run } from "../src/runner.js";
+import { run, escapeCmdArg } from "../src/runner.js";
 
 describe("run", () => {
   it("returns stdout and stderr with exit code 0 on success", async () => {
@@ -30,5 +30,49 @@ describe("run", () => {
     });
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBeTruthy();
+  });
+});
+
+describe("escapeCmdArg", () => {
+  it("escapes percent signs for env-var expansion prevention", () => {
+    expect(escapeCmdArg("%PATH%")).toBe("%%PATH%%");
+    expect(escapeCmdArg("100%")).toBe("100%%");
+  });
+
+  it("escapes ampersand to prevent command chaining", () => {
+    expect(escapeCmdArg("foo&bar")).toBe("foo^&bar");
+    expect(escapeCmdArg("a&&b")).toBe("a^&^&b");
+  });
+
+  it("escapes pipe to prevent piping", () => {
+    expect(escapeCmdArg("foo|bar")).toBe("foo^|bar");
+  });
+
+  it("escapes caret (cmd.exe escape char itself)", () => {
+    expect(escapeCmdArg("foo^bar")).toBe("foo^^bar");
+  });
+
+  it("escapes angle brackets to prevent redirection", () => {
+    expect(escapeCmdArg("foo>bar")).toBe("foo^>bar");
+    expect(escapeCmdArg("foo<bar")).toBe("foo^<bar");
+  });
+
+  it("handles multiple metacharacters in one string", () => {
+    // "a&b|c^d<e>f%g%" should escape all dangerous chars
+    expect(escapeCmdArg("a&b|c^d<e>f%g%")).toBe("a^&b^|c^^d^<e^>f%%g%%");
+  });
+
+  it("returns plain strings unchanged", () => {
+    expect(escapeCmdArg("hello")).toBe("hello");
+    expect(escapeCmdArg("src/index.ts")).toBe("src/index.ts");
+    expect(escapeCmdArg("--flag=value")).toBe("--flag=value");
+  });
+
+  it("handles empty string", () => {
+    expect(escapeCmdArg("")).toBe("");
+  });
+
+  it("does not escape parentheses (safe inside double quotes)", () => {
+    expect(escapeCmdArg("(foo)")).toBe("(foo)");
   });
 });
