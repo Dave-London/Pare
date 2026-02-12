@@ -129,6 +129,34 @@ describe("security: pip-audit — requirements validation", () => {
   });
 });
 
+describe("security: pip-show — package validation", () => {
+  it("rejects flag-like package names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "package")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe package names", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "package")).not.toThrow();
+    }
+  });
+});
+
+describe("security: ruff-format — patterns validation", () => {
+  it("rejects flag-like patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe patterns", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "patterns")).not.toThrow();
+    }
+  });
+});
+
 describe("security: uv-install — packages and requirements validation", () => {
   it("rejects flag-like packages", () => {
     for (const malicious of MALICIOUS_INPUTS) {

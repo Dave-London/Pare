@@ -7,6 +7,9 @@ import {
   parsePytestOutput,
   parseUvInstall,
   parseBlackOutput,
+  parsePipListJson,
+  parsePipShowOutput,
+  parseRuffFormatOutput,
 } from "../src/lib/parsers.js";
 
 describe("parsePipInstall", () => {
@@ -381,5 +384,164 @@ describe("parseUvInstall — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.installed).toHaveLength(1);
     expect(result.duration).toBe(0);
+  });
+});
+
+// ─── pip list parser tests ──────────────────────────────────────────────────
+
+describe("parsePipListJson", () => {
+  it("parses JSON array of packages", () => {
+    const json = JSON.stringify([
+      { name: "flask", version: "3.0.0" },
+      { name: "requests", version: "2.31.0" },
+    ]);
+    const result = parsePipListJson(json);
+
+    expect(result.total).toBe(2);
+    expect(result.packages[0]).toEqual({ name: "flask", version: "3.0.0" });
+    expect(result.packages[1]).toEqual({ name: "requests", version: "2.31.0" });
+  });
+
+  it("parses empty array", () => {
+    const result = parsePipListJson("[]");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parsePipListJson("not json");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles empty string", () => {
+    const result = parsePipListJson("");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles non-array JSON", () => {
+    const result = parsePipListJson('{"key": "value"}');
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+});
+
+// ─── pip show parser tests ──────────────────────────────────────────────────
+
+describe("parsePipShowOutput", () => {
+  it("parses full pip show output", () => {
+    const stdout = [
+      "Name: requests",
+      "Version: 2.31.0",
+      "Summary: Python HTTP for Humans.",
+      "Home-page: https://requests.readthedocs.io",
+      "Author: Kenneth Reitz",
+      "Author-email: me@kennethreitz.org",
+      "License: Apache-2.0",
+      "Location: /usr/lib/python3.11/site-packages",
+      "Requires: charset-normalizer, idna, urllib3, certifi",
+      "Required-by: ",
+    ].join("\n");
+
+    const result = parsePipShowOutput(stdout);
+
+    expect(result.name).toBe("requests");
+    expect(result.version).toBe("2.31.0");
+    expect(result.summary).toBe("Python HTTP for Humans.");
+    expect(result.homepage).toBe("https://requests.readthedocs.io");
+    expect(result.author).toBe("Kenneth Reitz");
+    expect(result.license).toBe("Apache-2.0");
+    expect(result.location).toBe("/usr/lib/python3.11/site-packages");
+    expect(result.requires).toEqual(["charset-normalizer", "idna", "urllib3", "certifi"]);
+  });
+
+  it("parses output with empty Requires field", () => {
+    const stdout = [
+      "Name: certifi",
+      "Version: 2023.7.22",
+      "Summary: Python package for providing Mozilla's CA Bundle.",
+      "Home-page: https://github.com/certifi/python-certifi",
+      "Author: Kenneth Reitz",
+      "License: MPL-2.0",
+      "Location: /usr/lib/python3.11/site-packages",
+      "Requires: ",
+      "Required-by: requests",
+    ].join("\n");
+
+    const result = parsePipShowOutput(stdout);
+
+    expect(result.name).toBe("certifi");
+    expect(result.requires).toEqual([]);
+  });
+
+  it("handles empty output", () => {
+    const result = parsePipShowOutput("");
+
+    expect(result.name).toBe("");
+    expect(result.version).toBe("");
+    expect(result.summary).toBe("");
+    expect(result.requires).toEqual([]);
+  });
+
+  it("handles output with missing optional fields", () => {
+    const stdout = ["Name: mypackage", "Version: 1.0.0", "Summary: A test package"].join("\n");
+
+    const result = parsePipShowOutput(stdout);
+
+    expect(result.name).toBe("mypackage");
+    expect(result.version).toBe("1.0.0");
+    expect(result.summary).toBe("A test package");
+    expect(result.homepage).toBeUndefined();
+    expect(result.author).toBeUndefined();
+    expect(result.license).toBeUndefined();
+    expect(result.location).toBeUndefined();
+    expect(result.requires).toEqual([]);
+  });
+});
+
+// ─── ruff format parser tests ───────────────────────────────────────────────
+
+describe("parseRuffFormatOutput", () => {
+  it("parses check mode with files needing formatting", () => {
+    const stderr = [
+      "Would reformat: src/main.py",
+      "Would reformat: src/utils.py",
+      "2 files would be reformatted",
+    ].join("\n");
+
+    const result = parseRuffFormatOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.filesChanged).toBe(2);
+    expect(result.files).toEqual(["src/main.py", "src/utils.py"]);
+  });
+
+  it("parses format mode with reformatted files", () => {
+    const stderr = ["reformatted: src/main.py", "1 file reformatted"].join("\n");
+
+    const result = parseRuffFormatOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(1);
+    expect(result.files).toEqual(["src/main.py"]);
+  });
+
+  it("parses clean output (no files need formatting)", () => {
+    const stderr = "0 files reformatted";
+
+    const result = parseRuffFormatOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toBeUndefined();
+  });
+
+  it("handles empty output", () => {
+    const result = parseRuffFormatOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toBeUndefined();
   });
 });

@@ -7,6 +7,9 @@ import type {
   UvInstall,
   UvRun,
   BlackResult,
+  PipList,
+  PipShow,
+  RuffFormatResult,
 } from "../schemas/index.js";
 
 /** Formats structured pip install results into a human-readable summary of installed packages. */
@@ -316,4 +319,114 @@ export function compactUvRunMap(data: UvRun): UvRunCompact {
 export function formatUvRunCompact(data: UvRunCompact): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
   return `uv run ${status} in ${data.duration}s`;
+}
+
+// ── pip-list formatters ──────────────────────────────────────────────
+
+/** Formats structured pip list results into a human-readable package listing. */
+export function formatPipList(data: PipList): string {
+  if (data.total === 0) return "No packages installed.";
+
+  const lines = [`${data.total} packages installed:`];
+  for (const pkg of data.packages) {
+    lines.push(`  ${pkg.name}==${pkg.version}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact pip-list: total count only. Drop individual package details. */
+export interface PipListCompact {
+  [key: string]: unknown;
+  total: number;
+}
+
+export function compactPipListMap(data: PipList): PipListCompact {
+  return {
+    total: data.total,
+  };
+}
+
+export function formatPipListCompact(data: PipListCompact): string {
+  if (data.total === 0) return "No packages installed.";
+  return `${data.total} packages installed.`;
+}
+
+// ── pip-show formatters ──────────────────────────────────────────────
+
+/** Formats structured pip show results into a human-readable package info display. */
+export function formatPipShow(data: PipShow): string {
+  if (!data.name) return "Package not found.";
+
+  const lines = [`${data.name}==${data.version}`];
+  if (data.summary) lines.push(`  Summary: ${data.summary}`);
+  if (data.author) lines.push(`  Author: ${data.author}`);
+  if (data.license) lines.push(`  License: ${data.license}`);
+  if (data.homepage) lines.push(`  Homepage: ${data.homepage}`);
+  if (data.location) lines.push(`  Location: ${data.location}`);
+  if (data.requires.length > 0) lines.push(`  Requires: ${data.requires.join(", ")}`);
+  return lines.join("\n");
+}
+
+/** Compact pip-show: name + version + summary only. Drop detailed metadata. */
+export interface PipShowCompact {
+  [key: string]: unknown;
+  name: string;
+  version: string;
+  summary: string;
+}
+
+export function compactPipShowMap(data: PipShow): PipShowCompact {
+  return {
+    name: data.name,
+    version: data.version,
+    summary: data.summary,
+  };
+}
+
+export function formatPipShowCompact(data: PipShowCompact): string {
+  if (!data.name) return "Package not found.";
+  return `${data.name}==${data.version}: ${data.summary}`;
+}
+
+// ── ruff-format formatters ───────────────────────────────────────────
+
+/** Formats structured ruff format results into a human-readable summary. */
+export function formatRuffFormat(data: RuffFormatResult): string {
+  if (data.success && data.filesChanged === 0) {
+    return "ruff format: all files already formatted.";
+  }
+
+  const lines: string[] = [];
+  const verb = data.success ? "reformatted" : "would be reformatted";
+  lines.push(`ruff format: ${data.filesChanged} files ${verb}`);
+
+  if (data.files && data.files.length > 0) {
+    for (const f of data.files) {
+      lines.push(`  ${f}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/** Compact ruff-format: success + filesChanged count. Drop individual file lists. */
+export interface RuffFormatResultCompact {
+  [key: string]: unknown;
+  success: boolean;
+  filesChanged: number;
+}
+
+export function compactRuffFormatMap(data: RuffFormatResult): RuffFormatResultCompact {
+  return {
+    success: data.success,
+    filesChanged: data.filesChanged,
+  };
+}
+
+export function formatRuffFormatCompact(data: RuffFormatResultCompact): string {
+  if (data.success && data.filesChanged === 0) {
+    return "ruff format: all files already formatted.";
+  }
+  const verb = data.success ? "reformatted" : "would be reformatted";
+  return `ruff format: ${data.filesChanged} files ${verb}`;
 }

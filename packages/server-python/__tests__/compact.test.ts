@@ -16,6 +16,12 @@ import {
   formatUvInstallCompact,
   compactUvRunMap,
   formatUvRunCompact,
+  compactPipListMap,
+  formatPipListCompact,
+  compactPipShowMap,
+  formatPipShowCompact,
+  compactRuffFormatMap,
+  formatRuffFormatCompact,
 } from "../src/lib/formatters.js";
 import type {
   PytestResult,
@@ -26,6 +32,9 @@ import type {
   PipAuditResult,
   UvInstall,
   UvRun,
+  PipList,
+  PipShow,
+  RuffFormatResult,
 } from "../src/schemas/index.js";
 
 // ── Pytest compact ────────────────────────────────────────────────────
@@ -400,5 +409,111 @@ describe("formatUvRunCompact", () => {
   it("formats failed run", () => {
     const compact = { exitCode: 1, success: false, duration: 2.0 };
     expect(formatUvRunCompact(compact)).toBe("uv run failed (exit 1) in 2s");
+  });
+});
+
+// ── Pip List compact ──────────────────────────────────────────────────
+
+describe("compactPipListMap", () => {
+  it("keeps total count, drops package details", () => {
+    const data: PipList = {
+      packages: [
+        { name: "flask", version: "3.0.0" },
+        { name: "requests", version: "2.31.0" },
+      ],
+      total: 2,
+    };
+
+    const compact = compactPipListMap(data);
+
+    expect(compact.total).toBe(2);
+    expect(compact).not.toHaveProperty("packages");
+  });
+});
+
+describe("formatPipListCompact", () => {
+  it("formats empty list", () => {
+    const compact = { total: 0 };
+    expect(formatPipListCompact(compact)).toBe("No packages installed.");
+  });
+
+  it("formats list with packages", () => {
+    const compact = { total: 15 };
+    expect(formatPipListCompact(compact)).toBe("15 packages installed.");
+  });
+});
+
+// ── Pip Show compact ──────────────────────────────────────────────────
+
+describe("compactPipShowMap", () => {
+  it("keeps name, version, and summary; drops detailed metadata", () => {
+    const data: PipShow = {
+      name: "requests",
+      version: "2.31.0",
+      summary: "Python HTTP for Humans.",
+      homepage: "https://requests.readthedocs.io",
+      author: "Kenneth Reitz",
+      license: "Apache-2.0",
+      location: "/usr/lib/python3.11/site-packages",
+      requires: ["charset-normalizer", "idna", "urllib3", "certifi"],
+    };
+
+    const compact = compactPipShowMap(data);
+
+    expect(compact.name).toBe("requests");
+    expect(compact.version).toBe("2.31.0");
+    expect(compact.summary).toBe("Python HTTP for Humans.");
+    expect(compact).not.toHaveProperty("homepage");
+    expect(compact).not.toHaveProperty("author");
+    expect(compact).not.toHaveProperty("license");
+    expect(compact).not.toHaveProperty("location");
+    expect(compact).not.toHaveProperty("requires");
+  });
+});
+
+describe("formatPipShowCompact", () => {
+  it("formats package not found", () => {
+    const compact = { name: "", version: "", summary: "" };
+    expect(formatPipShowCompact(compact)).toBe("Package not found.");
+  });
+
+  it("formats package with summary", () => {
+    const compact = { name: "requests", version: "2.31.0", summary: "Python HTTP for Humans." };
+    expect(formatPipShowCompact(compact)).toBe("requests==2.31.0: Python HTTP for Humans.");
+  });
+});
+
+// ── Ruff Format compact ──────────────────────────────────────────────
+
+describe("compactRuffFormatMap", () => {
+  it("keeps success and filesChanged, drops file list", () => {
+    const data: RuffFormatResult = {
+      success: true,
+      filesChanged: 3,
+      files: ["a.py", "b.py", "c.py"],
+    };
+
+    const compact = compactRuffFormatMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.filesChanged).toBe(3);
+    expect(compact).not.toHaveProperty("files");
+  });
+});
+
+describe("formatRuffFormatCompact", () => {
+  it("formats all clean", () => {
+    const compact = { success: true, filesChanged: 0 };
+    expect(formatRuffFormatCompact(compact)).toBe("ruff format: all files already formatted.");
+  });
+
+  it("formats with reformatted files", () => {
+    const compact = { success: true, filesChanged: 3 };
+    expect(formatRuffFormatCompact(compact)).toBe("ruff format: 3 files reformatted");
+  });
+
+  it("formats check mode with files needing formatting", () => {
+    const compact = { success: false, filesChanged: 2 };
+    expect(formatRuffFormatCompact(compact)).toBe("ruff format: 2 files would be reformatted");
   });
 });

@@ -6,6 +6,9 @@ import {
   formatPipAudit,
   formatPytest,
   formatBlack,
+  formatPipList,
+  formatPipShow,
+  formatRuffFormat,
 } from "../src/lib/formatters.js";
 import type {
   PipInstall,
@@ -14,6 +17,9 @@ import type {
   PipAuditResult,
   PytestResult,
   BlackResult,
+  PipList,
+  PipShow,
+  RuffFormatResult,
 } from "../src/schemas/index.js";
 
 describe("formatPipInstall", () => {
@@ -315,6 +321,124 @@ describe("formatBlack — edge cases", () => {
     const output = formatBlack(data);
     expect(output).toContain("3 files reformatted, 2 unchanged");
     // Should not list any files
+    expect(output.split("\n")).toHaveLength(1);
+  });
+});
+
+// ─── pip-list formatter tests ────────────────────────────────────────────────
+
+describe("formatPipList", () => {
+  it("formats empty package list", () => {
+    const data: PipList = { packages: [], total: 0 };
+    expect(formatPipList(data)).toBe("No packages installed.");
+  });
+
+  it("formats package list with multiple packages", () => {
+    const data: PipList = {
+      packages: [
+        { name: "flask", version: "3.0.0" },
+        { name: "requests", version: "2.31.0" },
+      ],
+      total: 2,
+    };
+    const output = formatPipList(data);
+    expect(output).toContain("2 packages installed:");
+    expect(output).toContain("flask==3.0.0");
+    expect(output).toContain("requests==2.31.0");
+  });
+});
+
+// ─── pip-show formatter tests ────────────────────────────────────────────────
+
+describe("formatPipShow", () => {
+  it("formats package not found", () => {
+    const data: PipShow = {
+      name: "",
+      version: "",
+      summary: "",
+      requires: [],
+    };
+    expect(formatPipShow(data)).toBe("Package not found.");
+  });
+
+  it("formats full package metadata", () => {
+    const data: PipShow = {
+      name: "requests",
+      version: "2.31.0",
+      summary: "Python HTTP for Humans.",
+      homepage: "https://requests.readthedocs.io",
+      author: "Kenneth Reitz",
+      license: "Apache-2.0",
+      location: "/usr/lib/python3.11/site-packages",
+      requires: ["charset-normalizer", "idna", "urllib3", "certifi"],
+    };
+    const output = formatPipShow(data);
+    expect(output).toContain("requests==2.31.0");
+    expect(output).toContain("Summary: Python HTTP for Humans.");
+    expect(output).toContain("Author: Kenneth Reitz");
+    expect(output).toContain("License: Apache-2.0");
+    expect(output).toContain("Homepage: https://requests.readthedocs.io");
+    expect(output).toContain("Location: /usr/lib/python3.11/site-packages");
+    expect(output).toContain("Requires: charset-normalizer, idna, urllib3, certifi");
+  });
+
+  it("formats package with minimal metadata", () => {
+    const data: PipShow = {
+      name: "mypackage",
+      version: "1.0.0",
+      summary: "A test package",
+      requires: [],
+    };
+    const output = formatPipShow(data);
+    expect(output).toContain("mypackage==1.0.0");
+    expect(output).toContain("Summary: A test package");
+    expect(output).not.toContain("Author:");
+    expect(output).not.toContain("Homepage:");
+    expect(output).not.toContain("Requires:");
+  });
+});
+
+// ─── ruff-format formatter tests ─────────────────────────────────────────────
+
+describe("formatRuffFormat", () => {
+  it("formats all files already formatted", () => {
+    const data: RuffFormatResult = {
+      success: true,
+      filesChanged: 0,
+    };
+    expect(formatRuffFormat(data)).toBe("ruff format: all files already formatted.");
+  });
+
+  it("formats format mode with reformatted files", () => {
+    const data: RuffFormatResult = {
+      success: true,
+      filesChanged: 2,
+      files: ["src/main.py", "src/utils.py"],
+    };
+    const output = formatRuffFormat(data);
+    expect(output).toContain("2 files reformatted");
+    expect(output).toContain("src/main.py");
+    expect(output).toContain("src/utils.py");
+  });
+
+  it("formats check mode with files needing formatting", () => {
+    const data: RuffFormatResult = {
+      success: false,
+      filesChanged: 1,
+      files: ["src/main.py"],
+    };
+    const output = formatRuffFormat(data);
+    expect(output).toContain("1 files would be reformatted");
+    expect(output).toContain("src/main.py");
+  });
+
+  it("formats with filesChanged > 0 but no file list", () => {
+    const data: RuffFormatResult = {
+      success: true,
+      filesChanged: 3,
+    };
+    const output = formatRuffFormat(data);
+    expect(output).toContain("3 files reformatted");
     expect(output.split("\n")).toHaveLength(1);
   });
 });

@@ -8,6 +8,9 @@ import type {
   UvInstall,
   UvRun,
   BlackResult,
+  PipList,
+  PipShow,
+  RuffFormatResult,
 } from "../schemas/index.js";
 import { z } from "zod";
 
@@ -346,5 +349,89 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
     filesChecked,
     success,
     wouldReformat,
+  };
+}
+
+/** Parses `pip list --format json` output into structured package list. */
+export function parsePipListJson(stdout: string): PipList {
+  let entries: { name: string; version: string }[];
+  try {
+    entries = JSON.parse(stdout);
+  } catch {
+    return { packages: [], total: 0 };
+  }
+
+  if (!Array.isArray(entries)) {
+    return { packages: [], total: 0 };
+  }
+
+  const packages = entries.map((e) => ({
+    name: e.name,
+    version: e.version,
+  }));
+
+  return { packages, total: packages.length };
+}
+
+/** Parses `pip show <package>` key-value output into structured package metadata. */
+export function parsePipShowOutput(stdout: string): PipShow {
+  const lines = stdout.split("\n");
+  const data: Record<string, string> = {};
+
+  for (const line of lines) {
+    const colonIdx = line.indexOf(": ");
+    if (colonIdx > 0) {
+      const key = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 2).trim();
+      data[key] = value;
+    }
+  }
+
+  const requires =
+    data["Requires"] && data["Requires"].trim()
+      ? data["Requires"].split(",").map((r) => r.trim())
+      : [];
+
+  return {
+    name: data["Name"] || "",
+    version: data["Version"] || "",
+    summary: data["Summary"] || "",
+    homepage: data["Home-page"] || undefined,
+    author: data["Author"] || undefined,
+    license: data["License"] || undefined,
+    location: data["Location"] || undefined,
+    requires,
+  };
+}
+
+const RUFF_FORMAT_FILE_RE = /^(?:Would reformat|reformatted): (.+)$/;
+
+/** Parses `ruff format` output into structured result with file counts. */
+export function parseRuffFormatOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): RuffFormatResult {
+  // ruff format writes file-level output to stderr
+  const output = stdout + "\n" + stderr;
+  const lines = output.split("\n");
+
+  const files: string[] = [];
+
+  for (const line of lines) {
+    const match = line.match(RUFF_FORMAT_FILE_RE);
+    if (match) {
+      files.push(match[1].trim());
+    }
+  }
+
+  // Parse summary line: "N files reformatted" or "N files would be reformatted" or "N files left unchanged"
+  const reformattedMatch = output.match(/(\d+) files? (?:would be )?reformatted/);
+  const filesChanged = reformattedMatch ? parseInt(reformattedMatch[1], 10) : files.length;
+
+  return {
+    success: exitCode === 0,
+    filesChanged: filesChanged || files.length,
+    files: files.length > 0 ? files : undefined,
   };
 }
