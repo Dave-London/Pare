@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoAddOutput } from "../lib/parsers.js";
-import { formatCargoAdd } from "../lib/formatters.js";
+import { formatCargoAdd, compactAddMap, formatAddCompact } from "../lib/formatters.js";
 import { CargoAddResultSchema } from "../schemas/index.js";
 
 export function registerAddTool(server: McpServer) {
@@ -37,10 +37,17 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be added without modifying Cargo.toml (--dry-run)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoAddResultSchema,
     },
-    async ({ path, packages, dev, features, dryRun }) => {
+    async ({ path, packages, dev, features, dryRun, compact }) => {
       const cwd = path || process.cwd();
 
       for (const pkg of packages) {
@@ -59,7 +66,14 @@ export function registerAddTool(server: McpServer) {
 
       const result = await cargo(args, cwd);
       const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatCargoAdd);
+      return compactDualOutput(
+        data,
+        result.stdout + result.stderr,
+        formatCargoAdd,
+        compactAddMap,
+        formatAddCompact,
+        compact === false,
+      );
     },
   );
 }

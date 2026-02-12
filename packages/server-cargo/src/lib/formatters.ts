@@ -9,6 +9,72 @@ import type {
   CargoDocResult,
 } from "../schemas/index.js";
 
+// ── Compact types ────────────────────────────────────────────────────
+
+/** Compact build/check: success + counts only, no diagnostic details. */
+export interface CargoBuildCompact {
+  [key: string]: unknown;
+  success: boolean;
+  errors: number;
+  warnings: number;
+  total: number;
+}
+
+/** Compact test: summary counts only, no individual test entries. */
+export interface CargoTestCompact {
+  [key: string]: unknown;
+  success: boolean;
+  total: number;
+  passed: number;
+  failed: number;
+  ignored: number;
+}
+
+/** Compact clippy: counts per severity only, no individual diagnostics. */
+export interface CargoClippyCompact {
+  [key: string]: unknown;
+  errors: number;
+  warnings: number;
+  total: number;
+}
+
+/** Compact run: exit code + success only, no stdout/stderr. */
+export interface CargoRunCompact {
+  [key: string]: unknown;
+  exitCode: number;
+  success: boolean;
+}
+
+/** Compact add: success + package names only, no version details. */
+export interface CargoAddCompact {
+  [key: string]: unknown;
+  success: boolean;
+  packages: string[];
+  total: number;
+}
+
+/** Compact remove: success + package names. */
+export interface CargoRemoveCompact {
+  [key: string]: unknown;
+  success: boolean;
+  removed: string[];
+  total: number;
+}
+
+/** Compact fmt: success + file count only. */
+export interface CargoFmtCompact {
+  [key: string]: unknown;
+  success: boolean;
+  filesChanged: number;
+}
+
+/** Compact doc: success + warning count. */
+export interface CargoDocCompact {
+  [key: string]: unknown;
+  success: boolean;
+  warnings: number;
+}
+
 /** Formats structured cargo build results into a human-readable diagnostic summary. */
 export function formatCargoBuild(data: CargoBuildResult): string {
   if (data.success && data.total === 0) return "cargo build: success, no diagnostics.";
@@ -95,6 +161,121 @@ export function formatCargoFmt(data: CargoFmtResult): string {
 
 /** Formats structured cargo doc output into a human-readable summary. */
 export function formatCargoDoc(data: CargoDocResult): string {
+  const status = data.success ? "success" : "failed";
+  if (data.warnings === 0) return `cargo doc: ${status}.`;
+  return `cargo doc: ${status} (${data.warnings} warning(s))`;
+}
+
+// ── Compact mappers ──────────────────────────────────────────────────
+
+export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
+  return {
+    success: data.success,
+    diagnostics: [],
+    errors: data.errors,
+    warnings: data.warnings,
+    total: data.total,
+  };
+}
+
+export function compactTestMap(data: CargoTestResult): CargoTestCompact {
+  return {
+    success: data.success,
+    tests: [],
+    total: data.total,
+    passed: data.passed,
+    failed: data.failed,
+    ignored: data.ignored,
+  };
+}
+
+export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
+  return {
+    diagnostics: [],
+    errors: data.errors,
+    warnings: data.warnings,
+    total: data.total,
+  };
+}
+
+export function compactRunMap(data: CargoRunResult): CargoRunCompact {
+  return {
+    exitCode: data.exitCode,
+    success: data.success,
+  };
+}
+
+export function compactAddMap(data: CargoAddResult): CargoAddCompact {
+  return {
+    success: data.success,
+    packages: data.added.map((p) => p.name),
+    total: data.total,
+  };
+}
+
+export function compactRemoveMap(data: CargoRemoveResult): CargoRemoveCompact {
+  return {
+    success: data.success,
+    removed: data.removed,
+    total: data.total,
+  };
+}
+
+export function compactFmtMap(data: CargoFmtResult): CargoFmtCompact {
+  return {
+    success: data.success,
+    filesChanged: data.filesChanged,
+  };
+}
+
+export function compactDocMap(data: CargoDocResult): CargoDocCompact {
+  return {
+    success: data.success,
+    warnings: data.warnings,
+  };
+}
+
+// ── Compact formatters ───────────────────────────────────────────────
+
+export function formatBuildCompact(data: CargoBuildCompact): string {
+  const status = data.success ? "success" : "failed";
+  return `cargo build: ${status} (${data.errors} errors, ${data.warnings} warnings)`;
+}
+
+export function formatTestCompact(data: CargoTestCompact): string {
+  const status = data.success ? "ok" : "FAILED";
+  return `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`;
+}
+
+export function formatClippyCompact(data: CargoClippyCompact): string {
+  if (data.total === 0) return "clippy: no warnings.";
+  return `clippy: ${data.errors} errors, ${data.warnings} warnings`;
+}
+
+export function formatRunCompact(data: CargoRunCompact): string {
+  const status = data.success ? "success" : "failed";
+  return `cargo run: ${status} (exit code ${data.exitCode})`;
+}
+
+export function formatAddCompact(data: CargoAddCompact): string {
+  if (!data.success) return "cargo add: failed";
+  if (data.total === 0) return "cargo add: success, no packages added.";
+  return `cargo add: ${data.total} package(s) added: ${data.packages.join(", ")}`;
+}
+
+export function formatRemoveCompact(data: CargoRemoveCompact): string {
+  if (!data.success) return "cargo remove: failed";
+  if (data.total === 0) return "cargo remove: success, no packages removed.";
+  return `cargo remove: ${data.total} package(s) removed: ${data.removed.join(", ")}`;
+}
+
+export function formatFmtCompact(data: CargoFmtCompact): string {
+  if (data.success && data.filesChanged === 0) return "cargo fmt: all files formatted.";
+  const status = data.success ? "success" : "needs formatting";
+  return `cargo fmt: ${status} (${data.filesChanged} file(s))`;
+}
+
+export function formatDocCompact(data: CargoDocCompact): string {
   const status = data.success ? "success" : "failed";
   if (data.warnings === 0) return `cargo doc: ${status}.`;
   return `cargo doc: ${status} (${data.warnings} warning(s))`;

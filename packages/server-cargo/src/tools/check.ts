@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
-import { formatCargoBuild } from "../lib/formatters.js";
+import { formatCargoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { CargoBuildResultSchema } from "../schemas/index.js";
 
 export function registerCheckTool(server: McpServer) {
@@ -24,10 +24,17 @@ export function registerCheckTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Package to check in a workspace"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoBuildResultSchema,
     },
-    async ({ path, package: pkg }) => {
+    async ({ path, package: pkg, compact }) => {
       const cwd = path || process.cwd();
       if (pkg) assertNoFlagInjection(pkg, "package");
 
@@ -36,7 +43,14 @@ export function registerCheckTool(server: McpServer) {
 
       const result = await cargo(args, cwd);
       const data = parseCargoBuildJson(result.stdout, result.exitCode);
-      return dualOutput(data, formatCargoBuild);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatCargoBuild,
+        compactBuildMap,
+        formatBuildCompact,
+        compact === false,
+      );
     },
   );
 }

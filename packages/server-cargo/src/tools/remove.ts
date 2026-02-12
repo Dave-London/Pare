@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRemoveOutput } from "../lib/parsers.js";
-import { formatCargoRemove } from "../lib/formatters.js";
+import { formatCargoRemove, compactRemoveMap, formatRemoveCompact } from "../lib/formatters.js";
 import { CargoRemoveResultSchema } from "../schemas/index.js";
 
 export function registerRemoveTool(server: McpServer) {
@@ -24,10 +24,17 @@ export function registerRemoveTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Package names to remove"),
         dev: z.boolean().optional().default(false).describe("Remove from dev dependencies (--dev)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoRemoveResultSchema,
     },
-    async ({ path, packages, dev }) => {
+    async ({ path, packages, dev, compact }) => {
       const cwd = path || process.cwd();
 
       for (const pkg of packages) {
@@ -39,7 +46,14 @@ export function registerRemoveTool(server: McpServer) {
 
       const result = await cargo(args, cwd);
       const data = parseCargoRemoveOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatCargoRemove);
+      return compactDualOutput(
+        data,
+        result.stdout + result.stderr,
+        formatCargoRemove,
+        compactRemoveMap,
+        formatRemoveCompact,
+        compact === false,
+      );
     },
   );
 }
