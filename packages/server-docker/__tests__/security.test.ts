@@ -12,7 +12,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { assertValidPortMapping } from "../src/lib/validation.js";
+import { assertValidPortMapping, assertSafeVolumeMount } from "../src/lib/validation.js";
 
 describe("assertNoFlagInjection — run tool (image param)", () => {
   it("accepts a normal image name", () => {
@@ -313,6 +313,98 @@ describe("assertNoFlagInjection — run tool (env param)", () => {
 
   it("rejects --cap-add=SYS_ADMIN as env value", () => {
     expect(() => assertNoFlagInjection("--cap-add=SYS_ADMIN", "env")).toThrow(/Invalid env/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// assertSafeVolumeMount — block dangerous host path mounts
+// ---------------------------------------------------------------------------
+
+describe("assertSafeVolumeMount", () => {
+  describe("accepts valid (safe) volume mounts", () => {
+    const validMounts = [
+      { value: "./data:/app/data", label: "relative host path" },
+      { value: "/home/user/project:/app", label: "absolute safe host path" },
+      { value: "myvolume:/data", label: "named volume" },
+      { value: "/tmp/work:/work:ro", label: "host path with options" },
+    ];
+
+    for (const { value, label } of validMounts) {
+      it(`accepts "${value}" (${label})`, () => {
+        expect(() => assertSafeVolumeMount(value)).not.toThrow();
+      });
+    }
+  });
+
+  describe("blocks dangerous host path mounts", () => {
+    const blockedMounts = [
+      { value: "/:/host", label: "root filesystem" },
+      { value: "/etc/shadow:/secrets", label: "/etc child path" },
+      { value: "/var/run/docker.sock:/var/run/docker.sock", label: "Docker socket" },
+      { value: "/proc:/proc", label: "/proc" },
+      { value: "/root:/root", label: "/root" },
+      { value: "/sys:/sys", label: "/sys" },
+      { value: "/dev:/dev", label: "/dev" },
+    ];
+
+    for (const { value, label } of blockedMounts) {
+      it(`blocks "${value}" (${label})`, () => {
+        expect(() => assertSafeVolumeMount(value)).toThrow(/Dangerous volume mount blocked/);
+      });
+    }
+  });
+
+  describe("handles edge cases", () => {
+    it('blocks "/etc/../root:/evil" (path traversal)', () => {
+      expect(() => assertSafeVolumeMount("/etc/../root:/evil")).toThrow(
+        /Dangerous volume mount blocked/,
+      );
+    });
+
+    it('blocks "/ :/host" (whitespace trick)', () => {
+      expect(() => assertSafeVolumeMount("/ :/host")).toThrow(/Dangerous volume mount blocked/);
+    });
+
+    it("blocks /etc with trailing slash", () => {
+      expect(() => assertSafeVolumeMount("/etc/:/secrets")).toThrow(
+        /Dangerous volume mount blocked/,
+      );
+    });
+
+    it("blocks /sys/kernel (child of /sys)", () => {
+      expect(() => assertSafeVolumeMount("/sys/kernel:/data")).toThrow(
+        /Dangerous volume mount blocked/,
+      );
+    });
+
+    it("blocks /dev/null mount", () => {
+      expect(() => assertSafeVolumeMount("/dev/null:/dev/null")).toThrow(
+        /Dangerous volume mount blocked/,
+      );
+    });
+
+    it("blocks /root/.ssh mount", () => {
+      expect(() => assertSafeVolumeMount("/root/.ssh:/ssh")).toThrow(
+        /Dangerous volume mount blocked/,
+      );
+    });
+
+    it("allows container-only mount (no colon)", () => {
+      expect(() => assertSafeVolumeMount("/data")).not.toThrow();
+    });
+
+    it("allows safe paths that start similarly to dangerous ones", () => {
+      // /etcetera is not /etc
+      expect(() => assertSafeVolumeMount("/etcetera:/data")).not.toThrow();
+    });
+
+    it("blocks Windows root mount C:\\", () => {
+      expect(() => assertSafeVolumeMount("C:\\:/host")).toThrow(/Dangerous volume mount blocked/);
+    });
+
+    it("blocks Windows root mount C:/", () => {
+      expect(() => assertSafeVolumeMount("C:/:/host")).toThrow(/Dangerous volume mount blocked/);
+    });
   });
 });
 

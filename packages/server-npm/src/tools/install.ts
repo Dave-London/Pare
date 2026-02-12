@@ -14,8 +14,8 @@ export function registerInstallTool(server: McpServer) {
       description:
         "Runs npm install and returns a structured summary of added/removed packages and vulnerabilities. " +
         "Use instead of running `npm install` in the terminal. " +
-        "WARNING: Installing npm packages may execute lifecycle scripts (preinstall/postinstall). " +
-        "Only install trusted packages. Set ignoreScripts to true to skip lifecycle scripts.",
+        "Lifecycle scripts (preinstall/postinstall) are skipped by default for safety. " +
+        "Set ignoreScripts to false if packages need postinstall scripts to work (e.g., esbuild, sharp).",
       inputSchema: {
         path: z
           .string()
@@ -31,9 +31,9 @@ export function registerInstallTool(server: McpServer) {
         ignoreScripts: z
           .boolean()
           .optional()
-          .default(false)
+          .default(true)
           .describe(
-            "Skip lifecycle scripts (preinstall/postinstall) via --ignore-scripts. Recommended for untrusted packages.",
+            "Skip lifecycle scripts (preinstall/postinstall). Defaults to true for safety. Set to false if packages need postinstall scripts to run (e.g., esbuild, sharp).",
           ),
       },
       outputSchema: NpmInstallSchema,
