@@ -59,6 +59,17 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
             return;
           }
 
+          // Timeout: execFile killed the child after the configured timeout.
+          // Surface this clearly instead of silently returning exitCode 1.
+          if (error.killed && error.signal) {
+            reject(
+              new Error(
+                `Command "${cmd}" timed out after ${opts?.timeout ?? 30_000}ms and was killed (${error.signal}).`,
+              ),
+            );
+            return;
+          }
+
           // Windows: cmd.exe masks ENOENT — detect via stderr message
           const cleanStderr = stripAnsi(stderr);
           if (cleanStderr.includes("is not recognized")) {
