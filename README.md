@@ -5,13 +5,15 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Dave-London/Pare/blob/main/LICENSE)
 [![Node.js >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 
-**Dev tools, optimized for agents. Up to 95% fewer tokens, 100% structured output.**
+**Dev tools for AI agents: 100% structured output, up to 90% fewer tokens.**
 
-Pare is a collection of [MCP](https://modelcontextprotocol.io) servers that wrap popular developer tools with structured, token-efficient, schema-validated output optimized for AI coding agents.
+Pare provides [MCP](https://modelcontextprotocol.io) servers that wrap common developer tools (git, npm, docker, test runners, etc.) and return clean, schema-validated JSON instead of raw terminal text — letting AI coding agents consume tool output more efficiently and reliably.
 
 ## The Problem
 
-AI coding agents waste tokens on output designed for humans — ANSI colors, progress bars, download indicators, help suggestions, decorative formatting. This is expensive and error-prone to parse.
+AI agents often deal with CLI output meant for humans: ANSI colors, progress bars, verbose warnings, help text, and formatting. Parsing this reliably costs tokens and can lead to errors or fragile workarounds.
+
+Here are some real examples of token usage:
 
 | Tool Command                              | Raw Tokens | Pare Tokens | Reduction |
 | ----------------------------------------- | ---------: | ----------: | --------: |
@@ -24,16 +26,16 @@ AI coding agents waste tokens on output designed for humans — ANSI colors, pro
 | `cargo test` (12 tests, 2 failures)       |        351 |         190 |   **46%** |
 | `npm audit` (4 vulnerabilities)           |        287 |         185 |   **36%** |
 
-> Token counts estimated at ~4 chars/token. Savings are highest on verbose, human-formatted output — build logs, install progress, test runners, and detailed history. For compact diagnostic tools like `eslint` or `tsc` (one line per issue), Pare's value is structured reliability over token savings: agents get typed JSON they can consume directly instead of regex-parsing human text.
+> Token estimates use ~4 chars/token. The biggest savings appear on verbose commands (builds, installs, tests). For simpler tools like `eslint` or `tsc`, the main advantage is reliable structured data — agents can use typed JSON directly rather than parsing strings.
 
 ## How It Works
 
-Every Pare tool returns dual output:
+Each Pare tool returns two outputs:
 
-- **`content`** — Human-readable text (for MCP clients that display it)
-- **`structuredContent`** — Typed, schema-validated JSON (for agents)
+- **`content`** — human-readable text, for MCP clients that display it
+- **`structuredContent`** — typed, schema-validated JSON, ready for agents to process
 
-Pare uses MCP's `structuredContent` + `outputSchema` spec features to deliver type-safe, validated structured output that agents can consume directly.
+This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
 ## Available Servers (62 tools)
 
