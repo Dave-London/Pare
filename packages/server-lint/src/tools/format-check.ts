@@ -1,9 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
 import { parsePrettierCheck } from "../lib/parsers.js";
-import { formatFormatCheck } from "../lib/formatters.js";
+import {
+  formatFormatCheck,
+  compactFormatCheckMap,
+  formatFormatCheckCompact,
+} from "../lib/formatters.js";
 import { FormatCheckResultSchema } from "../schemas/index.js";
 
 export function registerFormatCheckTool(server: McpServer) {
@@ -25,10 +29,17 @@ export function registerFormatCheckTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: FormatCheckResultSchema,
     },
-    async ({ path, patterns }) => {
+    async ({ path, patterns, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -37,7 +48,14 @@ export function registerFormatCheckTool(server: McpServer) {
 
       const result = await prettier(args, cwd);
       const data = parsePrettierCheck(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatFormatCheck);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatFormatCheck,
+        compactFormatCheckMap,
+        formatFormatCheckCompact,
+        compact === false,
+      );
     },
   );
 }

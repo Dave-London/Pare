@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { eslint } from "../lib/lint-runner.js";
 import { parseEslintJson } from "../lib/parsers.js";
-import { formatLint } from "../lib/formatters.js";
+import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
 export function registerLintTool(server: McpServer) {
@@ -26,10 +26,17 @@ export function registerLintTool(server: McpServer) {
           .default(["."])
           .describe("File patterns to lint (default: ['.'])"),
         fix: z.boolean().optional().default(false).describe("Auto-fix problems"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, fix }) => {
+    async ({ path, patterns, fix, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -39,7 +46,14 @@ export function registerLintTool(server: McpServer) {
 
       const result = await eslint(args, cwd);
       const data = parseEslintJson(result.stdout);
-      return dualOutput(data, formatLint);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatLint,
+        compactLintMap,
+        formatLintCompact,
+        compact === false,
+      );
     },
   );
 }
