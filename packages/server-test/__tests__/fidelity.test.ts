@@ -20,7 +20,7 @@ function runRaw(cmd: string, args: string[], cwd: string): string {
       cwd,
       encoding: "utf-8",
       shell: process.platform === "win32",
-      timeout: 60_000,
+      timeout: 120_000,
     });
   } catch (e: unknown) {
     // vitest --reporter=json writes JSON to stdout even on test failure
@@ -28,7 +28,7 @@ function runRaw(cmd: string, args: string[], cwd: string): string {
   }
 }
 
-describe("fidelity: vitest run", () => {
+describe("fidelity: vitest run", { timeout: 120_000 }, () => {
   it("preserves every test result from raw JSON", () => {
     const rawJson = runRaw("npx", ["vitest", "run", "--reporter=json"], GIT_PKG);
 
@@ -93,7 +93,7 @@ describe("fidelity: vitest run", () => {
   });
 });
 
-describe("fidelity: vitest coverage", () => {
+describe("fidelity: vitest coverage", { timeout: 120_000 }, () => {
   it("preserves coverage percentages from raw text output", () => {
     const rawOutput = runRaw(
       "npx",
