@@ -92,6 +92,34 @@ describe("security: format-check (Prettier) — patterns validation", () => {
   });
 });
 
+describe("security: stylelint — patterns validation", () => {
+  it("rejects flag-like patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe patterns", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "patterns")).not.toThrow();
+    }
+  });
+});
+
+describe("security: oxlint — patterns validation", () => {
+  it("rejects flag-like patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe patterns", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "patterns")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Lint tool schemas
 // ---------------------------------------------------------------------------

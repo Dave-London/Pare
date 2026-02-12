@@ -230,6 +230,141 @@ interface BiomeDiagnostic {
 }
 
 /**
+ * Parses Stylelint JSON output (from `stylelint --formatter json`).
+ *
+ * Stylelint JSON format is an array of objects:
+ * [{ source, warnings: [{ line, column, rule, severity, text }], deprecations, invalidOptionWarnings }]
+ */
+export function parseStylelintJson(stdout: string): LintResult {
+  let files: StylelintJsonEntry[];
+  try {
+    files = JSON.parse(stdout);
+  } catch {
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, fixable: 0, filesChecked: 0 };
+  }
+
+  const diagnostics: LintDiagnostic[] = [];
+
+  for (const file of files) {
+    for (const warn of file.warnings) {
+      diagnostics.push({
+        file: file.source ?? "unknown",
+        line: warn.line ?? 0,
+        column: warn.column ?? 0,
+        severity: warn.severity === "error" ? "error" : "warning",
+        rule: warn.rule ?? "unknown",
+        message: warn.text ?? "",
+        fixable: false,
+      });
+    }
+  }
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+
+  return {
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    fixable: 0,
+    filesChecked: files.length,
+  };
+}
+
+interface StylelintJsonEntry {
+  source: string | null;
+  warnings: {
+    line?: number;
+    column?: number;
+    rule?: string;
+    severity: string;
+    text?: string;
+  }[];
+  deprecations?: unknown[];
+  invalidOptionWarnings?: unknown[];
+}
+
+/**
+ * Parses Oxlint JSON output (from `oxlint --format json`).
+ *
+ * Oxlint outputs one JSON object per line (NDJSON / JSON Lines format):
+ * {"file":"src/index.ts","line":5,"column":10,"endLine":5,"endColumn":11,"message":"...","severity":"warning","ruleId":"no-unused-vars"}
+ */
+export function parseOxlintJson(stdout: string): LintResult {
+  const diagnostics: LintDiagnostic[] = [];
+  const filesSet = new Set<string>();
+
+  const lines = stdout.split("\n").filter(Boolean);
+
+  for (const line of lines) {
+    let entry: OxlintJsonEntry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+
+    // Skip non-diagnostic JSON (e.g. summary objects)
+    if (!entry.message) continue;
+
+    const file = entry.file ?? "unknown";
+    filesSet.add(file);
+
+    diagnostics.push({
+      file,
+      line: entry.line ?? 0,
+      column: entry.column ?? 0,
+      endLine: entry.endLine,
+      endColumn: entry.endColumn,
+      severity: mapOxlintSeverity(entry.severity),
+      rule: entry.ruleId ?? "unknown",
+      message: entry.message,
+      fixable: entry.fix !== undefined && entry.fix !== null,
+    });
+  }
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+  const fixable = diagnostics.filter((d) => d.fixable).length;
+
+  return {
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    fixable,
+    filesChecked: filesSet.size,
+  };
+}
+
+function mapOxlintSeverity(severity: string | undefined): "error" | "warning" | "info" {
+  switch (severity) {
+    case "error":
+      return "error";
+    case "warning":
+      return "warning";
+    case "off":
+    case "info":
+      return "info";
+    default:
+      return "warning";
+  }
+}
+
+interface OxlintJsonEntry {
+  file?: string;
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+  message?: string;
+  severity?: string;
+  ruleId?: string;
+  fix?: unknown;
+}
+
+/**
  * Parses Biome `format --write` output.
  *
  * Biome format --write outputs lines like:

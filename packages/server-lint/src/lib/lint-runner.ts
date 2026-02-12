@@ -11,3 +11,11 @@ export async function prettier(args: string[], cwd?: string): Promise<RunResult>
 export async function biome(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["@biomejs/biome", ...args], { cwd });
 }
+
+export async function stylelintCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["stylelint", ...args], { cwd, timeout: 120_000 });
+}
+
+export async function oxlintCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["oxlint", ...args], { cwd, timeout: 120_000 });
+}
