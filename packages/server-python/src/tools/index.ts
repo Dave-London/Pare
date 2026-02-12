@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "@paretools/shared";
 import { registerPipInstallTool } from "./pip-install.js";
 import { registerMypyTool } from "./mypy.js";
 import { registerRuffTool } from "./ruff.js";
@@ -9,12 +10,13 @@ import { registerUvRunTool } from "./uv-run.js";
 import { registerBlackTool } from "./black.js";
 
 export function registerAllTools(server: McpServer) {
-  registerPipInstallTool(server);
-  registerMypyTool(server);
-  registerRuffTool(server);
-  registerPipAuditTool(server);
-  registerPytestTool(server);
-  registerUvInstallTool(server);
-  registerUvRunTool(server);
-  registerBlackTool(server);
+  const s = (name: string) => shouldRegisterTool("python", name);
+  if (s("pip-install")) registerPipInstallTool(server);
+  if (s("mypy")) registerMypyTool(server);
+  if (s("ruff-check")) registerRuffTool(server);
+  if (s("pip-audit")) registerPipAuditTool(server);
+  if (s("pytest")) registerPytestTool(server);
+  if (s("uv-install")) registerUvInstallTool(server);
+  if (s("uv-run")) registerUvRunTool(server);
+  if (s("black")) registerBlackTool(server);
 }

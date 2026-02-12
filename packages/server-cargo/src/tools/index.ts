@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "@paretools/shared";
 import { registerBuildTool } from "./build.js";
 import { registerTestTool } from "./test.js";
 import { registerClippyTool } from "./clippy.js";
@@ -10,13 +11,14 @@ import { registerDocTool } from "./doc.js";
 import { registerCheckTool } from "./check.js";
 
 export function registerAllTools(server: McpServer) {
-  registerBuildTool(server);
-  registerTestTool(server);
-  registerClippyTool(server);
-  registerRunTool(server);
-  registerAddTool(server);
-  registerRemoveTool(server);
-  registerFmtTool(server);
-  registerDocTool(server);
-  registerCheckTool(server);
+  const s = (name: string) => shouldRegisterTool("cargo", name);
+  if (s("build")) registerBuildTool(server);
+  if (s("test")) registerTestTool(server);
+  if (s("clippy")) registerClippyTool(server);
+  if (s("run")) registerRunTool(server);
+  if (s("add")) registerAddTool(server);
+  if (s("remove")) registerRemoveTool(server);
+  if (s("fmt")) registerFmtTool(server);
+  if (s("doc")) registerDocTool(server);
+  if (s("check")) registerCheckTool(server);
 }

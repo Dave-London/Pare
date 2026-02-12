@@ -1,0 +1,43 @@
+/**
+ * Granular tool selection — allows users to enable/disable individual tools
+ * via environment variables.
+ *
+ * Environment variable precedence:
+ *   1. `PARE_TOOLS` — universal filter across all servers.
+ *      Format: comma-separated `server:tool` pairs.
+ *      Example: `PARE_TOOLS=git:status,git:log,npm:install`
+ *
+ *   2. `PARE_{SERVER}_TOOLS` — per-server filter.
+ *      Format: comma-separated tool names.
+ *      Example: `PARE_GIT_TOOLS=status,log`
+ *
+ *   3. No env vars → all tools enabled (default).
+ *
+ * Universal (`PARE_TOOLS`) takes precedence over per-server env vars.
+ */
+
+/**
+ * Determines whether a tool should be registered based on environment variables.
+ *
+ * @param serverName - The server identifier (e.g., "git", "npm", "docker").
+ * @param toolName - The tool name (e.g., "status", "log", "install").
+ * @returns `true` if the tool should be registered, `false` if filtered out.
+ */
+export function shouldRegisterTool(serverName: string, toolName: string): boolean {
+  const universal = process.env.PARE_TOOLS;
+  if (universal !== undefined) {
+    if (universal.trim() === "") return false;
+    const allowed = universal.split(",").map((s) => s.trim());
+    return allowed.includes(`${serverName}:${toolName}`);
+  }
+
+  const envKey = `PARE_${serverName.toUpperCase().replace(/-/g, "_")}_TOOLS`;
+  const perServer = process.env[envKey];
+  if (perServer !== undefined) {
+    if (perServer.trim() === "") return false;
+    const allowed = perServer.split(",").map((s) => s.trim());
+    return allowed.includes(toolName);
+  }
+
+  return true;
+}

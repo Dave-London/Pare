@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "@paretools/shared";
 import { registerStatusTool } from "./status.js";
 import { registerLogTool } from "./log.js";
 import { registerDiffTool } from "./diff.js";
@@ -11,14 +12,15 @@ import { registerPullTool } from "./pull.js";
 import { registerCheckoutTool } from "./checkout.js";
 
 export function registerAllTools(server: McpServer) {
-  registerStatusTool(server);
-  registerLogTool(server);
-  registerDiffTool(server);
-  registerBranchTool(server);
-  registerShowTool(server);
-  registerAddTool(server);
-  registerCommitTool(server);
-  registerPushTool(server);
-  registerPullTool(server);
-  registerCheckoutTool(server);
+  const s = (name: string) => shouldRegisterTool("git", name);
+  if (s("status")) registerStatusTool(server);
+  if (s("log")) registerLogTool(server);
+  if (s("diff")) registerDiffTool(server);
+  if (s("branch")) registerBranchTool(server);
+  if (s("show")) registerShowTool(server);
+  if (s("add")) registerAddTool(server);
+  if (s("commit")) registerCommitTool(server);
+  if (s("push")) registerPushTool(server);
+  if (s("pull")) registerPullTool(server);
+  if (s("checkout")) registerCheckoutTool(server);
 }

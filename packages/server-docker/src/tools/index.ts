@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "@paretools/shared";
 import { registerPsTool } from "./ps.js";
 import { registerBuildTool } from "./build.js";
 import { registerLogsTool } from "./logs.js";
@@ -10,13 +11,14 @@ import { registerComposeDownTool } from "./compose-down.js";
 import { registerPullTool } from "./pull.js";
 
 export function registerAllTools(server: McpServer) {
-  registerPsTool(server);
-  registerBuildTool(server);
-  registerLogsTool(server);
-  registerImagesTool(server);
-  registerRunTool(server);
-  registerExecTool(server);
-  registerComposeUpTool(server);
-  registerComposeDownTool(server);
-  registerPullTool(server);
+  const s = (name: string) => shouldRegisterTool("docker", name);
+  if (s("ps")) registerPsTool(server);
+  if (s("build")) registerBuildTool(server);
+  if (s("logs")) registerLogsTool(server);
+  if (s("images")) registerImagesTool(server);
+  if (s("run")) registerRunTool(server);
+  if (s("exec")) registerExecTool(server);
+  if (s("compose-up")) registerComposeUpTool(server);
+  if (s("compose-down")) registerComposeDownTool(server);
+  if (s("pull")) registerPullTool(server);
 }
