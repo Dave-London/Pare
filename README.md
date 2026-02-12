@@ -37,19 +37,23 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (62 tools)
+## Available Servers (100 tools, 14 packages)
 
-| Package                                         | Tools                                                                       | Wraps                              |
-| ----------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------- |
-| [`@paretools/git`](./packages/server-git)       | status, log, diff, branch, show, add, commit, push, pull, checkout          | git                                |
-| [`@paretools/test`](./packages/server-test)     | run, coverage                                                               | pytest, jest, vitest, mocha        |
-| [`@paretools/npm`](./packages/server-npm)       | install, audit, outdated, list, run, test, init                             | npm                                |
-| [`@paretools/docker`](./packages/server-docker) | ps, build, logs, images, run, exec, compose-up, compose-down, pull          | docker, docker compose             |
-| [`@paretools/build`](./packages/server-build)   | tsc, build, esbuild, vite-build, webpack                                    | tsc, esbuild, vite, webpack        |
-| [`@paretools/lint`](./packages/server-lint)     | lint, format-check, prettier-format, biome-check, biome-format              | eslint, prettier, biome            |
-| [`@paretools/python`](./packages/server-python) | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black | pip, mypy, ruff, pytest, uv, black |
-| [`@paretools/cargo`](./packages/server-cargo)   | build, test, clippy, run, add, remove, fmt, doc, check                      | cargo                              |
-| [`@paretools/go`](./packages/server-go)         | build, test, vet, run, mod-tidy, fmt, generate                              | go, gofmt                          |
+| Package                                         | Tools                                                                                                          | Wraps                                      |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| [`@paretools/git`](./packages/server-git)       | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame      | git                                        |
+| [`@paretools/github`](./packages/server-github) | pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list                          | gh                                         |
+| [`@paretools/search`](./packages/server-search) | search, find, count                                                                                            | ripgrep, fd                                |
+| [`@paretools/test`](./packages/server-test)     | run, coverage                                                                                                  | pytest, jest, vitest, mocha                |
+| [`@paretools/npm`](./packages/server-npm)       | install, audit, outdated, list, run, test, init, info, search                                                  | npm                                        |
+| [`@paretools/docker`](./packages/server-docker) | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps | docker, docker compose                     |
+| [`@paretools/build`](./packages/server-build)   | tsc, build, esbuild, vite-build, webpack                                                                       | tsc, esbuild, vite, webpack                |
+| [`@paretools/lint`](./packages/server-lint)     | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint                              | eslint, prettier, biome, stylelint, oxlint |
+| [`@paretools/http`](./packages/server-http)     | request, get, post, head                                                                                       | curl                                       |
+| [`@paretools/make`](./packages/server-make)     | run, list                                                                                                      | make, just                                 |
+| [`@paretools/python`](./packages/server-python) | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format   | pip, mypy, ruff, pytest, uv, black         |
+| [`@paretools/cargo`](./packages/server-cargo)   | build, test, clippy, run, add, remove, fmt, doc, check, update, tree                                           | cargo                                      |
+| [`@paretools/go`](./packages/server-go)         | build, test, vet, run, mod-tidy, fmt, generate, env, list, get                                                 | go, gofmt                                  |
 
 ## Quick Start
 
@@ -228,15 +232,19 @@ When Pare MCP tools are available (prefixed with mcp\_\_pare-\*), prefer them ov
 running raw CLI commands via Bash. Pare tools return structured JSON with ~85%
 fewer tokens than CLI output.
 
-- Git: mcp**pare-git**status, log, diff, branch, show, add, commit, push, pull, checkout
+- Git: mcp**pare-git**status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame
+- GitHub: mcp**pare-github**pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list
+- Search: mcp**pare-search**search, find, count
 - Tests: mcp**pare-test**run, mcp**pare-test**coverage (pytest, jest, vitest, mocha)
 - Builds: mcp**pare-build**tsc, build, esbuild, vite-build, webpack
-- Linting: mcp**pare-lint**lint, format-check, prettier-format, biome-check, biome-format
-- npm: mcp**pare-npm**install, audit, outdated, list, run, test, init
-- Docker: mcp**pare-docker**ps, build, logs, images, run, exec, compose-up, compose-down, pull
-- Python: mcp**pare-python**pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black
-- Cargo: mcp**pare-cargo**build, test, clippy, run, add, remove, fmt, doc, check
-- Go: mcp**pare-go**build, test, vet, run, mod-tidy, fmt, generate
+- Linting: mcp**pare-lint**lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint
+- npm: mcp**pare-npm**install, audit, outdated, list, run, test, init, info, search
+- Docker: mcp**pare-docker**ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps
+- HTTP: mcp**pare-http**request, get, post, head
+- Make: mcp**pare-make**run, list
+- Python: mcp**pare-python**pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format
+- Cargo: mcp**pare-cargo**build, test, clippy, run, add, remove, fmt, doc, check, update, tree
+- Go: mcp**pare-go**build, test, vet, run, mod-tidy, fmt, generate, env, list, get
 ```
 
 </details>
@@ -247,7 +255,7 @@ fewer tokens than CLI output.
 ```markdown
 ## MCP Servers
 
-This project uses Pare MCP servers (62 tools) for structured, token-efficient dev tool output.
+This project uses Pare MCP servers (100 tools) for structured, token-efficient dev tool output.
 Prefer Pare MCP tools over raw CLI commands for git, testing, building, linting, npm, docker, python, cargo, and go.
 Pare tools return typed JSON, saving tokens and preventing parsing errors.
 ```
@@ -266,7 +274,7 @@ alwaysApply: true
 
 When Pare MCP tools are available, prefer them over running CLI commands in the
 terminal. Pare tools (pare-git, pare-test, pare-build, pare-lint, pare-npm,
-pare-docker, pare-python, pare-cargo, pare-go — 62 tools total) return
+pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 100 tools total) return
 structured JSON with up to 95% fewer tokens than raw CLI output.
 ```
 
@@ -279,7 +287,7 @@ structured JSON with up to 95% fewer tokens than raw CLI output.
 ## Tool Preferences
 
 This project uses Pare MCP servers (@paretools/\*) for structured dev tool output.
-When available, prefer Pare tools (pare-git, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-python, pare-cargo, pare-go) over raw CLI commands.
+When available, prefer Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go) over raw CLI commands.
 ```
 
 </details>
@@ -291,15 +299,19 @@ When available, prefer Pare tools (pare-git, pare-test, pare-build, pare-lint, p
 When Pare MCP tools are available, prefer them over raw CLI commands.
 Pare tools return structured JSON with fewer tokens than CLI output.
 
-- pare-git: status, log, diff, branch, show, add, commit, push, pull, checkout
+- pare-git: status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame
+- pare-github: pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list
+- pare-search: search, find, count (ripgrep + fd)
 - pare-test: run, coverage (pytest, jest, vitest, mocha)
 - pare-build: tsc, build, esbuild, vite-build, webpack
-- pare-lint: lint, format-check, prettier-format, biome-check, biome-format
-- pare-npm: install, audit, outdated, list, run, test, init
-- pare-docker: ps, build, logs, images, run, exec, compose-up, compose-down, pull
-- pare-python: pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black
-- pare-cargo: build, test, clippy, run, add, remove, fmt, doc, check
-- pare-go: build, test, vet, run, mod-tidy, fmt, generate
+- pare-lint: lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint
+- pare-npm: install, audit, outdated, list, run, test, init, info, search
+- pare-docker: ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps
+- pare-http: request, get, post, head
+- pare-make: run, list (make + just)
+- pare-python: pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format
+- pare-cargo: build, test, clippy, run, add, remove, fmt, doc, check, update, tree
+- pare-go: build, test, vet, run, mod-tidy, fmt, generate, env, list, get
 ```
 
 </details>
@@ -330,12 +342,13 @@ PARE_TOOLS=git:status,git:log,npm:install npx @paretools/git
 PARE_GIT_TOOLS= npx @paretools/git   # no tools registered
 ```
 
-| Env Var | Scope | Format | Example |
-|---|---|---|---|
-| `PARE_TOOLS` | All servers | `server:tool,...` | `git:status,npm:install` |
-| `PARE_{SERVER}_TOOLS` | One server | `tool,...` | `status,log,diff` |
+| Env Var               | Scope       | Format            | Example                  |
+| --------------------- | ----------- | ----------------- | ------------------------ |
+| `PARE_TOOLS`          | All servers | `server:tool,...` | `git:status,npm:install` |
+| `PARE_{SERVER}_TOOLS` | One server  | `tool,...`        | `status,log,diff`        |
 
 **Rules:**
+
 - No env var = all tools enabled (default)
 - `PARE_TOOLS` (universal) takes precedence over per-server vars
 - Server names use uppercase with hyphens replaced by underscores (e.g., `PARE_MY_SERVER_TOOLS`)
@@ -372,13 +385,13 @@ In JSON MCP config, set via the `env` key:
 
 ## Troubleshooting
 
-| Issue                               | Solution                                                                                  |
-| ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see Windows config above)                                       |
-| Slow first start                    | Run `npx -y @paretools/git` once to cache, or install globally: `npm i -g @paretools/git` |
-| Node.js version error               | Pare requires Node.js >= 20                                                               |
-| NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                      |
-| MCP connection timeout              | Set `MCP_TIMEOUT=30000` for Claude Code, or increase `initTimeout` in client config       |
+| Issue                               | Solution                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see Windows config above)                                                 |
+| Slow first start                    | Run `npx -y @paretools/git` once to cache, or install globally: `npm i -g @paretools/git`           |
+| Node.js version error               | Pare requires Node.js >= 20                                                                         |
+| NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                                |
+| MCP connection timeout              | Set `MCP_TIMEOUT=30000` for Claude Code, or increase `initTimeout` in client config                 |
 | Too many tools filling context      | Use [tool selection](#tool-selection) env vars to limit tools, or only install the servers you need |
 
 ## Contributing
