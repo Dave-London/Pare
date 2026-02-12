@@ -1,5 +1,30 @@
 # @paretools/docker
 
+## 0.6.0
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
