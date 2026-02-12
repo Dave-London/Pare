@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRunOutput } from "../lib/parsers.js";
-import { formatCargoRun } from "../lib/formatters.js";
+import { formatCargoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { CargoRunResultSchema } from "../schemas/index.js";
 
 export function registerRunTool(server: McpServer) {
@@ -30,10 +30,17 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Package to run in a workspace"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoRunResultSchema,
     },
-    async ({ path, args, release, package: pkg }) => {
+    async ({ path, args, release, package: pkg, compact }) => {
       const cwd = path || process.cwd();
       if (pkg) assertNoFlagInjection(pkg, "package");
       // Defense-in-depth: validate args even though they come after "--" separator
@@ -51,7 +58,14 @@ export function registerRunTool(server: McpServer) {
 
       const result = await cargo(cargoArgs, cwd);
       const data = parseCargoRunOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatCargoRun);
+      return compactDualOutput(
+        data,
+        result.stdout + result.stderr,
+        formatCargoRun,
+        compactRunMap,
+        formatRunCompact,
+        compact === false,
+      );
     },
   );
 }

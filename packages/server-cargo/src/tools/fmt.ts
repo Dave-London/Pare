@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoFmtOutput } from "../lib/parsers.js";
-import { formatCargoFmt } from "../lib/formatters.js";
+import { formatCargoFmt, compactFmtMap, formatFmtCompact } from "../lib/formatters.js";
 import { CargoFmtResultSchema } from "../schemas/index.js";
 
 export function registerFmtTool(server: McpServer) {
@@ -24,17 +24,31 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check only without modifying files (--check)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoFmtResultSchema,
     },
-    async ({ path, check }) => {
+    async ({ path, check, compact }) => {
       const cwd = path || process.cwd();
       const args = ["fmt"];
       if (check) args.push("--check");
 
       const result = await cargo(args, cwd);
       const data = parseCargoFmtOutput(result.stdout, result.stderr, result.exitCode, !!check);
-      return dualOutput(data, formatCargoFmt);
+      return compactDualOutput(
+        data,
+        result.stdout + result.stderr,
+        formatCargoFmt,
+        compactFmtMap,
+        formatFmtCompact,
+        compact === false,
+      );
     },
   );
 }

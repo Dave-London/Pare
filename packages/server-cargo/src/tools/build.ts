@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
-import { formatCargoBuild } from "../lib/formatters.js";
+import { formatCargoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { CargoBuildResultSchema } from "../schemas/index.js";
 
 export function registerBuildTool(server: McpServer) {
@@ -20,17 +20,31 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .describe("Project root path (default: cwd)"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CargoBuildResultSchema,
     },
-    async ({ path, release }) => {
+    async ({ path, release, compact }) => {
       const cwd = path || process.cwd();
       const args = ["build", "--message-format=json"];
       if (release) args.push("--release");
 
       const result = await cargo(args, cwd);
       const data = parseCargoBuildJson(result.stdout, result.exitCode);
-      return dualOutput(data, formatCargoBuild);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatCargoBuild,
+        compactBuildMap,
+        formatBuildCompact,
+        compact === false,
+      );
     },
   );
 }
