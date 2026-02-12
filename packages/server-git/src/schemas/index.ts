@@ -160,3 +160,101 @@ export const GitCheckoutSchema = z.object({
 });
 
 export type GitCheckout = z.infer<typeof GitCheckoutSchema>;
+
+/** Zod schema for a single tag entry with name, optional date, and optional message. */
+export const GitTagEntrySchema = z.object({
+  name: z.string(),
+  date: z.string().optional(),
+  message: z.string().optional(),
+});
+
+/** Zod schema for structured git tag output with tag list and total count. */
+export const GitTagSchema = z.object({
+  tags: z.union([z.array(GitTagEntrySchema), z.array(z.string())]),
+  total: z.number(),
+});
+
+/** Full tag data (always returned by parser, before compact projection). */
+export type GitTagFull = {
+  tags: Array<{ name: string; date?: string; message?: string }>;
+  total: number;
+};
+
+export type GitTag = z.infer<typeof GitTagSchema>;
+
+/** Zod schema for a single stash entry with index, message, and date. */
+export const GitStashEntrySchema = z.object({
+  index: z.number(),
+  message: z.string(),
+  date: z.string(),
+});
+
+/** Zod schema for structured git stash list output with stash entries and total count. */
+export const GitStashListSchema = z.object({
+  stashes: z.union([z.array(GitStashEntrySchema), z.array(z.string())]),
+  total: z.number(),
+});
+
+/** Full stash list data (always returned by parser, before compact projection). */
+export type GitStashListFull = {
+  stashes: Array<{ index: number; message: string; date: string }>;
+  total: number;
+};
+
+export type GitStashList = z.infer<typeof GitStashListSchema>;
+
+/** Zod schema for structured git stash push/pop/apply/drop output. */
+export const GitStashSchema = z.object({
+  action: z.enum(["push", "pop", "apply", "drop"]),
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export type GitStash = z.infer<typeof GitStashSchema>;
+
+/** Zod schema for a single remote entry with name, fetch URL, and push URL. */
+export const GitRemoteEntrySchema = z.object({
+  name: z.string(),
+  fetchUrl: z.string(),
+  pushUrl: z.string(),
+});
+
+/** Zod schema for structured git remote output with remote list and total count. */
+export const GitRemoteSchema = z.object({
+  remotes: z.union([z.array(GitRemoteEntrySchema), z.array(z.string())]),
+  total: z.number(),
+});
+
+/** Full remote data (always returned by parser, before compact projection). */
+export type GitRemoteFull = {
+  remotes: Array<{ name: string; fetchUrl: string; pushUrl: string }>;
+  total: number;
+};
+
+export type GitRemote = z.infer<typeof GitRemoteSchema>;
+
+/** Zod schema for a single blame line entry with commit hash, author, date, line number, and content. */
+export const GitBlameLineSchema = z.object({
+  hash: z.string(),
+  author: z.string(),
+  date: z.string(),
+  lineNumber: z.number(),
+  content: z.string(),
+});
+
+/** Zod schema for structured git blame output with per-line annotations and file name. */
+export const GitBlameSchema = z.object({
+  lines: z.union([
+    z.array(GitBlameLineSchema),
+    z.array(z.object({ hash: z.string(), lineNumber: z.number(), content: z.string() })),
+  ]),
+  file: z.string(),
+});
+
+/** Full blame data (always returned by parser, before compact projection). */
+export type GitBlameFull = {
+  lines: Array<{ hash: string; author: string; date: string; lineNumber: number; content: string }>;
+  file: string;
+};
+
+export type GitBlame = z.infer<typeof GitBlameSchema>;

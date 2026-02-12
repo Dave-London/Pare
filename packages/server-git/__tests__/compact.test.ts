@@ -8,9 +8,23 @@ import {
   formatBranchCompact,
   compactShowMap,
   formatShowCompact,
+  compactTagMap,
+  formatTagCompact,
+  compactStashListMap,
+  formatStashListCompact,
+  compactRemoteMap,
+  formatRemoteCompact,
+  compactBlameMap,
+  formatBlameCompact,
 } from "../src/lib/formatters.js";
 import type { GitLog, GitDiff, GitShow } from "../src/schemas/index.js";
-import type { GitBranchFull } from "../src/schemas/index.js";
+import type {
+  GitBranchFull,
+  GitTagFull,
+  GitStashListFull,
+  GitRemoteFull,
+  GitBlameFull,
+} from "../src/schemas/index.js";
 
 describe("compactLogMap", () => {
   it("keeps only hashShort, message, and refs", () => {
@@ -200,5 +214,169 @@ describe("formatShowCompact", () => {
   it("formats compact show as single line", () => {
     const compact = { hashShort: "abc1234", message: "Fix parser bug" };
     expect(formatShowCompact(compact)).toBe("abc1234 Fix parser bug");
+  });
+});
+
+describe("compactTagMap", () => {
+  it("reduces tags to string array", () => {
+    const tags: GitTagFull = {
+      tags: [
+        { name: "v1.2.0", date: "2024-01-15T10:30:00+00:00", message: "Release 1.2.0" },
+        { name: "v1.1.0", date: "2024-01-01T09:00:00+00:00", message: "Release 1.1.0" },
+      ],
+      total: 2,
+    };
+
+    const compact = compactTagMap(tags);
+
+    expect(compact.total).toBe(2);
+    expect(compact.tags).toEqual(["v1.2.0", "v1.1.0"]);
+    // Verify dropped fields
+    expect(compact.tags[0]).not.toHaveProperty("date");
+    expect(compact.tags[0]).not.toHaveProperty("message");
+  });
+});
+
+describe("formatTagCompact", () => {
+  it("formats compact tag list", () => {
+    const compact = { tags: ["v1.2.0", "v1.1.0", "v1.0.0"], total: 3 };
+    const output = formatTagCompact(compact);
+
+    expect(output).toBe("v1.2.0\nv1.1.0\nv1.0.0");
+  });
+
+  it("formats empty tag list", () => {
+    const compact = { tags: [], total: 0 };
+    expect(formatTagCompact(compact)).toBe("No tags found");
+  });
+});
+
+describe("compactStashListMap", () => {
+  it("reduces stashes to string array", () => {
+    const stashes: GitStashListFull = {
+      stashes: [
+        { index: 0, message: "WIP on main: abc1234 Fix bug", date: "2024-01-15 10:30:00 +0000" },
+        { index: 1, message: "On main: save progress", date: "2024-01-14 09:00:00 +0000" },
+      ],
+      total: 2,
+    };
+
+    const compact = compactStashListMap(stashes);
+
+    expect(compact.total).toBe(2);
+    expect(compact.stashes).toEqual([
+      "stash@{0}: WIP on main: abc1234 Fix bug",
+      "stash@{1}: On main: save progress",
+    ]);
+  });
+});
+
+describe("formatStashListCompact", () => {
+  it("formats compact stash list", () => {
+    const compact = {
+      stashes: ["stash@{0}: WIP on main", "stash@{1}: save progress"],
+      total: 2,
+    };
+    const output = formatStashListCompact(compact);
+
+    expect(output).toBe("stash@{0}: WIP on main\nstash@{1}: save progress");
+  });
+
+  it("formats empty stash list", () => {
+    const compact = { stashes: [], total: 0 };
+    expect(formatStashListCompact(compact)).toBe("No stashes found");
+  });
+});
+
+describe("compactRemoteMap", () => {
+  it("reduces remotes to string array", () => {
+    const remotes: GitRemoteFull = {
+      remotes: [
+        {
+          name: "origin",
+          fetchUrl: "https://github.com/user/repo.git",
+          pushUrl: "https://github.com/user/repo.git",
+        },
+        {
+          name: "upstream",
+          fetchUrl: "https://github.com/upstream/repo.git",
+          pushUrl: "https://github.com/upstream/repo.git",
+        },
+      ],
+      total: 2,
+    };
+
+    const compact = compactRemoteMap(remotes);
+
+    expect(compact.total).toBe(2);
+    expect(compact.remotes).toEqual(["origin", "upstream"]);
+  });
+});
+
+describe("formatRemoteCompact", () => {
+  it("formats compact remote list", () => {
+    const compact = { remotes: ["origin", "upstream"], total: 2 };
+    const output = formatRemoteCompact(compact);
+
+    expect(output).toBe("origin\nupstream");
+  });
+
+  it("formats empty remote list", () => {
+    const compact = { remotes: [], total: 0 };
+    expect(formatRemoteCompact(compact)).toBe("No remotes configured");
+  });
+});
+
+describe("compactBlameMap", () => {
+  it("keeps only hash, lineNumber, and content", () => {
+    const blame: GitBlameFull = {
+      lines: [
+        {
+          hash: "abc12345",
+          author: "John Doe",
+          date: "2024-01-15T10:30:00.000Z",
+          lineNumber: 1,
+          content: "const x = 1;",
+        },
+        {
+          hash: "def67890",
+          author: "Jane Smith",
+          date: "2024-01-16T11:00:00.000Z",
+          lineNumber: 2,
+          content: "const y = 2;",
+        },
+      ],
+      file: "src/index.ts",
+    };
+
+    const compact = compactBlameMap(blame);
+
+    expect(compact.file).toBe("src/index.ts");
+    expect(compact.lines).toHaveLength(2);
+    expect(compact.lines[0]).toEqual({ hash: "abc12345", lineNumber: 1, content: "const x = 1;" });
+    expect(compact.lines[1]).toEqual({ hash: "def67890", lineNumber: 2, content: "const y = 2;" });
+    // Verify dropped fields
+    expect(compact.lines[0]).not.toHaveProperty("author");
+    expect(compact.lines[0]).not.toHaveProperty("date");
+  });
+});
+
+describe("formatBlameCompact", () => {
+  it("formats compact blame", () => {
+    const compact = {
+      lines: [
+        { hash: "abc12345", lineNumber: 1, content: "const x = 1;" },
+        { hash: "def67890", lineNumber: 2, content: "const y = 2;" },
+      ],
+      file: "src/index.ts",
+    };
+    const output = formatBlameCompact(compact);
+
+    expect(output).toBe("abc12345 1: const x = 1;\ndef67890 2: const y = 2;");
+  });
+
+  it("formats empty blame", () => {
+    const compact = { lines: [], file: "empty.ts" };
+    expect(formatBlameCompact(compact)).toBe("No blame data for empty.ts");
   });
 });

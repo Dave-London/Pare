@@ -9,6 +9,11 @@ import type {
   GitPush,
   GitPull,
   GitCheckout,
+  GitTagFull,
+  GitStashListFull,
+  GitStash,
+  GitRemoteFull,
+  GitBlameFull,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -177,4 +182,137 @@ export function compactShowMap(s: GitShow): GitShowCompact {
 
 export function formatShowCompact(s: GitShowCompact): string {
   return `${s.hashShort} ${s.message}`;
+}
+
+// ── Tag formatters ───────────────────────────────────────────────────
+
+/** Formats structured git tag data into a human-readable tag listing. */
+export function formatTag(t: GitTagFull): string {
+  if (t.tags.length === 0) return "No tags found";
+  return t.tags
+    .map((tag) => {
+      const parts = [tag.name];
+      if (tag.date) parts.push(tag.date);
+      if (tag.message) parts.push(tag.message);
+      return parts.join("  ");
+    })
+    .join("\n");
+}
+
+/** Compact tag: just tag names as string array + total. */
+export interface GitTagCompact {
+  [key: string]: unknown;
+  tags: string[];
+  total: number;
+}
+
+export function compactTagMap(t: GitTagFull): GitTagCompact {
+  return {
+    tags: t.tags.map((tag) => tag.name),
+    total: t.total,
+  };
+}
+
+export function formatTagCompact(t: GitTagCompact): string {
+  if (t.tags.length === 0) return "No tags found";
+  return t.tags.join("\n");
+}
+
+// ── Stash list formatters ────────────────────────────────────────────
+
+/** Formats structured git stash list data into a human-readable stash listing. */
+export function formatStashList(s: GitStashListFull): string {
+  if (s.stashes.length === 0) return "No stashes found";
+  return s.stashes.map((st) => `stash@{${st.index}}: ${st.message} (${st.date})`).join("\n");
+}
+
+/** Compact stash list: just index + message as string array + total. */
+export interface GitStashListCompact {
+  [key: string]: unknown;
+  stashes: string[];
+  total: number;
+}
+
+export function compactStashListMap(s: GitStashListFull): GitStashListCompact {
+  return {
+    stashes: s.stashes.map((st) => `stash@{${st.index}}: ${st.message}`),
+    total: s.total,
+  };
+}
+
+export function formatStashListCompact(s: GitStashListCompact): string {
+  if (s.stashes.length === 0) return "No stashes found";
+  return s.stashes.join("\n");
+}
+
+// ── Stash formatters ─────────────────────────────────────────────────
+
+/** Formats structured git stash result into a human-readable summary. */
+export function formatStash(s: GitStash): string {
+  return s.message;
+}
+
+// ── Remote formatters ────────────────────────────────────────────────
+
+/** Formats structured git remote data into a human-readable remote listing. */
+export function formatRemote(r: GitRemoteFull): string {
+  if (r.remotes.length === 0) return "No remotes configured";
+  return r.remotes
+    .map(
+      (remote) =>
+        `${remote.name}\t${remote.fetchUrl} (fetch)\n${remote.name}\t${remote.pushUrl} (push)`,
+    )
+    .join("\n");
+}
+
+/** Compact remote: just name as string array + total. */
+export interface GitRemoteCompact {
+  [key: string]: unknown;
+  remotes: string[];
+  total: number;
+}
+
+export function compactRemoteMap(r: GitRemoteFull): GitRemoteCompact {
+  return {
+    remotes: r.remotes.map((remote) => remote.name),
+    total: r.total,
+  };
+}
+
+export function formatRemoteCompact(r: GitRemoteCompact): string {
+  if (r.remotes.length === 0) return "No remotes configured";
+  return r.remotes.join("\n");
+}
+
+// ── Blame formatters ─────────────────────────────────────────────────
+
+/** Formats structured git blame data into a human-readable annotated file view. */
+export function formatBlame(b: GitBlameFull): string {
+  if (b.lines.length === 0) return `No blame data for ${b.file}`;
+  return b.lines
+    .map((l) => `${l.hash} (${l.author} ${l.date}) ${l.lineNumber}: ${l.content}`)
+    .join("\n");
+}
+
+/** Compact blame: hash + lineNumber + content only, no author/date. */
+export interface GitBlameCompact {
+  [key: string]: unknown;
+  lines: Array<{ hash: string; lineNumber: number; content: string }>;
+  file: string;
+}
+
+export function compactBlameMap(b: GitBlameFull): GitBlameCompact {
+  return {
+    lines: b.lines.map((l) => ({
+      hash: l.hash,
+      lineNumber: l.lineNumber,
+      content: l.content,
+    })),
+    file: b.file,
+  };
+}
+
+export function formatBlameCompact(b: GitBlameCompact): string {
+  if (b.lines.length === 0) return `No blame data for ${b.file}`;
+  return b.lines.map((l) => `${l.hash} ${l.lineNumber}: ${l.content}`).join("\n");
 }

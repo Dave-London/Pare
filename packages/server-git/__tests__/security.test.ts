@@ -138,6 +138,24 @@ describe("security: diff tool — ref validation", () => {
   });
 });
 
+describe("security: blame tool — file path validation", () => {
+  it("rejects flag-like file paths", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "file")).toThrow(/must not start with "-"/);
+    }
+  });
+});
+
+describe("security: stash tool — message validation", () => {
+  it("rejects flag-like stash messages", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "stash message")).toThrow(
+        /must not start with "-"/,
+      );
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Git tool schemas
 // ---------------------------------------------------------------------------
