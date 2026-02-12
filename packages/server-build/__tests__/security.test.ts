@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { assertAllowedCommand, assertNoFlagInjection } from "@paretools/shared";
+import { z } from "zod";
+import { assertAllowedCommand, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 
 // ---------------------------------------------------------------------------
 // assertAllowedCommand — used by the build tool
@@ -84,5 +85,199 @@ describe("assertNoFlagInjection", () => {
   it("allows paths that contain dashes but don't start with one", () => {
     expect(() => assertNoFlagInjection("src/my-component.ts", "entryPoints")).not.toThrow();
     expect(() => assertNoFlagInjection("pages/about-us.tsx", "entryPoints")).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tsc tool — project parameter flag injection
+// ---------------------------------------------------------------------------
+
+describe("security: tsc tool — project parameter validation", () => {
+  it("accepts normal tsconfig paths", () => {
+    expect(() => assertNoFlagInjection("tsconfig.json", "project")).not.toThrow();
+    expect(() => assertNoFlagInjection("./tsconfig.build.json", "project")).not.toThrow();
+    expect(() => assertNoFlagInjection("packages/core/tsconfig.json", "project")).not.toThrow();
+  });
+
+  it("rejects flag-like project values", () => {
+    expect(() => assertNoFlagInjection("--outDir=/tmp/evil", "project")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("-p", "project")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--noEmit", "project")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--declaration", "project")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects whitespace-prefixed flag injection", () => {
+    expect(() => assertNoFlagInjection(" --outDir=/etc/passwd", "project")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("\t-p", "project")).toThrow(/must not start with "-"/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// vite-build tool — mode and args[] flag injection
+// ---------------------------------------------------------------------------
+
+describe("security: vite-build tool — mode parameter validation", () => {
+  it("accepts normal mode values", () => {
+    expect(() => assertNoFlagInjection("production", "mode")).not.toThrow();
+    expect(() => assertNoFlagInjection("development", "mode")).not.toThrow();
+    expect(() => assertNoFlagInjection("staging", "mode")).not.toThrow();
+  });
+
+  it("rejects flag-like mode values", () => {
+    expect(() => assertNoFlagInjection("--mode=evil", "mode")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("-m", "mode")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--outDir=/etc/passwd", "mode")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+});
+
+describe("security: vite-build tool — args[] parameter validation", () => {
+  it("rejects flag-like args values", () => {
+    expect(() => assertNoFlagInjection("--outDir=/tmp/evil", "args")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("-w", "args")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--base=/evil", "args")).toThrow(/must not start with "-"/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// webpack tool — config and args[] flag injection
+// ---------------------------------------------------------------------------
+
+describe("security: webpack tool — config parameter validation", () => {
+  it("accepts normal config paths", () => {
+    expect(() => assertNoFlagInjection("webpack.config.js", "config")).not.toThrow();
+    expect(() => assertNoFlagInjection("./config/webpack.prod.js", "config")).not.toThrow();
+  });
+
+  it("rejects flag-like config values", () => {
+    expect(() => assertNoFlagInjection("--output-path=/etc/passwd", "config")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("-c", "config")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--mode=production", "config")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("rejects whitespace-prefixed flag injection", () => {
+    expect(() => assertNoFlagInjection(" --output-path=/tmp", "config")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+});
+
+describe("security: webpack tool — args[] parameter validation", () => {
+  it("rejects flag-like args values", () => {
+    expect(() => assertNoFlagInjection("--output-path=/tmp/evil", "args")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("--mode=production", "args")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("-d", "args")).toThrow(/must not start with "-"/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// build tool — args[] validation (note: command uses assertAllowedCommand)
+// ---------------------------------------------------------------------------
+
+describe("security: build tool — args[] parameter validation", () => {
+  it("rejects flag-like args values", () => {
+    expect(() => assertNoFlagInjection("--exec=rm -rf /", "args")).toThrow(
+      /must not start with "-"/,
+    );
+    expect(() => assertNoFlagInjection("-rf", "args")).toThrow(/must not start with "-"/);
+    expect(() => assertNoFlagInjection("--output=/etc/passwd", "args")).toThrow(
+      /must not start with "-"/,
+    );
+  });
+
+  it("accepts safe args values", () => {
+    expect(() => assertNoFlagInjection("run", "args")).not.toThrow();
+    expect(() => assertNoFlagInjection("build", "args")).not.toThrow();
+    expect(() => assertNoFlagInjection("src/index.ts", "args")).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod .max() input-limit constraints — Build tool schemas
+// ---------------------------------------------------------------------------
+
+describe("Zod .max() constraints — Build tool schemas", () => {
+  describe("tsc project parameter (PATH_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.PATH_MAX);
+
+    it("accepts a path within the limit", () => {
+      expect(schema.safeParse("tsconfig.json").success).toBe(true);
+    });
+
+    it("rejects a path exceeding PATH_MAX", () => {
+      const oversized = "p".repeat(INPUT_LIMITS.PATH_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("vite-build mode parameter (SHORT_STRING_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.SHORT_STRING_MAX);
+
+    it("accepts a mode within the limit", () => {
+      expect(schema.safeParse("production").success).toBe(true);
+    });
+
+    it("rejects a mode exceeding SHORT_STRING_MAX", () => {
+      const oversized = "m".repeat(INPUT_LIMITS.SHORT_STRING_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("build command parameter (SHORT_STRING_MAX)", () => {
+    const schema = z.string().max(INPUT_LIMITS.SHORT_STRING_MAX);
+
+    it("accepts a command within the limit", () => {
+      expect(schema.safeParse("npm").success).toBe(true);
+    });
+
+    it("rejects a command exceeding SHORT_STRING_MAX", () => {
+      const oversized = "c".repeat(INPUT_LIMITS.SHORT_STRING_MAX + 1);
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("args array (ARRAY_MAX + STRING_MAX)", () => {
+    const schema = z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from({ length: INPUT_LIMITS.ARRAY_MAX + 1 }, () => "arg");
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects arg string exceeding STRING_MAX", () => {
+      const oversized = ["a".repeat(INPUT_LIMITS.STRING_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+  });
+
+  describe("esbuild entryPoints (ARRAY_MAX + PATH_MAX)", () => {
+    const schema = z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+    it("rejects array exceeding ARRAY_MAX", () => {
+      const oversized = Array.from({ length: INPUT_LIMITS.ARRAY_MAX + 1 }, () => "src/index.ts");
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
+
+    it("rejects path exceeding PATH_MAX", () => {
+      const oversized = ["p".repeat(INPUT_LIMITS.PATH_MAX + 1)];
+      expect(schema.safeParse(oversized).success).toBe(false);
+    });
   });
 });
