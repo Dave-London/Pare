@@ -8,6 +8,10 @@ import type {
   DockerComposeUp,
   DockerComposeDown,
   DockerPull,
+  DockerInspect,
+  DockerNetworkLs,
+  DockerVolumeLs,
+  DockerComposePs,
 } from "../schemas/index.js";
 
 /** Parses `docker ps --format json` output into structured container data with ports and state. */
@@ -246,4 +250,80 @@ export function parsePullOutput(
     ...(digest ? { digest } : {}),
     success: exitCode === 0,
   };
+}
+
+/** Parses `docker inspect --format json` output into structured inspect data. */
+export function parseInspectJson(stdout: string): DockerInspect {
+  // docker inspect --format json returns a JSON array with one element
+  const parsed = JSON.parse(stdout);
+  const obj = Array.isArray(parsed) ? parsed[0] : parsed;
+
+  const state = obj.State ?? {};
+  const config = obj.Config ?? {};
+
+  return {
+    id: (obj.Id ?? "").slice(0, 12),
+    name: (obj.Name ?? "").replace(/^\//, ""),
+    state: {
+      status: (state.Status ?? "unknown").toLowerCase(),
+      running: state.Running ?? false,
+      ...(state.StartedAt && state.StartedAt !== "0001-01-01T00:00:00Z"
+        ? { startedAt: state.StartedAt }
+        : {}),
+    },
+    image: config.Image ?? obj.Image ?? "",
+    ...(obj.Platform ? { platform: obj.Platform } : {}),
+    created: obj.Created ?? "",
+  };
+}
+
+/** Parses `docker network ls --format json` output into structured network data. */
+export function parseNetworkLsJson(stdout: string): DockerNetworkLs {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const networks = lines.map((line) => {
+    const n = JSON.parse(line);
+    return {
+      id: (n.ID ?? "").slice(0, 12),
+      name: n.Name ?? "",
+      driver: n.Driver ?? "",
+      scope: n.Scope ?? "",
+    };
+  });
+
+  return { networks, total: networks.length };
+}
+
+/** Parses `docker volume ls --format json` output into structured volume data. */
+export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const volumes = lines.map((line) => {
+    const v = JSON.parse(line);
+    return {
+      name: v.Name ?? "",
+      driver: v.Driver ?? "",
+      mountpoint: v.Mountpoint ?? "",
+      scope: v.Scope ?? "",
+    };
+  });
+
+  return { volumes, total: volumes.length };
+}
+
+/** Parses `docker compose ps --format json` output into structured compose service data. */
+export function parseComposePsJson(stdout: string): DockerComposePs {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const services = lines.map((line) => {
+    const s = JSON.parse(line);
+    const ports = s.Ports ?? s.Publishers ?? "";
+    const portsStr = typeof ports === "string" ? ports : "";
+    return {
+      name: s.Name ?? "",
+      service: s.Service ?? "",
+      state: (s.State ?? "unknown").toLowerCase(),
+      status: s.Status ?? "",
+      ...(portsStr ? { ports: portsStr } : {}),
+    };
+  });
+
+  return { services, total: services.length };
 }

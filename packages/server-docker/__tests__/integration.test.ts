@@ -26,19 +26,23 @@ describe("@paretools/docker integration", () => {
     await transport.close();
   });
 
-  it("lists all 9 tools", async () => {
+  it("lists all 13 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "build",
       "compose-down",
+      "compose-ps",
       "compose-up",
       "exec",
       "images",
+      "inspect",
       "logs",
+      "network-ls",
       "ps",
       "pull",
       "run",
+      "volume-ls",
     ]);
   });
 
@@ -167,6 +171,76 @@ describe("@paretools/docker integration", () => {
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.stopped).toBe("number");
         expect(typeof sc.removed).toBe("number");
+      }
+    });
+  });
+
+  describe("inspect", () => {
+    it("rejects flag injection in target param", async () => {
+      const result = await client.callTool({
+        name: "inspect",
+        arguments: { target: "--privileged" },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toMatch(/Invalid target|argument injection/i);
+    });
+  });
+
+  describe("network-ls", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "network-ls",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.networks)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+      }
+    });
+  });
+
+  describe("volume-ls", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "volume-ls",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.volumes)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+      }
+    });
+  });
+
+  describe("compose-ps", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "compose-ps",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|compose|command|not found|error|no configuration/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.services)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });

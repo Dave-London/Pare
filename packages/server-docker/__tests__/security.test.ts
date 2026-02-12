@@ -130,6 +130,40 @@ describe("assertNoFlagInjection — exec tool (command[0] param)", () => {
   });
 });
 
+describe("assertNoFlagInjection — inspect tool (target param)", () => {
+  it("accepts a normal container name", () => {
+    expect(() => assertNoFlagInjection("my-web-app", "target")).not.toThrow();
+  });
+
+  it("accepts a container ID", () => {
+    expect(() => assertNoFlagInjection("abc123def456", "target")).not.toThrow();
+  });
+
+  it("accepts an image name with tag", () => {
+    expect(() => assertNoFlagInjection("nginx:latest", "target")).not.toThrow();
+  });
+
+  it("rejects --privileged", () => {
+    expect(() => assertNoFlagInjection("--privileged", "target")).toThrow(/Invalid target/);
+  });
+
+  it("rejects -f (flag injection)", () => {
+    expect(() => assertNoFlagInjection("-f", "target")).toThrow(/Invalid target/);
+  });
+
+  it("rejects --format", () => {
+    expect(() => assertNoFlagInjection("--format", "target")).toThrow(/Invalid target/);
+  });
+
+  it("rejects --type", () => {
+    expect(() => assertNoFlagInjection("--type", "target")).toThrow(/Invalid target/);
+  });
+
+  it("rejects -s (short flag)", () => {
+    expect(() => assertNoFlagInjection("-s", "target")).toThrow(/Invalid target/);
+  });
+});
+
 describe("assertNoFlagInjection — pull tool (image param)", () => {
   it("accepts a normal image name", () => {
     expect(() => assertNoFlagInjection("ubuntu:22.04", "image")).not.toThrow();

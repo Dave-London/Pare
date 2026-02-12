@@ -8,6 +8,10 @@ import type {
   DockerComposeUp,
   DockerComposeDown,
   DockerPull,
+  DockerInspect,
+  DockerNetworkLs,
+  DockerVolumeLs,
+  DockerComposePs,
 } from "../schemas/index.js";
 
 /** Formats structured Docker container data into a human-readable listing with state and ports. */
@@ -308,4 +312,160 @@ export function compactComposeDownMap(data: DockerComposeDown): DockerComposeDow
 export function formatComposeDownCompact(data: DockerComposeDownCompact): string {
   if (!data.success) return "Compose down failed";
   return `Compose down: ${data.stopped} stopped, ${data.removed} removed`;
+}
+
+// ── Inspect ──────────────────────────────────────────────────────────
+
+/** Formats structured Docker inspect data into a human-readable summary. */
+export function formatInspect(data: DockerInspect): string {
+  const lines = [`${data.name} (${data.id})`];
+  lines.push(`  Image: ${data.image}`);
+  lines.push(`  State: ${data.state.status} (running: ${data.state.running})`);
+  if (data.state.startedAt) lines.push(`  Started: ${data.state.startedAt}`);
+  if (data.platform) lines.push(`  Platform: ${data.platform}`);
+  lines.push(`  Created: ${data.created}`);
+  return lines.join("\n");
+}
+
+/** Compact inspect: id, name, status, running. Drop startedAt, platform, created. */
+export interface DockerInspectCompact {
+  [key: string]: unknown;
+  id: string;
+  name: string;
+  status: string;
+  running: boolean;
+  image: string;
+}
+
+export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
+  return {
+    id: data.id,
+    name: data.name,
+    status: data.state.status,
+    running: data.state.running,
+    image: data.image,
+  };
+}
+
+export function formatInspectCompact(data: DockerInspectCompact): string {
+  return `${data.name} (${data.id}) ${data.status} [${data.running ? "running" : "stopped"}] image=${data.image}`;
+}
+
+// ── Network LS ───────────────────────────────────────────────────────
+
+/** Formats structured Docker network list into a human-readable listing. */
+export function formatNetworkLs(data: DockerNetworkLs): string {
+  if (data.total === 0) return "No networks found.";
+
+  const lines = [`${data.total} networks:`];
+  for (const n of data.networks) {
+    lines.push(`  ${n.name} (${n.driver}, ${n.scope})`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact network-ls: name and driver only. Drop id, scope. */
+export interface DockerNetworkLsCompact {
+  [key: string]: unknown;
+  networks: Array<{ name: string; driver: string }>;
+  total: number;
+}
+
+export function compactNetworkLsMap(data: DockerNetworkLs): DockerNetworkLsCompact {
+  return {
+    networks: data.networks.map((n) => ({
+      name: n.name,
+      driver: n.driver,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatNetworkLsCompact(data: DockerNetworkLsCompact): string {
+  if (data.total === 0) return "No networks found.";
+  const lines = [`${data.total} networks:`];
+  for (const n of data.networks) {
+    lines.push(`  ${n.name} (${n.driver})`);
+  }
+  return lines.join("\n");
+}
+
+// ── Volume LS ────────────────────────────────────────────────────────
+
+/** Formats structured Docker volume list into a human-readable listing. */
+export function formatVolumeLs(data: DockerVolumeLs): string {
+  if (data.total === 0) return "No volumes found.";
+
+  const lines = [`${data.total} volumes:`];
+  for (const v of data.volumes) {
+    lines.push(`  ${v.name} (${v.driver}, ${v.scope})`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact volume-ls: name and driver only. Drop mountpoint, scope. */
+export interface DockerVolumeLsCompact {
+  [key: string]: unknown;
+  volumes: Array<{ name: string; driver: string }>;
+  total: number;
+}
+
+export function compactVolumeLsMap(data: DockerVolumeLs): DockerVolumeLsCompact {
+  return {
+    volumes: data.volumes.map((v) => ({
+      name: v.name,
+      driver: v.driver,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
+  if (data.total === 0) return "No volumes found.";
+  const lines = [`${data.total} volumes:`];
+  for (const v of data.volumes) {
+    lines.push(`  ${v.name} (${v.driver})`);
+  }
+  return lines.join("\n");
+}
+
+// ── Compose PS ───────────────────────────────────────────────────────
+
+/** Formats structured Docker Compose ps data into a human-readable listing. */
+export function formatComposePs(data: DockerComposePs): string {
+  if (data.total === 0) return "No compose services found.";
+
+  const lines = [`${data.total} services:`];
+  for (const s of data.services) {
+    const ports = s.ports ? ` [${s.ports}]` : "";
+    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact compose-ps: name, service, state. Drop status, ports. */
+export interface DockerComposePsCompact {
+  [key: string]: unknown;
+  services: Array<{ name: string; service: string; state: string }>;
+  total: number;
+}
+
+export function compactComposePsMap(data: DockerComposePs): DockerComposePsCompact {
+  return {
+    services: data.services.map((s) => ({
+      name: s.name,
+      service: s.service,
+      state: s.state,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatComposePsCompact(data: DockerComposePsCompact): string {
+  if (data.total === 0) return "No compose services found.";
+  const lines = [`${data.total} services:`];
+  for (const s of data.services) {
+    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service})`);
+  }
+  return lines.join("\n");
 }
