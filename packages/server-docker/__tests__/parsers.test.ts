@@ -4,6 +4,10 @@ import {
   parseBuildOutput,
   parseLogsOutput,
   parseImagesJson,
+  parseInspectJson,
+  parseNetworkLsJson,
+  parseVolumeLsJson,
+  parseComposePsJson,
 } from "../src/lib/parsers.js";
 
 describe("parsePsJson", () => {
@@ -304,5 +308,231 @@ describe("parseImagesJson", () => {
 
     const result = parseImagesJson(stdout);
     expect(result.images[0].created).toBe("2024-01-01T00:00:00Z");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseInspectJson
+// ---------------------------------------------------------------------------
+
+describe("parseInspectJson", () => {
+  it("parses a running container inspect output", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+        Name: "/web-app",
+        State: {
+          Status: "running",
+          Running: true,
+          StartedAt: "2024-06-01T10:00:00Z",
+        },
+        Config: {
+          Image: "nginx:latest",
+        },
+        Created: "2024-06-01T09:00:00Z",
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.id).toBe("abc123def456");
+    expect(result.name).toBe("web-app");
+    expect(result.state.status).toBe("running");
+    expect(result.state.running).toBe(true);
+    expect(result.state.startedAt).toBe("2024-06-01T10:00:00Z");
+    expect(result.image).toBe("nginx:latest");
+    expect(result.created).toBe("2024-06-01T09:00:00Z");
+  });
+
+  it("parses a stopped container without startedAt", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "def456abc789def456abc789def456abc789def456abc789def456abc789def4",
+        Name: "/stopped-app",
+        State: {
+          Status: "exited",
+          Running: false,
+          StartedAt: "0001-01-01T00:00:00Z",
+        },
+        Config: {
+          Image: "myapp:v1",
+        },
+        Created: "2024-05-15T08:00:00Z",
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.id).toBe("def456abc789");
+    expect(result.name).toBe("stopped-app");
+    expect(result.state.status).toBe("exited");
+    expect(result.state.running).toBe(false);
+    expect(result.state.startedAt).toBeUndefined();
+    expect(result.image).toBe("myapp:v1");
+  });
+
+  it("handles non-array JSON (single object)", () => {
+    const stdout = JSON.stringify({
+      Id: "aaa111bbb222",
+      Name: "/single",
+      State: { Status: "running", Running: true },
+      Config: { Image: "test:1" },
+      Created: "2024-01-01T00:00:00Z",
+    });
+
+    const result = parseInspectJson(stdout);
+    expect(result.name).toBe("single");
+    expect(result.state.running).toBe(true);
+  });
+
+  it("includes platform when present", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "ccc333ddd444",
+        Name: "/plat-test",
+        State: { Status: "running", Running: true },
+        Config: { Image: "node:20" },
+        Platform: "linux",
+        Created: "2024-01-01T00:00:00Z",
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+    expect(result.platform).toBe("linux");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseNetworkLsJson
+// ---------------------------------------------------------------------------
+
+describe("parseNetworkLsJson", () => {
+  it("parses multiple networks", () => {
+    const stdout = [
+      JSON.stringify({
+        ID: "aaa111bbb222ccc333",
+        Name: "bridge",
+        Driver: "bridge",
+        Scope: "local",
+      }),
+      JSON.stringify({ ID: "ddd444eee555fff666", Name: "host", Driver: "host", Scope: "local" }),
+      JSON.stringify({
+        ID: "ggg777hhh888iii999",
+        Name: "mynet",
+        Driver: "overlay",
+        Scope: "swarm",
+      }),
+    ].join("\n");
+
+    const result = parseNetworkLsJson(stdout);
+
+    expect(result.total).toBe(3);
+    expect(result.networks[0].id).toBe("aaa111bbb222");
+    expect(result.networks[0].name).toBe("bridge");
+    expect(result.networks[0].driver).toBe("bridge");
+    expect(result.networks[0].scope).toBe("local");
+    expect(result.networks[2].name).toBe("mynet");
+    expect(result.networks[2].driver).toBe("overlay");
+    expect(result.networks[2].scope).toBe("swarm");
+  });
+
+  it("parses empty output", () => {
+    const result = parseNetworkLsJson("");
+    expect(result.total).toBe(0);
+    expect(result.networks).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseVolumeLsJson
+// ---------------------------------------------------------------------------
+
+describe("parseVolumeLsJson", () => {
+  it("parses multiple volumes", () => {
+    const stdout = [
+      JSON.stringify({
+        Name: "my-data",
+        Driver: "local",
+        Mountpoint: "/var/lib/docker/volumes/my-data/_data",
+        Scope: "local",
+      }),
+      JSON.stringify({
+        Name: "pg-data",
+        Driver: "local",
+        Mountpoint: "/var/lib/docker/volumes/pg-data/_data",
+        Scope: "local",
+      }),
+    ].join("\n");
+
+    const result = parseVolumeLsJson(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.volumes[0].name).toBe("my-data");
+    expect(result.volumes[0].driver).toBe("local");
+    expect(result.volumes[0].mountpoint).toContain("my-data");
+    expect(result.volumes[0].scope).toBe("local");
+    expect(result.volumes[1].name).toBe("pg-data");
+  });
+
+  it("parses empty output", () => {
+    const result = parseVolumeLsJson("");
+    expect(result.total).toBe(0);
+    expect(result.volumes).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseComposePsJson
+// ---------------------------------------------------------------------------
+
+describe("parseComposePsJson", () => {
+  it("parses multiple compose services", () => {
+    const stdout = [
+      JSON.stringify({
+        Name: "myapp-web-1",
+        Service: "web",
+        State: "running",
+        Status: "Up 2 hours",
+        Ports: "0.0.0.0:8080->80/tcp",
+      }),
+      JSON.stringify({
+        Name: "myapp-db-1",
+        Service: "db",
+        State: "running",
+        Status: "Up 2 hours",
+        Ports: "",
+      }),
+    ].join("\n");
+
+    const result = parseComposePsJson(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.services[0].name).toBe("myapp-web-1");
+    expect(result.services[0].service).toBe("web");
+    expect(result.services[0].state).toBe("running");
+    expect(result.services[0].status).toBe("Up 2 hours");
+    expect(result.services[0].ports).toBe("0.0.0.0:8080->80/tcp");
+    expect(result.services[1].name).toBe("myapp-db-1");
+    expect(result.services[1].ports).toBeUndefined();
+  });
+
+  it("parses empty output", () => {
+    const result = parseComposePsJson("");
+    expect(result.total).toBe(0);
+    expect(result.services).toEqual([]);
+  });
+
+  it("handles service with exited state", () => {
+    const stdout = JSON.stringify({
+      Name: "myapp-worker-1",
+      Service: "worker",
+      State: "Exited",
+      Status: "Exited (0) 5 minutes ago",
+      Ports: "",
+    });
+
+    const result = parseComposePsJson(stdout);
+    expect(result.services[0].state).toBe("exited");
+    expect(result.services[0].status).toBe("Exited (0) 5 minutes ago");
   });
 });

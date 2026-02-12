@@ -111,3 +111,68 @@ export const DockerPullSchema = z.object({
 });
 
 export type DockerPull = z.infer<typeof DockerPullSchema>;
+
+/** Zod schema for structured docker inspect output with container/image details. */
+export const DockerInspectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  state: z.object({
+    status: z.string(),
+    running: z.boolean(),
+    startedAt: z.string().optional(),
+  }),
+  image: z.string(),
+  platform: z.string().optional(),
+  created: z.string(),
+});
+
+export type DockerInspect = z.infer<typeof DockerInspectSchema>;
+
+/** Zod schema for a single Docker network entry. */
+export const NetworkSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  driver: z.string(),
+  scope: z.string(),
+});
+
+/** Zod schema for structured docker network ls output. */
+export const DockerNetworkLsSchema = z.object({
+  networks: z.array(NetworkSchema),
+  total: z.number(),
+});
+
+export type DockerNetworkLs = z.infer<typeof DockerNetworkLsSchema>;
+
+/** Zod schema for a single Docker volume entry. */
+export const VolumeSchema = z.object({
+  name: z.string(),
+  driver: z.string(),
+  mountpoint: z.string(),
+  scope: z.string(),
+});
+
+/** Zod schema for structured docker volume ls output. */
+export const DockerVolumeLsSchema = z.object({
+  volumes: z.array(VolumeSchema),
+  total: z.number(),
+});
+
+export type DockerVolumeLs = z.infer<typeof DockerVolumeLsSchema>;
+
+/** Zod schema for a single Docker Compose service entry. */
+export const ComposeServiceSchema = z.object({
+  name: z.string(),
+  service: z.string(),
+  state: z.string(),
+  status: z.string(),
+  ports: z.string().optional(),
+});
+
+/** Zod schema for structured docker compose ps output. */
+export const DockerComposePsSchema = z.object({
+  services: z.array(ComposeServiceSchema),
+  total: z.number(),
+});
+
+export type DockerComposePs = z.infer<typeof DockerComposePsSchema>;
