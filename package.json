@@ -23,7 +23,8 @@
     "release": "turbo run build && changeset publish",
     "changelog": "tsx scripts/aggregate-changelog.ts",
     "benchmark": "tsx scripts/benchmark.ts",
-    "docs:api": "typedoc"
+    "docs:api": "typedoc",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",
@@ -33,10 +34,15 @@
     "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.4.0",
     "tsx": "^4.21.0",
     "turbo": "^2.4.0",
     "typedoc": "^0.28.16",
     "typedoc-plugin-markdown": "^4.10.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yaml,yml}": "prettier --write"
   }
 }
