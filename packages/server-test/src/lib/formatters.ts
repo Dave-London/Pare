@@ -22,9 +22,77 @@ export function formatCoverage(c: Coverage): string {
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
-  for (const f of c.files) {
+  for (const f of c.files ?? []) {
     parts.push(`  ${f.file}: ${f.lines}% lines`);
   }
+
+  return parts.join("\n");
+}
+
+// ── Compact types, mappers, and formatters ───────────────────────────
+
+/** Compact test run: summary + framework + failure names only (no messages, stacks, expected/actual). */
+export interface TestRunCompact {
+  [key: string]: unknown;
+  framework: string;
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    duration: number;
+  };
+  failures: Array<{ name: string }>;
+}
+
+export function compactTestRunMap(r: TestRun): TestRunCompact {
+  return {
+    framework: r.framework,
+    summary: { ...r.summary },
+    failures: r.failures.map((f) => ({ name: f.name })),
+  };
+}
+
+export function formatTestRunCompact(r: TestRunCompact): string {
+  const status = r.summary.failed > 0 ? "FAIL" : "PASS";
+  const parts = [
+    `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
+  ];
+
+  for (const f of r.failures) {
+    parts.push(`  FAIL ${f.name}`);
+  }
+
+  return parts.join("\n");
+}
+
+/** Compact coverage: summary totals + file count only (no per-file details). */
+export interface CoverageCompact {
+  [key: string]: unknown;
+  framework: string;
+  summary: {
+    lines: number;
+    branches?: number;
+    functions?: number;
+  };
+  totalFiles: number;
+}
+
+export function compactCoverageMap(c: Coverage): CoverageCompact {
+  return {
+    framework: c.framework,
+    summary: { ...c.summary },
+    totalFiles: (c.files ?? []).length,
+  };
+}
+
+export function formatCoverageCompact(c: CoverageCompact): string {
+  const parts = [`Coverage (${c.framework}): ${c.summary.lines}% lines`];
+
+  if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
+  if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
+
+  parts.push(`${c.totalFiles} file(s) analyzed`);
 
   return parts.join("\n");
 }

@@ -1,12 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, run, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage } from "../lib/parsers/pytest.js";
 import { parseJestCoverage } from "../lib/parsers/jest.js";
 import { parseVitestCoverage } from "../lib/parsers/vitest.js";
 import { parseMochaCoverage } from "../lib/parsers/mocha.js";
-import { formatCoverage } from "../lib/formatters.js";
+import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../lib/formatters.js";
 import { CoverageSchema } from "../schemas/index.js";
 
 function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: string[] } {
@@ -42,10 +42,17 @@ export function registerCoverageTool(server: McpServer) {
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: CoverageSchema,
     },
-    async ({ path, framework }) => {
+    async ({ path, framework, compact }) => {
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const { cmd, cmdArgs } = getCoverageCommand(detected);
@@ -69,7 +76,14 @@ export function registerCoverageTool(server: McpServer) {
           break;
       }
 
-      return dualOutput(coverage, formatCoverage);
+      return compactDualOutput(
+        coverage,
+        result.stdout,
+        formatCoverage,
+        compactCoverageMap,
+        formatCoverageCompact,
+        compact === false,
+      );
     },
   );
 }
