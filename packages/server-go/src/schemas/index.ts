@@ -88,3 +88,39 @@ export const GoGenerateResultSchema = z.object({
 });
 
 export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
+
+/** Zod schema for structured go env output with environment variables and key fields. */
+export const GoEnvResultSchema = z.object({
+  vars: z.record(z.string(), z.string()),
+  goroot: z.string(),
+  gopath: z.string(),
+  goversion: z.string(),
+  goos: z.string(),
+  goarch: z.string(),
+});
+
+export type GoEnvResult = z.infer<typeof GoEnvResultSchema>;
+
+/** Zod schema for a single Go package from go list output. */
+export const GoListPackageSchema = z.object({
+  dir: z.string(),
+  importPath: z.string(),
+  name: z.string(),
+  goFiles: z.array(z.string()).optional(),
+});
+
+/** Zod schema for structured go list output with package list and total count. */
+export const GoListResultSchema = z.object({
+  packages: z.array(GoListPackageSchema),
+  total: z.number(),
+});
+
+export type GoListResult = z.infer<typeof GoListResultSchema>;
+
+/** Zod schema for structured go get output with success status and output text. */
+export const GoGetResultSchema = z.object({
+  success: z.boolean(),
+  output: z.string().optional(),
+});
+
+export type GoGetResult = z.infer<typeof GoGetResultSchema>;

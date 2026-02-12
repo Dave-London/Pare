@@ -114,6 +114,40 @@ describe("security: go run — buildArgs validation", () => {
   });
 });
 
+describe("security: go list — packages validation", () => {
+  it("rejects flag-like package patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "packages")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe package patterns", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "packages")).not.toThrow();
+    }
+  });
+});
+
+describe("security: go get — packages validation", () => {
+  it("rejects flag-like package specifiers", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "packages")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe package specifiers", () => {
+    const safePackages = [
+      "github.com/pkg/errors@latest",
+      "github.com/stretchr/testify@v1.9.0",
+      "golang.org/x/tools@latest",
+      "./...",
+    ];
+    for (const safe of safePackages) {
+      expect(() => assertNoFlagInjection(safe, "packages")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Go tool schemas
 // ---------------------------------------------------------------------------

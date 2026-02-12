@@ -6,6 +6,9 @@ import type {
   GoModTidyResult,
   GoFmtResult,
   GoGenerateResult,
+  GoEnvResult,
+  GoListResult,
+  GoGetResult,
 } from "../schemas/index.js";
 
 /** Formats structured go build results into a human-readable error summary. */
@@ -216,4 +219,105 @@ export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
 export function formatModTidyCompact(data: GoModTidyCompact): string {
   if (data.success) return "go mod tidy: success.";
   return "go mod tidy: FAIL";
+}
+
+// ── env ──────────────────────────────────────────────────────────────
+
+/** Formats structured go env results into a human-readable environment listing. */
+export function formatGoEnv(data: GoEnvResult): string {
+  const lines = [
+    `GOROOT=${data.goroot}`,
+    `GOPATH=${data.gopath}`,
+    `GOVERSION=${data.goversion}`,
+    `GOOS=${data.goos}`,
+    `GOARCH=${data.goarch}`,
+  ];
+  const otherKeys = Object.keys(data.vars).filter(
+    (k) => !["GOROOT", "GOPATH", "GOVERSION", "GOOS", "GOARCH"].includes(k),
+  );
+  for (const k of otherKeys) {
+    lines.push(`${k}=${data.vars[k]}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact env: key fields only. Drop full vars map. */
+export interface GoEnvCompact {
+  [key: string]: unknown;
+  goroot: string;
+  gopath: string;
+  goversion: string;
+  goos: string;
+  goarch: string;
+}
+
+export function compactEnvMap(data: GoEnvResult): GoEnvCompact {
+  return {
+    goroot: data.goroot,
+    gopath: data.gopath,
+    goversion: data.goversion,
+    goos: data.goos,
+    goarch: data.goarch,
+  };
+}
+
+export function formatEnvCompact(data: GoEnvCompact): string {
+  return `go env: ${data.goversion} ${data.goos}/${data.goarch}`;
+}
+
+// ── list ─────────────────────────────────────────────────────────────
+
+/** Formats structured go list results into a human-readable package listing. */
+export function formatGoList(data: GoListResult): string {
+  if (data.total === 0) return "go list: no packages found.";
+
+  const lines = [`go list: ${data.total} packages`];
+  for (const pkg of data.packages) {
+    lines.push(`  ${pkg.importPath} (${pkg.name})`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact list: total count only. Drop individual package details. */
+export interface GoListCompact {
+  [key: string]: unknown;
+  total: number;
+}
+
+export function compactListMap(data: GoListResult): GoListCompact {
+  return {
+    total: data.total,
+  };
+}
+
+export function formatListCompact(data: GoListCompact): string {
+  if (data.total === 0) return "go list: no packages found.";
+  return `go list: ${data.total} packages`;
+}
+
+// ── get ──────────────────────────────────────────────────────────────
+
+/** Formats structured go get results into a human-readable summary. */
+export function formatGoGet(data: GoGetResult): string {
+  if (data.success) {
+    return data.output ? `go get: success.\n${data.output}` : "go get: success.";
+  }
+  return `go get: FAIL\n${data.output}`;
+}
+
+/** Compact get: success only. Drop output text. */
+export interface GoGetCompact {
+  [key: string]: unknown;
+  success: boolean;
+}
+
+export function compactGetMap(data: GoGetResult): GoGetCompact {
+  return {
+    success: data.success,
+  };
+}
+
+export function formatGetCompact(data: GoGetCompact): string {
+  if (data.success) return "go get: success.";
+  return "go get: FAIL";
 }

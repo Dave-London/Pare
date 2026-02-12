@@ -15,6 +15,9 @@ import {
   parseGoModTidyOutput,
   parseGoFmtOutput,
   parseGoGenerateOutput,
+  parseGoEnvOutput,
+  parseGoListOutput,
+  parseGoGetOutput,
 } from "../src/lib/parsers.js";
 
 // ---------------------------------------------------------------------------
@@ -582,5 +585,214 @@ describe("fidelity: go generate", () => {
     expect(result.success).toBe(false);
     expect(result.output).toContain("bad flag syntax");
     expect(result.output).toContain("invalid go:generate directive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// go env
+// ---------------------------------------------------------------------------
+describe("fidelity: go env", () => {
+  it("preserves all environment variables from JSON output", () => {
+    const stdout = JSON.stringify({
+      GOROOT: "/usr/local/go",
+      GOPATH: "/home/user/go",
+      GOVERSION: "go1.22.0",
+      GOOS: "linux",
+      GOARCH: "amd64",
+      CGO_ENABLED: "1",
+      GOMODCACHE: "/home/user/go/pkg/mod",
+      GOTOOLCHAIN: "auto",
+    });
+
+    const result = parseGoEnvOutput(stdout);
+
+    expect(result.goroot).toBe("/usr/local/go");
+    expect(result.gopath).toBe("/home/user/go");
+    expect(result.goversion).toBe("go1.22.0");
+    expect(result.goos).toBe("linux");
+    expect(result.goarch).toBe("amd64");
+    expect(result.vars.CGO_ENABLED).toBe("1");
+    expect(result.vars.GOMODCACHE).toBe("/home/user/go/pkg/mod");
+    expect(result.vars.GOTOOLCHAIN).toBe("auto");
+    expect(Object.keys(result.vars)).toHaveLength(8);
+  });
+
+  it("handles specific variable query (subset of vars)", () => {
+    const stdout = JSON.stringify({
+      GOROOT: "/usr/local/go",
+    });
+
+    const result = parseGoEnvOutput(stdout);
+
+    expect(result.goroot).toBe("/usr/local/go");
+    expect(result.gopath).toBe("");
+    expect(result.vars.GOROOT).toBe("/usr/local/go");
+    expect(Object.keys(result.vars)).toHaveLength(1);
+  });
+
+  it("handles Windows-style paths", () => {
+    const stdout = JSON.stringify({
+      GOROOT: "C:\\Go",
+      GOPATH: "C:\\Users\\user\\go",
+      GOVERSION: "go1.22.0",
+      GOOS: "windows",
+      GOARCH: "amd64",
+    });
+
+    const result = parseGoEnvOutput(stdout);
+
+    expect(result.goroot).toBe("C:\\Go");
+    expect(result.gopath).toBe("C:\\Users\\user\\go");
+    expect(result.goos).toBe("windows");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// go list
+// ---------------------------------------------------------------------------
+describe("fidelity: go list", () => {
+  it("parses a single package with all fields", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go", "app.go", "config.go"],
+    });
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0].dir).toBe("/home/user/project");
+    expect(result.packages[0].importPath).toBe("github.com/user/project");
+    expect(result.packages[0].name).toBe("main");
+    expect(result.packages[0].goFiles).toEqual(["main.go", "app.go", "config.go"]);
+  });
+
+  it("parses multiple concatenated JSON objects", () => {
+    const pkg1 = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+    });
+    const pkg2 = JSON.stringify({
+      Dir: "/home/user/project/internal/auth",
+      ImportPath: "github.com/user/project/internal/auth",
+      Name: "auth",
+      GoFiles: ["auth.go", "jwt.go", "middleware.go"],
+    });
+    const pkg3 = JSON.stringify({
+      Dir: "/home/user/project/pkg/util",
+      ImportPath: "github.com/user/project/pkg/util",
+      Name: "util",
+      GoFiles: ["util.go"],
+    });
+
+    const stdout = pkg1 + "\n" + pkg2 + "\n" + pkg3;
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(3);
+    expect(result.packages[0].importPath).toBe("github.com/user/project");
+    expect(result.packages[1].importPath).toBe("github.com/user/project/internal/auth");
+    expect(result.packages[1].goFiles).toEqual(["auth.go", "jwt.go", "middleware.go"]);
+    expect(result.packages[2].importPath).toBe("github.com/user/project/pkg/util");
+  });
+
+  it("handles empty output for projects with no packages", () => {
+    const result = parseGoListOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles package without GoFiles field", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project/cmd",
+      ImportPath: "github.com/user/project/cmd",
+      Name: "cmd",
+    });
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0].goFiles).toBeUndefined();
+  });
+
+  it("preserves Windows-style directory paths", () => {
+    const stdout = JSON.stringify({
+      Dir: "C:\\Users\\user\\project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+    });
+
+    const result = parseGoListOutput(stdout);
+
+    expect(result.packages[0].dir).toBe("C:\\Users\\user\\project");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// go get
+// ---------------------------------------------------------------------------
+describe("fidelity: go get", () => {
+  it("parses successful download with version info", () => {
+    const stderr = [
+      "go: downloading github.com/pkg/errors v0.9.1",
+      "go: added github.com/pkg/errors v0.9.1",
+    ].join("\n");
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("github.com/pkg/errors v0.9.1");
+    expect(result.output).toContain("go: added");
+  });
+
+  it("parses failure with module not found", () => {
+    const stderr =
+      'go: module github.com/nonexistent/pkg: no matching versions for query "latest"\n';
+
+    const result = parseGoGetOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("github.com/nonexistent/pkg");
+    expect(result.output).toContain("no matching versions");
+  });
+
+  it("parses multiple package downloads", () => {
+    const stderr = [
+      "go: downloading github.com/pkg/errors v0.9.1",
+      "go: downloading github.com/stretchr/testify v1.9.0",
+      "go: downloading github.com/davecgh/go-spew v1.1.2",
+      "go: added github.com/pkg/errors v0.9.1",
+      "go: added github.com/stretchr/testify v1.9.0",
+    ].join("\n");
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("github.com/pkg/errors");
+    expect(result.output).toContain("github.com/stretchr/testify");
+    expect(result.output).toContain("github.com/davecgh/go-spew");
+  });
+
+  it("returns undefined output for silent success", () => {
+    const result = parseGoGetOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.output).toBeUndefined();
+  });
+
+  it("preserves version conflict errors", () => {
+    const stderr = ["go: github.com/foo/bar@v2.0.0: invalid version: unknown revision v2.0.0"].join(
+      "\n",
+    );
+
+    const result = parseGoGetOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("invalid version");
+    expect(result.output).toContain("unknown revision v2.0.0");
   });
 });
