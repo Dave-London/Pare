@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseTestOutput } from "../lib/parsers.js";
 import { formatTest } from "../lib/formatters.js";
@@ -24,6 +24,11 @@ export function registerTestTool(server: McpServer) {
       outputSchema: NpmTestSchema,
     },
     async ({ path, args }) => {
+      // Defense-in-depth: validate args even though they come after "--" separator
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+
       const cwd = path || process.cwd();
 
       const npmArgs = ["test"];

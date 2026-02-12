@@ -29,6 +29,11 @@ export function registerExecTool(server: McpServer) {
     async ({ container, command, workdir, env, path }) => {
       assertNoFlagInjection(container, "container");
       if (workdir) assertNoFlagInjection(workdir, "workdir");
+      // Validate first element of command array (the binary name) to prevent flag injection.
+      // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
+      if (command.length > 0) {
+        assertNoFlagInjection(command[0], "command");
+      }
 
       const args = ["exec"];
       if (workdir) args.push("-w", workdir);

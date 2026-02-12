@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";
@@ -20,6 +20,8 @@ export function registerPipAuditTool(server: McpServer) {
     },
     async ({ path, requirements }) => {
       const cwd = path || process.cwd();
+      if (requirements) assertNoFlagInjection(requirements, "requirements");
+
       const args = ["audit", "--format", "json"];
       if (requirements) args.push("-r", requirements);
 

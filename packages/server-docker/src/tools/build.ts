@@ -24,6 +24,9 @@ export function registerBuildTool(server: McpServer) {
     async ({ path, tag, file, args }) => {
       if (tag) assertNoFlagInjection(tag, "tag");
       if (file) assertNoFlagInjection(file, "file");
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       const cwd = path || process.cwd();
       const dockerArgs = ["build", "."];

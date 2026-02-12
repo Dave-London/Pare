@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { black } from "../lib/python-runner.js";
 import { parseBlackOutput } from "../lib/parsers.js";
 import { formatBlack } from "../lib/formatters.js";
@@ -30,6 +30,9 @@ export function registerBlackTool(server: McpServer) {
     },
     async ({ path, targets, check }) => {
       const cwd = path || process.cwd();
+      for (const t of targets ?? []) {
+        assertNoFlagInjection(t, "targets");
+      }
       const args = [...(targets || ["."])];
       if (check) args.push("--check");
 

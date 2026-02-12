@@ -72,6 +72,9 @@ export function registerEsbuildTool(server: McpServer) {
       if (platform) cliArgs.push(`--platform=${platform}`);
       if (sourcemap) cliArgs.push("--sourcemap");
 
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
       if (args) {
         cliArgs.push(...args);
       }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseInstallOutput } from "../lib/parsers.js";
 import { formatInstall } from "../lib/formatters.js";
@@ -24,6 +24,10 @@ export function registerInstallTool(server: McpServer) {
       outputSchema: NpmInstallSchema,
     },
     async ({ path, args }) => {
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+
       const cwd = path || process.cwd();
       const start = Date.now();
       const result = await npm(["install", ...(args || [])], cwd);

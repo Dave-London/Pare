@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { webpackCmd } from "../lib/build-runner.js";
 import { parseWebpackOutput } from "../lib/parsers.js";
 import { formatWebpack } from "../lib/formatters.js";
@@ -26,6 +26,11 @@ export function registerWebpackTool(server: McpServer) {
     },
     async ({ path, config, mode, args }) => {
       const cwd = path || process.cwd();
+      if (config) assertNoFlagInjection(config, "config");
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+
       const cliArgs: string[] = [];
 
       if (config) cliArgs.push("--config", config);

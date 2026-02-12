@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { pytest } from "../lib/python-runner.js";
 import { parsePytestOutput } from "../lib/parsers.js";
 import { formatPytest } from "../lib/formatters.js";
@@ -27,6 +27,11 @@ export function registerPytestTool(server: McpServer) {
     },
     async ({ path, targets, markers, verbose, exitFirst }) => {
       const cwd = path || process.cwd();
+      for (const t of targets ?? []) {
+        assertNoFlagInjection(t, "targets");
+      }
+      if (markers) assertNoFlagInjection(markers, "markers");
+
       const args = ["--tb=short", "-q"];
 
       if (verbose) args.splice(args.indexOf("-q"), 1, "-v");

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { mypy } from "../lib/python-runner.js";
 import { parseMypyOutput } from "../lib/parsers.js";
 import { formatMypy } from "../lib/formatters.js";
@@ -25,6 +25,9 @@ export function registerMypyTool(server: McpServer) {
     },
     async ({ path, targets }) => {
       const cwd = path || process.cwd();
+      for (const t of targets ?? []) {
+        assertNoFlagInjection(t, "targets");
+      }
       const args = [...(targets || ["."])];
 
       const result = await mypy(args, cwd);

@@ -24,6 +24,10 @@ export function registerRunTool(server: McpServer) {
     async ({ path, args, release, package: pkg }) => {
       const cwd = path || process.cwd();
       if (pkg) assertNoFlagInjection(pkg, "package");
+      // Defense-in-depth: validate args even though they come after "--" separator
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       const cargoArgs = ["run"];
       if (release) cargoArgs.push("--release");

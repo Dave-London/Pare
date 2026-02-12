@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoVetOutput } from "../lib/parsers.js";
 import { formatGoVet } from "../lib/formatters.js";
@@ -25,6 +25,9 @@ export function registerVetTool(server: McpServer) {
     },
     async ({ path, packages }) => {
       const cwd = path || process.cwd();
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
       const result = await goCmd(["vet", ...(packages || ["./..."])], cwd);
       const data = parseGoVetOutput(result.stdout, result.stderr);
       return dualOutput(data, formatGoVet);

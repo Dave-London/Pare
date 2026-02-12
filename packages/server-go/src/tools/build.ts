@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoBuildOutput } from "../lib/parsers.js";
 import { formatGoBuild } from "../lib/formatters.js";
@@ -25,6 +25,9 @@ export function registerBuildTool(server: McpServer) {
     },
     async ({ path, packages }) => {
       const cwd = path || process.cwd();
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
       const result = await goCmd(["build", ...(packages || ["./..."])], cwd);
       const data = parseGoBuildOutput(result.stdout, result.stderr, result.exitCode);
       return dualOutput(data, formatGoBuild);

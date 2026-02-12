@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { viteCmd } from "../lib/build-runner.js";
 import { parseViteBuildOutput } from "../lib/parsers.js";
 import { formatViteBuild } from "../lib/formatters.js";
@@ -26,6 +26,11 @@ export function registerViteBuildTool(server: McpServer) {
     },
     async ({ path, mode, args }) => {
       const cwd = path || process.cwd();
+      if (mode) assertNoFlagInjection(mode, "mode");
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+
       const cliArgs: string[] = [];
 
       if (mode && mode !== "production") {

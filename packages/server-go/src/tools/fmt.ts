@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { gofmtCmd } from "../lib/go-runner.js";
 import { parseGoFmtOutput } from "../lib/parsers.js";
 import { formatGoFmt } from "../lib/formatters.js";
@@ -30,6 +30,9 @@ export function registerFmtTool(server: McpServer) {
     },
     async ({ path, patterns, check }) => {
       const cwd = path || process.cwd();
+      for (const p of patterns ?? []) {
+        assertNoFlagInjection(p, "patterns");
+      }
       const flag = check ? "-l" : "-w";
       const args = [flag, ...(patterns || ["."])];
       const result = await gofmtCmd(args, cwd);

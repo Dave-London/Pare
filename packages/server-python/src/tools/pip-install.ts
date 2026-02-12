@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { pip } from "../lib/python-runner.js";
 import { parsePipInstall } from "../lib/parsers.js";
 import { formatPipInstall } from "../lib/formatters.js";
@@ -26,6 +26,11 @@ export function registerPipInstallTool(server: McpServer) {
     },
     async ({ packages, requirements, path }) => {
       const cwd = path || process.cwd();
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
+      if (requirements) assertNoFlagInjection(requirements, "requirements");
+
       const args = ["install"];
       if (requirements) {
         args.push("-r", requirements);

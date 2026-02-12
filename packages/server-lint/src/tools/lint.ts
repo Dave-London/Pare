@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { eslint } from "../lib/lint-runner.js";
 import { parseEslintJson } from "../lib/parsers.js";
 import { formatLint } from "../lib/formatters.js";
@@ -26,6 +26,9 @@ export function registerLintTool(server: McpServer) {
     },
     async ({ path, patterns, fix }) => {
       const cwd = path || process.cwd();
+      for (const p of patterns ?? []) {
+        assertNoFlagInjection(p, "patterns");
+      }
       const args = ["--format", "json", ...(patterns || ["."])];
       if (fix) args.push("--fix");
 

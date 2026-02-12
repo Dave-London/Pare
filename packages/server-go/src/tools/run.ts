@@ -33,6 +33,9 @@ export function registerRunTool(server: McpServer) {
       const cwd = path || process.cwd();
       const target = file || ".";
       assertNoFlagInjection(target, "file");
+      for (const a of buildArgs ?? []) {
+        assertNoFlagInjection(a, "buildArgs");
+      }
       const cmdArgs = ["run", ...(buildArgs || []), target];
       const programArgs = args || [];
       if (programArgs.length > 0) {

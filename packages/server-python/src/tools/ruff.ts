@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { ruff } from "../lib/python-runner.js";
 import { parseRuffJson } from "../lib/parsers.js";
 import { formatRuff } from "../lib/formatters.js";
@@ -26,6 +26,9 @@ export function registerRuffTool(server: McpServer) {
     },
     async ({ path, targets, fix }) => {
       const cwd = path || process.cwd();
+      for (const t of targets ?? []) {
+        assertNoFlagInjection(t, "targets");
+      }
       const args = ["check", "--output-format", "json", ...(targets || ["."])];
       if (fix) args.push("--fix");
 
