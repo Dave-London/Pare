@@ -9,6 +9,11 @@ import type {
   GitPull,
   GitPush,
   GitCheckout,
+  GitTagFull,
+  GitStashListFull,
+  GitStash,
+  GitRemoteFull,
+  GitBlameFull,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -316,4 +321,149 @@ export function parseCheckout(
     previousRef,
     created,
   };
+}
+
+/** Parses `git tag -l --sort=-creatordate --format='%(refname:short)\t%(creatordate:iso-strict)\t%(subject)'` output into structured tag data. */
+export function parseTagOutput(stdout: string): GitTagFull {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const tags = lines.map((line) => {
+    const [name, date, ...messageParts] = line.split("\t");
+    return {
+      name: name || "",
+      ...(date ? { date } : {}),
+      ...(messageParts.join("\t") ? { message: messageParts.join("\t") } : {}),
+    };
+  });
+
+  return { tags, total: tags.length };
+}
+
+/** Parses `git stash list --format='%gd\t%gs\t%ci'` output into structured stash list data. */
+export function parseStashListOutput(stdout: string): GitStashListFull {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const stashes = lines.map((line) => {
+    const [ref, message, date] = line.split("\t");
+    const indexMatch = ref?.match(/stash@\{(\d+)\}/);
+    return {
+      index: indexMatch ? parseInt(indexMatch[1], 10) : 0,
+      message: message || "",
+      date: date || "",
+    };
+  });
+
+  return { stashes, total: stashes.length };
+}
+
+/** Parses `git stash push/pop/apply/drop` output into structured stash result data. */
+export function parseStashOutput(
+  stdout: string,
+  stderr: string,
+  action: "push" | "pop" | "apply" | "drop",
+): GitStash {
+  const combined = `${stdout}\n${stderr}`.trim();
+  return {
+    action,
+    success: true,
+    message: combined || `Stash ${action} completed successfully`,
+  };
+}
+
+/** Parses `git remote -v` output into structured remote data, grouping fetch/push URLs by name. */
+export function parseRemoteOutput(stdout: string): GitRemoteFull {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const remoteMap = new Map<string, { fetchUrl: string; pushUrl: string }>();
+
+  for (const line of lines) {
+    const match = line.match(/^(\S+)\s+(\S+)\s+\((fetch|push)\)$/);
+    if (!match) continue;
+    const [, name, url, type] = match;
+    if (!remoteMap.has(name)) {
+      remoteMap.set(name, { fetchUrl: "", pushUrl: "" });
+    }
+    const entry = remoteMap.get(name)!;
+    if (type === "fetch") entry.fetchUrl = url;
+    else entry.pushUrl = url;
+  }
+
+  const remotes = Array.from(remoteMap.entries()).map(([name, urls]) => ({
+    name,
+    fetchUrl: urls.fetchUrl,
+    pushUrl: urls.pushUrl,
+  }));
+
+  return { remotes, total: remotes.length };
+}
+
+/** Parses `git blame --porcelain` output into structured per-line blame data. */
+export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
+  const rawLines = stdout.split("\n");
+  const lines: GitBlameFull["lines"] = [];
+
+  let currentHash = "";
+  let currentAuthor = "";
+  let currentDate = "";
+  let currentLineNumber = 0;
+
+  // Track commit info we've seen (porcelain only shows full info once per commit)
+  const commitInfo = new Map<string, { author: string; date: string }>();
+
+  let i = 0;
+  while (i < rawLines.length) {
+    const line = rawLines[i];
+
+    // Hash line: <hash> <orig-line> <final-line> [<num-lines>]
+    const hashMatch = line.match(/^([a-f0-9]{40})\s+(\d+)\s+(\d+)/);
+    if (hashMatch) {
+      currentHash = hashMatch[1];
+      currentLineNumber = parseInt(hashMatch[3], 10);
+
+      // If we already have info for this commit, use it
+      const existing = commitInfo.get(currentHash);
+      if (existing) {
+        currentAuthor = existing.author;
+        currentDate = existing.date;
+      }
+
+      i++;
+      continue;
+    }
+
+    // Key-value pairs
+    if (line.startsWith("author ")) {
+      currentAuthor = line.slice(7);
+      i++;
+      continue;
+    }
+
+    if (line.startsWith("author-time ")) {
+      const timestamp = parseInt(line.slice(12), 10);
+      currentDate = new Date(timestamp * 1000).toISOString();
+      i++;
+      continue;
+    }
+
+    // Content line (prefixed with tab)
+    if (line.startsWith("\t")) {
+      // Store commit info for reuse
+      if (!commitInfo.has(currentHash)) {
+        commitInfo.set(currentHash, { author: currentAuthor, date: currentDate });
+      }
+
+      lines.push({
+        hash: currentHash.slice(0, 8),
+        author: currentAuthor,
+        date: currentDate,
+        lineNumber: currentLineNumber,
+        content: line.slice(1),
+      });
+
+      i++;
+      continue;
+    }
+
+    // Skip other porcelain metadata lines (author-mail, author-tz, committer-*, summary, filename, boundary, etc.)
+    i++;
+  }
+
+  return { lines, file };
 }

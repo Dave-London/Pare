@@ -10,6 +10,11 @@ import { registerCommitTool } from "./commit.js";
 import { registerPushTool } from "./push.js";
 import { registerPullTool } from "./pull.js";
 import { registerCheckoutTool } from "./checkout.js";
+import { registerTagTool } from "./tag.js";
+import { registerStashListTool } from "./stash-list.js";
+import { registerStashTool } from "./stash.js";
+import { registerRemoteTool } from "./remote.js";
+import { registerBlameTool } from "./blame.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
@@ -23,4 +28,9 @@ export function registerAllTools(server: McpServer) {
   if (s("push")) registerPushTool(server);
   if (s("pull")) registerPullTool(server);
   if (s("checkout")) registerCheckoutTool(server);
+  if (s("tag")) registerTagTool(server);
+  if (s("stash-list")) registerStashListTool(server);
+  if (s("stash")) registerStashTool(server);
+  if (s("remote")) registerRemoteTool(server);
+  if (s("blame")) registerBlameTool(server);
 }

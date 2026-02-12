@@ -10,6 +10,11 @@ import {
   formatPush,
   formatPull,
   formatCheckout,
+  formatTag,
+  formatStashList,
+  formatStash,
+  formatRemote,
+  formatBlame,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -22,6 +27,11 @@ import type {
   GitPush,
   GitPull,
   GitCheckout,
+  GitTagFull,
+  GitStashListFull,
+  GitStash,
+  GitRemoteFull,
+  GitBlameFull,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -469,5 +479,166 @@ describe("formatStatus (expanded)", () => {
     const output = formatStatus(status);
 
     expect(output).toContain("[ahead 3, behind 2]");
+  });
+});
+
+describe("formatTag", () => {
+  it("formats tag list with dates and messages", () => {
+    const tags: GitTagFull = {
+      tags: [
+        { name: "v1.2.0", date: "2024-01-15T10:30:00+00:00", message: "Release 1.2.0" },
+        { name: "v1.1.0", date: "2024-01-01T09:00:00+00:00", message: "Release 1.1.0" },
+      ],
+      total: 2,
+    };
+    const output = formatTag(tags);
+
+    expect(output).toContain("v1.2.0");
+    expect(output).toContain("2024-01-15T10:30:00+00:00");
+    expect(output).toContain("Release 1.2.0");
+    expect(output).toContain("v1.1.0");
+  });
+
+  it("formats empty tag list", () => {
+    const tags: GitTagFull = { tags: [], total: 0 };
+    expect(formatTag(tags)).toBe("No tags found");
+  });
+
+  it("formats tags without messages", () => {
+    const tags: GitTagFull = {
+      tags: [{ name: "v1.0.0", date: "2024-01-01T00:00:00+00:00" }],
+      total: 1,
+    };
+    const output = formatTag(tags);
+
+    expect(output).toContain("v1.0.0");
+    expect(output).toContain("2024-01-01T00:00:00+00:00");
+  });
+});
+
+describe("formatStashList", () => {
+  it("formats stash entries", () => {
+    const stashes: GitStashListFull = {
+      stashes: [
+        { index: 0, message: "WIP on main: abc1234 Fix bug", date: "2024-01-15 10:30:00 +0000" },
+        { index: 1, message: "On main: save progress", date: "2024-01-14 09:00:00 +0000" },
+      ],
+      total: 2,
+    };
+    const output = formatStashList(stashes);
+
+    expect(output).toContain("stash@{0}: WIP on main: abc1234 Fix bug");
+    expect(output).toContain("stash@{1}: On main: save progress");
+    expect(output).toContain("2024-01-15 10:30:00 +0000");
+  });
+
+  it("formats empty stash list", () => {
+    const stashes: GitStashListFull = { stashes: [], total: 0 };
+    expect(formatStashList(stashes)).toBe("No stashes found");
+  });
+});
+
+describe("formatStash", () => {
+  it("formats stash push result", () => {
+    const stash: GitStash = {
+      action: "push",
+      success: true,
+      message: "Saved working directory and index state WIP on main: abc1234 Fix bug",
+    };
+    const output = formatStash(stash);
+
+    expect(output).toContain("Saved working directory");
+  });
+
+  it("formats stash drop result", () => {
+    const stash: GitStash = {
+      action: "drop",
+      success: true,
+      message: "Dropped stash@{0} (abc1234...)",
+    };
+    const output = formatStash(stash);
+
+    expect(output).toContain("Dropped stash@{0}");
+  });
+});
+
+describe("formatRemote", () => {
+  it("formats remote list", () => {
+    const remotes: GitRemoteFull = {
+      remotes: [
+        {
+          name: "origin",
+          fetchUrl: "https://github.com/user/repo.git",
+          pushUrl: "https://github.com/user/repo.git",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatRemote(remotes);
+
+    expect(output).toContain("origin");
+    expect(output).toContain("https://github.com/user/repo.git");
+    expect(output).toContain("(fetch)");
+    expect(output).toContain("(push)");
+  });
+
+  it("formats empty remote list", () => {
+    const remotes: GitRemoteFull = { remotes: [], total: 0 };
+    expect(formatRemote(remotes)).toBe("No remotes configured");
+  });
+
+  it("formats multiple remotes", () => {
+    const remotes: GitRemoteFull = {
+      remotes: [
+        {
+          name: "origin",
+          fetchUrl: "https://github.com/user/repo.git",
+          pushUrl: "https://github.com/user/repo.git",
+        },
+        {
+          name: "upstream",
+          fetchUrl: "https://github.com/upstream/repo.git",
+          pushUrl: "https://github.com/upstream/repo.git",
+        },
+      ],
+      total: 2,
+    };
+    const output = formatRemote(remotes);
+
+    expect(output).toContain("origin");
+    expect(output).toContain("upstream");
+  });
+});
+
+describe("formatBlame", () => {
+  it("formats blame output", () => {
+    const blame: GitBlameFull = {
+      lines: [
+        {
+          hash: "abc12345",
+          author: "John Doe",
+          date: "2024-01-15T10:30:00.000Z",
+          lineNumber: 1,
+          content: "const x = 1;",
+        },
+        {
+          hash: "def67890",
+          author: "Jane Smith",
+          date: "2024-01-16T11:00:00.000Z",
+          lineNumber: 2,
+          content: "const y = 2;",
+        },
+      ],
+      file: "src/index.ts",
+    };
+    const output = formatBlame(blame);
+
+    expect(output).toContain("abc12345 (John Doe 2024-01-15T10:30:00.000Z) 1: const x = 1;");
+    expect(output).toContain("def67890 (Jane Smith 2024-01-16T11:00:00.000Z) 2: const y = 2;");
+  });
+
+  it("formats empty blame output", () => {
+    const blame: GitBlameFull = { lines: [], file: "empty.ts" };
+    expect(formatBlame(blame)).toBe("No blame data for empty.ts");
   });
 });

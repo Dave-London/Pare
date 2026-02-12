@@ -10,6 +10,11 @@ import {
   parsePush,
   parsePull,
   parseCheckout,
+  parseTagOutput,
+  parseStashListOutput,
+  parseStashOutput,
+  parseRemoteOutput,
+  parseBlameOutput,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -269,5 +274,272 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
 
     expect(result.files[0].status).toBe("renamed");
     expect(result.files[0].oldFile).toBeDefined();
+  });
+});
+
+describe("parseTagOutput", () => {
+  it("parses tag list with dates and messages", () => {
+    const stdout = [
+      "v1.2.0\t2024-01-15T10:30:00+00:00\tRelease 1.2.0",
+      "v1.1.0\t2024-01-01T09:00:00+00:00\tRelease 1.1.0",
+      "v1.0.0\t2023-12-01T08:00:00+00:00\tInitial release",
+    ].join("\n");
+
+    const result = parseTagOutput(stdout);
+
+    expect(result.total).toBe(3);
+    expect(result.tags[0]).toEqual({
+      name: "v1.2.0",
+      date: "2024-01-15T10:30:00+00:00",
+      message: "Release 1.2.0",
+    });
+    expect(result.tags[1].name).toBe("v1.1.0");
+    expect(result.tags[2].name).toBe("v1.0.0");
+  });
+
+  it("handles empty tag list", () => {
+    const result = parseTagOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.tags).toEqual([]);
+  });
+
+  it("handles tags without messages", () => {
+    const stdout = "v1.0.0\t2024-01-01T00:00:00+00:00\t";
+
+    const result = parseTagOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.tags[0].name).toBe("v1.0.0");
+    expect(result.tags[0].date).toBe("2024-01-01T00:00:00+00:00");
+  });
+
+  it("handles lightweight tags (no date or message)", () => {
+    const stdout = "v0.1.0\t\t";
+
+    const result = parseTagOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.tags[0].name).toBe("v0.1.0");
+  });
+});
+
+describe("parseStashListOutput", () => {
+  it("parses stash list entries", () => {
+    const stdout = [
+      "stash@{0}\tWIP on main: abc1234 Fix bug\t2024-01-15 10:30:00 +0000",
+      "stash@{1}\tOn main: save progress\t2024-01-14 09:00:00 +0000",
+    ].join("\n");
+
+    const result = parseStashListOutput(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.stashes[0]).toEqual({
+      index: 0,
+      message: "WIP on main: abc1234 Fix bug",
+      date: "2024-01-15 10:30:00 +0000",
+    });
+    expect(result.stashes[1]).toEqual({
+      index: 1,
+      message: "On main: save progress",
+      date: "2024-01-14 09:00:00 +0000",
+    });
+  });
+
+  it("handles empty stash list", () => {
+    const result = parseStashListOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.stashes).toEqual([]);
+  });
+
+  it("parses single stash entry", () => {
+    const stdout = "stash@{0}\tWIP on feature: work in progress\t2024-01-15 12:00:00 +0000";
+
+    const result = parseStashListOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.stashes[0].index).toBe(0);
+  });
+});
+
+describe("parseStashOutput", () => {
+  it("parses stash push output", () => {
+    const result = parseStashOutput(
+      "Saved working directory and index state WIP on main: abc1234 Fix bug",
+      "",
+      "push",
+    );
+
+    expect(result.action).toBe("push");
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("Saved working directory");
+  });
+
+  it("parses stash pop output", () => {
+    const result = parseStashOutput("", "Dropped refs/stash@{0}", "pop");
+
+    expect(result.action).toBe("pop");
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("Dropped");
+  });
+
+  it("parses stash apply output", () => {
+    const result = parseStashOutput("On branch main\nChanges not staged for commit:", "", "apply");
+
+    expect(result.action).toBe("apply");
+    expect(result.success).toBe(true);
+  });
+
+  it("parses stash drop output", () => {
+    const result = parseStashOutput("Dropped stash@{0} (abc1234...)", "", "drop");
+
+    expect(result.action).toBe("drop");
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("Dropped stash@{0}");
+  });
+
+  it("handles empty output", () => {
+    const result = parseStashOutput("", "", "push");
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("Stash push completed successfully");
+  });
+});
+
+describe("parseRemoteOutput", () => {
+  it("parses remote -v output with single remote", () => {
+    const stdout = [
+      "origin\thttps://github.com/user/repo.git (fetch)",
+      "origin\thttps://github.com/user/repo.git (push)",
+    ].join("\n");
+
+    const result = parseRemoteOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.remotes[0]).toEqual({
+      name: "origin",
+      fetchUrl: "https://github.com/user/repo.git",
+      pushUrl: "https://github.com/user/repo.git",
+    });
+  });
+
+  it("parses remote -v output with multiple remotes", () => {
+    const stdout = [
+      "origin\thttps://github.com/user/repo.git (fetch)",
+      "origin\thttps://github.com/user/repo.git (push)",
+      "upstream\thttps://github.com/upstream/repo.git (fetch)",
+      "upstream\thttps://github.com/upstream/repo.git (push)",
+    ].join("\n");
+
+    const result = parseRemoteOutput(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.remotes[0].name).toBe("origin");
+    expect(result.remotes[1].name).toBe("upstream");
+    expect(result.remotes[1].fetchUrl).toBe("https://github.com/upstream/repo.git");
+  });
+
+  it("handles different fetch and push URLs", () => {
+    const stdout = [
+      "origin\thttps://github.com/user/repo.git (fetch)",
+      "origin\tgit@github.com:user/repo.git (push)",
+    ].join("\n");
+
+    const result = parseRemoteOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.remotes[0].fetchUrl).toBe("https://github.com/user/repo.git");
+    expect(result.remotes[0].pushUrl).toBe("git@github.com:user/repo.git");
+  });
+
+  it("handles empty remote list", () => {
+    const result = parseRemoteOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.remotes).toEqual([]);
+  });
+});
+
+describe("parseBlameOutput", () => {
+  it("parses porcelain blame output", () => {
+    const stdout = [
+      "abc123456789012345678901234567890123abcd 1 1 3",
+      "author John Doe",
+      "author-mail <john@example.com>",
+      "author-time 1700000000",
+      "author-tz +0000",
+      "committer John Doe",
+      "committer-mail <john@example.com>",
+      "committer-time 1700000000",
+      "committer-tz +0000",
+      "summary Initial commit",
+      "filename src/index.ts",
+      "\tconst x = 1;",
+      "abc123456789012345678901234567890123abcd 2 2",
+      "\tconst y = 2;",
+      "abc123456789012345678901234567890123abcd 3 3",
+      "\tconst z = 3;",
+    ].join("\n");
+
+    const result = parseBlameOutput(stdout, "src/index.ts");
+
+    expect(result.file).toBe("src/index.ts");
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toEqual({
+      hash: "abc12345",
+      author: "John Doe",
+      date: new Date(1700000000 * 1000).toISOString(),
+      lineNumber: 1,
+      content: "const x = 1;",
+    });
+    expect(result.lines[1].lineNumber).toBe(2);
+    expect(result.lines[1].content).toBe("const y = 2;");
+    expect(result.lines[2].lineNumber).toBe(3);
+    expect(result.lines[2].content).toBe("const z = 3;");
+  });
+
+  it("parses blame with multiple commits", () => {
+    const stdout = [
+      "aaaa111122223333444455556666777788889999 1 1 1",
+      "author Alice",
+      "author-mail <alice@example.com>",
+      "author-time 1700000000",
+      "author-tz +0000",
+      "committer Alice",
+      "committer-mail <alice@example.com>",
+      "committer-time 1700000000",
+      "committer-tz +0000",
+      "summary First commit",
+      "filename file.ts",
+      "\tline one",
+      "bbbb111122223333444455556666777788889999 2 2 1",
+      "author Bob",
+      "author-mail <bob@example.com>",
+      "author-time 1700100000",
+      "author-tz +0000",
+      "committer Bob",
+      "committer-mail <bob@example.com>",
+      "committer-time 1700100000",
+      "committer-tz +0000",
+      "summary Second commit",
+      "filename file.ts",
+      "\tline two",
+    ].join("\n");
+
+    const result = parseBlameOutput(stdout, "file.ts");
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0].author).toBe("Alice");
+    expect(result.lines[0].hash).toBe("aaaa1111");
+    expect(result.lines[1].author).toBe("Bob");
+    expect(result.lines[1].hash).toBe("bbbb1111");
+  });
+
+  it("handles empty blame output", () => {
+    const result = parseBlameOutput("", "empty-file.ts");
+
+    expect(result.file).toBe("empty-file.ts");
+    expect(result.lines).toEqual([]);
   });
 });
