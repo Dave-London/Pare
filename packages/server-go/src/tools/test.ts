@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoTestJson } from "../lib/parsers.js";
-import { formatGoTest } from "../lib/formatters.js";
+import { formatGoTest, compactTestMap, formatTestCompact } from "../lib/formatters.js";
 import { GoTestResultSchema } from "../schemas/index.js";
 
 export function registerTestTool(server: McpServer) {
@@ -30,10 +30,17 @@ export function registerTestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test name filter regex"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GoTestResultSchema,
     },
-    async ({ path, packages, run: runFilter }) => {
+    async ({ path, packages, run: runFilter, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -45,7 +52,14 @@ export function registerTestTool(server: McpServer) {
 
       const result = await goCmd(args, cwd);
       const data = parseGoTestJson(result.stdout, result.exitCode);
-      return dualOutput(data, formatGoTest);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatGoTest,
+        compactTestMap,
+        formatTestCompact,
+        compact === false,
+      );
     },
   );
 }

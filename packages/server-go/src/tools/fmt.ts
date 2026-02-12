@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { gofmtCmd } from "../lib/go-runner.js";
 import { parseGoFmtOutput } from "../lib/parsers.js";
-import { formatGoFmt } from "../lib/formatters.js";
+import { formatGoFmt, compactFmtMap, formatFmtCompact } from "../lib/formatters.js";
 import { GoFmtResultSchema } from "../schemas/index.js";
 
 export function registerFmtTool(server: McpServer) {
@@ -30,10 +30,17 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check mode: list unformatted files without fixing (default: false)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: GoFmtResultSchema,
     },
-    async ({ path, patterns, check }) => {
+    async ({ path, patterns, check, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -42,7 +49,15 @@ export function registerFmtTool(server: McpServer) {
       const args = [flag, ...(patterns || ["."])];
       const result = await gofmtCmd(args, cwd);
       const data = parseGoFmtOutput(result.stdout, result.stderr, result.exitCode, !!check);
-      return dualOutput(data, formatGoFmt);
+      const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatGoFmt,
+        compactFmtMap,
+        formatFmtCompact,
+        compact === false,
+      );
     },
   );
 }
