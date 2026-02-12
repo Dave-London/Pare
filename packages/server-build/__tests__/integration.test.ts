@@ -55,7 +55,10 @@ describe("@paretools/build integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(Array.isArray(sc.diagnostics)).toBe(true);
-      expect(sc.total).toEqual(expect.any(Number));
+      // total may be omitted in compact mode
+      if (sc.total !== undefined) {
+        expect(sc.total).toEqual(expect.any(Number));
+      }
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
     }, 60_000);
@@ -76,8 +79,13 @@ describe("@paretools/build integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(typeof sc.duration).toBe("number");
-      expect(Array.isArray(sc.errors)).toBe(true);
-      expect(Array.isArray(sc.warnings)).toBe(true);
+      // In compact mode, arrays are replaced by counts
+      if (Array.isArray(sc.errors)) {
+        expect(Array.isArray(sc.warnings)).toBe(true);
+      } else {
+        expect(typeof sc.errorCount).toBe("number");
+        expect(typeof sc.warningCount).toBe("number");
+      }
     }, 60_000);
 
     it("rejects disallowed commands", async () => {
@@ -112,8 +120,13 @@ describe("@paretools/build integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.duration).toBe("number");
-        expect(Array.isArray(sc.errors)).toBe(true);
-        expect(Array.isArray(sc.warnings)).toBe(true);
+        // In compact mode, arrays are replaced by counts
+        if (Array.isArray(sc.errors)) {
+          expect(Array.isArray(sc.warnings)).toBe(true);
+        } else {
+          expect(typeof sc.errorCount).toBe("number");
+          expect(typeof sc.warningCount).toBe("number");
+        }
       } else {
         // If no structured content, it should be marked as an error
         expect(result.isError).toBe(true);
@@ -148,9 +161,15 @@ describe("@paretools/build integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.duration).toBe("number");
-        expect(Array.isArray(sc.outputs)).toBe(true);
-        expect(Array.isArray(sc.errors)).toBe(true);
-        expect(Array.isArray(sc.warnings)).toBe(true);
+        // In compact mode, per-file outputs and error/warning arrays are replaced by counts
+        if (Array.isArray(sc.outputs)) {
+          expect(Array.isArray(sc.errors)).toBe(true);
+          expect(Array.isArray(sc.warnings)).toBe(true);
+        } else {
+          expect(typeof sc.fileCount).toBe("number");
+          expect(typeof sc.errorCount).toBe("number");
+          expect(typeof sc.warningCount).toBe("number");
+        }
       } else {
         expect(result.isError).toBe(true);
       }
@@ -174,9 +193,15 @@ describe("@paretools/build integration", () => {
           const sc = result.structuredContent as Record<string, unknown>;
           expect(typeof sc.success).toBe("boolean");
           expect(typeof sc.duration).toBe("number");
-          expect(Array.isArray(sc.assets)).toBe(true);
-          expect(Array.isArray(sc.errors)).toBe(true);
-          expect(Array.isArray(sc.warnings)).toBe(true);
+          // In compact mode, per-asset and error/warning arrays are replaced by counts
+          if (Array.isArray(sc.assets)) {
+            expect(Array.isArray(sc.errors)).toBe(true);
+            expect(Array.isArray(sc.warnings)).toBe(true);
+          } else {
+            expect(typeof sc.assetCount).toBe("number");
+            expect(typeof sc.errorCount).toBe("number");
+            expect(typeof sc.warningCount).toBe("number");
+          }
         } else {
           expect(result.isError).toBe(true);
         }

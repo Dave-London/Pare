@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { tsc } from "../lib/build-runner.js";
 import { parseTscOutput } from "../lib/parsers.js";
-import { formatTsc } from "../lib/formatters.js";
+import { formatTsc, compactTscMap, formatTscCompact } from "../lib/formatters.js";
 import { TscResultSchema } from "../schemas/index.js";
 
 export function registerTscTool(server: McpServer) {
@@ -25,10 +25,17 @@ export function registerTscTool(server: McpServer) {
           .default(true)
           .describe("Skip emitting output files (default: true)"),
         project: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Path to tsconfig.json"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: TscResultSchema,
     },
-    async ({ path, noEmit, project }) => {
+    async ({ path, noEmit, project, compact }) => {
       const cwd = path || process.cwd();
       if (project) assertNoFlagInjection(project, "project");
 
@@ -37,8 +44,16 @@ export function registerTscTool(server: McpServer) {
       if (project) args.push("--project", project);
 
       const result = await tsc(args, cwd);
+      const rawOutput = result.stdout + "\n" + result.stderr;
       const data = parseTscOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatTsc);
+      return compactDualOutput(
+        data,
+        rawOutput,
+        formatTsc,
+        compactTscMap,
+        formatTscCompact,
+        compact === false,
+      );
     },
   );
 }

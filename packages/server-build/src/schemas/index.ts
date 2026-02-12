@@ -1,36 +1,66 @@
 import { z } from "zod";
 
-/** Zod schema for a single TypeScript compiler diagnostic with file location, severity, and error code. */
+/** Zod schema for a single TypeScript compiler diagnostic with file location, severity, and error code.
+ *  In compact mode, only file, line, and severity are returned. */
 export const TscDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
-  column: z.number(),
-  code: z.number(),
+  column: z.number().optional(),
+  code: z.number().optional(),
   severity: z.enum(["error", "warning"]),
-  message: z.string(),
+  message: z.string().optional(),
 });
 
-/** Zod schema for structured tsc output including success status, diagnostics array, and error/warning counts. */
+/** Zod schema for structured tsc output including success status, diagnostics array, and error/warning counts.
+ *  In compact mode, total is omitted and diagnostics contain only file:line + severity. */
 export const TscResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(TscDiagnosticSchema),
-  total: z.number(),
+  total: z.number().optional(),
   errors: z.number(),
   warnings: z.number(),
 });
 
-export type TscResult = z.infer<typeof TscResultSchema>;
-export type TscDiagnostic = z.infer<typeof TscDiagnosticSchema>;
+/** Full tsc diagnostic -- always returned by the parser. */
+export interface TscDiagnostic {
+  [key: string]: unknown;
+  file: string;
+  line: number;
+  column: number;
+  code: number;
+  severity: "error" | "warning";
+  message: string;
+}
 
-/** Zod schema for structured build command output with success status, duration, errors, and warnings. */
+/** Full tsc result -- always returned by the parser. */
+export interface TscResult {
+  [key: string]: unknown;
+  success: boolean;
+  diagnostics: TscDiagnostic[];
+  total: number;
+  errors: number;
+  warnings: number;
+}
+
+/** Zod schema for structured build command output with success status, duration, errors, and warnings.
+ *  In compact mode, error/warning arrays are replaced by errorCount/warningCount. */
 export const BuildResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
-  errors: z.array(z.string()),
-  warnings: z.array(z.string()),
+  errors: z.array(z.string()).optional(),
+  warnings: z.array(z.string()).optional(),
+  errorCount: z.number().optional(),
+  warningCount: z.number().optional(),
 });
 
-export type BuildResult = z.infer<typeof BuildResultSchema>;
+/** Full build result -- always returned by the parser. */
+export interface BuildResult {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  errors: string[];
+  warnings: string[];
+}
 
 // ---------------------------------------------------------------------------
 // esbuild
@@ -51,18 +81,45 @@ export const EsbuildWarningSchema = z.object({
   message: z.string(),
 });
 
-/** Zod schema for structured esbuild output including errors, warnings, output files, and duration. */
+/** Zod schema for structured esbuild output including errors, warnings, output files, and duration.
+ *  In compact mode, error/warning arrays and outputFiles are replaced by counts. */
 export const EsbuildResultSchema = z.object({
   success: z.boolean(),
-  errors: z.array(EsbuildErrorSchema),
-  warnings: z.array(EsbuildWarningSchema),
+  errors: z.array(EsbuildErrorSchema).optional(),
+  warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
   duration: z.number(),
+  errorCount: z.number().optional(),
+  warningCount: z.number().optional(),
+  outputFileCount: z.number().optional(),
 });
 
-export type EsbuildError = z.infer<typeof EsbuildErrorSchema>;
-export type EsbuildWarning = z.infer<typeof EsbuildWarningSchema>;
-export type EsbuildResult = z.infer<typeof EsbuildResultSchema>;
+/** Full esbuild error -- always returned by the parser. */
+export interface EsbuildError {
+  [key: string]: unknown;
+  file?: string;
+  line?: number;
+  column?: number;
+  message: string;
+}
+
+/** Full esbuild warning -- always returned by the parser. */
+export interface EsbuildWarning {
+  [key: string]: unknown;
+  file?: string;
+  line?: number;
+  message: string;
+}
+
+/** Full esbuild result -- always returned by the parser. */
+export interface EsbuildResult {
+  [key: string]: unknown;
+  success: boolean;
+  errors: EsbuildError[];
+  warnings: EsbuildWarning[];
+  outputFiles?: string[];
+  duration: number;
+}
 
 // ---------------------------------------------------------------------------
 // vite-build
@@ -74,17 +131,35 @@ export const ViteOutputFileSchema = z.object({
   size: z.string(),
 });
 
-/** Zod schema for structured Vite production build output with files, sizes, and duration. */
+/** Zod schema for structured Vite production build output with files, sizes, and duration.
+ *  In compact mode, per-file outputs and error/warning arrays are replaced by counts. */
 export const ViteBuildResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
-  outputs: z.array(ViteOutputFileSchema),
-  errors: z.array(z.string()),
-  warnings: z.array(z.string()),
+  outputs: z.array(ViteOutputFileSchema).optional(),
+  errors: z.array(z.string()).optional(),
+  warnings: z.array(z.string()).optional(),
+  fileCount: z.number().optional(),
+  errorCount: z.number().optional(),
+  warningCount: z.number().optional(),
 });
 
-export type ViteOutputFile = z.infer<typeof ViteOutputFileSchema>;
-export type ViteBuildResult = z.infer<typeof ViteBuildResultSchema>;
+/** Full Vite output file entry. */
+export interface ViteOutputFile {
+  [key: string]: unknown;
+  file: string;
+  size: string;
+}
+
+/** Full Vite build result -- always returned by the parser. */
+export interface ViteBuildResult {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  outputs: ViteOutputFile[];
+  errors: string[];
+  warnings: string[];
+}
 
 // ---------------------------------------------------------------------------
 // webpack
@@ -96,15 +171,35 @@ export const WebpackAssetSchema = z.object({
   size: z.number(),
 });
 
-/** Zod schema for structured webpack build output with assets, errors, warnings, and module count. */
+/** Zod schema for structured webpack build output with assets, errors, warnings, and module count.
+ *  In compact mode, per-asset and error/warning arrays are replaced by counts and totalSize. */
 export const WebpackResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
-  assets: z.array(WebpackAssetSchema),
-  errors: z.array(z.string()),
-  warnings: z.array(z.string()),
+  assets: z.array(WebpackAssetSchema).optional(),
+  errors: z.array(z.string()).optional(),
+  warnings: z.array(z.string()).optional(),
   modules: z.number().optional(),
+  assetCount: z.number().optional(),
+  totalSize: z.number().optional(),
+  errorCount: z.number().optional(),
+  warningCount: z.number().optional(),
 });
 
-export type WebpackAsset = z.infer<typeof WebpackAssetSchema>;
-export type WebpackResult = z.infer<typeof WebpackResultSchema>;
+/** Full webpack asset entry. */
+export interface WebpackAsset {
+  [key: string]: unknown;
+  name: string;
+  size: number;
+}
+
+/** Full webpack result -- always returned by the parser. */
+export interface WebpackResult {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  assets: WebpackAsset[];
+  errors: string[];
+  warnings: string[];
+  modules?: number;
+}
