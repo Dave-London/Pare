@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run } from "@paretools/shared";
+import { dualOutput, run, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage } from "../lib/parsers/pytest.js";
 import { parseJestCoverage } from "../lib/parsers/jest.js";
@@ -33,7 +33,11 @@ export function registerCoverageTool(server: McpServer) {
       description:
         "Runs tests with coverage and returns structured coverage summary per file. Use instead of running test coverage commands in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()

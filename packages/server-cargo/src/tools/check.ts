@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
 import { formatCargoBuild } from "../lib/formatters.js";
@@ -14,8 +14,16 @@ export function registerCheckTool(server: McpServer) {
       description:
         "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking. Use instead of running `cargo check` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        package: z.string().optional().describe("Package to check in a workspace"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Package to check in a workspace"),
       },
       outputSchema: CargoBuildResultSchema,
     },

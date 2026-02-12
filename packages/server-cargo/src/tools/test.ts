@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoTestOutput } from "../lib/parsers.js";
 import { formatCargoTest } from "../lib/formatters.js";
@@ -14,8 +14,16 @@ export function registerTestTool(server: McpServer) {
       description:
         "Runs cargo test and returns structured test results (name, status, pass/fail counts). Use instead of running `cargo test` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        filter: z.string().optional().describe("Test name filter pattern"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        filter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Test name filter pattern"),
       },
       outputSchema: CargoTestResultSchema,
     },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
 import { formatCargoBuild } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerBuildTool(server: McpServer) {
       description:
         "Runs cargo build and returns structured diagnostics (file, line, code, severity, message). Use instead of running `cargo build` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),
       },
       outputSchema: CargoBuildResultSchema,

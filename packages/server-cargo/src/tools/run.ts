@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRunOutput } from "../lib/parsers.js";
 import { formatCargoRun } from "../lib/formatters.js";
@@ -14,10 +14,22 @@ export function registerRunTool(server: McpServer) {
       description:
         "Runs a cargo binary and returns structured output (exit code, stdout, stderr). Use instead of running `cargo run` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        args: z.array(z.string()).optional().describe("Arguments to pass to the binary (after --)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Arguments to pass to the binary (after --)"),
         release: z.boolean().optional().default(false).describe("Run in release mode"),
-        package: z.string().optional().describe("Package to run in a workspace"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Package to run in a workspace"),
       },
       outputSchema: CargoRunResultSchema,
     },

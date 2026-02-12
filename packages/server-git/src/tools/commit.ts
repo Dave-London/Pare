@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseCommit } from "../lib/parsers.js";
 import { formatCommit } from "../lib/formatters.js";
@@ -14,8 +14,12 @@ export function registerCommitTool(server: McpServer) {
       description:
         "Creates a commit with the given message. Returns structured data with hash, message, and change statistics. Use instead of running `git commit` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
-        message: z.string().describe("Commit message"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
+        message: z.string().max(INPUT_LIMITS.MESSAGE_MAX).describe("Commit message"),
         amend: z.boolean().optional().default(false).describe("Amend the previous commit"),
       },
       outputSchema: GitCommitSchema,

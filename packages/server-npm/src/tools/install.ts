@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseInstallOutput } from "../lib/parsers.js";
 import { formatInstall } from "../lib/formatters.js";
@@ -17,9 +17,14 @@ export function registerInstallTool(server: McpServer) {
         "WARNING: Installing npm packages may execute lifecycle scripts (preinstall/postinstall). " +
         "Only install trusted packages. Set ignoreScripts to true to skip lifecycle scripts.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         args: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Additional arguments (e.g., package names to install)"),

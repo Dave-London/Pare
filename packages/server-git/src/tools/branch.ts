@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch } from "../lib/parsers.js";
@@ -15,9 +15,21 @@ export function registerBranchTool(server: McpServer) {
       description:
         "Lists, creates, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
-        create: z.string().optional().describe("Create a new branch with this name"),
-        delete: z.string().optional().describe("Delete branch with this name"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
+        create: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Create a new branch with this name"),
+        delete: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Delete branch with this name"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
         compact: z
           .boolean()

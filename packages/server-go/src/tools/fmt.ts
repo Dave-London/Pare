@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { gofmtCmd } from "../lib/go-runner.js";
 import { parseGoFmtOutput } from "../lib/parsers.js";
 import { formatGoFmt } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerFmtTool(server: McpServer) {
       description:
         "Checks or fixes Go source formatting using gofmt. In check mode (-l), lists unformatted files. In fix mode (-w), rewrites files. Use instead of running `gofmt` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         patterns: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("File patterns to format (default: ['.'])"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { black } from "../lib/python-runner.js";
 import { parseBlackOutput } from "../lib/parsers.js";
 import { formatBlack } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerBlackTool(server: McpServer) {
       description:
         "Runs Black code formatter and returns structured results (files changed, unchanged, would reformat). Use instead of running `black` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         targets: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe('Files or directories to format (default: ["."])'),

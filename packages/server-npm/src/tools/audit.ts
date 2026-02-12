@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseAuditJson } from "../lib/parsers.js";
 import { formatAudit } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerAuditTool(server: McpServer) {
       description:
         "Runs npm audit and returns structured vulnerability data. Use instead of running `npm audit` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
       },
       outputSchema: NpmAuditSchema,
     },

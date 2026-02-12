@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseLog } from "../lib/parsers.js";
@@ -18,14 +18,26 @@ export function registerLogTool(server: McpServer) {
       description:
         "Returns commit history as structured data. Use instead of running `git log` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
         maxCount: z
           .number()
           .optional()
           .default(10)
           .describe("Number of commits to return (default: 10)"),
-        ref: z.string().optional().describe("Branch, tag, or commit to start from"),
-        author: z.string().optional().describe("Filter by author name or email"),
+        ref: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Branch, tag, or commit to start from"),
+        author: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by author name or email"),
         compact: z
           .boolean()
           .optional()

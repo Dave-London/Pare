@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRemoveOutput } from "../lib/parsers.js";
 import { formatCargoRemove } from "../lib/formatters.js";
@@ -14,8 +14,15 @@ export function registerRemoveTool(server: McpServer) {
       description:
         "Removes dependencies from a Rust project and returns structured output. Use instead of running `cargo remove` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        packages: z.array(z.string()).describe("Package names to remove"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .describe("Package names to remove"),
         dev: z.boolean().optional().default(false).describe("Remove from dev dependencies (--dev)"),
       },
       outputSchema: CargoRemoveResultSchema,

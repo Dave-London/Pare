@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeFormat } from "../lib/parsers.js";
 import { formatFormatWrite } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerBiomeFormatTool(server: McpServer) {
       description:
         "Formats files with Biome (format --write) and returns a structured list of changed files. Use instead of running `biome format --write` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         patterns: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("File patterns to format (default: ['.'])"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoRunOutput } from "../lib/parsers.js";
 import { formatGoRun } from "../lib/formatters.js";
@@ -14,15 +14,26 @@ export function registerRunTool(server: McpServer) {
       description:
         "Runs a Go program and returns structured output (stdout, stderr, exit code). Use instead of running `go run` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        file: z.string().optional().default(".").describe("Go file or package to run (default: .)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .default(".")
+          .describe("Go file or package to run (default: .)"),
         args: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Arguments to pass to the program"),
         buildArgs: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Build flags to pass to go run (e.g., -race, -tags)"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseStatus } from "../lib/parsers.js";
 import { formatStatus } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerStatusTool(server: McpServer) {
       description:
         "Returns the working tree status as structured data (branch, staged, modified, untracked, conflicts). Use instead of running `git status` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Repository path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Repository path (default: cwd)"),
       },
       outputSchema: GitStatusSchema,
     },

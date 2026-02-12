@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { pytest } from "../lib/python-runner.js";
 import { parsePytestOutput } from "../lib/parsers.js";
 import { formatPytest } from "../lib/formatters.js";
@@ -14,12 +14,21 @@ export function registerPytestTool(server: McpServer) {
       description:
         "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures). Use instead of running `pytest` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         targets: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Test files or directories to run (default: auto-discover)"),
-        markers: z.string().optional().describe('Pytest marker expression (e.g. "not slow")'),
+        markers: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Pytest marker expression (e.g. "not slow")'),
         verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
         exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
       },

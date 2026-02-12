@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseImagesJson } from "../lib/parsers.js";
 import { formatImages } from "../lib/formatters.js";
@@ -19,7 +19,11 @@ export function registerImagesTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show all images including intermediates"),
-        filter: z.string().optional().describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
+        filter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
       },
       outputSchema: DockerImagesSchema,
     },

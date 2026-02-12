@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseOutdatedJson } from "../lib/parsers.js";
 import { formatOutdated } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerOutdatedTool(server: McpServer) {
       description:
         "Checks for outdated packages and returns structured update information. Use instead of running `npm outdated` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
       },
       outputSchema: NpmOutdatedSchema,
     },

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
@@ -34,13 +34,18 @@ export function registerRunTool(server: McpServer) {
       description:
         "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures. Use instead of running pytest/jest/vitest/mocha in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
         filter: z
           .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test filter pattern (file path or test name pattern)"),
         updateSnapshots: z
@@ -49,7 +54,8 @@ export function registerRunTool(server: McpServer) {
           .default(false)
           .describe("Update snapshots (vitest/jest only, adds -u flag)"),
         args: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Additional arguments to pass to the test runner"),

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoDocOutput } from "../lib/parsers.js";
 import { formatCargoDoc } from "../lib/formatters.js";
@@ -14,7 +14,11 @@ export function registerDocTool(server: McpServer) {
       description:
         "Generates Rust documentation and returns structured output with warning count. Use instead of running `cargo doc` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
         open: z
           .boolean()
           .optional()

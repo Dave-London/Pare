@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeUpOutput } from "../lib/parsers.js";
 import { formatComposeUp } from "../lib/formatters.js";
@@ -14,9 +14,13 @@ export function registerComposeUpTool(server: McpServer) {
       description:
         "Starts Docker Compose services and returns structured status. Use instead of running `docker compose up` in the terminal.",
       inputSchema: {
-        path: z.string().describe("Directory containing docker-compose.yml"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .describe("Directory containing docker-compose.yml"),
         services: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe("Specific services to start (default: all)"),
@@ -26,7 +30,11 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Build images before starting (default: false)"),
-        file: z.string().optional().describe("Compose file path (default: docker-compose.yml)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Compose file path (default: docker-compose.yml)"),
       },
       outputSchema: DockerComposeUpSchema,
     },

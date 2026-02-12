@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";
@@ -13,8 +13,16 @@ export function registerPipAuditTool(server: McpServer) {
       description:
         "Runs pip-audit and returns a structured vulnerability report. Use instead of running `pip-audit` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Project root path (default: cwd)"),
-        requirements: z.string().optional().describe("Path to requirements file"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Project root path (default: cwd)"),
+        requirements: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to requirements file"),
       },
       outputSchema: PipAuditResultSchema,
     },

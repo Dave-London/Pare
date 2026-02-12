@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvRun } from "../lib/parsers.js";
 import { formatUvRun } from "../lib/formatters.js";
@@ -14,9 +14,14 @@ export function registerUvRunTool(server: McpServer) {
       description:
         "Runs a command in a uv-managed environment and returns structured output. Use instead of running `uv run` in the terminal.",
       inputSchema: {
-        path: z.string().optional().describe("Working directory (default: cwd)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd)"),
         command: z
-          .array(z.string())
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
           .min(1)
           .describe("Command and arguments to run (e.g. ['python', 'script.py'])"),
       },
