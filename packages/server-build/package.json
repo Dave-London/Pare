@@ -1,6 +1,6 @@
 {
   "name": "@paretools/build",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "mcpName": "io.github.Dave-London/build",
   "description": "MCP server for build tools (tsc, esbuild, etc.) with structured, token-efficient output",
   "license": "MIT",
