@@ -12,7 +12,9 @@ export function registerExecTool(server: McpServer) {
     {
       title: "Docker Exec",
       description:
-        "Executes a command in a running Docker container and returns structured output. Use instead of running `docker exec` in the terminal.",
+        "Executes arbitrary commands inside a running Docker container and returns structured output. " +
+        "Use instead of running `docker exec` in the terminal. " +
+        "WARNING: This runs arbitrary commands inside the container. Only use on trusted containers.",
       inputSchema: {
         container: z.string().describe("Container name or ID"),
         command: z.array(z.string()).describe('Command to execute (e.g., ["ls", "-la"])'),
@@ -27,7 +29,11 @@ export function registerExecTool(server: McpServer) {
       outputSchema: DockerExecSchema,
     },
     async ({ container, command, workdir, env, path }) => {
+      if (!command || command.length === 0) {
+        throw new Error("command array must not be empty");
+      }
       assertNoFlagInjection(container, "container");
+      assertNoFlagInjection(command[0], "command");
       if (workdir) assertNoFlagInjection(workdir, "workdir");
       // Validate first element of command array (the binary name) to prevent flag injection.
       // Subsequent elements are intentionally unchecked as they are arguments to the command itself.

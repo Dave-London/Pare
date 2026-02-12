@@ -49,6 +49,11 @@ const ALLOWED_BUILD_COMMANDS = new Set([
  * Rejecting paths entirely would break legitimate use cases (NixOS store paths, `C:\Program Files\...`,
  * non-PATH installs). Exploiting this requires placing a malicious binary on disk, which already
  * implies the system is compromised.
+ *
+ * Security note: When a full path is provided (containing `/` or `\`), a warning is logged because
+ * basename-only validation cannot guarantee the binary at that path is the genuine tool. An attacker
+ * with write access to the filesystem could place a malicious binary at a path like `/tmp/evil/npm`.
+ * The warning serves as an audit trail for security-conscious deployments.
  */
 export function assertAllowedCommand(command: string): void {
   // Extract the base command name (handle paths like /usr/bin/npm or C:\npm.cmd)
@@ -63,6 +68,15 @@ export function assertAllowedCommand(command: string): void {
     throw new Error(
       `Command "${command}" is not in the allowed build commands list. ` +
         `Allowed: ${[...ALLOWED_BUILD_COMMANDS].sort().join(", ")}`,
+    );
+  }
+
+  // Warn when a full path is used — basename-only validation cannot verify the actual binary
+  if (command.includes("/") || command.includes("\\")) {
+    console.warn(
+      `[pare:security] Command uses a full path: "${command}". ` +
+        `Only the basename "${base}" was validated against the allowlist. ` +
+        `Ensure this path points to a trusted binary.`,
     );
   }
 }
