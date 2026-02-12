@@ -73,7 +73,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
       safeArgs,
       {
         cwd: opts?.cwd,
-        timeout: opts?.timeout ?? 30_000,
+        timeout: opts?.timeout ?? 60_000,
         env: opts?.env ? { ...process.env, ...opts.env } : undefined,
         maxBuffer: 10 * 1024 * 1024, // 10 MB
         shell: process.platform === "win32",
@@ -101,7 +101,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
           if (error.killed && error.signal) {
             reject(
               new Error(
-                `Command "${cmd}" timed out after ${opts?.timeout ?? 30_000}ms and was killed (${error.signal}).`,
+                `Command "${cmd}" timed out after ${opts?.timeout ?? 60_000}ms and was killed (${error.signal}).`,
               ),
             );
             return;
