@@ -29,8 +29,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // On Windows with shell mode, escape % to prevent env variable expansion.
     // Node.js wraps args in double quotes which prevents most cmd.exe metacharacters,
     // but %VAR% expansion still works inside double quotes.
-    const safeArgs =
-      process.platform === "win32" ? args.map((a) => a.replace(/%/g, "%%")) : args;
+    const safeArgs = process.platform === "win32" ? args.map((a) => a.replace(/%/g, "%%")) : args;
 
     execFile(
       cmd,
