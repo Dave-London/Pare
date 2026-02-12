@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { pytest } from "../lib/python-runner.js";
 import { parsePytestOutput } from "../lib/parsers.js";
-import { formatPytest } from "../lib/formatters.js";
+import { formatPytest, compactPytestMap, formatPytestCompact } from "../lib/formatters.js";
 import { PytestResultSchema } from "../schemas/index.js";
 
 export function registerPytestTool(server: McpServer) {
@@ -31,10 +31,17 @@ export function registerPytestTool(server: McpServer) {
           .describe('Pytest marker expression (e.g. "not slow")'),
         verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
         exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: PytestResultSchema,
     },
-    async ({ path, targets, markers, verbose, exitFirst }) => {
+    async ({ path, targets, markers, verbose, exitFirst, compact }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
@@ -50,7 +57,14 @@ export function registerPytestTool(server: McpServer) {
 
       const result = await pytest(args, cwd);
       const data = parsePytestOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatPytest);
+      return compactDualOutput(
+        data,
+        result.stdout,
+        formatPytest,
+        compactPytestMap,
+        formatPytestCompact,
+        compact === false,
+      );
     },
   );
 }

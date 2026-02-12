@@ -125,3 +125,195 @@ export function formatBlack(data: BlackResult): string {
 
   return lines.join("\n");
 }
+
+// ── Compact types, mappers, and formatters ───────────────────────────
+
+/** Compact pytest: counts + duration + failure test names only (no stack traces). */
+export interface PytestResultCompact {
+  [key: string]: unknown;
+  success: boolean;
+  passed: number;
+  failed: number;
+  errors: number;
+  skipped: number;
+  total: number;
+  duration: number;
+  failedTests: string[];
+}
+
+export function compactPytestMap(data: PytestResult): PytestResultCompact {
+  return {
+    success: data.success,
+    passed: data.passed,
+    failed: data.failed,
+    errors: data.errors,
+    skipped: data.skipped,
+    total: data.total,
+    duration: data.duration,
+    failedTests: data.failures.map((f) => f.test),
+  };
+}
+
+export function formatPytestCompact(data: PytestResultCompact): string {
+  if (data.total === 0) return "pytest: no tests collected.";
+
+  const parts: string[] = [];
+  if (data.passed > 0) parts.push(`${data.passed} passed`);
+  if (data.failed > 0) parts.push(`${data.failed} failed`);
+  if (data.errors > 0) parts.push(`${data.errors} errors`);
+  if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
+
+  const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
+  for (const t of data.failedTests) {
+    lines.push(`  FAILED ${t}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact mypy: success + diagnostic counts per severity. Drop individual diagnostics. */
+export interface MypyResultCompact {
+  [key: string]: unknown;
+  success: boolean;
+  total: number;
+  errors: number;
+  warnings: number;
+}
+
+export function compactMypyMap(data: MypyResult): MypyResultCompact {
+  return {
+    success: data.success,
+    total: data.total,
+    errors: data.errors,
+    warnings: data.warnings,
+  };
+}
+
+export function formatMypyCompact(data: MypyResultCompact): string {
+  if (data.success && data.total === 0) return "mypy: no errors found.";
+  return `mypy: ${data.errors} errors, ${data.warnings} warnings/notes (${data.total} total)`;
+}
+
+/** Compact ruff: success + diagnostic count. Drop individual entries. */
+export interface RuffResultCompact {
+  [key: string]: unknown;
+  total: number;
+  fixable: number;
+}
+
+export function compactRuffMap(data: RuffResult): RuffResultCompact {
+  return {
+    total: data.total,
+    fixable: data.fixable,
+  };
+}
+
+export function formatRuffCompact(data: RuffResultCompact): string {
+  if (data.total === 0) return "ruff: no issues found.";
+  return `ruff: ${data.total} issues (${data.fixable} fixable)`;
+}
+
+/** Compact black: success + changed/unchanged counts. Drop individual file lists. */
+export interface BlackResultCompact {
+  [key: string]: unknown;
+  success: boolean;
+  filesChanged: number;
+  filesUnchanged: number;
+  filesChecked: number;
+}
+
+export function compactBlackMap(data: BlackResult): BlackResultCompact {
+  return {
+    success: data.success,
+    filesChanged: data.filesChanged,
+    filesUnchanged: data.filesUnchanged,
+    filesChecked: data.filesChecked,
+  };
+}
+
+export function formatBlackCompact(data: BlackResultCompact): string {
+  if (data.filesChecked === 0) return "black: no Python files found.";
+  if (data.filesChanged === 0) return `black: ${data.filesUnchanged} files already formatted.`;
+  return `black: ${data.filesChanged} reformatted, ${data.filesUnchanged} unchanged`;
+}
+
+/** Compact pip-install: success + installed count. Drop individual package details. */
+export interface PipInstallCompact {
+  [key: string]: unknown;
+  success: boolean;
+  total: number;
+  alreadySatisfied: boolean;
+}
+
+export function compactPipInstallMap(data: PipInstall): PipInstallCompact {
+  return {
+    success: data.success,
+    total: data.total,
+    alreadySatisfied: data.alreadySatisfied,
+  };
+}
+
+export function formatPipInstallCompact(data: PipInstallCompact): string {
+  if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
+  if (!data.success) return "pip install failed.";
+  return `Installed ${data.total} packages.`;
+}
+
+/** Compact pip-audit: success + vulnerability count. Drop individual CVE details. */
+export interface PipAuditResultCompact {
+  [key: string]: unknown;
+  total: number;
+}
+
+export function compactPipAuditMap(data: PipAuditResult): PipAuditResultCompact {
+  return {
+    total: data.total,
+  };
+}
+
+export function formatPipAuditCompact(data: PipAuditResultCompact): string {
+  if (data.total === 0) return "No vulnerabilities found.";
+  return `${data.total} vulnerabilities found.`;
+}
+
+/** Compact uv-install: success + installed count + duration. Drop individual packages. */
+export interface UvInstallCompact {
+  [key: string]: unknown;
+  success: boolean;
+  total: number;
+  duration: number;
+}
+
+export function compactUvInstallMap(data: UvInstall): UvInstallCompact {
+  return {
+    success: data.success,
+    total: data.total,
+    duration: data.duration,
+  };
+}
+
+export function formatUvInstallCompact(data: UvInstallCompact): string {
+  if (!data.success) return "uv install failed.";
+  if (data.total === 0) return "All requirements already satisfied.";
+  return `Installed ${data.total} packages in ${data.duration}s.`;
+}
+
+/** Compact uv-run: exitCode + duration. Drop stdout/stderr. */
+export interface UvRunCompact {
+  [key: string]: unknown;
+  exitCode: number;
+  success: boolean;
+  duration: number;
+}
+
+export function compactUvRunMap(data: UvRun): UvRunCompact {
+  return {
+    exitCode: data.exitCode,
+    success: data.success,
+    duration: data.duration,
+  };
+}
+
+export function formatUvRunCompact(data: UvRunCompact): string {
+  const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
+  return `uv run ${status} in ${data.duration}s`;
+}

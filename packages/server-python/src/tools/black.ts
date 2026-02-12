@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { black } from "../lib/python-runner.js";
 import { parseBlackOutput } from "../lib/parsers.js";
-import { formatBlack } from "../lib/formatters.js";
+import { formatBlack, compactBlackMap, formatBlackCompact } from "../lib/formatters.js";
 import { BlackResultSchema } from "../schemas/index.js";
 
 export function registerBlackTool(server: McpServer) {
@@ -30,10 +30,17 @@ export function registerBlackTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check mode (report without modifying files)"),
+        compact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+          ),
       },
       outputSchema: BlackResultSchema,
     },
-    async ({ path, targets, check }) => {
+    async ({ path, targets, check, compact }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
@@ -43,7 +50,14 @@ export function registerBlackTool(server: McpServer) {
 
       const result = await black(args, cwd);
       const data = parseBlackOutput(result.stdout, result.stderr, result.exitCode);
-      return dualOutput(data, formatBlack);
+      return compactDualOutput(
+        data,
+        result.stderr,
+        formatBlack,
+        compactBlackMap,
+        formatBlackCompact,
+        compact === false,
+      );
     },
   );
 }
