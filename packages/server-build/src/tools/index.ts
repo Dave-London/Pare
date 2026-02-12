@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "@paretools/shared";
 import { registerTscTool } from "./tsc.js";
 import { registerBuildTool } from "./build.js";
 import { registerEsbuildTool } from "./esbuild.js";
@@ -6,9 +7,10 @@ import { registerViteBuildTool } from "./vite-build.js";
 import { registerWebpackTool } from "./webpack.js";
 
 export function registerAllTools(server: McpServer) {
-  registerTscTool(server);
-  registerBuildTool(server);
-  registerEsbuildTool(server);
-  registerViteBuildTool(server);
-  registerWebpackTool(server);
+  const s = (name: string) => shouldRegisterTool("build", name);
+  if (s("tsc")) registerTscTool(server);
+  if (s("build")) registerBuildTool(server);
+  if (s("esbuild")) registerEsbuildTool(server);
+  if (s("vite-build")) registerViteBuildTool(server);
+  if (s("webpack")) registerWebpackTool(server);
 }

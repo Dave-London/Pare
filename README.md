@@ -304,6 +304,72 @@ Pare tools return structured JSON with fewer tokens than CLI output.
 
 </details>
 
+## Configuration
+
+### Tool Selection
+
+By default, every Pare server registers all of its tools. If a server exposes tools you don't need — or you want to limit which tools are available to an agent — you can filter them with environment variables.
+
+**Per-server filter** — restrict a single server's tools:
+
+```bash
+# Only register status and log in the git server
+PARE_GIT_TOOLS=status,log npx @paretools/git
+```
+
+**Universal filter** — restrict tools across all servers:
+
+```bash
+# Only register these specific tools across any server
+PARE_TOOLS=git:status,git:log,npm:install npx @paretools/git
+```
+
+**Disable all tools** — set the env var to an empty string:
+
+```bash
+PARE_GIT_TOOLS= npx @paretools/git   # no tools registered
+```
+
+| Env Var | Scope | Format | Example |
+|---|---|---|---|
+| `PARE_TOOLS` | All servers | `server:tool,...` | `git:status,npm:install` |
+| `PARE_{SERVER}_TOOLS` | One server | `tool,...` | `status,log,diff` |
+
+**Rules:**
+- No env var = all tools enabled (default)
+- `PARE_TOOLS` (universal) takes precedence over per-server vars
+- Server names use uppercase with hyphens replaced by underscores (e.g., `PARE_MY_SERVER_TOOLS`)
+- Whitespace around commas is ignored
+
+**Common patterns:**
+
+```bash
+# Read-only git (no push, commit, add, checkout)
+PARE_GIT_TOOLS=status,log,diff,branch,show
+
+# Minimal npm
+PARE_NPM_TOOLS=install,test,run
+
+# Only specific tools across all servers
+PARE_TOOLS=git:status,git:diff,npm:install,test:run
+```
+
+In JSON MCP config, set via the `env` key:
+
+```json
+{
+  "mcpServers": {
+    "pare-git": {
+      "command": "npx",
+      "args": ["-y", "@paretools/git"],
+      "env": {
+        "PARE_GIT_TOOLS": "status,log,diff,show"
+      }
+    }
+  }
+}
+```
+
 ## Troubleshooting
 
 | Issue                               | Solution                                                                                  |
@@ -313,7 +379,7 @@ Pare tools return structured JSON with fewer tokens than CLI output.
 | Node.js version error               | Pare requires Node.js >= 20                                                               |
 | NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                      |
 | MCP connection timeout              | Set `MCP_TIMEOUT=30000` for Claude Code, or increase `initTimeout` in client config       |
-| Too many tools filling context      | Only install the Pare servers relevant to your project — you don't need all 9             |
+| Too many tools filling context      | Use [tool selection](#tool-selection) env vars to limit tools, or only install the servers you need |
 
 ## Contributing
 
