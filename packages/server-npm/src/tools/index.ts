@@ -7,6 +7,8 @@ import { registerListTool } from "./list.js";
 import { registerRunTool } from "./run.js";
 import { registerTestTool } from "./test.js";
 import { registerInitTool } from "./init.js";
+import { registerInfoTool } from "./info.js";
+import { registerSearchTool } from "./search.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("npm", name);
@@ -17,4 +19,6 @@ export function registerAllTools(server: McpServer) {
   if (s("run")) registerRunTool(server);
   if (s("test")) registerTestTool(server);
   if (s("init")) registerInitTool(server);
+  if (s("info")) registerInfoTool(server);
+  if (s("search")) registerSearchTool(server);
 }

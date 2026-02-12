@@ -7,6 +7,8 @@ import type {
   CargoRemoveResult,
   CargoFmtResult,
   CargoDocResult,
+  CargoUpdateResult,
+  CargoTreeResult,
 } from "../schemas/index.js";
 
 interface CargoMessage {
@@ -231,6 +233,47 @@ export function parseCargoDocOutput(stderr: string, exitCode: number): CargoDocR
   return {
     success: exitCode === 0,
     warnings,
+  };
+}
+
+/**
+ * Parses `cargo update` output.
+ * Returns success flag and combined output text.
+ */
+export function parseCargoUpdateOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): CargoUpdateResult {
+  const output = (stdout + "\n" + stderr).trim();
+  return {
+    success: exitCode === 0,
+    output,
+  };
+}
+
+/**
+ * Parses `cargo tree` output.
+ * Returns the full tree text and counts unique package names.
+ */
+export function parseCargoTreeOutput(stdout: string): CargoTreeResult {
+  const tree = stdout.trim();
+  const lines = tree.split("\n").filter(Boolean);
+
+  // Extract unique package names from tree lines
+  // Typical line: "my-app v0.1.0 (/path/to/project)" or "├── serde v1.0.217"
+  const packageNames = new Set<string>();
+  for (const line of lines) {
+    // Match package name + version pattern like "name v1.2.3"
+    const match = line.match(/([a-zA-Z0-9_-]+)\s+v\d+/);
+    if (match) {
+      packageNames.add(match[1]);
+    }
+  }
+
+  return {
+    tree,
+    packages: packageNames.size,
   };
 }
 

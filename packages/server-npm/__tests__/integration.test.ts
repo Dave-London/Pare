@@ -26,10 +26,20 @@ describe("@paretools/npm integration", () => {
     await transport.close();
   });
 
-  it("lists all 7 tools", async () => {
+  it("lists all 9 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["audit", "init", "install", "list", "outdated", "run", "test"]);
+    expect(names).toEqual([
+      "audit",
+      "info",
+      "init",
+      "install",
+      "list",
+      "outdated",
+      "run",
+      "search",
+      "test",
+    ]);
   });
 
   describe("list", () => {

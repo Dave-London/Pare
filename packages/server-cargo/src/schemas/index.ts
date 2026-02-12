@@ -100,3 +100,19 @@ export const CargoDocResultSchema = z.object({
 });
 
 export type CargoDocResult = z.infer<typeof CargoDocResultSchema>;
+
+/** Zod schema for structured cargo update output with success flag and output text. */
+export const CargoUpdateResultSchema = z.object({
+  success: z.boolean(),
+  output: z.string(),
+});
+
+export type CargoUpdateResult = z.infer<typeof CargoUpdateResultSchema>;
+
+/** Zod schema for structured cargo tree output with tree text and unique package count. */
+export const CargoTreeResultSchema = z.object({
+  tree: z.string(),
+  packages: z.number(),
+});
+
+export type CargoTreeResult = z.infer<typeof CargoTreeResultSchema>;
