@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { stripAnsi } from "./ansi.js";
+import { sanitizeErrorOutput } from "./sanitize.js";
 
 /** Options for the command runner, including working directory, timeout, and environment overrides. */
 export interface RunOptions {
@@ -26,7 +27,8 @@ export interface RunResult {
  *
  * We neutralise these by:
  *   1. Replacing `%` with `%%` (disables env-var expansion inside quotes).
- *   2. Prefixing `&`, `|`, `^`, `<`, `>` with the cmd.exe escape char `^`.
+ *   2. Prefixing `^`, `&`, `|`, `<`, `>`, `!` with the cmd.exe escape char `^`.
+ *      (`!` must be escaped to prevent delayed expansion of `!VAR!`.)
  *
  * Parentheses `(` `)` are NOT escaped here because inside double-quoted
  * strings they are literal characters and do not affect grouping.
@@ -43,6 +45,9 @@ export function escapeCmdArg(arg: string): string {
   escaped = escaped.replace(/\|/g, "^|");
   escaped = escaped.replace(/</g, "^<");
   escaped = escaped.replace(/>/g, "^>");
+
+  // Step 3: Escape ! to prevent delayed expansion (!VAR!)
+  escaped = escaped.replace(/!/g, "^!");
 
   return escaped;
 }
@@ -117,7 +122,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
         resolve({
           exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
           stdout: stripAnsi(stdout),
-          stderr: stripAnsi(stderr),
+          stderr: sanitizeErrorOutput(stripAnsi(stderr)),
         });
       },
     );

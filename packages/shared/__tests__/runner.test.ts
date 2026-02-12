@@ -109,6 +109,15 @@ describe("escapeCmdArg", () => {
     expect(escapeCmdArg("^^^")).toBe("^^^^^^");
   });
 
+  it("escapes exclamation mark to prevent delayed expansion", () => {
+    expect(escapeCmdArg("hello!world")).toBe("hello^!world");
+    expect(escapeCmdArg("!PATH!")).toBe("^!PATH^!");
+  });
+
+  it("escapes exclamation mark combined with other metacharacters", () => {
+    expect(escapeCmdArg("!foo&bar!")).toBe("^!foo^&bar^!");
+  });
+
   it("handles newlines and tabs (not metacharacters, passed through)", () => {
     expect(escapeCmdArg("line1\nline2")).toBe("line1\nline2");
     expect(escapeCmdArg("col1\tcol2")).toBe("col1\tcol2");
