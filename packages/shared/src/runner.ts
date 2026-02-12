@@ -26,9 +26,15 @@ export interface RunResult {
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
   return new Promise((resolve, reject) => {
+    // On Windows with shell mode, escape % to prevent env variable expansion.
+    // Node.js wraps args in double quotes which prevents most cmd.exe metacharacters,
+    // but %VAR% expansion still works inside double quotes.
+    const safeArgs =
+      process.platform === "win32" ? args.map((a) => a.replace(/%/g, "%%")) : args;
+
     execFile(
       cmd,
-      args,
+      safeArgs,
       {
         cwd: opts?.cwd,
         timeout: opts?.timeout ?? 30_000,

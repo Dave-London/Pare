@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseImagesJson } from "../lib/parsers.js";
 import { formatImages } from "../lib/formatters.js";
@@ -24,6 +24,8 @@ export function registerImagesTool(server: McpServer) {
       outputSchema: DockerImagesSchema,
     },
     async ({ all, filter }) => {
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const args = ["images", "--format", "json"];
       if (all) args.push("-a");
       if (filter) args.push(filter);

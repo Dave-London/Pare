@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseInitOutput } from "../lib/parsers.js";
 import { formatInit } from "../lib/formatters.js";
@@ -28,6 +28,7 @@ export function registerInitTool(server: McpServer) {
     },
     async ({ path, yes, scope }) => {
       const cwd = path || process.cwd();
+      if (scope) assertNoFlagInjection(scope, "scope");
 
       const npmArgs = ["init"];
       if (scope) {

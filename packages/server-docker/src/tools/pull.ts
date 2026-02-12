@@ -25,6 +25,7 @@ export function registerPullTool(server: McpServer) {
     },
     async ({ image, platform, path }) => {
       assertNoFlagInjection(image, "image");
+      if (platform) assertNoFlagInjection(platform, "platform");
 
       const args = ["pull"];
       if (platform) args.push("--platform", platform);

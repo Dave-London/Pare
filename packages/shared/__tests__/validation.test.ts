@@ -41,6 +41,18 @@ describe("assertNoFlagInjection", () => {
   it("allows empty string", () => {
     expect(() => assertNoFlagInjection("", "ref")).not.toThrow();
   });
+
+  it("throws for space-prefixed flag (whitespace bypass)", () => {
+    expect(() => assertNoFlagInjection(" --force", "ref")).toThrow();
+  });
+
+  it("throws for tab-prefixed flag (whitespace bypass)", () => {
+    expect(() => assertNoFlagInjection("\t--delete", "ref")).toThrow();
+  });
+
+  it("throws for multiple spaces before flag", () => {
+    expect(() => assertNoFlagInjection("   -rf", "ref")).toThrow();
+  });
 });
 
 describe("assertAllowedCommand", () => {

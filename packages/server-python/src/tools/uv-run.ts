@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvRun } from "../lib/parsers.js";
 import { formatUvRun } from "../lib/formatters.js";
@@ -24,6 +24,7 @@ export function registerUvRunTool(server: McpServer) {
     },
     async ({ path, command }) => {
       const cwd = path || process.cwd();
+      assertNoFlagInjection(command[0], "command");
       const args = ["run", ...command];
 
       const start = Date.now();

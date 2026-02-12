@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeUpOutput } from "../lib/parsers.js";
 import { formatComposeUp } from "../lib/formatters.js";
@@ -31,6 +31,13 @@ export function registerComposeUpTool(server: McpServer) {
       outputSchema: DockerComposeUpSchema,
     },
     async ({ path, services, detach, build, file }) => {
+      if (file) assertNoFlagInjection(file, "file");
+      if (services) {
+        for (const s of services) {
+          assertNoFlagInjection(s, "services");
+        }
+      }
+
       const args = ["compose"];
       if (file) args.push("-f", file);
       args.push("up");

@@ -52,6 +52,7 @@ export function registerRunTool(server: McpServer) {
     },
     async ({ image, name, ports, volumes, env, detach, rm, command, path }) => {
       assertNoFlagInjection(image, "image");
+      if (name) assertNoFlagInjection(name, "name");
 
       const args = ["run"];
       if (detach) args.push("-d");

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseBuildOutput } from "../lib/parsers.js";
 import { formatBuild } from "../lib/formatters.js";
@@ -22,6 +22,9 @@ export function registerBuildTool(server: McpServer) {
       outputSchema: DockerBuildSchema,
     },
     async ({ path, tag, file, args }) => {
+      if (tag) assertNoFlagInjection(tag, "tag");
+      if (file) assertNoFlagInjection(file, "file");
+
       const cwd = path || process.cwd();
       const dockerArgs = ["build", "."];
       if (tag) dockerArgs.push("-t", tag);

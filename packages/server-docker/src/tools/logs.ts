@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseLogsOutput } from "../lib/parsers.js";
 import { formatLogs } from "../lib/formatters.js";
@@ -28,6 +28,9 @@ export function registerLogsTool(server: McpServer) {
       outputSchema: DockerLogsSchema,
     },
     async ({ container, tail, since }) => {
+      assertNoFlagInjection(container, "container");
+      if (since) assertNoFlagInjection(since, "since");
+
       const args = ["logs", container, "--tail", String(tail ?? 100)];
       if (since) args.push("--since", since);
 

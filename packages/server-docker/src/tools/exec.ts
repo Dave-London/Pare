@@ -28,6 +28,7 @@ export function registerExecTool(server: McpServer) {
     },
     async ({ container, command, workdir, env, path }) => {
       assertNoFlagInjection(container, "container");
+      if (workdir) assertNoFlagInjection(workdir, "workdir");
 
       const args = ["exec"];
       if (workdir) args.push("-w", workdir);

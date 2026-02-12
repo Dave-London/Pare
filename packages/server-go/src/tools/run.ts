@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoRunOutput } from "../lib/parsers.js";
 import { formatGoRun } from "../lib/formatters.js";
@@ -31,7 +31,9 @@ export function registerRunTool(server: McpServer) {
     },
     async ({ path, file, args, buildArgs }) => {
       const cwd = path || process.cwd();
-      const cmdArgs = ["run", ...(buildArgs || []), file || "."];
+      const target = file || ".";
+      assertNoFlagInjection(target, "file");
+      const cmdArgs = ["run", ...(buildArgs || []), target];
       const programArgs = args || [];
       if (programArgs.length > 0) {
         cmdArgs.push("--", ...programArgs);

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRunOutput } from "../lib/parsers.js";
 import { formatCargoRun } from "../lib/formatters.js";
@@ -23,6 +23,8 @@ export function registerRunTool(server: McpServer) {
     },
     async ({ path, args, release, package: pkg }) => {
       const cwd = path || process.cwd();
+      if (pkg) assertNoFlagInjection(pkg, "package");
+
       const cargoArgs = ["run"];
       if (release) cargoArgs.push("--release");
       if (pkg) cargoArgs.push("-p", pkg);

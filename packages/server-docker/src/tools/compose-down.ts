@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeDownOutput } from "../lib/parsers.js";
 import { formatComposeDown } from "../lib/formatters.js";
@@ -30,6 +30,8 @@ export function registerComposeDownTool(server: McpServer) {
       outputSchema: DockerComposeDownSchema,
     },
     async ({ path, volumes, removeOrphans, file }) => {
+      if (file) assertNoFlagInjection(file, "file");
+
       const args = ["compose"];
       if (file) args.push("-f", file);
       args.push("down");

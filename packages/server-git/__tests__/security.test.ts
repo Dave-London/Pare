@@ -24,6 +24,10 @@ const MALICIOUS_INPUTS = [
   "--set-upstream",
   "--all",
   "-m",
+  // Whitespace bypass attempts
+  " --force",
+  "\t--delete",
+  "   -rf",
 ];
 
 /** Safe inputs that must be accepted. */

@@ -4,7 +4,7 @@
  * See: CVE-2025-68144, CVE-2025-68145
  */
 export function assertNoFlagInjection(value: string, paramName: string): void {
-  if (value.startsWith("-")) {
+  if (value.trimStart().startsWith("-")) {
     throw new Error(
       `Invalid ${paramName}: "${value}". Values must not start with "-" to prevent argument injection.`,
     );
@@ -42,7 +42,14 @@ const ALLOWED_BUILD_COMMANDS = new Set([
   "bazel",
 ]);
 
-/** Validates that a command is in the allowlist of safe build tools to prevent arbitrary command execution. */
+/**
+ * Validates that a command is in the allowlist of safe build tools to prevent arbitrary command execution.
+ *
+ * Known limitation: only the basename is checked, so a path like `/tmp/evil/npm` would pass.
+ * Rejecting paths entirely would break legitimate use cases (NixOS store paths, `C:\Program Files\...`,
+ * non-PATH installs). Exploiting this requires placing a malicious binary on disk, which already
+ * implies the system is compromised.
+ */
 export function assertAllowedCommand(command: string): void {
   // Extract the base command name (handle paths like /usr/bin/npm or C:\npm.cmd)
   const base =
