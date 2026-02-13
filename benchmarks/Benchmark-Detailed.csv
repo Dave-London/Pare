@@ -69,7 +69,7 @@
 39A,npm-outdated,Check outdated packages,Very Low,131,92,,39,30,1663,1216,-447
 40A,npm-list-d0,npm list depth=0,Very Low,520,602,,-82,-16,870,888,18
 40B,npm-list-d1,npm list depth=1,Very Low,11534,10265,,1269,11,896,984,88
-40C,npm-list-d2,npm list depth=2,Very Low,177467,70531,,106936,60,1559,1779,220
+40C*,npm-list-d2,npm list depth=2 (*),Very Low,177467,70531,,106936,60,1559,1779,220
 41A,esbuild-shared,esbuild bundle (shared pkg),Very Low,109,19,,90,83,934,884,-50
 42A,vite-build,Vite build (shared pkg),Very Low,51,19,,32,63,890,891,1
 43A,docker-exec,docker exec (ls in running container),Very Low,19,41,106,-87,-458,132,135,3

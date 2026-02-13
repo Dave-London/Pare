@@ -147,7 +147,7 @@ Per-tool token usage weighted by Use Frequency representative values. Each tool'
 |  37 | go/test              | Low           |      33 |            50 |       25 |             38 |
 |  38 | git/tag              | Very Low      |     232 |           116 |      261 |            131 |
 |  39 | npm/outdated         | Very Low      |     131 |            66 |       92 |             46 |
-|  40 | npm/list             | Very Low      |  63,174 |        31,587 |   27,133 |         13,567 |
+|  40 | npm/list (\*)        | Very Low      |   6,027 |         3,014 |    5,434 |          2,717 |
 |  41 | build/esbuild        | Very Low      |     109 |            55 |       19 |             10 |
 |  42 | build/vite-build     | Very Low      |      51 |            26 |       19 |             10 |
 |  43 | docker/exec          | Very Low      |      19 |            10 |      106 |             53 |
@@ -208,9 +208,11 @@ Per-tool token usage weighted by Use Frequency representative values. Each tool'
 |  98 | go/env               | Very Low      |     303 |           152 |      422 |            211 |
 |  99 | go/list              | Very Low      |      23 |            12 |        9 |              5 |
 | 100 | go/get               | Very Low      |      28 |            14 |        6 |              3 |
-|     | **Total**            |               |         |   **211,862** |          |     **71,104** |
+|     | **Total**            |               |         |   **183,289** |          |     **60,254** |
 
-**Estimated session savings: 140,758 tokens (66% reduction)**
+**Estimated session savings: 123,035 tokens (67% reduction)**
+
+_(\*) npm/list excludes the depth=2 scenario (40C) from its session average. While npm-list-d2 shows a large 60% reduction (177,467 → 70,531 tokens), depth=2 output is an outlier — it is rarely requested by coding agents and its extreme size (177K tokens from a single call) would disproportionately inflate the session estimate. The scenario is retained in the detailed benchmark data for transparency. Excluding it has minimal effect on the overall reduction (67% vs 66%) but yields a more representative session estimate._
 
 ---
 
