@@ -238,7 +238,7 @@ describe("formatCoverage", () => {
 });
 
 describe("compactTestRunMap", () => {
-  it("keeps summary, framework, and failure names only (drops messages, stacks, locations)", () => {
+  it("keeps summary, framework, failure names and messages (drops stacks, locations, expected/actual)", () => {
     const run: TestRun = {
       framework: "jest",
       summary: { total: 10, passed: 7, failed: 3, skipped: 0, duration: 2.1 },
@@ -275,17 +275,30 @@ describe("compactTestRunMap", () => {
       duration: 2.1,
     });
     expect(compact.failures).toEqual([
-      { name: "should validate email" },
-      { name: "should parse config" },
-      { name: "should handle timeout" },
+      { name: "should validate email", message: "Expected valid@email.com to be valid" },
+      { name: "should parse config", message: "Received null instead of config object" },
+      { name: "should handle timeout", message: "Timeout after 5000ms" },
     ]);
-    // Verify verbose fields are stripped from each failure
-    expect(compact.failures[0]).not.toHaveProperty("message");
+    // Verify message is preserved but verbose fields are stripped
+    expect(compact.failures[0]).toHaveProperty("message");
     expect(compact.failures[0]).not.toHaveProperty("file");
     expect(compact.failures[0]).not.toHaveProperty("line");
     expect(compact.failures[0]).not.toHaveProperty("stack");
     expect(compact.failures[0]).not.toHaveProperty("expected");
     expect(compact.failures[0]).not.toHaveProperty("actual");
+  });
+
+  it("omits message when failure has no message", () => {
+    const run: TestRun = {
+      framework: "mocha",
+      summary: { total: 1, passed: 0, failed: 1, skipped: 0, duration: 0.1 },
+      failures: [{ name: "anonymous failure" }],
+    };
+
+    const compact = compactTestRunMap(run);
+
+    expect(compact.failures).toEqual([{ name: "anonymous failure" }]);
+    expect(compact.failures[0]).not.toHaveProperty("message");
   });
 
   it("returns empty failures for passing run", () => {
@@ -303,13 +316,13 @@ describe("compactTestRunMap", () => {
 });
 
 describe("formatTestRunCompact", () => {
-  it("formats compact test run with failure names only", () => {
+  it("formats compact test run with failure names and messages", () => {
     const compact = {
       framework: "jest",
       summary: { total: 10, passed: 7, failed: 3, skipped: 0, duration: 2.1 },
       failures: [
-        { name: "should validate email" },
-        { name: "should parse config" },
+        { name: "should validate email", message: "Expected true, got false" },
+        { name: "should parse config", message: "Received null" },
         { name: "should handle timeout" },
       ],
     };
@@ -320,12 +333,12 @@ describe("formatTestRunCompact", () => {
     expect(output).toContain("(jest)");
     expect(output).toContain("10 tests");
     expect(output).toContain("3 failed");
-    expect(output).toContain("FAIL should validate email");
-    expect(output).toContain("FAIL should parse config");
+    expect(output).toContain("FAIL should validate email: Expected true, got false");
+    expect(output).toContain("FAIL should parse config: Received null");
     expect(output).toContain("FAIL should handle timeout");
-    // Should NOT contain verbose failure details
-    expect(output).not.toContain("Expected");
-    expect(output).not.toContain("Received");
+    // Failure without message should not have trailing colon
+    expect(output).not.toContain("FAIL should handle timeout:");
+    // Should NOT contain verbose failure details like file/stack
     expect(output).not.toContain("api.test.ts");
   });
 
@@ -333,7 +346,7 @@ describe("formatTestRunCompact", () => {
     const compact = {
       framework: "vitest",
       summary: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 0.3 },
-      failures: [] as Array<{ name: string }>,
+      failures: [] as Array<{ name: string; message?: string }>,
     };
 
     const output = formatTestRunCompact(compact);
