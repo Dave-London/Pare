@@ -169,136 +169,103 @@ export function formatTscCompact(data: TscCompact): string {
 // esbuild compact
 // ---------------------------------------------------------------------------
 
-/** Compact esbuild: success, counts, and duration. Drops individual file entries. */
+/** Compact esbuild: success and duration only. Schema-compatible (all arrays omitted). */
 export interface EsbuildCompact {
   [key: string]: unknown;
   success: boolean;
-  errorCount: number;
-  warningCount: number;
-  outputFileCount: number;
   duration: number;
 }
 
 export function compactEsbuildMap(data: EsbuildResult): EsbuildCompact {
   return {
     success: data.success,
-    errorCount: data.errors.length,
-    warningCount: data.warnings.length,
-    outputFileCount: data.outputFiles?.length ?? 0,
     duration: data.duration,
   };
 }
 
 export function formatEsbuildCompact(data: EsbuildCompact): string {
-  if (data.success && data.errorCount === 0 && data.warningCount === 0) {
-    const parts = [`esbuild: build succeeded in ${data.duration}s`];
-    if (data.outputFileCount > 0) parts.push(`${data.outputFileCount} output files`);
-    return parts.join(", ");
-  }
   if (data.success) {
-    return `esbuild: build succeeded in ${data.duration}s, ${data.warningCount} warnings`;
+    return `esbuild: build succeeded in ${data.duration}s`;
   }
-  return `esbuild: build failed (${data.duration}s) — ${data.errorCount} errors, ${data.warningCount} warnings`;
+  return `esbuild: build failed (${data.duration}s)`;
 }
 
 // ---------------------------------------------------------------------------
 // vite-build compact
 // ---------------------------------------------------------------------------
 
-/** Compact vite-build: success, file count, total size string, and duration. Drops per-file entries. */
+/** Compact vite-build: success and duration only. Schema-compatible (all arrays omitted). */
 export interface ViteBuildCompact {
   [key: string]: unknown;
   success: boolean;
-  fileCount: number;
-  errorCount: number;
-  warningCount: number;
   duration: number;
 }
 
 export function compactViteBuildMap(data: ViteBuildResult): ViteBuildCompact {
   return {
     success: data.success,
-    fileCount: data.outputs.length,
-    errorCount: data.errors.length,
-    warningCount: data.warnings.length,
     duration: data.duration,
   };
 }
 
 export function formatViteBuildCompact(data: ViteBuildCompact): string {
   if (data.success) {
-    const parts = [`Vite build succeeded in ${data.duration}s`];
-    if (data.fileCount > 0) parts.push(`${data.fileCount} output files`);
-    if (data.warningCount > 0) parts.push(`${data.warningCount} warnings`);
-    return parts.join(", ");
+    return `Vite build succeeded in ${data.duration}s`;
   }
-  return `Vite build failed (${data.duration}s), ${data.errorCount} errors`;
+  return `Vite build failed (${data.duration}s)`;
 }
 
 // ---------------------------------------------------------------------------
 // webpack compact
 // ---------------------------------------------------------------------------
 
-/** Compact webpack: success, asset count, total size, and duration. Drops per-asset details. */
+/** Compact webpack: success, duration, and optional modules count. Schema-compatible (arrays omitted). */
 export interface WebpackCompact {
   [key: string]: unknown;
   success: boolean;
-  assetCount: number;
-  totalSize: number;
-  errorCount: number;
-  warningCount: number;
   duration: number;
+  modules?: number;
 }
 
 export function compactWebpackMap(data: WebpackResult): WebpackCompact {
-  return {
+  const compact: WebpackCompact = {
     success: data.success,
-    assetCount: data.assets.length,
-    totalSize: data.assets.reduce((sum, a) => sum + a.size, 0),
-    errorCount: data.errors.length,
-    warningCount: data.warnings.length,
     duration: data.duration,
   };
+  if (data.modules !== undefined) compact.modules = data.modules;
+  return compact;
 }
 
 export function formatWebpackCompact(data: WebpackCompact): string {
   if (data.success) {
-    const sizeKB = (data.totalSize / 1024).toFixed(1);
     const parts = [`webpack: build succeeded in ${data.duration}s`];
-    if (data.assetCount > 0) parts.push(`${data.assetCount} assets (${sizeKB} kB)`);
-    if (data.warningCount > 0) parts.push(`${data.warningCount} warnings`);
+    if (data.modules !== undefined) parts.push(`${data.modules} modules`);
     return parts.join(", ");
   }
-  return `webpack: build failed (${data.duration}s), ${data.errorCount} errors`;
+  return `webpack: build failed (${data.duration}s)`;
 }
 
 // ---------------------------------------------------------------------------
 // build (generic) compact
 // ---------------------------------------------------------------------------
 
-/** Compact build: success, counts, and duration. Drops stdout/stderr content. */
+/** Compact build: success and duration only. Schema-compatible (arrays omitted). */
 export interface BuildCompact {
   [key: string]: unknown;
   success: boolean;
-  errorCount: number;
-  warningCount: number;
   duration: number;
 }
 
 export function compactBuildMap(data: BuildResult): BuildCompact {
   return {
     success: data.success,
-    errorCount: data.errors.length,
-    warningCount: data.warnings.length,
     duration: data.duration,
   };
 }
 
 export function formatBuildCompact(data: BuildCompact): string {
   if (data.success) {
-    const parts = [`Build succeeded in ${data.duration}s`];
-    if (data.warningCount > 0) parts.push(`${data.warningCount} warnings`);
-    return parts.join(", ");
+    return `Build succeeded in ${data.duration}s`;
   }
-  return `Build failed (${data.duration}s), ${data.errorCount} errors`;
+  return `Build failed (${data.duration}s)`;
 }

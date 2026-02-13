@@ -145,7 +145,7 @@ describe("formatTscCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactEsbuildMap", () => {
-  it("keeps success, counts, and duration; drops individual entries", () => {
+  it("keeps success and duration; drops arrays", () => {
     const data: EsbuildResult = {
       success: false,
       errors: [
@@ -160,14 +160,14 @@ describe("compactEsbuildMap", () => {
     const compact = compactEsbuildMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.errorCount).toBe(2);
-    expect(compact.warningCount).toBe(1);
-    expect(compact.outputFileCount).toBe(2);
     expect(compact.duration).toBe(1.5);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("errors");
     expect(compact).not.toHaveProperty("warnings");
     expect(compact).not.toHaveProperty("outputFiles");
+    expect(compact).not.toHaveProperty("errorCount");
+    expect(compact).not.toHaveProperty("warningCount");
+    expect(compact).not.toHaveProperty("outputFileCount");
   });
 
   it("handles successful build with no output files", () => {
@@ -181,9 +181,7 @@ describe("compactEsbuildMap", () => {
     const compact = compactEsbuildMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.errorCount).toBe(0);
-    expect(compact.warningCount).toBe(0);
-    expect(compact.outputFileCount).toBe(0);
+    expect(compact.duration).toBe(0.3);
   });
 });
 
@@ -191,41 +189,19 @@ describe("formatEsbuildCompact", () => {
   it("formats successful build", () => {
     const compact = {
       success: true,
-      errorCount: 0,
-      warningCount: 0,
-      outputFileCount: 3,
       duration: 0.5,
     };
     const output = formatEsbuildCompact(compact);
     expect(output).toContain("build succeeded in 0.5s");
-    expect(output).toContain("3 output files");
   });
 
   it("formats failed build", () => {
     const compact = {
       success: false,
-      errorCount: 2,
-      warningCount: 1,
-      outputFileCount: 0,
       duration: 0.1,
     };
     const output = formatEsbuildCompact(compact);
     expect(output).toContain("build failed");
-    expect(output).toContain("2 errors");
-    expect(output).toContain("1 warnings");
-  });
-
-  it("formats build with warnings only", () => {
-    const compact = {
-      success: true,
-      errorCount: 0,
-      warningCount: 3,
-      outputFileCount: 1,
-      duration: 0.8,
-    };
-    const output = formatEsbuildCompact(compact);
-    expect(output).toContain("build succeeded");
-    expect(output).toContain("3 warnings");
   });
 });
 
@@ -234,7 +210,7 @@ describe("formatEsbuildCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactViteBuildMap", () => {
-  it("keeps success, file count, and duration; drops per-file entries", () => {
+  it("keeps success and duration; drops arrays", () => {
     const data: ViteBuildResult = {
       success: true,
       duration: 1.5,
@@ -250,14 +226,14 @@ describe("compactViteBuildMap", () => {
     const compact = compactViteBuildMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.fileCount).toBe(3);
-    expect(compact.errorCount).toBe(0);
-    expect(compact.warningCount).toBe(1);
     expect(compact.duration).toBe(1.5);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("outputs");
     expect(compact).not.toHaveProperty("errors");
     expect(compact).not.toHaveProperty("warnings");
+    expect(compact).not.toHaveProperty("fileCount");
+    expect(compact).not.toHaveProperty("errorCount");
+    expect(compact).not.toHaveProperty("warningCount");
   });
 
   it("handles failed build", () => {
@@ -272,48 +248,27 @@ describe("compactViteBuildMap", () => {
     const compact = compactViteBuildMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.fileCount).toBe(0);
-    expect(compact.errorCount).toBe(2);
+    expect(compact.duration).toBe(0.5);
   });
 });
 
 describe("formatViteBuildCompact", () => {
-  it("formats successful build with files", () => {
+  it("formats successful build", () => {
     const compact = {
       success: true,
-      fileCount: 4,
-      errorCount: 0,
-      warningCount: 0,
       duration: 1.2,
     };
     const output = formatViteBuildCompact(compact);
     expect(output).toContain("Vite build succeeded in 1.2s");
-    expect(output).toContain("4 output files");
   });
 
   it("formats failed build", () => {
     const compact = {
       success: false,
-      fileCount: 0,
-      errorCount: 3,
-      warningCount: 0,
       duration: 0.5,
     };
     const output = formatViteBuildCompact(compact);
     expect(output).toContain("Vite build failed (0.5s)");
-    expect(output).toContain("3 errors");
-  });
-
-  it("formats build with warnings", () => {
-    const compact = {
-      success: true,
-      fileCount: 2,
-      errorCount: 0,
-      warningCount: 1,
-      duration: 3.0,
-    };
-    const output = formatViteBuildCompact(compact);
-    expect(output).toContain("1 warnings");
   });
 });
 
@@ -322,7 +277,7 @@ describe("formatViteBuildCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactWebpackMap", () => {
-  it("keeps success, asset count, total size, and duration; drops per-asset details", () => {
+  it("keeps success, duration, and modules; drops arrays", () => {
     const data: WebpackResult = {
       success: true,
       duration: 2.5,
@@ -339,19 +294,19 @@ describe("compactWebpackMap", () => {
     const compact = compactWebpackMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.assetCount).toBe(3);
-    expect(compact.totalSize).toBe(52480 + 143360 + 8192);
-    expect(compact.errorCount).toBe(0);
-    expect(compact.warningCount).toBe(0);
     expect(compact.duration).toBe(2.5);
+    expect(compact.modules).toBe(42);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("assets");
-    expect(compact).not.toHaveProperty("modules");
     expect(compact).not.toHaveProperty("errors");
     expect(compact).not.toHaveProperty("warnings");
+    expect(compact).not.toHaveProperty("assetCount");
+    expect(compact).not.toHaveProperty("totalSize");
+    expect(compact).not.toHaveProperty("errorCount");
+    expect(compact).not.toHaveProperty("warningCount");
   });
 
-  it("handles empty build", () => {
+  it("handles empty build without modules", () => {
     const data: WebpackResult = {
       success: true,
       duration: 0.1,
@@ -362,11 +317,12 @@ describe("compactWebpackMap", () => {
 
     const compact = compactWebpackMap(data);
 
-    expect(compact.assetCount).toBe(0);
-    expect(compact.totalSize).toBe(0);
+    expect(compact.success).toBe(true);
+    expect(compact.duration).toBe(0.1);
+    expect(compact.modules).toBeUndefined();
   });
 
-  it("handles failed build with errors", () => {
+  it("handles failed build", () => {
     const data: WebpackResult = {
       success: false,
       duration: 1.0,
@@ -378,61 +334,34 @@ describe("compactWebpackMap", () => {
     const compact = compactWebpackMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.errorCount).toBe(2);
-    expect(compact.warningCount).toBe(1);
+    expect(compact.duration).toBe(1.0);
   });
 });
 
 describe("formatWebpackCompact", () => {
-  it("formats successful build with assets", () => {
+  it("formats successful build with modules", () => {
     const compact = {
       success: true,
-      assetCount: 3,
-      totalSize: 204032,
-      errorCount: 0,
-      warningCount: 0,
       duration: 2.5,
+      modules: 42,
     };
     const output = formatWebpackCompact(compact);
     expect(output).toContain("webpack: build succeeded in 2.5s");
-    expect(output).toContain("3 assets");
-    expect(output).toContain("kB");
+    expect(output).toContain("42 modules");
   });
 
   it("formats failed build", () => {
     const compact = {
       success: false,
-      assetCount: 0,
-      totalSize: 0,
-      errorCount: 2,
-      warningCount: 0,
       duration: 1.0,
     };
     const output = formatWebpackCompact(compact);
     expect(output).toContain("webpack: build failed (1s)");
-    expect(output).toContain("2 errors");
   });
 
-  it("formats build with warnings", () => {
+  it("formats build with no modules", () => {
     const compact = {
       success: true,
-      assetCount: 1,
-      totalSize: 524288,
-      errorCount: 0,
-      warningCount: 2,
-      duration: 3.0,
-    };
-    const output = formatWebpackCompact(compact);
-    expect(output).toContain("2 warnings");
-  });
-
-  it("formats build with no assets", () => {
-    const compact = {
-      success: true,
-      assetCount: 0,
-      totalSize: 0,
-      errorCount: 0,
-      warningCount: 0,
       duration: 0.1,
     };
     const output = formatWebpackCompact(compact);
@@ -445,7 +374,7 @@ describe("formatWebpackCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactBuildMap", () => {
-  it("keeps success, counts, and duration; drops error/warning strings", () => {
+  it("keeps success and duration; drops error/warning strings", () => {
     const data: BuildResult = {
       success: false,
       duration: 2.5,
@@ -456,12 +385,12 @@ describe("compactBuildMap", () => {
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.errorCount).toBe(2);
-    expect(compact.warningCount).toBe(1);
     expect(compact.duration).toBe(2.5);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("errors");
     expect(compact).not.toHaveProperty("warnings");
+    expect(compact).not.toHaveProperty("errorCount");
+    expect(compact).not.toHaveProperty("warningCount");
   });
 
   it("handles successful build with no issues", () => {
@@ -475,8 +404,7 @@ describe("compactBuildMap", () => {
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.errorCount).toBe(0);
-    expect(compact.warningCount).toBe(0);
+    expect(compact.duration).toBe(8.3);
   });
 });
 
@@ -484,34 +412,17 @@ describe("formatBuildCompact", () => {
   it("formats successful build", () => {
     const compact = {
       success: true,
-      errorCount: 0,
-      warningCount: 0,
       duration: 8.3,
     };
     expect(formatBuildCompact(compact)).toBe("Build succeeded in 8.3s");
   });
 
-  it("formats successful build with warnings", () => {
-    const compact = {
-      success: true,
-      errorCount: 0,
-      warningCount: 2,
-      duration: 12.0,
-    };
-    const output = formatBuildCompact(compact);
-    expect(output).toContain("Build succeeded in 12s");
-    expect(output).toContain("2 warnings");
-  });
-
   it("formats failed build", () => {
     const compact = {
       success: false,
-      errorCount: 3,
-      warningCount: 0,
       duration: 2.5,
     };
     const output = formatBuildCompact(compact);
     expect(output).toContain("Build failed (2.5s)");
-    expect(output).toContain("3 errors");
   });
 });
