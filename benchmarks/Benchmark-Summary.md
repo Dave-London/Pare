@@ -216,5 +216,5 @@ _(\*) npm/list excludes the depth=2 scenario (40C) from its session average. Whi
 
 ---
 
-See `Benchmark-Detailed.csv` for full per-scenario data.
+See `Benchmark-Detailed.csv` for full per-scenario data. _Scenarios marked with (\*) are excluded from session impact averages — see footnote in Estimated Session Impact above._
 See `tool-registry.csv` for the complete tool registry with Use Frequency assignments.

@@ -848,7 +848,12 @@ function formatSummaryMd(
   lines.push(``);
   lines.push(`---`);
   lines.push(``);
-  lines.push(`See \`Benchmark-Detailed.csv\` for full per-scenario data.`);
+  lines.push(
+    `See \`Benchmark-Detailed.csv\` for full per-scenario data.` +
+      (hasOutliers
+        ? ` _Scenarios marked with (\\*) are excluded from session impact averages — see footnote in Estimated Session Impact above._`
+        : ``),
+  );
   lines.push(
     `See \`tool-registry.csv\` for the complete tool registry with Use Frequency assignments.`,
   );
