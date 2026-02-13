@@ -66,8 +66,9 @@ export function registerSearchTool(server: McpServer) {
 
       args.push(pattern);
 
-      // When path is provided, pass it as the search path argument to rg
-      // (not as cwd, since cwd is already set to it for relative paths)
+      // Always pass "." as the search path so rg searches the directory
+      // instead of reading from stdin (which hangs when stdin is piped)
+      args.push(".");
       const result = await rgCmd(args, cwd);
 
       // rg exits with code 1 when no matches are found — that's not an error

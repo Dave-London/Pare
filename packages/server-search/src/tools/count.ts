@@ -61,6 +61,9 @@ export function registerCountTool(server: McpServer) {
 
       args.push(pattern);
 
+      // Always pass "." as the search path so rg searches the directory
+      // instead of reading from stdin (which hangs when stdin is piped)
+      args.push(".");
       const result = await rgCmd(args, cwd);
 
       // rg exits with code 1 when no matches are found — that's not an error
