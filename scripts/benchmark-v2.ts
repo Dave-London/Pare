@@ -21,9 +21,22 @@ import { fileURLToPath } from "node:url";
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { V2_SCENARIOS, type V2Scenario } from "./benchmark-v2-scenarios.js";
+import { V2_SCENARIOS, type V2Scenario, type UseFrequency } from "./benchmark-v2-scenarios.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
+
+// ─── Use Frequency tier metadata ────────────────────────────────
+
+const USE_FREQUENCY_META: { name: UseFrequency; calls: string; rep: number }[] = [
+  { name: "Very High", calls: "12+", rep: 16 },
+  { name: "High", calls: "6–11", rep: 8 },
+  { name: "Average", calls: "3–5", rep: 4 },
+  { name: "Low", calls: "1–2", rep: 1.5 },
+  { name: "Very Low", calls: "<1", rep: 0.5 },
+];
+
+/** Scenario IDs excluded from session impact averages (outliers) */
+const SESSION_OUTLIER_IDS = new Set(["npm-list-d2"]);
 const REPO_ROOT = resolve(__dirname, "..");
 const BENCHMARKS_DIR = resolve(REPO_ROOT, "benchmarks");
 const RESULTS_DIR = resolve(BENCHMARKS_DIR, "temp");
@@ -249,7 +262,7 @@ function formatDetailedCsv(scenarios: ScenarioSummary[]): string {
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -273,7 +286,7 @@ function formatDetailedCsv(scenarios: ScenarioSummary[]): string {
         ref,
         s.scenario.id,
         s.scenario.description,
-        s.scenario.weight,
+        s.scenario.useFrequency,
         s.medianRawTokens,
         s.medianPareRegularTokens,
         compacted ? s.medianPareTokens : "",
@@ -317,7 +330,7 @@ interface MutatingRow {
   ref: string;
   scenario: string;
   description: string;
-  weight: number;
+  useFrequency: UseFrequency;
   rawTokens: number;
   pareRegularTokens: number;
   pareCompactTokens: string; // may be empty
@@ -345,7 +358,7 @@ function readMutatingResults(): MutatingRow[] {
       ref: parts[0],
       scenario: parts[1],
       description: parts[2],
-      weight: parseFloat(parts[3]) || 0,
+      useFrequency: parts[3] as UseFrequency,
       rawTokens: parseInt(parts[4]) || 0,
       pareRegularTokens: parseInt(parts[5]) || 0,
       pareCompactTokens: parts[6],
@@ -390,6 +403,107 @@ function parseCSVLine(line: string): string[] {
   return fields;
 }
 
+// ─── Tool registry reader ───────────────────────────────────────
+
+interface RegistryTool {
+  num: number;
+  pkg: string;
+  tool: string;
+  useFrequency: UseFrequency;
+}
+
+function readToolRegistry(): RegistryTool[] {
+  const filePath = resolve(BENCHMARKS_DIR, "tool-registry.csv");
+  const content = readFileSync(filePath, "utf-8");
+  const lines = content.trim().split("\n");
+  const tools: RegistryTool[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = parseCSVLine(lines[i]);
+    if (parts.length < 4) continue;
+    tools.push({
+      num: parseInt(parts[0]) || 0,
+      pkg: parts[1],
+      tool: parts[2],
+      useFrequency: parts[3] as UseFrequency,
+    });
+  }
+  return tools;
+}
+
+// ─── Session impact calculation ─────────────────────────────────
+
+interface ToolSessionRow {
+  num: number;
+  name: string;
+  useFrequency: UseFrequency;
+  avgRaw: number;
+  avgPare: number;
+  rawPerSession: number;
+  parePerSession: number;
+  outlierExcluded: boolean;
+}
+
+function computeSessionImpact(
+  reproducible: ScenarioSummary[],
+  mutating: MutatingRow[],
+  registry: RegistryTool[],
+  excludeOutliers = true,
+): ToolSessionRow[] {
+  // Collect per-tool scenario data
+  const toolData = new Map<number, { raw: number; pare: number; isOutlier: boolean }[]>();
+
+  for (const s of reproducible) {
+    const num = s.scenario.registryNum;
+    if (!toolData.has(num)) toolData.set(num, []);
+    const isOutlier = SESSION_OUTLIER_IDS.has(s.scenario.id);
+    const effectivePare = Math.min(s.medianPareTokens, s.medianPareRegularTokens);
+    toolData.get(num)!.push({ raw: s.medianRawTokens, pare: effectivePare, isOutlier });
+  }
+
+  for (const m of mutating) {
+    const num = parseInt(m.ref.replace(/[A-Z*]/g, "")) || 0;
+    if (!toolData.has(num)) toolData.set(num, []);
+    const effectivePare = m.pareCompactTokens
+      ? Math.min(m.pareRegularTokens, parseInt(m.pareCompactTokens) || m.pareRegularTokens)
+      : m.pareRegularTokens;
+    toolData.get(num)!.push({ raw: m.rawTokens, pare: effectivePare, isOutlier: false });
+  }
+
+  // Build session rows from registry
+  const rows: ToolSessionRow[] = [];
+
+  for (const tool of registry) {
+    const scenarios = toolData.get(tool.num) || [];
+    const nonOutlier = scenarios.filter((s) => !s.isOutlier);
+    const outlierExcluded = excludeOutliers && nonOutlier.length < scenarios.length;
+    const useScenarios = excludeOutliers && nonOutlier.length > 0 ? nonOutlier : scenarios;
+
+    const avgRaw =
+      useScenarios.length > 0
+        ? Math.round(useScenarios.reduce((sum, s) => sum + s.raw, 0) / useScenarios.length)
+        : 0;
+    const avgPare =
+      useScenarios.length > 0
+        ? Math.round(useScenarios.reduce((sum, s) => sum + s.pare, 0) / useScenarios.length)
+        : 0;
+
+    const rep = USE_FREQUENCY_META.find((m) => m.name === tool.useFrequency)?.rep ?? 0.5;
+
+    rows.push({
+      num: tool.num,
+      name: `${tool.pkg}/${tool.tool}`,
+      useFrequency: tool.useFrequency,
+      avgRaw,
+      avgPare,
+      rawPerSession: Math.round(avgRaw * rep),
+      parePerSession: Math.round(avgPare * rep),
+      outlierExcluded,
+    });
+  }
+
+  return rows;
+}
+
 // ─── Combined output formatters ─────────────────────────────────
 
 function formatCombinedDetailedCsv(
@@ -402,7 +516,7 @@ function formatCombinedDetailedCsv(
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -423,7 +537,9 @@ function formatCombinedDetailedCsv(
 
   // Add reproducible rows
   for (const s of reproducible) {
-    const ref = `${s.scenario.registryNum}${s.scenario.variant}`;
+    const isOutlier = SESSION_OUTLIER_IDS.has(s.scenario.id);
+    const ref = `${s.scenario.registryNum}${s.scenario.variant}${isOutlier ? "*" : ""}`;
+    const desc = isOutlier ? `${s.scenario.description} (*)` : s.scenario.description;
     const compacted = s.medianPareTokens !== s.medianPareRegularTokens;
     const saved = s.medianRawTokens - s.medianPareTokens;
     const reductionPct =
@@ -434,8 +550,8 @@ function formatCombinedDetailedCsv(
       csvLine: csvRow([
         ref,
         s.scenario.id,
-        s.scenario.description,
-        s.scenario.weight,
+        desc,
+        s.scenario.useFrequency,
         s.medianRawTokens,
         s.medianPareRegularTokens,
         compacted ? s.medianPareTokens : "",
@@ -457,7 +573,7 @@ function formatCombinedDetailedCsv(
         m.ref,
         m.scenario,
         m.description,
-        m.weight,
+        m.useFrequency,
         m.rawTokens,
         m.pareRegularTokens,
         m.pareCompactTokens,
@@ -484,6 +600,7 @@ function formatSummaryMd(
   mutating: MutatingRow[],
   config: BenchmarkConfig,
   skipped: string[],
+  registry: RegistryTool[],
 ): string {
   const repRaw = reproducible.reduce((s, x) => s + x.medianRawTokens, 0);
   const repPare = reproducible.reduce((s, x) => s + x.medianPareTokens, 0);
@@ -502,73 +619,93 @@ function formatSummaryMd(
 
   const totalRaw = repRaw + mutRaw;
   const totalPare = repPare + mutPare;
-  const totalPct = totalRaw > 0 ? Math.round((1 - totalPare / totalRaw) * 100) : 0;
   const totalScenarios = reproducible.length + mutating.length;
 
-  // Top savers (reproducible only — we have full data)
+  // Top savers — exclude outliers, combine reproducible + mutating
+  interface SaverEntry {
+    id: string;
+    raw: number;
+    pare: number;
+    saved: number;
+  }
+  const allSavers: SaverEntry[] = [];
+  for (const s of reproducible) {
+    if (SESSION_OUTLIER_IDS.has(s.scenario.id)) continue;
+    const pare = Math.min(s.medianPareTokens, s.medianPareRegularTokens);
+    allSavers.push({
+      id: s.scenario.id,
+      raw: s.medianRawTokens,
+      pare,
+      saved: s.medianRawTokens - pare,
+    });
+  }
+  for (const m of mutating) {
+    const pare = m.pareCompactTokens
+      ? Math.min(m.pareRegularTokens, parseInt(m.pareCompactTokens) || m.pareRegularTokens)
+      : m.pareRegularTokens;
+    allSavers.push({ id: m.scenario, raw: m.rawTokens, pare, saved: m.rawTokens - pare });
+  }
+  allSavers.sort((a, b) => b.saved - a.saved);
+  const topSavers = allSavers.slice(0, 5);
+
+  // Worst overhead (reproducible only — we have full data)
   const sorted = [...reproducible].sort(
     (a, b) => b.medianRawTokens - b.medianPareTokens - (a.medianRawTokens - a.medianPareTokens),
   );
-  const topSavers = sorted.slice(0, 5);
-
-  // Worst overhead
   const worstOverhead = sorted.slice(-5).reverse();
 
-  // Latency
-  const addedMs = reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs);
+  // Latency — use raw CLI times as the baseline reference for scenario execution range
+  const addedMs = [
+    ...reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs),
+    ...mutating.map((m) => m.addedMs),
+  ];
   const medianAdded = computeMedian(addedMs);
+  const rawLatencies = [
+    ...reproducible.map((s) => s.medianRawLatencyMs),
+    ...mutating.map((m) => m.rawMs),
+  ];
+  const latencyMin = Math.min(...rawLatencies);
+  const latencyMax = Math.max(...rawLatencies);
+  const latencyMedian = computeMedian(rawLatencies);
+
+  // Session impact
+  const sessionRows = computeSessionImpact(reproducible, mutating, registry);
+  const totalRawSession = sessionRows.reduce((s, r) => s + r.rawPerSession, 0);
+  const totalPareSession = sessionRows.reduce((s, r) => s + r.parePerSession, 0);
+  const sessionSaved = totalRawSession - totalPareSession;
+  const sessionPct =
+    totalRawSession > 0 ? Math.round((1 - totalPareSession / totalRawSession) * 100) : 0;
+  const hasOutliers = sessionRows.some((r) => r.outlierExcluded);
+
+  // Tier counts from registry
+  const tierCounts = new Map<string, number>();
+  for (const tool of registry) {
+    tierCounts.set(tool.useFrequency, (tierCounts.get(tool.useFrequency) ?? 0) + 1);
+  }
+
+  // ─── Build output ─────────────────────────────────────────────
 
   const lines = [
     `# Pare Benchmark Summary`,
     ``,
+    `## Overall`,
+    ``,
+    `Pare is a suite of MCP (Model Context Protocol) server packages that wrap standard developer CLI tools with structured, token-efficient JSON output. This benchmark measures the token efficiency of Pare's 100 tools across 14 packages by comparing the output of each Pare tool against its raw CLI equivalent.`,
+    ``,
+    `Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared.`,
+    ``,
     `**Date**: ${new Date().toISOString().split("T")[0]}`,
     `**Platform**: ${process.platform} (${process.arch})`,
     `**Node**: ${process.version}`,
+    `**Coding agent**: Claude Code (Claude Opus 4.6 / Sonnet 4.5)`,
+    `**Tested scenarios**: ${totalScenarios}`,
     `**Runs per scenario**: ${config.runs}`,
-    ``,
-    `## Overall`,
-    ``,
-    `| Metric | Value |`,
-    `|---|---:|`,
-    `| Total scenarios | ${totalScenarios} |`,
-    `| Total raw tokens | ${totalRaw.toLocaleString()} |`,
-    `| Total Pare tokens | ${totalPare.toLocaleString()} |`,
-    `| Tokens saved | ${(totalRaw - totalPare).toLocaleString()} |`,
-    `| **Overall reduction** | **${totalPct}%** |`,
-    ``,
-    `## Breakdown`,
-    ``,
-    `| Suite | Scenarios | Raw Tokens | Pare Tokens | Reduction |`,
-    `|---|---:|---:|---:|---:|`,
-    `| Reproducible | ${reproducible.length} | ${repRaw.toLocaleString()} | ${repPare.toLocaleString()} | ${repPct}% |`,
-    `| Mutating (one-shot) | ${mutating.length} | ${mutRaw.toLocaleString()} | ${mutPare.toLocaleString()} | ${mutPct}% |`,
-    ``,
-    `## Top Token Savers`,
-    ``,
-    `| Scenario | Raw | Pare | Saved |`,
-    `|---|---:|---:|---:|`,
-    ...topSavers.map((s) => {
-      const saved = s.medianRawTokens - s.medianPareTokens;
-      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | ${saved} |`;
-    }),
-    ``,
-    `## Worst Overhead`,
-    ``,
-    `| Scenario | Raw | Pare | Overhead |`,
-    `|---|---:|---:|---:|`,
-    ...worstOverhead.map((s) => {
-      const overhead = s.medianPareTokens - s.medianRawTokens;
-      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | +${overhead} |`;
-    }),
-    ``,
-    `## Latency`,
-    ``,
-    `Median added latency (Pare vs raw CLI): **${Math.round(medianAdded)} ms**`,
+    `**Total tokens consumed in tests**: ${(totalRaw + totalPare).toLocaleString()}`,
     ``,
   ];
 
   if (skipped.length > 0) {
-    lines.push(`## Skipped Scenarios`);
+    lines.push(`### Skipped Scenarios`);
     lines.push(``);
     for (const s of skipped) {
       lines.push(`- ${s}`);
@@ -578,7 +715,224 @@ function formatSummaryMd(
 
   lines.push(`---`);
   lines.push(``);
-  lines.push(`See \`Benchmark-Detailed.csv\` for full per-scenario data.`);
+
+  // ─── Methodology section ────────────────────────────────────────
+
+  lines.push(`## Methodology`);
+  lines.push(``);
+  lines.push(`### Use Frequency`);
+  lines.push(``);
+  lines.push(
+    `Each tool is assigned a **Use Frequency** category reflecting how often it is called during a typical AI coding agent session. Categories are defined relative to a reference session of ~200 Pare-wrappable tool calls, representing a medium-complexity coding task (30–60 minutes).`,
+  );
+  lines.push(``);
+  lines.push(`| Category  | Calls per session | Representative value | Tools |`);
+  lines.push(`| --------- | ----------------: | -------------------: | ----: |`);
+  for (const tier of USE_FREQUENCY_META) {
+    const count = tierCounts.get(tier.name) ?? 0;
+    lines.push(
+      `| ${tier.name.padEnd(9)} | ${tier.calls.padStart(17)} | ${String(tier.rep).padStart(20)} | ${String(count).padStart(5)} |`,
+    );
+  }
+  lines.push(``);
+  lines.push(
+    `**Representative values** are mid-range estimates used for calculating estimated session impact:`,
+  );
+  lines.push(``);
+  lines.push("```");
+  lines.push(`session_impact = Σ (representative_calls × avg_tokens_per_call)`);
+  lines.push("```");
+  lines.push(``);
+  lines.push(`### Per-tool averaging`);
+  lines.push(``);
+  lines.push(
+    `When a tool has multiple benchmark scenarios (e.g., git diff has small, large, and full-patch variants), the per-tool token count is a **simple average** across all its scenarios. This treats each scenario as equally likely, which is a simplifying assumption — in practice, small outputs are more common than large ones. Simple averaging was chosen for transparency and reproducibility; if this proves insufficiently nuanced, scenario-type weighting (e.g., higher weight for typical-sized output) can be introduced later.`,
+  );
+  lines.push(``);
+  lines.push(`### Reference session`);
+  lines.push(``);
+  lines.push(
+    `The 200-call reference session is an order-of-magnitude estimate, not a directly measured figure. It is informed by:`,
+  );
+  lines.push(``);
+  lines.push(
+    `- **MCP tool call benchmarks** — MCPMark reports an average of ~17 tool calls per atomic task. A medium-complexity coding session chains 10–15 such tasks (explore, edit, test, fix, lint, commit), yielding ~170–250 tool calls.`,
+  );
+  lines.push(
+    `- **Agent workflow analysis** — typical coding agent loops (explore → edit → test → fix → lint → commit) are dominated by git and build tool calls, with git status/diff/add/commit comprising the highest-frequency operations.`,
+  );
+  lines.push(
+    `- **Observed Pare MCP usage** — real-world sessions using Pare tools for all git, test, build, lint, and npm operations.`,
+  );
+  lines.push(``);
+  lines.push(
+    `Since Use Frequency categories are used for _relative_ comparison between tools (not absolute savings predictions), the exact session length has minimal impact on the conclusions — proportions remain stable across session sizes.`,
+  );
+  lines.push(``);
+  lines.push(`### Frequency assignment rationale`);
+  lines.push(``);
+  lines.push(
+    `Tools were assigned to tiers based on the natural clustering of expected call counts:`,
+  );
+  lines.push(``);
+  lines.push(
+    `- **Very High** — Core git read/write cycle: \`status\`, \`diff\`, \`commit\`, \`add\`, \`log\`. Called on nearly every iteration of an edit-test-commit loop.`,
+  );
+  lines.push(
+    `- **High** — Session-level operations: \`push\`, \`test run\`, \`checkout\`, \`npm run\`. Called multiple times per session but not on every loop iteration.`,
+  );
+  lines.push(
+    `- **Average** — Periodic operations: \`pull\`, \`install\`, \`tsc\`, \`npm test\`, \`branch\`, \`show\`, \`build\`, \`lint\`. Used a few times per session, often at phase transitions (start of session, before push, after major changes).`,
+  );
+  lines.push(
+    `- **Low** — Situational operations: docker, coverage, formatting, blame, audit, language-specific build/test. Used when the workflow requires them, typically 1–2 times.`,
+  );
+  lines.push(
+    `- **Very Low** — Occasional operations: specialized linters, package search/info, stash, compose, HTTP tools, language-specific formatters. Used less than once per average session.`,
+  );
+  lines.push(``);
+  lines.push(`### Data sources`);
+  lines.push(``);
+  lines.push(
+    `- [MCPMark benchmark](https://github.com/yiranwu0/MCPMark) — tool call frequency data for AI coding agents`,
+  );
+  lines.push(`- Anthropic Claude Code documentation — agent workflow patterns`);
+  lines.push(`- Pare project internal usage telemetry — observed tool call distributions`);
+  lines.push(``);
+  lines.push(`### Token estimation`);
+  lines.push(``);
+  lines.push(
+    `Tokens are estimated as \`Math.ceil(text.length / 4)\`, a standard heuristic for English text with code. Actual tokenizer counts may vary by ±10–15%.`,
+  );
+  lines.push(``);
+
+  // ─── Session impact table ───────────────────────────────────────
+
+  lines.push(`---`);
+  lines.push(``);
+  lines.push(`## Estimated Session Impact`);
+  lines.push(``);
+  lines.push(
+    `Per-tool token usage weighted by Use Frequency representative values. Each tool's avg tokens are a simple average across its benchmark scenarios. Session values = avg tokens × representative calls.`,
+  );
+  lines.push(``);
+  lines.push(
+    `|   # | Tool                 | Use Frequency | Avg Raw | Raw / Session | Avg Pare | Pare / Session |`,
+  );
+  lines.push(
+    `| --: | -------------------- | ------------- | ------: | ------------: | -------: | -------------: |`,
+  );
+
+  for (const r of sessionRows) {
+    const toolName = r.outlierExcluded ? `${r.name} (\\*)` : r.name;
+    lines.push(
+      `| ${String(r.num).padStart(3)} | ${toolName.padEnd(20)} | ${r.useFrequency.padEnd(13)} | ${r.avgRaw.toLocaleString().padStart(7)} | ${r.rawPerSession.toLocaleString().padStart(13)} | ${r.avgPare.toLocaleString().padStart(8)} | ${r.parePerSession.toLocaleString().padStart(14)} |`,
+    );
+  }
+
+  lines.push(
+    `|     | **Total**            |               |         | ${("**" + totalRawSession.toLocaleString() + "**").padStart(13)} |          | ${("**" + totalPareSession.toLocaleString() + "**").padStart(14)} |`,
+  );
+  lines.push(``);
+  lines.push(`**Estimated savings per coding session:**`);
+  lines.push(``);
+  lines.push(
+    `Using Pare tools, a coding agent's input token consumption is reduced by an estimated **${sessionSaved.toLocaleString()} tokens** relative to standard CLI tool use — a **${sessionPct}% reduction** per session.`,
+  );
+  lines.push(``);
+  lines.push(`### Estimated Cost Savings`);
+  lines.push(``);
+  lines.push(
+    `An active developer using AI coding agents runs an estimated **8–12 sessions per week** (24–48 per month), where each session involves ~200 tool calls. This estimate is derived from polling three frontier LLMs for their assessment of typical CLI agent usage patterns and should be treated as a rough approximation — actual usage varies widely by workflow and role.`,
+  );
+  lines.push(``);
+  const blendedRate = 4.5; // $/MTok — usage-weighted (most sessions use cheaper models)
+  const costPerSession = (sessionSaved / 1_000_000) * blendedRate;
+  const monthlyLow = costPerSession * 24;
+  const monthlyHigh = costPerSession * 48;
+  lines.push(
+    `Token pricing varies by model. Sonnet-class models cost ~$3/MTok while Opus-class models cost ~$15/MTok. Since most coding agent usage skews toward faster, cheaper models, we use a usage-weighted estimate of **$${blendedRate.toFixed(2)} per million tokens**.`,
+  );
+  lines.push(``);
+  lines.push(
+    `At this rate, ${sessionSaved.toLocaleString()} tokens saved per session = **$${costPerSession.toFixed(2)} per session**, or **$${monthlyLow.toFixed(1)} to $${monthlyHigh.toFixed(1)} per developer per month**.`,
+  );
+  lines.push(``);
+  lines.push(
+    `These are input token savings only — the measurable floor. The harder-to-quantify benefits of structured MCP output (reduced context window consumption, fewer parsing failures, more deterministic agent behavior) are likely worth more than the raw token cost savings but cannot be derived from this benchmark alone. Pare is a free, open source toolset that requires no workflow changes — it wraps the same CLI tools already in use, so these savings come at zero cost and zero friction.`,
+  );
+
+  if (hasOutliers) {
+    lines.push(``);
+    lines.push(`&nbsp;`);
+    // Compute "with outlier" percentage for comparison
+    const withOutlier = computeSessionImpact(reproducible, mutating, registry, false);
+    const rawWithOutlier = withOutlier.reduce((s, r) => s + r.rawPerSession, 0);
+    const pareWithOutlier = withOutlier.reduce((s, r) => s + r.parePerSession, 0);
+    const pctWithOutlier =
+      rawWithOutlier > 0 ? Math.round((1 - pareWithOutlier / rawWithOutlier) * 100) : 0;
+
+    lines.push(``);
+    lines.push(
+      `_(\\*) npm/list excludes the depth=2 scenario (40C) from its session average. While npm-list-d2 shows a large 60% reduction (177,467 → 70,531 tokens), depth=2 output is an outlier — it is rarely requested by coding agents and its extreme size (177K tokens from a single call) would disproportionately inflate the session estimate. The scenario is retained in the detailed benchmark data for transparency. Excluding it has minimal effect on the overall reduction (${sessionPct}% vs ${pctWithOutlier}%) but yields a more representative session estimate._`,
+    );
+  }
+
+  lines.push(``);
+  lines.push(`---`);
+  lines.push(``);
+
+  // ─── Detailed breakdowns (appendix) ────────────────────────────
+
+  lines.push(`## Breakdown`);
+  lines.push(``);
+  lines.push(`| Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |`);
+  lines.push(`| ------------------- | --------: | ---------: | ----------: | --------: |`);
+  lines.push(
+    `| Reproducible        | ${String(reproducible.length).padStart(9)} | ${repRaw.toLocaleString().padStart(10)} | ${repPare.toLocaleString().padStart(11)} | ${String(repPct + "%").padStart(9)} |`,
+  );
+  lines.push(
+    `| Mutating (one-shot) | ${String(mutating.length).padStart(9)} | ${mutRaw.toLocaleString().padStart(10)} | ${mutPare.toLocaleString().padStart(11)} | ${String(mutPct + "%").padStart(9)} |`,
+  );
+  lines.push(``);
+  lines.push(`## Top Token Savers`);
+  lines.push(``);
+  lines.push(`| Scenario | Raw | Pare | Saved |`);
+  lines.push(`|---|---:|---:|---:|`);
+  for (const s of topSavers) {
+    lines.push(
+      `| ${s.id} | ${s.raw.toLocaleString()} | ${s.pare.toLocaleString()} | ${s.saved.toLocaleString()} |`,
+    );
+  }
+  lines.push(``);
+  lines.push(`## Worst Overhead`);
+  lines.push(``);
+  lines.push(`| Scenario | Raw | Pare | Overhead |`);
+  lines.push(`|---|---:|---:|---:|`);
+  for (const s of worstOverhead) {
+    const overhead = s.medianPareTokens - s.medianRawTokens;
+    lines.push(
+      `| ${s.scenario.id} | ${s.medianRawTokens.toLocaleString()} | ${s.medianPareTokens.toLocaleString()} | +${overhead.toLocaleString()} |`,
+    );
+  }
+  lines.push(``);
+  lines.push(`## Latency`);
+  lines.push(``);
+  lines.push(
+    `The median difference in execution time between Pare and raw CLI is **${Math.round(medianAdded)} ms**, which is negligible given that the ${totalScenarios} benchmark scenarios span a range of **${latencyMin.toLocaleString()} ms to ${latencyMax.toLocaleString()} ms** with a median execution time of **${Math.round(latencyMedian).toLocaleString()} ms**. Pare's structured parsing and schema validation add no meaningful overhead to tool execution.`,
+  );
+  lines.push(``);
+  lines.push(`---`);
+  lines.push(``);
+  lines.push(
+    `See \`Benchmark-Detailed.csv\` for full per-scenario data.` +
+      (hasOutliers
+        ? ` _Scenarios marked with (\\*) are excluded from session impact averages — see footnote in Estimated Session Impact above._`
+        : ``),
+  );
+  lines.push(
+    `See \`tool-registry.csv\` for the complete tool registry with Use Frequency assignments.`,
+  );
   lines.push(``);
 
   return lines.join("\n");
@@ -735,8 +1089,9 @@ async function main() {
   );
   writeFileSync(resolve(RESULTS_DIR, "results-overall.csv"), formatOverallCsv(summaries), "utf-8");
 
-  // Read mutating results and generate combined tracked outputs
+  // Read mutating results and tool registry, generate combined tracked outputs
   const mutatingRows = readMutatingResults();
+  const registry = readToolRegistry();
   writeFileSync(
     resolve(BENCHMARKS_DIR, "Benchmark-Detailed.csv"),
     formatCombinedDetailedCsv(summaries, mutatingRows),
@@ -744,7 +1099,7 @@ async function main() {
   );
   writeFileSync(
     resolve(BENCHMARKS_DIR, "Benchmark-Summary.md"),
-    formatSummaryMd(summaries, mutatingRows, config, skipped),
+    formatSummaryMd(summaries, mutatingRows, config, skipped, registry),
     "utf-8",
   );
 

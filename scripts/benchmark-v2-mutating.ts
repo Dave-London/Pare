@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import type { UseFrequency } from "./benchmark-v2-scenarios.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const REPO_ROOT = resolve(__dirname, "..");
@@ -43,8 +44,8 @@ if (process.platform === "win32") {
 interface MutatingScenario {
   id: string;
   registryNum: number;
-  variant: "A";
-  weight: number;
+  variant: string;
+  useFrequency: UseFrequency;
   description: string;
   group: string;
   /** Setup function — creates necessary preconditions, returns cwd for raw command */
@@ -66,7 +67,7 @@ interface RunResult {
   registryNum: number;
   variant: string;
   description: string;
-  weight: number;
+  useFrequency: UseFrequency;
   rawTokens: number;
   pareTokens: number;
   pareRegularTokens: number;
@@ -307,7 +308,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-add",
     registryNum: 4,
     variant: "A",
-    weight: 7,
+    useFrequency: "Very High",
     description: "git add (stage single file)",
     group: "git",
     setup: async () => {
@@ -329,7 +330,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-commit",
     registryNum: 3,
     variant: "A",
-    weight: 10,
+    useFrequency: "Very High",
     description: "git commit (single file, short msg)",
     group: "git",
     setup: async () => {
@@ -357,7 +358,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-checkout",
     registryNum: 8,
     variant: "A",
-    weight: 3,
+    useFrequency: "High",
     description: "git checkout (switch branch)",
     group: "git",
     setup: async () => {
@@ -380,7 +381,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-stash",
     registryNum: 76,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "git stash (push dirty tree)",
     group: "git",
     setup: async () => {
@@ -405,7 +406,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-push",
     registryNum: 6,
     variant: "A",
-    weight: 5,
+    useFrequency: "High",
     description: "git push (fast-forward to bare remote)",
     group: "git",
     setup: async () => {
@@ -426,7 +427,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-pull",
     registryNum: 10,
     variant: "A",
-    weight: 2.5,
+    useFrequency: "Average",
     description: "git pull (already up to date)",
     group: "git",
     setup: async () => {
@@ -447,7 +448,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "npm-init",
     registryNum: 89,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "npm init (default, -y)",
     group: "npm",
     setup: async () => {
@@ -466,7 +467,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "npm-install",
     registryNum: 11,
     variant: "A",
-    weight: 2,
+    useFrequency: "Average",
     description: "npm install (add single package)",
     group: "npm",
     setup: async () => {
@@ -489,7 +490,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-run",
     registryNum: 29,
     variant: "A",
-    weight: 0.5,
+    useFrequency: "Low",
     description: "docker run (alpine echo hello)",
     group: "docker",
     setup: async () => TEMP_ROOT,
@@ -507,7 +508,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-pull",
     registryNum: 64,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "docker pull (already up-to-date)",
     group: "docker",
     setup: async () => {
@@ -525,7 +526,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-exec",
     registryNum: 43,
     variant: "A",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "docker exec (ls in running container)",
     group: "docker",
     setup: async () => {
@@ -550,7 +551,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-compose-up",
     registryNum: 44,
     variant: "A",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "docker compose up (single service)",
     group: "docker",
     setup: async () => {
@@ -577,7 +578,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-compose-down",
     registryNum: 54,
     variant: "A",
-    weight: 0.3,
+    useFrequency: "Very Low",
     description: "docker compose down (stop service)",
     group: "docker",
     setup: async () => {
@@ -604,7 +605,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "http-post",
     registryNum: 82,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "HTTP POST JSON (httpbin)",
     group: "http",
     setup: async () => TEMP_ROOT,
@@ -636,7 +637,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "github-issue-create",
     registryNum: 66,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "GitHub issue create (then delete)",
     group: "github",
     setup: async () => REPO_ROOT,
@@ -710,7 +711,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "pip-install",
     registryNum: 33,
     variant: "A",
-    weight: 0.5,
+    useFrequency: "Low",
     description: "pip install (single package)",
     group: "python",
     setup: async () => {
@@ -730,7 +731,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "uv-install",
     registryNum: 85,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "uv pip install (single package)",
     group: "python",
     setup: async () => {
@@ -752,13 +753,161 @@ const SCENARIOS: MutatingScenario[] = [
     pareArgs: { packages: ["requests"], path: "__CWD__" },
   },
 
+  // ─── Python tool error scenarios ──────────────────────────────
+
+  {
+    id: "mypy-violations",
+    registryNum: 48,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "mypy (file with ~8 type errors)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "mypy-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import os",
+          "import sys",
+          "import json",
+          "import re",
+          "",
+          "def bad_return(x: int) -> str:",
+          "    return x + 1",
+          "",
+          "def no_return_type(a, b):",
+          "    result: str = a + b",
+          "    return result",
+          "",
+          "class Foo:",
+          "    def method(self) -> int:",
+          '        return "hello"',
+          "",
+          'x: int = "not an int"',
+          'y = bad_return("string")',
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "mypy",
+    rawArgs: ["violations.py"],
+    pareServer: "server-python",
+    pareTool: "mypy",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"] },
+  },
+  {
+    id: "ruff-violations",
+    registryNum: 49,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "ruff check (file with ~10 violations)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "ruff-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import os",
+          "import sys",
+          "import json",
+          "import re",
+          "import collections",
+          "",
+          "x=1",
+          "y =    2",
+          "z = x+y",
+          "",
+          "try:",
+          "    pass",
+          "except:",
+          "    pass",
+          "",
+          "if type(x) == int:",
+          "    print(x)",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "ruff",
+    rawArgs: ["check", "--output-format", "json", "violations.py"],
+    pareServer: "server-python",
+    pareTool: "ruff-check",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"] },
+  },
+  {
+    id: "black-violations",
+    registryNum: 87,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "black check (file with bad formatting)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "black-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import   os",
+          "x=1",
+          "y=     2",
+          "z =x+y",
+          "def    foo(  a,b ,c   ):",
+          "    return a+b+c",
+          "class   Bar:",
+          "    def   method(  self  ,x,  y):",
+          "            return    x+y",
+          "if x==1:",
+          '    print(   "hello"    )',
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "black",
+    rawArgs: ["--check", "violations.py"],
+    pareServer: "server-python",
+    pareTool: "black",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"], check: true },
+  },
+  {
+    id: "pip-audit-vulns",
+    registryNum: 84,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "pip-audit (requirements with known vulns)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "pip-audit-vulns");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      // Pin old versions with known CVEs
+      writeFileSync(
+        join(dir, "requirements.txt"),
+        ["urllib3==1.26.5", "certifi==2023.7.22", "requests==2.25.1", ""].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "pip-audit",
+    rawArgs: ["--format", "json", "-r", "requirements.txt"],
+    pareServer: "server-python",
+    pareTool: "pip-audit",
+    pareArgs: { path: "__CWD__", requirements: "requirements.txt" },
+  },
+
   // ─── Cargo group ────────────────────────────────────────────────
 
   {
     id: "cargo-add",
     registryNum: 88,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "cargo add (single crate)",
     group: "cargo",
     setup: async () => cargoDir(),
@@ -772,7 +921,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-remove",
     registryNum: 93,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "cargo remove (single crate)",
     group: "cargo",
     setup: async () => {
@@ -791,7 +940,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-update",
     registryNum: 95,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "cargo update (all deps)",
     group: "cargo",
     setup: async () => {
@@ -806,6 +955,56 @@ const SCENARIOS: MutatingScenario[] = [
     pareTool: "update",
     pareArgs: { path: "__CWD__" },
   },
+  {
+    id: "cargo-clippy-warnings",
+    registryNum: 50,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "cargo clippy (code with ~5 warnings)",
+    group: "cargo",
+    setup: async () => {
+      const dir = await cargoDir();
+      // Overwrite main.rs with code that triggers clippy warnings
+      writeFileSync(
+        join(dir, "src", "main.rs"),
+        [
+          "fn main() {",
+          "    let v: Vec<i32> = vec![1, 2, 3];",
+          "    // clippy::len_zero — use is_empty()",
+          "    if v.len() == 0 {",
+          '        println!("empty");',
+          "    }",
+          "    // clippy::needless_return",
+          "    let _s = needless_return_fn();",
+          "    // clippy::redundant_clone",
+          '    let s1 = String::from("hello");',
+          "    let _s2 = s1.clone();",
+          "    // clippy::manual_is_ascii_check",
+          "    let _b = ('a'..='z').contains(&'x');",
+          "}",
+          "",
+          "fn needless_return_fn() -> i32 {",
+          "    return 42;",
+          "}",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "cargo",
+    rawArgs: ["clippy", "--message-format=json"],
+    pareServer: "server-cargo",
+    pareTool: "clippy",
+    pareArgs: { path: "__CWD__" },
+    teardown: async () => {
+      // Restore clean main.rs for subsequent cargo scenarios
+      const dir = await cargoDir();
+      writeFileSync(
+        join(dir, "src", "main.rs"),
+        'fn main() {\n    println!("Hello, world!");\n}\n',
+      );
+    },
+  },
 
   // ─── Go group ───────────────────────────────────────────────────
 
@@ -813,7 +1012,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-get",
     registryNum: 100,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "go get (single package)",
     group: "go",
     setup: async () => goDir(),
@@ -827,7 +1026,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-mod-tidy",
     registryNum: 75,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "go mod tidy",
     group: "go",
     setup: async () => goDir(),
@@ -841,7 +1040,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-generate",
     registryNum: 97,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "go generate (no directives)",
     group: "go",
     setup: async () => goDir(),
@@ -850,6 +1049,113 @@ const SCENARIOS: MutatingScenario[] = [
     pareServer: "server-go",
     pareTool: "generate",
     pareArgs: { path: "__CWD__" },
+  },
+
+  // ─── Lint group ──────────────────────────────────────────────────
+
+  {
+    id: "lint-violations",
+    registryNum: 17,
+    variant: "D",
+    useFrequency: "Average",
+    description: "ESLint (file with ~15 deliberate violations)",
+    group: "lint",
+    setup: async () => {
+      // Write a temp file into packages/shared/src/ so eslint.config.mjs picks it up.
+      // Violations: 5× no-unused-vars (error), 5× no-explicit-any (warn), 5× no-console (warn)
+      const targetDir = resolve(REPO_ROOT, "packages", "shared", "src");
+      writeFileSync(
+        join(targetDir, "__bench_lint_violations__.ts"),
+        [
+          "// Deliberate lint violations for benchmark — auto-deleted after run",
+          "",
+          "// 5× @typescript-eslint/no-unused-vars (error)",
+          "const unusedAlpha = 1;",
+          "const unusedBravo = 2;",
+          "const unusedCharlie = 3;",
+          "const unusedDelta = 4;",
+          "const unusedEcho = 5;",
+          "",
+          "// 5× @typescript-eslint/no-explicit-any (warn)",
+          "export function fnOne(x: any): any { return x; }",
+          "export function fnTwo(a: any, b: any): any { return a + b; }",
+          "",
+          "// 5× no-console (warn)",
+          "console.log('bench1');",
+          "console.log('bench2');",
+          "console.log('bench3');",
+          "console.log('bench4');",
+          "console.log('bench5');",
+          "",
+        ].join("\n"),
+      );
+      return REPO_ROOT;
+    },
+    rawCommand: "npx",
+    rawArgs: ["eslint", "--format", "json", "packages/shared/src/__bench_lint_violations__.ts"],
+    pareServer: "server-lint",
+    pareTool: "lint",
+    pareArgs: {
+      path: "__CWD__",
+      patterns: ["packages/shared/src/__bench_lint_violations__.ts"],
+    },
+    teardown: async () => {
+      const f = resolve(REPO_ROOT, "packages", "shared", "src", "__bench_lint_violations__.ts");
+      if (existsSync(f)) rmSync(f);
+    },
+  },
+  {
+    id: "biome-violations",
+    registryNum: 63,
+    variant: "B",
+    useFrequency: "Very Low",
+    description: "Biome check (file with ~13 deliberate violations)",
+    group: "lint",
+    setup: async () => {
+      // Create a temp subdirectory inside the repo so npx can find @biomejs/biome
+      // from node_modules, and a local biome.json enables recommended rules.
+      const dir = resolve(REPO_ROOT, "__bench_biome__");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "biome.json"),
+        JSON.stringify(
+          {
+            $schema: "https://biomejs.dev/schemas/2.0.0/schema.json",
+            linter: { enabled: true, rules: { recommended: true } },
+          },
+          null,
+          2,
+        ),
+      );
+      writeFileSync(
+        join(dir, "violations.ts"),
+        [
+          "// Deliberate biome violations for benchmark",
+          "var alpha = 1;",
+          "var bravo = 2;",
+          "var charlie = 3;",
+          "if (alpha == bravo) { debugger; }",
+          "if (charlie == 0) { debugger; }",
+          'let unused1 = "hello";',
+          'let unused2 = "world";',
+          'let unused3 = "test";',
+          "function fn(x: any) { eval('alert(1)'); return x; }",
+          "console.log(alpha, fn(bravo));",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "npx",
+    rawArgs: ["@biomejs/biome", "check", "--reporter=json", "violations.ts"],
+    pareServer: "server-lint",
+    pareTool: "biome-check",
+    pareArgs: { path: "__CWD__", patterns: ["violations.ts"] },
+    teardown: async () => {
+      const dir = resolve(REPO_ROOT, "__bench_biome__");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+    },
   },
 ];
 
@@ -918,7 +1224,7 @@ async function runScenario(scenario: MutatingScenario): Promise<RunResult> {
     registryNum: scenario.registryNum,
     variant: scenario.variant,
     description: scenario.description,
-    weight: scenario.weight,
+    useFrequency: scenario.useFrequency,
     rawTokens,
     pareTokens,
     pareRegularTokens,
@@ -953,7 +1259,7 @@ async function main(): Promise<void> {
   const skipped: string[] = [];
 
   for (const scenario of scenarios) {
-    console.log(`Running ${scenario.registryNum}A ${scenario.id}...`);
+    console.log(`Running ${scenario.registryNum}${scenario.variant} ${scenario.id}...`);
     try {
       const result = await runScenario(scenario);
       results.push(result);
@@ -975,7 +1281,7 @@ async function main(): Promise<void> {
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -997,7 +1303,7 @@ async function main(): Promise<void> {
         ref,
         r.scenarioId,
         r.description,
-        r.weight,
+        r.useFrequency,
         r.rawTokens,
         r.pareRegularTokens,
         compacted ? r.pareTokens : "",

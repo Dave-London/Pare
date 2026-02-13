@@ -1,142 +1,149 @@
-#,Scenario,Description,Weight %,Raw Tokens,Pare Regular,Pare Compact,Saved,Reduction %,Raw ms,Pare ms,Added ms
-1A,status,Repo status (current state),12,321,239,,82,26,29,32,3
-2A,diff-small,Small diff (HEAD~1),10,207,738,725,-518,-250,41,41,0
-2B,diff-large,Large diff (HEAD~5),10,327,1143,1130,-803,-246,44,44,0
-2C,diff-full-patch,Full patch with chunks (HEAD~1),10,22873,23138,725,22148,97,43,83,40
-3A,git-commit,"git commit (single file, short msg)",10,48,69,,-21,-44,23,26,3
-4A,git-add,git add (stage single file),7,0,22,,-22,0,29,56,27
-5A,log-5,5 commits oneline,6,110,217,109,1,1,26,33,7
-5B,log-20,20 commits oneline,6,359,839,409,-50,-14,27,27,0
-5C,log-50,50 commits oneline,6,907,2084,1009,-102,-11,28,28,0
-6A,git-push,git push (fast-forward to bare remote),5,74,79,,-5,-7,22,23,1
-7A,test-server-git,Vitest run (server-git tests),4,424,40,,384,91,3757,3750,-7
-7B,test-shared,Vitest run (shared tests),4,577,40,,537,93,1330,1306,-24
-7C,test-server-lint,Vitest run (server-lint tests),4,562,40,,522,93,8539,8164,-375
-8A,git-checkout,git checkout (switch branch),3,17,21,,-4,-24,23,49,26
-9A,npm-run-build,npm run build (shared pkg),3,37,64,,-27,-73,786,777,-9
-9B,npm-run-lint,npm run lint (shared pkg),3,100,130,,-30,-30,870,848,-22
-9C,npm-run-test,npm run test (shared pkg),3,588,430,431,157,27,1150,1171,21
-10A,git-pull,git pull (already up to date),2.5,77,54,,23,30,155,87,-68
-11A,npm-install,npm install (add single package),2,45,53,,-8,-18,1409,666,-743
-12A,tsc-shared,TypeScript check (shared pkg),2,84,22,,62,74,932,922,-10
-12B,tsc-server-git,TypeScript check (server-git pkg),2,84,22,,62,74,1274,1267,-7
-12C,tsc-repo,TypeScript check (whole repo),2,1368,23,,1345,98,439,438,-1
-13A,npm-test-shared,npm test (shared pkg),1.8,588,425,,163,28,1143,1181,38
-13B,npm-test-server-git,npm test (server-git pkg),1.8,435,274,,161,37,3628,3635,7
-14A,branch-local,Local branches only,1.5,318,995,374,-56,-18,32,32,0
-14B,branch-all,All branches including remotes,1.5,964,2452,1096,-132,-14,31,33,2
-15A,show-head,Show HEAD (latest commit),1.5,268,249,11,257,96,27,52,25
-15B,show-mid,Show HEAD~3 (recent commit),1.5,459,240,11,448,98,27,52,25
-15C,show-deep,Show HEAD~8 (older commit),1.5,412,570,11,401,97,32,52,20
-16A,build-shared,Build (shared pkg),1.5,37,48,20,17,46,807,806,-1
-16B,build-server-git,Build (server-git pkg),1.5,36,48,20,16,44,1191,1157,-34
-16C,build-server-npm,Build (server-npm pkg),1.5,36,48,20,16,44,1301,1312,11
-17A,lint-shared,ESLint (shared pkg src),1.5,145,99,,46,32,1510,1060,-450
-17B,lint-server-git,ESLint (server-git pkg src),1.5,84,27,,57,68,1129,1172,43
-17C,lint-server-npm,ESLint (server-npm pkg src),1.5,226,443,,-217,-96,1132,1138,6
-18A,docker-ps,Docker ps (running),0.8,345,855,,-510,-148,70,82,12
-18B,docker-ps-all,Docker ps (all containers),0.8,433,1000,,-567,-131,72,83,11
-19A,pytest,pytest run,0.8,72,34,64,8,11,1020,528,-492
-20A,docker-images,Docker images,0.7,158,323,,-165,-104,92,102,10
-20B,docker-images-all,Docker images (all including intermediate),0.7,158,323,,-165,-104,100,106,6
-21A,format-shared,Prettier check (shared pkg src),0.6,207,90,10,197,95,562,571,9
-21B,format-server-git,Prettier check (server-git pkg src),0.6,101,13,,88,87,720,702,-18
-21C,format-server-npm,Prettier check (server-npm pkg src),0.6,140,38,10,130,93,652,694,42
-22A,docker-build,Docker build (no Dockerfile),0.6,69,45,64,5,7,475,365,-110
-23A,pr-view,View PR #198,0.6,484,783,,-299,-62,947,752,-195
-24A,blame-small,Blame small file (62 lines),0.5,1615,3120,1896,-281,-17,70,44,-26
-24B,blame-medium,Blame medium file (130 lines),0.5,4522,7623,4776,-254,-6,48,46,-2
-24C,blame-large,Blame large file (470 lines),0.5,10255,21968,13409,-3154,-31,52,46,-6
-25A,npm-audit,npm audit,0.5,176,36,,140,80,381,374,-7
-26A,coverage-shared,Test coverage (shared pkg),0.5,846,220,,626,74,1655,1581,-74
-27A,prettier-format-shared,Prettier format (shared pkg src),0.5,169,15,,154,91,606,584,-22
-27B,prettier-format-server-git,Prettier format (server-git pkg src),0.5,427,15,,412,96,736,799,63
-28A,docker-logs,Docker logs (tail 10),0.5,15,33,63,-48,-320,47,48,1
-29A,docker-run,docker run (alpine echo hello),0.5,81,19,,62,77,4609,608,-4001
-30A,pr-list-open,List open PRs,0.5,21,68,,-47,-224,450,454,4
-30B,pr-list-closed,List closed PRs,0.5,497,1300,,-803,-162,468,493,25
-31A,search-narrow,Search narrow pattern (5 matches),0.5,45,118,,-73,-162,152,37,-115
-31B,search-broad,Search broad pattern (50+ matches),0.5,77,196,,-119,-155,30,34,4
-31C,search-regex,Search regex pattern across files,0.5,228,569,,-341,-150,32,33,1
-32A,make-run,Make run target,0.5,13,40,24,-11,-85,241,59,-182
-33A,pip-install,pip install (single package),0.5,105,21,,84,80,1799,1962,163
-34A,cargo-build,cargo build,0.5,18,23,,-5,-28,328,74,-254
-35A,cargo-test,cargo test,0.5,18,25,,-7,-39,61,66,5
-36A,go-build,go build,0.5,23,13,,10,43,89,35,-54
-37A,go-test,go test,0.5,33,25,,8,24,45,48,3
-38A,tag-list,List all tags,0.4,232,1269,261,-29,-12,30,32,2
-39A,npm-outdated,Check outdated packages,0.4,131,92,,39,30,1663,1216,-447
-40A,npm-list-d0,npm list depth=0,0.4,520,602,,-82,-16,870,888,18
-40B,npm-list-d1,npm list depth=1,0.4,11534,10265,,1269,11,896,984,88
-40C,npm-list-d2,npm list depth=2,0.4,177467,70531,,106936,60,1559,1779,220
-41A,esbuild-shared,esbuild bundle (shared pkg),0.4,109,19,,90,83,934,884,-50
-42A,vite-build,Vite build (shared pkg),0.4,51,19,,32,63,890,891,1
-43A,docker-exec,docker exec (ls in running container),0.4,19,41,106,-87,-458,132,135,3
-44A,docker-compose-up,docker compose up (single service),0.4,60,21,65,-5,-8,621,196,-425
-45A,github-pr-create,GitHub PR create (throwaway branch),0.4,12,106,19,-7,-58,1662,1626,-36
-46A,issue-view,View issue #123,0.4,264,298,,-34,-13,715,442,-273
-47A,find-ts,Find *.ts files (shared pkg),0.4,70,206,63,7,10,21,28,7
-47B,find-test-files,Find test files (whole repo),0.4,1440,8,,1432,99,25,19,-6
-47C,find-all-ts,Find all *.ts files (whole repo),0.4,3548,9292,63,3485,98,23,25,2
-48A,mypy-check,mypy type check,0.4,11,23,65,-54,-491,1873,198,-1675
-49A,ruff-check,ruff check,0.4,19,14,66,-47,-247,273,31,-242
-50A,cargo-clippy,cargo clippy,0.4,18,18,,0,0,171,136,-35
-51A,cargo-check,cargo check,0.4,18,23,,-5,-28,61,61,0
-52A,remote-list,List remotes with URLs,0.3,28,48,13,15,54,25,24,-1
-53A,npm-info-small,npm info (small package),0.3,264,112,,152,58,909,412,-497
-53B,npm-info-medium,npm info (medium package),0.3,292,125,,167,57,995,465,-530
-53C,npm-info-popular,npm info (popular package),0.3,377,271,,106,28,415,501,86
-54A,docker-compose-down,docker compose down (stop service),0.3,67,14,,53,79,10768,135,-10633
-55A,issue-list-open,List open issues,0.3,268,730,,-462,-172,421,693,272
-55B,issue-list-all,List all issues (open+closed),0.3,711,2031,,-1320,-186,685,641,-44
-56A,http-request-get,HTTP GET small JSON,0.3,165,118,160,5,3,788,599,-189
-56B,http-request-post,HTTP POST with JSON body,0.3,148,26,,122,82,4609,31,-4578
-57A,go-vet,go vet,0.3,23,10,,13,57,353,40,-313
-58A,http-get-small,HTTP GET small response,0.25,66,117,159,-93,-141,681,808,127
-58B,http-get-headers,HTTP GET with many headers,0.25,101,117,159,-58,-57,605,589,-16
-59A,ruff-format,ruff format check,0.25,14,11,,3,21,31,34,3
-60A,go-fmt,go fmt,0.25,23,15,11,12,52,28,338,310
-61A,stash-list,List stashes,0.2,0,9,,-9,0,24,24,0
-62A,webpack-build,Webpack build,0.2,109,19,,90,83,899,879,-20
-63A,biome-check-shared,Biome check (shared pkg src),0.2,84,855,,-771,-918,1682,1120,-562
-64A,docker-pull,docker pull (already up-to-date),0.2,49,37,,12,24,972,1002,30
-65A,docker-inspect,Docker inspect,0.2,10,15,,-5,-50,70,64,-6
-66A,github-issue-create,GitHub issue create (then delete),0.2,257,268,,-11,-4,59,63,4
-67A,run-view,View workflow run,0.2,702,329,,373,53,4057,1322,-2735
-68A,run-list,List recent workflow runs,0.2,319,777,,-458,-144,871,858,-13
-68B,run-list-20,List 20 workflow runs,0.2,647,1526,,-879,-136,1139,985,-154
-69A,count-rare,Count rare pattern matches,0.2,16,45,63,-47,-294,26,35,9
-69B,count-common,Count common pattern matches,0.2,3647,6972,63,3584,98,48,36,-12
-70A,make-list,Make list targets,0.2,3340,34,,3306,99,21,21,0
-71A,pip-list,pip list installed packages,0.2,968,1665,,-697,-72,715,301,-414
-72A,cargo-run,cargo run (version flag),0.2,18,21,,-3,-17,58,1,-57
-73A,cargo-fmt,cargo fmt check,0.2,219,15,,204,93,164,144,-20
-74A,go-run,go run (main package),0.2,27,46,10,17,63,31,31,0
-75A,go-mod-tidy,go mod tidy,0.2,0,19,6,-6,0,1758,61,-1697
-76A,git-stash,git stash (push dirty tree),0.15,26,51,,-25,-96,21,22,1
-77A,npm-search-narrow,npm search (narrow query),0.15,1444,999,,445,31,1434,262,-1172
-77B,npm-search-broad,npm search (broad query),0.15,1523,998,,525,34,655,279,-376
-77C,npm-search-popular,npm search (popular query),0.15,1368,986,,382,28,698,266,-432
-78A,biome-format-shared,Biome format (shared pkg src),0.15,84,15,11,73,87,1363,1081,-282
-79A,docker-network-ls,Docker network ls,0.15,70,125,,-55,-79,44,45,1
-80A,docker-volume-ls,Docker volume ls,0.15,42,192,,-150,-357,46,43,-3
-81A,docker-compose-ps,Docker compose ps,0.15,11,9,,2,18,170,124,-46
-82A,http-post,HTTP POST JSON (httpbin),0.15,90,60,,30,33,3489,2,-3487
-83A,pip-show-pip,pip show (pip itself),0.15,73,56,,17,23,356,334,-22
-84A,pip-audit,pip audit,0.15,9,21,,-12,-133,237,12,-225
-85A,uv-install,uv pip install (single package),0.15,48,18,66,-18,-37,1174,30,-1144
-86A,uv-run,uv run (python version),0.15,4,61,,-57,-1425,311,1,-310
-87A,black-check,black format check,0.15,18,28,65,-47,-261,799,289,-510
-88A,cargo-add,cargo add (single crate),0.15,81,61,,20,25,1959,3,-1956
-89A,npm-init,"npm init (default, -y)",0.1,114,46,,68,60,397,390,-7
-90A,stylelint-check,Stylelint check,0.1,296,27,22,274,93,1360,1302,-58
-91A,oxlint-check,Oxlint check (shared pkg src),0.1,107,27,,80,75,1062,1099,37
-92A,http-head-200,HTTP HEAD 200 response,0.1,59,72,114,-55,-93,21839,636,-21203
-93A,cargo-remove,cargo remove (single crate),0.1,10,62,,-52,-520,90,1,-89
-94A,cargo-doc,cargo doc,0.1,18,10,,8,44,58,58,0
-95A,cargo-update,cargo update (all deps),0.1,24,32,64,-40,-167,597,588,-9
-96A,cargo-tree,cargo tree,0.1,18,23,,-5,-28,65,58,-7
-97A,go-generate,go generate (no directives),0.1,0,10,6,-6,0,53,54,1
-98A,go-env,go env,0.1,303,422,,-119,-39,58,61,3
-99A,go-list,go list,0.1,23,9,,14,61,32,31,-1
-100A,go-get,go get (single package),0.1,28,6,,22,79,2681,138,-2543
+#,Scenario,Description,Use Frequency,Raw Tokens,Pare Regular,Pare Compact,Saved,Reduction %,Raw ms,Pare ms,Added ms
+1A,status,Repo status (current state),Very High,321,239,,82,26,29,32,3
+2A,diff-small,Small diff (HEAD~1),Very High,207,738,725,-518,-250,41,41,0
+2B,diff-large,Large diff (HEAD~5),Very High,327,1143,1130,-803,-246,44,44,0
+2C,diff-full-patch,Full patch with chunks (HEAD~1),Very High,22873,23138,725,22148,97,43,83,40
+3A,git-commit,"git commit (single file, short msg)",Very High,48,69,,-21,-44,23,26,3
+4A,git-add,git add (stage single file),Very High,0,22,,-22,0,29,56,27
+5A,log-5,5 commits oneline,Very High,110,217,109,1,1,26,33,7
+5B,log-20,20 commits oneline,Very High,359,839,409,-50,-14,27,27,0
+5C,log-50,50 commits oneline,Very High,907,2084,1009,-102,-11,28,28,0
+6A,git-push,git push (fast-forward to bare remote),High,74,79,,-5,-7,22,23,1
+7A,test-server-git,Vitest run (server-git tests),High,424,40,,384,91,3757,3750,-7
+7B,test-shared,Vitest run (shared tests),High,577,40,,537,93,1330,1306,-24
+7C,test-server-lint,Vitest run (server-lint tests),High,562,40,,522,93,8539,8164,-375
+8A,git-checkout,git checkout (switch branch),High,17,21,,-4,-24,23,49,26
+9A,npm-run-build,npm run build (shared pkg),High,37,64,,-27,-73,786,777,-9
+9B,npm-run-lint,npm run lint (shared pkg),High,100,130,,-30,-30,870,848,-22
+9C,npm-run-test,npm run test (shared pkg),High,588,430,431,157,27,1150,1171,21
+10A,git-pull,git pull (already up to date),Average,77,54,,23,30,155,87,-68
+11A,npm-install,npm install (add single package),Average,45,53,,-8,-18,1409,666,-743
+12A,tsc-shared,TypeScript check (shared pkg),Average,84,22,,62,74,932,922,-10
+12B,tsc-server-git,TypeScript check (server-git pkg),Average,84,22,,62,74,1274,1267,-7
+12C,tsc-repo,TypeScript check (whole repo),Average,1368,23,,1345,98,439,438,-1
+13A,npm-test-shared,npm test (shared pkg),Average,588,425,,163,28,1143,1181,38
+13B,npm-test-server-git,npm test (server-git pkg),Average,435,274,,161,37,3628,3635,7
+14A,branch-local,Local branches only,Average,318,995,374,-56,-18,32,32,0
+14B,branch-all,All branches including remotes,Average,964,2452,1096,-132,-14,31,33,2
+15A,show-head,Show HEAD (latest commit),Average,268,249,11,257,96,27,52,25
+15B,show-mid,Show HEAD~3 (recent commit),Average,459,240,11,448,98,27,52,25
+15C,show-deep,Show HEAD~8 (older commit),Average,412,570,11,401,97,32,52,20
+16A,build-shared,Build (shared pkg),Average,37,48,20,17,46,807,806,-1
+16B,build-server-git,Build (server-git pkg),Average,36,48,20,16,44,1191,1157,-34
+16C,build-server-npm,Build (server-npm pkg),Average,36,48,20,16,44,1301,1312,11
+17A,lint-shared,ESLint (shared pkg src),Average,145,99,,46,32,1510,1060,-450
+17B,lint-server-git,ESLint (server-git pkg src),Average,84,27,,57,68,1129,1172,43
+17C,lint-server-npm,ESLint (server-npm pkg src),Average,226,443,,-217,-96,1132,1138,6
+17D,lint-violations,ESLint (file with ~15 deliberate violations),Average,1800,1344,,456,25,983,963,-20
+18A,docker-ps,Docker ps (running),Low,345,855,,-510,-148,70,82,12
+18B,docker-ps-all,Docker ps (all containers),Low,433,1000,,-567,-131,72,83,11
+19A,pytest,pytest run,Low,72,34,64,8,11,1020,528,-492
+20A,docker-images,Docker images,Low,158,323,,-165,-104,92,102,10
+20B,docker-images-all,Docker images (all including intermediate),Low,158,323,,-165,-104,100,106,6
+21A,format-shared,Prettier check (shared pkg src),Low,207,90,10,197,95,562,571,9
+21B,format-server-git,Prettier check (server-git pkg src),Low,101,13,,88,87,720,702,-18
+21C,format-server-npm,Prettier check (server-npm pkg src),Low,140,38,10,130,93,652,694,42
+22A,docker-build,Docker build (no Dockerfile),Low,69,45,64,5,7,475,365,-110
+23A,pr-view,View PR #198,Low,484,783,,-299,-62,947,752,-195
+24A,blame-small,Blame small file (62 lines),Low,1615,3120,1896,-281,-17,70,44,-26
+24B,blame-medium,Blame medium file (130 lines),Low,4522,7623,4776,-254,-6,48,46,-2
+24C,blame-large,Blame large file (470 lines),Low,10255,21968,13409,-3154,-31,52,46,-6
+25A,npm-audit,npm audit,Low,176,36,,140,80,381,374,-7
+26A,coverage-shared,Test coverage (shared pkg),Low,846,220,,626,74,1655,1581,-74
+27A,prettier-format-shared,Prettier format (shared pkg src),Low,169,15,,154,91,606,584,-22
+27B,prettier-format-server-git,Prettier format (server-git pkg src),Low,427,15,,412,96,736,799,63
+28A,docker-logs,Docker logs (tail 10),Low,15,33,63,-48,-320,47,48,1
+29A,docker-run,docker run (alpine echo hello),Low,81,19,,62,77,4609,608,-4001
+30A,pr-list-open,List open PRs,Low,21,68,,-47,-224,450,454,4
+30B,pr-list-closed,List closed PRs,Low,497,1300,,-803,-162,468,493,25
+31A,search-narrow,Search narrow pattern (5 matches),Low,45,118,,-73,-162,152,37,-115
+31B,search-broad,Search broad pattern (50+ matches),Low,77,196,,-119,-155,30,34,4
+31C,search-regex,Search regex pattern across files,Low,228,569,,-341,-150,32,33,1
+32A,make-run,Make run target,Low,13,40,24,-11,-85,241,59,-182
+33A,pip-install,pip install (single package),Low,105,21,,84,80,1799,1962,163
+34A,cargo-build,cargo build,Low,18,23,,-5,-28,328,74,-254
+35A,cargo-test,cargo test,Low,18,25,,-7,-39,61,66,5
+36A,go-build,go build,Low,23,13,,10,43,89,35,-54
+37A,go-test,go test,Low,33,25,,8,24,45,48,3
+38A,tag-list,List all tags,Very Low,232,1269,261,-29,-12,30,32,2
+39A,npm-outdated,Check outdated packages,Very Low,131,92,,39,30,1663,1216,-447
+40A,npm-list-d0,npm list depth=0,Very Low,520,602,,-82,-16,870,888,18
+40B,npm-list-d1,npm list depth=1,Very Low,11534,10265,,1269,11,896,984,88
+40C*,npm-list-d2,npm list depth=2 (*),Very Low,177467,70531,,106936,60,1559,1779,220
+41A,esbuild-shared,esbuild bundle (shared pkg),Very Low,109,19,,90,83,934,884,-50
+42A,vite-build,Vite build (shared pkg),Very Low,51,19,,32,63,890,891,1
+43A,docker-exec,docker exec (ls in running container),Very Low,19,41,106,-87,-458,132,135,3
+44A,docker-compose-up,docker compose up (single service),Very Low,60,21,65,-5,-8,621,196,-425
+45A,github-pr-create,GitHub PR create (throwaway branch),Very Low,12,106,19,-7,-58,1662,1626,-36
+46A,issue-view,View issue #123,Very Low,264,298,,-34,-13,715,442,-273
+47A,find-ts,Find *.ts files (shared pkg),Very Low,70,206,63,7,10,21,28,7
+47B,find-test-files,Find test files (whole repo),Very Low,1440,8,,1432,99,25,19,-6
+47C,find-all-ts,Find all *.ts files (whole repo),Very Low,3548,9292,63,3485,98,23,25,2
+48A,mypy-check,mypy type check,Very Low,11,23,65,-54,-491,1873,198,-1675
+48B,mypy-violations,mypy (file with ~8 type errors),Very Low,158,23,,135,85,871,495,-376
+49A,ruff-check,ruff check,Very Low,19,14,66,-47,-247,273,31,-242
+49B,ruff-violations,ruff check (file with ~10 violations),Very Low,1167,548,,619,53,32,32,0
+50A,cargo-clippy,cargo clippy,Very Low,18,18,,0,0,171,136,-35
+50B,cargo-clippy-warnings,cargo clippy (code with ~5 warnings),Very Low,1945,167,,1778,91,241,134,-107
+51A,cargo-check,cargo check,Very Low,18,23,,-5,-28,61,61,0
+52A,remote-list,List remotes with URLs,Very Low,28,48,13,15,54,25,24,-1
+53A,npm-info-small,npm info (small package),Very Low,264,112,,152,58,909,412,-497
+53B,npm-info-medium,npm info (medium package),Very Low,292,125,,167,57,995,465,-530
+53C,npm-info-popular,npm info (popular package),Very Low,377,271,,106,28,415,501,86
+54A,docker-compose-down,docker compose down (stop service),Very Low,67,14,,53,79,10768,135,-10633
+55A,issue-list-open,List open issues,Very Low,268,730,,-462,-172,421,693,272
+55B,issue-list-all,List all issues (open+closed),Very Low,711,2031,,-1320,-186,685,641,-44
+56A,http-request-get,HTTP GET small JSON,Very Low,165,118,160,5,3,788,599,-189
+56B,http-request-post,HTTP POST with JSON body,Very Low,148,26,,122,82,4609,31,-4578
+57A,go-vet,go vet,Very Low,23,10,,13,57,353,40,-313
+58A,http-get-small,HTTP GET small response,Very Low,66,117,159,-93,-141,681,808,127
+58B,http-get-headers,HTTP GET with many headers,Very Low,101,117,159,-58,-57,605,589,-16
+59A,ruff-format,ruff format check,Very Low,14,11,,3,21,31,34,3
+60A,go-fmt,go fmt,Very Low,23,15,11,12,52,28,338,310
+61A,stash-list,List stashes,Very Low,0,9,,-9,0,24,24,0
+62A,webpack-build,Webpack build,Very Low,109,19,,90,83,899,879,-20
+63A,biome-check-shared,Biome check (shared pkg src),Very Low,84,855,,-771,-918,1682,1120,-562
+63B,biome-violations,Biome check (file with ~13 deliberate violations),Very Low,5632,820,,4812,85,1596,1051,-545
+64A,docker-pull,docker pull (already up-to-date),Very Low,49,37,,12,24,972,1002,30
+65A,docker-inspect,Docker inspect,Very Low,10,15,,-5,-50,70,64,-6
+66A,github-issue-create,GitHub issue create (then delete),Very Low,257,268,,-11,-4,59,63,4
+67A,run-view,View workflow run,Very Low,702,329,,373,53,4057,1322,-2735
+68A,run-list,List recent workflow runs,Very Low,319,777,,-458,-144,871,858,-13
+68B,run-list-20,List 20 workflow runs,Very Low,647,1526,,-879,-136,1139,985,-154
+69A,count-rare,Count rare pattern matches,Very Low,16,45,63,-47,-294,26,35,9
+69B,count-common,Count common pattern matches,Very Low,3647,6972,63,3584,98,48,36,-12
+70A,make-list,Make list targets,Very Low,3340,34,,3306,99,21,21,0
+71A,pip-list,pip list installed packages,Very Low,968,1665,,-697,-72,715,301,-414
+72A,cargo-run,cargo run (version flag),Very Low,18,21,,-3,-17,58,1,-57
+73A,cargo-fmt,cargo fmt check,Very Low,219,15,,204,93,164,144,-20
+74A,go-run,go run (main package),Very Low,27,46,10,17,63,31,31,0
+75A,go-mod-tidy,go mod tidy,Very Low,0,19,6,-6,0,1758,61,-1697
+76A,git-stash,git stash (push dirty tree),Very Low,26,51,,-25,-96,21,22,1
+77A,npm-search-narrow,npm search (narrow query),Very Low,1444,999,,445,31,1434,262,-1172
+77B,npm-search-broad,npm search (broad query),Very Low,1523,998,,525,34,655,279,-376
+77C,npm-search-popular,npm search (popular query),Very Low,1368,986,,382,28,698,266,-432
+78A,biome-format-shared,Biome format (shared pkg src),Very Low,84,15,11,73,87,1363,1081,-282
+79A,docker-network-ls,Docker network ls,Very Low,70,125,,-55,-79,44,45,1
+80A,docker-volume-ls,Docker volume ls,Very Low,42,192,,-150,-357,46,43,-3
+81A,docker-compose-ps,Docker compose ps,Very Low,11,9,,2,18,170,124,-46
+82A,http-post,HTTP POST JSON (httpbin),Very Low,90,60,,30,33,3489,2,-3487
+83A,pip-show-pip,pip show (pip itself),Very Low,73,56,,17,23,356,334,-22
+84A,pip-audit,pip audit,Very Low,9,21,,-12,-133,237,12,-225
+84B,pip-audit-vulns,pip-audit (requirements with known vulns),Very Low,5760,11,67,5693,99,13678,593,-13085
+85A,uv-install,uv pip install (single package),Very Low,48,18,66,-18,-37,1174,30,-1144
+86A,uv-run,uv run (python version),Very Low,4,61,,-57,-1425,311,1,-310
+87A,black-check,black format check,Very Low,18,28,65,-47,-261,799,289,-510
+87B,black-violations,black check (file with bad formatting),Very Low,26,28,,-2,-8,182,178,-4
+88A,cargo-add,cargo add (single crate),Very Low,81,61,,20,25,1959,3,-1956
+89A,npm-init,"npm init (default, -y)",Very Low,114,46,,68,60,397,390,-7
+90A,stylelint-check,Stylelint check,Very Low,296,27,22,274,93,1360,1302,-58
+91A,oxlint-check,Oxlint check (shared pkg src),Very Low,107,27,,80,75,1062,1099,37
+92A,http-head-200,HTTP HEAD 200 response,Very Low,59,72,114,-55,-93,21839,636,-21203
+93A,cargo-remove,cargo remove (single crate),Very Low,10,62,,-52,-520,90,1,-89
+94A,cargo-doc,cargo doc,Very Low,18,10,,8,44,58,58,0
+95A,cargo-update,cargo update (all deps),Very Low,24,32,64,-40,-167,597,588,-9
+96A,cargo-tree,cargo tree,Very Low,18,23,,-5,-28,65,58,-7
+97A,go-generate,go generate (no directives),Very Low,0,10,6,-6,0,53,54,1
+98A,go-env,go env,Very Low,303,422,,-119,-39,58,61,3
+99A,go-list,go list,Very Low,23,9,,14,61,32,31,-1
+100A,go-get,go get (single package),Very Low,28,6,,22,79,2681,138,-2543
