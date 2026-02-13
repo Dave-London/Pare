@@ -12,7 +12,7 @@ export function registerBlameTool(server: McpServer) {
     {
       title: "Git Blame",
       description:
-        "Shows per-line commit annotations for a file. Returns structured blame data with hash, author, date, line number, and content. Use instead of running `git blame` in the terminal.",
+        "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, date) and their attributed lines. Use instead of running `git blame` in the terminal.",
       inputSchema: {
         path: z
           .string()

@@ -611,25 +611,24 @@ describe("formatRemote", () => {
 });
 
 describe("formatBlame", () => {
-  it("formats blame output", () => {
+  it("formats grouped blame output as per-line human-readable text", () => {
     const blame: GitBlameFull = {
-      lines: [
+      commits: [
         {
           hash: "abc12345",
           author: "John Doe",
           date: "2024-01-15T10:30:00.000Z",
-          lineNumber: 1,
-          content: "const x = 1;",
+          lines: [{ lineNumber: 1, content: "const x = 1;" }],
         },
         {
           hash: "def67890",
           author: "Jane Smith",
           date: "2024-01-16T11:00:00.000Z",
-          lineNumber: 2,
-          content: "const y = 2;",
+          lines: [{ lineNumber: 2, content: "const y = 2;" }],
         },
       ],
       file: "src/index.ts",
+      totalLines: 2,
     };
     const output = formatBlame(blame);
 
@@ -637,8 +636,38 @@ describe("formatBlame", () => {
     expect(output).toContain("def67890 (Jane Smith 2024-01-16T11:00:00.000Z) 2: const y = 2;");
   });
 
+  it("sorts interleaved commit lines by line number", () => {
+    const blame: GitBlameFull = {
+      commits: [
+        {
+          hash: "abc12345",
+          author: "Alice",
+          date: "2024-01-15T00:00:00.000Z",
+          lines: [
+            { lineNumber: 1, content: "first" },
+            { lineNumber: 3, content: "third" },
+          ],
+        },
+        {
+          hash: "def67890",
+          author: "Bob",
+          date: "2024-01-16T00:00:00.000Z",
+          lines: [{ lineNumber: 2, content: "second" }],
+        },
+      ],
+      file: "test.ts",
+      totalLines: 3,
+    };
+    const output = formatBlame(blame);
+    const lines = output.split("\n");
+
+    expect(lines[0]).toContain("1: first");
+    expect(lines[1]).toContain("2: second");
+    expect(lines[2]).toContain("3: third");
+  });
+
   it("formats empty blame output", () => {
-    const blame: GitBlameFull = { lines: [], file: "empty.ts" };
+    const blame: GitBlameFull = { commits: [], file: "empty.ts", totalLines: 0 };
     expect(formatBlame(blame)).toBe("No blame data for empty.ts");
   });
 });

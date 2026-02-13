@@ -394,18 +394,25 @@ export function parseRemoteOutput(stdout: string): GitRemoteFull {
   return { remotes, total: remotes.length };
 }
 
-/** Parses `git blame --porcelain` output into structured per-line blame data. */
+/** Parses `git blame --porcelain` output into structured blame data grouped by commit. */
 export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   const rawLines = stdout.split("\n");
-  const lines: GitBlameFull["lines"] = [];
 
   let currentHash = "";
   let currentAuthor = "";
   let currentDate = "";
   let currentLineNumber = 0;
+  let totalLines = 0;
 
   // Track commit info we've seen (porcelain only shows full info once per commit)
   const commitInfo = new Map<string, { author: string; date: string }>();
+
+  // Build commit groups in encounter order (keyed by short hash)
+  const commitOrder: string[] = [];
+  const commitGroups = new Map<
+    string,
+    { author: string; date: string; lines: Array<{ lineNumber: number; content: string }> }
+  >();
 
   let i = 0;
   while (i < rawLines.length) {
@@ -449,13 +456,15 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
         commitInfo.set(currentHash, { author: currentAuthor, date: currentDate });
       }
 
-      lines.push({
-        hash: currentHash.slice(0, 8),
-        author: currentAuthor,
-        date: currentDate,
-        lineNumber: currentLineNumber,
-        content: line.slice(1),
-      });
+      const shortHash = currentHash.slice(0, 8);
+      let group = commitGroups.get(shortHash);
+      if (!group) {
+        group = { author: currentAuthor, date: currentDate, lines: [] };
+        commitGroups.set(shortHash, group);
+        commitOrder.push(shortHash);
+      }
+      group.lines.push({ lineNumber: currentLineNumber, content: line.slice(1) });
+      totalLines++;
 
       i++;
       continue;
@@ -465,5 +474,10 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
     i++;
   }
 
-  return { lines, file };
+  const commits = commitOrder.map((hash) => ({
+    hash,
+    ...commitGroups.get(hash)!,
+  }));
+
+  return { commits, file, totalLines };
 }

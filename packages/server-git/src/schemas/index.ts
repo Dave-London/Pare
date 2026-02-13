@@ -233,28 +233,34 @@ export type GitRemoteFull = {
 
 export type GitRemote = z.infer<typeof GitRemoteSchema>;
 
-/** Zod schema for a single blame line entry with commit hash, author, date, line number, and content. */
-export const GitBlameLineSchema = z.object({
+/** Zod schema for a blame commit group with metadata and its attributed lines. */
+export const GitBlameCommitSchema = z.object({
   hash: z.string(),
   author: z.string(),
   date: z.string(),
-  lineNumber: z.number(),
-  content: z.string(),
+  lines: z.array(z.object({ lineNumber: z.number(), content: z.string() })),
 });
 
-/** Zod schema for structured git blame output with per-line annotations and file name. */
+/** Zod schema for structured git blame output grouped by commit. */
 export const GitBlameSchema = z.object({
-  lines: z.union([
-    z.array(GitBlameLineSchema),
-    z.array(z.object({ hash: z.string(), lineNumber: z.number(), content: z.string() })),
+  commits: z.union([
+    z.array(GitBlameCommitSchema),
+    z.array(z.object({ hash: z.string(), lines: z.array(z.number()) })),
   ]),
   file: z.string(),
+  totalLines: z.number(),
 });
 
 /** Full blame data (always returned by parser, before compact projection). */
 export type GitBlameFull = {
-  lines: Array<{ hash: string; author: string; date: string; lineNumber: number; content: string }>;
+  commits: Array<{
+    hash: string;
+    author: string;
+    date: string;
+    lines: Array<{ lineNumber: number; content: string }>;
+  }>;
   file: string;
+  totalLines: number;
 };
 
 export type GitBlame = z.infer<typeof GitBlameSchema>;

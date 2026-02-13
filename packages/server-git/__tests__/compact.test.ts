@@ -337,55 +337,67 @@ describe("formatRemoteCompact", () => {
 });
 
 describe("compactBlameMap", () => {
-  it("keeps only hash, lineNumber, and content", () => {
+  it("drops author, date, and content — keeps only hash and line numbers", () => {
     const blame: GitBlameFull = {
-      lines: [
+      commits: [
         {
           hash: "abc12345",
           author: "John Doe",
           date: "2024-01-15T10:30:00.000Z",
-          lineNumber: 1,
-          content: "const x = 1;",
+          lines: [
+            { lineNumber: 1, content: "const x = 1;" },
+            { lineNumber: 3, content: "const z = 3;" },
+          ],
         },
         {
           hash: "def67890",
           author: "Jane Smith",
           date: "2024-01-16T11:00:00.000Z",
-          lineNumber: 2,
-          content: "const y = 2;",
+          lines: [{ lineNumber: 2, content: "const y = 2;" }],
         },
       ],
       file: "src/index.ts",
+      totalLines: 3,
     };
 
     const compact = compactBlameMap(blame);
 
     expect(compact.file).toBe("src/index.ts");
-    expect(compact.lines).toHaveLength(2);
-    expect(compact.lines[0]).toEqual({ hash: "abc12345", lineNumber: 1, content: "const x = 1;" });
-    expect(compact.lines[1]).toEqual({ hash: "def67890", lineNumber: 2, content: "const y = 2;" });
-    // Verify dropped fields
-    expect(compact.lines[0]).not.toHaveProperty("author");
-    expect(compact.lines[0]).not.toHaveProperty("date");
+    expect(compact.totalLines).toBe(3);
+    expect(compact.commits).toHaveLength(2);
+    expect(compact.commits[0]).toEqual({ hash: "abc12345", lines: [1, 3] });
+    expect(compact.commits[1]).toEqual({ hash: "def67890", lines: [2] });
   });
 });
 
 describe("formatBlameCompact", () => {
-  it("formats compact blame", () => {
+  it("formats compact blame with compressed line ranges", () => {
     const compact = {
-      lines: [
-        { hash: "abc12345", lineNumber: 1, content: "const x = 1;" },
-        { hash: "def67890", lineNumber: 2, content: "const y = 2;" },
+      commits: [
+        { hash: "abc12345", lines: [1, 2, 3, 7, 9, 10] },
+        { hash: "def67890", lines: [4, 5, 6, 8] },
       ],
       file: "src/index.ts",
+      totalLines: 10,
     };
     const output = formatBlameCompact(compact);
 
-    expect(output).toBe("abc12345 1: const x = 1;\ndef67890 2: const y = 2;");
+    expect(output).toBe("abc12345: lines 1-3, 7, 9-10\ndef67890: lines 4-6, 8");
+  });
+
+  it("formats single line per commit", () => {
+    const compact = {
+      commits: [{ hash: "abc12345", lines: [42] }],
+      file: "src/index.ts",
+      totalLines: 1,
+    };
+    const output = formatBlameCompact(compact);
+
+    expect(output).toBe("abc12345: lines 42");
   });
 
   it("formats empty blame", () => {
-    const compact = { lines: [], file: "empty.ts" };
+    const compact = { commits: [], file: "empty.ts", totalLines: 0 };
     expect(formatBlameCompact(compact)).toBe("No blame data for empty.ts");
   });
 });
