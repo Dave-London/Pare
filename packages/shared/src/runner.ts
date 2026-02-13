@@ -19,34 +19,44 @@ export interface RunResult {
 /**
  * Escapes a single argument for safe use with cmd.exe on Windows.
  *
- * When `shell: true` is used with `execFile` on Windows, Node.js wraps each
- * argument in double quotes. Inside double quotes cmd.exe still interprets:
- *   - `%VAR%` for environment variable expansion
- *   - `^` as the escape character itself
- *   - `&`, `|`, `<`, `>` as pipeline / redirection operators
+ * When `shell: true` is used with `execFile` on Windows, Node.js joins the
+ * command and args with spaces to build a cmd.exe command line. It does NOT
+ * automatically quote individual arguments, so args containing spaces would
+ * be split into multiple tokens by cmd.exe.
  *
- * We neutralise these by:
- *   1. Replacing `%` with `%%` (disables env-var expansion inside quotes).
- *   2. Prefixing `^`, `&`, `|`, `<`, `>`, `!` with the cmd.exe escape char `^`.
- *      (`!` must be escaped to prevent delayed expansion of `!VAR!`.)
+ * Strategy:
+ *   - Args with spaces, tabs, or double quotes are wrapped in double quotes.
+ *     Inside double quotes cmd.exe treats `&`, `|`, `<`, `>`, `^` as literal,
+ *     so only `%` needs escaping (`%%`). Internal `"` chars are doubled (`""`).
+ *   - Args without spaces are left unquoted, with cmd.exe metacharacters
+ *     escaped via the caret (`^`) prefix.
+ *   - `%` → `%%` is applied unconditionally (active in both quoted/unquoted).
  *
- * Parentheses `(` `)` are NOT escaped here because inside double-quoted
- * strings they are literal characters and do not affect grouping.
+ * Parentheses `(` `)` are NOT escaped because inside double-quoted strings
+ * they are literal, and outside quotes they rarely appear in tool args.
  */
 export function escapeCmdArg(arg: string): string {
-  // Step 1: Escape % → %% to prevent %VAR% expansion
+  // Step 1: Escape % → %% to prevent %VAR% expansion (works quoted & unquoted)
   let escaped = arg.replace(/%/g, "%%");
 
-  // Step 2: Caret-escape cmd.exe metacharacters that are dangerous
-  // even inside double quotes. The caret itself must be escaped first
-  // so that carets we insert are not themselves re-escaped.
+  // Step 2: If the arg contains spaces, tabs, or double quotes, wrap it in
+  // double quotes so cmd.exe keeps it as a single token.
+  if (/[ \t"]/.test(arg)) {
+    // Escape internal double quotes by doubling them
+    escaped = escaped.replace(/"/g, '""');
+    return `"${escaped}"`;
+  }
+
+  // Step 3: For unquoted args, caret-escape cmd.exe metacharacters.
+  // The caret itself must be escaped first so that carets we insert
+  // are not themselves re-escaped.
   escaped = escaped.replace(/\^/g, "^^");
   escaped = escaped.replace(/&/g, "^&");
   escaped = escaped.replace(/\|/g, "^|");
   escaped = escaped.replace(/</g, "^<");
   escaped = escaped.replace(/>/g, "^>");
 
-  // Step 3: Escape ! to prevent delayed expansion (!VAR!)
+  // Step 4: Escape ! to prevent delayed expansion (!VAR!)
   escaped = escaped.replace(/!/g, "^!");
 
   return escaped;
