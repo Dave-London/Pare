@@ -49,8 +49,6 @@ export const BuildResultSchema = z.object({
   duration: z.number(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full build result -- always returned by the parser. */
@@ -89,9 +87,6 @@ export const EsbuildResultSchema = z.object({
   warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
   duration: z.number(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
-  outputFileCount: z.number().optional(),
 });
 
 /** Full esbuild error -- always returned by the parser. */
@@ -139,9 +134,6 @@ export const ViteBuildResultSchema = z.object({
   outputs: z.array(ViteOutputFileSchema).optional(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
-  fileCount: z.number().optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full Vite output file entry. */
@@ -180,10 +172,6 @@ export const WebpackResultSchema = z.object({
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
   modules: z.number().optional(),
-  assetCount: z.number().optional(),
-  totalSize: z.number().optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full webpack asset entry. */
