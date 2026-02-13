@@ -31,7 +31,7 @@ export function formatCoverage(c: Coverage): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact test run: summary + framework + failure names only (no messages, stacks, expected/actual). */
+/** Compact test run: summary + framework + failure names and messages (no stacks, expected/actual). */
 export interface TestRunCompact {
   [key: string]: unknown;
   framework: string;
@@ -42,14 +42,17 @@ export interface TestRunCompact {
     skipped: number;
     duration: number;
   };
-  failures: Array<{ name: string }>;
+  failures: Array<{ name: string; message?: string }>;
 }
 
 export function compactTestRunMap(r: TestRun): TestRunCompact {
   return {
     framework: r.framework,
     summary: { ...r.summary },
-    failures: r.failures.map((f) => ({ name: f.name })),
+    failures: r.failures.map((f) => ({
+      name: f.name,
+      ...(f.message ? { message: f.message } : {}),
+    })),
   };
 }
 
@@ -60,7 +63,7 @@ export function formatTestRunCompact(r: TestRunCompact): string {
   ];
 
   for (const f of r.failures) {
-    parts.push(`  FAIL ${f.name}`);
+    parts.push(`  FAIL ${f.name}${f.message ? `: ${f.message}` : ""}`);
   }
 
   return parts.join("\n");
