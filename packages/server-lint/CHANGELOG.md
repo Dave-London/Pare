@@ -1,5 +1,54 @@
 # @paretools/lint
 
+## 0.8.0
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
 ## 0.7.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@paretools/search",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "mcpName": "io.github.Dave-London/search",
   "description": "MCP server for code search (ripgrep + fd) with structured, token-efficient output",
   "license": "MIT",
