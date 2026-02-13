@@ -229,7 +229,7 @@ _(\*) npm/list excludes the depth=2 scenario (40C) from its session average. Whi
 
 ## Latency
 
-The median difference in execution time between Pare and raw CLI is **-3 ms**, which is negligible given that the 148 benchmark scenarios span a range of **1 ms to 21,839 ms** with a median execution time of **306 ms**. Pare's structured parsing and schema validation add no meaningful overhead to tool execution.
+The median difference in execution time between Pare and raw CLI is **-6 ms**, which is negligible given that the 148 benchmark scenarios span a range of **21 ms to 21,839 ms** with a median execution time of **430 ms**. Pare's structured parsing and schema validation add no meaningful overhead to tool execution.
 
 ---
 

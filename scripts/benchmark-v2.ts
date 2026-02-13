@@ -654,21 +654,19 @@ function formatSummaryMd(
   );
   const worstOverhead = sorted.slice(-5).reverse();
 
-  // Latency
+  // Latency — use raw CLI times as the baseline reference for scenario execution range
   const addedMs = [
     ...reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs),
     ...mutating.map((m) => m.addedMs),
   ];
   const medianAdded = computeMedian(addedMs);
-  const allLatencies = [
+  const rawLatencies = [
     ...reproducible.map((s) => s.medianRawLatencyMs),
-    ...reproducible.map((s) => s.medianPareLatencyMs),
     ...mutating.map((m) => m.rawMs),
-    ...mutating.map((m) => m.pareMs),
   ];
-  const latencyMin = Math.min(...allLatencies);
-  const latencyMax = Math.max(...allLatencies);
-  const latencyMedian = computeMedian(allLatencies);
+  const latencyMin = Math.min(...rawLatencies);
+  const latencyMax = Math.max(...rawLatencies);
+  const latencyMedian = computeMedian(rawLatencies);
 
   // Session impact
   const sessionRows = computeSessionImpact(reproducible, mutating, registry);
