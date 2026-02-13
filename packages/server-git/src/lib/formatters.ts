@@ -130,7 +130,7 @@ export interface GitDiffCompact {
   [key: string]: unknown;
   files: Array<{
     file: string;
-    status: "added" | "modified" | "deleted" | "renamed";
+    status: "added" | "modified" | "deleted" | "renamed" | "copied";
     additions: number;
     deletions: number;
   }>;

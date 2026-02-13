@@ -92,9 +92,9 @@ describe("run", () => {
 });
 
 describe("escapeCmdArg", () => {
-  it("escapes percent signs for env-var expansion prevention", () => {
-    expect(escapeCmdArg("%PATH%")).toBe("%%PATH%%");
-    expect(escapeCmdArg("100%")).toBe("100%%");
+  it("does not escape percent signs (only works in batch files, not cmd.exe /c)", () => {
+    expect(escapeCmdArg("%PATH%")).toBe("%PATH%");
+    expect(escapeCmdArg("100%")).toBe("100%");
   });
 
   it("escapes ampersand to prevent command chaining", () => {
@@ -116,8 +116,8 @@ describe("escapeCmdArg", () => {
   });
 
   it("handles multiple metacharacters in one string", () => {
-    // "a&b|c^d<e>f%g%" should escape all dangerous chars
-    expect(escapeCmdArg("a&b|c^d<e>f%g%")).toBe("a^&b^|c^^d^<e^>f%%g%%");
+    // "a&b|c^d<e>f%g%" should escape dangerous chars (but not %)
+    expect(escapeCmdArg("a&b|c^d<e>f%g%")).toBe("a^&b^|c^^d^<e^>f%g%");
   });
 
   it("returns plain strings unchanged", () => {
@@ -140,8 +140,8 @@ describe("escapeCmdArg", () => {
     // ^  -> ^^ (caret escaped first)
     // <  -> ^<
     // >  -> ^>
-    // %  -> %% (percent escaped first)
-    expect(escapeCmdArg("&|^<>%")).toBe("^&^|^^^<^>%%");
+    // %  -> % (not escaped — only works in batch files)
+    expect(escapeCmdArg("&|^<>%")).toBe("^&^|^^^<^>%");
   });
 
   it("handles very long strings without error", () => {
@@ -160,7 +160,7 @@ describe("escapeCmdArg", () => {
   });
 
   it("handles string with only percent signs", () => {
-    expect(escapeCmdArg("%%%")).toBe("%%%%%%");
+    expect(escapeCmdArg("%%%")).toBe("%%%");
   });
 
   it("handles string with only carets", () => {
@@ -204,13 +204,21 @@ describe("escapeCmdArg", () => {
     expect(escapeCmdArg('"quoted"')).toBe('"""quoted"""');
   });
 
-  it("handles spaces + percent signs (both escaped and quoted)", () => {
-    expect(escapeCmdArg("%PATH% value")).toBe('"%%PATH%% value"');
+  it("handles spaces + percent signs (quoted but % not escaped)", () => {
+    expect(escapeCmdArg("%PATH% value")).toBe('"%PATH% value"');
   });
 
   it("handles spaces + metacharacters (metacharacters are literal inside quotes)", () => {
     // Inside double quotes, & | < > ^ are literal — no caret escaping needed
     expect(escapeCmdArg("hello & world")).toBe('"hello & world"');
     expect(escapeCmdArg("a | b")).toBe('"a | b"');
+  });
+
+  it("preserves git format specifiers (% must not be doubled)", () => {
+    // Git uses %H, %h, %an, etc. in --format strings. Doubling % to %%
+    // causes git to interpret %% as its own escape for literal %, outputting
+    // the specifier name instead of the resolved value.
+    const fmt = "--format=%H@@%h@@%an@@%ae@@%ar@@%D@@%s";
+    expect(escapeCmdArg(fmt)).toBe(fmt);
   });
 });
