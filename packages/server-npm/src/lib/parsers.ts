@@ -107,7 +107,6 @@ export function parseListJson(jsonStr: string): NpmList {
       const dep = v as any;
       const entry: NpmListDep = {
         version: dep.version ?? "unknown",
-        ...(dep.resolved ? { resolved: dep.resolved } : {}),
       };
       if (dep.dependencies && Object.keys(dep.dependencies).length > 0) {
         entry.dependencies = parseDeps(dep.dependencies);

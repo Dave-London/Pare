@@ -68,14 +68,12 @@ export type NpmOutdated = z.infer<typeof NpmOutdatedSchema>;
 /** A single dependency entry in the npm dependency list (recursive for nested deps). */
 export interface NpmListDep {
   version: string;
-  resolved?: string;
   dependencies?: Record<string, NpmListDep>;
 }
 
-/** Zod schema for a single dependency entry in an npm list with version, optional resolved URL, and nested dependencies. */
+/** Zod schema for a single dependency entry in an npm list with version and nested dependencies. */
 export const NpmListDepSchema: z.ZodType<NpmListDep> = z.object({
   version: z.string(),
-  resolved: z.string().optional(),
   dependencies: z
     .record(
       z.string(),
