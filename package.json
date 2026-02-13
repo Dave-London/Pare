@@ -40,7 +40,8 @@
     "tsx": "^4.21.0",
     "turbo": "^2.4.0",
     "typedoc": "^0.28.16",
-    "typedoc-plugin-markdown": "^4.10.0"
+    "typedoc-plugin-markdown": "^4.10.0",
+    "vitest": "^4.0.18"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,yaml,yml}": "prettier --write"

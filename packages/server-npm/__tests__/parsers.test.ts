@@ -149,6 +149,41 @@ describe("parseListJson", () => {
     const result = parseListJson(json);
     expect(result.total).toBe(0);
   });
+
+  it("parses nested dependencies (depth > 0)", () => {
+    const json = JSON.stringify({
+      name: "my-project",
+      version: "1.0.0",
+      dependencies: {
+        express: {
+          version: "4.18.2",
+          dependencies: {
+            "body-parser": {
+              version: "1.20.1",
+              dependencies: {
+                bytes: { version: "3.1.2" },
+              },
+            },
+            cookie: { version: "0.5.0" },
+          },
+        },
+        zod: { version: "3.25.0" },
+      },
+    });
+
+    const result = parseListJson(json);
+
+    expect(result.name).toBe("my-project");
+    expect(result.total).toBe(5); // express + body-parser + bytes + cookie + zod
+    expect(result.dependencies.express.version).toBe("4.18.2");
+    expect(result.dependencies.express.dependencies!["body-parser"].version).toBe("1.20.1");
+    expect(
+      result.dependencies.express.dependencies!["body-parser"].dependencies!.bytes.version,
+    ).toBe("3.1.2");
+    expect(result.dependencies.express.dependencies!.cookie.version).toBe("0.5.0");
+    expect(result.dependencies.zod.version).toBe("3.25.0");
+    expect(result.dependencies.zod.dependencies).toBeUndefined();
+  });
 });
 
 // ─── Branch coverage ────────────────────────────────────────────────────────

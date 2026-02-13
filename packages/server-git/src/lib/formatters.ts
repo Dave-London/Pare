@@ -128,7 +128,12 @@ export function formatLogCompact(log: GitLogCompact): string {
 /** Compact diff: file-level stats only, no chunks or aggregate totals. */
 export interface GitDiffCompact {
   [key: string]: unknown;
-  files: Array<{ file: string; additions: number; deletions: number }>;
+  files: Array<{
+    file: string;
+    status: "added" | "modified" | "deleted" | "renamed";
+    additions: number;
+    deletions: number;
+  }>;
   totalFiles: number;
 }
 
@@ -136,6 +141,7 @@ export function compactDiffMap(diff: GitDiff): GitDiffCompact {
   return {
     files: diff.files.map((f) => ({
       file: f.file,
+      status: f.status,
       additions: f.additions,
       deletions: f.deletions,
     })),

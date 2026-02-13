@@ -55,7 +55,10 @@ export function registerDiffTool(server: McpServer) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
       }
-      if (file) args.push("--", file);
+      if (file) {
+        assertNoFlagInjection(file, "file");
+        args.push("--", file);
+      }
 
       const result = await git(args, cwd);
 

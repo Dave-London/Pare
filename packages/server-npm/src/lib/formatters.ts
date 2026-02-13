@@ -3,6 +3,7 @@ import type {
   NpmAudit,
   NpmOutdated,
   NpmList,
+  NpmListDep,
   NpmRun,
   NpmTest,
   NpmInit,
@@ -61,9 +62,15 @@ export function formatOutdated(data: NpmOutdated): string {
 /** Formats structured npm list data into a human-readable dependency tree summary. */
 export function formatList(data: NpmList): string {
   const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
-  for (const [name, dep] of Object.entries(data.dependencies)) {
-    lines.push(`  ${name}@${dep.version}`);
+  function formatDeps(deps: Record<string, NpmListDep>, indent: string) {
+    for (const [name, dep] of Object.entries(deps)) {
+      lines.push(`${indent}${name}@${dep.version}`);
+      if (dep.dependencies) {
+        formatDeps(dep.dependencies, indent + "  ");
+      }
+    }
   }
+  formatDeps(data.dependencies, "  ");
   return lines.join("\n");
 }
 
@@ -103,7 +110,7 @@ export function formatInit(data: NpmInit): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact list: dependencies as name → version string map. */
+/** Compact list: flattened dependencies as name → version string map (no nesting). */
 export interface NpmListCompact {
   [key: string]: unknown;
   name: string;
@@ -114,9 +121,15 @@ export interface NpmListCompact {
 
 export function compactListMap(data: NpmList): NpmListCompact {
   const deps: Record<string, string> = {};
-  for (const [name, dep] of Object.entries(data.dependencies)) {
-    deps[name] = dep.version;
+  function flatten(d: Record<string, NpmListDep>) {
+    for (const [name, dep] of Object.entries(d)) {
+      deps[name] = dep.version;
+      if (dep.dependencies) {
+        flatten(dep.dependencies);
+      }
+    }
   }
+  flatten(data.dependencies);
   return {
     name: data.name,
     version: data.version,

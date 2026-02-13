@@ -59,10 +59,14 @@ describe("@paretools/cargo integration", () => {
     // cargo clippy on a cold toolchain (especially Windows CI) can take
     // well over 60s; give it enough room to finish or fail clearly.
     it("returns structured data or a command-not-found error", { timeout: 120_000 }, async () => {
-      const result = await client.callTool({
-        name: "clippy",
-        arguments: { path: resolve(__dirname, "../../..") },
-      });
+      const result = await client.callTool(
+        {
+          name: "clippy",
+          arguments: { path: resolve(__dirname, "../../..") },
+        },
+        undefined,
+        { timeout: 120_000 },
+      );
 
       if (result.isError) {
         // cargo not installed — verify meaningful error

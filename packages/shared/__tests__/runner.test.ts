@@ -1,5 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
+import { writeFileSync, unlinkSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { run, escapeCmdArg } from "../src/runner.js";
+
+// Helper script that prints its args as JSON — avoids issues with inline
+// `-e` code being mangled by cmd.exe parentheses parsing on Windows.
+const ARGS_SCRIPT = join(tmpdir(), "pare-test-print-args.js");
+writeFileSync(ARGS_SCRIPT, "process.stdout.write(JSON.stringify(process.argv.slice(2)))");
+afterAll(() => {
+  if (existsSync(ARGS_SCRIPT)) unlinkSync(ARGS_SCRIPT);
+});
 
 describe("run", () => {
   it("returns stdout and stderr with exit code 0 on success", async () => {
@@ -30,6 +41,53 @@ describe("run", () => {
     });
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBeTruthy();
+  });
+
+  it("preserves multi-word arguments as single tokens", async () => {
+    // Regression test: before the fix, args with spaces were split into
+    // multiple tokens by cmd.exe on Windows (broke gh pr create --title).
+    // Uses a temp-file script to avoid cmd.exe mangling inline -e code.
+    const result = await run("node", [ARGS_SCRIPT, "multi word title", "another multi word arg"]);
+    expect(result.exitCode).toBe(0);
+    const args = JSON.parse(result.stdout.trim());
+    expect(args).toEqual(["multi word title", "another multi word arg"]);
+  });
+
+  it("preserves args with metacharacters and spaces", async () => {
+    const result = await run("node", [ARGS_SCRIPT, "hello & world", "a | b", "foo>bar baz"]);
+    expect(result.exitCode).toBe(0);
+    const args = JSON.parse(result.stdout.trim());
+    expect(args).toEqual(["hello & world", "a | b", "foo>bar baz"]);
+  });
+
+  it("pipes stdin data to the child process", async () => {
+    const stdinScript = join(tmpdir(), "pare-test-stdin.js");
+    writeFileSync(
+      stdinScript,
+      "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d))",
+    );
+    try {
+      const result = await run("node", [stdinScript], { stdin: "hello from stdin" });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("hello from stdin");
+    } finally {
+      unlinkSync(stdinScript);
+    }
+  });
+
+  it("pipes multi-line stdin data preserving newlines", async () => {
+    const stdinScript = join(tmpdir(), "pare-test-stdin-nl.js");
+    writeFileSync(
+      stdinScript,
+      "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d))",
+    );
+    try {
+      const result = await run("node", [stdinScript], { stdin: "line1\n\nline2\nline3" });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("line1\n\nline2\nline3");
+    } finally {
+      unlinkSync(stdinScript);
+    }
   });
 });
 
@@ -118,8 +176,41 @@ describe("escapeCmdArg", () => {
     expect(escapeCmdArg("!foo&bar!")).toBe("^!foo^&bar^!");
   });
 
-  it("handles newlines and tabs (not metacharacters, passed through)", () => {
+  it("passes newlines through unchanged when no spaces present", () => {
+    // No spaces → no quoting → newlines pass through (rare edge case)
     expect(escapeCmdArg("line1\nline2")).toBe("line1\nline2");
-    expect(escapeCmdArg("col1\tcol2")).toBe("col1\tcol2");
+  });
+
+  it("replaces newlines with spaces when quoting (cmd.exe cannot handle newlines in args)", () => {
+    // Newlines inside double-quoted args terminate the cmd.exe command line,
+    // so they must be replaced with spaces when the arg needs quoting.
+    expect(escapeCmdArg("multi word\nwith newline")).toBe('"multi word with newline"');
+    expect(escapeCmdArg("title\n\nbody text")).toBe('"title  body text"');
+    expect(escapeCmdArg("line1\r\nline2 spaced")).toBe('"line1 line2 spaced"');
+  });
+
+  it("wraps args with spaces in double quotes", () => {
+    expect(escapeCmdArg("multi word title")).toBe('"multi word title"');
+    expect(escapeCmdArg("hello world")).toBe('"hello world"');
+    expect(escapeCmdArg("a b c")).toBe('"a b c"');
+  });
+
+  it("wraps args with tabs in double quotes", () => {
+    expect(escapeCmdArg("col1\tcol2")).toBe('"col1\tcol2"');
+  });
+
+  it("wraps args with internal double quotes and doubles them", () => {
+    expect(escapeCmdArg('say "hello"')).toBe('"say ""hello"""');
+    expect(escapeCmdArg('"quoted"')).toBe('"""quoted"""');
+  });
+
+  it("handles spaces + percent signs (both escaped and quoted)", () => {
+    expect(escapeCmdArg("%PATH% value")).toBe('"%%PATH%% value"');
+  });
+
+  it("handles spaces + metacharacters (metacharacters are literal inside quotes)", () => {
+    // Inside double quotes, & | < > ^ are literal — no caret escaping needed
+    expect(escapeCmdArg("hello & world")).toBe('"hello & world"');
+    expect(escapeCmdArg("a | b")).toBe('"a | b"');
   });
 });

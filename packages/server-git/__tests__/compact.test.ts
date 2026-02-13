@@ -85,7 +85,7 @@ describe("formatLogCompact", () => {
 });
 
 describe("compactDiffMap", () => {
-  it("keeps only file, additions, deletions, and totalFiles", () => {
+  it("keeps only file, status, additions, deletions, and totalFiles", () => {
     const diff: GitDiff = {
       files: [
         {
@@ -106,12 +106,21 @@ describe("compactDiffMap", () => {
 
     expect(compact.totalFiles).toBe(2);
     expect(compact.files).toHaveLength(2);
-    expect(compact.files[0]).toEqual({ file: "src/a.ts", additions: 10, deletions: 3 });
-    expect(compact.files[1]).toEqual({ file: "src/b.ts", additions: 25, deletions: 0 });
+    expect(compact.files[0]).toEqual({
+      file: "src/a.ts",
+      status: "modified",
+      additions: 10,
+      deletions: 3,
+    });
+    expect(compact.files[1]).toEqual({
+      file: "src/b.ts",
+      status: "added",
+      additions: 25,
+      deletions: 0,
+    });
     // Verify dropped fields
     expect(compact).not.toHaveProperty("totalAdditions");
     expect(compact).not.toHaveProperty("totalDeletions");
-    expect(compact.files[0]).not.toHaveProperty("status");
     expect(compact.files[0]).not.toHaveProperty("chunks");
   });
 });
@@ -120,8 +129,8 @@ describe("formatDiffCompact", () => {
   it("formats compact diff", () => {
     const compact = {
       files: [
-        { file: "src/a.ts", additions: 10, deletions: 3 },
-        { file: "src/b.ts", additions: 25, deletions: 0 },
+        { file: "src/a.ts", status: "modified" as const, additions: 10, deletions: 3 },
+        { file: "src/b.ts", status: "added" as const, additions: 25, deletions: 0 },
       ],
       totalFiles: 2,
     };

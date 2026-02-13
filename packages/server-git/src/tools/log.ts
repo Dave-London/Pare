@@ -52,7 +52,10 @@ export function registerLogTool(server: McpServer) {
       const cwd = path || process.cwd();
       const args = ["log", `--format=${LOG_FORMAT}`, `--max-count=${maxCount ?? 10}`];
 
-      if (author) args.push(`--author=${author}`);
+      if (author) {
+        assertNoFlagInjection(author, "author");
+        args.push(`--author=${author}`);
+      }
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);

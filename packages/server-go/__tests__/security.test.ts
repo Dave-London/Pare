@@ -82,6 +82,21 @@ describe("security: go vet — packages validation", () => {
   });
 });
 
+describe("security: go env — vars validation", () => {
+  it("rejects flag-like variable names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "vars")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe variable names", () => {
+    const safeVars = ["GOROOT", "GOPATH", "GOPROXY", "GOBIN", "CGO_ENABLED"];
+    for (const safe of safeVars) {
+      expect(() => assertNoFlagInjection(safe, "vars")).not.toThrow();
+    }
+  });
+});
+
 describe("security: go generate — patterns validation", () => {
   it("rejects flag-like patterns", () => {
     for (const malicious of MALICIOUS_INPUTS) {

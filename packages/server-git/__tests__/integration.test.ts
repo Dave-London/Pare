@@ -240,16 +240,15 @@ describe("@paretools/git write-tool integration", () => {
   });
 
   describe("commit", () => {
-    it("creates a commit and returns structured commit data", async () => {
+    it("creates a commit with multi-word message and returns structured data", async () => {
       // Ensure there's something to commit
       writeFileSync(join(tempDir, "commit-test.ts"), "export const y = 2;\n");
       gitInTemp(["add", "commit-test.ts"]);
 
-      // Use a single-word message because execFile with shell:true on Windows
-      // does not properly escape multi-word arguments for git commit -m
+      // Uses --file - with stdin so multi-word messages work on Windows
       const result = await client.callTool({
         name: "commit",
-        arguments: { path: tempDir, message: "TestCommit" },
+        arguments: { path: tempDir, message: "feat: add commit test file" },
       });
 
       expect(result.content).toBeDefined();
@@ -259,10 +258,28 @@ describe("@paretools/git write-tool integration", () => {
       expect(sc).toBeDefined();
       expect(sc.hash).toEqual(expect.any(String));
       expect(sc.hashShort).toEqual(expect.any(String));
-      expect(sc.message).toBe("TestCommit");
+      expect(sc.message).toBe("feat: add commit test file");
       expect(sc.filesChanged).toEqual(expect.any(Number));
       expect(sc.insertions).toEqual(expect.any(Number));
       expect(sc.deletions).toEqual(expect.any(Number));
+    });
+
+    it("creates a commit with multi-line message preserving newlines", async () => {
+      writeFileSync(join(tempDir, "commit-test-2.ts"), "export const z = 3;\n");
+      gitInTemp(["add", "commit-test-2.ts"]);
+
+      const multiLineMsg =
+        "chore(test): add multi-line commit\n\nThis tests that newlines are preserved\nwhen using --file - with stdin.";
+      const result = await client.callTool({
+        name: "commit",
+        arguments: { path: tempDir, message: multiLineMsg },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.hash).toEqual(expect.any(String));
+      // git commit --file - preserves the first line as the subject
+      expect(sc.message).toBe("chore(test): add multi-line commit");
     });
 
     it("rejects flag-injection in commit message", async () => {

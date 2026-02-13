@@ -40,9 +40,6 @@ export function registerGenerateTool(server: McpServer) {
         assertNoFlagInjection(p, "patterns");
       }
       const cwd = path || process.cwd();
-      for (const p of patterns ?? []) {
-        assertNoFlagInjection(p, "patterns");
-      }
       const result = await goCmd(["generate", ...(patterns || ["./..."])], cwd);
       const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
