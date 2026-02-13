@@ -48,4 +48,57 @@ Median added latency (Pare vs raw CLI): **-3 ms**
 
 ---
 
+## Methodology
+
+### Use Frequency
+
+Each tool is assigned a **Use Frequency** category reflecting how often it is called during a typical AI coding agent session. Categories are defined relative to a reference session of ~200 Pare-wrappable tool calls, representing a medium-complexity coding task (30–60 minutes).
+
+| Category  | Calls per session | Representative value | Tools |
+| --------- | ----------------: | -------------------: | ----: |
+| Very High |               12+ |                   16 |     5 |
+| High      |              6–11 |                    8 |     4 |
+| Average   |               3–5 |                    4 |     8 |
+| Low       |               1–2 |                  1.5 |    20 |
+| Very Low  |                <1 |                  0.5 |    63 |
+
+**Representative values** are mid-range estimates used for calculating estimated session impact:
+
+```
+session_impact = Σ (representative_calls × avg_tokens_saved_per_call)
+```
+
+### Reference session
+
+The 200-call reference session is an order-of-magnitude estimate, not a directly measured figure. It is informed by:
+
+- **MCP tool call benchmarks** — MCPMark reports an average of ~17 tool calls per atomic task. A medium-complexity coding session chains 10–15 such tasks (explore, edit, test, fix, lint, commit), yielding ~170–250 tool calls.
+- **Agent workflow analysis** — typical coding agent loops (explore → edit → test → fix → lint → commit) are dominated by git and build tool calls, with git status/diff/add/commit comprising the highest-frequency operations.
+- **Observed Pare MCP usage** — real-world sessions using Pare tools for all git, test, build, lint, and npm operations.
+
+Since Use Frequency categories are used for _relative_ comparison between tools (not absolute savings predictions), the exact session length has minimal impact on the conclusions — proportions remain stable across session sizes.
+
+### Frequency assignment rationale
+
+Tools were assigned to tiers based on the natural clustering of expected call counts:
+
+- **Very High** — Core git read/write cycle: `status`, `diff`, `commit`, `add`, `log`. Called on nearly every iteration of an edit-test-commit loop.
+- **High** — Session-level operations: `push`, `test run`, `checkout`, `npm run`. Called multiple times per session but not on every loop iteration.
+- **Average** — Periodic operations: `pull`, `install`, `tsc`, `npm test`, `branch`, `show`, `build`, `lint`. Used a few times per session, often at phase transitions (start of session, before push, after major changes).
+- **Low** — Situational operations: docker, coverage, formatting, blame, audit, language-specific build/test. Used when the workflow requires them, typically 1–2 times.
+- **Very Low** — Occasional operations: specialized linters, package search/info, stash, compose, HTTP tools, language-specific formatters. Used less than once per average session.
+
+### Data sources
+
+- [MCPMark benchmark](https://github.com/yiranwu0/MCPMark) — tool call frequency data for AI coding agents
+- Anthropic Claude Code documentation — agent workflow patterns
+- Pare project internal usage telemetry — observed tool call distributions
+
+### Token estimation
+
+Tokens are estimated as `Math.ceil(text.length / 4)`, a standard heuristic for English text with code. Actual tokenizer counts may vary by ±10–15%.
+
+---
+
 See `Benchmark-Detailed.csv` for full per-scenario data.
+See `tool-registry.csv` for the complete tool registry with Use Frequency assignments.

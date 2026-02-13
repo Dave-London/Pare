@@ -249,7 +249,7 @@ function formatDetailedCsv(scenarios: ScenarioSummary[]): string {
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -273,7 +273,7 @@ function formatDetailedCsv(scenarios: ScenarioSummary[]): string {
         ref,
         s.scenario.id,
         s.scenario.description,
-        s.scenario.weight,
+        s.scenario.useFrequency,
         s.medianRawTokens,
         s.medianPareRegularTokens,
         compacted ? s.medianPareTokens : "",
@@ -317,7 +317,7 @@ interface MutatingRow {
   ref: string;
   scenario: string;
   description: string;
-  weight: number;
+  useFrequency: string;
   rawTokens: number;
   pareRegularTokens: number;
   pareCompactTokens: string; // may be empty
@@ -345,7 +345,7 @@ function readMutatingResults(): MutatingRow[] {
       ref: parts[0],
       scenario: parts[1],
       description: parts[2],
-      weight: parseFloat(parts[3]) || 0,
+      useFrequency: parts[3],
       rawTokens: parseInt(parts[4]) || 0,
       pareRegularTokens: parseInt(parts[5]) || 0,
       pareCompactTokens: parts[6],
@@ -402,7 +402,7 @@ function formatCombinedDetailedCsv(
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -435,7 +435,7 @@ function formatCombinedDetailedCsv(
         ref,
         s.scenario.id,
         s.scenario.description,
-        s.scenario.weight,
+        s.scenario.useFrequency,
         s.medianRawTokens,
         s.medianPareRegularTokens,
         compacted ? s.medianPareTokens : "",
@@ -457,7 +457,7 @@ function formatCombinedDetailedCsv(
         m.ref,
         m.scenario,
         m.description,
-        m.weight,
+        m.useFrequency,
         m.rawTokens,
         m.pareRegularTokens,
         m.pareCompactTokens,

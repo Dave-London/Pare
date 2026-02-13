@@ -44,7 +44,7 @@ interface MutatingScenario {
   id: string;
   registryNum: number;
   variant: string;
-  weight: number;
+  useFrequency: "Very High" | "High" | "Average" | "Low" | "Very Low";
   description: string;
   group: string;
   /** Setup function — creates necessary preconditions, returns cwd for raw command */
@@ -66,7 +66,7 @@ interface RunResult {
   registryNum: number;
   variant: string;
   description: string;
-  weight: number;
+  useFrequency: string;
   rawTokens: number;
   pareTokens: number;
   pareRegularTokens: number;
@@ -307,7 +307,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-add",
     registryNum: 4,
     variant: "A",
-    weight: 7,
+    useFrequency: "Very High",
     description: "git add (stage single file)",
     group: "git",
     setup: async () => {
@@ -329,7 +329,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-commit",
     registryNum: 3,
     variant: "A",
-    weight: 10,
+    useFrequency: "Very High",
     description: "git commit (single file, short msg)",
     group: "git",
     setup: async () => {
@@ -357,7 +357,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-checkout",
     registryNum: 8,
     variant: "A",
-    weight: 3,
+    useFrequency: "High",
     description: "git checkout (switch branch)",
     group: "git",
     setup: async () => {
@@ -380,7 +380,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-stash",
     registryNum: 76,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "git stash (push dirty tree)",
     group: "git",
     setup: async () => {
@@ -405,7 +405,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-push",
     registryNum: 6,
     variant: "A",
-    weight: 5,
+    useFrequency: "High",
     description: "git push (fast-forward to bare remote)",
     group: "git",
     setup: async () => {
@@ -426,7 +426,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "git-pull",
     registryNum: 10,
     variant: "A",
-    weight: 2.5,
+    useFrequency: "Average",
     description: "git pull (already up to date)",
     group: "git",
     setup: async () => {
@@ -447,7 +447,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "npm-init",
     registryNum: 89,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "npm init (default, -y)",
     group: "npm",
     setup: async () => {
@@ -466,7 +466,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "npm-install",
     registryNum: 11,
     variant: "A",
-    weight: 2,
+    useFrequency: "Average",
     description: "npm install (add single package)",
     group: "npm",
     setup: async () => {
@@ -489,7 +489,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-run",
     registryNum: 29,
     variant: "A",
-    weight: 0.5,
+    useFrequency: "Low",
     description: "docker run (alpine echo hello)",
     group: "docker",
     setup: async () => TEMP_ROOT,
@@ -507,7 +507,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-pull",
     registryNum: 64,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "docker pull (already up-to-date)",
     group: "docker",
     setup: async () => {
@@ -525,7 +525,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-exec",
     registryNum: 43,
     variant: "A",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "docker exec (ls in running container)",
     group: "docker",
     setup: async () => {
@@ -550,7 +550,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-compose-up",
     registryNum: 44,
     variant: "A",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "docker compose up (single service)",
     group: "docker",
     setup: async () => {
@@ -577,7 +577,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "docker-compose-down",
     registryNum: 54,
     variant: "A",
-    weight: 0.3,
+    useFrequency: "Very Low",
     description: "docker compose down (stop service)",
     group: "docker",
     setup: async () => {
@@ -604,7 +604,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "http-post",
     registryNum: 82,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "HTTP POST JSON (httpbin)",
     group: "http",
     setup: async () => TEMP_ROOT,
@@ -636,7 +636,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "github-issue-create",
     registryNum: 66,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "GitHub issue create (then delete)",
     group: "github",
     setup: async () => REPO_ROOT,
@@ -710,7 +710,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "pip-install",
     registryNum: 33,
     variant: "A",
-    weight: 0.5,
+    useFrequency: "Low",
     description: "pip install (single package)",
     group: "python",
     setup: async () => {
@@ -730,7 +730,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "uv-install",
     registryNum: 85,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "uv pip install (single package)",
     group: "python",
     setup: async () => {
@@ -758,7 +758,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "mypy-violations",
     registryNum: 48,
     variant: "B",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "mypy (file with ~8 type errors)",
     group: "python",
     setup: async () => {
@@ -801,7 +801,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "ruff-violations",
     registryNum: 49,
     variant: "B",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "ruff check (file with ~10 violations)",
     group: "python",
     setup: async () => {
@@ -843,7 +843,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "black-violations",
     registryNum: 87,
     variant: "B",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "black check (file with bad formatting)",
     group: "python",
     setup: async () => {
@@ -879,7 +879,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "pip-audit-vulns",
     registryNum: 84,
     variant: "B",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "pip-audit (requirements with known vulns)",
     group: "python",
     setup: async () => {
@@ -906,7 +906,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-add",
     registryNum: 88,
     variant: "A",
-    weight: 0.15,
+    useFrequency: "Very Low",
     description: "cargo add (single crate)",
     group: "cargo",
     setup: async () => cargoDir(),
@@ -920,7 +920,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-remove",
     registryNum: 93,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "cargo remove (single crate)",
     group: "cargo",
     setup: async () => {
@@ -939,7 +939,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-update",
     registryNum: 95,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "cargo update (all deps)",
     group: "cargo",
     setup: async () => {
@@ -958,7 +958,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "cargo-clippy-warnings",
     registryNum: 50,
     variant: "B",
-    weight: 0.4,
+    useFrequency: "Very Low",
     description: "cargo clippy (code with ~5 warnings)",
     group: "cargo",
     setup: async () => {
@@ -1011,7 +1011,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-get",
     registryNum: 100,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "go get (single package)",
     group: "go",
     setup: async () => goDir(),
@@ -1025,7 +1025,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-mod-tidy",
     registryNum: 75,
     variant: "A",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "go mod tidy",
     group: "go",
     setup: async () => goDir(),
@@ -1039,7 +1039,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "go-generate",
     registryNum: 97,
     variant: "A",
-    weight: 0.1,
+    useFrequency: "Very Low",
     description: "go generate (no directives)",
     group: "go",
     setup: async () => goDir(),
@@ -1056,7 +1056,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "lint-violations",
     registryNum: 17,
     variant: "D",
-    weight: 1.5,
+    useFrequency: "Average",
     description: "ESLint (file with ~15 deliberate violations)",
     group: "lint",
     setup: async () => {
@@ -1107,7 +1107,7 @@ const SCENARIOS: MutatingScenario[] = [
     id: "biome-violations",
     registryNum: 63,
     variant: "B",
-    weight: 0.2,
+    useFrequency: "Very Low",
     description: "Biome check (file with ~13 deliberate violations)",
     group: "lint",
     setup: async () => {
@@ -1223,7 +1223,7 @@ async function runScenario(scenario: MutatingScenario): Promise<RunResult> {
     registryNum: scenario.registryNum,
     variant: scenario.variant,
     description: scenario.description,
-    weight: scenario.weight,
+    useFrequency: scenario.useFrequency,
     rawTokens,
     pareTokens,
     pareRegularTokens,
@@ -1280,7 +1280,7 @@ async function main(): Promise<void> {
       "#",
       "Scenario",
       "Description",
-      "Weight %",
+      "Use Frequency",
       "Raw Tokens",
       "Pare Regular",
       "Pare Compact",
@@ -1302,7 +1302,7 @@ async function main(): Promise<void> {
         ref,
         r.scenarioId,
         r.description,
-        r.weight,
+        r.useFrequency,
         r.rawTokens,
         r.pareRegularTokens,
         compacted ? r.pareTokens : "",
