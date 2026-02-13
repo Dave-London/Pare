@@ -1,50 +1,18 @@
 # Pare Benchmark Summary
 
+## Overall
+
+Pare is a suite of MCP (Model Context Protocol) server packages that wrap standard developer CLI tools with structured, token-efficient JSON output. This benchmark measures the token efficiency of Pare's 100 tools across 14 packages by comparing the output of each Pare tool against its raw CLI equivalent.
+
+Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared. Token counts are estimated using a standard `ceil(length / 4)` heuristic.
+
 **Date**: 2026-02-13
 **Platform**: win32 (x64)
 **Node**: v22.19.0
+**Coding agent**: Claude Code (Claude Opus 4.6 / Sonnet 4.5)
+**Tested scenarios**: 148
 **Runs per scenario**: 1
-
-## Overall
-
-| Metric                |   Value |
-| --------------------- | ------: |
-| Total scenarios       |     148 |
-| Total raw tokens      | 285,409 |
-| Total Pare tokens     | 134,259 |
-| Tokens saved          | 151,150 |
-| **Overall reduction** | **53%** |
-
-## Breakdown
-
-| Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |
-| ------------------- | --------: | ---------: | ----------: | --------: |
-| Reproducible        |       117 |    267,589 |     129,987 |       51% |
-| Mutating (one-shot) |        31 |     17,820 |       4,272 |       76% |
-
-## Top Token Savers
-
-| Scenario         |    Raw |  Pare |  Saved |
-| ---------------- | -----: | ----: | -----: |
-| npm-list-d2      | 177467 | 70531 | 106936 |
-| diff-full-patch  |  22873 |   725 |  22148 |
-| pip-audit-vulns  |   5760 |    67 |   5693 |
-| biome-violations |   5632 |   820 |   4812 |
-| count-common     |   3647 |    63 |   3584 |
-
-## Worst Overhead
-
-| Scenario       |   Raw |  Pare | Overhead |
-| -------------- | ----: | ----: | -------: |
-| blame-large    | 10255 | 13409 |    +3154 |
-| issue-list-all |   711 |  2031 |    +1320 |
-| run-list-20    |   647 |  1526 |     +879 |
-| pr-list-closed |   497 |  1300 |     +803 |
-| diff-large     |   327 |  1130 |     +803 |
-
-## Latency
-
-Median added latency (Pare vs raw CLI): **-3 ms**
+**Total tokens consumed in tests**: 285,409 (raw) / 134,259 (Pare)
 
 ---
 
@@ -101,6 +69,8 @@ Tools were assigned to tiers based on the natural clustering of expected call co
 ### Token estimation
 
 Tokens are estimated as `Math.ceil(text.length / 4)`, a standard heuristic for English text with code. Actual tokenizer counts may vary by ±10–15%.
+
+---
 
 ## Estimated Session Impact
 
@@ -210,9 +180,44 @@ Per-tool token usage weighted by Use Frequency representative values. Each tool'
 | 100 | go/get               | Very Low      |      28 |            14 |        6 |              3 |
 |     | **Total**            |               |         |   **183,289** |          |     **60,254** |
 
-**Estimated session savings: 123,035 tokens (67% reduction)**
+**Estimated savings per coding session:**
+
+Using Pare tools, a coding agent's input token consumption is reduced by an estimated **123,035 tokens** relative to standard CLI tool use. This represents the coding agent using **67% fewer tokens** in a coding session compared to current token usage.
 
 _(\*) npm/list excludes the depth=2 scenario (40C) from its session average. While npm-list-d2 shows a large 60% reduction (177,467 → 70,531 tokens), depth=2 output is an outlier — it is rarely requested by coding agents and its extreme size (177K tokens from a single call) would disproportionately inflate the session estimate. The scenario is retained in the detailed benchmark data for transparency. Excluding it has minimal effect on the overall reduction (67% vs 66%) but yields a more representative session estimate._
+
+---
+
+## Breakdown
+
+| Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |
+| ------------------- | --------: | ---------: | ----------: | --------: |
+| Reproducible        |       117 |    267,589 |     129,987 |       51% |
+| Mutating (one-shot) |        31 |     17,820 |       4,272 |       76% |
+
+## Top Token Savers
+
+| Scenario         |   Raw | Pare |  Saved |
+| ---------------- | ----: | ---: | -----: |
+| diff-full-patch  | 22873 |  725 | 22,148 |
+| pip-audit-vulns  |  5760 |   67 |  5,693 |
+| biome-violations |  5632 |  820 |  4,812 |
+| count-common     |  3647 |   63 |  3,584 |
+| find-all-ts      |  3548 |   63 |  3,485 |
+
+## Worst Overhead
+
+| Scenario       |   Raw |  Pare | Overhead |
+| -------------- | ----: | ----: | -------: |
+| blame-large    | 10255 | 13409 |    +3154 |
+| issue-list-all |   711 |  2031 |    +1320 |
+| run-list-20    |   647 |  1526 |     +879 |
+| pr-list-closed |   497 |  1300 |     +803 |
+| diff-large     |   327 |  1130 |     +803 |
+
+## Latency
+
+Median added latency (Pare vs raw CLI): **-3 ms**
 
 ---
 

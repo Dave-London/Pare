@@ -619,16 +619,39 @@ function formatSummaryMd(
 
   const totalRaw = repRaw + mutRaw;
   const totalPare = repPare + mutPare;
-  const totalPct = totalRaw > 0 ? Math.round((1 - totalPare / totalRaw) * 100) : 0;
   const totalScenarios = reproducible.length + mutating.length;
 
-  // Top savers (reproducible only — we have full data)
+  // Top savers — exclude outliers, combine reproducible + mutating
+  interface SaverEntry {
+    id: string;
+    raw: number;
+    pare: number;
+    saved: number;
+  }
+  const allSavers: SaverEntry[] = [];
+  for (const s of reproducible) {
+    if (SESSION_OUTLIER_IDS.has(s.scenario.id)) continue;
+    const pare = Math.min(s.medianPareTokens, s.medianPareRegularTokens);
+    allSavers.push({
+      id: s.scenario.id,
+      raw: s.medianRawTokens,
+      pare,
+      saved: s.medianRawTokens - pare,
+    });
+  }
+  for (const m of mutating) {
+    const pare = m.pareCompactTokens
+      ? Math.min(m.pareRegularTokens, parseInt(m.pareCompactTokens) || m.pareRegularTokens)
+      : m.pareRegularTokens;
+    allSavers.push({ id: m.scenario, raw: m.rawTokens, pare, saved: m.rawTokens - pare });
+  }
+  allSavers.sort((a, b) => b.saved - a.saved);
+  const topSavers = allSavers.slice(0, 5);
+
+  // Worst overhead (reproducible only — we have full data)
   const sorted = [...reproducible].sort(
     (a, b) => b.medianRawTokens - b.medianPareTokens - (a.medianRawTokens - a.medianPareTokens),
   );
-  const topSavers = sorted.slice(0, 5);
-
-  // Worst overhead
   const worstOverhead = sorted.slice(-5).reverse();
 
   // Latency
@@ -650,57 +673,29 @@ function formatSummaryMd(
     tierCounts.set(tool.useFrequency, (tierCounts.get(tool.useFrequency) ?? 0) + 1);
   }
 
+  // ─── Build output ─────────────────────────────────────────────
+
   const lines = [
     `# Pare Benchmark Summary`,
+    ``,
+    `## Overall`,
+    ``,
+    `Pare is a suite of MCP (Model Context Protocol) server packages that wrap standard developer CLI tools with structured, token-efficient JSON output. This benchmark measures the token efficiency of Pare's 100 tools across 14 packages by comparing the output of each Pare tool against its raw CLI equivalent.`,
+    ``,
+    `Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared. Token counts are estimated using a standard \`ceil(length / 4)\` heuristic.`,
     ``,
     `**Date**: ${new Date().toISOString().split("T")[0]}`,
     `**Platform**: ${process.platform} (${process.arch})`,
     `**Node**: ${process.version}`,
+    `**Coding agent**: Claude Code (Claude Opus 4.6 / Sonnet 4.5)`,
+    `**Tested scenarios**: ${totalScenarios}`,
     `**Runs per scenario**: ${config.runs}`,
-    ``,
-    `## Overall`,
-    ``,
-    `| Metric                |   Value |`,
-    `| --------------------- | ------: |`,
-    `| Total scenarios       | ${totalScenarios.toLocaleString().padStart(7)} |`,
-    `| Total raw tokens      | ${totalRaw.toLocaleString().padStart(7)} |`,
-    `| Total Pare tokens     | ${totalPare.toLocaleString().padStart(7)} |`,
-    `| Tokens saved          | ${(totalRaw - totalPare).toLocaleString().padStart(7)} |`,
-    `| **Overall reduction** | **${totalPct}%** |`,
-    ``,
-    `## Breakdown`,
-    ``,
-    `| Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |`,
-    `| ------------------- | --------: | ---------: | ----------: | --------: |`,
-    `| Reproducible        | ${String(reproducible.length).padStart(9)} | ${repRaw.toLocaleString().padStart(10)} | ${repPare.toLocaleString().padStart(11)} | ${String(repPct + "%").padStart(9)} |`,
-    `| Mutating (one-shot) | ${String(mutating.length).padStart(9)} | ${mutRaw.toLocaleString().padStart(10)} | ${mutPare.toLocaleString().padStart(11)} | ${String(mutPct + "%").padStart(9)} |`,
-    ``,
-    `## Top Token Savers`,
-    ``,
-    `| Scenario | Raw | Pare | Saved |`,
-    `|---|---:|---:|---:|`,
-    ...topSavers.map((s) => {
-      const saved = s.medianRawTokens - s.medianPareTokens;
-      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | ${saved} |`;
-    }),
-    ``,
-    `## Worst Overhead`,
-    ``,
-    `| Scenario | Raw | Pare | Overhead |`,
-    `|---|---:|---:|---:|`,
-    ...worstOverhead.map((s) => {
-      const overhead = s.medianPareTokens - s.medianRawTokens;
-      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | +${overhead} |`;
-    }),
-    ``,
-    `## Latency`,
-    ``,
-    `Median added latency (Pare vs raw CLI): **${Math.round(medianAdded)} ms**`,
+    `**Total tokens consumed in tests**: ${totalRaw.toLocaleString()} (raw) / ${totalPare.toLocaleString()} (Pare)`,
     ``,
   ];
 
   if (skipped.length > 0) {
-    lines.push(`## Skipped Scenarios`);
+    lines.push(`### Skipped Scenarios`);
     lines.push(``);
     for (const s of skipped) {
       lines.push(`- ${s}`);
@@ -803,6 +798,8 @@ function formatSummaryMd(
 
   // ─── Session impact table ───────────────────────────────────────
 
+  lines.push(`---`);
+  lines.push(``);
   lines.push(`## Estimated Session Impact`);
   lines.push(``);
   lines.push(
@@ -827,8 +824,10 @@ function formatSummaryMd(
     `|     | **Total**            |               |         | ${("**" + totalRawSession.toLocaleString() + "**").padStart(13)} |          | ${("**" + totalPareSession.toLocaleString() + "**").padStart(14)} |`,
   );
   lines.push(``);
+  lines.push(`**Estimated savings per coding session:**`);
+  lines.push(``);
   lines.push(
-    `**Estimated session savings: ${sessionSaved.toLocaleString()} tokens (${sessionPct}% reduction)**`,
+    `Using Pare tools, a coding agent's input token consumption is reduced by an estimated **${sessionSaved.toLocaleString()} tokens** relative to standard CLI tool use. This represents the coding agent using **${sessionPct}% fewer tokens** in a coding session compared to current token usage.`,
   );
 
   if (hasOutliers) {
@@ -845,6 +844,47 @@ function formatSummaryMd(
     );
   }
 
+  lines.push(``);
+  lines.push(`---`);
+  lines.push(``);
+
+  // ─── Detailed breakdowns (appendix) ────────────────────────────
+
+  lines.push(`## Breakdown`);
+  lines.push(``);
+  lines.push(`| Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |`);
+  lines.push(`| ------------------- | --------: | ---------: | ----------: | --------: |`);
+  lines.push(
+    `| Reproducible        | ${String(reproducible.length).padStart(9)} | ${repRaw.toLocaleString().padStart(10)} | ${repPare.toLocaleString().padStart(11)} | ${String(repPct + "%").padStart(9)} |`,
+  );
+  lines.push(
+    `| Mutating (one-shot) | ${String(mutating.length).padStart(9)} | ${mutRaw.toLocaleString().padStart(10)} | ${mutPare.toLocaleString().padStart(11)} | ${String(mutPct + "%").padStart(9)} |`,
+  );
+  lines.push(``);
+  lines.push(`## Top Token Savers`);
+  lines.push(``);
+  lines.push(`| Scenario | Raw | Pare | Saved |`);
+  lines.push(`|---|---:|---:|---:|`);
+  for (const s of topSavers) {
+    lines.push(
+      `| ${s.id} | ${s.raw.toLocaleString()} | ${s.pare.toLocaleString()} | ${s.saved.toLocaleString()} |`,
+    );
+  }
+  lines.push(``);
+  lines.push(`## Worst Overhead`);
+  lines.push(``);
+  lines.push(`| Scenario | Raw | Pare | Overhead |`);
+  lines.push(`|---|---:|---:|---:|`);
+  for (const s of worstOverhead) {
+    const overhead = s.medianPareTokens - s.medianRawTokens;
+    lines.push(
+      `| ${s.scenario.id} | ${s.medianRawTokens.toLocaleString()} | ${s.medianPareTokens.toLocaleString()} | +${overhead.toLocaleString()} |`,
+    );
+  }
+  lines.push(``);
+  lines.push(`## Latency`);
+  lines.push(``);
+  lines.push(`Median added latency (Pare vs raw CLI): **${Math.round(medianAdded)} ms**`);
   lines.push(``);
   lines.push(`---`);
   lines.push(``);
