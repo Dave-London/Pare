@@ -103,13 +103,17 @@ export function parseBuildOutput(
   };
 }
 
-/** Parses `docker logs` output into structured data with container name and log lines. */
-export function parseLogsOutput(stdout: string, container: string): DockerLogs {
-  const lines = stdout.split("\n").filter(Boolean);
+/** Parses `docker logs` output into structured data with container name and log lines. Caps output to `limit` lines when provided. */
+export function parseLogsOutput(stdout: string, container: string, limit?: number): DockerLogs {
+  const allLines = stdout.split("\n").filter(Boolean);
+  const totalLines = allLines.length;
+  const isTruncated = limit != null && totalLines > limit;
+  const lines = isTruncated ? allLines.slice(0, limit) : allLines;
   return {
     container,
     lines,
     total: lines.length,
+    ...(isTruncated ? { isTruncated: true, totalLines } : {}),
   };
 }
 

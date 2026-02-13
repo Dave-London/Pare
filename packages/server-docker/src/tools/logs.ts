@@ -25,6 +25,13 @@ export function registerLogsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
+        limit: z
+          .number()
+          .optional()
+          .default(100)
+          .describe(
+            "Max lines in structured output (default: 100). Lines beyond this are truncated with isTruncated flag.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -35,7 +42,7 @@ export function registerLogsTool(server: McpServer) {
       },
       outputSchema: DockerLogsSchema,
     },
-    async ({ container, tail, since, compact }) => {
+    async ({ container, tail, since, limit, compact }) => {
       assertNoFlagInjection(container, "container");
       if (since) assertNoFlagInjection(since, "since");
 
@@ -44,7 +51,7 @@ export function registerLogsTool(server: McpServer) {
 
       const result = await docker(args);
       const output = result.stdout || result.stderr;
-      const data = parseLogsOutput(output, container);
+      const data = parseLogsOutput(output, container, limit);
       return compactDualOutput(
         data,
         output,
