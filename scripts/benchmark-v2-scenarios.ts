@@ -10,6 +10,9 @@
  * (see `C:\pare docs\benchmark-design\tool-registry.csv`).
  */
 
+export const USE_FREQUENCY_TIERS = ["Very High", "High", "Average", "Low", "Very Low"] as const;
+export type UseFrequency = (typeof USE_FREQUENCY_TIERS)[number];
+
 export interface V2Scenario {
   /** Unique identifier, e.g. "log-5" */
   id: string;
@@ -18,7 +21,7 @@ export interface V2Scenario {
   /** Variant within the tool: A (small), B (typical), C (large) */
   variant: "A" | "B" | "C";
   /** Use Frequency category from the tool registry */
-  useFrequency: "Very High" | "High" | "Average" | "Low" | "Very Low";
+  useFrequency: UseFrequency;
   /** Human-readable description for the report table */
   description: string;
   /** Raw CLI executable, e.g. "git" */

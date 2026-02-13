@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import type { UseFrequency } from "./benchmark-v2-scenarios.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const REPO_ROOT = resolve(__dirname, "..");
@@ -44,7 +45,7 @@ interface MutatingScenario {
   id: string;
   registryNum: number;
   variant: string;
-  useFrequency: "Very High" | "High" | "Average" | "Low" | "Very Low";
+  useFrequency: UseFrequency;
   description: string;
   group: string;
   /** Setup function — creates necessary preconditions, returns cwd for raw command */
@@ -66,7 +67,7 @@ interface RunResult {
   registryNum: number;
   variant: string;
   description: string;
-  useFrequency: string;
+  useFrequency: UseFrequency;
   rawTokens: number;
   pareTokens: number;
   pareRegularTokens: number;

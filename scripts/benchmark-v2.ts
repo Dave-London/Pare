@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { V2_SCENARIOS, type V2Scenario } from "./benchmark-v2-scenarios.js";
+import { V2_SCENARIOS, type V2Scenario, type UseFrequency } from "./benchmark-v2-scenarios.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const REPO_ROOT = resolve(__dirname, "..");
@@ -317,7 +317,7 @@ interface MutatingRow {
   ref: string;
   scenario: string;
   description: string;
-  useFrequency: string;
+  useFrequency: UseFrequency;
   rawTokens: number;
   pareRegularTokens: number;
   pareCompactTokens: string; // may be empty
@@ -345,7 +345,7 @@ function readMutatingResults(): MutatingRow[] {
       ref: parts[0],
       scenario: parts[1],
       description: parts[2],
-      useFrequency: parts[3],
+      useFrequency: parts[3] as UseFrequency,
       rawTokens: parseInt(parts[4]) || 0,
       pareRegularTokens: parseInt(parts[5]) || 0,
       pareCompactTokens: parts[6],
