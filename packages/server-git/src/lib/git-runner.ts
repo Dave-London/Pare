@@ -5,5 +5,7 @@ export async function git(
   cwd?: string,
   opts?: Pick<RunOptions, "stdin">,
 ): Promise<RunResult> {
-  return run("git", args, { cwd, ...opts });
+  // git is a native executable — disable shell mode to prevent cmd.exe from
+  // misinterpreting <> in format strings (e.g., --format="%an <%ae>").
+  return run("git", args, { cwd, shell: false, ...opts });
 }

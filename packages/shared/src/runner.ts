@@ -11,6 +11,10 @@ export interface RunOptions {
    *  (e.g., `git commit --file -`) instead of passing it as a command arg,
    *  which avoids cmd.exe argument-length and newline limitations on Windows. */
   stdin?: string;
+  /** Override shell mode. Defaults to `true` on Windows (for .cmd/.bat wrappers)
+   *  and `false` elsewhere. Set to `false` for native executables (e.g., git)
+   *  whose args contain characters that cmd.exe would misinterpret (like `<>`). */
+  shell?: boolean;
 }
 
 /** Result of a command execution, containing the exit code and ANSI-stripped stdout/stderr. */
@@ -89,10 +93,15 @@ export function escapeCmdArg(arg: string): string {
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
   return new Promise((resolve, reject) => {
+    // Determine shell mode: default to true on Windows (for .cmd/.bat wrappers),
+    // but allow callers to override (e.g., git uses shell:false to avoid cmd.exe
+    // mangling format strings that contain < > characters).
+    const useShell = opts?.shell ?? process.platform === "win32";
+
     // On Windows with shell mode, escape cmd.exe metacharacters to prevent
     // environment variable expansion and command injection via special chars.
     // See escapeCmdArg() for details on what is escaped and why.
-    const safeArgs = process.platform === "win32" ? args.map(escapeCmdArg) : args;
+    const safeArgs = useShell && process.platform === "win32" ? args.map(escapeCmdArg) : args;
 
     const child = execFile(
       cmd,
@@ -102,7 +111,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
         timeout: opts?.timeout ?? 60_000,
         env: opts?.env ? { ...process.env, ...opts.env } : undefined,
         maxBuffer: 10 * 1024 * 1024, // 10 MB
-        shell: process.platform === "win32",
+        shell: useShell,
       },
       (error, stdout, stderr) => {
         if (error) {
