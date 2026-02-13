@@ -148,6 +148,20 @@ describe("formatLogs", () => {
     const output = formatLogs(data);
     expect(output).toContain("idle-app (0 lines)");
   });
+
+  it("formats truncated logs with truncation indicator", () => {
+    const data: DockerLogs = {
+      container: "busy-app",
+      lines: ["line 1", "line 2"],
+      total: 2,
+      isTruncated: true,
+      totalLines: 500,
+    };
+    const output = formatLogs(data);
+    expect(output).toContain("busy-app (2 of 500 lines, truncated)");
+    expect(output).toContain("line 1");
+    expect(output).toContain("line 2");
+  });
 });
 
 describe("formatImages", () => {

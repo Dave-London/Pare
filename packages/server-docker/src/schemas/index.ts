@@ -43,6 +43,8 @@ export const DockerLogsSchema = z.object({
   container: z.string(),
   lines: z.array(z.string()),
   total: z.number(),
+  isTruncated: z.boolean().optional(),
+  totalLines: z.number().optional(),
 });
 
 export type DockerLogs = z.infer<typeof DockerLogsSchema>;

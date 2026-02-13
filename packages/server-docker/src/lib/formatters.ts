@@ -44,7 +44,10 @@ export function formatBuild(data: DockerBuild): string {
 
 /** Formats structured Docker logs data into a human-readable output with container name and line count. */
 export function formatLogs(data: DockerLogs): string {
-  return `${data.container} (${data.total} lines)\n${data.lines.join("\n")}`;
+  const header = data.isTruncated
+    ? `${data.container} (${data.total} of ${data.totalLines} lines, truncated)`
+    : `${data.container} (${data.total} lines)`;
+  return `${header}\n${data.lines.join("\n")}`;
 }
 
 /** Formats structured Docker image data into a human-readable listing with repository, tag, and size. */

@@ -259,6 +259,40 @@ describe("parseLogsOutput", () => {
     expect(result.lines).toEqual([]);
     expect(result.total).toBe(0);
   });
+
+  it("truncates lines when limit is exceeded", () => {
+    const lines = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`);
+    const stdout = lines.join("\n");
+    const result = parseLogsOutput(stdout, "busy-app", 50);
+
+    expect(result.lines).toHaveLength(50);
+    expect(result.total).toBe(50);
+    expect(result.isTruncated).toBe(true);
+    expect(result.totalLines).toBe(200);
+    expect(result.lines[0]).toBe("line 1");
+    expect(result.lines[49]).toBe("line 50");
+  });
+
+  it("does not truncate when lines are within limit", () => {
+    const stdout = "line 1\nline 2\nline 3";
+    const result = parseLogsOutput(stdout, "small-app", 100);
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.total).toBe(3);
+    expect(result.isTruncated).toBeUndefined();
+    expect(result.totalLines).toBeUndefined();
+  });
+
+  it("does not truncate when no limit is provided", () => {
+    const lines = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`);
+    const stdout = lines.join("\n");
+    const result = parseLogsOutput(stdout, "unlimited-app");
+
+    expect(result.lines).toHaveLength(200);
+    expect(result.total).toBe(200);
+    expect(result.isTruncated).toBeUndefined();
+    expect(result.totalLines).toBeUndefined();
+  });
 });
 
 describe("parseImagesJson", () => {
