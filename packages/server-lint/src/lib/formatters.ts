@@ -4,11 +4,9 @@ import type { LintResult, FormatCheckResult, FormatWriteResult } from "../schema
 export function formatLint(data: LintResult): string {
   if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
 
-  const lines = [
-    `Lint: ${data.errors} errors, ${data.warnings} warnings (${data.fixable} fixable)`,
-  ];
+  const lines = [`Lint: ${data.errors} errors, ${data.warnings} warnings`];
   for (const d of data.diagnostics ?? []) {
-    lines.push(`  ${d.file}:${d.line}:${d.column} ${d.severity} ${d.rule}: ${d.message}`);
+    lines.push(`  ${d.file}:${d.line} ${d.severity} ${d.rule}: ${d.message}`);
   }
   return lines.join("\n");
 }
@@ -44,7 +42,6 @@ export interface LintResultCompact {
   total: number;
   errors: number;
   warnings: number;
-  fixable: number;
   filesChecked: number;
 }
 
@@ -53,14 +50,13 @@ export function compactLintMap(data: LintResult): LintResultCompact {
     total: data.total,
     errors: data.errors,
     warnings: data.warnings,
-    fixable: data.fixable,
     filesChecked: data.filesChecked,
   };
 }
 
 export function formatLintCompact(data: LintResultCompact): string {
   if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
-  return `Lint: ${data.errors} errors, ${data.warnings} warnings (${data.fixable} fixable) across ${data.filesChecked} files.`;
+  return `Lint: ${data.errors} errors, ${data.warnings} warnings across ${data.filesChecked} files.`;
 }
 
 /** Compact format check: counts only, no individual file paths. */

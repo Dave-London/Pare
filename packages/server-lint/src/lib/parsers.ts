@@ -16,7 +16,7 @@ export function parseEslintJson(stdout: string): LintResult {
   try {
     files = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, fixable: 0, filesChecked: 0 };
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -26,27 +26,21 @@ export function parseEslintJson(stdout: string): LintResult {
       diagnostics.push({
         file: file.filePath,
         line: msg.line ?? 0,
-        column: msg.column ?? 0,
-        endLine: msg.endLine,
-        endColumn: msg.endColumn,
         severity: msg.severity === 2 ? "error" : msg.severity === 1 ? "warning" : "info",
         rule: msg.ruleId ?? "unknown",
         message: msg.message,
-        fixable: !!msg.fix,
       });
     }
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
-  const fixable = diagnostics.filter((d) => d.fixable).length;
 
   return {
     diagnostics,
     total: diagnostics.length,
     errors,
     warnings,
-    fixable,
     filesChecked: files.length,
   };
 }
@@ -145,7 +139,7 @@ export function parseBiomeJson(stdout: string): LintResult {
   try {
     biomeOutput = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, fixable: 0, filesChecked: 0 };
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -167,31 +161,24 @@ export function parseBiomeJson(stdout: string): LintResult {
     // Biome spans are byte offsets, not line/column. We extract from sourceCode if available,
     // but default to 0 if line info is not in the JSON output.
     const line = diag.location?.sourceCode?.lineNumber ?? 0;
-    const column = diag.location?.sourceCode?.columnNumber ?? 0;
-
-    const fixable = diag.tags?.includes("fixable") ?? false;
 
     diagnostics.push({
       file,
       line,
-      column,
       severity,
       rule,
       message,
-      fixable,
     });
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
-  const fixable = diagnostics.filter((d) => d.fixable).length;
 
   return {
     diagnostics,
     total: diagnostics.length,
     errors,
     warnings,
-    fixable,
     filesChecked: filesSet.size,
   };
 }
@@ -240,7 +227,7 @@ export function parseStylelintJson(stdout: string): LintResult {
   try {
     files = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, fixable: 0, filesChecked: 0 };
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -250,11 +237,9 @@ export function parseStylelintJson(stdout: string): LintResult {
       diagnostics.push({
         file: file.source ?? "unknown",
         line: warn.line ?? 0,
-        column: warn.column ?? 0,
         severity: warn.severity === "error" ? "error" : "warning",
         rule: warn.rule ?? "unknown",
         message: warn.text ?? "",
-        fixable: false,
       });
     }
   }
@@ -267,7 +252,6 @@ export function parseStylelintJson(stdout: string): LintResult {
     total: diagnostics.length,
     errors,
     warnings,
-    fixable: 0,
     filesChecked: files.length,
   };
 }
@@ -314,26 +298,20 @@ export function parseOxlintJson(stdout: string): LintResult {
     diagnostics.push({
       file,
       line: entry.line ?? 0,
-      column: entry.column ?? 0,
-      endLine: entry.endLine,
-      endColumn: entry.endColumn,
       severity: mapOxlintSeverity(entry.severity),
       rule: entry.ruleId ?? "unknown",
       message: entry.message,
-      fixable: entry.fix !== undefined && entry.fix !== null,
     });
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
-  const fixable = diagnostics.filter((d) => d.fixable).length;
 
   return {
     diagnostics,
     total: diagnostics.length,
     errors,
     warnings,
-    fixable,
     filesChecked: filesSet.size,
   };
 }

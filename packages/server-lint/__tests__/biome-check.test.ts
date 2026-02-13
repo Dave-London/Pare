@@ -35,27 +35,22 @@ describe("parseBiomeJson", () => {
     expect(result.total).toBe(2);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(1);
-    expect(result.fixable).toBe(1);
     expect(result.filesChecked).toBe(2);
 
     expect(result.diagnostics[0]).toEqual({
       file: "src/index.ts",
       line: 5,
-      column: 10,
       severity: "error",
       rule: "lint/suspicious/noDoubleEquals",
       message: "Use === instead of ==.",
-      fixable: true,
     });
 
     expect(result.diagnostics[1]).toEqual({
       file: "src/utils.ts",
       line: 12,
-      column: 1,
       severity: "warning",
       rule: "lint/style/useConst",
       message: "Use const instead of let.",
-      fixable: false,
     });
   });
 
@@ -67,7 +62,6 @@ describe("parseBiomeJson", () => {
     expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
-    expect(result.fixable).toBe(0);
     expect(result.filesChecked).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
@@ -154,7 +148,6 @@ describe("parseBiomeJson", () => {
 
     expect(result.diagnostics[0].file).toBe("unknown");
     expect(result.diagnostics[0].line).toBe(0);
-    expect(result.diagnostics[0].column).toBe(0);
   });
 
   it("handles mixed lint and format diagnostics", () => {
@@ -198,7 +191,6 @@ describe("parseBiomeJson", () => {
     expect(result.total).toBe(3);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(1);
-    expect(result.fixable).toBe(2);
     // Both src/index.ts entries count as one file
     expect(result.filesChecked).toBe(2);
   });
