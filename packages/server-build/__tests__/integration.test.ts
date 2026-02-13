@@ -79,12 +79,10 @@ describe("@paretools/build integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(typeof sc.duration).toBe("number");
-      // In compact mode, arrays are replaced by counts
-      if (Array.isArray(sc.errors)) {
+      // In compact mode, arrays are omitted; in full mode they are present
+      if (sc.errors !== undefined) {
+        expect(Array.isArray(sc.errors)).toBe(true);
         expect(Array.isArray(sc.warnings)).toBe(true);
-      } else {
-        expect(typeof sc.errorCount).toBe("number");
-        expect(typeof sc.warningCount).toBe("number");
       }
     }, 60_000);
 
@@ -120,12 +118,10 @@ describe("@paretools/build integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.duration).toBe("number");
-        // In compact mode, arrays are replaced by counts
-        if (Array.isArray(sc.errors)) {
+        // In compact mode, arrays are omitted; in full mode they are present
+        if (sc.errors !== undefined) {
+          expect(Array.isArray(sc.errors)).toBe(true);
           expect(Array.isArray(sc.warnings)).toBe(true);
-        } else {
-          expect(typeof sc.errorCount).toBe("number");
-          expect(typeof sc.warningCount).toBe("number");
         }
       } else {
         // If no structured content, it should be marked as an error
@@ -161,14 +157,13 @@ describe("@paretools/build integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.duration).toBe("number");
-        // In compact mode, per-file outputs and error/warning arrays are replaced by counts
-        if (Array.isArray(sc.outputs)) {
+        // In compact mode, arrays are omitted; in full mode they are present
+        if (sc.outputs !== undefined) {
+          expect(Array.isArray(sc.outputs)).toBe(true);
+        }
+        if (sc.errors !== undefined) {
           expect(Array.isArray(sc.errors)).toBe(true);
           expect(Array.isArray(sc.warnings)).toBe(true);
-        } else {
-          expect(typeof sc.fileCount).toBe("number");
-          expect(typeof sc.errorCount).toBe("number");
-          expect(typeof sc.warningCount).toBe("number");
         }
       } else {
         expect(result.isError).toBe(true);
@@ -193,14 +188,13 @@ describe("@paretools/build integration", () => {
           const sc = result.structuredContent as Record<string, unknown>;
           expect(typeof sc.success).toBe("boolean");
           expect(typeof sc.duration).toBe("number");
-          // In compact mode, per-asset and error/warning arrays are replaced by counts
-          if (Array.isArray(sc.assets)) {
+          // In compact mode, arrays are omitted; in full mode they are present
+          if (sc.assets !== undefined) {
+            expect(Array.isArray(sc.assets)).toBe(true);
+          }
+          if (sc.errors !== undefined) {
             expect(Array.isArray(sc.errors)).toBe(true);
             expect(Array.isArray(sc.warnings)).toBe(true);
-          } else {
-            expect(typeof sc.assetCount).toBe("number");
-            expect(typeof sc.errorCount).toBe("number");
-            expect(typeof sc.warningCount).toBe("number");
           }
         } else {
           expect(result.isError).toBe(true);

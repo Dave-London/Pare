@@ -43,14 +43,12 @@ export interface TscResult {
 }
 
 /** Zod schema for structured build command output with success status, duration, errors, and warnings.
- *  In compact mode, error/warning arrays are replaced by errorCount/warningCount. */
+ *  In compact mode, error/warning arrays are omitted. */
 export const BuildResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full build result -- always returned by the parser. */
@@ -82,16 +80,13 @@ export const EsbuildWarningSchema = z.object({
 });
 
 /** Zod schema for structured esbuild output including errors, warnings, output files, and duration.
- *  In compact mode, error/warning arrays and outputFiles are replaced by counts. */
+ *  In compact mode, arrays are omitted; only success and duration are returned. */
 export const EsbuildResultSchema = z.object({
   success: z.boolean(),
   errors: z.array(EsbuildErrorSchema).optional(),
   warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
   duration: z.number(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
-  outputFileCount: z.number().optional(),
 });
 
 /** Full esbuild error -- always returned by the parser. */
@@ -132,16 +127,13 @@ export const ViteOutputFileSchema = z.object({
 });
 
 /** Zod schema for structured Vite production build output with files, sizes, and duration.
- *  In compact mode, per-file outputs and error/warning arrays are replaced by counts. */
+ *  In compact mode, arrays are omitted; only success and duration are returned. */
 export const ViteBuildResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
   outputs: z.array(ViteOutputFileSchema).optional(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
-  fileCount: z.number().optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full Vite output file entry. */
@@ -172,7 +164,7 @@ export const WebpackAssetSchema = z.object({
 });
 
 /** Zod schema for structured webpack build output with assets, errors, warnings, and module count.
- *  In compact mode, per-asset and error/warning arrays are replaced by counts and totalSize. */
+ *  In compact mode, arrays are omitted; only success, duration, and modules are returned. */
 export const WebpackResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
@@ -180,10 +172,6 @@ export const WebpackResultSchema = z.object({
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
   modules: z.number().optional(),
-  assetCount: z.number().optional(),
-  totalSize: z.number().optional(),
-  errorCount: z.number().optional(),
-  warningCount: z.number().optional(),
 });
 
 /** Full webpack asset entry. */
