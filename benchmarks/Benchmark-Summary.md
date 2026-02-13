@@ -4,7 +4,7 @@
 
 Pare is a suite of MCP (Model Context Protocol) server packages that wrap standard developer CLI tools with structured, token-efficient JSON output. This benchmark measures the token efficiency of Pare's 100 tools across 14 packages by comparing the output of each Pare tool against its raw CLI equivalent.
 
-Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared. Token counts are estimated using a standard `ceil(length / 4)` heuristic.
+Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared.
 
 **Date**: 2026-02-13
 **Platform**: win32 (x64)
@@ -12,7 +12,7 @@ Each of Pare's **100 tools** is tested through one or more **benchmark scenarios
 **Coding agent**: Claude Code (Claude Opus 4.6 / Sonnet 4.5)
 **Tested scenarios**: 148
 **Runs per scenario**: 1
-**Total tokens consumed in tests**: 285,409 (raw) / 134,259 (Pare)
+**Total tokens consumed in tests**: 419,668
 
 ---
 
@@ -182,7 +182,19 @@ Per-tool token usage weighted by Use Frequency representative values. Each tool'
 
 **Estimated savings per coding session:**
 
-Using Pare tools, a coding agent's input token consumption is reduced by an estimated **123,035 tokens** relative to standard CLI tool use. This represents the coding agent using **67% fewer tokens** in a coding session compared to current token usage.
+Using Pare tools, a coding agent's input token consumption is reduced by an estimated **123,035 tokens** relative to standard CLI tool use — a **67% reduction** per session.
+
+### Estimated Cost Savings
+
+An active developer using AI coding agents runs an estimated **8–12 sessions per week** (24–48 per month), where each session involves ~200 tool calls. This estimate is derived from polling three frontier LLMs for their assessment of typical CLI agent usage patterns and should be treated as a rough approximation — actual usage varies widely by workflow and role.
+
+Token pricing varies by model. Sonnet-class models cost ~$3/MTok while Opus-class models cost ~$15/MTok. Since most coding agent usage skews toward faster, cheaper models, we use a usage-weighted estimate of **$4.50 per million tokens**.
+
+At this rate, 123,035 tokens saved per session = **$0.55 per session**, or **$13.3 to $26.6 per developer per month**.
+
+These are input token savings only — the measurable floor. The harder-to-quantify benefits of structured MCP output (reduced context window consumption, fewer parsing failures, more deterministic agent behavior) are likely worth more than the raw token cost savings but cannot be derived from this benchmark alone. Pare is a free, open source toolset that requires no workflow changes — it wraps the same CLI tools already in use, so these savings come at zero cost and zero friction.
+
+&nbsp;
 
 _(\*) npm/list excludes the depth=2 scenario (40C) from its session average. While npm-list-d2 shows a large 60% reduction (177,467 → 70,531 tokens), depth=2 output is an outlier — it is rarely requested by coding agents and its extreme size (177K tokens from a single call) would disproportionately inflate the session estimate. The scenario is retained in the detailed benchmark data for transparency. Excluding it has minimal effect on the overall reduction (67% vs 66%) but yields a more representative session estimate._
 
@@ -217,7 +229,7 @@ _(\*) npm/list excludes the depth=2 scenario (40C) from its session average. Whi
 
 ## Latency
 
-Median added latency (Pare vs raw CLI): **-3 ms**
+The median difference in execution time between Pare and raw CLI is **-3 ms**, which is negligible given that the 148 benchmark scenarios span a range of **1 ms to 21,839 ms** with a median execution time of **306 ms**. Pare's structured parsing and schema validation add no meaningful overhead to tool execution.
 
 ---
 

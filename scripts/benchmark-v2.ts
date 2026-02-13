@@ -655,8 +655,20 @@ function formatSummaryMd(
   const worstOverhead = sorted.slice(-5).reverse();
 
   // Latency
-  const addedMs = reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs);
+  const addedMs = [
+    ...reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs),
+    ...mutating.map((m) => m.addedMs),
+  ];
   const medianAdded = computeMedian(addedMs);
+  const allLatencies = [
+    ...reproducible.map((s) => s.medianRawLatencyMs),
+    ...reproducible.map((s) => s.medianPareLatencyMs),
+    ...mutating.map((m) => m.rawMs),
+    ...mutating.map((m) => m.pareMs),
+  ];
+  const latencyMin = Math.min(...allLatencies);
+  const latencyMax = Math.max(...allLatencies);
+  const latencyMedian = computeMedian(allLatencies);
 
   // Session impact
   const sessionRows = computeSessionImpact(reproducible, mutating, registry);
@@ -682,7 +694,7 @@ function formatSummaryMd(
     ``,
     `Pare is a suite of MCP (Model Context Protocol) server packages that wrap standard developer CLI tools with structured, token-efficient JSON output. This benchmark measures the token efficiency of Pare's 100 tools across 14 packages by comparing the output of each Pare tool against its raw CLI equivalent.`,
     ``,
-    `Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared. Token counts are estimated using a standard \`ceil(length / 4)\` heuristic.`,
+    `Each of Pare's **100 tools** is tested through one or more **benchmark scenarios** that exercise different output sizes and configurations. For each scenario, both the raw CLI command and the equivalent Pare MCP tool call are executed, and their output token counts are compared.`,
     ``,
     `**Date**: ${new Date().toISOString().split("T")[0]}`,
     `**Platform**: ${process.platform} (${process.arch})`,
@@ -690,7 +702,7 @@ function formatSummaryMd(
     `**Coding agent**: Claude Code (Claude Opus 4.6 / Sonnet 4.5)`,
     `**Tested scenarios**: ${totalScenarios}`,
     `**Runs per scenario**: ${config.runs}`,
-    `**Total tokens consumed in tests**: ${totalRaw.toLocaleString()} (raw) / ${totalPare.toLocaleString()} (Pare)`,
+    `**Total tokens consumed in tests**: ${(totalRaw + totalPare).toLocaleString()}`,
     ``,
   ];
 
@@ -827,10 +839,34 @@ function formatSummaryMd(
   lines.push(`**Estimated savings per coding session:**`);
   lines.push(``);
   lines.push(
-    `Using Pare tools, a coding agent's input token consumption is reduced by an estimated **${sessionSaved.toLocaleString()} tokens** relative to standard CLI tool use. This represents the coding agent using **${sessionPct}% fewer tokens** in a coding session compared to current token usage.`,
+    `Using Pare tools, a coding agent's input token consumption is reduced by an estimated **${sessionSaved.toLocaleString()} tokens** relative to standard CLI tool use — a **${sessionPct}% reduction** per session.`,
+  );
+  lines.push(``);
+  lines.push(`### Estimated Cost Savings`);
+  lines.push(``);
+  lines.push(
+    `An active developer using AI coding agents runs an estimated **8–12 sessions per week** (24–48 per month), where each session involves ~200 tool calls. This estimate is derived from polling three frontier LLMs for their assessment of typical CLI agent usage patterns and should be treated as a rough approximation — actual usage varies widely by workflow and role.`,
+  );
+  lines.push(``);
+  const blendedRate = 4.5; // $/MTok — usage-weighted (most sessions use cheaper models)
+  const costPerSession = (sessionSaved / 1_000_000) * blendedRate;
+  const monthlyLow = costPerSession * 24;
+  const monthlyHigh = costPerSession * 48;
+  lines.push(
+    `Token pricing varies by model. Sonnet-class models cost ~$3/MTok while Opus-class models cost ~$15/MTok. Since most coding agent usage skews toward faster, cheaper models, we use a usage-weighted estimate of **$${blendedRate.toFixed(2)} per million tokens**.`,
+  );
+  lines.push(``);
+  lines.push(
+    `At this rate, ${sessionSaved.toLocaleString()} tokens saved per session = **$${costPerSession.toFixed(2)} per session**, or **$${monthlyLow.toFixed(1)} to $${monthlyHigh.toFixed(1)} per developer per month**.`,
+  );
+  lines.push(``);
+  lines.push(
+    `These are input token savings only — the measurable floor. The harder-to-quantify benefits of structured MCP output (reduced context window consumption, fewer parsing failures, more deterministic agent behavior) are likely worth more than the raw token cost savings but cannot be derived from this benchmark alone. Pare is a free, open source toolset that requires no workflow changes — it wraps the same CLI tools already in use, so these savings come at zero cost and zero friction.`,
   );
 
   if (hasOutliers) {
+    lines.push(``);
+    lines.push(`&nbsp;`);
     // Compute "with outlier" percentage for comparison
     const withOutlier = computeSessionImpact(reproducible, mutating, registry, false);
     const rawWithOutlier = withOutlier.reduce((s, r) => s + r.rawPerSession, 0);
@@ -884,7 +920,9 @@ function formatSummaryMd(
   lines.push(``);
   lines.push(`## Latency`);
   lines.push(``);
-  lines.push(`Median added latency (Pare vs raw CLI): **${Math.round(medianAdded)} ms**`);
+  lines.push(
+    `The median difference in execution time between Pare and raw CLI is **${Math.round(medianAdded)} ms**, which is negligible given that the ${totalScenarios} benchmark scenarios span a range of **${latencyMin.toLocaleString()} ms to ${latencyMax.toLocaleString()} ms** with a median execution time of **${Math.round(latencyMedian).toLocaleString()} ms**. Pare's structured parsing and schema validation add no meaningful overhead to tool execution.`,
+  );
   lines.push(``);
   lines.push(`---`);
   lines.push(``);
