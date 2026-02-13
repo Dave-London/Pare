@@ -13,4 +13,4 @@ CLAUDE.md
 .mcp.json
 nul
 docs/api/
-benchmark-results/
+benchmarks/temp/

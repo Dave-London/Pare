@@ -1,0 +1,101 @@
+#,Package,Tool,Frequency,Weight %,Status,Scenario A,Scenario B,Scenario C,Remarks
+1,git,status,very-high,12,tested,Clean repo — no changes,Dirty — 15 files staged/modified/untracked,Merge conflict — 3 conflicting files + staged changes,
+2,git,diff,very-high,10,tested,Small diff — 2 files changed (HEAD~1),Large diff — 30+ files across packages (HEAD~10),Full patch — 5 files with line-level chunks (full=true),
+3,git,commit,very-high,10,skip,Single file — short message,Multi-file — conventional commit with body,20+ files — long description with co-authors,Mutating
+4,git,add,very-high,7,skip,Stage single file,Stage 10 specific files by path,Stage all changes (add -A) on dirty repo,Mutating
+5,git,log,very-high,6,tested,10 commits — oneline,5 commits with --stat (file change bars),50 commits — full history page,
+6,git,push,very-high,5,skip,Fast-forward push to tracked branch,Push with -u to set upstream on new branch,Push rejected — behind remote,Mutating
+7,test,run,high,4,tested,Small suite all pass (~20 tests),Large suite all pass (~200 tests),Mixed results — 5 failures with stack traces,
+8,git,checkout,high,3,skip,Switch to existing branch,Create and switch to new branch (-b),Checkout specific commit (detached HEAD),Mutating
+9,npm,run,high,3,tested,Build script — success clean output,Build script — success with warnings,Lint script — exits with errors,
+10,git,pull,high,2.5,skip,Already up to date,Fast-forward — 5 commits pulled,Pull with 2 merge conflicts,Mutating
+11,npm,install,high,2,skip,Clean install — empty node_modules,Add single new package,Install with 3 vulnerability warnings,Mutating
+12,build,tsc,high,2,tested,Clean compile — zero errors,5 type errors across 3 files,20+ diagnostics — cascading type failures,
+13,npm,test,high,1.8,tested,All pass — short vitest output,All pass — jest with coverage summary,3 test failures with assertion diffs,
+14,git,branch,high,1.5,tested,5 local branches only,15 branches including remotes (--all),30+ branches with stale tracking refs,
+15,git,show,high,1.5,tested,Small commit — 2 files changed,Merge commit — multiple parents,Large commit — 25+ files with stat block,
+16,build,build,high,1.5,tested,Successful build — clean output,Build with deprecation warnings,Failed build — 5 errors in output,
+17,lint,lint,high,1.5,tested,Clean lint — zero issues,3 warnings from 2 files,15+ errors across 8 files,
+18,docker,ps,medium,0.8,tested,No running containers,5 containers — mixed running/stopped,20+ containers across multiple compose stacks,State-dependent: output varies with running containers
+19,python,pytest,medium,0.8,tested,Small suite all pass (~10 tests),,,"No output variety for passing tests. Failure output varies with count and tracebacks."
+20,docker,images,medium,0.7,tested,No local images,5 images — single tag each,25+ images with multiple tags and <none> entries,State-dependent: output varies with local images
+21,lint,format-check,medium,0.6,tested,All files formatted correctly,3 files need formatting,20+ files need formatting across packages,
+22,docker,build,medium,0.6,tested,Simple Dockerfile — fully cached,Multi-stage build — partial cache hit,Build failure — missing dependency in RUN step,
+23,github,pr-view,medium,0.6,tested,Simple PR — 1 commit 2 files,Large PR — 10 commits 20 files with description,PR with 15 review comments and CI checks,
+24,git,blame,medium,0.5,tested,Small file (~30 lines),Medium file (~150 lines 5+ authors),Large file (~400+ lines many authors),
+25,npm,audit,medium,0.5,tested,No vulnerabilities found,3 moderate vulnerabilities,12+ vulnerabilities — critical/high/moderate mix,State-dependent: output varies with installed packages
+26,test,coverage,medium,0.5,tested,High coverage (~95%) small project,Medium coverage (~70%) with uncovered branches,Low coverage (~40%) with many uncovered files,
+27,lint,prettier-format,medium,0.5,tested,No files changed,5 files reformatted,30+ files reformatted across packages,
+28,docker,logs,medium,0.5,tested,Short log — 10 lines,Medium log — 200 lines with timestamps,Large log — 2000+ lines from busy service,State-dependent: output varies with container logs
+29,docker,run,medium,0.5,skip,Run alpine echo hello,Run nginx with port mapping and env vars,Run failing command — non-zero exit with stderr,Mutating
+30,github,pr-list,medium,0.5,tested,3 open PRs,20 open PRs with labels and assignees,Filtered — by author with draft and ready mix,
+31,search,search,medium,0.5,tested,Simple pattern — 5 matches in 3 files,Common pattern — 50+ matches across 20 files,Regex pattern — complex match with context lines,Requires ripgrep
+32,make,run,medium,0.5,tested,Simple target — success (e.g. clean),Target with 3 dependencies — success,Failed target — missing prerequisite,Requires make
+33,python,pip-install,medium,0.5,skip,Install single package,Install from requirements.txt (15 packages),Install with dependency conflict,Mutating
+34,cargo,build,medium,0.5,tested,Clean build — success,,,"No output variety for success. Failure output varies with error count."
+35,cargo,test,medium,0.5,tested,Small test suite all pass,,,"No output variety for passing tests. Failure output varies with count and panics."
+36,go,build,medium,0.5,tested,Single package — clean build,,,"No output variety for success. Failure output varies with error count."
+37,go,test,medium,0.5,tested,Small suite all pass,,,"No output variety for passing tests. Failure output varies with test output."
+38,git,tag,medium,0.4,tested,5 lightweight tags,20 tags — mix of annotated and lightweight,50+ tags with semver sorting,State-dependent: output varies with repo tags
+39,npm,outdated,medium,0.4,tested,No outdated packages,5 outdated — minor/patch updates,15+ outdated — including major version bumps,State-dependent: output varies with installed packages
+40,npm,list,medium,0.4,tested,Few top-level deps (~8),Many top-level deps (~40),depth=1 showing nested dependencies,
+41,build,esbuild,medium,0.4,tested,Single entry point — success,Multi-entry bundle with externals,Bundle with 3 resolve errors,
+42,build,vite-build,medium,0.4,tested,Small app — clean build,Medium app — with chunk splitting,Build with warnings about large chunks,
+43,docker,exec,medium,0.4,skip,Simple command — ls /app,Command with env vars — printenv,Failed command — non-zero exit,Mutating
+44,docker,compose-up,medium,0.4,skip,Single service — start,3 services with dependencies,Start with 1 service failing health check,Mutating
+45,github,pr-create,medium,0.4,skip,Simple PR — single commit,PR with detailed body and labels,PR with reviewers and milestone assigned,Mutating
+46,github,issue-view,medium,0.4,tested,Simple issue — short description,Issue with 10 comments and labels,Issue with linked PRs and project board,
+47,search,find,medium,0.4,tested,Glob for *.ts — 10 files,Glob for **/*.test.* — 50+ files,Deep nested glob — 200+ matches,Requires ripgrep
+48,python,mypy,medium,0.4,tested,Clean type check — no errors,5 type errors across 3 files,15+ errors with note/error mix,Requires mypy
+49,python,ruff-check,medium,0.4,tested,Clean check — no issues,8 warnings from 4 files,30+ violations across many files,Requires ruff
+50,cargo,clippy,medium,0.4,tested,Clean — no warnings,,,"No output variety for clean code. Warning output varies with lint count."
+51,cargo,check,medium,0.4,tested,Clean check — success,,,"No output variety for success. Error output varies with diagnostic count."
+52,git,remote,medium,0.3,tested,Single remote (origin),2 remotes (origin + upstream),3 remotes with different fetch/push URLs,State-dependent: output varies with configured remotes
+53,npm,info,medium,0.3,tested,Small package — few fields,Popular package — many versions and deps,Scoped package with full metadata,
+54,docker,compose-down,medium,0.3,skip,Stop single service,Stop 3 services — remove volumes,Stop with orphan container warnings,Mutating
+55,github,issue-list,medium,0.3,tested,5 open issues,25 open issues with labels and milestones,Filtered — by label with assignees,
+56,http,request,low,0.3,tested,GET small JSON endpoint (~200 bytes),GET large JSON response (~5KB),POST with JSON body — 201 response,
+57,go,vet,medium,0.3,tested,Clean vet — no issues,,,"No output variety for clean code. Issue output varies with finding count."
+58,http,get,low,0.25,tested,Small JSON (~100 bytes),Medium JSON API response (~2KB),Large paginated response (~10KB),
+59,python,ruff-format,low,0.25,tested,No files changed,5 files reformatted,20+ files reformatted,Requires ruff
+60,go,fmt,low,0.25,tested,No files changed,3 files reformatted,10+ files reformatted,
+61,git,stash-list,low,0.2,tested,Empty stash list,3 stashes with messages,10+ stashes from multiple branches,State-dependent: output varies with stash stack
+62,build,webpack,low,0.2,tested,Small bundle — success,Medium bundle with code splitting,Bundle with warnings about size limits,
+63,lint,biome-check,low,0.2,tested,Clean check — no issues,5 lint + format issues,20+ mixed violations,
+64,docker,pull,low,0.2,skip,Pull small image (~5MB),Pull medium image (~200MB) with layers,Pull already up-to-date — no changes,Mutating
+65,docker,inspect,low,0.2,tested,Inspect running container,Inspect stopped container with mounts,Inspect image with full layer metadata,State-dependent: output varies with containers present
+66,github,issue-create,low,0.2,skip,Simple issue — title only,Issue with body labels and assignee,Bug report with template and reproduction steps,Mutating
+67,github,run-view,low,0.2,tested,Successful workflow run,Failed run — 1 job failed,Run with 5 jobs — mixed pass/fail/skip,
+68,github,run-list,low,0.2,tested,5 recent runs — all success,20 runs — mixed status,Filtered by workflow name,
+69,search,count,low,0.2,tested,Rare pattern — 2 matches,Common pattern — 150+ matches,Pattern across file types — type breakdown,Requires ripgrep
+70,make,list,low,0.2,tested,5 targets in Makefile,15 targets with descriptions,Complex Makefile — 30+ targets nested includes,Requires make
+71,python,pip-list,low,0.2,tested,Minimal venv — 5 packages,Medium project — 30 packages,Large project — 100+ packages,State-dependent: output varies with installed packages
+72,cargo,run,low,0.2,tested,Run binary with --version flag,,,"No output variety for success. Output is passthrough from executed binary."
+73,cargo,fmt,low,0.2,tested,All files formatted — check mode,5 files need formatting,15+ files need formatting,
+74,go,run,low,0.2,tested,Run main package,,,"No output variety for success. Output is passthrough from executed program."
+75,go,mod-tidy,low,0.2,skip,Already tidy — no changes,Remove 3 unused dependencies,Add 5 missing indirect deps,Mutating
+76,git,stash,low,0.15,skip,Stash dirty working tree (push),Pop latest stash,Drop specific stash by index,Mutating
+77,npm,search,low,0.15,tested,Narrow query — 3 results,Broad query — 20 results,Query with scope filter,
+78,lint,biome-format,low,0.15,tested,No files changed,5 files reformatted,20+ files reformatted,
+79,docker,network-ls,low,0.15,tested,Default networks only (bridge/host/none),,,"State-dependent: output varies with Docker networks. Single scenario covers typical state."
+80,docker,volume-ls,low,0.15,tested,No volumes,,,"State-dependent: output varies with Docker volumes. Single scenario covers typical state."
+81,docker,compose-ps,low,0.15,tested,Single service running,,,"State-dependent: output varies with running compose services."
+82,http,post,low,0.15,skip,POST JSON — 201 created,POST form data — 200 with response body,POST — 400 validation error response,Mutating
+83,python,pip-show,low,0.15,tested,Single package — minimal metadata,,,"State-dependent: output varies with installed packages."
+84,python,pip-audit,low,0.15,tested,No vulnerabilities,,,"State-dependent: output varies with installed package vulnerabilities."
+85,python,uv-install,low,0.15,skip,Install single package,Install from pyproject.toml,Install with resolution conflict,Mutating
+86,python,uv-run,low,0.15,tested,Run simple script — version check,,,"No output variety for success. Output is passthrough from executed command."
+87,python,black,low,0.15,tested,No files changed,5 files reformatted,20+ files reformatted,Requires black
+88,cargo,add,low,0.15,skip,Add single crate,Add crate with features flag,Add crate — version conflict,Mutating
+89,npm,init,low,0.1,skip,Default init — accept all defaults,Scoped package init,Init in existing directory with package.json,Mutating
+90,lint,stylelint,low,0.1,tested,Clean — no issues,5 CSS warnings,15+ violations across SCSS files,
+91,lint,oxlint,low,0.1,tested,Clean — no issues,3 warnings,10+ errors with fix suggestions,
+92,http,head,low,0.1,tested,HEAD — 200 with standard headers,HEAD — 301 redirect,HEAD — 404 not found,
+93,cargo,remove,low,0.1,skip,Remove single crate,Remove crate used in workspace,Remove non-existent crate — error,Mutating
+94,cargo,doc,low,0.1,tested,Small crate — success,,,"No output variety for success. Warning output varies with missing doc items."
+95,cargo,update,low,0.1,skip,Update all — 3 packages updated,Update single crate,Update — no changes needed,Mutating
+96,cargo,tree,low,0.1,tested,Small dependency tree (~10 deps),Medium tree (~50 deps),Large tree — duplicate versions highlighted,
+97,go,generate,low,0.1,skip,Single generate directive,3 directives across packages,Generate with missing tool — error,Mutating
+98,go,env,low,0.1,tested,Default GOPATH/GOROOT env,,,"State-dependent: output fixed per machine configuration."
+99,go,list,low,0.1,tested,List packages in current module,List all dependencies (-m all),List with -json flag — structured output,
+100,go,get,low,0.1,skip,Get single package,Get package@version,Get — version conflict error,Mutating

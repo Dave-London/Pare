@@ -18,14 +18,15 @@
 import { execFile } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { V2_SCENARIOS, type V2Scenario } from "./benchmark-v2-scenarios.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const REPO_ROOT = resolve(__dirname, "..");
-const RESULTS_DIR = resolve(REPO_ROOT, "benchmark-results");
+const BENCHMARKS_DIR = resolve(REPO_ROOT, "benchmarks");
+const RESULTS_DIR = resolve(BENCHMARKS_DIR, "temp");
 
 // Extend PATH for user-local tool installs (rg, make, mypy, ruff, black)
 if (process.platform === "win32") {
@@ -310,6 +311,279 @@ function cleanResultsDir(): void {
   mkdirSync(RESULTS_DIR, { recursive: true });
 }
 
+// ─── Mutating results reader ────────────────────────────────────
+
+interface MutatingRow {
+  ref: string;
+  scenario: string;
+  description: string;
+  weight: number;
+  rawTokens: number;
+  pareRegularTokens: number;
+  pareCompactTokens: string; // may be empty
+  saved: number;
+  reductionPct: number;
+  rawMs: number;
+  pareMs: number;
+  addedMs: number;
+}
+
+function readMutatingResults(): MutatingRow[] {
+  const filePath = resolve(BENCHMARKS_DIR, "latest-mutating-results.csv");
+  if (!existsSync(filePath)) return [];
+
+  const content = readFileSync(filePath, "utf-8");
+  const lines = content.trim().split("\n");
+  if (lines.length < 2) return [];
+
+  // Skip header line
+  const rows: MutatingRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = parseCSVLine(lines[i]);
+    if (parts.length < 12) continue;
+    rows.push({
+      ref: parts[0],
+      scenario: parts[1],
+      description: parts[2],
+      weight: parseFloat(parts[3]) || 0,
+      rawTokens: parseInt(parts[4]) || 0,
+      pareRegularTokens: parseInt(parts[5]) || 0,
+      pareCompactTokens: parts[6],
+      saved: parseInt(parts[7]) || 0,
+      reductionPct: parseInt(parts[8]) || 0,
+      rawMs: parseInt(parts[9]) || 0,
+      pareMs: parseInt(parts[10]) || 0,
+      addedMs: parseInt(parts[11]) || 0,
+    });
+  }
+  return rows;
+}
+
+/** Simple CSV line parser that handles quoted fields */
+function parseCSVLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        fields.push(current);
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+  }
+  fields.push(current);
+  return fields;
+}
+
+// ─── Combined output formatters ─────────────────────────────────
+
+function formatCombinedDetailedCsv(
+  reproducible: ScenarioSummary[],
+  mutating: MutatingRow[],
+): string {
+  const lines: string[] = [];
+  lines.push(
+    csvRow([
+      "#",
+      "Scenario",
+      "Description",
+      "Weight %",
+      "Raw Tokens",
+      "Pare Regular",
+      "Pare Compact",
+      "Saved",
+      "Reduction %",
+      "Raw ms",
+      "Pare ms",
+      "Added ms",
+    ]),
+  );
+
+  // Build all rows with a sortable registry number
+  interface CombinedRow {
+    registryNum: number;
+    csvLine: string;
+  }
+  const allRows: CombinedRow[] = [];
+
+  // Add reproducible rows
+  for (const s of reproducible) {
+    const ref = `${s.scenario.registryNum}${s.scenario.variant}`;
+    const compacted = s.medianPareTokens !== s.medianPareRegularTokens;
+    const saved = s.medianRawTokens - s.medianPareTokens;
+    const reductionPct =
+      s.medianRawTokens > 0 ? Math.round((1 - s.medianPareTokens / s.medianRawTokens) * 100) : 0;
+    const addedMs = s.medianPareLatencyMs - s.medianRawLatencyMs;
+    allRows.push({
+      registryNum: s.scenario.registryNum,
+      csvLine: csvRow([
+        ref,
+        s.scenario.id,
+        s.scenario.description,
+        s.scenario.weight,
+        s.medianRawTokens,
+        s.medianPareRegularTokens,
+        compacted ? s.medianPareTokens : "",
+        saved,
+        reductionPct,
+        s.medianRawLatencyMs,
+        s.medianPareLatencyMs,
+        addedMs,
+      ]),
+    });
+  }
+
+  // Add mutating rows
+  for (const m of mutating) {
+    const num = parseInt(m.ref.replace(/[A-Z]/g, "")) || 0;
+    allRows.push({
+      registryNum: num,
+      csvLine: csvRow([
+        m.ref,
+        m.scenario,
+        m.description,
+        m.weight,
+        m.rawTokens,
+        m.pareRegularTokens,
+        m.pareCompactTokens,
+        m.saved,
+        m.reductionPct,
+        m.rawMs,
+        m.pareMs,
+        m.addedMs,
+      ]),
+    });
+  }
+
+  // Sort by registry number
+  allRows.sort((a, b) => a.registryNum - b.registryNum);
+  for (const row of allRows) {
+    lines.push(row.csvLine);
+  }
+
+  return lines.join("\n") + "\n";
+}
+
+function formatSummaryMd(
+  reproducible: ScenarioSummary[],
+  mutating: MutatingRow[],
+  config: BenchmarkConfig,
+  skipped: string[],
+): string {
+  const repRaw = reproducible.reduce((s, x) => s + x.medianRawTokens, 0);
+  const repPare = reproducible.reduce((s, x) => s + x.medianPareTokens, 0);
+  const repPct = repRaw > 0 ? Math.round((1 - repPare / repRaw) * 100) : 0;
+
+  const mutRaw = mutating.reduce((s, m) => s + m.rawTokens, 0);
+  const mutPare = mutating.reduce(
+    (s, m) =>
+      s +
+      (m.pareCompactTokens
+        ? parseInt(m.pareCompactTokens) || m.pareRegularTokens
+        : m.pareRegularTokens),
+    0,
+  );
+  const mutPct = mutRaw > 0 ? Math.round((1 - mutPare / mutRaw) * 100) : 0;
+
+  const totalRaw = repRaw + mutRaw;
+  const totalPare = repPare + mutPare;
+  const totalPct = totalRaw > 0 ? Math.round((1 - totalPare / totalRaw) * 100) : 0;
+  const totalScenarios = reproducible.length + mutating.length;
+
+  // Top savers (reproducible only — we have full data)
+  const sorted = [...reproducible].sort(
+    (a, b) => b.medianRawTokens - b.medianPareTokens - (a.medianRawTokens - a.medianPareTokens),
+  );
+  const topSavers = sorted.slice(0, 5);
+
+  // Worst overhead
+  const worstOverhead = sorted.slice(-5).reverse();
+
+  // Latency
+  const addedMs = reproducible.map((s) => s.medianPareLatencyMs - s.medianRawLatencyMs);
+  const medianAdded = computeMedian(addedMs);
+
+  const lines = [
+    `# Pare Benchmark Summary`,
+    ``,
+    `**Date**: ${new Date().toISOString().split("T")[0]}`,
+    `**Platform**: ${process.platform} (${process.arch})`,
+    `**Node**: ${process.version}`,
+    `**Runs per scenario**: ${config.runs}`,
+    ``,
+    `## Overall`,
+    ``,
+    `| Metric | Value |`,
+    `|---|---:|`,
+    `| Total scenarios | ${totalScenarios} |`,
+    `| Total raw tokens | ${totalRaw.toLocaleString()} |`,
+    `| Total Pare tokens | ${totalPare.toLocaleString()} |`,
+    `| Tokens saved | ${(totalRaw - totalPare).toLocaleString()} |`,
+    `| **Overall reduction** | **${totalPct}%** |`,
+    ``,
+    `## Breakdown`,
+    ``,
+    `| Suite | Scenarios | Raw Tokens | Pare Tokens | Reduction |`,
+    `|---|---:|---:|---:|---:|`,
+    `| Reproducible | ${reproducible.length} | ${repRaw.toLocaleString()} | ${repPare.toLocaleString()} | ${repPct}% |`,
+    `| Mutating (one-shot) | ${mutating.length} | ${mutRaw.toLocaleString()} | ${mutPare.toLocaleString()} | ${mutPct}% |`,
+    ``,
+    `## Top Token Savers`,
+    ``,
+    `| Scenario | Raw | Pare | Saved |`,
+    `|---|---:|---:|---:|`,
+    ...topSavers.map((s) => {
+      const saved = s.medianRawTokens - s.medianPareTokens;
+      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | ${saved} |`;
+    }),
+    ``,
+    `## Worst Overhead`,
+    ``,
+    `| Scenario | Raw | Pare | Overhead |`,
+    `|---|---:|---:|---:|`,
+    ...worstOverhead.map((s) => {
+      const overhead = s.medianPareTokens - s.medianRawTokens;
+      return `| ${s.scenario.id} | ${s.medianRawTokens} | ${s.medianPareTokens} | +${overhead} |`;
+    }),
+    ``,
+    `## Latency`,
+    ``,
+    `Median added latency (Pare vs raw CLI): **${Math.round(medianAdded)} ms**`,
+    ``,
+  ];
+
+  if (skipped.length > 0) {
+    lines.push(`## Skipped Scenarios`);
+    lines.push(``);
+    for (const s of skipped) {
+      lines.push(`- ${s}`);
+    }
+    lines.push(``);
+  }
+
+  lines.push(`---`);
+  lines.push(``);
+  lines.push(`See \`Benchmark-Detailed.csv\` for full per-scenario data.`);
+  lines.push(``);
+
+  return lines.join("\n");
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 
 function matchesFilter(scenario: V2Scenario, filters: string[]): boolean {
@@ -453,6 +727,7 @@ async function main() {
   // Write output
   cleanResultsDir();
 
+  // Write intermediates to temp/
   writeFileSync(
     resolve(RESULTS_DIR, "results-detailed.csv"),
     formatDetailedCsv(summaries),
@@ -460,8 +735,22 @@ async function main() {
   );
   writeFileSync(resolve(RESULTS_DIR, "results-overall.csv"), formatOverallCsv(summaries), "utf-8");
 
+  // Read mutating results and generate combined tracked outputs
+  const mutatingRows = readMutatingResults();
+  writeFileSync(
+    resolve(BENCHMARKS_DIR, "Benchmark-Detailed.csv"),
+    formatCombinedDetailedCsv(summaries, mutatingRows),
+    "utf-8",
+  );
+  writeFileSync(
+    resolve(BENCHMARKS_DIR, "Benchmark-Summary.md"),
+    formatSummaryMd(summaries, mutatingRows, config, skipped),
+    "utf-8",
+  );
+
   log("");
-  log(`Results written to ${RESULTS_DIR}/`);
+  log(`Intermediates written to ${RESULTS_DIR}/`);
+  log(`Combined results written to ${BENCHMARKS_DIR}/`);
   if (skipped.length > 0) {
     log(`Skipped: ${skipped.join(", ")}`);
   }
@@ -473,6 +762,9 @@ async function main() {
   log(
     `\nOverall: ${summaries.length} scenarios, ${totalRaw} raw → ${totalPare} pare (${overallPct}% reduction)`,
   );
+  if (mutatingRows.length > 0) {
+    log(`Combined with ${mutatingRows.length} mutating scenarios in Benchmark-Detailed.csv`);
+  }
 
   // Close all server connections
   for (const [, conn] of serverMap) {

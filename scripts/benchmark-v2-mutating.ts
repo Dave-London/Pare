@@ -7,7 +7,7 @@
  *
  * Setup → Run raw CLI + Pare MCP → Capture tokens → Teardown
  *
- * Results are written to benchmark-results/results-mutating.csv
+ * Results are written to benchmarks/latest-mutating-results.csv
  * in the same format as results-detailed.csv.
  *
  * Usage:
@@ -19,13 +19,13 @@
 import { execFile } from "node:child_process";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeFileSync, mkdirSync, rmSync, existsSync, appendFileSync } from "node:fs";
+import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const REPO_ROOT = resolve(__dirname, "..");
-const RESULTS_DIR = resolve(REPO_ROOT, "benchmark-results");
+const RESULTS_DIR = resolve(REPO_ROOT, "benchmarks");
 const TEMP_ROOT = resolve(process.env.TEMP ?? process.env.TMP ?? "/tmp", "pare-benchmark-mutating");
 
 // Extend PATH for user-local tool installs
@@ -1010,68 +1010,14 @@ async function main(): Promise<void> {
     );
   }
 
-  writeFileSync(join(RESULTS_DIR, "results-mutating.csv"), lines.join("\n") + "\n");
-
-  // Write overall summary
-  const totalRaw = results.reduce((s, r) => s + r.rawTokens, 0);
-  const totalPare = results.reduce((s, r) => s + r.pareTokens, 0);
-  const saved = totalRaw - totalPare;
-  const pct = totalRaw > 0 ? Math.round((1 - totalPare / totalRaw) * 100) : 0;
-
-  const overallLines = [
-    csvRow(["Scenarios", "Total Raw", "Total Pare", "Saved", "Reduction %"]),
-    csvRow([results.length, totalRaw, totalPare, saved, pct]),
-  ];
-  writeFileSync(join(RESULTS_DIR, "results-mutating-overall.csv"), overallLines.join("\n") + "\n");
-
-  // Write methodology
-  const methodology = `# Mutating Tools Benchmark — Methodology
-
-## Overview
-These ${results.length} scenarios test tools that modify state (git commit, npm install, etc.).
-Each was run **once** in an isolated throwaway environment.
-
-## Environment
-- Date: ${new Date().toISOString().slice(0, 10)}
-- Platform: ${process.platform} (${process.arch})
-- Node: ${process.version}
-- Temp directory: \`${TEMP_ROOT}\` (created at start, destroyed at end)
-
-## Setup
-Each tool group uses an isolated throwaway workspace:
-- **Git**: Fresh repo with bare remote at \`${TEMP_ROOT}/git-remote.git\`
-- **npm**: Minimal \`package.json\` project
-- **Docker**: Uses system Docker daemon; containers removed after each test
-- **Cargo**: Fresh \`cargo new\` project
-- **Go**: Minimal \`go.mod\` module
-- **Python**: Fresh venv at \`${TEMP_ROOT}/python-venv/.venv\`
-- **HTTP**: Public httpbin.org endpoint
-- **GitHub**: Real API calls to Dave-London/pare; issues created then deleted
-
-## Measurement
-- **Raw CLI**: \`execFile(cmd, args, {shell: true})\` — captures stdout + stderr
-- **Pare MCP**: \`client.callTool()\` — captures structuredContent JSON or text content
-- **Token estimate**: \`Math.ceil(text.length / 4)\` (cl100k_base heuristic)
-- **Single run** per scenario (no median — these are one-shot mutating operations)
-
-## Why One-Shot?
-Mutating tools change system state on each run. Running them multiple times would require
-full setup/teardown cycles and produce different outputs each time (e.g., different commit
-hashes, different download progress). A single controlled run captures the representative
-token comparison.
-
-## Skipped Scenarios
-${skipped.length > 0 ? skipped.map((s) => `- ${s}`).join("\n") : "None — all scenarios completed successfully."}
-
-## Results
-See \`results-mutating.csv\` for detailed per-scenario comparison.
-See \`results-mutating-overall.csv\` for aggregate summary.
-`;
-
-  writeFileSync(join(RESULTS_DIR, "methodology-mutating.md"), methodology);
+  writeFileSync(join(RESULTS_DIR, "latest-mutating-results.csv"), lines.join("\n") + "\n");
 
   // Summary
-  console.log(`\nResults written to ${RESULTS_DIR}/`);
+  const totalRaw = results.reduce((s, r) => s + r.rawTokens, 0);
+  const totalPare = results.reduce((s, r) => s + r.pareTokens, 0);
+  const pct = totalRaw > 0 ? Math.round((1 - totalPare / totalRaw) * 100) : 0;
+
+  console.log(`\nResults written to ${RESULTS_DIR}/latest-mutating-results.csv`);
   if (skipped.length > 0) {
     console.log(`Skipped: ${skipped.join(", ")}`);
   }
