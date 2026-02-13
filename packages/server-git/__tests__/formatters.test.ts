@@ -282,6 +282,42 @@ describe("formatLog (expanded)", () => {
 
     expect(output).toContain('fix: handle "quotes" & <brackets>');
   });
+
+  it("includes full author <email> in formatted output", () => {
+    const log: GitLog = {
+      commits: [
+        {
+          hash: "abc123",
+          hashShort: "abc1234",
+          author: "Jane Doe <jane@example.com>",
+          date: "2h ago",
+          message: "feat: add feature",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatLog(log);
+
+    expect(output).toContain("(Jane Doe <jane@example.com>, 2h ago)");
+  });
+
+  it("handles author without email in formatted output", () => {
+    const log: GitLog = {
+      commits: [
+        {
+          hash: "def456",
+          hashShort: "def4567",
+          author: "bot",
+          date: "now",
+          message: "auto-deploy",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatLog(log);
+
+    expect(output).toContain("(bot, now)");
+  });
 });
 
 describe("formatDiff (expanded)", () => {

@@ -120,6 +120,21 @@ describe("parseLog", () => {
     expect(result.total).toBe(0);
     expect(result.commits).toEqual([]);
   });
+
+  it("preserves combined author <email> with special characters", () => {
+    const DELIM = "@@";
+    const line = `abc123${DELIM}abc${DELIM}José O'Brien <jose.o'brien@company-name.co.uk>${DELIM}3 days ago${DELIM}${DELIM}fix: encoding`;
+    const result = parseLog(line);
+    expect(result.commits[0].author).toBe("José O'Brien <jose.o'brien@company-name.co.uk>");
+  });
+
+  it("handles author without email brackets", () => {
+    const DELIM = "@@";
+    const line = `abc123${DELIM}abc${DELIM}noreply${DELIM}1 day ago${DELIM}${DELIM}automated commit`;
+    const result = parseLog(line);
+    expect(result.commits[0].author).toBe("noreply");
+    expect(result.commits[0].message).toBe("automated commit");
+  });
 });
 
 describe("parseDiffStat", () => {
@@ -191,6 +206,21 @@ describe("parseShow", () => {
     expect(result.diff.totalFiles).toBe(2);
     expect(result.diff.totalAdditions).toBe(6);
     expect(result.diff.totalDeletions).toBe(3);
+  });
+
+  it("preserves combined author <email> with special characters", () => {
+    const DELIM = "@@";
+    const commitInfo = `abc123${DELIM}María García-López <maria@über-corp.de>${DELIM}5 hours ago${DELIM}chore: update deps`;
+    const result = parseShow(commitInfo, "");
+    expect(result.author).toBe("María García-López <maria@über-corp.de>");
+  });
+
+  it("handles author without email brackets", () => {
+    const DELIM = "@@";
+    const commitInfo = `abc123${DELIM}bot${DELIM}now${DELIM}auto-merge`;
+    const result = parseShow(commitInfo, "");
+    expect(result.author).toBe("bot");
+    expect(result.message).toBe("auto-merge");
   });
 });
 
