@@ -1,16 +1,12 @@
 import { z } from "zod";
 
-/** Zod schema for a single ESLint diagnostic with file location, severity, rule name, and fixability. */
+/** Zod schema for a single ESLint diagnostic with file location, severity, rule name, and message. */
 export const LintDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
-  column: z.number(),
-  endLine: z.number().optional(),
-  endColumn: z.number().optional(),
   severity: z.enum(["error", "warning", "info"]),
   rule: z.string(),
   message: z.string(),
-  fixable: z.boolean(),
 });
 
 /** Zod schema for structured ESLint output including diagnostics, counts, and files checked. */
@@ -19,7 +15,6 @@ export const LintResultSchema = z.object({
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
-  fixable: z.number(),
   filesChecked: z.number(),
 });
 

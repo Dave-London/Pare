@@ -64,7 +64,6 @@ describe("@paretools/lint integration", () => {
       expect(sc.total).toEqual(expect.any(Number));
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
-      expect(sc.fixable).toEqual(expect.any(Number));
       expect(sc.filesChecked).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -128,7 +127,6 @@ describe("@paretools/lint integration", () => {
       expect(sc.total).toEqual(expect.any(Number));
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
-      expect(sc.fixable).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);
@@ -170,7 +168,6 @@ describe("@paretools/lint integration", () => {
       expect(sc.total).toEqual(expect.any(Number));
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
-      expect(sc.fixable).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);
@@ -192,7 +189,6 @@ describe("@paretools/lint integration", () => {
       expect(sc.total).toEqual(expect.any(Number));
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
-      expect(sc.fixable).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
     }, 60_000);

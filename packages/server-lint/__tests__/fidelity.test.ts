@@ -149,15 +149,12 @@ All matched files use Prettier code style!`;
 // ---------------------------------------------------------------------------
 
 describe("fidelity: parseEslintJson", () => {
-  it("preserves file, line, column, severity, rule, and message for a single violation", () => {
+  it("preserves file, line, severity, rule, and message for a single violation", () => {
     const result = parseEslintJson(eslintSingleFile);
     const diag = result.diagnostics[0];
 
     expect(diag.file).toBe("/project/src/index.ts");
     expect(diag.line).toBe(10);
-    expect(diag.column).toBe(5);
-    expect(diag.endLine).toBe(10);
-    expect(diag.endColumn).toBe(6);
     expect(diag.severity).toBe("error");
     expect(diag.rule).toBe("no-unused-vars");
     expect(diag.message).toBe("'x' is defined but never used");
@@ -196,15 +193,6 @@ describe("fidelity: parseEslintJson", () => {
     expect(result.diagnostics.find((d) => d.rule === "no-console")!.severity).toBe("warning");
   });
 
-  it("preserves the fixable flag for violations with a fix object", () => {
-    const result = parseEslintJson(eslintSingleFile);
-
-    // First diagnostic has fix: null => fixable false
-    expect(result.diagnostics[0].fixable).toBe(false);
-    // Second diagnostic has fix object => fixable true
-    expect(result.diagnostics[1].fixable).toBe(true);
-  });
-
   it("returns empty diagnostics and zero counts for clean output", () => {
     const result = parseEslintJson(eslintClean);
 
@@ -212,7 +200,6 @@ describe("fidelity: parseEslintJson", () => {
     expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
-    expect(result.fixable).toBe(0);
   });
 
   it("error and warning counts match the raw data", () => {
@@ -222,8 +209,6 @@ describe("fidelity: parseEslintJson", () => {
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(2);
     expect(result.total).toBe(4);
-    // fixable: eqeqeq + prefer-const
-    expect(result.fixable).toBe(2);
   });
 
   it("filesChecked matches the number of entries in the JSON array", () => {
@@ -442,17 +427,15 @@ const biomeCheckFatal = JSON.stringify({
 // ---------------------------------------------------------------------------
 
 describe("fidelity: parseBiomeJson", () => {
-  it("preserves file, line, column, severity, rule, and message for each diagnostic", () => {
+  it("preserves file, line, severity, rule, and message for each diagnostic", () => {
     const result = parseBiomeJson(biomeCheckMixed);
 
     const first = result.diagnostics[0];
     expect(first.file).toBe("src/components/App.tsx");
     expect(first.line).toBe(18);
-    expect(first.column).toBe(12);
     expect(first.severity).toBe("error");
     expect(first.rule).toBe("lint/suspicious/noDoubleEquals");
     expect(first.message).toContain("Use === instead of ==");
-    expect(first.fixable).toBe(true);
   });
 
   it("captures all diagnostics from mixed lint + format output", () => {
@@ -462,7 +445,7 @@ describe("fidelity: parseBiomeJson", () => {
     expect(result.total).toBe(6);
   });
 
-  it("correctly counts errors, warnings, and fixable across mixed output", () => {
+  it("correctly counts errors and warnings across mixed output", () => {
     const result = parseBiomeJson(biomeCheckMixed);
 
     // errors: noDoubleEquals (error), format (error), noExplicitAny (error) = 3
@@ -470,8 +453,6 @@ describe("fidelity: parseBiomeJson", () => {
     // info: noConsole (information) = 1
     expect(result.errors).toBe(3);
     expect(result.warnings).toBe(2);
-    // fixable: noDoubleEquals, useConst, noUnusedImports, format = 4
-    expect(result.fixable).toBe(4);
   });
 
   it("counts unique files correctly when same file has multiple diagnostics", () => {
@@ -521,21 +502,8 @@ describe("fidelity: parseBiomeJson", () => {
     expect(result.total).toBe(2);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(0);
-    expect(result.fixable).toBe(2);
     expect(result.filesChecked).toBe(2);
     expect(result.diagnostics.every((d) => d.rule === "format")).toBe(true);
-  });
-
-  it("preserves non-fixable flag for diagnostics without fixable tag", () => {
-    const result = parseBiomeJson(biomeCheckMixed);
-
-    const noExplicitAny = result.diagnostics.find(
-      (d) => d.rule === "lint/suspicious/noExplicitAny",
-    )!;
-    expect(noExplicitAny.fixable).toBe(false);
-
-    const noConsole = result.diagnostics.find((d) => d.rule === "lint/nursery/noConsole")!;
-    expect(noConsole.fixable).toBe(false);
   });
 
   it("preserves multi-line description messages", () => {
@@ -739,13 +707,12 @@ const stylelintClean = JSON.stringify([
 // ---------------------------------------------------------------------------
 
 describe("fidelity: parseStylelintJson", () => {
-  it("preserves file, line, column, severity, rule, and message for each warning", () => {
+  it("preserves file, line, severity, rule, and message for each warning", () => {
     const result = parseStylelintJson(stylelintMixed);
     const first = result.diagnostics[0];
 
     expect(first.file).toBe("/project/src/styles.css");
     expect(first.line).toBe(5);
-    expect(first.column).toBe(3);
     expect(first.severity).toBe("error");
     expect(first.rule).toBe("color-no-invalid-hex");
     expect(first.message).toContain("Unexpected invalid hex color");
@@ -763,7 +730,6 @@ describe("fidelity: parseStylelintJson", () => {
 
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
-    expect(result.fixable).toBe(0);
   });
 
   it("counts unique files correctly", () => {
@@ -829,15 +795,12 @@ const oxlintClean = "";
 // ---------------------------------------------------------------------------
 
 describe("fidelity: parseOxlintJson", () => {
-  it("preserves file, line, column, severity, rule, and message for each diagnostic", () => {
+  it("preserves file, line, severity, rule, and message for each diagnostic", () => {
     const result = parseOxlintJson(oxlintMixed);
     const first = result.diagnostics[0];
 
     expect(first.file).toBe("/project/src/index.ts");
     expect(first.line).toBe(10);
-    expect(first.column).toBe(5);
-    expect(first.endLine).toBe(10);
-    expect(first.endColumn).toBe(6);
     expect(first.severity).toBe("error");
     expect(first.rule).toBe("no-unused-vars");
     expect(first.message).toBe("'x' is defined but never used");
@@ -853,24 +816,11 @@ describe("fidelity: parseOxlintJson", () => {
     expect(files).toContain("/project/src/utils.ts");
   });
 
-  it("correctly counts errors, warnings, and fixable", () => {
+  it("correctly counts errors and warnings", () => {
     const result = parseOxlintJson(oxlintMixed);
 
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(1);
-    // no-console has fix, eqeqeq has fix = 2 fixable
-    expect(result.fixable).toBe(2);
-  });
-
-  it("preserves the fixable flag for diagnostics with a fix object", () => {
-    const result = parseOxlintJson(oxlintMixed);
-
-    // First diagnostic has no fix => fixable false
-    expect(result.diagnostics[0].fixable).toBe(false);
-    // Second diagnostic has fix object => fixable true
-    expect(result.diagnostics[1].fixable).toBe(true);
-    // Third diagnostic has fix object => fixable true
-    expect(result.diagnostics[2].fixable).toBe(true);
   });
 
   it("returns empty diagnostics and zero counts for clean output", () => {
@@ -880,7 +830,6 @@ describe("fidelity: parseOxlintJson", () => {
     expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
-    expect(result.fixable).toBe(0);
     expect(result.filesChecked).toBe(0);
   });
 

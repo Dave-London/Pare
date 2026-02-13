@@ -58,21 +58,15 @@ describe("parseEslintJson", () => {
     expect(result.total).toBe(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
-    expect(result.fixable).toBe(1);
     expect(result.filesChecked).toBe(2);
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/index.ts",
       line: 5,
-      column: 7,
-      endLine: 5,
-      endColumn: 8,
       severity: "error",
       rule: "no-unused-vars",
       message: "'x' is defined but never used.",
-      fixable: false,
     });
     expect(result.diagnostics[1].severity).toBe("warning");
-    expect(result.diagnostics[1].fixable).toBe(true);
   });
 
   it("parses clean ESLint output", () => {
@@ -193,16 +187,13 @@ describe("parseStylelintJson", () => {
     expect(result.total).toBe(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
-    expect(result.fixable).toBe(0);
     expect(result.filesChecked).toBe(2);
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/styles.css",
       line: 5,
-      column: 3,
       severity: "error",
       rule: "color-no-invalid-hex",
       message: 'Unexpected invalid hex color "#xyz" (color-no-invalid-hex)',
-      fixable: false,
     });
     expect(result.diagnostics[1].severity).toBe("warning");
   });
@@ -285,20 +276,14 @@ describe("parseOxlintJson", () => {
     expect(result.total).toBe(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
-    expect(result.fixable).toBe(1);
     expect(result.filesChecked).toBe(2);
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/index.ts",
       line: 5,
-      column: 7,
-      endLine: 5,
-      endColumn: 8,
       severity: "error",
       rule: "no-unused-vars",
       message: "'x' is defined but never used.",
-      fixable: false,
     });
-    expect(result.diagnostics[1].fixable).toBe(true);
   });
 
   it("parses clean Oxlint output", () => {

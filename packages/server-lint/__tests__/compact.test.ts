@@ -20,26 +20,21 @@ describe("compactLintMap", () => {
         {
           file: "src/index.ts",
           line: 5,
-          column: 10,
           severity: "error",
           rule: "no-unused-vars",
           message: "'foo' is defined but never used.",
-          fixable: false,
         },
         {
           file: "src/utils.ts",
           line: 12,
-          column: 1,
           severity: "warning",
           rule: "prefer-const",
           message: "'x' is never reassigned. Use 'const' instead.",
-          fixable: true,
         },
       ],
       total: 2,
       errors: 1,
       warnings: 1,
-      fixable: 1,
       filesChecked: 10,
     };
 
@@ -48,7 +43,6 @@ describe("compactLintMap", () => {
     expect(compact.total).toBe(2);
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(1);
-    expect(compact.fixable).toBe(1);
     expect(compact.filesChecked).toBe(10);
     // Verify diagnostics are dropped
     expect(compact).not.toHaveProperty("diagnostics");
@@ -60,7 +54,6 @@ describe("compactLintMap", () => {
       total: 0,
       errors: 0,
       warnings: 0,
-      fixable: 0,
       filesChecked: 25,
     };
 
@@ -78,15 +71,13 @@ describe("compactLintMap", () => {
 
 describe("formatLintCompact", () => {
   it("formats clean lint result", () => {
-    const compact = { total: 0, errors: 0, warnings: 0, fixable: 0, filesChecked: 25 };
+    const compact = { total: 0, errors: 0, warnings: 0, filesChecked: 25 };
     expect(formatLintCompact(compact)).toBe("Lint: no issues found (25 files checked).");
   });
 
   it("formats lint result with counts", () => {
-    const compact = { total: 5, errors: 2, warnings: 3, fixable: 1, filesChecked: 10 };
-    expect(formatLintCompact(compact)).toBe(
-      "Lint: 2 errors, 3 warnings (1 fixable) across 10 files.",
-    );
+    const compact = { total: 5, errors: 2, warnings: 3, filesChecked: 10 };
+    expect(formatLintCompact(compact)).toBe("Lint: 2 errors, 3 warnings across 10 files.");
   });
 });
 
