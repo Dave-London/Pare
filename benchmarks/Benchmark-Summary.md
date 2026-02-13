@@ -9,10 +9,10 @@
 
 | Metric                |   Value |
 | --------------------- | ------: |
-| Total scenarios       |     141 |
-| Total raw tokens      | 268,921 |
-| Total Pare tokens     | 131,262 |
-| Tokens saved          | 137,659 |
+| Total scenarios       |     142 |
+| Total raw tokens      | 270,721 |
+| Total Pare tokens     | 132,606 |
+| Tokens saved          | 138,115 |
 | **Overall reduction** | **51%** |
 
 ## Breakdown
@@ -20,7 +20,7 @@
 | Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |
 | ------------------- | --------: | ---------: | ----------: | --------: |
 | Reproducible        |       117 |    267,589 |     129,987 |       51% |
-| Mutating (one-shot) |        24 |      1,332 |       1,275 |        4% |
+| Mutating (one-shot) |        25 |      3,132 |       2,619 |       16% |
 
 ## Top Token Savers
 

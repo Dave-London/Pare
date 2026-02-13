@@ -15,7 +15,7 @@
 14,git,branch,high,1.5,tested,5 local branches only,15 branches including remotes (--all),30+ branches with stale tracking refs,
 15,git,show,high,1.5,tested,Small commit — 2 files changed,Merge commit — multiple parents,Large commit — 25+ files with stat block,
 16,build,build,high,1.5,tested,Successful build — clean output,Build with deprecation warnings,Failed build — 5 errors in output,
-17,lint,lint,high,1.5,tested,Clean lint — zero issues,3 warnings from 2 files,15+ errors across 8 files,
+17,lint,lint,high,1.5,tested,Clean lint — zero issues,3 warnings from 2 files,15+ errors across 8 files,Scenario D: 15 deliberate violations (mutating one-shot)
 18,docker,ps,medium,0.8,tested,No running containers,5 containers — mixed running/stopped,20+ containers across multiple compose stacks,State-dependent: output varies with running containers
 19,python,pytest,medium,0.8,tested,Small suite all pass (~10 tests),,,"No output variety for passing tests. Failure output varies with count and tracebacks."
 20,docker,images,medium,0.7,tested,No local images,5 images — single tag each,25+ images with multiple tags and <none> entries,State-dependent: output varies with local images

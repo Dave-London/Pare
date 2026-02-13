@@ -43,7 +43,7 @@ if (process.platform === "win32") {
 interface MutatingScenario {
   id: string;
   registryNum: number;
-  variant: "A";
+  variant: string;
   weight: number;
   description: string;
   group: string;
@@ -851,6 +851,60 @@ const SCENARIOS: MutatingScenario[] = [
     pareTool: "generate",
     pareArgs: { path: "__CWD__" },
   },
+
+  // ─── Lint group ──────────────────────────────────────────────────
+
+  {
+    id: "lint-violations",
+    registryNum: 17,
+    variant: "D",
+    weight: 1.5,
+    description: "ESLint (file with ~15 deliberate violations)",
+    group: "lint",
+    setup: async () => {
+      // Write a temp file into packages/shared/src/ so eslint.config.mjs picks it up.
+      // Violations: 5× no-unused-vars (error), 5× no-explicit-any (warn), 5× no-console (warn)
+      const targetDir = resolve(REPO_ROOT, "packages", "shared", "src");
+      writeFileSync(
+        join(targetDir, "__bench_lint_violations__.ts"),
+        [
+          "// Deliberate lint violations for benchmark — auto-deleted after run",
+          "",
+          "// 5× @typescript-eslint/no-unused-vars (error)",
+          "const unusedAlpha = 1;",
+          "const unusedBravo = 2;",
+          "const unusedCharlie = 3;",
+          "const unusedDelta = 4;",
+          "const unusedEcho = 5;",
+          "",
+          "// 5× @typescript-eslint/no-explicit-any (warn)",
+          "export function fnOne(x: any): any { return x; }",
+          "export function fnTwo(a: any, b: any): any { return a + b; }",
+          "",
+          "// 5× no-console (warn)",
+          "console.log('bench1');",
+          "console.log('bench2');",
+          "console.log('bench3');",
+          "console.log('bench4');",
+          "console.log('bench5');",
+          "",
+        ].join("\n"),
+      );
+      return REPO_ROOT;
+    },
+    rawCommand: "npx",
+    rawArgs: ["eslint", "--format", "json", "packages/shared/src/__bench_lint_violations__.ts"],
+    pareServer: "server-lint",
+    pareTool: "lint",
+    pareArgs: {
+      path: "__CWD__",
+      patterns: ["packages/shared/src/__bench_lint_violations__.ts"],
+    },
+    teardown: async () => {
+      const f = resolve(REPO_ROOT, "packages", "shared", "src", "__bench_lint_violations__.ts");
+      if (existsSync(f)) rmSync(f);
+    },
+  },
 ];
 
 // ─── Scenario runner ──────────────────────────────────────────────
@@ -953,7 +1007,7 @@ async function main(): Promise<void> {
   const skipped: string[] = [];
 
   for (const scenario of scenarios) {
-    console.log(`Running ${scenario.registryNum}A ${scenario.id}...`);
+    console.log(`Running ${scenario.registryNum}${scenario.variant} ${scenario.id}...`);
     try {
       const result = await runScenario(scenario);
       results.push(result);

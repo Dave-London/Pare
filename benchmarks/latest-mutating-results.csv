@@ -1,25 +1,26 @@
 #,Scenario,Description,Weight %,Raw Tokens,Pare Regular,Pare Compact,Saved,Reduction %,Raw ms,Pare ms,Added ms
-4A,git-add,git add (stage single file),7,0,22,,-22,0,29,56,27
 3A,git-commit,"git commit (single file, short msg)",10,48,69,,-21,-44,23,26,3
-8A,git-checkout,git checkout (switch branch),3,17,21,,-4,-24,23,49,26
-76A,git-stash,git stash (push dirty tree),0.15,26,51,,-25,-96,21,22,1
+4A,git-add,git add (stage single file),7,0,22,,-22,0,29,56,27
 6A,git-push,git push (fast-forward to bare remote),5,74,79,,-5,-7,22,23,1
+8A,git-checkout,git checkout (switch branch),3,17,21,,-4,-24,23,49,26
 10A,git-pull,git pull (already up to date),2.5,77,54,,23,30,155,87,-68
-89A,npm-init,"npm init (default, -y)",0.1,114,46,,68,60,397,390,-7
 11A,npm-install,npm install (add single package),2,45,53,,-8,-18,1409,666,-743
+17D,lint-violations,ESLint (file with ~15 deliberate violations),1.5,1800,1344,,456,25,983,963,-20
 29A,docker-run,docker run (alpine echo hello),0.5,81,19,,62,77,4609,608,-4001
-64A,docker-pull,docker pull (already up-to-date),0.2,49,37,,12,24,972,1002,30
+33A,pip-install,pip install (single package),0.5,105,21,,84,80,1799,1962,163
 43A,docker-exec,docker exec (ls in running container),0.4,19,41,106,-87,-458,132,135,3
 44A,docker-compose-up,docker compose up (single service),0.4,60,21,65,-5,-8,621,196,-425
+45A,github-pr-create,GitHub PR create (throwaway branch),0.4,12,106,19,-7,-58,1662,1626,-36
 54A,docker-compose-down,docker compose down (stop service),0.3,67,14,,53,79,10768,135,-10633
-82A,http-post,HTTP POST JSON (httpbin),0.15,90,60,,30,33,3489,2,-3487
+64A,docker-pull,docker pull (already up-to-date),0.2,49,37,,12,24,972,1002,30
 66A,github-issue-create,GitHub issue create (then delete),0.2,257,268,,-11,-4,59,63,4
-33A,pip-install,pip install (single package),0.5,105,21,,84,80,1799,1962,163
+75A,go-mod-tidy,go mod tidy,0.2,0,19,6,-6,0,1758,61,-1697
+76A,git-stash,git stash (push dirty tree),0.15,26,51,,-25,-96,21,22,1
+82A,http-post,HTTP POST JSON (httpbin),0.15,90,60,,30,33,3489,2,-3487
 85A,uv-install,uv pip install (single package),0.15,48,18,66,-18,-37,1174,30,-1144
 88A,cargo-add,cargo add (single crate),0.15,81,61,,20,25,1959,3,-1956
+89A,"npm-init","npm init (default, -y)",0.1,114,46,,68,60,397,390,-7
 93A,cargo-remove,cargo remove (single crate),0.1,10,62,,-52,-520,90,1,-89
 95A,cargo-update,cargo update (all deps),0.1,24,32,64,-40,-167,597,588,-9
-100A,go-get,go get (single package),0.1,28,6,,22,79,2681,138,-2543
-75A,go-mod-tidy,go mod tidy,0.2,0,19,6,-6,0,1758,61,-1697
 97A,go-generate,go generate (no directives),0.1,0,10,6,-6,0,53,54,1
-45A,github-pr-create,GitHub PR create (throwaway branch),0.4,12,106,19,-7,-58,1662,1626,-36
+100A,go-get,go get (single package),0.1,28,6,,22,79,2681,138,-2543

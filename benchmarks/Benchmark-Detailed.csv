@@ -34,6 +34,7 @@
 17A,lint-shared,ESLint (shared pkg src),1.5,145,99,,46,32,1510,1060,-450
 17B,lint-server-git,ESLint (server-git pkg src),1.5,84,27,,57,68,1129,1172,43
 17C,lint-server-npm,ESLint (server-npm pkg src),1.5,226,443,,-217,-96,1132,1138,6
+17D,lint-violations,ESLint (file with ~15 deliberate violations),1.5,1800,1344,,456,25,983,963,-20
 18A,docker-ps,Docker ps (running),0.8,345,855,,-510,-148,70,82,12
 18B,docker-ps-all,Docker ps (all containers),0.8,433,1000,,-567,-131,72,83,11
 19A,pytest,pytest run,0.8,72,34,64,8,11,1020,528,-492
