@@ -7,6 +7,10 @@ export interface RunOptions {
   cwd?: string;
   timeout?: number;
   env?: Record<string, string>;
+  /** Data to write to the child process's stdin. Useful for piping content
+   *  (e.g., `git commit --file -`) instead of passing it as a command arg,
+   *  which avoids cmd.exe argument-length and newline limitations on Windows. */
+  stdin?: string;
 }
 
 /** Result of a command execution, containing the exit code and ANSI-stripped stdout/stderr. */
@@ -42,6 +46,11 @@ export function escapeCmdArg(arg: string): string {
   // Step 2: If the arg contains spaces, tabs, or double quotes, wrap it in
   // double quotes so cmd.exe keeps it as a single token.
   if (/[ \t"]/.test(arg)) {
+    // Replace newlines with spaces — cmd.exe treats \n as a command-line
+    // terminator even inside double quotes, so literal newlines cannot be
+    // passed via command args. Tools that need newline-preserving input
+    // should use RunOptions.stdin instead (e.g., git commit --file -).
+    escaped = escaped.replace(/\r?\n/g, " ");
     // Escape internal double quotes by doubling them
     escaped = escaped.replace(/"/g, '""');
     return `"${escaped}"`;
@@ -78,7 +87,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // See escapeCmdArg() for details on what is escaped and why.
     const safeArgs = process.platform === "win32" ? args.map(escapeCmdArg) : args;
 
-    execFile(
+    const child = execFile(
       cmd,
       safeArgs,
       {
@@ -136,5 +145,12 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
         });
       },
     );
+
+    // Pipe stdin data if provided, then close the stream so the child
+    // process knows input is complete (e.g., `git commit --file -`).
+    if (opts?.stdin != null) {
+      child.stdin?.write(opts.stdin);
+      child.stdin?.end();
+    }
   });
 }

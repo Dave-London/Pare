@@ -59,6 +59,36 @@ describe("run", () => {
     const args = JSON.parse(result.stdout.trim());
     expect(args).toEqual(["hello & world", "a | b", "foo>bar baz"]);
   });
+
+  it("pipes stdin data to the child process", async () => {
+    const stdinScript = join(tmpdir(), "pare-test-stdin.js");
+    writeFileSync(
+      stdinScript,
+      "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d))",
+    );
+    try {
+      const result = await run("node", [stdinScript], { stdin: "hello from stdin" });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("hello from stdin");
+    } finally {
+      unlinkSync(stdinScript);
+    }
+  });
+
+  it("pipes multi-line stdin data preserving newlines", async () => {
+    const stdinScript = join(tmpdir(), "pare-test-stdin-nl.js");
+    writeFileSync(
+      stdinScript,
+      "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d))",
+    );
+    try {
+      const result = await run("node", [stdinScript], { stdin: "line1\n\nline2\nline3" });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("line1\n\nline2\nline3");
+    } finally {
+      unlinkSync(stdinScript);
+    }
+  });
 });
 
 describe("escapeCmdArg", () => {
@@ -146,8 +176,17 @@ describe("escapeCmdArg", () => {
     expect(escapeCmdArg("!foo&bar!")).toBe("^!foo^&bar^!");
   });
 
-  it("passes newlines through unchanged (no quoting)", () => {
+  it("passes newlines through unchanged when no spaces present", () => {
+    // No spaces → no quoting → newlines pass through (rare edge case)
     expect(escapeCmdArg("line1\nline2")).toBe("line1\nline2");
+  });
+
+  it("replaces newlines with spaces when quoting (cmd.exe cannot handle newlines in args)", () => {
+    // Newlines inside double-quoted args terminate the cmd.exe command line,
+    // so they must be replaced with spaces when the arg needs quoting.
+    expect(escapeCmdArg("multi word\nwith newline")).toBe('"multi word with newline"');
+    expect(escapeCmdArg("title\n\nbody text")).toBe('"title  body text"');
+    expect(escapeCmdArg("line1\r\nline2 spaced")).toBe('"line1 line2 spaced"');
   });
 
   it("wraps args with spaces in double quotes", () => {

@@ -29,11 +29,15 @@ export function registerCommitTool(server: McpServer) {
 
       assertNoFlagInjection(message, "commit message");
 
+      // Use --file - to pipe the message via stdin instead of -m.
+      // This avoids cmd.exe argument escaping issues on Windows where
+      // newlines, parentheses, and special characters in the message
+      // break the command line. Works identically on all platforms.
       const args = ["commit"];
       if (amend) args.push("--amend");
-      args.push("-m", message);
+      args.push("--file", "-");
 
-      const result = await git(args, cwd);
+      const result = await git(args, cwd, { stdin: message });
 
       if (result.exitCode !== 0) {
         throw new Error(`git commit failed: ${result.stderr}`);
