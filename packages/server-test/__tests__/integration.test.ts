@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
+/** MCP SDK defaults to 60 s request timeout; override for CI where process spawning is slow. */
+const CALL_TIMEOUT = { timeout: 120_000 };
+
 describe("@paretools/test integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
@@ -35,10 +38,11 @@ describe("@paretools/test integration", () => {
   describe("run", () => {
     it("runs vitest on the server-git package and returns structured results", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: gitPkgPath, framework: "vitest" },
-      });
+      const result = await client.callTool(
+        { name: "run", arguments: { path: gitPkgPath, framework: "vitest" } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
 
@@ -58,7 +62,7 @@ describe("@paretools/test integration", () => {
 
       expect(Array.isArray(sc.failures)).toBe(true);
       expect((sc.failures as unknown[]).length).toBe(0);
-    }, 60_000);
+    });
 
     it("returns error for directory with no test framework", async () => {
       const result = await client.callTool({
@@ -74,10 +78,11 @@ describe("@paretools/test integration", () => {
   describe("coverage", () => {
     it("runs coverage on the server-git package", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
-      const result = await client.callTool({
-        name: "coverage",
-        arguments: { path: gitPkgPath, framework: "vitest" },
-      });
+      const result = await client.callTool(
+        { name: "coverage", arguments: { path: gitPkgPath, framework: "vitest" } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -86,6 +91,6 @@ describe("@paretools/test integration", () => {
       const summary = sc.summary as Record<string, unknown>;
       expect(summary).toBeDefined();
       expect(summary.lines).toEqual(expect.any(Number));
-    }, 60_000);
+    });
   });
 });

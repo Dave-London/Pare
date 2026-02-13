@@ -1,15 +1,15 @@
 import { run, type RunResult } from "@paretools/shared";
 
 export async function eslint(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["eslint", ...args], { cwd });
+  return run("npx", ["eslint", ...args], { cwd, timeout: 120_000 });
 }
 
 export async function prettier(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["prettier", ...args], { cwd });
+  return run("npx", ["prettier", ...args], { cwd, timeout: 120_000 });
 }
 
 export async function biome(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["@biomejs/biome", ...args], { cwd });
+  return run("npx", ["@biomejs/biome", ...args], { cwd, timeout: 120_000 });
 }
 
 export async function stylelintCmd(args: string[], cwd?: string): Promise<RunResult> {

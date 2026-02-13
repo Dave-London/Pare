@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
+/** MCP SDK defaults to 60 s request timeout; override for CI where npx + cmd.exe is slow. */
+const CALL_TIMEOUT = { timeout: 120_000 };
+
 describe("@paretools/lint integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
@@ -51,10 +54,11 @@ describe("@paretools/lint integration", () => {
   describe("lint", () => {
     it("returns structured ESLint diagnostics", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "lint",
-        arguments: { path: pkgPath, patterns: ["src/"] },
-      });
+      const result = await client.callTool(
+        { name: "lint", arguments: { path: pkgPath, patterns: ["src/"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -67,16 +71,17 @@ describe("@paretools/lint integration", () => {
       expect(sc.filesChecked).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
-    }, 60_000);
+    });
   });
 
   describe("format-check", () => {
     it("returns structured Prettier check result", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "format-check",
-        arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
-      });
+      const result = await client.callTool(
+        { name: "format-check", arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -87,17 +92,21 @@ describe("@paretools/lint integration", () => {
       expect(sc.total).toEqual(expect.any(Number));
       // files may be omitted in compact mode
       expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
-    }, 60_000);
+    });
   });
 
   describe("prettier-format", () => {
     it("returns structured Prettier write result", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "prettier-format",
-        // Use --check on a single known-formatted file to avoid modifying files
-        arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "prettier-format",
+          // Use --check on a single known-formatted file to avoid modifying files
+          arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
+        },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -108,16 +117,17 @@ describe("@paretools/lint integration", () => {
       expect(sc.filesChanged).toEqual(expect.any(Number));
       // files may be omitted in compact mode
       expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
-    }, 60_000);
+    });
   });
 
   describe("biome-check", () => {
     it("returns structured result even when biome is not configured", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "biome-check",
-        arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
-      });
+      const result = await client.callTool(
+        { name: "biome-check", arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -129,16 +139,17 @@ describe("@paretools/lint integration", () => {
       expect(sc.warnings).toEqual(expect.any(Number));
       // diagnostics may be omitted in compact mode
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
-    }, 60_000);
+    });
   });
 
   describe("biome-format", () => {
     it("returns structured result even when biome is not configured", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "biome-format",
-        arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
-      });
+      const result = await client.callTool(
+        { name: "biome-format", arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -149,7 +160,7 @@ describe("@paretools/lint integration", () => {
       expect(sc.filesChanged).toEqual(expect.any(Number));
       // files may be omitted in compact mode
       expect(sc.files === undefined || Array.isArray(sc.files)).toBe(true);
-    }, 60_000);
+    });
   });
 
   describe("stylelint", () => {
