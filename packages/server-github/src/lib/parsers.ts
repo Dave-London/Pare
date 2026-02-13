@@ -5,6 +5,7 @@ import type {
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
+  IssueCloseResult,
   RunViewResult,
   RunListResult,
 } from "../schemas/index.js";
@@ -141,6 +142,15 @@ export function parseIssueCreate(stdout: string): IssueCreateResult {
   const match = url.match(/\/issues\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
   return { number, url };
+}
+
+/**
+ * Parses `gh issue close` output into structured data.
+ * The gh CLI prints a confirmation URL to stdout. We extract the number from it.
+ */
+export function parseIssueClose(stdout: string, number: number): IssueCloseResult {
+  const url = stdout.trim();
+  return { number, state: "closed", url };
 }
 
 /**

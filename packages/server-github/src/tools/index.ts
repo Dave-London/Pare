@@ -6,6 +6,7 @@ import { registerPrCreateTool } from "./pr-create.js";
 import { registerIssueViewTool } from "./issue-view.js";
 import { registerIssueListTool } from "./issue-list.js";
 import { registerIssueCreateTool } from "./issue-create.js";
+import { registerIssueCloseTool } from "./issue-close.js";
 import { registerRunViewTool } from "./run-view.js";
 import { registerRunListTool } from "./run-list.js";
 
@@ -17,6 +18,7 @@ export function registerAllTools(server: McpServer) {
   if (s("issue-view")) registerIssueViewTool(server);
   if (s("issue-list")) registerIssueListTool(server);
   if (s("issue-create")) registerIssueCreateTool(server);
+  if (s("issue-close")) registerIssueCloseTool(server);
   if (s("run-view")) registerRunViewTool(server);
   if (s("run-list")) registerRunListTool(server);
 }

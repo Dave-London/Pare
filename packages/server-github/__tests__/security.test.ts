@@ -134,6 +134,20 @@ describe("security: issue-create — title validation", () => {
   });
 });
 
+describe("security: issue-close — comment validation", () => {
+  it("rejects flag-like comments", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "comment")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe comments", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "comment")).not.toThrow();
+    }
+  });
+});
+
 describe("security: run-list — branch validation", () => {
   it("rejects flag-like branch names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
