@@ -138,8 +138,6 @@ export const NpmInfoSchema = z.object({
   dist: z
     .object({
       tarball: z.string().optional(),
-      fileCount: z.number().optional(),
-      unpackedSize: z.number().optional(),
     })
     .optional(),
 });

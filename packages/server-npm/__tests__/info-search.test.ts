@@ -45,8 +45,8 @@ describe("parseInfoJson", () => {
       "body-parser": "1.20.1",
     });
     expect(result.dist?.tarball).toBe("https://registry.npmjs.org/express/-/express-4.18.2.tgz");
-    expect(result.dist?.fileCount).toBe(214);
-    expect(result.dist?.unpackedSize).toBe(220551);
+    expect(result.dist).not.toHaveProperty("fileCount");
+    expect(result.dist).not.toHaveProperty("unpackedSize");
   });
 
   it("handles minimal package info", () => {
@@ -213,7 +213,7 @@ describe("formatInfo", () => {
       homepage: "http://expressjs.com/",
       license: "MIT",
       dependencies: { accepts: "~1.3.8", "body-parser": "1.20.1" },
-      dist: { fileCount: 214, unpackedSize: 220551 },
+      dist: { tarball: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
     };
     const output = formatInfo(data);
     expect(output).toContain("express@4.18.2");
@@ -222,8 +222,7 @@ describe("formatInfo", () => {
     expect(output).toContain("Homepage: http://expressjs.com/");
     expect(output).toContain("Dependencies: 2");
     expect(output).toContain("accepts: ~1.3.8");
-    expect(output).toContain("Files: 214");
-    expect(output).toContain("Unpacked size: 220551");
+    expect(output).toContain("Tarball: https://registry.npmjs.org/express/-/express-4.18.2.tgz");
   });
 
   it("formats minimal info", () => {
@@ -248,7 +247,7 @@ describe("compactInfoMap", () => {
       homepage: "http://expressjs.com/",
       license: "MIT",
       dependencies: { accepts: "~1.3.8" },
-      dist: { fileCount: 214 },
+      dist: { tarball: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
     };
     const compact = compactInfoMap(data);
     expect(compact.name).toBe("express");

@@ -161,10 +161,8 @@ export function formatInfo(data: NpmInfo): string {
       lines.push(`  ${name}: ${version}`);
     }
   }
-  if (data.dist) {
-    if (data.dist.fileCount !== undefined) lines.push(`Files: ${data.dist.fileCount}`);
-    if (data.dist.unpackedSize !== undefined)
-      lines.push(`Unpacked size: ${data.dist.unpackedSize}`);
+  if (data.dist?.tarball) {
+    lines.push(`Tarball: ${data.dist.tarball}`);
   }
   return lines.join("\n");
 }
