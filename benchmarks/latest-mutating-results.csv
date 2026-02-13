@@ -11,13 +11,19 @@
 43A,docker-exec,docker exec (ls in running container),0.4,19,41,106,-87,-458,132,135,3
 44A,docker-compose-up,docker compose up (single service),0.4,60,21,65,-5,-8,621,196,-425
 45A,github-pr-create,GitHub PR create (throwaway branch),0.4,12,106,19,-7,-58,1662,1626,-36
+48B,mypy-violations,mypy (file with ~8 type errors),0.4,158,23,,135,85,871,495,-376
+49B,ruff-violations,ruff check (file with ~10 violations),0.4,1167,548,,619,53,32,32,0
+50B,cargo-clippy-warnings,cargo clippy (code with ~5 warnings),0.4,1945,167,,1778,91,241,134,-107
 54A,docker-compose-down,docker compose down (stop service),0.3,67,14,,53,79,10768,135,-10633
+63B,biome-violations,Biome check (file with ~13 deliberate violations),0.2,5632,820,,4812,85,1596,1051,-545
 64A,docker-pull,docker pull (already up-to-date),0.2,49,37,,12,24,972,1002,30
 66A,github-issue-create,GitHub issue create (then delete),0.2,257,268,,-11,-4,59,63,4
 75A,go-mod-tidy,go mod tidy,0.2,0,19,6,-6,0,1758,61,-1697
 76A,git-stash,git stash (push dirty tree),0.15,26,51,,-25,-96,21,22,1
 82A,http-post,HTTP POST JSON (httpbin),0.15,90,60,,30,33,3489,2,-3487
+84B,pip-audit-vulns,pip-audit (requirements with known vulns),0.15,5760,11,67,5693,99,13678,593,-13085
 85A,uv-install,uv pip install (single package),0.15,48,18,66,-18,-37,1174,30,-1144
+87B,black-violations,black check (file with bad formatting),0.15,26,28,,-2,-8,182,178,-4
 88A,cargo-add,cargo add (single crate),0.15,81,61,,20,25,1959,3,-1956
 89A,"npm-init","npm init (default, -y)",0.1,114,46,,68,60,397,390,-7
 93A,cargo-remove,cargo remove (single crate),0.1,10,62,,-52,-520,90,1,-89

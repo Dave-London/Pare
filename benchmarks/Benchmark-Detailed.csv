@@ -80,8 +80,11 @@
 47B,find-test-files,Find test files (whole repo),0.4,1440,8,,1432,99,25,19,-6
 47C,find-all-ts,Find all *.ts files (whole repo),0.4,3548,9292,63,3485,98,23,25,2
 48A,mypy-check,mypy type check,0.4,11,23,65,-54,-491,1873,198,-1675
+48B,mypy-violations,mypy (file with ~8 type errors),0.4,158,23,,135,85,871,495,-376
 49A,ruff-check,ruff check,0.4,19,14,66,-47,-247,273,31,-242
+49B,ruff-violations,ruff check (file with ~10 violations),0.4,1167,548,,619,53,32,32,0
 50A,cargo-clippy,cargo clippy,0.4,18,18,,0,0,171,136,-35
+50B,cargo-clippy-warnings,cargo clippy (code with ~5 warnings),0.4,1945,167,,1778,91,241,134,-107
 51A,cargo-check,cargo check,0.4,18,23,,-5,-28,61,61,0
 52A,remote-list,List remotes with URLs,0.3,28,48,13,15,54,25,24,-1
 53A,npm-info-small,npm info (small package),0.3,264,112,,152,58,909,412,-497
@@ -100,6 +103,7 @@
 61A,stash-list,List stashes,0.2,0,9,,-9,0,24,24,0
 62A,webpack-build,Webpack build,0.2,109,19,,90,83,899,879,-20
 63A,biome-check-shared,Biome check (shared pkg src),0.2,84,855,,-771,-918,1682,1120,-562
+63B,biome-violations,Biome check (file with ~13 deliberate violations),0.2,5632,820,,4812,85,1596,1051,-545
 64A,docker-pull,docker pull (already up-to-date),0.2,49,37,,12,24,972,1002,30
 65A,docker-inspect,Docker inspect,0.2,10,15,,-5,-50,70,64,-6
 66A,github-issue-create,GitHub issue create (then delete),0.2,257,268,,-11,-4,59,63,4
@@ -125,9 +129,11 @@
 82A,http-post,HTTP POST JSON (httpbin),0.15,90,60,,30,33,3489,2,-3487
 83A,pip-show-pip,pip show (pip itself),0.15,73,56,,17,23,356,334,-22
 84A,pip-audit,pip audit,0.15,9,21,,-12,-133,237,12,-225
+84B,pip-audit-vulns,pip-audit (requirements with known vulns),0.15,5760,11,67,5693,99,13678,593,-13085
 85A,uv-install,uv pip install (single package),0.15,48,18,66,-18,-37,1174,30,-1144
 86A,uv-run,uv run (python version),0.15,4,61,,-57,-1425,311,1,-310
 87A,black-check,black format check,0.15,18,28,65,-47,-261,799,289,-510
+87B,black-violations,black check (file with bad formatting),0.15,26,28,,-2,-8,182,178,-4
 88A,cargo-add,cargo add (single crate),0.15,81,61,,20,25,1959,3,-1956
 89A,npm-init,"npm init (default, -y)",0.1,114,46,,68,60,397,390,-7
 90A,stylelint-check,Stylelint check,0.1,296,27,22,274,93,1360,1302,-58

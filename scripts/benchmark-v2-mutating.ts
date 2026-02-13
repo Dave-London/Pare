@@ -752,6 +752,154 @@ const SCENARIOS: MutatingScenario[] = [
     pareArgs: { packages: ["requests"], path: "__CWD__" },
   },
 
+  // ─── Python tool error scenarios ──────────────────────────────
+
+  {
+    id: "mypy-violations",
+    registryNum: 48,
+    variant: "B",
+    weight: 0.4,
+    description: "mypy (file with ~8 type errors)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "mypy-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import os",
+          "import sys",
+          "import json",
+          "import re",
+          "",
+          "def bad_return(x: int) -> str:",
+          "    return x + 1",
+          "",
+          "def no_return_type(a, b):",
+          "    result: str = a + b",
+          "    return result",
+          "",
+          "class Foo:",
+          "    def method(self) -> int:",
+          '        return "hello"',
+          "",
+          'x: int = "not an int"',
+          'y = bad_return("string")',
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "mypy",
+    rawArgs: ["violations.py"],
+    pareServer: "server-python",
+    pareTool: "mypy",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"] },
+  },
+  {
+    id: "ruff-violations",
+    registryNum: 49,
+    variant: "B",
+    weight: 0.4,
+    description: "ruff check (file with ~10 violations)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "ruff-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import os",
+          "import sys",
+          "import json",
+          "import re",
+          "import collections",
+          "",
+          "x=1",
+          "y =    2",
+          "z = x+y",
+          "",
+          "try:",
+          "    pass",
+          "except:",
+          "    pass",
+          "",
+          "if type(x) == int:",
+          "    print(x)",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "ruff",
+    rawArgs: ["check", "--output-format", "json", "violations.py"],
+    pareServer: "server-python",
+    pareTool: "ruff-check",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"] },
+  },
+  {
+    id: "black-violations",
+    registryNum: 87,
+    variant: "B",
+    weight: 0.15,
+    description: "black check (file with bad formatting)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "black-violations");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "violations.py"),
+        [
+          "import   os",
+          "x=1",
+          "y=     2",
+          "z =x+y",
+          "def    foo(  a,b ,c   ):",
+          "    return a+b+c",
+          "class   Bar:",
+          "    def   method(  self  ,x,  y):",
+          "            return    x+y",
+          "if x==1:",
+          '    print(   "hello"    )',
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "black",
+    rawArgs: ["--check", "violations.py"],
+    pareServer: "server-python",
+    pareTool: "black",
+    pareArgs: { path: "__CWD__", targets: ["violations.py"], check: true },
+  },
+  {
+    id: "pip-audit-vulns",
+    registryNum: 84,
+    variant: "B",
+    weight: 0.15,
+    description: "pip-audit (requirements with known vulns)",
+    group: "python",
+    setup: async () => {
+      const dir = join(TEMP_ROOT, "pip-audit-vulns");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      // Pin old versions with known CVEs
+      writeFileSync(
+        join(dir, "requirements.txt"),
+        ["urllib3==1.26.5", "certifi==2023.7.22", "requests==2.25.1", ""].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "pip-audit",
+    rawArgs: ["--format", "json", "-r", "requirements.txt"],
+    pareServer: "server-python",
+    pareTool: "pip-audit",
+    pareArgs: { path: "__CWD__", requirements: "requirements.txt" },
+  },
+
   // ─── Cargo group ────────────────────────────────────────────────
 
   {
@@ -805,6 +953,56 @@ const SCENARIOS: MutatingScenario[] = [
     pareServer: "server-cargo",
     pareTool: "update",
     pareArgs: { path: "__CWD__" },
+  },
+  {
+    id: "cargo-clippy-warnings",
+    registryNum: 50,
+    variant: "B",
+    weight: 0.4,
+    description: "cargo clippy (code with ~5 warnings)",
+    group: "cargo",
+    setup: async () => {
+      const dir = await cargoDir();
+      // Overwrite main.rs with code that triggers clippy warnings
+      writeFileSync(
+        join(dir, "src", "main.rs"),
+        [
+          "fn main() {",
+          "    let v: Vec<i32> = vec![1, 2, 3];",
+          "    // clippy::len_zero — use is_empty()",
+          "    if v.len() == 0 {",
+          '        println!("empty");',
+          "    }",
+          "    // clippy::needless_return",
+          "    let _s = needless_return_fn();",
+          "    // clippy::redundant_clone",
+          '    let s1 = String::from("hello");',
+          "    let _s2 = s1.clone();",
+          "    // clippy::manual_is_ascii_check",
+          "    let _b = ('a'..='z').contains(&'x');",
+          "}",
+          "",
+          "fn needless_return_fn() -> i32 {",
+          "    return 42;",
+          "}",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "cargo",
+    rawArgs: ["clippy", "--message-format=json"],
+    pareServer: "server-cargo",
+    pareTool: "clippy",
+    pareArgs: { path: "__CWD__" },
+    teardown: async () => {
+      // Restore clean main.rs for subsequent cargo scenarios
+      const dir = await cargoDir();
+      writeFileSync(
+        join(dir, "src", "main.rs"),
+        'fn main() {\n    println!("Hello, world!");\n}\n',
+      );
+    },
   },
 
   // ─── Go group ───────────────────────────────────────────────────
@@ -903,6 +1101,59 @@ const SCENARIOS: MutatingScenario[] = [
     teardown: async () => {
       const f = resolve(REPO_ROOT, "packages", "shared", "src", "__bench_lint_violations__.ts");
       if (existsSync(f)) rmSync(f);
+    },
+  },
+  {
+    id: "biome-violations",
+    registryNum: 63,
+    variant: "B",
+    weight: 0.2,
+    description: "Biome check (file with ~13 deliberate violations)",
+    group: "lint",
+    setup: async () => {
+      // Create a temp subdirectory inside the repo so npx can find @biomejs/biome
+      // from node_modules, and a local biome.json enables recommended rules.
+      const dir = resolve(REPO_ROOT, "__bench_biome__");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      ensureDir(dir);
+      writeFileSync(
+        join(dir, "biome.json"),
+        JSON.stringify(
+          {
+            $schema: "https://biomejs.dev/schemas/2.0.0/schema.json",
+            linter: { enabled: true, rules: { recommended: true } },
+          },
+          null,
+          2,
+        ),
+      );
+      writeFileSync(
+        join(dir, "violations.ts"),
+        [
+          "// Deliberate biome violations for benchmark",
+          "var alpha = 1;",
+          "var bravo = 2;",
+          "var charlie = 3;",
+          "if (alpha == bravo) { debugger; }",
+          "if (charlie == 0) { debugger; }",
+          'let unused1 = "hello";',
+          'let unused2 = "world";',
+          'let unused3 = "test";',
+          "function fn(x: any) { eval('alert(1)'); return x; }",
+          "console.log(alpha, fn(bravo));",
+          "",
+        ].join("\n"),
+      );
+      return dir;
+    },
+    rawCommand: "npx",
+    rawArgs: ["@biomejs/biome", "check", "--reporter=json", "violations.ts"],
+    pareServer: "server-lint",
+    pareTool: "biome-check",
+    pareArgs: { path: "__CWD__", patterns: ["violations.ts"] },
+    teardown: async () => {
+      const dir = resolve(REPO_ROOT, "__bench_biome__");
+      if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
     },
   },
 ];

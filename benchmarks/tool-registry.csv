@@ -46,9 +46,9 @@
 45,github,pr-create,medium,0.4,skip,Simple PR — single commit,PR with detailed body and labels,PR with reviewers and milestone assigned,Mutating
 46,github,issue-view,medium,0.4,tested,Simple issue — short description,Issue with 10 comments and labels,Issue with linked PRs and project board,
 47,search,find,medium,0.4,tested,Glob for *.ts — 10 files,Glob for **/*.test.* — 50+ files,Deep nested glob — 200+ matches,Requires ripgrep
-48,python,mypy,medium,0.4,tested,Clean type check — no errors,5 type errors across 3 files,15+ errors with note/error mix,Requires mypy
-49,python,ruff-check,medium,0.4,tested,Clean check — no issues,8 warnings from 4 files,30+ violations across many files,Requires ruff
-50,cargo,clippy,medium,0.4,tested,Clean — no warnings,,,"No output variety for clean code. Warning output varies with lint count."
+48,python,mypy,medium,0.4,tested,Clean type check — no errors,5 type errors across 3 files,15+ errors with note/error mix,Scenario B: ~8 type errors (mutating one-shot)
+49,python,ruff-check,medium,0.4,tested,Clean check — no issues,8 warnings from 4 files,30+ violations across many files,Scenario B: ~10 violations (mutating one-shot)
+50,cargo,clippy,medium,0.4,tested,Clean — no warnings,,,"Scenario B: ~5 clippy warnings (mutating one-shot)"
 51,cargo,check,medium,0.4,tested,Clean check — success,,,"No output variety for success. Error output varies with diagnostic count."
 52,git,remote,medium,0.3,tested,Single remote (origin),2 remotes (origin + upstream),3 remotes with different fetch/push URLs,State-dependent: output varies with configured remotes
 53,npm,info,medium,0.3,tested,Small package — few fields,Popular package — many versions and deps,Scoped package with full metadata,
@@ -61,7 +61,7 @@
 60,go,fmt,low,0.25,tested,No files changed,3 files reformatted,10+ files reformatted,
 61,git,stash-list,low,0.2,tested,Empty stash list,3 stashes with messages,10+ stashes from multiple branches,State-dependent: output varies with stash stack
 62,build,webpack,low,0.2,tested,Small bundle — success,Medium bundle with code splitting,Bundle with warnings about size limits,
-63,lint,biome-check,low,0.2,tested,Clean check — no issues,5 lint + format issues,20+ mixed violations,
+63,lint,biome-check,low,0.2,tested,Clean check — no issues,5 lint + format issues,20+ mixed violations,Scenario B: ~13 violations (mutating one-shot)
 64,docker,pull,low,0.2,skip,Pull small image (~5MB),Pull medium image (~200MB) with layers,Pull already up-to-date — no changes,Mutating
 65,docker,inspect,low,0.2,tested,Inspect running container,Inspect stopped container with mounts,Inspect image with full layer metadata,State-dependent: output varies with containers present
 66,github,issue-create,low,0.2,skip,Simple issue — title only,Issue with body labels and assignee,Bug report with template and reproduction steps,Mutating
@@ -82,10 +82,10 @@
 81,docker,compose-ps,low,0.15,tested,Single service running,,,"State-dependent: output varies with running compose services."
 82,http,post,low,0.15,skip,POST JSON — 201 created,POST form data — 200 with response body,POST — 400 validation error response,Mutating
 83,python,pip-show,low,0.15,tested,Single package — minimal metadata,,,"State-dependent: output varies with installed packages."
-84,python,pip-audit,low,0.15,tested,No vulnerabilities,,,"State-dependent: output varies with installed package vulnerabilities."
+84,python,pip-audit,low,0.15,tested,No vulnerabilities,,,"Scenario B: requirements with known vulns (mutating one-shot)"
 85,python,uv-install,low,0.15,skip,Install single package,Install from pyproject.toml,Install with resolution conflict,Mutating
 86,python,uv-run,low,0.15,tested,Run simple script — version check,,,"No output variety for success. Output is passthrough from executed command."
-87,python,black,low,0.15,tested,No files changed,5 files reformatted,20+ files reformatted,Requires black
+87,python,black,low,0.15,tested,No files changed,5 files reformatted,20+ files reformatted,Scenario B: bad formatting (mutating one-shot)
 88,cargo,add,low,0.15,skip,Add single crate,Add crate with features flag,Add crate — version conflict,Mutating
 89,npm,init,low,0.1,skip,Default init — accept all defaults,Scoped package init,Init in existing directory with package.json,Mutating
 90,lint,stylelint,low,0.1,tested,Clean — no issues,5 CSS warnings,15+ violations across SCSS files,

@@ -9,28 +9,28 @@
 
 | Metric                |   Value |
 | --------------------- | ------: |
-| Total scenarios       |     142 |
-| Total raw tokens      | 270,721 |
-| Total Pare tokens     | 132,606 |
-| Tokens saved          | 138,115 |
-| **Overall reduction** | **51%** |
+| Total scenarios       |     148 |
+| Total raw tokens      | 285,409 |
+| Total Pare tokens     | 134,259 |
+| Tokens saved          | 151,150 |
+| **Overall reduction** | **53%** |
 
 ## Breakdown
 
 | Suite               | Scenarios | Raw Tokens | Pare Tokens | Reduction |
 | ------------------- | --------: | ---------: | ----------: | --------: |
 | Reproducible        |       117 |    267,589 |     129,987 |       51% |
-| Mutating (one-shot) |        25 |      3,132 |       2,619 |       16% |
+| Mutating (one-shot) |        31 |     17,820 |       4,272 |       76% |
 
 ## Top Token Savers
 
-| Scenario        |    Raw |  Pare |  Saved |
-| --------------- | -----: | ----: | -----: |
-| npm-list-d2     | 177467 | 70531 | 106936 |
-| diff-full-patch |  22873 |   725 |  22148 |
-| count-common    |   3647 |    63 |   3584 |
-| find-all-ts     |   3548 |    63 |   3485 |
-| make-list       |   3340 |    34 |   3306 |
+| Scenario         |    Raw |  Pare |  Saved |
+| ---------------- | -----: | ----: | -----: |
+| npm-list-d2      | 177467 | 70531 | 106936 |
+| diff-full-patch  |  22873 |   725 |  22148 |
+| pip-audit-vulns  |   5760 |    67 |   5693 |
+| biome-violations |   5632 |   820 |   4812 |
+| count-common     |   3647 |    63 |   3584 |
 
 ## Worst Overhead
 
