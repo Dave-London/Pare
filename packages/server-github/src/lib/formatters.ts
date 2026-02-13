@@ -2,6 +2,7 @@ import type {
   PrViewResult,
   PrListResult,
   PrCreateResult,
+  PrMergeResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -46,6 +47,11 @@ export function formatPrList(data: PrListResult): string {
 /** Formats structured PR create data into human-readable text. */
 export function formatPrCreate(data: PrCreateResult): string {
   return `Created PR #${data.number}: ${data.url}`;
+}
+
+/** Formats structured PR merge data into human-readable text. */
+export function formatPrMerge(data: PrMergeResult): string {
+  return `Merged PR #${data.number} via ${data.method}: ${data.url}`;
 }
 
 /** Formats structured issue view data into human-readable text. */

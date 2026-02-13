@@ -2,6 +2,7 @@ import type {
   PrViewResult,
   PrListResult,
   PrCreateResult,
+  PrMergeResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -84,6 +85,16 @@ export function parsePrCreate(stdout: string): PrCreateResult {
   const match = url.match(/\/pull\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
   return { number, url };
+}
+
+/**
+ * Parses `gh pr merge` output into structured data.
+ * The gh CLI prints a confirmation message with the PR URL on success.
+ */
+export function parsePrMerge(stdout: string, number: number, method: string): PrMergeResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : "";
+  return { number, merged: true, method, url };
 }
 
 /**
