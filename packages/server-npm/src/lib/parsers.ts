@@ -203,12 +203,8 @@ export function parseInfoJson(jsonStr: string): NpmInfo {
   if (data.dependencies && Object.keys(data.dependencies).length > 0) {
     result.dependencies = data.dependencies;
   }
-  if (data.dist) {
-    const dist: NpmInfo["dist"] = {};
-    if (data.dist.tarball) dist.tarball = data.dist.tarball;
-    if (data.dist.fileCount !== undefined) dist.fileCount = data.dist.fileCount;
-    if (data.dist.unpackedSize !== undefined) dist.unpackedSize = data.dist.unpackedSize;
-    if (Object.keys(dist).length > 0) result.dist = dist;
+  if (data.dist?.tarball) {
+    result.dist = { tarball: data.dist.tarball };
   }
 
   return result;
