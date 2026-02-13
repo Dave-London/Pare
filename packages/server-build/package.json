@@ -64,6 +64,8 @@
     "@paretools/tsconfig": "workspace:*",
     "@types/node": "^25.2.3",
     "typescript": "^5.7.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "webpack": "^5.105.2",
+    "webpack-cli": "^6.0.1"
   }
 }

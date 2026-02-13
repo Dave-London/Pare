@@ -3,6 +3,7 @@ import type {
   NpmAudit,
   NpmOutdated,
   NpmList,
+  NpmListDep,
   NpmRun,
   NpmTest,
   NpmInit,
@@ -100,20 +101,41 @@ export function parseOutdatedJson(jsonStr: string): NpmOutdated {
 export function parseListJson(jsonStr: string): NpmList {
   const data = JSON.parse(jsonStr);
 
-  const deps: Record<string, { version: string; resolved?: string }> = {};
-  for (const [name, v] of Object.entries(data.dependencies ?? {})) {
-    const dep = v as any;
-    deps[name] = {
-      version: dep.version ?? "unknown",
-      ...(dep.resolved ? { resolved: dep.resolved } : {}),
-    };
+  function parseDeps(raw: Record<string, any> | undefined): Record<string, NpmListDep> {
+    const deps: Record<string, NpmListDep> = {};
+    for (const [name, v] of Object.entries(raw ?? {})) {
+      const dep = v as any;
+      const entry: NpmListDep = {
+        version: dep.version ?? "unknown",
+        ...(dep.resolved ? { resolved: dep.resolved } : {}),
+      };
+      if (dep.dependencies && Object.keys(dep.dependencies).length > 0) {
+        entry.dependencies = parseDeps(dep.dependencies);
+      }
+      deps[name] = entry;
+    }
+    return deps;
+  }
+
+  const deps = parseDeps(data.dependencies);
+
+  // Count all deps including nested
+  function countDeps(d: Record<string, NpmListDep>): number {
+    let count = 0;
+    for (const dep of Object.values(d)) {
+      count++;
+      if (dep.dependencies) {
+        count += countDeps(dep.dependencies);
+      }
+    }
+    return count;
   }
 
   return {
     name: data.name ?? "unknown",
     version: data.version ?? "0.0.0",
     dependencies: deps,
-    total: Object.keys(deps).length,
+    total: countDeps(deps),
   };
 }
 
