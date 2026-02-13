@@ -3,6 +3,7 @@ import {
   formatPrView,
   formatPrList,
   formatPrCreate,
+  formatComment,
   formatIssueView,
   formatIssueList,
   formatIssueCreate,
@@ -25,6 +26,7 @@ import type {
   PrViewResult,
   PrListResult,
   PrCreateResult,
+  CommentResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -155,6 +157,28 @@ describe("formatPrCreate", () => {
   it("formats PR create result", () => {
     const data: PrCreateResult = { number: 99, url: "https://github.com/owner/repo/pull/99" };
     expect(formatPrCreate(data)).toBe("Created PR #99: https://github.com/owner/repo/pull/99");
+  });
+});
+
+// ── Comment ──────────────────────────────────────────────────────────
+
+describe("formatComment", () => {
+  it("formats comment result for PR comment", () => {
+    const data: CommentResult = {
+      url: "https://github.com/owner/repo/pull/42#issuecomment-123456",
+    };
+    expect(formatComment(data)).toBe(
+      "Comment added: https://github.com/owner/repo/pull/42#issuecomment-123456",
+    );
+  });
+
+  it("formats comment result for issue comment", () => {
+    const data: CommentResult = {
+      url: "https://github.com/owner/repo/issues/15#issuecomment-789012",
+    };
+    expect(formatComment(data)).toBe(
+      "Comment added: https://github.com/owner/repo/issues/15#issuecomment-789012",
+    );
   });
 });
 

@@ -1,0 +1,38 @@
+import { describe, it, expect } from "vitest";
+import { parseComment } from "../src/lib/parsers.js";
+import { formatComment } from "../src/lib/formatters.js";
+import type { CommentResult } from "../src/schemas/index.js";
+
+describe("parseComment (pr-comment)", () => {
+  it("parses comment URL from stdout", () => {
+    const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123456\n");
+
+    expect(result.url).toBe("https://github.com/owner/repo/pull/42#issuecomment-123456");
+  });
+
+  it("handles URL without trailing newline", () => {
+    const result = parseComment("https://github.com/owner/repo/pull/1#issuecomment-1");
+    expect(result.url).toBe("https://github.com/owner/repo/pull/1#issuecomment-1");
+  });
+
+  it("handles empty output", () => {
+    const result = parseComment("");
+    expect(result.url).toBe("");
+  });
+
+  it("trims whitespace from output", () => {
+    const result = parseComment("  https://github.com/owner/repo/pull/10#issuecomment-999  \n");
+    expect(result.url).toBe("https://github.com/owner/repo/pull/10#issuecomment-999");
+  });
+});
+
+describe("formatComment (pr-comment)", () => {
+  it("formats comment result", () => {
+    const data: CommentResult = {
+      url: "https://github.com/owner/repo/pull/42#issuecomment-123456",
+    };
+    expect(formatComment(data)).toBe(
+      "Comment added: https://github.com/owner/repo/pull/42#issuecomment-123456",
+    );
+  });
+});

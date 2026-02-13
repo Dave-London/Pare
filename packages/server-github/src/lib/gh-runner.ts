@@ -1,5 +1,12 @@
 import { run, type RunResult } from "@paretools/shared";
 
-export async function ghCmd(args: string[], cwd?: string): Promise<RunResult> {
-  return run("gh", args, { cwd, timeout: 30_000 });
+export interface GhCmdOptions {
+  cwd?: string;
+  /** Data to write to the child process's stdin (e.g., for --body-file -). */
+  stdin?: string;
+}
+
+export async function ghCmd(args: string[], cwdOrOpts?: string | GhCmdOptions): Promise<RunResult> {
+  const opts = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : cwdOrOpts;
+  return run("gh", args, { cwd: opts?.cwd, timeout: 30_000, stdin: opts?.stdin });
 }

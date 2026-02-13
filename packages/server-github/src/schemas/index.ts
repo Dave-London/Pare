@@ -115,6 +115,15 @@ export const IssueCloseResultSchema = z.object({
 
 export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
 
+// ── Comment schemas (shared by pr-comment and issue-comment) ─────────
+
+/** Zod schema for structured comment result output. */
+export const CommentResultSchema = z.object({
+  url: z.string(),
+});
+
+export type CommentResult = z.infer<typeof CommentResultSchema>;
+
 // ── Run schemas ──────────────────────────────────────────────────────
 
 /** Zod schema for a single job in a workflow run. */

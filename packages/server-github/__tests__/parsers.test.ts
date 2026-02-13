@@ -3,6 +3,7 @@ import {
   parsePrView,
   parsePrList,
   parsePrCreate,
+  parseComment,
   parseIssueView,
   parseIssueList,
   parseIssueCreate,
@@ -174,6 +175,24 @@ describe("parsePrCreate", () => {
     const result = parsePrCreate("https://github.com/unknown-format");
     expect(result.number).toBe(0);
     expect(result.url).toBe("https://github.com/unknown-format");
+  });
+});
+
+describe("parseComment", () => {
+  it("parses comment URL from stdout", () => {
+    const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123456\n");
+
+    expect(result.url).toBe("https://github.com/owner/repo/pull/42#issuecomment-123456");
+  });
+
+  it("handles URL without trailing newline", () => {
+    const result = parseComment("https://github.com/owner/repo/issues/1#issuecomment-1");
+    expect(result.url).toBe("https://github.com/owner/repo/issues/1#issuecomment-1");
+  });
+
+  it("handles empty output", () => {
+    const result = parseComment("");
+    expect(result.url).toBe("");
   });
 });
 
