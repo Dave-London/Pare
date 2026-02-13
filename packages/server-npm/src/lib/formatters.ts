@@ -121,15 +121,16 @@ export interface NpmListCompact {
 
 export function compactListMap(data: NpmList): NpmListCompact {
   const deps: Record<string, string> = {};
-  function flatten(d: Record<string, NpmListDep>) {
+  function flatten(d: Record<string, NpmListDep>, prefix: string) {
     for (const [name, dep] of Object.entries(d)) {
-      deps[name] = dep.version;
+      const key = prefix ? `${prefix}>${name}` : name;
+      deps[key] = dep.version;
       if (dep.dependencies) {
-        flatten(dep.dependencies);
+        flatten(dep.dependencies, key);
       }
     }
   }
-  flatten(data.dependencies);
+  flatten(data.dependencies, "");
   return {
     name: data.name,
     version: data.version,
