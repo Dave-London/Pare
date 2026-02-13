@@ -421,17 +421,13 @@ describe("fidelity: npm list", () => {
     expect(result.dependencies["typescript"].version).toBe("5.3.3");
   });
 
-  it("preserves resolved URLs when present", () => {
+  it("strips resolved URLs from output", () => {
     const result = parseListJson(LIST_BASIC);
 
-    expect(result.dependencies["express"].resolved).toBe(
-      "https://registry.npmjs.org/express/-/express-4.18.2.tgz",
-    );
-    expect(result.dependencies["zod"].resolved).toBe(
-      "https://registry.npmjs.org/zod/-/zod-3.22.4.tgz",
-    );
-    // typescript has no resolved field
-    expect(result.dependencies["typescript"].resolved).toBeUndefined();
+    // resolved URLs are intentionally omitted to save tokens
+    expect(result.dependencies["express"]).not.toHaveProperty("resolved");
+    expect(result.dependencies["zod"]).not.toHaveProperty("resolved");
+    expect(result.dependencies["typescript"]).not.toHaveProperty("resolved");
   });
 
   it("preserves package name and version for scoped packages", () => {

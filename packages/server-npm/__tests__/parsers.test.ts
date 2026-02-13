@@ -141,6 +141,7 @@ describe("parseListJson", () => {
     expect(result.version).toBe("1.0.0");
     expect(result.total).toBe(2);
     expect(result.dependencies.express.version).toBe("4.18.2");
+    expect(result.dependencies.express).not.toHaveProperty("resolved");
     expect(result.dependencies.zod.version).toBe("3.25.0");
   });
 
