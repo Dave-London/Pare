@@ -40,10 +40,17 @@ export interface RunResult {
  * they are literal, and outside quotes they rarely appear in tool args.
  */
 export function escapeCmdArg(arg: string): string {
-  // Step 1: Escape % → %% to prevent %VAR% expansion (works quoted & unquoted)
-  let escaped = arg.replace(/%/g, "%%");
+  // NOTE: We intentionally do NOT escape % → %%. While % starts environment
+  // variable expansion in cmd.exe (%VAR%), the %% escape only works in batch
+  // files. When Node.js uses `shell: true`, it runs via `cmd.exe /d /s /c`
+  // which is NOT batch context — so %% passes through literally as two %
+  // characters. This breaks tools like git that use % in format strings
+  // (e.g., --format=%H), because git interprets %% as its own escape for
+  // literal %. User-provided text that might contain %VAR% patterns should
+  // be passed via stdin (e.g., git commit --file -) rather than as args.
+  let escaped = arg;
 
-  // Step 2: If the arg contains spaces, tabs, or double quotes, wrap it in
+  // Step 1: If the arg contains spaces, tabs, or double quotes, wrap it in
   // double quotes so cmd.exe keeps it as a single token.
   if (/[ \t"]/.test(arg)) {
     // Replace newlines with spaces — cmd.exe treats \n as a command-line
@@ -56,7 +63,7 @@ export function escapeCmdArg(arg: string): string {
     return `"${escaped}"`;
   }
 
-  // Step 3: For unquoted args, caret-escape cmd.exe metacharacters.
+  // Step 2: For unquoted args, caret-escape cmd.exe metacharacters.
   // The caret itself must be escaped first so that carets we insert
   // are not themselves re-escaped.
   escaped = escaped.replace(/\^/g, "^^");
@@ -65,7 +72,7 @@ export function escapeCmdArg(arg: string): string {
   escaped = escaped.replace(/</g, "^<");
   escaped = escaped.replace(/>/g, "^>");
 
-  // Step 4: Escape ! to prevent delayed expansion (!VAR!)
+  // Step 3: Escape ! to prevent delayed expansion (!VAR!)
   escaped = escaped.replace(/!/g, "^!");
 
   return escaped;

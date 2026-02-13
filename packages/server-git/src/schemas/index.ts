@@ -43,7 +43,7 @@ export type GitLog = z.infer<typeof GitLogSchema>;
 /** Zod schema for a single file entry in a git diff with additions, deletions, and status. */
 export const GitDiffFileSchema = z.object({
   file: z.string(),
-  status: z.enum(["added", "modified", "deleted", "renamed"]),
+  status: z.enum(["added", "modified", "deleted", "renamed", "copied"]),
   additions: z.number(),
   deletions: z.number(),
   oldFile: z.string().optional(),
