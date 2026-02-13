@@ -8,7 +8,7 @@ import { formatShow, compactShowMap, formatShowCompact } from "../lib/formatters
 import { GitShowSchema } from "../schemas/index.js";
 
 const DELIMITER = "@@";
-const SHOW_FORMAT = `%H${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%B`;
+const SHOW_FORMAT = `%H${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%B`;
 
 export function registerShowTool(server: McpServer) {
   server.registerTool(

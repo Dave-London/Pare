@@ -115,16 +115,15 @@ function parseBranchFromPorcelain(line: string): {
 
 /** Parses custom-formatted `git log` output (delimited by `@@`) into structured commit entries. */
 export function parseLog(stdout: string): GitLog {
-  // Format: hash|hashShort|author|email|date|refs|message
+  // Format: hash|hashShort|author|date|refs|message
   const DELIMITER = "@@";
   const lines = stdout.trim().split("\n").filter(Boolean);
   const commits = lines.map((line) => {
-    const [hash, hashShort, author, email, date, refs, ...messageParts] = line.split(DELIMITER);
+    const [hash, hashShort, author, date, refs, ...messageParts] = line.split(DELIMITER);
     return {
       hash,
       hashShort,
       author,
-      email,
       date,
       message: messageParts.join(DELIMITER),
       ...(refs ? { refs } : {}),
@@ -193,14 +192,13 @@ export function parseShow(stdout: string, diffStdout: string): GitShow {
   // stdout is the formatted commit info, diffStdout is the numstat
   const DELIMITER = "@@";
   const parts = stdout.trim().split(DELIMITER);
-  const [hash, author, email, date, ...messageParts] = parts;
+  const [hash, author, date, ...messageParts] = parts;
   const diff = parseDiffStat(diffStdout);
 
   return {
     hash,
     hashShort: hash.slice(0, 7),
     author,
-    email,
     date,
     message: messageParts.join(DELIMITER),
     diff,

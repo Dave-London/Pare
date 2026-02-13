@@ -30,7 +30,6 @@ function gitRaw(args: string[]): string {
   return execFileSync("git", args, {
     cwd: CWD,
     encoding: "utf-8",
-    shell: process.platform === "win32",
   });
 }
 
@@ -109,7 +108,7 @@ describe("fidelity: git status", () => {
 describe("fidelity: git log", () => {
   it("preserves every commit hash from raw log", () => {
     const DELIMITER = "@@";
-    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
+    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=5"]);
 
     // Also get raw oneline to cross-check
@@ -135,7 +134,7 @@ describe("fidelity: git log", () => {
 
   it("preserves commit messages", () => {
     const DELIMITER = "@@";
-    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
+    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=5"]);
 
     // Get raw messages via separate format
@@ -151,16 +150,12 @@ describe("fidelity: git log", () => {
     }
   });
 
-  it("preserves author name and email", () => {
+  it("preserves author name and email in combined format", () => {
     const DELIMITER = "@@";
-    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
+    const FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
     const rawFormatted = gitRaw(["log", `--format=${FORMAT}`, "--max-count=3"]);
 
-    const rawAuthors = gitRaw(["log", "--format=%an", "--max-count=3"])
-      .trim()
-      .split("\n")
-      .filter(Boolean);
-    const rawEmails = gitRaw(["log", "--format=%ae", "--max-count=3"])
+    const rawAuthors = gitRaw(["log", "--format=%an <%ae>", "--max-count=3"])
       .trim()
       .split("\n")
       .filter(Boolean);
@@ -169,7 +164,6 @@ describe("fidelity: git log", () => {
 
     for (let i = 0; i < rawAuthors.length; i++) {
       expect(log.commits[i].author).toBe(rawAuthors[i]);
-      expect(log.commits[i].email).toBe(rawEmails[i]);
     }
   });
 });
@@ -286,26 +280,24 @@ describe("fidelity: git branch", () => {
 describe("fidelity: git show", () => {
   it("preserves commit metadata from raw show", () => {
     const DELIMITER = "@@";
-    const FORMAT = `%H${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%B`;
+    const FORMAT = `%H${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%B`;
 
     const rawFormatted = gitRaw(["show", "--no-patch", `--format=${FORMAT}`, "HEAD"]);
     const rawDiff = gitRaw(["show", "--numstat", "--format=", "HEAD"]);
 
     // Cross-check with raw fields
     const rawHash = gitRaw(["show", "--format=%H", "--no-patch", "HEAD"]).trim();
-    const rawAuthor = gitRaw(["show", "--format=%an", "--no-patch", "HEAD"]).trim();
-    const rawEmail = gitRaw(["show", "--format=%ae", "--no-patch", "HEAD"]).trim();
+    const rawAuthor = gitRaw(["show", "--format=%an <%ae>", "--no-patch", "HEAD"]).trim();
 
     const show = parseShow(rawFormatted, rawDiff);
 
     expect(show.hash).toBe(rawHash);
     expect(show.author).toBe(rawAuthor);
-    expect(show.email).toBe(rawEmail);
   });
 
   it("preserves file list from show diff", () => {
     const DELIMITER = "@@";
-    const FORMAT = `%H${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%B`;
+    const FORMAT = `%H${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%B`;
 
     const rawFormatted = gitRaw(["show", "--no-patch", `--format=${FORMAT}`, "HEAD"]);
     const rawDiff = gitRaw(["show", "--numstat", "--format=", "HEAD"]);
@@ -375,7 +367,7 @@ describe("fidelity: edge cases", () => {
 
   it("parseLog handles commit message with special characters", () => {
     const DELIMITER = "@@";
-    const line = `abc123${DELIMITER}abc${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}1 day ago${DELIMITER}HEAD -> main${DELIMITER}fix: handle "quotes" & <brackets>`;
+    const line = `abc123${DELIMITER}abc${DELIMITER}Author <a@b.com>${DELIMITER}1 day ago${DELIMITER}HEAD -> main${DELIMITER}fix: handle "quotes" & <brackets>`;
     const log = parseLog(line);
     expect(log.commits[0].message).toBe('fix: handle "quotes" & <brackets>');
   });
@@ -470,7 +462,7 @@ describe("fidelity: log edge cases (expanded)", () => {
   it("parseLog handles commit message containing @@ delimiter", () => {
     const DELIMITER = "@@";
     // Message itself contains @@, which is also the delimiter
-    const line = `abc123${DELIMITER}abc${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}2 days ago${DELIMITER}HEAD -> main${DELIMITER}fix: handle @@ in diff output`;
+    const line = `abc123${DELIMITER}abc${DELIMITER}Author <a@b.com>${DELIMITER}2 days ago${DELIMITER}HEAD -> main${DELIMITER}fix: handle @@ in diff output`;
     const log = parseLog(line);
     expect(log.commits).toHaveLength(1);
     // The parser joins messageParts with @@, so it reconstructs the message
@@ -479,7 +471,7 @@ describe("fidelity: log edge cases (expanded)", () => {
 
   it("parseLog handles commit message with multiple @@ occurrences", () => {
     const DELIMITER = "@@";
-    const line = `def456${DELIMITER}def${DELIMITER}Dev${DELIMITER}d@e.com${DELIMITER}3 hours ago${DELIMITER}${DELIMITER}fix: @@ -1,5 +1,7 @@ in message`;
+    const line = `def456${DELIMITER}def${DELIMITER}Dev <d@e.com>${DELIMITER}3 hours ago${DELIMITER}${DELIMITER}fix: @@ -1,5 +1,7 @@ in message`;
     const log = parseLog(line);
     expect(log.commits).toHaveLength(1);
     expect(log.commits[0].message).toBe("fix: @@ -1,5 +1,7 @@ in message");
@@ -487,7 +479,7 @@ describe("fidelity: log edge cases (expanded)", () => {
 
   it("parseLog handles empty refs field (no decoration)", () => {
     const DELIMITER = "@@";
-    const line = `abc123${DELIMITER}abc${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}5 days ago${DELIMITER}${DELIMITER}chore: routine update`;
+    const line = `abc123${DELIMITER}abc${DELIMITER}Author <a@b.com>${DELIMITER}5 days ago${DELIMITER}${DELIMITER}chore: routine update`;
     const log = parseLog(line);
     expect(log.commits).toHaveLength(1);
     expect(log.commits[0].message).toBe("chore: routine update");
@@ -500,7 +492,7 @@ describe("fidelity: log edge cases (expanded)", () => {
     // %s in git log should not have newlines, but if it somehow does, the parser
     // splits on \n first, so a newline would create a second "line" that fails to parse
     // Test that at least the first commit parses correctly
-    const input = `abc123${DELIMITER}abc${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}1 day ago${DELIMITER}${DELIMITER}first line\nsecond line`;
+    const input = `abc123${DELIMITER}abc${DELIMITER}Author <a@b.com>${DELIMITER}1 day ago${DELIMITER}${DELIMITER}first line\nsecond line`;
     const log = parseLog(input);
     // The newline splits into two lines; first parses as a commit, second is malformed
     expect(log.commits.length).toBeGreaterThanOrEqual(1);
@@ -510,9 +502,9 @@ describe("fidelity: log edge cases (expanded)", () => {
   it("parseLog handles multiple commits with mixed refs", () => {
     const DELIMITER = "@@";
     const lines = [
-      `aaa111${DELIMITER}aaa${DELIMITER}Alice${DELIMITER}alice@test.com${DELIMITER}1 day ago${DELIMITER}HEAD -> main, origin/main${DELIMITER}feat: add feature`,
-      `bbb222${DELIMITER}bbb${DELIMITER}Bob${DELIMITER}bob@test.com${DELIMITER}2 days ago${DELIMITER}${DELIMITER}fix: bug fix`,
-      `ccc333${DELIMITER}ccc${DELIMITER}Charlie${DELIMITER}charlie@test.com${DELIMITER}3 days ago${DELIMITER}tag: v1.0.0${DELIMITER}chore: release`,
+      `aaa111${DELIMITER}aaa${DELIMITER}Alice <alice@test.com>${DELIMITER}1 day ago${DELIMITER}HEAD -> main, origin/main${DELIMITER}feat: add feature`,
+      `bbb222${DELIMITER}bbb${DELIMITER}Bob <bob@test.com>${DELIMITER}2 days ago${DELIMITER}${DELIMITER}fix: bug fix`,
+      `ccc333${DELIMITER}ccc${DELIMITER}Charlie <charlie@test.com>${DELIMITER}3 days ago${DELIMITER}tag: v1.0.0${DELIMITER}chore: release`,
     ].join("\n");
     const log = parseLog(lines);
     expect(log.commits).toHaveLength(3);
@@ -524,7 +516,7 @@ describe("fidelity: log edge cases (expanded)", () => {
 
   it("parseLog handles message with quotes, angle brackets, and ampersands", () => {
     const DELIMITER = "@@";
-    const line = `xyz789${DELIMITER}xyz${DELIMITER}Dev${DELIMITER}dev@co.com${DELIMITER}1 hour ago${DELIMITER}${DELIMITER}fix: escape "quotes" <tags> & ampersands 'singles' \`backticks\``;
+    const line = `xyz789${DELIMITER}xyz${DELIMITER}Dev <dev@co.com>${DELIMITER}1 hour ago${DELIMITER}${DELIMITER}fix: escape "quotes" <tags> & ampersands 'singles' \`backticks\``;
     const log = parseLog(line);
     expect(log.commits[0].message).toBe(
       "fix: escape \"quotes\" <tags> & ampersands 'singles' `backticks`",
@@ -618,11 +610,10 @@ describe("fidelity: diff edge cases (expanded)", () => {
 describe("fidelity: show edge cases (expanded)", () => {
   it("parseShow handles commit with empty diff (no file changes)", () => {
     const DELIMITER = "@@";
-    const metadata = `abc123${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}1 day ago${DELIMITER}chore: empty commit`;
+    const metadata = `abc123${DELIMITER}Author <a@b.com>${DELIMITER}1 day ago${DELIMITER}chore: empty commit`;
     const show = parseShow(metadata, "");
     expect(show.hash).toBe("abc123");
-    expect(show.author).toBe("Author");
-    expect(show.email).toBe("a@b.com");
+    expect(show.author).toBe("Author <a@b.com>");
     expect(show.date).toBe("1 day ago");
     expect(show.message).toBe("chore: empty commit");
     expect(show.diff.files).toHaveLength(0);
@@ -634,7 +625,7 @@ describe("fidelity: show edge cases (expanded)", () => {
   it("parseShow handles commit body with multi-line message containing @@", () => {
     const DELIMITER = "@@";
     // Message body contains @@ which is also the delimiter
-    const metadata = `def456${DELIMITER}Dev${DELIMITER}dev@co.com${DELIMITER}2 hours ago${DELIMITER}fix: handle @@ -1,5 +1,7 @@ diff markers in commit messages`;
+    const metadata = `def456${DELIMITER}Dev <dev@co.com>${DELIMITER}2 hours ago${DELIMITER}fix: handle @@ -1,5 +1,7 @@ diff markers in commit messages`;
     const diffOutput = "3\t1\tsrc/parsers.ts";
     const show = parseShow(metadata, diffOutput);
     expect(show.hash).toBe("def456");
@@ -645,7 +636,7 @@ describe("fidelity: show edge cases (expanded)", () => {
 
   it("parseShow handles commit with multiple @@ in body", () => {
     const DELIMITER = "@@";
-    const metadata = `ghi789${DELIMITER}Author${DELIMITER}a@b.com${DELIMITER}3 days ago${DELIMITER}test: verify @@ delimiter @@ handling @@ in messages`;
+    const metadata = `ghi789${DELIMITER}Author <a@b.com>${DELIMITER}3 days ago${DELIMITER}test: verify @@ delimiter @@ handling @@ in messages`;
     const show = parseShow(metadata, "");
     expect(show.hash).toBe("ghi789");
     expect(show.message).toBe("test: verify @@ delimiter @@ handling @@ in messages");
@@ -653,7 +644,7 @@ describe("fidelity: show edge cases (expanded)", () => {
 
   it("parseShow handles commit with large diff", () => {
     const DELIMITER = "@@";
-    const metadata = `jkl012${DELIMITER}Dev${DELIMITER}dev@co.com${DELIMITER}1 week ago${DELIMITER}feat: massive refactor`;
+    const metadata = `jkl012${DELIMITER}Dev <dev@co.com>${DELIMITER}1 week ago${DELIMITER}feat: massive refactor`;
     const diffLines = [
       "500\t200\tsrc/core.ts",
       "1000\t0\tsrc/new-module.ts",

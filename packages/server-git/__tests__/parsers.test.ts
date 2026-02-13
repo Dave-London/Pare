@@ -96,8 +96,8 @@ describe("parseLog", () => {
   it("parses formatted log output", () => {
     const DELIM = "@@";
     const stdout = [
-      `abc1234567890${DELIM}abc1234${DELIM}Jane Doe${DELIM}jane@example.com${DELIM}2 hours ago${DELIM}HEAD -> main${DELIM}Fix the bug`,
-      `def5678901234${DELIM}def5678${DELIM}John Smith${DELIM}john@example.com${DELIM}1 day ago${DELIM}${DELIM}Add feature X`,
+      `abc1234567890${DELIM}abc1234${DELIM}Jane Doe <jane@example.com>${DELIM}2 hours ago${DELIM}HEAD -> main${DELIM}Fix the bug`,
+      `def5678901234${DELIM}def5678${DELIM}John Smith <john@example.com>${DELIM}1 day ago${DELIM}${DELIM}Add feature X`,
     ].join("\n");
 
     const result = parseLog(stdout);
@@ -106,8 +106,7 @@ describe("parseLog", () => {
     expect(result.commits[0]).toEqual({
       hash: "abc1234567890",
       hashShort: "abc1234",
-      author: "Jane Doe",
-      email: "jane@example.com",
+      author: "Jane Doe <jane@example.com>",
       date: "2 hours ago",
       message: "Fix the bug",
       refs: "HEAD -> main",
@@ -120,6 +119,21 @@ describe("parseLog", () => {
     const result = parseLog("");
     expect(result.total).toBe(0);
     expect(result.commits).toEqual([]);
+  });
+
+  it("preserves combined author <email> with special characters", () => {
+    const DELIM = "@@";
+    const line = `abc123${DELIM}abc${DELIM}José O'Brien <jose.o'brien@company-name.co.uk>${DELIM}3 days ago${DELIM}${DELIM}fix: encoding`;
+    const result = parseLog(line);
+    expect(result.commits[0].author).toBe("José O'Brien <jose.o'brien@company-name.co.uk>");
+  });
+
+  it("handles author without email brackets", () => {
+    const DELIM = "@@";
+    const line = `abc123${DELIM}abc${DELIM}noreply${DELIM}1 day ago${DELIM}${DELIM}automated commit`;
+    const result = parseLog(line);
+    expect(result.commits[0].author).toBe("noreply");
+    expect(result.commits[0].message).toBe("automated commit");
   });
 });
 
@@ -180,19 +194,33 @@ describe("parseBranch", () => {
 describe("parseShow", () => {
   it("parses commit info and diff stats", () => {
     const DELIM = "@@";
-    const commitInfo = `abc123${DELIM}Jane Doe${DELIM}jane@example.com${DELIM}2 hours ago${DELIM}Fix critical bug in parser`;
+    const commitInfo = `abc123${DELIM}Jane Doe <jane@example.com>${DELIM}2 hours ago${DELIM}Fix critical bug in parser`;
     const diffStat = "5\t2\tsrc/parser.ts\n1\t1\ttests/parser.test.ts";
 
     const result = parseShow(commitInfo, diffStat);
 
     expect(result.hash).toBe("abc123");
-    expect(result.author).toBe("Jane Doe");
-    expect(result.email).toBe("jane@example.com");
+    expect(result.author).toBe("Jane Doe <jane@example.com>");
     expect(result.date).toBe("2 hours ago");
     expect(result.message).toBe("Fix critical bug in parser");
     expect(result.diff.totalFiles).toBe(2);
     expect(result.diff.totalAdditions).toBe(6);
     expect(result.diff.totalDeletions).toBe(3);
+  });
+
+  it("preserves combined author <email> with special characters", () => {
+    const DELIM = "@@";
+    const commitInfo = `abc123${DELIM}María García-López <maria@über-corp.de>${DELIM}5 hours ago${DELIM}chore: update deps`;
+    const result = parseShow(commitInfo, "");
+    expect(result.author).toBe("María García-López <maria@über-corp.de>");
+  });
+
+  it("handles author without email brackets", () => {
+    const DELIM = "@@";
+    const commitInfo = `abc123${DELIM}bot${DELIM}now${DELIM}auto-merge`;
+    const result = parseShow(commitInfo, "");
+    expect(result.author).toBe("bot");
+    expect(result.message).toBe("auto-merge");
   });
 });
 

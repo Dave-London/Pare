@@ -90,7 +90,6 @@ describe("@paretools/git integration", () => {
       expect(first.hash).toEqual(expect.any(String));
       expect(first.hashShort).toEqual(expect.any(String));
       expect(first.author).toEqual(expect.any(String));
-      expect(first.email).toEqual(expect.any(String));
       expect(first.date).toEqual(expect.any(String));
       expect(first.message).toEqual(expect.any(String));
     });
@@ -137,7 +136,6 @@ describe("@paretools/git integration", () => {
       expect(sc).toBeDefined();
       expect(sc.hash).toEqual(expect.any(String));
       expect(sc.author).toEqual(expect.any(String));
-      expect(sc.email).toEqual(expect.any(String));
       expect(sc.date).toEqual(expect.any(String));
       expect(sc.message).toEqual(expect.any(String));
 

@@ -27,7 +27,6 @@ export const GitLogEntrySchema = z.object({
   hash: z.string().optional(),
   hashShort: z.string(),
   author: z.string().optional(),
-  email: z.string().optional(),
   date: z.string().optional(),
   message: z.string(),
   refs: z.string().optional(),
@@ -95,7 +94,6 @@ export const GitShowSchema = z.object({
   hash: z.string().optional(),
   hashShort: z.string().optional(),
   author: z.string().optional(),
-  email: z.string().optional(),
   date: z.string().optional(),
   message: z.string(),
   diff: z

@@ -33,8 +33,7 @@ describe("compactLogMap", () => {
         {
           hash: "abc123full",
           hashShort: "abc1234",
-          author: "Jane",
-          email: "j@e.com",
+          author: "Jane <j@e.com>",
           date: "2h ago",
           message: "Fix bug",
           refs: "HEAD -> main",
@@ -42,8 +41,7 @@ describe("compactLogMap", () => {
         {
           hash: "def456full",
           hashShort: "def5678",
-          author: "John",
-          email: "j@e.com",
+          author: "John <j@e.com>",
           date: "1d ago",
           message: "Add feature",
         },
@@ -64,7 +62,6 @@ describe("compactLogMap", () => {
     // Verify dropped fields are not present
     expect(compact.commits[0]).not.toHaveProperty("hash");
     expect(compact.commits[0]).not.toHaveProperty("author");
-    expect(compact.commits[0]).not.toHaveProperty("email");
     expect(compact.commits[0]).not.toHaveProperty("date");
   });
 });
@@ -181,8 +178,7 @@ describe("compactShowMap", () => {
     const show: GitShow = {
       hash: "abc123def456full",
       hashShort: "abc123d",
-      author: "Jane Doe",
-      email: "jane@example.com",
+      author: "Jane Doe <jane@example.com>",
       date: "2 hours ago",
       message: "Fix parser bug\n\nDetailed description here",
       diff: {
@@ -199,7 +195,6 @@ describe("compactShowMap", () => {
     expect(compact.message).toBe("Fix parser bug");
     expect(compact).not.toHaveProperty("hash");
     expect(compact).not.toHaveProperty("author");
-    expect(compact).not.toHaveProperty("email");
     expect(compact).not.toHaveProperty("date");
     expect(compact).not.toHaveProperty("diff");
   });
@@ -207,8 +202,7 @@ describe("compactShowMap", () => {
   it("derives hashShort from hash when hashShort not present", () => {
     const show: GitShow = {
       hash: "abc123def456full",
-      author: "Jane",
-      email: "j@e.com",
+      author: "Jane <j@e.com>",
       date: "1h ago",
       message: "Some commit",
       diff: { files: [], totalAdditions: 0, totalDeletions: 0, totalFiles: 0 },

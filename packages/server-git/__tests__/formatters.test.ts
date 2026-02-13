@@ -77,16 +77,14 @@ describe("formatLog", () => {
         {
           hash: "abc123",
           hashShort: "abc1234",
-          author: "Jane",
-          email: "j@e.com",
+          author: "Jane <j@e.com>",
           date: "2h ago",
           message: "Fix bug",
         },
         {
           hash: "def456",
           hashShort: "def5678",
-          author: "John",
-          email: "j@e.com",
+          author: "John <j@e.com>",
           date: "1d ago",
           message: "Add feature",
         },
@@ -95,8 +93,8 @@ describe("formatLog", () => {
     };
     const output = formatLog(log);
 
-    expect(output).toContain("abc1234 Fix bug (Jane, 2h ago)");
-    expect(output).toContain("def5678 Add feature (John, 1d ago)");
+    expect(output).toContain("abc1234 Fix bug (Jane <j@e.com>, 2h ago)");
+    expect(output).toContain("def5678 Add feature (John <j@e.com>, 1d ago)");
   });
 });
 
@@ -139,8 +137,7 @@ describe("formatShow", () => {
   it("formats commit details with diff", () => {
     const show: GitShow = {
       hash: "abc123def456",
-      author: "Jane Doe",
-      email: "jane@example.com",
+      author: "Jane Doe <jane@example.com>",
       date: "2 hours ago",
       message: "Fix parser bug",
       diff: {
@@ -160,8 +157,7 @@ describe("formatShow", () => {
   it("formats commit with multiline message (single-line %s)", () => {
     const show: GitShow = {
       hash: "def456789012",
-      author: "John Smith",
-      email: "john@example.com",
+      author: "John Smith <john@example.com>",
       date: "3 days ago",
       message: "feat: add new feature with detailed description",
       diff: {
@@ -187,8 +183,7 @@ describe("formatShow", () => {
   it("formats commit with empty diff", () => {
     const show: GitShow = {
       hash: "aaa111222333",
-      author: "Author",
-      email: "a@b.com",
+      author: "Author <a@b.com>",
       date: "1 hour ago",
       message: "chore: empty commit",
       diff: {
@@ -221,8 +216,7 @@ describe("formatLog (expanded)", () => {
         {
           hash: "abc123",
           hashShort: "abc1234",
-          author: "Dev",
-          email: "d@e.com",
+          author: "Dev <d@e.com>",
           date: "5 min ago",
           message: "initial",
         },
@@ -231,7 +225,7 @@ describe("formatLog (expanded)", () => {
     };
     const output = formatLog(log);
 
-    expect(output).toBe("abc1234 initial (Dev, 5 min ago)");
+    expect(output).toBe("abc1234 initial (Dev <d@e.com>, 5 min ago)");
   });
 
   it("formats commits with refs", () => {
@@ -240,8 +234,7 @@ describe("formatLog (expanded)", () => {
         {
           hash: "aaa111",
           hashShort: "aaa1111",
-          author: "Alice",
-          email: "a@b.com",
+          author: "Alice <a@b.com>",
           date: "1h ago",
           message: "fix: bug",
           refs: "HEAD -> main",
@@ -252,15 +245,14 @@ describe("formatLog (expanded)", () => {
     const output = formatLog(log);
 
     // formatLog doesn't include refs in the output, but message should be present
-    expect(output).toContain("aaa1111 fix: bug (Alice, 1h ago)");
+    expect(output).toContain("aaa1111 fix: bug (Alice <a@b.com>, 1h ago)");
   });
 
   it("formats many commits", () => {
     const commits = Array.from({ length: 10 }, (_, i) => ({
       hash: `hash${i}`,
       hashShort: `short${i}`,
-      author: `Author${i}`,
-      email: `a${i}@b.com`,
+      author: `Author${i} <a${i}@b.com>`,
       date: `${i}d ago`,
       message: `Commit message ${i}`,
     }));
@@ -269,8 +261,8 @@ describe("formatLog (expanded)", () => {
     const lines = output.split("\n").filter(Boolean);
 
     expect(lines).toHaveLength(10);
-    expect(lines[0]).toContain("short0 Commit message 0 (Author0, 0d ago)");
-    expect(lines[9]).toContain("short9 Commit message 9 (Author9, 9d ago)");
+    expect(lines[0]).toContain("short0 Commit message 0 (Author0 <a0@b.com>, 0d ago)");
+    expect(lines[9]).toContain("short9 Commit message 9 (Author9 <a9@b.com>, 9d ago)");
   });
 
   it("formats commit with special characters in message", () => {
@@ -279,8 +271,7 @@ describe("formatLog (expanded)", () => {
         {
           hash: "xyz789",
           hashShort: "xyz7890",
-          author: "Dev",
-          email: "d@e.com",
+          author: "Dev <d@e.com>",
           date: "now",
           message: 'fix: handle "quotes" & <brackets>',
         },
@@ -290,6 +281,42 @@ describe("formatLog (expanded)", () => {
     const output = formatLog(log);
 
     expect(output).toContain('fix: handle "quotes" & <brackets>');
+  });
+
+  it("includes full author <email> in formatted output", () => {
+    const log: GitLog = {
+      commits: [
+        {
+          hash: "abc123",
+          hashShort: "abc1234",
+          author: "Jane Doe <jane@example.com>",
+          date: "2h ago",
+          message: "feat: add feature",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatLog(log);
+
+    expect(output).toContain("(Jane Doe <jane@example.com>, 2h ago)");
+  });
+
+  it("handles author without email in formatted output", () => {
+    const log: GitLog = {
+      commits: [
+        {
+          hash: "def456",
+          hashShort: "def4567",
+          author: "bot",
+          date: "now",
+          message: "auto-deploy",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatLog(log);
+
+    expect(output).toContain("(bot, now)");
   });
 });
 
