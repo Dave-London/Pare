@@ -59,6 +59,39 @@ describe("compactListMap", () => {
 
     expect(compact.dependencies).toEqual({ express: "4.18.2" });
   });
+
+  it("flattens nested dependencies with > delimited paths", () => {
+    const list: NpmList = {
+      name: "my-app",
+      version: "1.0.0",
+      dependencies: {
+        express: {
+          version: "4.18.2",
+          dependencies: {
+            "body-parser": {
+              version: "1.20.1",
+              dependencies: {
+                bytes: { version: "3.1.2" },
+              },
+            },
+            "content-type": { version: "1.0.5" },
+          },
+        },
+        lodash: { version: "4.17.21" },
+      },
+      total: 5,
+    };
+
+    const compact = compactListMap(list);
+
+    expect(compact.dependencies).toEqual({
+      express: "4.18.2",
+      "express>body-parser": "1.20.1",
+      "express>body-parser>bytes": "3.1.2",
+      "express>content-type": "1.0.5",
+      lodash: "4.17.21",
+    });
+  });
 });
 
 describe("formatListCompact", () => {
