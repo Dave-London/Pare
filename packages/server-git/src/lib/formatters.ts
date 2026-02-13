@@ -55,7 +55,7 @@ export function formatBranch(b: GitBranchFull): string {
 
 /** Formats structured git show data into a human-readable commit detail view with diff summary. */
 export function formatShow(s: GitShow): string {
-  const header = `${(s.hash ?? "").slice(0, 8)} ${s.message}\nAuthor: ${s.author ?? ""} <${s.email ?? ""}>\nDate: ${s.date ?? ""}`;
+  const header = `${(s.hash ?? "").slice(0, 8)} ${s.message}\nAuthor: ${s.author ?? ""}\nDate: ${s.date ?? ""}`;
   const diff = s.diff ? formatDiff(s.diff) : "";
   return diff ? `${header}\n\n${diff}` : header;
 }

@@ -8,7 +8,7 @@ import { formatLog, compactLogMap, formatLogCompact } from "../lib/formatters.js
 import { GitLogSchema } from "../schemas/index.js";
 
 const DELIMITER = "@@";
-const LOG_FORMAT = `%H${DELIMITER}%h${DELIMITER}%an${DELIMITER}%ae${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
+const LOG_FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
 
 export function registerLogTool(server: McpServer) {
   server.registerTool(
