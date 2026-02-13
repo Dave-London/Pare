@@ -86,6 +86,53 @@ describe("parsePsJson", () => {
     const result = parsePsJson(stdout);
     expect(result.containers[0].ports).toEqual([]);
   });
+
+  it("truncates long container IDs to 12 characters", () => {
+    const stdout = JSON.stringify({
+      ID: "abc123def456789012345678901234567890123456789012345678901234abcd",
+      Names: "long-id-app",
+      Image: "node:20",
+      Status: "Up 1 hour",
+      State: "running",
+      Ports: "",
+      CreatedAt: "2024-01-15 10:30:00",
+    });
+
+    const result = parsePsJson(stdout);
+    expect(result.containers[0].id).toBe("abc123def456");
+    expect(result.containers[0].id).toHaveLength(12);
+  });
+
+  it("prefers RunningFor over CreatedAt for relative timestamps", () => {
+    const stdout = JSON.stringify({
+      ID: "abc123def456",
+      Names: "relative-ts",
+      Image: "node:20",
+      Status: "Up 2 hours",
+      State: "running",
+      Ports: "",
+      CreatedAt: "2024-01-15 10:30:00 +0000 UTC",
+      RunningFor: "2 hours ago",
+    });
+
+    const result = parsePsJson(stdout);
+    expect(result.containers[0].created).toBe("2 hours ago");
+  });
+
+  it("falls back to CreatedAt when RunningFor is absent", () => {
+    const stdout = JSON.stringify({
+      ID: "abc123def456",
+      Names: "iso-ts",
+      Image: "node:20",
+      Status: "Up 1 hour",
+      State: "running",
+      Ports: "",
+      CreatedAt: "2024-01-15 10:30:00",
+    });
+
+    const result = parsePsJson(stdout);
+    expect(result.containers[0].created).toBe("2024-01-15 10:30:00");
+  });
 });
 
 // ---------------------------------------------------------------------------

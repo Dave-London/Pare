@@ -21,13 +21,13 @@ export function parsePsJson(stdout: string): DockerPs {
   const containers = lines.map((line) => {
     const c = JSON.parse(line);
     return {
-      id: c.ID ?? c.Id ?? "",
+      id: (c.ID ?? c.Id ?? "").slice(0, 12),
       name: c.Names ?? c.Name ?? "",
       image: c.Image ?? "",
       status: c.Status ?? "",
       state: (c.State ?? "created").toLowerCase(),
       ports: parsePorts(c.Ports ?? ""),
-      created: c.CreatedAt ?? c.RunningFor ?? "",
+      created: c.RunningFor ?? c.CreatedAt ?? "",
     };
   });
 
