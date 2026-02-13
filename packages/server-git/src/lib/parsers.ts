@@ -15,6 +15,7 @@ import type {
   GitRemoteFull,
   GitBlameFull,
   GitRestore,
+  GitReset,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -489,4 +490,23 @@ export function parseRestore(files: string[], source: string, staged: boolean): 
     source,
     staged,
   };
+}
+
+/** Parses `git reset` output into structured reset data with the ref and list of unstaged files. */
+export function parseReset(stdout: string, stderr: string, ref: string): GitReset {
+  // git reset outputs lines like "Unstaged changes after reset:" followed by
+  // status-prefixed file lines, e.g., "M\tsrc/index.ts" or "D\told-file.ts".
+  // It may also be empty if nothing was staged.
+  const combined = `${stdout}\n${stderr}`.trim();
+  const unstaged: string[] = [];
+
+  for (const line of combined.split("\n")) {
+    // Lines with a single-char status and a tab-separated file path
+    const match = line.match(/^[A-Z]\t(.+)$/);
+    if (match) {
+      unstaged.push(match[1]);
+    }
+  }
+
+  return { ref, unstaged };
 }

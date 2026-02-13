@@ -30,7 +30,7 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 16 tools", async () => {
+  it("lists all 17 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -44,6 +44,7 @@ describe("@paretools/git integration", () => {
       "pull",
       "push",
       "remote",
+      "reset",
       "restore",
       "show",
       "stash",
@@ -333,6 +334,66 @@ describe("@paretools/git write-tool integration", () => {
       const result = await client.callTool({
         name: "checkout",
         arguments: { path: tempDir, ref: "--force" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("reset", () => {
+    it("unstages a staged file and returns structured reset data", async () => {
+      // Create and stage a file
+      writeFileSync(join(tempDir, "reset-test.ts"), "export const r = 1;\n");
+      gitInTemp(["add", "reset-test.ts"]);
+
+      // Verify file is staged
+      const statusBefore = gitInTemp(["status", "--porcelain"]);
+      expect(statusBefore).toContain("reset-test.ts");
+
+      const result = await client.callTool({
+        name: "reset",
+        arguments: { path: tempDir, files: ["reset-test.ts"] },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.ref).toBe("HEAD");
+      expect(Array.isArray(sc.unstaged)).toBe(true);
+    });
+
+    it("unstages all files when no files specified", async () => {
+      // Stage multiple files
+      writeFileSync(join(tempDir, "reset-all-1.ts"), "export const a = 1;\n");
+      writeFileSync(join(tempDir, "reset-all-2.ts"), "export const b = 2;\n");
+      gitInTemp(["add", "reset-all-1.ts", "reset-all-2.ts"]);
+
+      const result = await client.callTool({
+        name: "reset",
+        arguments: { path: tempDir },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.ref).toBe("HEAD");
+      expect(Array.isArray(sc.unstaged)).toBe(true);
+    });
+
+    it("rejects flag-injection in ref", async () => {
+      const result = await client.callTool({
+        name: "reset",
+        arguments: { path: tempDir, ref: "--hard" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("rejects flag-injection in file paths", async () => {
+      const result = await client.callTool({
+        name: "reset",
+        arguments: { path: tempDir, files: ["--force"] },
       });
 
       expect(result.isError).toBe(true);

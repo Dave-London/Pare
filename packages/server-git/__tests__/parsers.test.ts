@@ -15,6 +15,7 @@ import {
   parseStashOutput,
   parseRemoteOutput,
   parseBlameOutput,
+  parseReset,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -692,5 +693,29 @@ describe("parseBlameOutput", () => {
     expect(result.file).toBe("empty-file.ts");
     expect(result.totalLines).toBe(0);
     expect(result.commits).toEqual([]);
+  });
+});
+
+describe("parseReset", () => {
+  it("parses unstaged files from reset output", () => {
+    const stdout = "Unstaged changes after reset:\nM\tsrc/index.ts\nM\tsrc/app.ts\n";
+    const result = parseReset(stdout, "", "HEAD");
+
+    expect(result.ref).toBe("HEAD");
+    expect(result.unstaged).toEqual(["src/index.ts", "src/app.ts"]);
+  });
+
+  it("handles empty output", () => {
+    const result = parseReset("", "", "HEAD");
+
+    expect(result.ref).toBe("HEAD");
+    expect(result.unstaged).toEqual([]);
+  });
+
+  it("parses output with various status types", () => {
+    const stdout = "Unstaged changes after reset:\nM\tmodified.ts\nD\tdeleted.ts\nA\tadded.ts\n";
+    const result = parseReset(stdout, "", "HEAD");
+
+    expect(result.unstaged).toEqual(["modified.ts", "deleted.ts", "added.ts"]);
   });
 });

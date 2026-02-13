@@ -214,6 +214,28 @@ describe("security: restore tool — files validation", () => {
   });
 });
 
+describe("security: reset tool — ref validation", () => {
+  it("rejects flag-like refs", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(/must not start with "-"/);
+    }
+  });
+});
+
+describe("security: reset tool — files validation", () => {
+  it("rejects flag-like file paths", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "files")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe file paths", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "files")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Git tool schemas
 // ---------------------------------------------------------------------------

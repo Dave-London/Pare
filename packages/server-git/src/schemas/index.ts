@@ -271,3 +271,11 @@ export const GitRestoreSchema = z.object({
 });
 
 export type GitRestore = z.infer<typeof GitRestoreSchema>;
+
+/** Zod schema for structured git reset output with ref and list of unstaged files. */
+export const GitResetSchema = z.object({
+  ref: z.string(),
+  unstaged: z.array(z.string()),
+});
+
+export type GitReset = z.infer<typeof GitResetSchema>;
