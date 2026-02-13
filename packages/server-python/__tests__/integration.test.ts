@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
+/** MCP SDK defaults to 60 s request timeout; override for CI where shell spawning is slow. */
+const CALL_TIMEOUT = { timeout: 120_000 };
+
 describe("@paretools/python integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
@@ -54,10 +57,11 @@ describe("@paretools/python integration", () => {
 
   describe("ruff-check", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "ruff-check",
-        arguments: { path: resolve(__dirname, "../../..") },
-      });
+      const result = await client.callTool(
+        { name: "ruff-check", arguments: { path: resolve(__dirname, "../../..") } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         // ruff not installed — verify meaningful error
@@ -76,10 +80,11 @@ describe("@paretools/python integration", () => {
 
   describe("pip-install", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "pip-install",
-        arguments: { packages: ["nonexistent-pkg-xyz-12345"] },
-      });
+      const result = await client.callTool(
+        { name: "pip-install", arguments: { packages: ["nonexistent-pkg-xyz-12345"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -97,10 +102,11 @@ describe("@paretools/python integration", () => {
 
   describe("mypy", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "mypy",
-        arguments: { targets: ["nonexistent_dir_xyz"] },
-      });
+      const result = await client.callTool(
+        { name: "mypy", arguments: { targets: ["nonexistent_dir_xyz"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -119,10 +125,11 @@ describe("@paretools/python integration", () => {
 
   describe("pip-audit", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "pip-audit",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        { name: "pip-audit", arguments: {} },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -138,10 +145,11 @@ describe("@paretools/python integration", () => {
 
   describe("pytest", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "pytest",
-        arguments: { targets: ["nonexistent_test_dir_xyz"] },
-      });
+      const result = await client.callTool(
+        { name: "pytest", arguments: { targets: ["nonexistent_test_dir_xyz"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -163,10 +171,11 @@ describe("@paretools/python integration", () => {
 
   describe("uv-install", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "uv-install",
-        arguments: { packages: ["nonexistent-pkg-xyz-12345"] },
-      });
+      const result = await client.callTool(
+        { name: "uv-install", arguments: { packages: ["nonexistent-pkg-xyz-12345"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -184,10 +193,11 @@ describe("@paretools/python integration", () => {
 
   describe("uv-run", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "uv-run",
-        arguments: { command: ["python", "--version"] },
-      });
+      const result = await client.callTool(
+        { name: "uv-run", arguments: { command: ["python", "--version"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -206,10 +216,11 @@ describe("@paretools/python integration", () => {
 
   describe("black", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "black",
-        arguments: { targets: ["nonexistent_dir_xyz"], check: true },
-      });
+      const result = await client.callTool(
+        { name: "black", arguments: { targets: ["nonexistent_dir_xyz"], check: true } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -228,10 +239,11 @@ describe("@paretools/python integration", () => {
 
   describe("pip-list", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "pip-list",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        { name: "pip-list", arguments: {} },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -247,10 +259,11 @@ describe("@paretools/python integration", () => {
 
   describe("pip-show", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "pip-show",
-        arguments: { package: "pip" },
-      });
+      const result = await client.callTool(
+        { name: "pip-show", arguments: { package: "pip" } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -268,10 +281,11 @@ describe("@paretools/python integration", () => {
 
   describe("ruff-format", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "ruff-format",
-        arguments: { patterns: ["nonexistent_dir_xyz"], check: true },
-      });
+      const result = await client.callTool(
+        { name: "ruff-format", arguments: { patterns: ["nonexistent_dir_xyz"], check: true } },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
