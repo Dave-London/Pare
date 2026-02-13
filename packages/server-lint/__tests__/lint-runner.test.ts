@@ -25,6 +25,7 @@ describe("eslint()", () => {
     expect(mockRun).toHaveBeenCalledOnce();
     expect(mockRun).toHaveBeenCalledWith("npx", ["eslint", "--format", "json", "src/"], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -33,6 +34,7 @@ describe("eslint()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["eslint", "--format", "json", "."], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -41,6 +43,7 @@ describe("eslint()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["eslint", "--format", "json", "src/", "--fix"], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -50,7 +53,7 @@ describe("eslint()", () => {
     expect(mockRun).toHaveBeenCalledWith(
       "npx",
       ["eslint", "--format", "json", "src/", "lib/", "tests/"],
-      { cwd: "/project" },
+      { cwd: "/project", timeout: 120_000 },
     );
   });
 
@@ -59,6 +62,7 @@ describe("eslint()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["eslint", "--format", "json", "."], {
       cwd: undefined,
+      timeout: 120_000,
     });
   });
 
@@ -82,6 +86,7 @@ describe("prettier()", () => {
     expect(mockRun).toHaveBeenCalledOnce();
     expect(mockRun).toHaveBeenCalledWith("npx", ["prettier", "--check", "."], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -90,6 +95,7 @@ describe("prettier()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["prettier", "--check", "src/", "lib/"], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -98,6 +104,7 @@ describe("prettier()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["prettier", "--write", "src/", "lib/"], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -106,6 +113,7 @@ describe("prettier()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["prettier", "--check", "."], {
       cwd: undefined,
+      timeout: 120_000,
     });
   });
 
@@ -130,7 +138,7 @@ describe("biome()", () => {
     expect(mockRun).toHaveBeenCalledWith(
       "npx",
       ["@biomejs/biome", "check", "--reporter=json", "."],
-      { cwd: "/project" },
+      { cwd: "/project", timeout: 120_000 },
     );
   });
 
@@ -140,7 +148,7 @@ describe("biome()", () => {
     expect(mockRun).toHaveBeenCalledWith(
       "npx",
       ["@biomejs/biome", "check", "--reporter=json", "src/", "lib/"],
-      { cwd: "/project" },
+      { cwd: "/project", timeout: 120_000 },
     );
   });
 
@@ -149,6 +157,7 @@ describe("biome()", () => {
 
     expect(mockRun).toHaveBeenCalledWith("npx", ["@biomejs/biome", "format", "--write", "src/"], {
       cwd: "/project",
+      timeout: 120_000,
     });
   });
 
@@ -158,7 +167,7 @@ describe("biome()", () => {
     expect(mockRun).toHaveBeenCalledWith(
       "npx",
       ["@biomejs/biome", "format", "--write", "src/", "lib/", "tests/"],
-      { cwd: "/project" },
+      { cwd: "/project", timeout: 120_000 },
     );
   });
 
@@ -168,7 +177,7 @@ describe("biome()", () => {
     expect(mockRun).toHaveBeenCalledWith(
       "npx",
       ["@biomejs/biome", "check", "--reporter=json", "."],
-      { cwd: undefined },
+      { cwd: undefined, timeout: 120_000 },
     );
   });
 
