@@ -294,31 +294,66 @@ export function formatRemoteCompact(r: GitRemoteCompact): string {
 
 /** Formats structured git blame data into a human-readable annotated file view. */
 export function formatBlame(b: GitBlameFull): string {
-  if (b.lines.length === 0) return `No blame data for ${b.file}`;
-  return b.lines
+  if (b.totalLines === 0) return `No blame data for ${b.file}`;
+  // Flatten to per-line for human-readable output, sorted by line number
+  const flat: Array<{
+    hash: string;
+    author: string;
+    date: string;
+    lineNumber: number;
+    content: string;
+  }> = [];
+  for (const c of b.commits) {
+    for (const l of c.lines) {
+      flat.push({ hash: c.hash, author: c.author, date: c.date, ...l });
+    }
+  }
+  flat.sort((a, b) => a.lineNumber - b.lineNumber);
+  return flat
     .map((l) => `${l.hash} (${l.author} ${l.date}) ${l.lineNumber}: ${l.content}`)
     .join("\n");
 }
 
-/** Compact blame: hash + lineNumber + content only, no author/date. */
+/** Compact blame: hash + line numbers only, no author/date/content. */
 export interface GitBlameCompact {
   [key: string]: unknown;
-  lines: Array<{ hash: string; lineNumber: number; content: string }>;
+  commits: Array<{ hash: string; lines: number[] }>;
   file: string;
+  totalLines: number;
 }
 
 export function compactBlameMap(b: GitBlameFull): GitBlameCompact {
   return {
-    lines: b.lines.map((l) => ({
-      hash: l.hash,
-      lineNumber: l.lineNumber,
-      content: l.content,
+    commits: b.commits.map((c) => ({
+      hash: c.hash,
+      lines: c.lines.map((l) => l.lineNumber),
     })),
     file: b.file,
+    totalLines: b.totalLines,
   };
 }
 
+/** Compresses sorted line numbers into range strings (e.g., [1,2,3,7,9,10] → "1-3, 7, 9-10"). */
+function compressLineRanges(nums: number[]): string {
+  if (nums.length === 0) return "";
+  const sorted = [...nums].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      ranges.push(start === end ? `${start}` : `${start}-${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  ranges.push(start === end ? `${start}` : `${start}-${end}`);
+  return ranges.join(", ");
+}
+
 export function formatBlameCompact(b: GitBlameCompact): string {
-  if (b.lines.length === 0) return `No blame data for ${b.file}`;
-  return b.lines.map((l) => `${l.hash} ${l.lineNumber}: ${l.content}`).join("\n");
+  if (b.totalLines === 0) return `No blame data for ${b.file}`;
+  return b.commits.map((c) => `${c.hash}: lines ${compressLineRanges(c.lines)}`).join("\n");
 }

@@ -462,7 +462,7 @@ describe("parseRemoteOutput", () => {
 });
 
 describe("parseBlameOutput", () => {
-  it("parses porcelain blame output", () => {
+  it("groups lines by commit with single commit", () => {
     const stdout = [
       "abc123456789012345678901234567890123abcd 1 1 3",
       "author John Doe",
@@ -485,21 +485,21 @@ describe("parseBlameOutput", () => {
     const result = parseBlameOutput(stdout, "src/index.ts");
 
     expect(result.file).toBe("src/index.ts");
-    expect(result.lines).toHaveLength(3);
-    expect(result.lines[0]).toEqual({
+    expect(result.totalLines).toBe(3);
+    expect(result.commits).toHaveLength(1);
+    expect(result.commits[0]).toEqual({
       hash: "abc12345",
       author: "John Doe",
       date: new Date(1700000000 * 1000).toISOString(),
-      lineNumber: 1,
-      content: "const x = 1;",
+      lines: [
+        { lineNumber: 1, content: "const x = 1;" },
+        { lineNumber: 2, content: "const y = 2;" },
+        { lineNumber: 3, content: "const z = 3;" },
+      ],
     });
-    expect(result.lines[1].lineNumber).toBe(2);
-    expect(result.lines[1].content).toBe("const y = 2;");
-    expect(result.lines[2].lineNumber).toBe(3);
-    expect(result.lines[2].content).toBe("const z = 3;");
   });
 
-  it("parses blame with multiple commits", () => {
+  it("groups lines by commit with multiple commits", () => {
     const stdout = [
       "aaaa111122223333444455556666777788889999 1 1 1",
       "author Alice",
@@ -529,17 +529,140 @@ describe("parseBlameOutput", () => {
 
     const result = parseBlameOutput(stdout, "file.ts");
 
-    expect(result.lines).toHaveLength(2);
-    expect(result.lines[0].author).toBe("Alice");
-    expect(result.lines[0].hash).toBe("aaaa1111");
-    expect(result.lines[1].author).toBe("Bob");
-    expect(result.lines[1].hash).toBe("bbbb1111");
+    expect(result.totalLines).toBe(2);
+    expect(result.commits).toHaveLength(2);
+    expect(result.commits[0].hash).toBe("aaaa1111");
+    expect(result.commits[0].author).toBe("Alice");
+    expect(result.commits[0].lines).toEqual([{ lineNumber: 1, content: "line one" }]);
+    expect(result.commits[1].hash).toBe("bbbb1111");
+    expect(result.commits[1].author).toBe("Bob");
+    expect(result.commits[1].lines).toEqual([{ lineNumber: 2, content: "line two" }]);
+  });
+
+  it("deduplicates interleaved commits (A-B-A pattern)", () => {
+    // Simulates a file where commit A wrote lines 1,3 and commit B wrote line 2
+    const stdout = [
+      "aaaa111122223333444455556666777788889999 1 1 1",
+      "author Alice",
+      "author-mail <alice@example.com>",
+      "author-time 1700000000",
+      "author-tz +0000",
+      "committer Alice",
+      "committer-mail <alice@example.com>",
+      "committer-time 1700000000",
+      "committer-tz +0000",
+      "summary First commit",
+      "filename file.ts",
+      "\tline one",
+      "bbbb111122223333444455556666777788889999 2 2 1",
+      "author Bob",
+      "author-mail <bob@example.com>",
+      "author-time 1700100000",
+      "author-tz +0000",
+      "committer Bob",
+      "committer-mail <bob@example.com>",
+      "committer-time 1700100000",
+      "committer-tz +0000",
+      "summary Second commit",
+      "filename file.ts",
+      "\tline two",
+      "aaaa111122223333444455556666777788889999 3 3",
+      "\tline three",
+    ].join("\n");
+
+    const result = parseBlameOutput(stdout, "file.ts");
+
+    expect(result.totalLines).toBe(3);
+    // Only 2 commit groups despite 3 lines
+    expect(result.commits).toHaveLength(2);
+    expect(result.commits[0].hash).toBe("aaaa1111");
+    expect(result.commits[0].lines).toEqual([
+      { lineNumber: 1, content: "line one" },
+      { lineNumber: 3, content: "line three" },
+    ]);
+    expect(result.commits[1].hash).toBe("bbbb1111");
+    expect(result.commits[1].lines).toEqual([{ lineNumber: 2, content: "line two" }]);
+  });
+
+  it("handles many commits with many lines (large file simulation)", () => {
+    // Simulate a 30-line file with 5 different commits (6 lines each)
+    const commits = [
+      { hash: "aaaa" + "0".repeat(36), author: "Alice", time: 1700000000 },
+      { hash: "bbbb" + "0".repeat(36), author: "Bob", time: 1700100000 },
+      { hash: "cccc" + "0".repeat(36), author: "Charlie", time: 1700200000 },
+      { hash: "dddd" + "0".repeat(36), author: "Diana", time: 1700300000 },
+      { hash: "eeee" + "0".repeat(36), author: "Eve", time: 1700400000 },
+    ];
+    const lines: string[] = [];
+    for (let lineNum = 1; lineNum <= 30; lineNum++) {
+      const c = commits[(lineNum - 1) % 5];
+      const isFirstOccurrence = lineNum <= 5; // first time each commit appears
+      lines.push(`${c.hash} ${lineNum} ${lineNum}${isFirstOccurrence ? " 6" : ""}`);
+      if (isFirstOccurrence) {
+        lines.push(`author ${c.author}`);
+        lines.push(`author-mail <${c.author.toLowerCase()}@example.com>`);
+        lines.push(`author-time ${c.time}`);
+        lines.push(`author-tz +0000`);
+        lines.push(`committer ${c.author}`);
+        lines.push(`committer-mail <${c.author.toLowerCase()}@example.com>`);
+        lines.push(`committer-time ${c.time}`);
+        lines.push(`committer-tz +0000`);
+        lines.push(`summary Commit by ${c.author}`);
+        lines.push("filename large.ts");
+      }
+      lines.push(`\tcode line ${lineNum}`);
+    }
+
+    const result = parseBlameOutput(lines.join("\n"), "large.ts");
+
+    expect(result.totalLines).toBe(30);
+    expect(result.commits).toHaveLength(5);
+    // Each commit owns 6 lines
+    for (const c of result.commits) {
+      expect(c.lines).toHaveLength(6);
+    }
+    expect(result.commits[0].author).toBe("Alice");
+    expect(result.commits[4].author).toBe("Eve");
+  });
+
+  it("handles single commit owning entire file", () => {
+    const hash = "ff" + "0".repeat(38);
+    const lines = [
+      `${hash} 1 1 5`,
+      "author Solo Dev",
+      "author-mail <solo@example.com>",
+      "author-time 1700000000",
+      "author-tz +0000",
+      "committer Solo Dev",
+      "committer-mail <solo@example.com>",
+      "committer-time 1700000000",
+      "committer-tz +0000",
+      "summary Initial commit",
+      "filename solo.ts",
+      "\tline 1",
+      `${hash} 2 2`,
+      "\tline 2",
+      `${hash} 3 3`,
+      "\tline 3",
+      `${hash} 4 4`,
+      "\tline 4",
+      `${hash} 5 5`,
+      "\tline 5",
+    ];
+
+    const result = parseBlameOutput(lines.join("\n"), "solo.ts");
+
+    expect(result.totalLines).toBe(5);
+    expect(result.commits).toHaveLength(1);
+    expect(result.commits[0].author).toBe("Solo Dev");
+    expect(result.commits[0].lines).toHaveLength(5);
   });
 
   it("handles empty blame output", () => {
     const result = parseBlameOutput("", "empty-file.ts");
 
     expect(result.file).toBe("empty-file.ts");
-    expect(result.lines).toEqual([]);
+    expect(result.totalLines).toBe(0);
+    expect(result.commits).toEqual([]);
   });
 });
