@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Dave-London/docker",
-  "description": "Structured Docker operations (ps, images, logs, build) as typed JSON.",
+  "name": "io.github.Dave-London/pare-docker",
+  "description": "Pare Docker \u05d2\u20ac\u201d Structured Docker operations (ps, images, logs, build, compose) as typed JSON.",
   "repository": {
     "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.8.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@paretools/docker",
-      "version": "0.3.0",
+      "version": "0.8.1",
       "transport": {
         "type": "stdio"
       }

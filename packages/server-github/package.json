@@ -1,7 +1,7 @@
 {
   "name": "@paretools/github",
   "version": "0.7.1",
-  "mcpName": "io.github.Dave-London/github",
+  "mcpName": "io.github.Dave-London/pare-github",
   "description": "MCP server for GitHub operations (PRs, issues, actions) with structured, token-efficient output",
   "license": "MIT",
   "keywords": [

@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Dave-London/npm",
-  "description": "Structured npm/pnpm operations (install, audit, outdated, list) as typed JSON.",
+  "name": "io.github.Dave-London/pare-npm",
+  "description": "Pare npm \u05d2\u20ac\u201d Structured npm/pnpm operations (install, audit, outdated, list, run) as typed JSON.",
   "repository": {
     "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.8.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@paretools/npm",
-      "version": "0.3.0",
+      "version": "0.8.1",
       "transport": {
         "type": "stdio"
       }

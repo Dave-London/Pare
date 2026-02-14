@@ -1,7 +1,7 @@
 {
   "name": "@paretools/lint",
   "version": "0.8.0",
-  "mcpName": "io.github.Dave-London/lint",
+  "mcpName": "io.github.Dave-London/pare-lint",
   "description": "MCP server for linters (ESLint, Prettier, Biome) with structured, token-efficient output",
   "license": "MIT",
   "keywords": [
