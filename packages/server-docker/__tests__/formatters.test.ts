@@ -8,7 +8,9 @@ import {
   formatNetworkLs,
   formatVolumeLs,
   formatComposePs,
+
   formatComposeLogs,
+  formatStats,
 } from "../src/lib/formatters.js";
 import type {
   DockerPs,
@@ -19,7 +21,9 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+
   DockerComposeLogs,
+  DockerStats,
 } from "../src/schemas/index.js";
 
 describe("formatPs", () => {
@@ -352,6 +356,7 @@ describe("formatComposePs", () => {
   });
 });
 
+
 describe("formatComposeLogs", () => {
   it("formats compose logs with timestamps", () => {
     const data: DockerComposeLogs = {
@@ -399,5 +404,46 @@ describe("formatComposeLogs", () => {
     };
     const output = formatComposeLogs(data);
     expect(output).toContain("0 services, 0 entries");
+describe("formatStats", () => {
+  it("formats container stats with CPU, memory, and I/O", () => {
+    const data: DockerStats = {
+      containers: [
+        {
+          id: "abc123",
+          name: "web",
+          cpuPercent: 1.23,
+          memoryUsage: "150MiB",
+          memoryLimit: "1GiB",
+          memoryPercent: 14.65,
+          netIO: "1.5kB / 2.3kB",
+          blockIO: "8.19kB / 0B",
+          pids: 12,
+        },
+        {
+          id: "def456",
+          name: "db",
+          cpuPercent: 0.5,
+          memoryUsage: "256MiB",
+          memoryLimit: "2GiB",
+          memoryPercent: 12.5,
+          netIO: "500B / 1kB",
+          blockIO: "4.1MB / 12kB",
+          pids: 8,
+        },
+      ],
+      total: 2,
+    };
+    const output = formatStats(data);
+    expect(output).toContain("2 containers:");
+    expect(output).toContain("web (abc123) CPU: 1.23%");
+    expect(output).toContain("150MiB/1GiB");
+    expect(output).toContain("14.65%");
+    expect(output).toContain("PIDs: 12");
+    expect(output).toContain("db (def456) CPU: 0.50%");
+  });
+
+  it("formats empty stats", () => {
+    const data: DockerStats = { containers: [], total: 0 };
+    expect(formatStats(data)).toBe("No container stats available.");
   });
 });

@@ -8,7 +8,9 @@ import {
   parseNetworkLsJson,
   parseVolumeLsJson,
   parseComposePsJson,
+
   parseComposeLogsOutput,
+  parseStatsJson,
 } from "../src/lib/parsers.js";
 
 describe("parsePsJson", () => {
@@ -620,6 +622,7 @@ describe("parseComposePsJson", () => {
 });
 
 // ---------------------------------------------------------------------------
+
 // parseComposeLogsOutput
 // ---------------------------------------------------------------------------
 
@@ -700,5 +703,100 @@ describe("parseComposeLogsOutput", () => {
     expect(result.total).toBe(1);
     expect(result.entries[0].service).toBe("unknown");
     expect(result.entries[0].message).toBe("some raw output without pipe");
+// parseStatsJson
+// ---------------------------------------------------------------------------
+
+describe("parseStatsJson", () => {
+  it("parses multiple container stats", () => {
+    const stdout = [
+      JSON.stringify({
+        Container: "abc123def456",
+        Name: "web-app",
+        CPUPerc: "1.23%",
+        MemUsage: "150MiB / 1GiB",
+        MemPerc: "14.65%",
+        NetIO: "1.5kB / 2.3kB",
+        BlockIO: "8.19kB / 0B",
+        PIDs: "12",
+      }),
+      JSON.stringify({
+        Container: "def456abc789",
+        Name: "db",
+        CPUPerc: "0.50%",
+        MemUsage: "256MiB / 2GiB",
+        MemPerc: "12.50%",
+        NetIO: "500B / 1kB",
+        BlockIO: "4.1MB / 12kB",
+        PIDs: "8",
+      }),
+    ].join("\n");
+
+    const result = parseStatsJson(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.containers[0].id).toBe("abc123def456");
+    expect(result.containers[0].name).toBe("web-app");
+    expect(result.containers[0].cpuPercent).toBe(1.23);
+    expect(result.containers[0].memoryUsage).toBe("150MiB");
+    expect(result.containers[0].memoryLimit).toBe("1GiB");
+    expect(result.containers[0].memoryPercent).toBe(14.65);
+    expect(result.containers[0].netIO).toBe("1.5kB / 2.3kB");
+    expect(result.containers[0].blockIO).toBe("8.19kB / 0B");
+    expect(result.containers[0].pids).toBe(12);
+    expect(result.containers[1].name).toBe("db");
+    expect(result.containers[1].cpuPercent).toBe(0.5);
+  });
+
+  it("parses empty output", () => {
+    const result = parseStatsJson("");
+    expect(result.total).toBe(0);
+    expect(result.containers).toEqual([]);
+  });
+
+  it("handles missing fields gracefully", () => {
+    const stdout = JSON.stringify({
+      Container: "aaa111bbb222",
+      Name: "minimal",
+    });
+
+    const result = parseStatsJson(stdout);
+    expect(result.containers[0].id).toBe("aaa111bbb222");
+    expect(result.containers[0].name).toBe("minimal");
+    expect(result.containers[0].cpuPercent).toBe(0);
+    expect(result.containers[0].memoryPercent).toBe(0);
+    expect(result.containers[0].pids).toBe(0);
+  });
+
+  it("strips leading slash from container name", () => {
+    const stdout = JSON.stringify({
+      Container: "abc123def456",
+      Name: "/my-container",
+      CPUPerc: "0%",
+      MemUsage: "0B / 0B",
+      MemPerc: "0%",
+      NetIO: "0B / 0B",
+      BlockIO: "0B / 0B",
+      PIDs: "0",
+    });
+
+    const result = parseStatsJson(stdout);
+    expect(result.containers[0].name).toBe("my-container");
+  });
+
+  it("truncates long container IDs to 12 characters", () => {
+    const stdout = JSON.stringify({
+      Container: "abc123def456789012345678901234567890",
+      Name: "long-id",
+      CPUPerc: "0.01%",
+      MemUsage: "10MiB / 512MiB",
+      MemPerc: "1.95%",
+      NetIO: "0B / 0B",
+      BlockIO: "0B / 0B",
+      PIDs: "1",
+    });
+
+    const result = parseStatsJson(stdout);
+    expect(result.containers[0].id).toBe("abc123def456");
+    expect(result.containers[0].id).toHaveLength(12);
   });
 });

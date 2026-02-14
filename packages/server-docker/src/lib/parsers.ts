@@ -12,8 +12,10 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+
   DockerComposeLogs,
   DockerComposeBuild,
+  DockerStats,
 } from "../schemas/index.js";
 
 /** Parses `docker ps --format json` output into structured container data with ports and state. */
@@ -315,6 +317,7 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
   return { volumes, total: volumes.length };
 }
 
+
 /** Parses `docker compose build` output into structured per-service build status. */
 export function parseComposeBuildOutput(
   stdout: string,
@@ -394,6 +397,33 @@ export function parseComposeBuildOutput(
     failed,
     duration,
   };
+/** Parses percentage string like "1.23%" into a number. Returns 0 for unparseable values. */
+function parsePercent(value: string): number {
+  const n = parseFloat(value.replace("%", ""));
+  return Number.isNaN(n) ? 0 : n;
+}
+
+/** Parses `docker stats --no-stream --format '{{json .}}'` output into structured container stats. */
+export function parseStatsJson(stdout: string): DockerStats {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const containers = lines.map((line) => {
+    const s = JSON.parse(line);
+    // Docker stats JSON uses: Container, Name, CPUPerc, MemUsage, MemPerc, NetIO, BlockIO, PIDs
+    const memParts = (s.MemUsage ?? "0B / 0B").split("/").map((p: string) => p.trim());
+    return {
+      id: (s.Container ?? s.ID ?? "").slice(0, 12),
+      name: (s.Name ?? "").replace(/^\//, ""),
+      cpuPercent: parsePercent(s.CPUPerc ?? "0%"),
+      memoryUsage: memParts[0] ?? "0B",
+      memoryLimit: memParts[1] ?? "0B",
+      memoryPercent: parsePercent(s.MemPerc ?? "0%"),
+      netIO: s.NetIO ?? "0B / 0B",
+      blockIO: s.BlockIO ?? "0B / 0B",
+      pids: parseInt(s.PIDs ?? "0", 10) || 0,
+    };
+  });
+
+  return { containers, total: containers.length };
 }
 
 /** Parses `docker compose ps --format json` output into structured compose service data. */

@@ -26,7 +26,8 @@ describe("@paretools/docker integration", () => {
     await transport.close();
   });
 
-  it("lists all 15 tools", async () => {
+
+  it("lists all 16 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -44,6 +45,7 @@ describe("@paretools/docker integration", () => {
       "ps",
       "pull",
       "run",
+      "stats",
       "volume-ls",
     ]);
   });
@@ -308,6 +310,36 @@ describe("@paretools/docker integration", () => {
         expect(Array.isArray(sc.services)).toBe(true);
         expect(sc.total).toEqual(expect.any(Number));
       }
+    });
+  });
+
+  describe("stats", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "stats",
+        arguments: {},
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.containers)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+      }
+    });
+
+    it("rejects flag injection in containers param", async () => {
+      const result = await client.callTool({
+        name: "stats",
+        arguments: { containers: ["--privileged"] },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toMatch(/argument injection/i);
     });
   });
 });
