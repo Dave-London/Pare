@@ -15,6 +15,7 @@ import type {
   RunViewResult,
   RunListResult,
   RunRerunResult,
+  ReleaseCreateResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -339,6 +340,20 @@ export function parseRunRerun(
     failedOnly,
     url,
   };
+}
+
+/**
+ * Parses `gh release create` output (URL on stdout) into structured data.
+ * The gh CLI prints the new release URL to stdout.
+ */
+export function parseReleaseCreate(
+  stdout: string,
+  tag: string,
+  draft: boolean,
+  prerelease: boolean,
+): ReleaseCreateResult {
+  const url = stdout.trim();
+  return { tag, url, draft, prerelease };
 }
 
 /**

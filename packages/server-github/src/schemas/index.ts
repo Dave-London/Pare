@@ -258,6 +258,18 @@ export const RunRerunResultSchema = z.object({
 
 export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
 
+// ── Release schemas ─────────────────────────────────────────────────
+
+/** Zod schema for structured release-create output. */
+export const ReleaseCreateResultSchema = z.object({
+  tag: z.string(),
+  url: z.string(),
+  draft: z.boolean(),
+  prerelease: z.boolean(),
+});
+
+export type ReleaseCreateResult = z.infer<typeof ReleaseCreateResultSchema>;
+
 // ── API schemas ─────────────────────────────────────────────────────
 
 /** Zod schema for structured gh api output. */

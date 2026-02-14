@@ -19,6 +19,7 @@ import { registerRunViewTool } from "./run-view.js";
 import { registerRunListTool } from "./run-list.js";
 import { registerRunRerunTool } from "./run-rerun.js";
 import { registerApiTool } from "./api.js";
+import { registerReleaseCreateTool } from "./release-create.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("github", name);
@@ -40,5 +41,6 @@ export function registerAllTools(server: McpServer) {
   if (s("run-view")) registerRunViewTool(server);
   if (s("run-list")) registerRunListTool(server);
   if (s("run-rerun")) registerRunRerunTool(server);
+  if (s("release-create")) registerReleaseCreateTool(server);
   if (s("api")) registerApiTool(server);
 }
