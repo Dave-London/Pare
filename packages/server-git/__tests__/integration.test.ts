@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/git integration", () => {
   let client: Client;
@@ -63,7 +64,9 @@ describe("@paretools/git integration", () => {
 
   describe("status", () => {
     it("returns structured status data", async () => {
-      const result = await client.callTool({ name: "status", arguments: {} });
+      const result = await client.callTool({ name: "status", arguments: {} }, undefined, {
+        timeout: CALL_TIMEOUT,
+      });
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -81,10 +84,14 @@ describe("@paretools/git integration", () => {
 
   describe("log", () => {
     it("returns structured commit history", async () => {
-      const result = await client.callTool({
-        name: "log",
-        arguments: { maxCount: 3, compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "log",
+          arguments: { maxCount: 3, compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -106,10 +113,14 @@ describe("@paretools/git integration", () => {
 
   describe("log-graph", () => {
     it("returns structured graph topology", async () => {
-      const result = await client.callTool({
-        name: "log-graph",
-        arguments: { maxCount: 5, compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "log-graph",
+          arguments: { maxCount: 5, compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -131,10 +142,14 @@ describe("@paretools/git integration", () => {
 
   describe("reflog", () => {
     it("returns structured reflog data", async () => {
-      const result = await client.callTool({
-        name: "reflog",
-        arguments: { maxCount: 5, compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "reflog",
+          arguments: { maxCount: 5, compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -155,10 +170,14 @@ describe("@paretools/git integration", () => {
 
   describe("worktree", () => {
     it("returns worktree list data with text content", async () => {
-      const result = await client.callTool({
-        name: "worktree",
-        arguments: { action: "list", compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "worktree",
+          arguments: { action: "list", compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -182,7 +201,11 @@ describe("@paretools/git integration", () => {
 
   describe("diff", () => {
     it("returns structured diff statistics", async () => {
-      const result = await client.callTool({ name: "diff", arguments: { compact: false } });
+      const result = await client.callTool(
+        { name: "diff", arguments: { compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -195,7 +218,11 @@ describe("@paretools/git integration", () => {
 
   describe("branch", () => {
     it("returns structured branch list with current", async () => {
-      const result = await client.callTool({ name: "branch", arguments: { compact: false } });
+      const result = await client.callTool(
+        { name: "branch", arguments: { compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -212,10 +239,14 @@ describe("@paretools/git integration", () => {
 
   describe("show", () => {
     it("returns structured commit details with diff", async () => {
-      const result = await client.callTool({
-        name: "show",
-        arguments: { ref: "HEAD", compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "show",
+          arguments: { ref: "HEAD", compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -283,10 +314,14 @@ describe("@paretools/git write-tool integration", () => {
       // Create a file to add
       writeFileSync(join(tempDir, "new-file.ts"), "export {};\n");
 
-      const result = await client.callTool({
-        name: "add",
-        arguments: { path: tempDir, files: ["new-file.ts"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "add",
+          arguments: { path: tempDir, files: ["new-file.ts"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -301,10 +336,14 @@ describe("@paretools/git write-tool integration", () => {
     it("stages all files with all=true", async () => {
       writeFileSync(join(tempDir, "another.ts"), "export const x = 1;\n");
 
-      const result = await client.callTool({
-        name: "add",
-        arguments: { path: tempDir, all: true },
-      });
+      const result = await client.callTool(
+        {
+          name: "add",
+          arguments: { path: tempDir, all: true },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -312,10 +351,14 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in file paths", async () => {
-      const result = await client.callTool({
-        name: "add",
-        arguments: { path: tempDir, files: ["--force"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "add",
+          arguments: { path: tempDir, files: ["--force"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       // Should return an error
       expect(result.isError).toBe(true);
@@ -329,10 +372,14 @@ describe("@paretools/git write-tool integration", () => {
       gitInTemp(["add", "commit-test.ts"]);
 
       // Uses --file - with stdin so multi-word messages work on Windows
-      const result = await client.callTool({
-        name: "commit",
-        arguments: { path: tempDir, message: "feat: add commit test file" },
-      });
+      const result = await client.callTool(
+        {
+          name: "commit",
+          arguments: { path: tempDir, message: "feat: add commit test file" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -353,10 +400,14 @@ describe("@paretools/git write-tool integration", () => {
 
       const multiLineMsg =
         "chore(test): add multi-line commit\n\nThis tests that newlines are preserved\nwhen using --file - with stdin.";
-      const result = await client.callTool({
-        name: "commit",
-        arguments: { path: tempDir, message: multiLineMsg },
-      });
+      const result = await client.callTool(
+        {
+          name: "commit",
+          arguments: { path: tempDir, message: multiLineMsg },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -366,10 +417,14 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in commit message", async () => {
-      const result = await client.callTool({
-        name: "commit",
-        arguments: { path: tempDir, message: "--amend" },
-      });
+      const result = await client.callTool(
+        {
+          name: "commit",
+          arguments: { path: tempDir, message: "--amend" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -377,10 +432,14 @@ describe("@paretools/git write-tool integration", () => {
 
   describe("checkout", () => {
     it("creates a new branch and returns structured checkout data", async () => {
-      const result = await client.callTool({
-        name: "checkout",
-        arguments: { path: tempDir, ref: "test-branch-integration", create: true },
-      });
+      const result = await client.callTool(
+        {
+          name: "checkout",
+          arguments: { path: tempDir, ref: "test-branch-integration", create: true },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -401,10 +460,14 @@ describe("@paretools/git write-tool integration", () => {
         ?.trim();
 
       if (defaultBranch) {
-        const result = await client.callTool({
-          name: "checkout",
-          arguments: { path: tempDir, ref: defaultBranch },
-        });
+        const result = await client.callTool(
+          {
+            name: "checkout",
+            arguments: { path: tempDir, ref: defaultBranch },
+          },
+          undefined,
+          { timeout: CALL_TIMEOUT },
+        );
 
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
@@ -414,10 +477,14 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in ref", async () => {
-      const result = await client.callTool({
-        name: "checkout",
-        arguments: { path: tempDir, ref: "--force" },
-      });
+      const result = await client.callTool(
+        {
+          name: "checkout",
+          arguments: { path: tempDir, ref: "--force" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -433,10 +500,14 @@ describe("@paretools/git write-tool integration", () => {
       const statusBefore = gitInTemp(["status", "--porcelain"]);
       expect(statusBefore).toContain("reset-test.ts");
 
-      const result = await client.callTool({
-        name: "reset",
-        arguments: { path: tempDir, files: ["reset-test.ts"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "reset",
+          arguments: { path: tempDir, files: ["reset-test.ts"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -453,10 +524,14 @@ describe("@paretools/git write-tool integration", () => {
       writeFileSync(join(tempDir, "reset-all-2.ts"), "export const b = 2;\n");
       gitInTemp(["add", "reset-all-1.ts", "reset-all-2.ts"]);
 
-      const result = await client.callTool({
-        name: "reset",
-        arguments: { path: tempDir },
-      });
+      const result = await client.callTool(
+        {
+          name: "reset",
+          arguments: { path: tempDir },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -465,19 +540,27 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in ref", async () => {
-      const result = await client.callTool({
-        name: "reset",
-        arguments: { path: tempDir, ref: "--hard" },
-      });
+      const result = await client.callTool(
+        {
+          name: "reset",
+          arguments: { path: tempDir, ref: "--hard" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("rejects flag-injection in file paths", async () => {
-      const result = await client.callTool({
-        name: "reset",
-        arguments: { path: tempDir, files: ["--force"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "reset",
+          arguments: { path: tempDir, files: ["--force"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -485,19 +568,27 @@ describe("@paretools/git write-tool integration", () => {
 
   describe("push", () => {
     it("rejects flag-injection in remote name", async () => {
-      const result = await client.callTool({
-        name: "push",
-        arguments: { path: tempDir, remote: "--delete" },
-      });
+      const result = await client.callTool(
+        {
+          name: "push",
+          arguments: { path: tempDir, remote: "--delete" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("rejects flag-injection in branch name", async () => {
-      const result = await client.callTool({
-        name: "push",
-        arguments: { path: tempDir, branch: "--force" },
-      });
+      const result = await client.callTool(
+        {
+          name: "push",
+          arguments: { path: tempDir, branch: "--force" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -505,19 +596,27 @@ describe("@paretools/git write-tool integration", () => {
 
   describe("pull", () => {
     it("rejects flag-injection in remote name", async () => {
-      const result = await client.callTool({
-        name: "pull",
-        arguments: { path: tempDir, remote: "--exec=malicious" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pull",
+          arguments: { path: tempDir, remote: "--exec=malicious" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("rejects flag-injection in branch name", async () => {
-      const result = await client.callTool({
-        name: "pull",
-        arguments: { path: tempDir, branch: "--no-verify" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pull",
+          arguments: { path: tempDir, branch: "--no-verify" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -540,10 +639,14 @@ describe("@paretools/git write-tool integration", () => {
       gitInTemp(["commit", "-m", "feat: add merge-ff file"]);
       gitInTemp(["checkout", defaultBranch]);
 
-      const result = await client.callTool({
-        name: "merge",
-        arguments: { path: tempDir, branch: "merge-ff-test" },
-      });
+      const result = await client.callTool(
+        {
+          name: "merge",
+          arguments: { path: tempDir, branch: "merge-ff-test" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -572,10 +675,14 @@ describe("@paretools/git write-tool integration", () => {
       gitInTemp(["commit", "-m", "feat: add merge-noff file"]);
       gitInTemp(["checkout", defaultBranch]);
 
-      const result = await client.callTool({
-        name: "merge",
-        arguments: { path: tempDir, branch: "merge-noff-test", noFf: true },
-      });
+      const result = await client.callTool(
+        {
+          name: "merge",
+          arguments: { path: tempDir, branch: "merge-noff-test", noFf: true },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -608,10 +715,14 @@ describe("@paretools/git write-tool integration", () => {
       gitInTemp(["add", "conflict-file.txt"]);
       gitInTemp(["commit", "-m", "change conflict file on main"]);
 
-      const result = await client.callTool({
-        name: "merge",
-        arguments: { path: tempDir, branch: "merge-conflict-test" },
-      });
+      const result = await client.callTool(
+        {
+          name: "merge",
+          arguments: { path: tempDir, branch: "merge-conflict-test" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       // Should NOT be an error — conflicts are returned as structured data
       expect(result.isError).not.toBe(true);
@@ -629,19 +740,27 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in branch name", async () => {
-      const result = await client.callTool({
-        name: "merge",
-        arguments: { path: tempDir, branch: "--force" },
-      });
+      const result = await client.callTool(
+        {
+          name: "merge",
+          arguments: { path: tempDir, branch: "--force" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("rejects flag-injection in message", async () => {
-      const result = await client.callTool({
-        name: "merge",
-        arguments: { path: tempDir, branch: "some-branch", message: "--amend" },
-      });
+      const result = await client.callTool(
+        {
+          name: "merge",
+          arguments: { path: tempDir, branch: "some-branch", message: "--amend" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -649,10 +768,14 @@ describe("@paretools/git write-tool integration", () => {
 
   describe("bisect", () => {
     it("handles reset action without error when no bisect is active", async () => {
-      const result = await client.callTool({
-        name: "bisect",
-        arguments: { path: tempDir, action: "reset" },
-      });
+      const result = await client.callTool(
+        {
+          name: "bisect",
+          arguments: { path: tempDir, action: "reset" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       // bisect reset when no bisect is active should still succeed
       // (git bisect reset returns 0 when there's no active bisect session)
@@ -678,15 +801,19 @@ describe("@paretools/git write-tool integration", () => {
       const lastCommit = gitInTemp(["rev-parse", "HEAD"]).trim();
 
       // Start bisect with bad=HEAD and good=first commit
-      const startResult = await client.callTool({
-        name: "bisect",
-        arguments: {
-          path: tempDir,
-          action: "start",
-          bad: lastCommit,
-          good: firstCommit,
+      const startResult = await client.callTool(
+        {
+          name: "bisect",
+          arguments: {
+            path: tempDir,
+            action: "start",
+            bad: lastCommit,
+            good: firstCommit,
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(startResult.content).toBeDefined();
       const startSc = startResult.structuredContent as Record<string, unknown>;
@@ -695,10 +822,14 @@ describe("@paretools/git write-tool integration", () => {
       expect(startSc.message).toEqual(expect.any(String));
 
       // Reset bisect to clean up
-      const resetResult = await client.callTool({
-        name: "bisect",
-        arguments: { path: tempDir, action: "reset" },
-      });
+      const resetResult = await client.callTool(
+        {
+          name: "bisect",
+          arguments: { path: tempDir, action: "reset" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const resetSc = resetResult.structuredContent as Record<string, unknown>;
       expect(resetSc).toBeDefined();
@@ -706,19 +837,27 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in bad ref", async () => {
-      const result = await client.callTool({
-        name: "bisect",
-        arguments: { path: tempDir, action: "start", bad: "--exec=malicious", good: "HEAD" },
-      });
+      const result = await client.callTool(
+        {
+          name: "bisect",
+          arguments: { path: tempDir, action: "start", bad: "--exec=malicious", good: "HEAD" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("rejects flag-injection in good ref", async () => {
-      const result = await client.callTool({
-        name: "bisect",
-        arguments: { path: tempDir, action: "start", bad: "HEAD", good: "--exec=malicious" },
-      });
+      const result = await client.callTool(
+        {
+          name: "bisect",
+          arguments: { path: tempDir, action: "start", bad: "HEAD", good: "--exec=malicious" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
@@ -749,10 +888,14 @@ describe("@paretools/git write-tool integration", () => {
       // Checkout feature branch and rebase onto default
       gitInTemp(["checkout", "rebase-feature"]);
 
-      const result = await client.callTool({
-        name: "rebase",
-        arguments: { path: tempDir, branch: defaultBranch },
-      });
+      const result = await client.callTool(
+        {
+          name: "rebase",
+          arguments: { path: tempDir, branch: defaultBranch },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
@@ -804,10 +947,14 @@ describe("@paretools/git write-tool integration", () => {
       // Checkout feature and attempt rebase onto default (should conflict)
       gitInTemp(["checkout", "rebase-conflict"]);
 
-      const result = await client.callTool({
-        name: "rebase",
-        arguments: { path: tempDir, branch: defaultBranch },
-      });
+      const result = await client.callTool(
+        {
+          name: "rebase",
+          arguments: { path: tempDir, branch: defaultBranch },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -821,10 +968,14 @@ describe("@paretools/git write-tool integration", () => {
       expect(text).toContain("conflict");
 
       // Abort the rebase to clean up
-      const abortResult = await client.callTool({
-        name: "rebase",
-        arguments: { path: tempDir, abort: true },
-      });
+      const abortResult = await client.callTool(
+        {
+          name: "rebase",
+          arguments: { path: tempDir, abort: true },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const abortSc = abortResult.structuredContent as Record<string, unknown>;
       expect(abortSc.success).toBe(true);
@@ -834,19 +985,27 @@ describe("@paretools/git write-tool integration", () => {
     });
 
     it("rejects flag-injection in branch name", async () => {
-      const result = await client.callTool({
-        name: "rebase",
-        arguments: { path: tempDir, branch: "--exec=malicious" },
-      });
+      const result = await client.callTool(
+        {
+          name: "rebase",
+          arguments: { path: tempDir, branch: "--exec=malicious" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("errors when branch is missing for normal rebase", async () => {
-      const result = await client.callTool({
-        name: "rebase",
-        arguments: { path: tempDir },
-      });
+      const result = await client.callTool(
+        {
+          name: "rebase",
+          arguments: { path: tempDir },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });

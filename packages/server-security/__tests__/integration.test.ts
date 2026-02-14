@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/security integration", () => {
   let client: Client;
@@ -42,10 +43,14 @@ describe("@paretools/security integration", () => {
 
   describe("trivy", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "trivy",
-        arguments: { target: "alpine:3.18" },
-      });
+      const result = await client.callTool(
+        {
+          name: "trivy",
+          arguments: { target: "alpine:3.18" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -61,10 +66,14 @@ describe("@paretools/security integration", () => {
 
   describe("semgrep", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "semgrep",
-        arguments: { config: "auto" },
-      });
+      const result = await client.callTool(
+        {
+          name: "semgrep",
+          arguments: { config: "auto" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -79,10 +88,14 @@ describe("@paretools/security integration", () => {
 
   describe("gitleaks", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "gitleaks",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "gitleaks",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;

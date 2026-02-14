@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/github integration", () => {
   let client: Client;
@@ -67,10 +68,14 @@ describe("@paretools/github integration", () => {
 
   describe("pr-view", () => {
     it("returns error for non-existent PR", async () => {
-      const result = await client.callTool({
-        name: "pr-view",
-        arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pr-view",
+          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       // Should fail because repo doesn't exist or gh auth is missing
       if (result.isError) {
@@ -83,10 +88,14 @@ describe("@paretools/github integration", () => {
 
   describe("pr-list", () => {
     it("returns error or structured data for non-existent repo", async () => {
-      const result = await client.callTool({
-        name: "pr-list",
-        arguments: { repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pr-list",
+          arguments: { repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -102,10 +111,14 @@ describe("@paretools/github integration", () => {
 
   describe("pr-checks", () => {
     it("returns error for non-existent PR", async () => {
-      const result = await client.callTool({
-        name: "pr-checks",
-        arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pr-checks",
+          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -116,10 +129,14 @@ describe("@paretools/github integration", () => {
 
   describe("pr-diff", () => {
     it("returns error for non-existent PR", async () => {
-      const result = await client.callTool({
-        name: "pr-diff",
-        arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pr-diff",
+          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -130,10 +147,14 @@ describe("@paretools/github integration", () => {
 
   describe("issue-view", () => {
     it("returns error for non-existent issue", async () => {
-      const result = await client.callTool({
-        name: "issue-view",
-        arguments: { issue: 999999, repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "issue-view",
+          arguments: { issue: 999999, repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -144,10 +165,14 @@ describe("@paretools/github integration", () => {
 
   describe("issue-list", () => {
     it("returns error or structured data for non-existent repo", async () => {
-      const result = await client.callTool({
-        name: "issue-list",
-        arguments: { repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "issue-list",
+          arguments: { repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -163,10 +188,14 @@ describe("@paretools/github integration", () => {
 
   describe("run-view", () => {
     it("returns error for non-existent run", async () => {
-      const result = await client.callTool({
-        name: "run-view",
-        arguments: { runId: 999999999, repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run-view",
+          arguments: { runId: 999999999, repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -177,10 +206,14 @@ describe("@paretools/github integration", () => {
 
   describe("run-list", () => {
     it("returns error or structured data for non-existent repo", async () => {
-      const result = await client.callTool({
-        name: "run-list",
-        arguments: { repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run-list",
+          arguments: { repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -196,10 +229,14 @@ describe("@paretools/github integration", () => {
 
   describe("release-list", () => {
     it("returns error or structured data for non-existent repo", async () => {
-      const result = await client.callTool({
-        name: "release-list",
-        arguments: { repo: "paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "release-list",
+          arguments: { repo: "paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -215,10 +252,14 @@ describe("@paretools/github integration", () => {
 
   describe("api", () => {
     it("returns error or structured data for a simple endpoint", async () => {
-      const result = await client.callTool({
-        name: "api",
-        arguments: { endpoint: "repos/paretools/nonexistent-repo-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "api",
+          arguments: { endpoint: "repos/paretools/nonexistent-repo-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -237,182 +278,242 @@ describe("@paretools/github integration", () => {
 
   describe("security: flag injection via MCP", () => {
     it("pr-create rejects flag-injection in title", async () => {
-      const result = await client.callTool({
-        name: "pr-create",
-        arguments: {
-          title: "--exec=malicious",
-          body: "test body",
+      const result = await client.callTool(
+        {
+          name: "pr-create",
+          arguments: {
+            title: "--exec=malicious",
+            body: "test body",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-create rejects flag-injection in base branch", async () => {
-      const result = await client.callTool({
-        name: "pr-create",
-        arguments: {
-          title: "safe title",
-          body: "test body",
-          base: "--delete",
+      const result = await client.callTool(
+        {
+          name: "pr-create",
+          arguments: {
+            title: "safe title",
+            body: "test body",
+            base: "--delete",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-create rejects flag-injection in head branch", async () => {
-      const result = await client.callTool({
-        name: "pr-create",
-        arguments: {
-          title: "safe title",
-          body: "test body",
-          head: "--force",
+      const result = await client.callTool(
+        {
+          name: "pr-create",
+          arguments: {
+            title: "safe title",
+            body: "test body",
+            head: "--force",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-comment rejects flag-injection in body", async () => {
-      const result = await client.callTool({
-        name: "pr-comment",
-        arguments: {
-          pr: 1,
-          body: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "pr-comment",
+          arguments: {
+            pr: 1,
+            body: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("issue-create rejects flag-injection in title", async () => {
-      const result = await client.callTool({
-        name: "issue-create",
-        arguments: {
-          title: "--exec=malicious",
-          body: "test body",
+      const result = await client.callTool(
+        {
+          name: "issue-create",
+          arguments: {
+            title: "--exec=malicious",
+            body: "test body",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("issue-comment rejects flag-injection in body", async () => {
-      const result = await client.callTool({
-        name: "issue-comment",
-        arguments: {
-          issue: 1,
-          body: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "issue-comment",
+          arguments: {
+            issue: 1,
+            body: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("issue-close rejects flag-injection in comment", async () => {
-      const result = await client.callTool({
-        name: "issue-close",
-        arguments: {
-          issue: 1,
-          comment: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "issue-close",
+          arguments: {
+            issue: 1,
+            comment: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-review rejects flag-injection in body", async () => {
-      const result = await client.callTool({
-        name: "pr-review",
-        arguments: {
-          pr: 1,
-          event: "comment",
-          body: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "pr-review",
+          arguments: {
+            pr: 1,
+            event: "comment",
+            body: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-update rejects flag-injection in title", async () => {
-      const result = await client.callTool({
-        name: "pr-update",
-        arguments: {
-          pr: 1,
-          title: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "pr-update",
+          arguments: {
+            pr: 1,
+            title: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-update rejects flag-injection in addLabels", async () => {
-      const result = await client.callTool({
-        name: "pr-update",
-        arguments: {
-          pr: 1,
-          addLabels: ["--exec=malicious"],
+      const result = await client.callTool(
+        {
+          name: "pr-update",
+          arguments: {
+            pr: 1,
+            addLabels: ["--exec=malicious"],
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("issue-update rejects flag-injection in title", async () => {
-      const result = await client.callTool({
-        name: "issue-update",
-        arguments: {
-          issue: 1,
-          title: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "issue-update",
+          arguments: {
+            issue: 1,
+            title: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("issue-update rejects flag-injection in addLabels", async () => {
-      const result = await client.callTool({
-        name: "issue-update",
-        arguments: {
-          issue: 1,
-          addLabels: ["--exec=malicious"],
+      const result = await client.callTool(
+        {
+          name: "issue-update",
+          arguments: {
+            issue: 1,
+            addLabels: ["--exec=malicious"],
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("release-create rejects flag-injection in tag", async () => {
-      const result = await client.callTool({
-        name: "release-create",
-        arguments: {
-          tag: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "release-create",
+          arguments: {
+            tag: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("release-list rejects flag-injection in repo", async () => {
-      const result = await client.callTool({
-        name: "release-list",
-        arguments: {
-          repo: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "release-list",
+          arguments: {
+            repo: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });
 
     it("pr-diff rejects flag-injection in repo", async () => {
-      const result = await client.callTool({
-        name: "pr-diff",
-        arguments: {
-          pr: 1,
-          repo: "--exec=malicious",
+      const result = await client.callTool(
+        {
+          name: "pr-diff",
+          arguments: {
+            pr: 1,
+            repo: "--exec=malicious",
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
     });

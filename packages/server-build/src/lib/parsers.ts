@@ -465,10 +465,6 @@ export function parseTurboOutput(
 const NX_TASK_RE =
   /^\s*[✔✓✗✖]\s+nx run\s+([\w@/.:-]+):([\w-]+)\s*(?:\[([^\]]+)])?\s*(?:\((\d+(?:\.\d+)?)\s*s\))?/i;
 
-// Summary line: "Successfully ran target <target> for N projects (Xs)"
-// or: "Ran target <target> for N projects (Xs)"
-const NX_SUMMARY_RE = /ran target\s+\S+\s+for\s+(\d+)\s+projects?\s*\((\d+(?:\.\d+)?)\s*s\)/i;
-
 // Cache hit summary: "N out of N tasks were retrieved from cache"
 // or individual [local cache] / [remote cache] on task lines (handled inline)
 

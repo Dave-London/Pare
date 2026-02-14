@@ -179,7 +179,6 @@ export const DockerComposePsSchema = z.object({
 
 export type DockerComposePs = z.infer<typeof DockerComposePsSchema>;
 
-
 /** Zod schema for a single compose log entry with timestamp, service, and message. */
 export const ComposeLogEntrySchema = z.object({
   timestamp: z.string().optional(),

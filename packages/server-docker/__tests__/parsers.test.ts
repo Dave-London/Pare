@@ -8,7 +8,6 @@ import {
   parseNetworkLsJson,
   parseVolumeLsJson,
   parseComposePsJson,
-
   parseComposeLogsOutput,
   parseStatsJson,
 } from "../src/lib/parsers.js";
@@ -703,6 +702,9 @@ describe("parseComposeLogsOutput", () => {
     expect(result.total).toBe(1);
     expect(result.entries[0].service).toBe("unknown");
     expect(result.entries[0].message).toBe("some raw output without pipe");
+  });
+});
+
 // parseStatsJson
 // ---------------------------------------------------------------------------
 

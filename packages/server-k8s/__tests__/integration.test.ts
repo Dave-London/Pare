@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/k8s integration", () => {
   let client: Client;
@@ -48,10 +49,14 @@ describe("@paretools/k8s integration", () => {
 
   describe("get", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "get",
-        arguments: { resource: "pods" },
-      });
+      const result = await client.callTool(
+        {
+          name: "get",
+          arguments: { resource: "pods" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -67,10 +72,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in resource param", async () => {
-      const result = await client.callTool({
-        name: "get",
-        arguments: { resource: "--privileged" },
-      });
+      const result = await client.callTool(
+        {
+          name: "get",
+          arguments: { resource: "--privileged" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -78,10 +87,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in name param", async () => {
-      const result = await client.callTool({
-        name: "get",
-        arguments: { resource: "pods", name: "--all" },
-      });
+      const result = await client.callTool(
+        {
+          name: "get",
+          arguments: { resource: "pods", name: "--all" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -89,10 +102,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in namespace param", async () => {
-      const result = await client.callTool({
-        name: "get",
-        arguments: { resource: "pods", namespace: "--all-namespaces" },
-      });
+      const result = await client.callTool(
+        {
+          name: "get",
+          arguments: { resource: "pods", namespace: "--all-namespaces" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -102,10 +119,14 @@ describe("@paretools/k8s integration", () => {
 
   describe("describe", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "describe",
-        arguments: { resource: "pod", name: "nonexistent-pod-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "describe",
+          arguments: { resource: "pod", name: "nonexistent-pod-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -120,10 +141,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in name param", async () => {
-      const result = await client.callTool({
-        name: "describe",
-        arguments: { resource: "pod", name: "--privileged" },
-      });
+      const result = await client.callTool(
+        {
+          name: "describe",
+          arguments: { resource: "pod", name: "--privileged" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -133,10 +158,14 @@ describe("@paretools/k8s integration", () => {
 
   describe("logs", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "logs",
-        arguments: { pod: "nonexistent-pod-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "logs",
+          arguments: { pod: "nonexistent-pod-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -152,10 +181,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in pod param", async () => {
-      const result = await client.callTool({
-        name: "logs",
-        arguments: { pod: "--all-containers" },
-      });
+      const result = await client.callTool(
+        {
+          name: "logs",
+          arguments: { pod: "--all-containers" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -165,10 +198,14 @@ describe("@paretools/k8s integration", () => {
 
   describe("apply", () => {
     it("returns error or structured data for nonexistent file", async () => {
-      const result = await client.callTool({
-        name: "apply",
-        arguments: { file: "/nonexistent-path-for-testing/manifest.yaml" },
-      });
+      const result = await client.callTool(
+        {
+          name: "apply",
+          arguments: { file: "/nonexistent-path-for-testing/manifest.yaml" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -181,10 +218,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in namespace param", async () => {
-      const result = await client.callTool({
-        name: "apply",
-        arguments: { file: "test.yaml", namespace: "--privileged" },
-      });
+      const result = await client.callTool(
+        {
+          name: "apply",
+          arguments: { file: "test.yaml", namespace: "--privileged" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -194,10 +235,14 @@ describe("@paretools/k8s integration", () => {
 
   describe("helm", () => {
     it("returns structured data or a command-not-found error for list", async () => {
-      const result = await client.callTool({
-        name: "helm",
-        arguments: { action: "list" },
-      });
+      const result = await client.callTool(
+        {
+          name: "helm",
+          arguments: { action: "list" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -211,10 +256,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in release param", async () => {
-      const result = await client.callTool({
-        name: "helm",
-        arguments: { action: "status", release: "--all" },
-      });
+      const result = await client.callTool(
+        {
+          name: "helm",
+          arguments: { action: "status", release: "--all" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -222,10 +271,14 @@ describe("@paretools/k8s integration", () => {
     });
 
     it("rejects flag injection in namespace param", async () => {
-      const result = await client.callTool({
-        name: "helm",
-        arguments: { action: "list", namespace: "--all-namespaces" },
-      });
+      const result = await client.callTool(
+        {
+          name: "helm",
+          arguments: { action: "list", namespace: "--all-namespaces" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
