@@ -30,7 +30,7 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 19 tools", async () => {
+  it("lists all 20 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -45,6 +45,7 @@ describe("@paretools/git integration", () => {
       "merge",
       "pull",
       "push",
+      "rebase",
       "remote",
       "reset",
       "restore",
@@ -560,6 +561,134 @@ describe("@paretools/git write-tool integration", () => {
       const result = await client.callTool({
         name: "merge",
         arguments: { path: tempDir, branch: "some-branch", message: "--amend" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("rebase", () => {
+    it("rebases a branch onto another and returns structured data", async () => {
+      // Ensure we are on the default branch (master/main)
+      const defaultBranch = gitInTemp(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+
+      // Create a base commit on the default branch
+      writeFileSync(join(tempDir, "rebase-base.txt"), "base content\n");
+      gitInTemp(["add", "rebase-base.txt"]);
+      gitInTemp(["commit", "-m", "Add rebase base file"]);
+
+      // Create a feature branch and add a commit
+      gitInTemp(["checkout", "-b", "rebase-feature"]);
+      writeFileSync(join(tempDir, "rebase-feature.txt"), "feature content\n");
+      gitInTemp(["add", "rebase-feature.txt"]);
+      gitInTemp(["commit", "-m", "Add feature file"]);
+
+      // Go back to default branch and add another commit (diverge)
+      gitInTemp(["checkout", defaultBranch]);
+      writeFileSync(join(tempDir, "rebase-diverge.txt"), "diverge content\n");
+      gitInTemp(["add", "rebase-diverge.txt"]);
+      gitInTemp(["commit", "-m", "Add diverge file"]);
+
+      // Checkout feature branch and rebase onto default
+      gitInTemp(["checkout", "rebase-feature"]);
+
+      const result = await client.callTool({
+        name: "rebase",
+        arguments: { path: tempDir, branch: defaultBranch },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.success).toBe(true);
+      expect(sc.branch).toBe(defaultBranch);
+      expect(sc.current).toBe("rebase-feature");
+      expect(sc.conflicts).toEqual([]);
+      expect(sc.rebasedCommits).toBe(1);
+
+      // Verify the text content
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      const text = textContent[0].text.replace(/\r\n/g, "\n");
+      expect(text).toContain("Rebased");
+
+      // Clean up — go back to default branch
+      gitInTemp(["checkout", defaultBranch]);
+    });
+
+    it("detects conflicts and returns success=false", async () => {
+      const defaultBranch = gitInTemp(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+
+      // Create a shared base: a file that both branches will modify differently
+      writeFileSync(join(tempDir, "conflict-file.txt"), "line 1\nline 2\nline 3\n");
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "Add conflict base file"]);
+
+      // Create a feature branch from this point
+      gitInTemp(["checkout", "-b", "rebase-conflict"]);
+      // Modify the same lines on the feature branch
+      writeFileSync(
+        join(tempDir, "conflict-file.txt"),
+        "feature line 1\nfeature line 2\nfeature line 3\n",
+      );
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "Modify conflict file on feature"]);
+
+      // Go back to default and modify the same lines differently
+      gitInTemp(["checkout", defaultBranch]);
+      writeFileSync(
+        join(tempDir, "conflict-file.txt"),
+        "default line 1\ndefault line 2\ndefault line 3\n",
+      );
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "Modify conflict file on default"]);
+
+      // Checkout feature and attempt rebase onto default (should conflict)
+      gitInTemp(["checkout", "rebase-conflict"]);
+
+      const result = await client.callTool({
+        name: "rebase",
+        arguments: { path: tempDir, branch: defaultBranch },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.success).toBe(false);
+      expect((sc.conflicts as string[]).length).toBeGreaterThan(0);
+      expect(sc.conflicts).toContain("conflict-file.txt");
+
+      // Verify the text content mentions conflicts — normalize CRLF for Windows
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      const text = textContent[0].text.replace(/\r\n/g, "\n");
+      expect(text).toContain("conflict");
+
+      // Abort the rebase to clean up
+      const abortResult = await client.callTool({
+        name: "rebase",
+        arguments: { path: tempDir, abort: true },
+      });
+
+      const abortSc = abortResult.structuredContent as Record<string, unknown>;
+      expect(abortSc.success).toBe(true);
+
+      // Clean up
+      gitInTemp(["checkout", defaultBranch]);
+    });
+
+    it("rejects flag-injection in branch name", async () => {
+      const result = await client.callTool({
+        name: "rebase",
+        arguments: { path: tempDir, branch: "--exec=malicious" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("errors when branch is missing for normal rebase", async () => {
+      const result = await client.callTool({
+        name: "rebase",
+        arguments: { path: tempDir },
       });
 
       expect(result.isError).toBe(true);

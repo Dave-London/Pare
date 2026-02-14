@@ -252,6 +252,20 @@ describe("security: merge tool — message validation", () => {
   });
 });
 
+describe("security: rebase tool — branch validation", () => {
+  it("rejects flag-like branch names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe branch names", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "branch")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Git tool schemas
 // ---------------------------------------------------------------------------

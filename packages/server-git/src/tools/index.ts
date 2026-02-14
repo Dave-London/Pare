@@ -19,6 +19,7 @@ import { registerRestoreTool } from "./restore.js";
 import { registerResetTool } from "./reset.js";
 import { registerCherryPickTool } from "./cherry-pick.js";
 import { registerMergeTool } from "./merge.js";
+import { registerRebaseTool } from "./rebase.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
@@ -41,4 +42,5 @@ export function registerAllTools(server: McpServer) {
   if (s("reset")) registerResetTool(server);
   if (s("cherry-pick")) registerCherryPickTool(server);
   if (s("merge")) registerMergeTool(server);
+  if (s("rebase")) registerRebaseTool(server);
 }

@@ -18,6 +18,7 @@ import type {
   GitReset,
   GitCherryPick,
   GitMerge,
+  GitRebase,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -390,6 +391,29 @@ export function formatCherryPick(cp: GitCherryPick): string {
     return "Cherry-pick completed (no commits applied)";
   }
   return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}`;
+}
+
+// ── Rebase formatters ─────────────────────────────────────────────────
+
+/** Formats structured git rebase data into a human-readable rebase summary. */
+export function formatRebase(r: GitRebase): string {
+  if (!r.success) {
+    const parts = [`Rebase of '${r.current}' onto '${r.branch}' paused with conflicts`];
+    if (r.conflicts.length > 0) {
+      parts.push(`Conflicts: ${r.conflicts.join(", ")}`);
+    }
+    return parts.join("\n");
+  }
+
+  if (!r.branch) {
+    return `Rebase aborted on '${r.current}'`;
+  }
+
+  const parts = [`Rebased '${r.current}' onto '${r.branch}'`];
+  if (r.rebasedCommits !== undefined) {
+    parts.push(`${r.rebasedCommits} commit(s) rebased`);
+  }
+  return parts.join("\n");
 }
 
 // ── Merge formatters ──────────────────────────────────────────────────
