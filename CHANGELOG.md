@@ -23,6 +23,953 @@ Run `pnpm changelog` to regenerate the sections below from per-package changelog
 
 <!-- BEGIN AGGREGATED CHANGELOG -->
 
+### 0.8.0
+
+#### @paretools/build
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/docker
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/git
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/lint
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/npm
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/python
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/shared
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+#### @paretools/test
+
+### Minor Changes
+
+- ### Highlights
+  - **100 tools** across 14 packages — the full Pare tool suite
+  - **Comprehensive benchmark**: 148 scenarios measuring token efficiency across all tools, with session impact analysis and cost savings estimates
+  - **Windows reliability**: Fix git log/show format strings on Windows (angle brackets in `%an <%ae>` no longer misinterpreted by cmd.exe), align CI timeout layers
+
+  ### Changes by package
+
+  **@paretools/shared**
+  - Add `shell` option to `RunOptions` for callers to override default shell behavior
+  - Remove cmd.exe percent escaping that broke git format strings
+  - Align CI timeout layers to 120s
+
+  **@paretools/git**
+  - Fix log/show returning literal format codes on Windows by disabling shell mode for native git.exe
+  - Merge author+email into single field (`author` instead of separate `author`/`email`)
+  - Deduplicate blame output by grouping lines per commit
+  - Add `copied` field to diff schema
+
+  **@paretools/npm**
+  - Flatten nested deps with `>` delimited paths in compact mode
+  - Remove resolved URLs from list schema (token savings)
+  - Remove fileCount/unpackedSize from info dist (token savings)
+
+  **@paretools/build**
+  - Drop redundant errorCount/warningCount from build schemas (token savings)
+
+  **@paretools/lint**
+  - Trim diagnostic schema: drop column, fixable, endLine, endColumn (token savings)
+  - Align integration test timeouts for Windows CI reliability
+
+  **@paretools/test**
+  - Restore message field in test failure compact mode
+
+  **@paretools/docker**
+  - Cap logs full mode output to prevent unbounded tokens
+  - Truncate container IDs to 12 chars and prefer relative timestamps
+
+  **@paretools/python**
+  - Align integration test timeouts for Windows CI reliability
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+---
+
+### 0.7.1
+
+#### @paretools/cargo
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+#### @paretools/go
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.8.0
+
+---
+
+### 0.7.0
+
+#### @paretools/build
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/cargo
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/docker
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/git
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/go
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/lint
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/npm
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/python
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+#### @paretools/shared
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+#### @paretools/test
+
+### Minor Changes
+
+- v0.7.0 — 100 tools, 14 packages
+
+  New packages:
+  - `@paretools/github` — 8 tools wrapping the `gh` CLI (pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list)
+  - `@paretools/search` — 3 tools wrapping ripgrep and fd (search, find, count)
+  - `@paretools/http` — 4 tools wrapping curl (request, get, post, head)
+  - `@paretools/make` — 2 tools wrapping make and just (run, list)
+
+  Expanded servers:
+  - `@paretools/git` +5 tools: tag, stash-list, stash, remote, blame
+  - `@paretools/docker` +4 tools: inspect, network-ls, volume-ls, compose-ps
+  - `@paretools/go` +3 tools: env, list, get
+  - `@paretools/python` +3 tools: pip-list, pip-show, ruff-format
+  - `@paretools/npm` +2 tools: info, search
+  - `@paretools/cargo` +2 tools: update, tree
+  - `@paretools/lint` +2 tools: stylelint, oxlint
+
+  Cross-cutting:
+  - `@paretools/shared` — granular tool selection via `PARE_TOOLS` and `PARE_{SERVER}_TOOLS` environment variables (#111)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.7.0
+
+---
+
+### 0.6.0
+
+#### @paretools/build
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/cargo
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/docker
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/git
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/go
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/lint
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/npm
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/python
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+#### @paretools/shared
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+#### @paretools/test
+
+### Minor Changes
+
+- [`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90) Thanks [@Dave-London](https://github.com/Dave-London)! - ### Automatic compact mode
+
+  All 9 servers now support automatic compact mode. When structured JSON output would exceed the raw CLI token count, Pare automatically applies a compact projection — keeping essential fields and dropping verbose details like stack traces, individual diagnostics, and file-level stats. This ensures Pare always uses fewer tokens than raw CLI output. Each tool accepts a `compact` parameter (default: `true`) to opt out if needed.
+
+  ### Security hardening
+  - Block dangerous Docker volume mounts (`/`, `/etc`, `/var/run/docker.sock`)
+  - Default `ignoreScripts: true` for npm install
+  - Validate all `args[]` arrays against flag injection
+  - Windows `cmd.exe` delayed expansion escaping
+  - Zod input size limits on all string/array parameters
+  - Error message sanitization to prevent path leakage
+
+  ### Reliability
+  - Increased default `run()` timeout from 30s to 60s
+  - Fixed flaky Windows test timeouts
+
+### Patch Changes
+
+- Updated dependencies [[`975d319`](https://github.com/Dave-London/Pare/commit/975d319bec6b7511066b4463cd24eb49a1c91a90)]:
+  - @paretools/shared@0.6.0
+
+---
+
 ### 0.5.0
 
 #### @paretools/build
