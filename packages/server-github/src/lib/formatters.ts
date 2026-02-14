@@ -4,6 +4,7 @@ import type {
   PrCreateResult,
   PrMergeResult,
   CommentResult,
+  PrReviewResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -59,6 +60,11 @@ export function formatPrMerge(data: PrMergeResult): string {
 /** Formats structured comment result into human-readable text. */
 export function formatComment(data: CommentResult): string {
   return `Comment added: ${data.url}`;
+}
+
+/** Formats structured PR review data into human-readable text. */
+export function formatPrReview(data: PrReviewResult): string {
+  return `Reviewed PR #${data.number} (${data.event}): ${data.url}`;
 }
 
 /** Formats structured issue view data into human-readable text. */

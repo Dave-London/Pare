@@ -64,6 +64,15 @@ export const PrMergeResultSchema = z.object({
 
 export type PrMergeResult = z.infer<typeof PrMergeResultSchema>;
 
+/** Zod schema for structured pr-review output. */
+export const PrReviewResultSchema = z.object({
+  number: z.number(),
+  event: z.string(),
+  url: z.string(),
+});
+
+export type PrReviewResult = z.infer<typeof PrReviewResultSchema>;
+
 // ── Issue schemas ────────────────────────────────────────────────────
 
 /** Zod schema for structured issue-view output. */
