@@ -9,6 +9,7 @@ import type {
   CargoDocResult,
   CargoUpdateResult,
   CargoTreeResult,
+  CargoAuditResult,
 } from "../schemas/index.js";
 
 interface CargoMessage {
@@ -275,6 +276,93 @@ export function parseCargoTreeOutput(stdout: string): CargoTreeResult {
     tree,
     packages: packageNames.size,
   };
+}
+
+/**
+ * Converts a CVSS v3 base score to a severity label.
+ * See https://www.first.org/cvss/specification-document#Qualitative-Severity-Rating-Scale
+ */
+function cvssToSeverity(
+  cvss: string | null | undefined,
+): "critical" | "high" | "medium" | "low" | "informational" | "unknown" {
+  if (!cvss) return "unknown";
+
+  // Extract numeric score from CVSS vector or raw number
+  let score: number;
+  const vectorMatch = cvss.match(/CVSS:\d+\.\d+\/.*?$/);
+  if (vectorMatch) {
+    // Try to extract the base score from the end or use a simple heuristic
+    // CVSS vectors don't embed the score directly; we need to look at AV/AC/etc.
+    // However, cargo audit often provides the score separately or we parse from the vector.
+    // In practice, cargo audit JSON may include a numeric score field too.
+    return "unknown";
+  }
+
+  score = parseFloat(cvss);
+  if (isNaN(score)) return "unknown";
+  if (score >= 9.0) return "critical";
+  if (score >= 7.0) return "high";
+  if (score >= 4.0) return "medium";
+  if (score > 0.0) return "low";
+  return "informational";
+}
+
+/**
+ * Parses `cargo audit --json` output.
+ * Returns structured vulnerability data with severity summary.
+ */
+export function parseCargoAuditJson(jsonStr: string): CargoAuditResult {
+  const data = JSON.parse(jsonStr);
+
+  type Severity = "critical" | "high" | "medium" | "low" | "informational" | "unknown";
+
+  const vulnList = data.vulnerabilities?.list ?? [];
+  const vulnerabilities = vulnList.map(
+    (v: {
+      advisory?: {
+        id?: string;
+        title?: string;
+        url?: string;
+        cvss?: string | null;
+      };
+      package?: { name?: string; version?: string };
+      versions?: { patched?: string[]; unaffected?: string[] };
+    }) => {
+      const advisory = v.advisory ?? {};
+      const pkg = v.package ?? {};
+      const versions = v.versions ?? {};
+
+      return {
+        id: advisory.id ?? "unknown",
+        package: pkg.name ?? "unknown",
+        version: pkg.version ?? "unknown",
+        severity: cvssToSeverity(advisory.cvss) as Severity,
+        title: advisory.title ?? "Unknown vulnerability",
+        url: advisory.url || undefined,
+        patched: versions.patched ?? [],
+        unaffected: versions.unaffected ?? [],
+      };
+    },
+  );
+
+  const summary = {
+    total: vulnerabilities.length,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    informational: 0,
+    unknown: 0,
+  };
+
+  for (const v of vulnerabilities) {
+    const sev = v.severity as Severity;
+    if (sev in summary) {
+      summary[sev]++;
+    }
+  }
+
+  return { vulnerabilities, summary };
 }
 
 function parseCompilerMessages(stdout: string) {

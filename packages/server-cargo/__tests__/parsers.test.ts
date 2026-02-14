@@ -4,6 +4,7 @@ import {
   parseCargoTestOutput,
   parseCargoClippyJson,
   parseCargoFmtOutput,
+  parseCargoAuditJson,
 } from "../src/lib/parsers.js";
 
 describe("parseCargoBuildJson", () => {
@@ -412,5 +413,163 @@ describe("parsers handle ANSI color codes", () => {
     const result = parseCargoBuildJson(stdout, 0);
     expect(result.total).toBe(1);
     expect(result.diagnostics[0].message).toBe("valid line");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseCargoAuditJson
+// ---------------------------------------------------------------------------
+
+describe("parseCargoAuditJson", () => {
+  it("parses vulnerabilities with CVSS scores", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        found: true,
+        count: 2,
+        list: [
+          {
+            advisory: {
+              id: "RUSTSEC-2022-0090",
+              title: "Use-after-free in sqlite",
+              url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
+              cvss: "9.8",
+            },
+            package: { name: "libsqlite3-sys", version: "0.24.2" },
+            versions: { patched: [">=0.25.1"], unaffected: [] },
+          },
+          {
+            advisory: {
+              id: "RUSTSEC-2023-0001",
+              title: "Buffer overflow in parser",
+              url: "https://rustsec.org/advisories/RUSTSEC-2023-0001",
+              cvss: "5.5",
+            },
+            package: { name: "some-parser", version: "1.0.0" },
+            versions: { patched: [">=1.1.0", ">=2.0.0"], unaffected: ["<0.9.0"] },
+          },
+        ],
+      },
+    });
+
+    const result = parseCargoAuditJson(json);
+
+    expect(result.vulnerabilities).toHaveLength(2);
+    expect(result.vulnerabilities[0]).toEqual({
+      id: "RUSTSEC-2022-0090",
+      package: "libsqlite3-sys",
+      version: "0.24.2",
+      severity: "critical",
+      title: "Use-after-free in sqlite",
+      url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
+      patched: [">=0.25.1"],
+      unaffected: [],
+    });
+    expect(result.vulnerabilities[1].severity).toBe("medium");
+    expect(result.vulnerabilities[1].unaffected).toEqual(["<0.9.0"]);
+
+    expect(result.summary.total).toBe(2);
+    expect(result.summary.critical).toBe(1);
+    expect(result.summary.medium).toBe(1);
+    expect(result.summary.high).toBe(0);
+    expect(result.summary.low).toBe(0);
+  });
+
+  it("parses empty vulnerabilities list", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        found: false,
+        count: 0,
+        list: [],
+      },
+    });
+
+    const result = parseCargoAuditJson(json);
+
+    expect(result.vulnerabilities).toHaveLength(0);
+    expect(result.summary.total).toBe(0);
+    expect(result.summary.critical).toBe(0);
+    expect(result.summary.high).toBe(0);
+  });
+
+  it("handles missing optional fields gracefully", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        found: true,
+        count: 1,
+        list: [
+          {
+            advisory: {
+              id: "RUSTSEC-2024-0001",
+              title: "Some issue",
+            },
+            package: { name: "my-crate", version: "0.1.0" },
+            versions: { patched: [] },
+          },
+        ],
+      },
+    });
+
+    const result = parseCargoAuditJson(json);
+
+    expect(result.vulnerabilities).toHaveLength(1);
+    expect(result.vulnerabilities[0].severity).toBe("unknown");
+    expect(result.vulnerabilities[0].url).toBeUndefined();
+    expect(result.vulnerabilities[0].patched).toEqual([]);
+    expect(result.summary.unknown).toBe(1);
+  });
+
+  it("handles missing vulnerabilities key", () => {
+    const json = JSON.stringify({
+      database: { advisory_count: 500 },
+    });
+
+    const result = parseCargoAuditJson(json);
+
+    expect(result.vulnerabilities).toHaveLength(0);
+    expect(result.summary.total).toBe(0);
+  });
+
+  it("maps CVSS scores to correct severity levels", () => {
+    const json = JSON.stringify({
+      vulnerabilities: {
+        found: true,
+        count: 5,
+        list: [
+          {
+            advisory: { id: "A", title: "Critical", cvss: "9.0" },
+            package: { name: "a", version: "1.0.0" },
+            versions: { patched: [] },
+          },
+          {
+            advisory: { id: "B", title: "High", cvss: "7.5" },
+            package: { name: "b", version: "1.0.0" },
+            versions: { patched: [] },
+          },
+          {
+            advisory: { id: "C", title: "Medium", cvss: "4.0" },
+            package: { name: "c", version: "1.0.0" },
+            versions: { patched: [] },
+          },
+          {
+            advisory: { id: "D", title: "Low", cvss: "2.0" },
+            package: { name: "d", version: "1.0.0" },
+            versions: { patched: [] },
+          },
+          {
+            advisory: { id: "E", title: "Info", cvss: "0.0" },
+            package: { name: "e", version: "1.0.0" },
+            versions: { patched: [] },
+          },
+        ],
+      },
+    });
+
+    const result = parseCargoAuditJson(json);
+
+    expect(result.vulnerabilities[0].severity).toBe("critical");
+    expect(result.vulnerabilities[1].severity).toBe("high");
+    expect(result.vulnerabilities[2].severity).toBe("medium");
+    expect(result.vulnerabilities[3].severity).toBe("low");
+    expect(result.vulnerabilities[4].severity).toBe("informational");
   });
 });

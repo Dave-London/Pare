@@ -116,3 +116,33 @@ export const CargoTreeResultSchema = z.object({
 });
 
 export type CargoTreeResult = z.infer<typeof CargoTreeResultSchema>;
+
+/** Zod schema for a single cargo audit vulnerability entry with advisory ID, package, severity, and fix info. */
+export const CargoAuditVulnSchema = z.object({
+  id: z.string().describe("Advisory ID (e.g. RUSTSEC-2022-0090)"),
+  package: z.string().describe("Affected crate name"),
+  version: z.string().describe("Installed version of the affected crate"),
+  severity: z
+    .enum(["critical", "high", "medium", "low", "informational", "unknown"])
+    .describe("Severity level derived from CVSS"),
+  title: z.string().describe("Short description of the vulnerability"),
+  url: z.string().optional().describe("URL with more information"),
+  patched: z.array(z.string()).describe("Version requirements that fix the vulnerability"),
+  unaffected: z.array(z.string()).optional().describe("Version requirements not affected"),
+});
+
+/** Zod schema for structured cargo audit output with vulnerability list and severity summary. */
+export const CargoAuditResultSchema = z.object({
+  vulnerabilities: z.array(CargoAuditVulnSchema),
+  summary: z.object({
+    total: z.number(),
+    critical: z.number(),
+    high: z.number(),
+    medium: z.number(),
+    low: z.number(),
+    informational: z.number(),
+    unknown: z.number(),
+  }),
+});
+
+export type CargoAuditResult = z.infer<typeof CargoAuditResultSchema>;
