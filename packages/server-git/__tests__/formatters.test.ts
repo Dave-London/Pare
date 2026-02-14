@@ -16,6 +16,7 @@ import {
   formatRemote,
   formatBlame,
   formatReset,
+  formatLogGraph,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -34,6 +35,7 @@ import type {
   GitRemoteFull,
   GitBlameFull,
   GitReset,
+  GitLogGraphFull,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -715,5 +717,44 @@ describe("formatReset", () => {
   it("formats reset with single file", () => {
     const data: GitReset = { ref: "HEAD", unstaged: ["README.md"] };
     expect(formatReset(data)).toBe("Reset to HEAD: unstaged 1 file(s): README.md");
+  });
+});
+
+describe("formatLogGraph", () => {
+  it("formats graph with commits and refs", () => {
+    const data: GitLogGraphFull = {
+      commits: [
+        { graph: "*", hashShort: "abc1234", message: "Latest commit", refs: "HEAD -> main" },
+        { graph: "*", hashShort: "def5678", message: "Previous commit" },
+      ],
+      total: 2,
+    };
+    const output = formatLogGraph(data);
+
+    expect(output).toContain("* abc1234 Latest commit (HEAD -> main)");
+    expect(output).toContain("* def5678 Previous commit");
+    expect(output).not.toContain("(undefined)");
+  });
+
+  it("formats graph with continuation lines", () => {
+    const data: GitLogGraphFull = {
+      commits: [
+        { graph: "*  ", hashShort: "abc1234", message: "Merge commit", refs: "HEAD -> main" },
+        { graph: "|\\", hashShort: "", message: "" },
+        { graph: "| *", hashShort: "def5678", message: "Feature commit", refs: "feature" },
+      ],
+      total: 2,
+    };
+    const output = formatLogGraph(data);
+    const lines = output.split("\n");
+
+    expect(lines[0]).toContain("abc1234 Merge commit (HEAD -> main)");
+    expect(lines[1]).toBe("|\\");
+    expect(lines[2]).toContain("def5678 Feature commit (feature)");
+  });
+
+  it("formats empty graph", () => {
+    const data: GitLogGraphFull = { commits: [], total: 0 };
+    expect(formatLogGraph(data)).toBe("No commits found");
   });
 });

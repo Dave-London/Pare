@@ -20,11 +20,13 @@ import { registerResetTool } from "./reset.js";
 import { registerCherryPickTool } from "./cherry-pick.js";
 import { registerMergeTool } from "./merge.js";
 import { registerRebaseTool } from "./rebase.js";
+import { registerLogGraphTool } from "./log-graph.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
   if (s("status")) registerStatusTool(server);
   if (s("log")) registerLogTool(server);
+  if (s("log-graph")) registerLogGraphTool(server);
   if (s("diff")) registerDiffTool(server);
   if (s("branch")) registerBranchTool(server);
   if (s("show")) registerShowTool(server);

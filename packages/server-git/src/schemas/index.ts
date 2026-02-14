@@ -310,3 +310,25 @@ export const GitRebaseSchema = z.object({
 });
 
 export type GitRebase = z.infer<typeof GitRebaseSchema>;
+
+/** Zod schema for a single log-graph commit entry with graph characters, hash, message, and refs. */
+export const GitLogGraphEntrySchema = z.object({
+  graph: z.string(),
+  hashShort: z.string(),
+  message: z.string(),
+  refs: z.string().optional(),
+});
+
+/** Zod schema for structured git log --graph output with commits array and total count. */
+export const GitLogGraphSchema = z.object({
+  commits: z.array(GitLogGraphEntrySchema),
+  total: z.number(),
+});
+
+/** Full log-graph data (always returned by parser, before compact projection). */
+export type GitLogGraphFull = {
+  commits: Array<{ graph: string; hashShort: string; message: string; refs?: string }>;
+  total: number;
+};
+
+export type GitLogGraph = z.infer<typeof GitLogGraphSchema>;
