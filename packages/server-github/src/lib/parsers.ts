@@ -16,6 +16,7 @@ import type {
   RunListResult,
   RunRerunResult,
   ReleaseCreateResult,
+  GistCreateResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -377,6 +378,17 @@ export function parseApi(
   }
 
   return { status, body, endpoint, method };
+}
+
+/**
+ * Parses `gh gist create` output (URL on stdout) into structured data.
+ * The gh CLI prints the new gist URL to stdout. We extract the ID from it.
+ */
+export function parseGistCreate(stdout: string, isPublic: boolean): GistCreateResult {
+  const url = stdout.trim();
+  const match = url.match(/\/([a-f0-9]+)$/);
+  const id = match ? match[1] : "";
+  return { id, url, public: isPublic };
 }
 
 /**

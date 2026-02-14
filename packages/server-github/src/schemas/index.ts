@@ -270,6 +270,17 @@ export const ReleaseCreateResultSchema = z.object({
 
 export type ReleaseCreateResult = z.infer<typeof ReleaseCreateResultSchema>;
 
+// ── Gist schemas ────────────────────────────────────────────────────
+
+/** Zod schema for structured gist-create output. */
+export const GistCreateResultSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  public: z.boolean(),
+});
+
+export type GistCreateResult = z.infer<typeof GistCreateResultSchema>;
+
 // ── API schemas ─────────────────────────────────────────────────────
 
 /** Zod schema for structured gh api output. */
