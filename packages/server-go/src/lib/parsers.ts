@@ -270,7 +270,7 @@ function splitJsonObjects(text: string): string[] {
  * Parses `golangci-lint run --out-format json` output into structured diagnostics.
  * The JSON output has the shape: { Issues: [...], Report: { Linters: [...] } }
  */
-export function parseGolangciLintJson(stdout: string, exitCode: number): GolangciLintResult {
+export function parseGolangciLintJson(stdout: string, _exitCode: number): GolangciLintResult {
   const diagnostics: GolangciLintDiagnostic[] = [];
 
   if (!stdout.trim()) {
