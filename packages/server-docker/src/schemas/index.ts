@@ -179,6 +179,7 @@ export const DockerComposePsSchema = z.object({
 
 export type DockerComposePs = z.infer<typeof DockerComposePsSchema>;
 
+
 /** Zod schema for a single compose log entry with timestamp, service, and message. */
 export const ComposeLogEntrySchema = z.object({
   timestamp: z.string().optional(),
@@ -215,3 +216,23 @@ export const DockerComposeBuildSchema = z.object({
 });
 
 export type DockerComposeBuild = z.infer<typeof DockerComposeBuildSchema>;
+/** Zod schema for a single container's resource usage stats. */
+export const ContainerStatsSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  cpuPercent: z.number(),
+  memoryUsage: z.string(),
+  memoryLimit: z.string(),
+  memoryPercent: z.number(),
+  netIO: z.string(),
+  blockIO: z.string(),
+  pids: z.number(),
+});
+
+/** Zod schema for structured docker stats output with container stats list. */
+export const DockerStatsSchema = z.object({
+  containers: z.array(ContainerStatsSchema),
+  total: z.number(),
+});
+
+export type DockerStats = z.infer<typeof DockerStatsSchema>;

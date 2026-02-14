@@ -12,8 +12,10 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+
   DockerComposeLogs,
   DockerComposeBuild,
+  DockerStats,
 } from "../schemas/index.js";
 
 /** Formats structured Docker container data into a human-readable listing with state and ports. */
@@ -434,6 +436,7 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
   return lines.join("\n");
 }
 
+
 // ── Compose Build ────────────────────────────────────────────────────
 
 /** Formats structured Docker Compose build output into a human-readable summary. */
@@ -451,9 +454,21 @@ export function formatComposeBuild(data: DockerComposeBuild): string {
     const status = s.success ? "built" : "failed";
     const error = s.error ? ` — ${s.error}` : "";
     lines.push(`  ${s.service}: ${status}${error}`);
+// ── Stats ────────────────────────────────────────────────────────────
+
+/** Formats structured Docker stats data into a human-readable listing with CPU, memory, and I/O. */
+export function formatStats(data: DockerStats): string {
+  if (data.total === 0) return "No container stats available.";
+
+  const lines = [`${data.total} containers:`];
+  for (const c of data.containers) {
+    lines.push(
+      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem: ${c.memoryUsage}/${c.memoryLimit} (${c.memoryPercent.toFixed(2)}%) Net: ${c.netIO} Block: ${c.blockIO} PIDs: ${c.pids}`,
+    );
   }
   return lines.join("\n");
 }
+
 
 /** Compact compose build: success, built, failed, duration. Drop per-service details. */
 export interface DockerComposeBuildCompact {
@@ -478,6 +493,41 @@ export function formatComposeBuildCompact(data: DockerComposeBuildCompact): stri
     return `Compose build failed (${data.duration}s)`;
   }
   return `Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`;
+/** Compact stats: name, cpuPercent, memoryPercent, pids only. Drop I/O details. */
+export interface DockerStatsCompact {
+  [key: string]: unknown;
+  containers: Array<{
+    id: string;
+    name: string;
+    cpuPercent: number;
+    memoryPercent: number;
+    pids: number;
+  }>;
+  total: number;
+}
+
+export function compactStatsMap(data: DockerStats): DockerStatsCompact {
+  return {
+    containers: data.containers.map((c) => ({
+      id: c.id,
+      name: c.name,
+      cpuPercent: c.cpuPercent,
+      memoryPercent: c.memoryPercent,
+      pids: c.pids,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatStatsCompact(data: DockerStatsCompact): string {
+  if (data.total === 0) return "No container stats available.";
+  const lines = [`${data.total} containers:`];
+  for (const c of data.containers) {
+    lines.push(
+      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem: ${c.memoryPercent.toFixed(2)}% PIDs: ${c.pids}`,
+    );
+  }
+  return lines.join("\n");
 }
 
 // ── Compose PS ───────────────────────────────────────────────────────

@@ -13,8 +13,10 @@ import { registerInspectTool } from "./inspect.js";
 import { registerNetworkLsTool } from "./network-ls.js";
 import { registerVolumeLsTool } from "./volume-ls.js";
 import { registerComposePsTool } from "./compose-ps.js";
+
 import { registerComposeLogsTool } from "./compose-logs.js";
 import { registerComposeBuildTool } from "./compose-build.js";
+import { registerStatsTool } from "./stats.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("docker", name);
@@ -31,6 +33,8 @@ export function registerAllTools(server: McpServer) {
   if (s("network-ls")) registerNetworkLsTool(server);
   if (s("volume-ls")) registerVolumeLsTool(server);
   if (s("compose-ps")) registerComposePsTool(server);
+
   if (s("compose-logs")) registerComposeLogsTool(server);
   if (s("compose-build")) registerComposeBuildTool(server);
+  if (s("stats")) registerStatsTool(server);
 }
