@@ -81,10 +81,10 @@ nothing to commit, working tree clean
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Savings |
-| ------------------ | ---------- | --------- | ------- |
-| Commit 3 files     | ~40        | ~30       | 25%     |
-| Nothing to commit  | ~30        | ~20       | 33%     |
+| Scenario          | CLI Tokens | Pare Full | Savings |
+| ----------------- | ---------- | --------- | ------- |
+| Commit 3 files    | ~40        | ~30       | 25%     |
+| Nothing to commit | ~30        | ~20       | 33%     |
 
 ## Notes
 

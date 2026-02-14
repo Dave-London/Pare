@@ -82,9 +82,9 @@ Date:   2 days ago
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| Commit with 3 files | ~300      | ~100      | ~20          | 67-93%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| Commit with 3 files | ~300       | ~100      | ~20          | 67-93%  |
 
 ## Notes
 

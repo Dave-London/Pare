@@ -73,9 +73,9 @@ upstream	git@github.com:org/repo.git (push)
 
 ## Token Savings
 
-| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------- | ---------- | --------- | ------------ | ------- |
-| 2 remotes   | ~60        | ~50       | ~15          | 17-75%  |
+| Scenario  | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------- | ---------- | --------- | ------------ | ------- |
+| 2 remotes | ~60        | ~50       | ~15          | 17-75%  |
 
 ## Notes
 

@@ -6,13 +6,13 @@ Pushes commits to a remote repository. Returns structured data with success stat
 
 ## Input Parameters
 
-| Parameter     | Type    | Default    | Description                     |
-| ------------- | ------- | ---------- | ------------------------------- |
-| `path`        | string  | cwd        | Repository path                 |
-| `remote`      | string  | `"origin"` | Remote name                     |
+| Parameter     | Type    | Default    | Description                       |
+| ------------- | ------- | ---------- | --------------------------------- |
+| `path`        | string  | cwd        | Repository path                   |
+| `remote`      | string  | `"origin"` | Remote name                       |
 | `branch`      | string  | --         | Branch to push (default: current) |
-| `force`       | boolean | `false`    | Force push (`--force`)          |
-| `setUpstream` | boolean | `false`    | Set upstream tracking (`-u`)    |
+| `force`       | boolean | `false`    | Force push (`--force`)            |
+| `setUpstream` | boolean | `false`    | Set upstream tracking (`-u`)      |
 
 ## Success
 
@@ -86,10 +86,10 @@ hint: Updates were rejected because the tip of your current branch is behind
 
 ## Token Savings
 
-| Scenario     | CLI Tokens | Pare Full | Savings |
-| ------------ | ---------- | --------- | ------- |
-| Normal push  | ~60        | ~25       | 58%     |
-| Rejected     | ~80        | ~30       | 63%     |
+| Scenario    | CLI Tokens | Pare Full | Savings |
+| ----------- | ---------- | --------- | ------- |
+| Normal push | ~60        | ~25       | 58%     |
+| Rejected    | ~80        | ~30       | 63%     |
 
 ## Notes
 

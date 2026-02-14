@@ -109,10 +109,10 @@ error: pathspec 'nonexistent' did not match any file(s) known to git
 | Scenario         | CLI Tokens | Pare Full | Savings |
 | ---------------- | ---------- | --------- | ------- |
 | Switch branch    | ~20        | ~20       | 0%      |
-| Create branch    | ~15        | ~20       | --*     |
+| Create branch    | ~15        | ~20       | --\*    |
 | Branch not found | ~25        | ~25       | 0%      |
 
-*Checkout responses are already compact; Pare adds value through consistent structured schema rather than token savings.
+\*Checkout responses are already compact; Pare adds value through consistent structured schema rather than token savings.
 
 ## Notes
 

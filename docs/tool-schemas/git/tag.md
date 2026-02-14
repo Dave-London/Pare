@@ -71,12 +71,12 @@ v0.5.0
 
 ## Token Savings
 
-| Scenario  | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------- | ---------- | --------- | ------------ | ------- |
-| 5 tags    | ~80        | ~80       | ~25          | 0-69%   |
-| 20 tags   | ~120       | ~300      | ~80          | 33%*    |
+| Scenario | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------- | ---------- | --------- | ------------ | ------- |
+| 5 tags   | ~80        | ~80       | ~25          | 0-69%   |
+| 20 tags  | ~120       | ~300      | ~80          | 33%\*   |
 
-*Full mode is larger than CLI due to added metadata (dates, messages); compact mode provides savings.
+\*Full mode is larger than CLI due to added metadata (dates, messages); compact mode provides savings.
 
 ## Notes
 

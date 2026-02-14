@@ -35,9 +35,21 @@ stash@{2}: WIP on main: def5678 fix: resolve bug
 ```json
 {
   "stashes": [
-    { "index": 0, "message": "WIP on main: abc1234 feat: add auth", "date": "2026-02-14 10:30:00 +0000" },
-    { "index": 1, "message": "On feature/api: work in progress", "date": "2026-02-13 15:00:00 +0000" },
-    { "index": 2, "message": "WIP on main: def5678 fix: resolve bug", "date": "2026-02-12 09:00:00 +0000" }
+    {
+      "index": 0,
+      "message": "WIP on main: abc1234 feat: add auth",
+      "date": "2026-02-14 10:30:00 +0000"
+    },
+    {
+      "index": 1,
+      "message": "On feature/api: work in progress",
+      "date": "2026-02-13 15:00:00 +0000"
+    },
+    {
+      "index": 2,
+      "message": "WIP on main: def5678 fix: resolve bug",
+      "date": "2026-02-12 09:00:00 +0000"
+    }
   ],
   "total": 3
 }
@@ -69,9 +81,9 @@ stash@{2}: WIP on main: def5678 fix: resolve bug
 
 ## Token Savings
 
-| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------- | ---------- | --------- | ------------ | ------- |
-| 3 stashes   | ~80        | ~70       | ~45          | 13-44%  |
+| Scenario  | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------- | ---------- | --------- | ------------ | ------- |
+| 3 stashes | ~80        | ~70       | ~45          | 13-44%  |
 
 ## Notes
 

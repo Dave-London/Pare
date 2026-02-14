@@ -93,10 +93,10 @@ abc12345 (Alice 2026-02-10 14:30:00 +0000  6) });
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 6 lines        | ~200       | ~120      | ~35          | 40-83%  |
-| 100 lines      | ~3000      | ~1500     | ~150         | 50-95%  |
+| Scenario  | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------- | ---------- | --------- | ------------ | ------- |
+| 6 lines   | ~200       | ~120      | ~35          | 40-83%  |
+| 100 lines | ~3000      | ~1500     | ~150         | 50-95%  |
 
 ## Notes
 

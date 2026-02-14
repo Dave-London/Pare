@@ -6,11 +6,11 @@ Unstages files by resetting them to a ref (default: HEAD). Returns structured da
 
 ## Input Parameters
 
-| Parameter | Type     | Default  | Description                        |
-| --------- | -------- | -------- | ---------------------------------- |
-| `path`    | string   | cwd      | Repository path                    |
+| Parameter | Type     | Default  | Description                          |
+| --------- | -------- | -------- | ------------------------------------ |
+| `path`    | string   | cwd      | Repository path                      |
 | `files`   | string[] | --       | File paths to unstage (omit for all) |
-| `ref`     | string   | `"HEAD"` | Ref to reset to                    |
+| `ref`     | string   | `"HEAD"` | Ref to reset to                      |
 
 ## Success — Unstage Specific Files
 
@@ -77,12 +77,12 @@ M	src/index.ts
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Savings |
-| ---------------- | ---------- | --------- | ------- |
-| Unstage 2 files  | ~20        | ~20       | 0%      |
-| Unstage all      | ~10        | ~15       | --*     |
+| Scenario        | CLI Tokens | Pare Full | Savings |
+| --------------- | ---------- | --------- | ------- |
+| Unstage 2 files | ~20        | ~20       | 0%      |
+| Unstage all     | ~10        | ~15       | --\*    |
 
-*Reset responses are already compact; Pare adds value through consistent structured schema.
+\*Reset responses are already compact; Pare adds value through consistent structured schema.
 
 ## Notes
 

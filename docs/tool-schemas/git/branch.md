@@ -70,12 +70,12 @@ Lists, creates, or deletes branches. Returns structured branch data.
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 4 local branches   | ~60        | ~70       | ~30          | 50%*    |
-| 20 branches (-a)   | ~300       | ~350      | ~100         | 67%*    |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| 4 local branches | ~60        | ~70       | ~30          | 50%\*   |
+| 20 branches (-a) | ~300       | ~350      | ~100         | 67%\*   |
 
-*Full mode may be slightly larger than CLI for small branch lists; compact mode provides the savings.
+\*Full mode may be slightly larger than CLI for small branch lists; compact mode provides the savings.
 
 ## Notes
 

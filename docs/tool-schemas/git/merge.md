@@ -6,13 +6,13 @@ Merges a branch into the current branch. Returns structured data with merge stat
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                  |
-| --------- | ------- | ------- | ---------------------------- |
-| `path`    | string  | cwd     | Repository path              |
-| `branch`  | string  | --      | Branch to merge              |
+| Parameter | Type    | Default | Description                    |
+| --------- | ------- | ------- | ------------------------------ |
+| `path`    | string  | cwd     | Repository path                |
+| `branch`  | string  | --      | Branch to merge                |
 | `noFf`    | boolean | `false` | Force merge commit (`--no-ff`) |
-| `abort`   | boolean | `false` | Abort in-progress merge      |
-| `message` | string  | --      | Custom merge commit message  |
+| `abort`   | boolean | `false` | Abort in-progress merge        |
+| `message` | string  | --      | Custom merge commit message    |
 
 ## Success — Fast-Forward Merge
 

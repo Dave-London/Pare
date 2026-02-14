@@ -6,9 +6,9 @@ Returns the working tree status as structured data (branch, staged, modified, un
 
 ## Input Parameters
 
-| Parameter | Type   | Default | Description              |
-| --------- | ------ | ------- | ------------------------ |
-| `path`    | string | cwd     | Repository path          |
+| Parameter | Type   | Default | Description     |
+| --------- | ------ | ------- | --------------- |
+| `path`    | string | cwd     | Repository path |
 
 ## Success — Clean Working Tree
 
@@ -132,11 +132,11 @@ fatal: not a git repository (or any of the parent directories): .git
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Savings |
-| ---------------- | ---------- | --------- | ------- |
-| Clean tree       | ~60        | ~30       | 50%     |
-| Dirty tree       | ~200       | ~80       | 60%     |
-| Not a git repo   | ~30        | ~25       | 17%     |
+| Scenario       | CLI Tokens | Pare Full | Savings |
+| -------------- | ---------- | --------- | ------- |
+| Clean tree     | ~60        | ~30       | 50%     |
+| Dirty tree     | ~200       | ~80       | 60%     |
+| Not a git repo | ~30        | ~25       | 17%     |
 
 ## Notes
 

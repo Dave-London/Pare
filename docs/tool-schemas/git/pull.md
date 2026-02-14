@@ -6,11 +6,11 @@ Pulls changes from a remote repository. Returns structured data with success sta
 
 ## Input Parameters
 
-| Parameter | Type    | Default    | Description                            |
-| --------- | ------- | ---------- | -------------------------------------- |
-| `path`    | string  | cwd        | Repository path                        |
-| `remote`  | string  | `"origin"` | Remote name                            |
-| `branch`  | string  | --         | Branch to pull (default: tracking)     |
+| Parameter | Type    | Default    | Description                              |
+| --------- | ------- | ---------- | ---------------------------------------- |
+| `path`    | string  | cwd        | Repository path                          |
+| `remote`  | string  | `"origin"` | Remote name                              |
+| `branch`  | string  | --         | Branch to pull (default: tracking)       |
 | `rebase`  | boolean | `false`    | Use rebase instead of merge (`--rebase`) |
 
 ## Success — Changes Pulled
@@ -131,10 +131,10 @@ Automatic merge failed; fix conflicts and then commit the result.
 | Scenario           | CLI Tokens | Pare Full | Savings |
 | ------------------ | ---------- | --------- | ------- |
 | Changes pulled     | ~100       | ~30       | 70%     |
-| Already up to date | ~10        | ~25       | --*     |
+| Already up to date | ~10        | ~25       | --\*    |
 | Merge conflicts    | ~120       | ~35       | 71%     |
 
-*Already-up-to-date responses are slightly larger in structured form but provide consistent schema.
+\*Already-up-to-date responses are slightly larger in structured form but provide consistent schema.
 
 ## Notes
 

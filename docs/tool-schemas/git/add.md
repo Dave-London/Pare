@@ -9,7 +9,7 @@ Stages files for commit. Returns structured data with count and list of staged f
 | Parameter | Type     | Default | Description                                 |
 | --------- | -------- | ------- | ------------------------------------------- |
 | `path`    | string   | cwd     | Repository path                             |
-| `files`   | string[] | --      | File paths to stage (required unless `all`)  |
+| `files`   | string[] | --      | File paths to stage (required unless `all`) |
 | `all`     | boolean  | `false` | Stage all changes (`git add -A`)            |
 
 ## Success
@@ -34,11 +34,7 @@ Stages files for commit. Returns structured data with count and list of staged f
 ```json
 {
   "staged": 3,
-  "files": [
-    "src/auth.ts",
-    "src/index.ts",
-    "tests/auth.test.ts"
-  ]
+  "files": ["src/auth.ts", "src/index.ts", "tests/auth.test.ts"]
 }
 ```
 
@@ -77,11 +73,11 @@ Nothing specified, nothing added.
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Savings |
-| -------------- | ---------- | --------- | ------- |
-| Stage 3 files  | ~5         | ~25       | --*     |
+| Scenario      | CLI Tokens | Pare Full | Savings |
+| ------------- | ---------- | --------- | ------- |
+| Stage 3 files | ~5         | ~25       | --\*    |
 
-*`git add` produces no output on success; Pare adds value by returning which files were staged via a follow-up `git status --porcelain=v1` call.
+\*`git add` produces no output on success; Pare adds value by returning which files were staged via a follow-up `git status --porcelain=v1` call.
 
 ## Notes
 

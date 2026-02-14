@@ -6,13 +6,13 @@ Applies specific commits to the current branch. Returns structured data with app
 
 ## Input Parameters
 
-| Parameter  | Type     | Default | Description                               |
-| ---------- | -------- | ------- | ----------------------------------------- |
-| `path`     | string   | cwd     | Repository path                           |
-| `commits`  | string[] | `[]`    | Commit hashes to cherry-pick              |
-| `abort`    | boolean  | `false` | Abort in-progress cherry-pick             |
-| `continue` | boolean  | `false` | Continue after resolving conflicts        |
-| `noCommit` | boolean  | `false` | Apply changes without committing (`-n`)   |
+| Parameter  | Type     | Default | Description                             |
+| ---------- | -------- | ------- | --------------------------------------- |
+| `path`     | string   | cwd     | Repository path                         |
+| `commits`  | string[] | `[]`    | Commit hashes to cherry-pick            |
+| `abort`    | boolean  | `false` | Abort in-progress cherry-pick           |
+| `continue` | boolean  | `false` | Continue after resolving conflicts      |
+| `noCommit` | boolean  | `false` | Apply changes without committing (`-n`) |
 
 ## Success — Clean Cherry-Pick
 

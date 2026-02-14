@@ -6,11 +6,11 @@ Discards working tree changes or restores files from a specific commit. Returns 
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                     |
-| --------- | -------- | ------- | ------------------------------- |
-| `path`    | string   | cwd     | Repository path                 |
-| `files`   | string[] | --      | File paths to restore           |
-| `staged`  | boolean  | `false` | Restore staged changes (`--staged`) |
+| Parameter | Type     | Default | Description                            |
+| --------- | -------- | ------- | -------------------------------------- |
+| `path`    | string   | cwd     | Repository path                        |
+| `files`   | string[] | --      | File paths to restore                  |
+| `staged`  | boolean  | `false` | Restore staged changes (`--staged`)    |
 | `source`  | string   | --      | Restore from specific ref (`--source`) |
 
 ## Success — Discard Working Tree Changes
@@ -77,12 +77,12 @@ Discards working tree changes or restores files from a specific commit. Returns 
 
 ## Token Savings
 
-| Scenario                 | CLI Tokens | Pare Full | Savings |
-| ------------------------ | ---------- | --------- | ------- |
-| Discard 2 files          | ~5         | ~25       | --*     |
-| Unstage 1 file           | ~5         | ~20       | --*     |
+| Scenario        | CLI Tokens | Pare Full | Savings |
+| --------------- | ---------- | --------- | ------- |
+| Discard 2 files | ~5         | ~25       | --\*    |
+| Unstage 1 file  | ~5         | ~20       | --\*    |
 
-*`git restore` produces no output on success; Pare adds value by confirming which files were restored and the restoration parameters.
+\*`git restore` produces no output on success; Pare adds value by confirming which files were restored and the restoration parameters.
 
 ## Notes
 

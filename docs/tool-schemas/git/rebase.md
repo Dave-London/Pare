@@ -6,12 +6,12 @@ Rebases the current branch onto a target branch. Supports abort and continue for
 
 ## Input Parameters
 
-| Parameter  | Type    | Default | Description                                          |
-| ---------- | ------- | ------- | ---------------------------------------------------- |
-| `path`     | string  | cwd     | Repository path                                      |
+| Parameter  | Type    | Default | Description                                                   |
+| ---------- | ------- | ------- | ------------------------------------------------------------- |
+| `path`     | string  | cwd     | Repository path                                               |
 | `branch`   | string  | --      | Target branch to rebase onto (required unless abort/continue) |
-| `abort`    | boolean | `false` | Abort in-progress rebase                             |
-| `continue` | boolean | `false` | Continue after conflict resolution                   |
+| `abort`    | boolean | `false` | Abort in-progress rebase                                      |
+| `continue` | boolean | `false` | Continue after conflict resolution                            |
 
 ## Success — Clean Rebase
 

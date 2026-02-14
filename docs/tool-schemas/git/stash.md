@@ -6,11 +6,11 @@ Pushes, pops, applies, or drops stash entries. Returns structured result with ac
 
 ## Input Parameters
 
-| Parameter | Type                                         | Default | Description                                         |
-| --------- | -------------------------------------------- | ------- | --------------------------------------------------- |
-| `path`    | string                                       | cwd     | Repository path                                     |
-| `action`  | `"push"` \| `"pop"` \| `"apply"` \| `"drop"` | --      | Stash action to perform                             |
-| `message` | string                                       | --      | Stash message (only used with `push`)               |
+| Parameter | Type                                         | Default | Description                                              |
+| --------- | -------------------------------------------- | ------- | -------------------------------------------------------- |
+| `path`    | string                                       | cwd     | Repository path                                          |
+| `action`  | `"push"` \| `"pop"` \| `"apply"` \| `"drop"` | --      | Stash action to perform                                  |
+| `message` | string                                       | --      | Stash message (only used with `push`)                    |
 | `index`   | number                                       | --      | Stash index for pop/apply/drop (e.g., 0 for `stash@{0}`) |
 
 ## Success — Push
@@ -81,10 +81,10 @@ Dropped refs/stash@{0} (abc1234def5678)
 
 ## Token Savings
 
-| Scenario    | CLI Tokens | Pare Full | Savings |
-| ----------- | ---------- | --------- | ------- |
-| Stash push  | ~20        | ~20       | 0%      |
-| Stash pop   | ~40        | ~25       | 38%     |
+| Scenario   | CLI Tokens | Pare Full | Savings |
+| ---------- | ---------- | --------- | ------- |
+| Stash push | ~20        | ~20       | 0%      |
+| Stash pop  | ~40        | ~25       | 38%     |
 
 ## Notes
 

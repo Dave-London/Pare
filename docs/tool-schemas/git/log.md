@@ -91,7 +91,11 @@ Date:   4 days ago
 ```json
 {
   "commits": [
-    { "hashShort": "e5955b4", "message": "docs: update roadmap for v0.8.0", "refs": "HEAD -> main, origin/main" },
+    {
+      "hashShort": "e5955b4",
+      "message": "docs: update roadmap for v0.8.0",
+      "refs": "HEAD -> main, origin/main"
+    },
     { "hashShort": "b22708d", "message": "feat: rebrand for MCP Registry" },
     { "hashShort": "4d22223", "message": "feat(git): add rebase tool" }
   ],
@@ -105,10 +109,10 @@ Date:   4 days ago
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| 3 commits       | ~250       | ~120      | ~55          | 52-78%  |
-| 10 commits      | ~800       | ~400      | ~170         | 50-79%  |
+| Scenario   | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------- | ---------- | --------- | ------------ | ------- |
+| 3 commits  | ~250       | ~120      | ~55          | 52-78%  |
+| 10 commits | ~800       | ~400      | ~170         | 50-79%  |
 
 ## Notes
 
