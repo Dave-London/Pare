@@ -23,3 +23,7 @@ export async function uv(args: string[], cwd?: string): Promise<RunResult> {
 export async function black(args: string[], cwd?: string): Promise<RunResult> {
   return run("black", args, { cwd, timeout: 120_000 });
 }
+
+export async function conda(args: string[], cwd?: string): Promise<RunResult> {
+  return run("conda", args, { cwd, timeout: 120_000 });
+}

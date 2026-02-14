@@ -10,6 +10,10 @@ import type {
   PipList,
   PipShow,
   RuffFormatResult,
+  CondaList,
+  CondaInfo,
+  CondaEnvList,
+  CondaResult,
 } from "../schemas/index.js";
 
 /** Formats structured pip install results into a human-readable summary of installed packages. */
@@ -429,4 +433,152 @@ export function formatRuffFormatCompact(data: RuffFormatResultCompact): string {
   }
   const verb = data.success ? "reformatted" : "would be reformatted";
   return `ruff format: ${data.filesChanged} files ${verb}`;
+}
+
+// ── conda formatters ─────────────────────────────────────────────────
+
+/** Formats structured conda list results into a human-readable package listing. */
+export function formatCondaList(data: CondaList): string {
+  if (data.total === 0) return "conda: no packages found.";
+
+  const env = data.environment ? ` (env: ${data.environment})` : "";
+  const lines = [`conda list${env}: ${data.total} packages:`];
+  for (const pkg of data.packages) {
+    lines.push(`  ${pkg.name}==${pkg.version} (${pkg.channel})`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats structured conda info results into a human-readable summary. */
+export function formatCondaInfo(data: CondaInfo): string {
+  const lines = [
+    `conda ${data.condaVersion}`,
+    `  platform: ${data.platform}`,
+    `  python: ${data.pythonVersion}`,
+    `  default prefix: ${data.defaultPrefix}`,
+  ];
+  if (data.activePrefix) {
+    lines.push(`  active prefix: ${data.activePrefix}`);
+  }
+  if (data.channels.length > 0) {
+    lines.push(`  channels: ${data.channels.join(", ")}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats structured conda env list results into a human-readable listing. */
+export function formatCondaEnvList(data: CondaEnvList): string {
+  if (data.total === 0) return "conda: no environments found.";
+
+  const lines = [`conda environments: ${data.total}`];
+  for (const env of data.environments) {
+    const marker = env.active ? " *" : "";
+    lines.push(`  ${env.name}${marker}: ${env.path}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats any CondaResult variant into human-readable text. */
+export function formatCondaResult(data: CondaResult): string {
+  switch (data.action) {
+    case "list":
+      return formatCondaList(data as CondaList);
+    case "info":
+      return formatCondaInfo(data as CondaInfo);
+    case "env-list":
+      return formatCondaEnvList(data as CondaEnvList);
+    default:
+      return "conda: unknown action.";
+  }
+}
+
+// ── conda compact formatters ─────────────────────────────────────────
+
+/** Compact conda list: total count only. */
+export interface CondaListCompact {
+  [key: string]: unknown;
+  action: "list";
+  total: number;
+  environment?: string;
+}
+
+export function compactCondaListMap(data: CondaList): CondaListCompact {
+  return {
+    action: "list",
+    total: data.total,
+    environment: data.environment,
+  };
+}
+
+export function formatCondaListCompact(data: CondaListCompact): string {
+  if (data.total === 0) return "conda: no packages found.";
+  const env = data.environment ? ` (env: ${data.environment})` : "";
+  return `conda list${env}: ${data.total} packages.`;
+}
+
+/** Compact conda info: version + platform only. */
+export interface CondaInfoCompact {
+  [key: string]: unknown;
+  action: "info";
+  condaVersion: string;
+  platform: string;
+  pythonVersion: string;
+}
+
+export function compactCondaInfoMap(data: CondaInfo): CondaInfoCompact {
+  return {
+    action: "info",
+    condaVersion: data.condaVersion,
+    platform: data.platform,
+    pythonVersion: data.pythonVersion,
+  };
+}
+
+export function formatCondaInfoCompact(data: CondaInfoCompact): string {
+  return `conda ${data.condaVersion} (${data.platform}, python ${data.pythonVersion})`;
+}
+
+/** Compact conda env-list: total count only. */
+export interface CondaEnvListCompact {
+  [key: string]: unknown;
+  action: "env-list";
+  total: number;
+}
+
+export function compactCondaEnvListMap(data: CondaEnvList): CondaEnvListCompact {
+  return {
+    action: "env-list",
+    total: data.total,
+  };
+}
+
+export function formatCondaEnvListCompact(data: CondaEnvListCompact): string {
+  if (data.total === 0) return "conda: no environments found.";
+  return `conda: ${data.total} environments.`;
+}
+
+export type CondaResultCompact = CondaListCompact | CondaInfoCompact | CondaEnvListCompact;
+
+export function compactCondaResultMap(data: CondaResult): CondaResultCompact {
+  switch (data.action) {
+    case "list":
+      return compactCondaListMap(data as CondaList);
+    case "info":
+      return compactCondaInfoMap(data as CondaInfo);
+    case "env-list":
+      return compactCondaEnvListMap(data as CondaEnvList);
+    default:
+      return { action: "list", total: 0 };
+  }
+}
+
+export function formatCondaResultCompact(data: CondaResultCompact): string {
+  switch (data.action) {
+    case "list":
+      return formatCondaListCompact(data as CondaListCompact);
+    case "info":
+      return formatCondaInfoCompact(data as CondaInfoCompact);
+    case "env-list":
+      return formatCondaEnvListCompact(data as CondaEnvListCompact);
+  }
 }

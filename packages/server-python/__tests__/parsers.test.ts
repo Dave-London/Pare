@@ -10,6 +10,9 @@ import {
   parsePipListJson,
   parsePipShowOutput,
   parseRuffFormatOutput,
+  parseCondaListJson,
+  parseCondaInfoJson,
+  parseCondaEnvListJson,
 } from "../src/lib/parsers.js";
 
 describe("parsePipInstall", () => {
@@ -543,5 +546,170 @@ describe("parseRuffFormatOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.files).toBeUndefined();
+  });
+});
+
+// ─── conda list parser tests ────────────────────────────────────────────────
+
+describe("parseCondaListJson", () => {
+  it("parses JSON array of packages", () => {
+    const json = JSON.stringify([
+      { name: "numpy", version: "1.26.0", channel: "defaults", build_string: "py311h5b45529_0" },
+      { name: "pandas", version: "2.1.0", channel: "conda-forge", build_string: "py311hf63a34e_0" },
+    ]);
+    const result = parseCondaListJson(json);
+
+    expect(result.action).toBe("list");
+    expect(result.total).toBe(2);
+    expect(result.packages[0]).toEqual({
+      name: "numpy",
+      version: "1.26.0",
+      channel: "defaults",
+      buildString: "py311h5b45529_0",
+    });
+    expect(result.packages[1].channel).toBe("conda-forge");
+  });
+
+  it("parses with environment name", () => {
+    const json = JSON.stringify([{ name: "flask", version: "3.0.0", channel: "defaults" }]);
+    const result = parseCondaListJson(json, "myenv");
+
+    expect(result.environment).toBe("myenv");
+    expect(result.total).toBe(1);
+  });
+
+  it("parses empty array", () => {
+    const result = parseCondaListJson("[]");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseCondaListJson("not json");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles non-array JSON", () => {
+    const result = parseCondaListJson('{"key": "value"}');
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+
+  it("handles empty string", () => {
+    const result = parseCondaListJson("");
+    expect(result.total).toBe(0);
+  });
+});
+
+// ─── conda info parser tests ────────────────────────────────────────────────
+
+describe("parseCondaInfoJson", () => {
+  it("parses full conda info output", () => {
+    const json = JSON.stringify({
+      conda_version: "24.1.0",
+      platform: "win-64",
+      python_version: "3.11.7.final.0",
+      default_prefix: "C:\\Users\\user\\miniconda3",
+      active_prefix: "C:\\Users\\user\\miniconda3\\envs\\myenv",
+      active_prefix_name: "myenv",
+      channels: ["defaults", "conda-forge"],
+      envs_dirs: ["C:\\Users\\user\\miniconda3\\envs"],
+      pkgs_dirs: ["C:\\Users\\user\\miniconda3\\pkgs"],
+    });
+    const result = parseCondaInfoJson(json);
+
+    expect(result.action).toBe("info");
+    expect(result.condaVersion).toBe("24.1.0");
+    expect(result.platform).toBe("win-64");
+    expect(result.pythonVersion).toBe("3.11.7.final.0");
+    expect(result.defaultPrefix).toBe("C:\\Users\\user\\miniconda3");
+    expect(result.activePrefix).toBe("C:\\Users\\user\\miniconda3\\envs\\myenv");
+    expect(result.channels).toEqual(["defaults", "conda-forge"]);
+    expect(result.envsDirs).toEqual(["C:\\Users\\user\\miniconda3\\envs"]);
+    expect(result.pkgsDirs).toEqual(["C:\\Users\\user\\miniconda3\\pkgs"]);
+  });
+
+  it("handles missing optional fields", () => {
+    const json = JSON.stringify({
+      conda_version: "24.1.0",
+      platform: "linux-64",
+    });
+    const result = parseCondaInfoJson(json);
+
+    expect(result.condaVersion).toBe("24.1.0");
+    expect(result.platform).toBe("linux-64");
+    expect(result.pythonVersion).toBe("");
+    expect(result.defaultPrefix).toBe("");
+    expect(result.activePrefix).toBeUndefined();
+    expect(result.channels).toEqual([]);
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseCondaInfoJson("not json");
+    expect(result.condaVersion).toBe("");
+    expect(result.platform).toBe("");
+  });
+
+  it("handles empty string", () => {
+    const result = parseCondaInfoJson("");
+    expect(result.action).toBe("info");
+    expect(result.condaVersion).toBe("");
+  });
+});
+
+// ─── conda env list parser tests ─────────────────────────────────────────────
+
+describe("parseCondaEnvListJson", () => {
+  it("parses environment list", () => {
+    const json = JSON.stringify({
+      envs: [
+        "C:\\Users\\user\\miniconda3",
+        "C:\\Users\\user\\miniconda3\\envs\\myenv",
+        "C:\\Users\\user\\miniconda3\\envs\\test",
+      ],
+    });
+    const result = parseCondaEnvListJson(json, "C:\\Users\\user\\miniconda3");
+
+    expect(result.action).toBe("env-list");
+    expect(result.total).toBe(3);
+    expect(result.environments[0]).toEqual({
+      name: "miniconda3",
+      path: "C:\\Users\\user\\miniconda3",
+      active: true,
+    });
+    expect(result.environments[1]).toEqual({
+      name: "myenv",
+      path: "C:\\Users\\user\\miniconda3\\envs\\myenv",
+      active: false,
+    });
+    expect(result.environments[2].name).toBe("test");
+  });
+
+  it("parses empty env list", () => {
+    const json = JSON.stringify({ envs: [] });
+    const result = parseCondaEnvListJson(json);
+
+    expect(result.total).toBe(0);
+    expect(result.environments).toEqual([]);
+  });
+
+  it("handles missing envs key", () => {
+    const result = parseCondaEnvListJson("{}");
+    expect(result.total).toBe(0);
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseCondaEnvListJson("not json");
+    expect(result.total).toBe(0);
+  });
+
+  it("handles no active prefix", () => {
+    const json = JSON.stringify({
+      envs: ["/home/user/miniconda3"],
+    });
+    const result = parseCondaEnvListJson(json);
+
+    expect(result.environments[0].active).toBe(false);
   });
 });

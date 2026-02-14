@@ -167,3 +167,66 @@ export const RuffFormatResultSchema = z.object({
 });
 
 export type RuffFormatResult = z.infer<typeof RuffFormatResultSchema>;
+
+/** Zod schema for a single conda package entry with name, version, and channel. */
+export const CondaPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  channel: z.string(),
+  buildString: z.string().optional(),
+});
+
+/** Zod schema for a single conda environment entry. */
+export const CondaEnvSchema = z.object({
+  name: z.string(),
+  path: z.string(),
+  active: z.boolean(),
+});
+
+/** Zod schema for structured conda output covering list, info, and env-list actions. */
+export const CondaResultSchema = z.object({
+  action: z.enum(["list", "info", "env-list"]),
+  // list fields
+  packages: z.array(CondaPackageSchema).optional(),
+  total: z.number().optional(),
+  environment: z.string().optional(),
+  // info fields
+  condaVersion: z.string().optional(),
+  platform: z.string().optional(),
+  pythonVersion: z.string().optional(),
+  defaultPrefix: z.string().optional(),
+  activePrefix: z.string().optional(),
+  channels: z.array(z.string()).optional(),
+  envsDirs: z.array(z.string()).optional(),
+  pkgsDirs: z.array(z.string()).optional(),
+  // env-list fields
+  environments: z.array(CondaEnvSchema).optional(),
+});
+
+export type CondaResult = z.infer<typeof CondaResultSchema>;
+
+/** Narrowed type for conda list action. */
+export type CondaList = CondaResult & {
+  action: "list";
+  packages: { name: string; version: string; channel: string; buildString?: string }[];
+  total: number;
+};
+
+/** Narrowed type for conda info action. */
+export type CondaInfo = CondaResult & {
+  action: "info";
+  condaVersion: string;
+  platform: string;
+  pythonVersion: string;
+  defaultPrefix: string;
+  channels: string[];
+  envsDirs: string[];
+  pkgsDirs: string[];
+};
+
+/** Narrowed type for conda env-list action. */
+export type CondaEnvList = CondaResult & {
+  action: "env-list";
+  environments: { name: string; path: string; active: boolean }[];
+  total: number;
+};
