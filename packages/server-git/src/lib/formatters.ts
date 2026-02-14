@@ -14,6 +14,7 @@ import type {
   GitStash,
   GitRemoteFull,
   GitBlameFull,
+  GitRestore,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -97,6 +98,14 @@ export function formatCheckout(c: GitCheckout): string {
     return `Created and switched to new branch '${c.ref}' (was ${c.previousRef})`;
   }
   return `Switched to '${c.ref}' (was ${c.previousRef})`;
+}
+
+/** Formats structured git restore data into a human-readable restore summary. */
+export function formatRestore(r: GitRestore): string {
+  if (r.restored.length === 0) return "No files restored";
+  const mode = r.staged ? "staged" : "working tree";
+  const src = r.source !== "HEAD" ? ` from ${r.source}` : "";
+  return `Restored ${r.restored.length} file(s) (${mode})${src}: ${r.restored.join(", ")}`;
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────

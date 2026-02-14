@@ -15,6 +15,7 @@ import { registerStashListTool } from "./stash-list.js";
 import { registerStashTool } from "./stash.js";
 import { registerRemoteTool } from "./remote.js";
 import { registerBlameTool } from "./blame.js";
+import { registerRestoreTool } from "./restore.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
@@ -33,4 +34,5 @@ export function registerAllTools(server: McpServer) {
   if (s("stash")) registerStashTool(server);
   if (s("remote")) registerRemoteTool(server);
   if (s("blame")) registerBlameTool(server);
+  if (s("restore")) registerRestoreTool(server);
 }

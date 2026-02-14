@@ -262,3 +262,12 @@ export type GitBlameFull = {
 };
 
 export type GitBlame = z.infer<typeof GitBlameSchema>;
+
+/** Zod schema for structured git restore output with restored files, source ref, and staged flag. */
+export const GitRestoreSchema = z.object({
+  restored: z.array(z.string()),
+  source: z.string(),
+  staged: z.boolean(),
+});
+
+export type GitRestore = z.infer<typeof GitRestoreSchema>;

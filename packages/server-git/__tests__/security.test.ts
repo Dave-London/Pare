@@ -185,6 +185,35 @@ describe("security: stash tool — message validation", () => {
   });
 });
 
+describe("security: restore tool — source validation", () => {
+  it("rejects flag-like source refs", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "source")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe source refs", () => {
+    const safeRefs = ["HEAD", "main", "v1.0.0", "abc1234", "feature/branch"];
+    for (const safe of safeRefs) {
+      expect(() => assertNoFlagInjection(safe, "source")).not.toThrow();
+    }
+  });
+});
+
+describe("security: restore tool — files validation", () => {
+  it("rejects flag-like file paths", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "files")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe file paths", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "files")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Git tool schemas
 // ---------------------------------------------------------------------------

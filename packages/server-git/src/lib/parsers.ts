@@ -14,6 +14,7 @@ import type {
   GitStash,
   GitRemoteFull,
   GitBlameFull,
+  GitRestore,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -478,4 +479,14 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   }));
 
   return { commits, file, totalLines };
+}
+
+/** Parses `git restore` result into structured restore data.
+ *  Since `git restore` produces no stdout on success, we return the file list that was passed in. */
+export function parseRestore(files: string[], source: string, staged: boolean): GitRestore {
+  return {
+    restored: files,
+    source,
+    staged,
+  };
 }
