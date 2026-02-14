@@ -381,3 +381,34 @@ export const GitBisectSchema = z.object({
 });
 
 export type GitBisect = z.infer<typeof GitBisectSchema>;
+
+/** Zod schema for a single worktree entry with path, HEAD commit, branch, and bare flag. */
+export const GitWorktreeEntrySchema = z.object({
+  path: z.string(),
+  head: z.string(),
+  branch: z.string(),
+  bare: z.boolean(),
+});
+
+/** Zod schema for structured git worktree list output. */
+export const GitWorktreeListSchema = z.object({
+  worktrees: z.union([z.array(GitWorktreeEntrySchema), z.array(z.string())]),
+  total: z.number(),
+});
+
+/** Full worktree list data (always returned by parser, before compact projection). */
+export type GitWorktreeListFull = {
+  worktrees: Array<{ path: string; head: string; branch: string; bare: boolean }>;
+  total: number;
+};
+
+export type GitWorktreeList = z.infer<typeof GitWorktreeListSchema>;
+
+/** Zod schema for structured git worktree add/remove output. */
+export const GitWorktreeSchema = z.object({
+  success: z.boolean(),
+  path: z.string(),
+  branch: z.string(),
+});
+
+export type GitWorktree = z.infer<typeof GitWorktreeSchema>;

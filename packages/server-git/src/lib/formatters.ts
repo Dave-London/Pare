@@ -22,6 +22,8 @@ import type {
   GitLogGraphFull,
   GitReflogFull,
   GitBisect,
+  GitWorktreeListFull,
+  GitWorktree,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -533,4 +535,46 @@ export function formatBisect(b: GitBisect): string {
   if (b.current) parts.push(`Current: ${b.current}`);
   if (b.remaining !== undefined) parts.push(`~${b.remaining} step(s) remaining`);
   return parts.join(" — ");
+}
+
+// ── Worktree formatters ────────────────────────────────────────────────
+
+/** Formats structured git worktree list data into a human-readable worktree listing. */
+export function formatWorktreeList(w: GitWorktreeListFull): string {
+  if (w.worktrees.length === 0) return "No worktrees found";
+  return w.worktrees
+    .map((wt) => {
+      const bare = wt.bare ? " [bare]" : "";
+      const branch = wt.branch ? ` (${wt.branch})` : "";
+      return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}`;
+    })
+    .join("\n");
+}
+
+/** Compact worktree list: path + branch as string array + total. */
+export interface GitWorktreeListCompact {
+  [key: string]: unknown;
+  worktrees: string[];
+  total: number;
+}
+
+export function compactWorktreeListMap(w: GitWorktreeListFull): GitWorktreeListCompact {
+  return {
+    worktrees: w.worktrees.map((wt) => {
+      const branch = wt.branch ? ` (${wt.branch})` : "";
+      return `${wt.path}${branch}`;
+    }),
+    total: w.total,
+  };
+}
+
+export function formatWorktreeListCompact(w: GitWorktreeListCompact): string {
+  if (w.worktrees.length === 0) return "No worktrees found";
+  return w.worktrees.join("\n");
+}
+
+/** Formats structured git worktree add/remove result into a human-readable summary. */
+export function formatWorktree(w: GitWorktree): string {
+  const branch = w.branch ? ` on branch '${w.branch}'` : "";
+  return `Worktree at '${w.path}'${branch}`;
 }
