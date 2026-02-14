@@ -17,6 +17,7 @@ import type {
   RunRerunResult,
   ReleaseCreateResult,
   GistCreateResult,
+  ReleaseListResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -434,6 +435,53 @@ export function formatReleaseCreate(data: ReleaseCreateResult): string {
     .join(", ");
   const suffix = flags ? ` (${flags})` : "";
   return `Created release ${data.tag}${suffix}: ${data.url}`;
+}
+
+/** Formats structured release list data into human-readable text. */
+export function formatReleaseList(data: ReleaseListResult): string {
+  if (data.total === 0) return "No releases found.";
+
+  const lines = [`${data.total} releases:`];
+  for (const r of data.releases) {
+    const flags = [r.draft ? "draft" : "", r.prerelease ? "prerelease" : ""]
+      .filter(Boolean)
+      .join(", ");
+    const suffix = flags ? ` (${flags})` : "";
+    lines.push(`  ${r.tag} ${r.name}${suffix} — ${r.publishedAt}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact release list: tag, name, and flags only. */
+export interface ReleaseListCompact {
+  [key: string]: unknown;
+  releases: { tag: string; name: string; draft: boolean; prerelease: boolean }[];
+  total: number;
+}
+
+export function compactReleaseListMap(data: ReleaseListResult): ReleaseListCompact {
+  return {
+    releases: data.releases.map((r) => ({
+      tag: r.tag,
+      name: r.name,
+      draft: r.draft,
+      prerelease: r.prerelease,
+    })),
+    total: data.total,
+  };
+}
+
+export function formatReleaseListCompact(data: ReleaseListCompact): string {
+  if (data.total === 0) return "No releases found.";
+  const lines = [`${data.total} releases:`];
+  for (const r of data.releases) {
+    const flags = [r.draft ? "draft" : "", r.prerelease ? "prerelease" : ""]
+      .filter(Boolean)
+      .join(", ");
+    const suffix = flags ? ` (${flags})` : "";
+    lines.push(`  ${r.tag} ${r.name}${suffix}`);
+  }
+  return lines.join("\n");
 }
 
 // ── API ─────────────────────────────────────────────────────────────
