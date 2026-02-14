@@ -26,7 +26,7 @@ describe("@paretools/go integration", () => {
     await transport.close();
   });
 
-  it("lists all 10 tools", async () => {
+  it("lists all 11 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -35,6 +35,7 @@ describe("@paretools/go integration", () => {
       "fmt",
       "generate",
       "get",
+      "golangci-lint",
       "list",
       "mod-tidy",
       "run",
@@ -254,6 +255,28 @@ describe("@paretools/go integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
+      }
+    });
+  });
+
+  describe("golangci-lint", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool({
+        name: "golangci-lint",
+        arguments: { path: resolve(__dirname, "../../.."), compact: false },
+      });
+
+      if (result.isError) {
+        // golangci-lint not installed — verify meaningful error
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/golangci-lint|command|not found/i);
+      } else {
+        // golangci-lint is available — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.errors).toEqual(expect.any(Number));
+        expect(sc.warnings).toEqual(expect.any(Number));
       }
     });
   });

@@ -124,3 +124,32 @@ export const GoGetResultSchema = z.object({
 });
 
 export type GoGetResult = z.infer<typeof GoGetResultSchema>;
+
+/** Zod schema for a single golangci-lint diagnostic with file location, linter, severity, and message. */
+export const GolangciLintDiagnosticSchema = z.object({
+  file: z.string(),
+  line: z.number(),
+  column: z.number().optional(),
+  linter: z.string(),
+  severity: z.enum(["error", "warning", "info"]),
+  message: z.string(),
+  sourceLine: z.string().optional(),
+});
+
+/** Zod schema for linter-level summary counts. */
+export const GolangciLintLinterSummarySchema = z.object({
+  linter: z.string(),
+  count: z.number(),
+});
+
+/** Zod schema for structured golangci-lint output with diagnostics and summary counts. */
+export const GolangciLintResultSchema = z.object({
+  diagnostics: z.array(GolangciLintDiagnosticSchema).optional(),
+  total: z.number(),
+  errors: z.number(),
+  warnings: z.number(),
+  byLinter: z.array(GolangciLintLinterSummarySchema).optional(),
+});
+
+export type GolangciLintResult = z.infer<typeof GolangciLintResultSchema>;
+export type GolangciLintDiagnostic = z.infer<typeof GolangciLintDiagnosticSchema>;

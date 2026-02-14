@@ -6,6 +6,7 @@ import {
   formatGoEnv,
   formatGoList,
   formatGoGet,
+  formatGolangciLint,
 } from "../src/lib/formatters.js";
 import type {
   GoBuildResult,
@@ -14,6 +15,7 @@ import type {
   GoEnvResult,
   GoListResult,
   GoGetResult,
+  GolangciLintResult,
 } from "../src/schemas/index.js";
 
 describe("formatGoBuild", () => {
@@ -247,5 +249,54 @@ describe("formatGoGet", () => {
     const output = formatGoGet(data);
     expect(output).toContain("go get: FAIL");
     expect(output).toContain("no matching versions");
+  });
+});
+
+describe("formatGolangciLint", () => {
+  it("formats clean lint result", () => {
+    const data: GolangciLintResult = {
+      diagnostics: [],
+      total: 0,
+      errors: 0,
+      warnings: 0,
+      byLinter: [],
+    };
+    expect(formatGolangciLint(data)).toBe("golangci-lint: no issues found.");
+  });
+
+  it("formats lint result with issues", () => {
+    const data: GolangciLintResult = {
+      diagnostics: [
+        {
+          file: "main.go",
+          line: 10,
+          column: 5,
+          linter: "govet",
+          severity: "warning",
+          message: "unreachable code",
+        },
+        {
+          file: "handler.go",
+          line: 25,
+          linter: "errcheck",
+          severity: "error",
+          message: "Error return value is not checked",
+        },
+      ],
+      total: 2,
+      errors: 1,
+      warnings: 1,
+      byLinter: [
+        { linter: "govet", count: 1 },
+        { linter: "errcheck", count: 1 },
+      ],
+    };
+    const output = formatGolangciLint(data);
+    expect(output).toContain("golangci-lint: 2 issues (1 errors, 1 warnings)");
+    expect(output).toContain("main.go:10:5: unreachable code (govet)");
+    expect(output).toContain("handler.go:25: Error return value is not checked (errcheck)");
+    expect(output).toContain("By linter:");
+    expect(output).toContain("govet: 1");
+    expect(output).toContain("errcheck: 1");
   });
 });

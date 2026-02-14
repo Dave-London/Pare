@@ -6,6 +6,7 @@ import {
   parseGoEnvOutput,
   parseGoListOutput,
   parseGoGetOutput,
+  parseGolangciLintJson,
 } from "../src/lib/parsers.js";
 
 describe("parseGoBuildOutput", () => {
@@ -293,5 +294,123 @@ describe("parseGoGetOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.output).toBeUndefined();
+  });
+});
+
+describe("parseGolangciLintJson", () => {
+  it("parses JSON output with multiple issues", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        {
+          FromLinter: "govet",
+          Text: "printf: Sprintf format %d reads arg #1, but call has 0 args",
+          Severity: "warning",
+          Pos: { Filename: "main.go", Line: 10, Column: 5 },
+          SourceLines: ['\tfmt.Sprintf("%d")'],
+        },
+        {
+          FromLinter: "errcheck",
+          Text: "Error return value is not checked",
+          Severity: "error",
+          Pos: { Filename: "handler.go", Line: 25, Column: 0 },
+          SourceLines: ["\tos.Remove(path)"],
+        },
+        {
+          FromLinter: "govet",
+          Text: "unreachable code",
+          Severity: "warning",
+          Pos: { Filename: "util.go", Line: 42 },
+        },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(2);
+    expect(result.diagnostics).toHaveLength(3);
+
+    expect(result.diagnostics![0]).toEqual({
+      file: "main.go",
+      line: 10,
+      column: 5,
+      linter: "govet",
+      severity: "warning",
+      message: "printf: Sprintf format %d reads arg #1, but call has 0 args",
+      sourceLine: '\tfmt.Sprintf("%d")',
+    });
+
+    expect(result.diagnostics![1]).toEqual({
+      file: "handler.go",
+      line: 25,
+      column: undefined,
+      linter: "errcheck",
+      severity: "error",
+      message: "Error return value is not checked",
+      sourceLine: "\tos.Remove(path)",
+    });
+
+    expect(result.diagnostics![2].sourceLine).toBeUndefined();
+  });
+
+  it("parses clean output with no issues", () => {
+    const stdout = JSON.stringify({ Issues: [] });
+    const result = parseGolangciLintJson(stdout, 0);
+
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.byLinter).toEqual([]);
+  });
+
+  it("handles empty stdout", () => {
+    const result = parseGolangciLintJson("", 0);
+
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+  });
+
+  it("handles malformed JSON", () => {
+    const result = parseGolangciLintJson("not valid json", 1);
+
+    expect(result.total).toBe(0);
+  });
+
+  it("builds by-linter summary sorted by count", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        { FromLinter: "errcheck", Text: "err1", Pos: { Filename: "a.go", Line: 1 } },
+        { FromLinter: "govet", Text: "vet1", Pos: { Filename: "a.go", Line: 2 } },
+        { FromLinter: "errcheck", Text: "err2", Pos: { Filename: "b.go", Line: 3 } },
+        { FromLinter: "errcheck", Text: "err3", Pos: { Filename: "c.go", Line: 4 } },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.byLinter).toEqual([
+      { linter: "errcheck", count: 3 },
+      { linter: "govet", count: 1 },
+    ]);
+  });
+
+  it("defaults severity to warning when not specified", () => {
+    const stdout = JSON.stringify({
+      Issues: [{ FromLinter: "govet", Text: "issue", Pos: { Filename: "a.go", Line: 1 } }],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+    expect(result.diagnostics![0].severity).toBe("warning");
+    expect(result.warnings).toBe(1);
+  });
+
+  it("handles null Issues field", () => {
+    const stdout = JSON.stringify({ Report: {} });
+    const result = parseGolangciLintJson(stdout, 0);
+
+    expect(result.total).toBe(0);
   });
 });

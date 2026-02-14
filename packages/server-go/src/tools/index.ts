@@ -10,6 +10,7 @@ import { registerGenerateTool } from "./generate.js";
 import { registerEnvTool } from "./env.js";
 import { registerListTool } from "./list.js";
 import { registerGetTool } from "./get.js";
+import { registerGolangciLintTool } from "./golangci-lint.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("go", name);
@@ -23,4 +24,5 @@ export function registerAllTools(server: McpServer) {
   if (s("env")) registerEnvTool(server);
   if (s("list")) registerListTool(server);
   if (s("get")) registerGetTool(server);
+  if (s("golangci-lint")) registerGolangciLintTool(server);
 }
