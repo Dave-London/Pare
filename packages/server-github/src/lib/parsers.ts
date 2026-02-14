@@ -5,6 +5,7 @@ import type {
   PrMergeResult,
   CommentResult,
   PrReviewResult,
+  EditResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -87,6 +88,16 @@ export function parsePrCreate(stdout: string): PrCreateResult {
   const url = stdout.trim();
   const match = url.match(/\/pull\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
+  return { number, url };
+}
+
+/**
+ * Parses `gh pr edit` output into structured data.
+ * The gh CLI prints the PR URL to stdout on success.
+ */
+export function parsePrUpdate(stdout: string, number: number): EditResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : "";
   return { number, url };
 }
 
@@ -183,6 +194,16 @@ export function parseIssueCreate(stdout: string): IssueCreateResult {
 export function parseIssueClose(stdout: string, number: number): IssueCloseResult {
   const url = stdout.trim();
   return { number, state: "closed", url };
+}
+
+/**
+ * Parses `gh issue edit` output into structured data.
+ * The gh CLI prints the issue URL to stdout on success.
+ */
+export function parseIssueUpdate(stdout: string, number: number): EditResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/issues\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : "";
+  return { number, url };
 }
 
 /**

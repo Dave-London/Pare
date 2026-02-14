@@ -133,6 +133,14 @@ export const CommentResultSchema = z.object({
 
 export type CommentResult = z.infer<typeof CommentResultSchema>;
 
+/** Zod schema for structured pr-update / issue-update output. */
+export const EditResultSchema = z.object({
+  number: z.number(),
+  url: z.string(),
+});
+
+export type EditResult = z.infer<typeof EditResultSchema>;
+
 // ── Run schemas ──────────────────────────────────────────────────────
 
 /** Zod schema for a single job in a workflow run. */
