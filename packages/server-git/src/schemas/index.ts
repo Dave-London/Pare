@@ -299,3 +299,14 @@ export const GitMergeSchema = z.object({
 });
 
 export type GitMerge = z.infer<typeof GitMergeSchema>;
+
+/** Zod schema for structured git rebase output with success status, branch info, conflicts, and rebased commit count. */
+export const GitRebaseSchema = z.object({
+  success: z.boolean(),
+  branch: z.string(),
+  current: z.string(),
+  conflicts: z.array(z.string()),
+  rebasedCommits: z.number().optional(),
+});
+
+export type GitRebase = z.infer<typeof GitRebaseSchema>;

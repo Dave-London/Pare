@@ -18,6 +18,7 @@ import type {
   GitReset,
   GitCherryPick,
   GitMerge,
+  GitRebase,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -518,7 +519,6 @@ export function parseCherryPick(
 ): GitCherryPick {
   const combined = `${stdout}\n${stderr}`.trim();
 
-  // Detect conflicts
   const conflicts: string[] = [];
   const conflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
   let match;
@@ -526,7 +526,6 @@ export function parseCherryPick(
     conflicts.push(match[1].trim());
   }
 
-  // If exit code is non-zero and we found conflicts, it's a conflict pause
   if (exitCode !== 0 && conflicts.length > 0) {
     return {
       success: false,
@@ -535,7 +534,6 @@ export function parseCherryPick(
     };
   }
 
-  // Detect abort
   if (/cherry-pick.*abort/i.test(combined) || /abort/i.test(combined)) {
     if (exitCode === 0) {
       return {
@@ -546,7 +544,6 @@ export function parseCherryPick(
     }
   }
 
-  // Success — all commits applied
   if (exitCode === 0) {
     return {
       success: true,
@@ -555,7 +552,6 @@ export function parseCherryPick(
     };
   }
 
-  // Non-zero exit code without conflicts — something else went wrong
   return {
     success: false,
     applied: [],
@@ -607,5 +603,58 @@ export function parseMergeAbort(_stdout: string, _stderr: string): GitMerge {
     fastForward: false,
     branch: "",
     conflicts: [],
+  };
+}
+
+/** Parses `git rebase` output into structured rebase result data with conflict detection. */
+export function parseRebase(
+  stdout: string,
+  stderr: string,
+  branch: string,
+  current: string,
+): GitRebase {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  const conflicts: string[] = [];
+  const conflictPattern2 = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+  let match2;
+  while ((match2 = conflictPattern2.exec(combined)) !== null) {
+    conflicts.push(match2[1].trim());
+  }
+
+  let rebasedCommits: number | undefined;
+  const applyMatches = combined.match(/Applying: /g);
+  if (applyMatches) {
+    rebasedCommits = applyMatches.length;
+  }
+  if (rebasedCommits === undefined && /Successfully rebased/.test(combined)) {
+    rebasedCommits = 0;
+  }
+
+  if (!branch && conflicts.length === 0) {
+    return {
+      success: true,
+      branch: "",
+      current,
+      conflicts: [],
+    };
+  }
+
+  if (/Successfully rebased/.test(combined) && conflicts.length === 0) {
+    return {
+      success: true,
+      branch,
+      current,
+      conflicts: [],
+      ...(rebasedCommits !== undefined ? { rebasedCommits } : {}),
+    };
+  }
+
+  return {
+    success: conflicts.length === 0,
+    branch,
+    current,
+    conflicts,
+    ...(rebasedCommits !== undefined ? { rebasedCommits } : {}),
   };
 }
