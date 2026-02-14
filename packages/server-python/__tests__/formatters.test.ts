@@ -12,7 +12,21 @@ import {
   formatCondaList,
   formatCondaInfo,
   formatCondaEnvList,
+  formatCondaResult,
+  formatCondaListCompact,
+  formatCondaInfoCompact,
+  formatCondaEnvListCompact,
+  formatCondaResultCompact,
+  compactCondaListMap,
+  compactCondaInfoMap,
+  compactCondaEnvListMap,
+  compactCondaResultMap,
   formatPoetry,
+  formatPoetryCompact,
+  compactPoetryMap,
+  formatPyenv,
+  formatPyenvCompact,
+  compactPyenvMap,
 } from "../src/lib/formatters.js";
 import type {
   PipInstall,
@@ -28,6 +42,7 @@ import type {
   CondaInfo,
   CondaEnvList,
   PoetryResult,
+  PyenvResult,
 } from "../src/schemas/index.js";
 
 describe("formatPipInstall", () => {
@@ -549,6 +564,289 @@ describe("formatCondaEnvList", () => {
     expect(output).toContain("base *: /home/user/miniconda3");
     expect(output).toContain("dev: /home/user/miniconda3/envs/dev");
     expect(output).not.toContain("dev *:");
+  });
+});
+
+// ─── conda result dispatcher tests ──────────────────────────────────────────
+
+describe("formatCondaResult", () => {
+  it("dispatches list action to formatCondaList", () => {
+    const data: CondaList = {
+      action: "list",
+      packages: [{ name: "numpy", version: "1.26.0", channel: "defaults" }],
+      total: 1,
+    };
+    const output = formatCondaResult(data);
+    expect(output).toContain("conda list: 1 packages:");
+    expect(output).toContain("numpy==1.26.0 (defaults)");
+  });
+
+  it("dispatches info action to formatCondaInfo", () => {
+    const data: CondaInfo = {
+      action: "info",
+      condaVersion: "24.1.0",
+      platform: "linux-64",
+      pythonVersion: "3.11.7",
+      defaultPrefix: "/home/user/miniconda3",
+      channels: [],
+      envsDirs: [],
+      pkgsDirs: [],
+    };
+    const output = formatCondaResult(data);
+    expect(output).toContain("conda 24.1.0");
+  });
+
+  it("dispatches env-list action to formatCondaEnvList", () => {
+    const data: CondaEnvList = {
+      action: "env-list",
+      environments: [{ name: "base", path: "/home/user/miniconda3", active: true }],
+      total: 1,
+    };
+    const output = formatCondaResult(data);
+    expect(output).toContain("conda environments: 1");
+  });
+
+  it("returns unknown action for unrecognised action", () => {
+    const data = { action: "create" } as unknown as CondaList;
+    expect(formatCondaResult(data)).toBe("conda: unknown action.");
+  });
+});
+
+// ─── conda compact formatter tests ──────────────────────────────────────────
+
+describe("formatCondaListCompact", () => {
+  it("formats empty list", () => {
+    const data = compactCondaListMap({ action: "list", packages: [], total: 0 } as CondaList);
+    expect(formatCondaListCompact(data)).toBe("conda: no packages found.");
+  });
+
+  it("formats list with packages and environment", () => {
+    const data = compactCondaListMap({
+      action: "list",
+      packages: [{ name: "numpy", version: "1.26.0", channel: "defaults" }],
+      total: 5,
+      environment: "myenv",
+    } as CondaList);
+    expect(formatCondaListCompact(data)).toBe("conda list (env: myenv): 5 packages.");
+  });
+
+  it("formats list without environment", () => {
+    const data = compactCondaListMap({
+      action: "list",
+      packages: [{ name: "numpy", version: "1.26.0", channel: "defaults" }],
+      total: 3,
+    } as CondaList);
+    expect(formatCondaListCompact(data)).toBe("conda list: 3 packages.");
+  });
+});
+
+describe("formatCondaInfoCompact", () => {
+  it("formats conda info summary", () => {
+    const data = compactCondaInfoMap({
+      action: "info",
+      condaVersion: "24.1.0",
+      platform: "win-64",
+      pythonVersion: "3.11.7",
+      defaultPrefix: "C:\\miniconda3",
+      channels: ["defaults"],
+      envsDirs: [],
+      pkgsDirs: [],
+    } as CondaInfo);
+    expect(formatCondaInfoCompact(data)).toBe("conda 24.1.0 (win-64, python 3.11.7)");
+  });
+});
+
+describe("formatCondaEnvListCompact", () => {
+  it("formats empty env list", () => {
+    const data = compactCondaEnvListMap({
+      action: "env-list",
+      environments: [],
+      total: 0,
+    } as CondaEnvList);
+    expect(formatCondaEnvListCompact(data)).toBe("conda: no environments found.");
+  });
+
+  it("formats env list with count", () => {
+    const data = compactCondaEnvListMap({
+      action: "env-list",
+      environments: [
+        { name: "base", path: "/home/user/miniconda3", active: true },
+        { name: "dev", path: "/home/user/miniconda3/envs/dev", active: false },
+      ],
+      total: 2,
+    } as CondaEnvList);
+    expect(formatCondaEnvListCompact(data)).toBe("conda: 2 environments.");
+  });
+});
+
+describe("formatCondaResultCompact", () => {
+  it("dispatches compact list", () => {
+    const data = compactCondaResultMap({ action: "list", packages: [], total: 0 } as CondaList);
+    expect(formatCondaResultCompact(data)).toBe("conda: no packages found.");
+  });
+
+  it("dispatches compact info", () => {
+    const data = compactCondaResultMap({
+      action: "info",
+      condaVersion: "24.1.0",
+      platform: "linux-64",
+      pythonVersion: "3.11.7",
+      defaultPrefix: "/home/user/miniconda3",
+      channels: [],
+      envsDirs: [],
+      pkgsDirs: [],
+    } as CondaInfo);
+    expect(formatCondaResultCompact(data)).toBe("conda 24.1.0 (linux-64, python 3.11.7)");
+  });
+
+  it("dispatches compact env-list", () => {
+    const data = compactCondaResultMap({
+      action: "env-list",
+      environments: [{ name: "base", path: "/p", active: true }],
+      total: 1,
+    } as CondaEnvList);
+    expect(formatCondaResultCompact(data)).toBe("conda: 1 environments.");
+  });
+
+  it("falls back for unknown action", () => {
+    const data = compactCondaResultMap({ action: "create" } as unknown as CondaList);
+    expect(formatCondaResultCompact(data)).toBe("conda: no packages found.");
+  });
+});
+
+// ─── pyenv formatter tests ──────────────────────────────────────────────────
+
+describe("formatPyenv", () => {
+  it("formats failed action", () => {
+    const data: PyenvResult = {
+      action: "versions",
+      success: false,
+      error: "pyenv not found",
+    };
+    expect(formatPyenv(data)).toBe("pyenv versions failed: pyenv not found");
+  });
+
+  it("formats failed action without error message", () => {
+    const data: PyenvResult = {
+      action: "install",
+      success: false,
+    };
+    expect(formatPyenv(data)).toBe("pyenv install failed: unknown error");
+  });
+
+  it("formats versions list with current marker", () => {
+    const data: PyenvResult = {
+      action: "versions",
+      success: true,
+      versions: ["3.10.12", "3.11.7", "3.12.1"],
+      current: "3.11.7",
+    };
+    const output = formatPyenv(data);
+    expect(output).toContain("3 versions installed:");
+    expect(output).toContain("3.10.12");
+    expect(output).toContain("3.11.7 *");
+    expect(output).toContain("3.12.1");
+    expect(output).not.toContain("3.10.12 *");
+  });
+
+  it("formats empty versions list", () => {
+    const data: PyenvResult = {
+      action: "versions",
+      success: true,
+      versions: [],
+    };
+    expect(formatPyenv(data)).toBe("pyenv: no versions installed.");
+  });
+
+  it("formats current version", () => {
+    const data: PyenvResult = {
+      action: "version",
+      success: true,
+      current: "3.11.7",
+    };
+    expect(formatPyenv(data)).toBe("pyenv: current version is 3.11.7");
+  });
+
+  it("formats version when not set", () => {
+    const data: PyenvResult = {
+      action: "version",
+      success: true,
+    };
+    expect(formatPyenv(data)).toBe("pyenv: no version set.");
+  });
+
+  it("formats install with version", () => {
+    const data: PyenvResult = {
+      action: "install",
+      success: true,
+      installed: "3.12.1",
+    };
+    expect(formatPyenv(data)).toBe("pyenv: installed Python 3.12.1");
+  });
+
+  it("formats install without version detail", () => {
+    const data: PyenvResult = {
+      action: "install",
+      success: true,
+    };
+    expect(formatPyenv(data)).toBe("pyenv: installation completed.");
+  });
+
+  it("formats local version set", () => {
+    const data: PyenvResult = {
+      action: "local",
+      success: true,
+      localVersion: "3.11.7",
+    };
+    expect(formatPyenv(data)).toBe("pyenv: local version set to 3.11.7");
+  });
+
+  it("formats local without version detail", () => {
+    const data: PyenvResult = {
+      action: "local",
+      success: true,
+    };
+    expect(formatPyenv(data)).toBe("pyenv: local version set.");
+  });
+
+  it("formats global version set", () => {
+    const data: PyenvResult = {
+      action: "global",
+      success: true,
+      globalVersion: "3.12.1",
+    };
+    expect(formatPyenv(data)).toBe("pyenv: global version set to 3.12.1");
+  });
+
+  it("formats global without version detail", () => {
+    const data: PyenvResult = {
+      action: "global",
+      success: true,
+    };
+    expect(formatPyenv(data)).toBe("pyenv: global version set.");
+  });
+});
+
+describe("formatPyenvCompact", () => {
+  it("formats failed action", () => {
+    const data = compactPyenvMap({
+      action: "install",
+      success: false,
+      error: "not found",
+    } as PyenvResult);
+    expect(formatPyenvCompact(data)).toBe("pyenv install failed.");
+  });
+
+  it("formats successful action", () => {
+    const data = compactPyenvMap({
+      action: "versions",
+      success: true,
+      versions: ["3.11.7"],
+    } as PyenvResult);
+    expect(formatPyenvCompact(data)).toBe("pyenv versions: success.");
+  });
+});
+
 // ─── poetry formatter tests ─────────────────────────────────────────────────
 
 describe("formatPoetry", () => {
@@ -657,5 +955,101 @@ describe("formatPoetry", () => {
     const output = formatPoetry(data);
     expect(output).toContain("poetry remove: 1 packages:");
     expect(output).toContain("requests==2.31.0");
+  });
+});
+
+// ─── poetry compact formatter tests ─────────────────────────────────────────
+
+describe("formatPoetryCompact", () => {
+  it("formats failed action", () => {
+    const data = compactPoetryMap({
+      success: false,
+      action: "install",
+      total: 0,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry install failed.");
+  });
+
+  it("formats show with packages", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "show",
+      packages: [
+        { name: "requests", version: "2.31.0" },
+        { name: "flask", version: "3.0.0" },
+      ],
+      total: 2,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("2 packages installed.");
+  });
+
+  it("formats show with no packages", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "show",
+      packages: [],
+      total: 0,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("No packages found.");
+  });
+
+  it("formats build with artifacts", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "build",
+      artifacts: [{ file: "pkg-1.0.0.tar.gz" }, { file: "pkg-1.0.0-py3-none-any.whl" }],
+      total: 2,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("Built 2 artifacts.");
+  });
+
+  it("formats build with no artifacts", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "build",
+      artifacts: [],
+      total: 0,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry build: no artifacts produced.");
+  });
+
+  it("formats install with packages", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "install",
+      packages: [{ name: "requests", version: "2.31.0" }],
+      total: 1,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry install: 1 packages.");
+  });
+
+  it("formats install with no changes", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "install",
+      packages: [],
+      total: 0,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry install: no changes.");
+  });
+
+  it("formats add with packages", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "add",
+      packages: [{ name: "certifi", version: "2023.7.22" }],
+      total: 1,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry add: 1 packages.");
+  });
+
+  it("formats remove with packages", () => {
+    const data = compactPoetryMap({
+      success: true,
+      action: "remove",
+      packages: [{ name: "requests", version: "2.31.0" }],
+      total: 1,
+    } as PoetryResult);
+    expect(formatPoetryCompact(data)).toBe("poetry remove: 1 packages.");
   });
 });

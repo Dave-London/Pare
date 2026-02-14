@@ -712,6 +712,9 @@ describe("parseCondaEnvListJson", () => {
     const result = parseCondaEnvListJson(json);
 
     expect(result.environments[0].active).toBe(false);
+  });
+});
+
 // ─── poetry parser tests ────────────────────────────────────────────────────
 
 describe("parsePoetryOutput — show", () => {

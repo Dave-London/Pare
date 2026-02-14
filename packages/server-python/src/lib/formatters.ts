@@ -635,6 +635,8 @@ export function compactPyenvMap(data: PyenvResult): PyenvResultCompact {
 export function formatPyenvCompact(data: PyenvResultCompact): string {
   if (!data.success) return `pyenv ${data.action} failed.`;
   return `pyenv ${data.action}: success.`;
+}
+
 // ── poetry formatters ────────────────────────────────────────────────
 
 /** Formats structured poetry results into a human-readable summary. */

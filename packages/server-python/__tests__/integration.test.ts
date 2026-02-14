@@ -40,8 +40,8 @@ describe("@paretools/python integration", () => {
       "pip-install",
       "pip-list",
       "pip-show",
-      "pyenv",
       "poetry",
+      "pyenv",
       "pytest",
       "ruff-check",
       "ruff-format",
@@ -368,10 +368,6 @@ describe("@paretools/python integration", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
         { name: "pyenv", arguments: { action: "version" } },
-  describe("poetry", () => {
-    it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool(
-        { name: "poetry", arguments: { action: "show" } },
         undefined,
         CALL_TIMEOUT,
       );
@@ -384,6 +380,20 @@ describe("@paretools/python integration", () => {
         expect(sc).toBeDefined();
         expect(sc.action).toBe("version");
         expect(typeof sc.success).toBe("boolean");
+      }
+    });
+  });
+
+  describe("poetry", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool(
+        { name: "poetry", arguments: { action: "show" } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/poetry|command|not found/i);
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
