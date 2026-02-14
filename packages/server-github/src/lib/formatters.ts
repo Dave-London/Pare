@@ -15,6 +15,7 @@ import type {
   RunViewResult,
   RunListResult,
   RunRerunResult,
+  ReleaseCreateResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -413,6 +414,17 @@ export function formatRunRerun(data: RunRerunResult): string {
   const mode = data.failedOnly ? "failed jobs only" : "all jobs";
   const urlPart = data.url ? `: ${data.url}` : "";
   return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
+}
+
+// ── Release ─────────────────────────────────────────────────────────
+
+/** Formats structured release create data into human-readable text. */
+export function formatReleaseCreate(data: ReleaseCreateResult): string {
+  const flags = [data.draft ? "draft" : "", data.prerelease ? "prerelease" : ""]
+    .filter(Boolean)
+    .join(", ");
+  const suffix = flags ? ` (${flags})` : "";
+  return `Created release ${data.tag}${suffix}: ${data.url}`;
 }
 
 // ── API ─────────────────────────────────────────────────────────────
