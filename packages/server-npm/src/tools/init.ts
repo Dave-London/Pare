@@ -17,7 +17,7 @@ export function registerInitTool(server: McpServer) {
       title: "Init Package",
       description:
         "Initializes a new package.json in the target directory. " +
-        "Works with both npm and pnpm. Returns structured output with the package name, version, and path.",
+        "Works with npm, pnpm, and yarn. Returns structured output with the package name, version, and path.",
       inputSchema: {
         path: z
           .string()

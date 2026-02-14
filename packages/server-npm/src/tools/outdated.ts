@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
-import { parseOutdatedJson } from "../lib/parsers.js";
+import { parseOutdatedJson, parseYarnOutdatedJson } from "../lib/parsers.js";
 import { formatOutdated } from "../lib/formatters.js";
 import { NpmOutdatedSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
@@ -15,7 +15,8 @@ export function registerOutdatedTool(server: McpServer) {
       title: "Outdated Packages",
       description:
         "Checks for outdated packages and returns structured update information. " +
-        "Auto-detects pnpm via pnpm-lock.yaml. Use instead of running `npm outdated` or `pnpm outdated` in the terminal.",
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
+        "Use instead of running `npm outdated`, `pnpm outdated`, or `yarn outdated` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -39,7 +40,8 @@ export function registerOutdatedTool(server: McpServer) {
 
       // outdated returns exit code 1 when outdated packages exist, which is expected
       const output = result.stdout || "{}";
-      const outdated = parseOutdatedJson(output, pm);
+      const outdated =
+        pm === "yarn" ? parseYarnOutdatedJson(output) : parseOutdatedJson(output, pm);
       return dualOutput({ ...outdated, packageManager: pm }, formatOutdated);
     },
   );

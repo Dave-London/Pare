@@ -2,9 +2,9 @@ import { z } from "zod";
 
 /** Reusable schema field indicating which package manager was used. */
 const packageManagerField = z
-  .enum(["npm", "pnpm"])
+  .enum(["npm", "pnpm", "yarn"])
   .optional()
-  .describe("Package manager that was used (npm or pnpm)");
+  .describe("Package manager that was used (npm, pnpm, or yarn)");
 
 /** Zod schema for structured npm install output including package counts, vulnerabilities, and duration. */
 export const NpmInstallSchema = z.object({

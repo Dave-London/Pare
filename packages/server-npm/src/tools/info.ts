@@ -15,7 +15,7 @@ export function registerInfoTool(server: McpServer) {
       title: "Package Info",
       description:
         "Shows detailed package metadata from the npm registry. " +
-        "Works with both npm and pnpm (both query the same registry). Use instead of running `npm info` in the terminal.",
+        "Works with npm, pnpm, and yarn (all query the same registry). Use instead of running `npm info` or `yarn info` in the terminal.",
       inputSchema: {
         package: z
           .string()
@@ -42,14 +42,27 @@ export function registerInfoTool(server: McpServer) {
       assertNoFlagInjection(pkg, "package");
       const pm = await detectPackageManager(cwd, packageManager);
 
-      // pnpm info is an alias for npm info — both work the same way
+      // All package managers query the npm registry; yarn uses "info" as well
       const result = await runPm(pm, ["info", pkg, "--json"], cwd);
 
       if (result.exitCode !== 0 && !result.stdout) {
         throw new Error(`${pm} info failed: ${result.stderr}`);
       }
 
-      const info = parseInfoJson(result.stdout);
+      // Yarn Classic wraps the result in { type: "inspect", data: { ... } }
+      let jsonStr = result.stdout;
+      if (pm === "yarn") {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.type === "inspect" && parsed.data) {
+            jsonStr = JSON.stringify(parsed.data);
+          }
+        } catch {
+          // fall through, let parseInfoJson handle it
+        }
+      }
+
+      const info = parseInfoJson(jsonStr);
       const infoWithPm = { ...info, packageManager: pm };
       return compactDualOutput(
         infoWithPm,
