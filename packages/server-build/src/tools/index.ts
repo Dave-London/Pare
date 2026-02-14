@@ -6,6 +6,7 @@ import { registerEsbuildTool } from "./esbuild.js";
 import { registerViteBuildTool } from "./vite-build.js";
 import { registerWebpackTool } from "./webpack.js";
 import { registerTurboTool } from "./turbo.js";
+import { registerNxTool } from "./nx.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("build", name);
@@ -15,4 +16,5 @@ export function registerAllTools(server: McpServer) {
   if (s("vite-build")) registerViteBuildTool(server);
   if (s("webpack")) registerWebpackTool(server);
   if (s("turbo")) registerTurboTool(server);
+  if (s("nx")) registerNxTool(server);
 }

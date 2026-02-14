@@ -5,6 +5,7 @@ import type {
   ViteBuildResult,
   WebpackResult,
   TurboResult,
+  NxResult,
 } from "../schemas/index.js";
 
 /** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
@@ -303,6 +304,26 @@ export function formatTurbo(data: TurboResult): string {
 }
 
 // ---------------------------------------------------------------------------
+// nx
+// ---------------------------------------------------------------------------
+
+/** Formats structured Nx results into a human-readable summary. */
+export function formatNx(data: NxResult): string {
+  const summary = `nx: ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
+
+  if (data.tasks.length === 0) return summary;
+
+  const lines = [summary];
+  for (const task of data.tasks) {
+    const icon = task.status === "success" ? "✔" : "✖";
+    const cacheTag = task.cache ? " [cache]" : "";
+    const dur = task.duration !== undefined ? ` (${task.duration}s)` : "";
+    lines.push(`  ${icon} ${task.project}:${task.target}${cacheTag}${dur}`);
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // turbo compact
 // ---------------------------------------------------------------------------
 
@@ -335,4 +356,37 @@ export function formatTurboCompact(data: TurboCompact): string {
     return parts.join(", ");
   }
   return `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`;
+}
+
+// ---------------------------------------------------------------------------
+// nx compact
+// ---------------------------------------------------------------------------
+
+/** Compact nx: success, summary counts only. Schema-compatible (tasks array omitted). */
+export interface NxCompact {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  total: number;
+  passed: number;
+  failed: number;
+  cached: number;
+}
+
+export function compactNxMap(data: NxResult): NxCompact {
+  return {
+    success: data.success,
+    duration: data.duration,
+    total: data.total,
+    passed: data.passed,
+    failed: data.failed,
+    cached: data.cached,
+  };
+}
+
+export function formatNxCompact(data: NxCompact): string {
+  if (data.success) {
+    return `nx: ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
+  }
+  return `nx: failed — ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
 }
