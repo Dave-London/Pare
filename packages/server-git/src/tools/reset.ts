@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseReset } from "../lib/parsers.js";
 import { formatReset } from "../lib/formatters.js";
 import { GitResetSchema } from "../schemas/index.js";
@@ -45,7 +45,9 @@ export function registerResetTool(server: McpServer) {
         for (const f of files) {
           assertNoFlagInjection(f, "files");
         }
-        args.push("--", ...files);
+        // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+        const resolvedFiles = await resolveFilePaths(files, cwd);
+        args.push("--", ...resolvedFiles);
       }
 
       const result = await git(args, cwd);

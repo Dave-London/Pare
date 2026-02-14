@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseAdd } from "../lib/parsers.js";
 import { formatAdd } from "../lib/formatters.js";
 import { GitAddSchema } from "../schemas/index.js";
@@ -44,7 +44,9 @@ export function registerAddTool(server: McpServer) {
         for (const file of files!) {
           assertNoFlagInjection(file, "file path");
         }
-        args = ["add", "--", ...files!];
+        // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+        const resolvedFiles = await resolveFilePaths(files!, cwd);
+        args = ["add", "--", ...resolvedFiles];
       }
 
       const result = await git(args, cwd);

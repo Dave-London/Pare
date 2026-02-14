@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, resolveFilePath } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
 import { formatDiff, compactDiffMap, formatDiffCompact } from "../lib/formatters.js";
 import { GitDiffSchema } from "../schemas/index.js";
@@ -50,14 +50,20 @@ export function registerDiffTool(server: McpServer) {
       const cwd = path || process.cwd();
       const args = ["diff", "--numstat"];
 
+      // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+      let resolvedFile: string | undefined;
+      if (file) {
+        assertNoFlagInjection(file, "file");
+        resolvedFile = await resolveFilePath(file, cwd);
+      }
+
       if (staged) args.push("--cached");
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
       }
-      if (file) {
-        assertNoFlagInjection(file, "file");
-        args.push("--", file);
+      if (resolvedFile) {
+        args.push("--", resolvedFile);
       }
 
       const result = await git(args, cwd);
@@ -73,7 +79,9 @@ export function registerDiffTool(server: McpServer) {
         const patchArgs = ["diff"];
         if (staged) patchArgs.push("--cached");
         if (ref) patchArgs.push(ref); // Already validated above
-        if (file) patchArgs.push("--", file);
+        if (resolvedFile) {
+          patchArgs.push("--", resolvedFile);
+        }
 
         const patchResult = await git(patchArgs, cwd);
         if (patchResult.exitCode === 0) {

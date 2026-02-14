@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, resolveFilePath } from "../lib/git-runner.js";
 import { parseBlameOutput } from "../lib/parsers.js";
 import { formatBlame, compactBlameMap, formatBlameCompact } from "../lib/formatters.js";
 import { GitBlameSchema } from "../schemas/index.js";
@@ -37,13 +37,16 @@ export function registerBlameTool(server: McpServer) {
 
       assertNoFlagInjection(file, "file");
 
+      // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+      const resolvedFile = await resolveFilePath(file, cwd);
+
       const args = ["blame", "--porcelain"];
       if (startLine !== undefined && endLine !== undefined) {
         args.push(`-L${startLine},${endLine}`);
       } else if (startLine !== undefined) {
         args.push(`-L${startLine},`);
       }
-      args.push("--", file);
+      args.push("--", resolvedFile);
 
       const result = await git(args, cwd);
 
@@ -51,7 +54,7 @@ export function registerBlameTool(server: McpServer) {
         throw new Error(`git blame failed: ${result.stderr}`);
       }
 
-      const blame = parseBlameOutput(result.stdout, file);
+      const blame = parseBlameOutput(result.stdout, resolvedFile);
       return compactDualOutput(
         blame,
         result.stdout,

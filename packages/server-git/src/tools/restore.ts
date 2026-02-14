@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseRestore } from "../lib/parsers.js";
 import { formatRestore } from "../lib/formatters.js";
 import { GitRestoreSchema } from "../schemas/index.js";
@@ -49,11 +49,14 @@ export function registerRestoreTool(server: McpServer) {
         assertNoFlagInjection(f, "files");
       }
 
+      // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+      const resolvedFiles = await resolveFilePaths(files, cwd);
+
       // Build args
       const args = ["restore"];
       if (staged) args.push("--staged");
       if (source) args.push("--source", source);
-      args.push("--", ...files);
+      args.push("--", ...resolvedFiles);
 
       const result = await git(args, cwd);
 
