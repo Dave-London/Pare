@@ -33,3 +33,37 @@ export const TrivyScanResultSchema = z.object({
 });
 
 export type TrivyScanResult = z.infer<typeof TrivyScanResultSchema>;
+
+// -- Semgrep schemas ----------------------------------------------------------
+
+/** Zod schema for a single Semgrep finding. */
+export const SemgrepFindingSchema = z.object({
+  ruleId: z.string(),
+  path: z.string(),
+  startLine: z.number(),
+  endLine: z.number(),
+  message: z.string(),
+  severity: z.string(),
+  category: z.string().optional(),
+});
+
+export type SemgrepFinding = z.infer<typeof SemgrepFindingSchema>;
+
+/** Zod schema for Semgrep severity summary counts. */
+export const SemgrepSeveritySummarySchema = z.object({
+  error: z.number(),
+  warning: z.number(),
+  info: z.number(),
+});
+
+export type SemgrepSeveritySummary = z.infer<typeof SemgrepSeveritySummarySchema>;
+
+/** Zod schema for the structured Semgrep scan result. */
+export const SemgrepScanResultSchema = z.object({
+  totalFindings: z.number(),
+  findings: z.array(SemgrepFindingSchema),
+  summary: SemgrepSeveritySummarySchema,
+  config: z.string(),
+});
+
+export type SemgrepScanResult = z.infer<typeof SemgrepScanResultSchema>;

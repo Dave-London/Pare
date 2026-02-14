@@ -2,6 +2,9 @@ import type {
   TrivyScanResult,
   TrivyVulnerability,
   TrivySeveritySummary,
+  SemgrepScanResult,
+  SemgrepFinding,
+  SemgrepSeveritySummary,
 } from "../schemas/index.js";
 
 /** Raw Trivy JSON vulnerability shape (from `trivy --format json`). */
@@ -132,6 +135,107 @@ function computeSummary(vulnerabilities: TrivyVulnerability[]): TrivySeveritySum
         break;
       default:
         summary.unknown++;
+        break;
+    }
+  }
+  return summary;
+}
+
+// -- Semgrep parser -----------------------------------------------------------
+
+/** Raw Semgrep JSON finding shape (from `semgrep scan --json`). */
+interface SemgrepJsonFinding {
+  check_id?: string;
+  path?: string;
+  start?: { line?: number; col?: number };
+  end?: { line?: number; col?: number };
+  extra?: {
+    message?: string;
+    severity?: string;
+    metadata?: {
+      category?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+}
+
+/** Top-level Semgrep JSON output. */
+interface SemgrepJsonOutput {
+  results?: SemgrepJsonFinding[] | null;
+  errors?: unknown[];
+}
+
+/**
+ * Parses raw Semgrep JSON output into a structured SemgrepScanResult.
+ *
+ * Semgrep's JSON output has a `results` array containing findings,
+ * each with check_id, path, start/end positions, and extra metadata.
+ */
+export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanResult {
+  let parsed: SemgrepJsonOutput;
+  try {
+    parsed = JSON.parse(jsonStr) as SemgrepJsonOutput;
+  } catch {
+    return {
+      totalFindings: 0,
+      findings: [],
+      summary: { error: 0, warning: 0, info: 0 },
+      config,
+    };
+  }
+
+  const findings: SemgrepFinding[] = [];
+
+  if (parsed.results) {
+    for (const r of parsed.results) {
+      findings.push({
+        ruleId: r.check_id || "unknown",
+        path: r.path || "unknown",
+        startLine: r.start?.line ?? 0,
+        endLine: r.end?.line ?? 0,
+        message: r.extra?.message || "",
+        severity: normalizeSemgrepSeverity(r.extra?.severity),
+        category: r.extra?.metadata?.category || undefined,
+      });
+    }
+  }
+
+  const summary = computeSemgrepSummary(findings);
+
+  return {
+    totalFindings: findings.length,
+    findings,
+    summary,
+    config,
+  };
+}
+
+/** Normalizes Semgrep severity strings to a consistent uppercase form. */
+function normalizeSemgrepSeverity(severity: string | undefined): string {
+  if (!severity) return "INFO";
+  const upper = severity.toUpperCase();
+  if (["ERROR", "WARNING", "INFO"].includes(upper)) return upper;
+  return upper;
+}
+
+/** Computes severity summary counts from a list of Semgrep findings. */
+function computeSemgrepSummary(findings: SemgrepFinding[]): SemgrepSeveritySummary {
+  const summary: SemgrepSeveritySummary = { error: 0, warning: 0, info: 0 };
+  for (const f of findings) {
+    switch (f.severity) {
+      case "ERROR":
+        summary.error++;
+        break;
+      case "WARNING":
+        summary.warning++;
+        break;
+      case "INFO":
+        summary.info++;
+        break;
+      default:
+        // Map unknown severities to info
+        summary.info++;
         break;
     }
   }

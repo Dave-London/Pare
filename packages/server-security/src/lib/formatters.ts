@@ -1,4 +1,4 @@
-import type { TrivyScanResult } from "../schemas/index.js";
+import type { TrivyScanResult, SemgrepScanResult } from "../schemas/index.js";
 
 // -- Full formatters ----------------------------------------------------------
 
@@ -57,5 +57,60 @@ export function formatTrivyScanCompact(data: TrivyScanCompact): string {
     `Trivy ${data.scanType} scan: ${data.target} -- ` +
     `${data.totalVulnerabilities} vulnerabilities ` +
     `(${data.summary.critical}C/${data.summary.high}H/${data.summary.medium}M/${data.summary.low}L)`
+  );
+}
+
+// -- Semgrep formatters -------------------------------------------------------
+
+/** Formats a Semgrep scan result into human-readable text. */
+export function formatSemgrepScan(data: SemgrepScanResult): string {
+  const lines: string[] = [];
+
+  lines.push(`Semgrep scan (config: ${data.config})`);
+  lines.push(
+    `Found ${data.totalFindings} findings: ` +
+      `${data.summary.error} error, ${data.summary.warning} warning, ` +
+      `${data.summary.info} info`,
+  );
+
+  if (data.findings.length > 0) {
+    lines.push("");
+    for (const f of data.findings) {
+      const category = f.category ? ` [${f.category}]` : "";
+      lines.push(`  [${f.severity}] ${f.ruleId}: ${f.path}:${f.startLine}-${f.endLine}${category}`);
+      lines.push(`    ${f.message}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// -- Semgrep compact types, mappers, and formatters ---------------------------
+
+/** Compact scan result: summary and total only, no individual findings. */
+export interface SemgrepScanCompact {
+  [key: string]: unknown;
+  totalFindings: number;
+  summary: {
+    error: number;
+    warning: number;
+    info: number;
+  };
+  config: string;
+}
+
+export function compactSemgrepScanMap(data: SemgrepScanResult): SemgrepScanCompact {
+  return {
+    totalFindings: data.totalFindings,
+    summary: data.summary,
+    config: data.config,
+  };
+}
+
+export function formatSemgrepScanCompact(data: SemgrepScanCompact): string {
+  return (
+    `Semgrep scan (config: ${data.config}) -- ` +
+    `${data.totalFindings} findings ` +
+    `(${data.summary.error}E/${data.summary.warning}W/${data.summary.info}I)`
   );
 }

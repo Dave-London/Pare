@@ -3,8 +3,11 @@ import {
   formatTrivyScan,
   compactTrivyScanMap,
   formatTrivyScanCompact,
+  formatSemgrepScan,
+  compactSemgrepScanMap,
+  formatSemgrepScanCompact,
 } from "../src/lib/formatters.js";
-import type { TrivyScanResult } from "../src/schemas/index.js";
+import type { TrivyScanResult, SemgrepScanResult } from "../src/schemas/index.js";
 
 // -- Full formatters ----------------------------------------------------------
 
@@ -141,5 +144,125 @@ describe("formatTrivyScanCompact", () => {
     });
 
     expect(output).toBe("Trivy fs scan: clean:latest -- 0 vulnerabilities (0C/0H/0M/0L)");
+  });
+});
+
+// -- Semgrep formatters -------------------------------------------------------
+
+describe("formatSemgrepScan", () => {
+  it("formats scan with findings", () => {
+    const data: SemgrepScanResult = {
+      totalFindings: 2,
+      findings: [
+        {
+          ruleId: "python.lang.security.audit.exec-detected",
+          path: "app/main.py",
+          startLine: 42,
+          endLine: 42,
+          message: "Detected use of exec(). This is dangerous.",
+          severity: "ERROR",
+          category: "security",
+        },
+        {
+          ruleId: "python.lang.best-practice.open-never-closed",
+          path: "app/utils.py",
+          startLine: 10,
+          endLine: 10,
+          message: "File opened but never closed.",
+          severity: "WARNING",
+        },
+      ],
+      summary: { error: 1, warning: 1, info: 0 },
+      config: "auto",
+    };
+
+    const output = formatSemgrepScan(data);
+
+    expect(output).toContain("Semgrep scan (config: auto)");
+    expect(output).toContain("Found 2 findings");
+    expect(output).toContain("1 error");
+    expect(output).toContain("1 warning");
+    expect(output).toContain(
+      "[ERROR] python.lang.security.audit.exec-detected: app/main.py:42-42 [security]",
+    );
+    expect(output).toContain("Detected use of exec(). This is dangerous.");
+    expect(output).toContain(
+      "[WARNING] python.lang.best-practice.open-never-closed: app/utils.py:10-10",
+    );
+    // No category on second finding
+    expect(output).not.toContain("open-never-closed: app/utils.py:10-10 [");
+  });
+
+  it("formats scan with no findings", () => {
+    const data: SemgrepScanResult = {
+      totalFindings: 0,
+      findings: [],
+      summary: { error: 0, warning: 0, info: 0 },
+      config: "p/security-audit",
+    };
+
+    const output = formatSemgrepScan(data);
+
+    expect(output).toContain("Semgrep scan (config: p/security-audit)");
+    expect(output).toContain("Found 0 findings");
+    expect(output).not.toContain("[");
+  });
+});
+
+describe("compactSemgrepScanMap", () => {
+  it("keeps summary and total, drops individual findings", () => {
+    const data: SemgrepScanResult = {
+      totalFindings: 2,
+      findings: [
+        {
+          ruleId: "rule1",
+          path: "test.py",
+          startLine: 1,
+          endLine: 1,
+          message: "msg",
+          severity: "ERROR",
+        },
+        {
+          ruleId: "rule2",
+          path: "test.py",
+          startLine: 2,
+          endLine: 2,
+          message: "msg",
+          severity: "WARNING",
+        },
+      ],
+      summary: { error: 1, warning: 1, info: 0 },
+      config: "auto",
+    };
+
+    const compact = compactSemgrepScanMap(data);
+
+    expect(compact.totalFindings).toBe(2);
+    expect(compact.summary.error).toBe(1);
+    expect(compact.summary.warning).toBe(1);
+    expect(compact.config).toBe("auto");
+    expect(compact).not.toHaveProperty("findings");
+  });
+});
+
+describe("formatSemgrepScanCompact", () => {
+  it("formats compact summary", () => {
+    const output = formatSemgrepScanCompact({
+      totalFindings: 5,
+      summary: { error: 2, warning: 2, info: 1 },
+      config: "auto",
+    });
+
+    expect(output).toBe("Semgrep scan (config: auto) -- 5 findings (2E/2W/1I)");
+  });
+
+  it("formats compact with zero findings", () => {
+    const output = formatSemgrepScanCompact({
+      totalFindings: 0,
+      summary: { error: 0, warning: 0, info: 0 },
+      config: "p/security-audit",
+    });
+
+    expect(output).toBe("Semgrep scan (config: p/security-audit) -- 0 findings (0E/0W/0I)");
   });
 });
