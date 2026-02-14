@@ -14,6 +14,7 @@ import type {
   CondaInfo,
   CondaEnvList,
   CondaResult,
+  PyenvResult,
 } from "../schemas/index.js";
 
 /** Formats structured pip install results into a human-readable summary of installed packages. */
@@ -581,4 +582,56 @@ export function formatCondaResultCompact(data: CondaResultCompact): string {
     case "env-list":
       return formatCondaEnvListCompact(data as CondaEnvListCompact);
   }
+}
+
+// ── pyenv formatters ─────────────────────────────────────────────────
+
+/** Formats structured pyenv results into a human-readable summary. */
+export function formatPyenv(data: PyenvResult): string {
+  if (!data.success) return `pyenv ${data.action} failed: ${data.error || "unknown error"}`;
+
+  switch (data.action) {
+    case "versions": {
+      if (!data.versions || data.versions.length === 0) return "pyenv: no versions installed.";
+      const lines = [`${data.versions.length} versions installed:`];
+      for (const v of data.versions) {
+        const marker = v === data.current ? " *" : "";
+        lines.push(`  ${v}${marker}`);
+      }
+      return lines.join("\n");
+    }
+    case "version":
+      return data.current ? `pyenv: current version is ${data.current}` : "pyenv: no version set.";
+    case "install":
+      return data.installed
+        ? `pyenv: installed Python ${data.installed}`
+        : "pyenv: installation completed.";
+    case "local":
+      return data.localVersion
+        ? `pyenv: local version set to ${data.localVersion}`
+        : "pyenv: local version set.";
+    case "global":
+      return data.globalVersion
+        ? `pyenv: global version set to ${data.globalVersion}`
+        : "pyenv: global version set.";
+  }
+}
+
+/** Compact pyenv: action + success + key value only. */
+export interface PyenvResultCompact {
+  [key: string]: unknown;
+  action: string;
+  success: boolean;
+}
+
+export function compactPyenvMap(data: PyenvResult): PyenvResultCompact {
+  return {
+    action: data.action,
+    success: data.success,
+  };
+}
+
+export function formatPyenvCompact(data: PyenvResultCompact): string {
+  if (!data.success) return `pyenv ${data.action} failed.`;
+  return `pyenv ${data.action}: success.`;
 }

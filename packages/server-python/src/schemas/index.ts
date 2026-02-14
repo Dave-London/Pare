@@ -230,3 +230,17 @@ export type CondaEnvList = CondaResult & {
   environments: { name: string; path: string; active: boolean }[];
   total: number;
 };
+
+/** Zod schema for structured pyenv output with action results and version info. */
+export const PyenvResultSchema = z.object({
+  action: z.enum(["versions", "version", "install", "local", "global"]),
+  success: z.boolean(),
+  current: z.string().optional(),
+  versions: z.array(z.string()).optional(),
+  installed: z.string().optional(),
+  localVersion: z.string().optional(),
+  globalVersion: z.string().optional(),
+  error: z.string().optional(),
+});
+
+export type PyenvResult = z.infer<typeof PyenvResultSchema>;
