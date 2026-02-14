@@ -92,7 +92,7 @@ export function registerPlaywrightTool(server: McpServer) {
       // Set PLAYWRIGHT_JSON_OUTPUT_NAME env var to direct JSON to temp file
       const result = await run("npx", cmdArgs, {
         cwd,
-        timeout: 120_000,
+        timeout: 180_000,
         env: { PLAYWRIGHT_JSON_OUTPUT_NAME: tempPath },
       });
 

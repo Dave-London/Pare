@@ -114,7 +114,7 @@ export function registerRunTool(server: McpServer) {
         cmdArgs.push(`--outputFile=${tempPath}`);
       }
 
-      const result = await run(cmd, cmdArgs, { cwd, timeout: 120_000 });
+      const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
       // Combine stdout and stderr for parsing (some frameworks write to stderr)
       const output = result.stdout + "\n" + result.stderr;

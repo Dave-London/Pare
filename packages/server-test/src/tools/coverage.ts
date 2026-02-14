@@ -56,7 +56,7 @@ export function registerCoverageTool(server: McpServer) {
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const { cmd, cmdArgs } = getCoverageCommand(detected);
-      const result = await run(cmd, cmdArgs, { cwd, timeout: 120_000 });
+      const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
       const output = result.stdout + "\n" + result.stderr;
 
