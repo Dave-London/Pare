@@ -78,11 +78,7 @@ internal/utils.go
 {
   "success": false,
   "filesChanged": 3,
-  "files": [
-    "server/handler.go",
-    "server/middleware.go",
-    "internal/utils.go"
-  ]
+  "files": ["server/handler.go", "server/middleware.go", "internal/utils.go"]
 }
 ```
 
@@ -108,10 +104,10 @@ internal/utils.go
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| All formatted        | ~5         | ~15       | ~15          | 0%      |
-| 3 unformatted files  | ~30        | ~25       | ~10          | 17-67%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| All formatted       | ~5         | ~15       | ~15          | 0%      |
+| 3 unformatted files | ~30        | ~25       | ~10          | 17-67%  |
 
 ## Notes
 

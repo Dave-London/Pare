@@ -119,10 +119,10 @@ exit status 2
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Program runs   | ~30        | ~30       | ~10          | 0-67%   |
-| Program fails  | ~50        | ~40       | ~10          | 20-80%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Program runs  | ~30        | ~30       | ~10          | 0-67%   |
+| Program fails | ~50        | ~40       | ~10          | 20-80%  |
 
 ## Notes
 

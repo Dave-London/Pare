@@ -149,10 +149,10 @@ server/router.go:18:4: error returned from external package is unwrapped (wrapch
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| No issues      | ~5         | ~20       | ~20          | 0%      |
-| 4 lint issues  | ~200       | ~150      | ~15          | 25-93%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| No issues     | ~5         | ~20       | ~20          | 0%      |
+| 4 lint issues | ~200       | ~150      | ~15          | 25-93%  |
 
 ## Notes
 

@@ -87,9 +87,9 @@ Lists Go packages and returns structured package information (dir, importPath, n
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 2 packages     | ~250       | ~80       | ~5           | 68-98%  |
+| Scenario   | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------- | ---------- | --------- | ------------ | ------- |
+| 2 packages | ~250       | ~80       | ~5           | 68-98%  |
 
 ## Notes
 

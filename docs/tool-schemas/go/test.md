@@ -147,10 +147,10 @@ FAIL	myapp/server   0.08s
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| 4 tests passing      | ~150       | ~100      | ~25          | 33-83%  |
-| 5 tests, 2 failures  | ~300       | ~120      | ~25          | 60-92%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| 4 tests passing     | ~150       | ~100      | ~25          | 33-83%  |
+| 5 tests, 2 failures | ~300       | ~120      | ~25          | 60-92%  |
 
 ## Notes
 

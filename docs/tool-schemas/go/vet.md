@@ -120,10 +120,10 @@ Same as full (no reduction when there are no issues).
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| No issues      | ~5         | ~10       | ~10          | 0%      |
-| 3 diagnostics  | ~100       | ~70       | ~5           | 30-95%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| No issues     | ~5         | ~10       | ~10          | 0%      |
+| 3 diagnostics | ~100       | ~70       | ~5           | 30-95%  |
 
 ## Notes
 

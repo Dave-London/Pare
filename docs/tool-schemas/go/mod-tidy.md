@@ -105,10 +105,10 @@ go: myapp imports
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Already tidy   | ~5         | ~15       | ~5           | 0%      |
-| Tidy fails     | ~40        | ~30       | ~5           | 25-88%  |
+| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------ | ---------- | --------- | ------------ | ------- |
+| Already tidy | ~5         | ~15       | ~5           | 0%      |
+| Tidy fails   | ~40        | ~30       | ~5           | 25-88%  |
 
 ## Notes
 

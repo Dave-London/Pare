@@ -6,11 +6,11 @@ Downloads and installs Go packages and their dependencies. Use instead of runnin
 
 ## Input Parameters
 
-| Parameter  | Type     | Default | Description                                                        |
-| ---------- | -------- | ------- | ------------------------------------------------------------------ |
+| Parameter  | Type     | Default | Description                                                               |
+| ---------- | -------- | ------- | ------------------------------------------------------------------------- |
 | `packages` | string[] | --      | Packages to install (e.g., `['github.com/pkg/errors@latest']`) (required) |
-| `path`     | string   | cwd     | Project root path                                                  |
-| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
+| `path`     | string   | cwd     | Project root path                                                         |
+| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                |
 
 ## Success — Package Installed
 
@@ -105,10 +105,10 @@ go: module github.com/example/nonexistent: no matching versions for query "lates
 
 ## Token Savings
 
-| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------- | ---------- | --------- | ------------ | ------- |
-| Package installed   | ~30        | ~20       | ~5           | 33-83%  |
-| Package not found   | ~40        | ~20       | ~5           | 50-88%  |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Package installed | ~30        | ~20       | ~5           | 33-83%  |
+| Package not found | ~40        | ~20       | ~5           | 50-88%  |
 
 ## Notes
 

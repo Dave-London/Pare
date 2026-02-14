@@ -105,10 +105,10 @@ main.go:3: running "mockgen": exec: "mockgen": executable file not found in $PAT
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| Generate succeeds | ~20       | ~20       | ~5           | 0-75%   |
-| Generate fails   | ~40        | ~20       | ~5           | 50-88%  |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Generate succeeds | ~20        | ~20       | ~5           | 0-75%   |
+| Generate fails    | ~40        | ~20       | ~5           | 50-88%  |
 
 ## Notes
 

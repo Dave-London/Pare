@@ -6,11 +6,11 @@ Runs go build and returns structured error list (file, line, column, message). U
 
 ## Input Parameters
 
-| Parameter  | Type     | Default  | Description                                                |
-| ---------- | -------- | -------- | ---------------------------------------------------------- |
-| `path`     | string   | cwd      | Project root path                                          |
-| `packages` | string[] | `[./...]` | Packages to build                                         |
-| `compact`  | boolean  | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter  | Type     | Default   | Description                                                |
+| ---------- | -------- | --------- | ---------------------------------------------------------- |
+| `path`     | string   | cwd       | Project root path                                          |
+| `packages` | string[] | `[./...]` | Packages to build                                          |
+| `compact`  | boolean  | `true`    | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Build Passes
 
@@ -123,10 +123,10 @@ Same as full (no reduction when build succeeds).
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| Build passes      | ~5         | ~15       | ~15          | 0%      |
-| 3 build errors    | ~120       | ~80       | ~10          | 33-92%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| Build passes   | ~5         | ~15       | ~15          | 0%      |
+| 3 build errors | ~120       | ~80       | ~10          | 33-92%  |
 
 ## Notes
 

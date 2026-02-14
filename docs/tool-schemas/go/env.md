@@ -6,11 +6,11 @@ Returns Go environment variables as structured JSON. Optionally request specific
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                                                          |
-| --------- | -------- | ------- | -------------------------------------------------------------------- |
-| `path`    | string   | cwd     | Project root path                                                    |
+| Parameter | Type     | Default | Description                                                            |
+| --------- | -------- | ------- | ---------------------------------------------------------------------- |
+| `path`    | string   | cwd     | Project root path                                                      |
 | `vars`    | string[] | --      | Specific environment variables to query (e.g., `['GOROOT', 'GOPATH']`) |
-| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens           |
+| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens             |
 
 ## Success — Full Environment
 
@@ -89,9 +89,9 @@ GOVERSION="go1.22.2"
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| Full environment   | ~400       | ~250      | ~30          | 38-93%  |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| Full environment | ~400       | ~250      | ~30          | 38-93%  |
 
 ## Notes
 
