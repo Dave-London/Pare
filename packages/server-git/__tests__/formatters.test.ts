@@ -17,6 +17,7 @@ import {
   formatBlame,
   formatReset,
   formatLogGraph,
+  formatReflog,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -36,6 +37,7 @@ import type {
   GitBlameFull,
   GitReset,
   GitLogGraphFull,
+  GitReflogFull,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -756,5 +758,61 @@ describe("formatLogGraph", () => {
   it("formats empty graph", () => {
     const data: GitLogGraphFull = { commits: [], total: 0 };
     expect(formatLogGraph(data)).toBe("No commits found");
+  });
+});
+
+describe("formatReflog", () => {
+  it("formats reflog entries", () => {
+    const reflog: GitReflogFull = {
+      entries: [
+        {
+          hash: "abc123full",
+          shortHash: "abc1234",
+          selector: "HEAD@{0}",
+          action: "checkout",
+          description: "moving from main to feature",
+          date: "2024-01-15 10:30:00 +0000",
+        },
+        {
+          hash: "def456full",
+          shortHash: "def5678",
+          selector: "HEAD@{1}",
+          action: "commit",
+          description: "fix the bug",
+          date: "2024-01-14 09:00:00 +0000",
+        },
+      ],
+      total: 2,
+    };
+    const output = formatReflog(reflog);
+
+    expect(output).toContain("abc1234 HEAD@{0} checkout: moving from main to feature");
+    expect(output).toContain("def5678 HEAD@{1} commit: fix the bug");
+    expect(output).toContain("2024-01-15 10:30:00 +0000");
+  });
+
+  it("formats empty reflog", () => {
+    const reflog: GitReflogFull = { entries: [], total: 0 };
+    expect(formatReflog(reflog)).toBe("No reflog entries found");
+  });
+
+  it("formats reflog entry without description", () => {
+    const reflog: GitReflogFull = {
+      entries: [
+        {
+          hash: "aaa111full",
+          shortHash: "aaa1111",
+          selector: "HEAD@{0}",
+          action: "reset",
+          description: "",
+          date: "2024-01-01 00:00:00 +0000",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatReflog(reflog);
+
+    expect(output).toContain("aaa1111 HEAD@{0} reset");
+    expect(output).not.toContain(": (");
   });
 });

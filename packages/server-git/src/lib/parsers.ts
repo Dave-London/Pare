@@ -20,6 +20,7 @@ import type {
   GitMerge,
   GitRebase,
   GitLogGraphFull,
+  GitReflogFull,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -705,4 +706,27 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
   // Count only actual commits (non-empty hashShort)
   const total = commits.filter((c) => c.hashShort !== "").length;
   return { commits, total };
+}
+
+/** Parses custom-formatted `git reflog` output (tab-delimited: %H\t%h\t%gd\t%gs\t%ci) into structured reflog entries. */
+export function parseReflogOutput(stdout: string): GitReflogFull {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const entries = lines.map((line) => {
+    const [hash, shortHash, selector, subject, date] = line.split("\t");
+    // Split subject into action and description: "checkout: moving from main to feature"
+    const colonIdx = (subject || "").indexOf(": ");
+    const action = colonIdx >= 0 ? (subject || "").slice(0, colonIdx) : subject || "";
+    const description = colonIdx >= 0 ? (subject || "").slice(colonIdx + 2) : "";
+
+    return {
+      hash: hash || "",
+      shortHash: shortHash || "",
+      selector: selector || "",
+      action,
+      description,
+      date: date || "",
+    };
+  });
+
+  return { entries, total: entries.length };
 }

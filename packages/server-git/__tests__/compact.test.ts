@@ -18,6 +18,8 @@ import {
   formatBlameCompact,
   compactLogGraphMap,
   formatLogGraphCompact,
+  compactReflogMap,
+  formatReflogCompact,
 } from "../src/lib/formatters.js";
 import type { GitLog, GitDiff, GitShow } from "../src/schemas/index.js";
 import type {
@@ -27,6 +29,7 @@ import type {
   GitRemoteFull,
   GitBlameFull,
   GitLogGraphFull,
+  GitReflogFull,
 } from "../src/schemas/index.js";
 
 describe("compactLogMap", () => {
@@ -456,5 +459,61 @@ describe("formatLogGraphCompact", () => {
   it("formats empty log-graph", () => {
     const compact = { commits: [], total: 0 };
     expect(formatLogGraphCompact(compact)).toBe("No commits found");
+  });
+});
+
+describe("compactReflogMap", () => {
+  it("reduces entries to string array with shortHash, selector, and action", () => {
+    const reflog: GitReflogFull = {
+      entries: [
+        {
+          hash: "abc123full",
+          shortHash: "abc1234",
+          selector: "HEAD@{0}",
+          action: "checkout",
+          description: "moving from main to feature",
+          date: "2024-01-15 10:30:00 +0000",
+        },
+        {
+          hash: "def456full",
+          shortHash: "def5678",
+          selector: "HEAD@{1}",
+          action: "commit",
+          description: "fix the bug",
+          date: "2024-01-14 09:00:00 +0000",
+        },
+      ],
+      total: 2,
+    };
+
+    const compact = compactReflogMap(reflog);
+
+    expect(compact.total).toBe(2);
+    expect(compact.entries).toEqual([
+      "abc1234 HEAD@{0} checkout: moving from main to feature",
+      "def5678 HEAD@{1} commit: fix the bug",
+    ]);
+  });
+});
+
+describe("formatReflogCompact", () => {
+  it("formats compact reflog entries", () => {
+    const compact = {
+      entries: [
+        "abc1234 HEAD@{0} checkout: moving from main to feature",
+        "def5678 HEAD@{1} commit: fix the bug",
+      ],
+      total: 2,
+    };
+    const output = formatReflogCompact(compact);
+
+    expect(output).toBe(
+      "abc1234 HEAD@{0} checkout: moving from main to feature\ndef5678 HEAD@{1} commit: fix the bug",
+    );
+  });
+
+  it("formats empty reflog", () => {
+    const compact = { entries: [], total: 0 };
+    expect(formatReflogCompact(compact)).toBe("No reflog entries found");
   });
 });

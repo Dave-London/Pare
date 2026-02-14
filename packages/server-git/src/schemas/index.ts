@@ -332,3 +332,34 @@ export type GitLogGraphFull = {
 };
 
 export type GitLogGraph = z.infer<typeof GitLogGraphSchema>;
+
+/** Zod schema for a single reflog entry with hash, selector, action, description, and date. */
+export const GitReflogEntrySchema = z.object({
+  hash: z.string(),
+  shortHash: z.string(),
+  selector: z.string(),
+  action: z.string(),
+  description: z.string(),
+  date: z.string(),
+});
+
+/** Zod schema for structured git reflog output with entries array and total count. */
+export const GitReflogSchema = z.object({
+  entries: z.union([z.array(GitReflogEntrySchema), z.array(z.string())]),
+  total: z.number(),
+});
+
+/** Full reflog data (always returned by parser, before compact projection). */
+export type GitReflogFull = {
+  entries: Array<{
+    hash: string;
+    shortHash: string;
+    selector: string;
+    action: string;
+    description: string;
+    date: string;
+  }>;
+  total: number;
+};
+
+export type GitReflog = z.infer<typeof GitReflogSchema>;
