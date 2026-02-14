@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTrivyJson } from "../src/lib/parsers.js";
+import { parseTrivyJson, parseSemgrepJson } from "../src/lib/parsers.js";
 
 describe("parseTrivyJson", () => {
   it("parses a full Trivy JSON output with vulnerabilities", () => {
@@ -242,5 +242,166 @@ describe("parseTrivyJson", () => {
     });
     expect(result.summary.high).toBe(1);
     expect(result.summary.medium).toBe(1);
+  });
+});
+
+describe("parseSemgrepJson", () => {
+  it("parses a full Semgrep JSON output with findings", () => {
+    const json = JSON.stringify({
+      results: [
+        {
+          check_id: "python.lang.security.audit.exec-detected",
+          path: "app/main.py",
+          start: { line: 42, col: 1 },
+          end: { line: 42, col: 20 },
+          extra: {
+            message: "Detected use of exec(). This is dangerous.",
+            severity: "ERROR",
+            metadata: { category: "security" },
+          },
+        },
+        {
+          check_id: "python.lang.best-practice.open-never-closed",
+          path: "app/utils.py",
+          start: { line: 10, col: 5 },
+          end: { line: 10, col: 30 },
+          extra: {
+            message: "File opened but never closed.",
+            severity: "WARNING",
+            metadata: { category: "best-practice" },
+          },
+        },
+        {
+          check_id: "python.lang.correctness.useless-comparison",
+          path: "app/logic.py",
+          start: { line: 5, col: 1 },
+          end: { line: 5, col: 15 },
+          extra: {
+            message: "Useless comparison detected.",
+            severity: "INFO",
+          },
+        },
+      ],
+    });
+
+    const result = parseSemgrepJson(json, "auto");
+
+    expect(result.config).toBe("auto");
+    expect(result.totalFindings).toBe(3);
+    expect(result.findings).toHaveLength(3);
+
+    expect(result.findings[0]).toEqual({
+      ruleId: "python.lang.security.audit.exec-detected",
+      path: "app/main.py",
+      startLine: 42,
+      endLine: 42,
+      message: "Detected use of exec(). This is dangerous.",
+      severity: "ERROR",
+      category: "security",
+    });
+
+    expect(result.findings[2].category).toBeUndefined();
+
+    expect(result.summary).toEqual({
+      error: 1,
+      warning: 1,
+      info: 1,
+    });
+  });
+
+  it("handles empty results array", () => {
+    const json = JSON.stringify({ results: [] });
+    const result = parseSemgrepJson(json, "p/security-audit");
+
+    expect(result.config).toBe("p/security-audit");
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+    expect(result.summary).toEqual({ error: 0, warning: 0, info: 0 });
+  });
+
+  it("handles null results", () => {
+    const json = JSON.stringify({ results: null });
+    const result = parseSemgrepJson(json, "auto");
+
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+  });
+
+  it("handles invalid JSON gracefully", () => {
+    const result = parseSemgrepJson("not valid json", "auto");
+
+    expect(result.config).toBe("auto");
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+    expect(result.summary).toEqual({ error: 0, warning: 0, info: 0 });
+  });
+
+  it("normalizes severity strings to uppercase", () => {
+    const json = JSON.stringify({
+      results: [
+        {
+          check_id: "rule1",
+          path: "test.py",
+          start: { line: 1, col: 1 },
+          end: { line: 1, col: 10 },
+          extra: { message: "msg", severity: "error" },
+        },
+        {
+          check_id: "rule2",
+          path: "test.py",
+          start: { line: 2, col: 1 },
+          end: { line: 2, col: 10 },
+          extra: { message: "msg", severity: "Warning" },
+        },
+      ],
+    });
+
+    const result = parseSemgrepJson(json, "auto");
+
+    expect(result.findings[0].severity).toBe("ERROR");
+    expect(result.findings[1].severity).toBe("WARNING");
+    expect(result.summary.error).toBe(1);
+    expect(result.summary.warning).toBe(1);
+  });
+
+  it("handles missing fields with defaults", () => {
+    const json = JSON.stringify({
+      results: [
+        {
+          // Minimal: no fields
+        },
+      ],
+    });
+
+    const result = parseSemgrepJson(json, "auto");
+
+    expect(result.findings[0]).toEqual({
+      ruleId: "unknown",
+      path: "unknown",
+      startLine: 0,
+      endLine: 0,
+      message: "",
+      severity: "INFO",
+      category: undefined,
+    });
+    expect(result.summary.info).toBe(1);
+  });
+
+  it("handles missing severity by defaulting to INFO", () => {
+    const json = JSON.stringify({
+      results: [
+        {
+          check_id: "rule1",
+          path: "test.py",
+          start: { line: 1, col: 1 },
+          end: { line: 1, col: 10 },
+          extra: { message: "No severity" },
+        },
+      ],
+    });
+
+    const result = parseSemgrepJson(json, "auto");
+    expect(result.findings[0].severity).toBe("INFO");
+    expect(result.summary.info).toBe(1);
   });
 });
