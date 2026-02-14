@@ -363,3 +363,21 @@ export type GitReflogFull = {
 };
 
 export type GitReflog = z.infer<typeof GitReflogSchema>;
+
+/** Zod schema for structured git bisect output with action, current commit, remaining steps, and result. */
+export const GitBisectSchema = z.object({
+  action: z.enum(["start", "good", "bad", "reset", "status"]),
+  current: z.string().optional(),
+  remaining: z.number().optional(),
+  result: z
+    .object({
+      hash: z.string(),
+      message: z.string(),
+      author: z.string().optional(),
+      date: z.string().optional(),
+    })
+    .optional(),
+  message: z.string(),
+});
+
+export type GitBisect = z.infer<typeof GitBisectSchema>;

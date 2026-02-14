@@ -21,6 +21,7 @@ import type {
   GitRebase,
   GitLogGraphFull,
   GitReflogFull,
+  GitBisect,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -515,4 +516,21 @@ export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
 export function formatReflogCompact(r: GitReflogCompact): string {
   if (r.entries.length === 0) return "No reflog entries found";
   return r.entries.join("\n");
+}
+
+// ── Bisect formatters ─────────────────────────────────────────────────
+
+/** Formats structured git bisect data into a human-readable bisect summary. */
+export function formatBisect(b: GitBisect): string {
+  if (b.result) {
+    const parts = [`Bisect found culprit: ${b.result.hash.slice(0, 8)} ${b.result.message}`];
+    if (b.result.author) parts.push(`Author: ${b.result.author}`);
+    if (b.result.date) parts.push(`Date: ${b.result.date}`);
+    return parts.join("\n");
+  }
+
+  const parts = [`Bisect ${b.action}`];
+  if (b.current) parts.push(`Current: ${b.current}`);
+  if (b.remaining !== undefined) parts.push(`~${b.remaining} step(s) remaining`);
+  return parts.join(" — ");
 }

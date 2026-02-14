@@ -21,6 +21,7 @@ import type {
   GitRebase,
   GitLogGraphFull,
   GitReflogFull,
+  GitBisect,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -729,4 +730,52 @@ export function parseReflogOutput(stdout: string): GitReflogFull {
   });
 
   return { entries, total: entries.length };
+}
+
+/** Parses `git bisect` output into structured bisect result data. */
+export function parseBisect(
+  stdout: string,
+  stderr: string,
+  action: GitBisect["action"],
+): GitBisect {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Check if bisect found the culprit commit
+  // Example: "<hash> is the first bad commit\ncommit <hash>\nAuthor: ...\nDate: ...\n\n    message"
+  const culpritMatch = combined.match(/^([a-f0-9]{40}) is the first bad commit/);
+  if (culpritMatch) {
+    const hash = culpritMatch[1];
+    const authorMatch = combined.match(/Author:\s+(.+)/);
+    const dateMatch = combined.match(/Date:\s+(.+)/);
+    // Message is after the blank line following headers
+    const messageMatch = combined.match(/\n\n\s{4}(.+)/);
+
+    return {
+      action,
+      result: {
+        hash,
+        message: messageMatch?.[1]?.trim() || "",
+        ...(authorMatch ? { author: authorMatch[1].trim() } : {}),
+        ...(dateMatch ? { date: dateMatch[1].trim() } : {}),
+      },
+      message: combined,
+    };
+  }
+
+  // Parse "Bisecting: N revisions left to test after this (roughly M steps)"
+  const bisectingMatch = combined.match(
+    /Bisecting:\s+(\d+)\s+revisions?\s+left.*roughly\s+(\d+)\s+steps?/,
+  );
+  const remaining = bisectingMatch ? parseInt(bisectingMatch[2], 10) : undefined;
+
+  // Parse current commit: "[<hash>] message" on the last line
+  const commitMatch = combined.match(/\[([a-f0-9]{7,40})\]\s+(.+)/);
+  const current = commitMatch?.[1];
+
+  return {
+    action,
+    ...(current ? { current } : {}),
+    ...(remaining !== undefined ? { remaining } : {}),
+    message: combined || `Bisect ${action} completed`,
+  };
 }
