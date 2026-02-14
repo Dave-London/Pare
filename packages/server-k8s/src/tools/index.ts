@@ -4,6 +4,7 @@ import { registerGetTool } from "./get.js";
 import { registerDescribeTool } from "./describe.js";
 import { registerLogsTool } from "./logs.js";
 import { registerApplyTool } from "./apply.js";
+import { registerHelmTool } from "./helm.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("k8s", name);
@@ -11,4 +12,5 @@ export function registerAllTools(server: McpServer) {
   if (s("describe")) registerDescribeTool(server);
   if (s("logs")) registerLogsTool(server);
   if (s("apply")) registerApplyTool(server);
+  if (s("helm")) registerHelmTool(server);
 }

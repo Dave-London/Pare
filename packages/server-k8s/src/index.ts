@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/k8s", version: "0.8.1" },
   {
     instructions:
-      "Structured Kubernetes kubectl operations (get, describe, logs, apply). Returns typed JSON. Use instead of running kubectl in the terminal.",
+      "Structured Kubernetes kubectl and Helm operations (get, describe, logs, apply, helm). Returns typed JSON. Use instead of running kubectl/helm in the terminal.",
   },
 );
 

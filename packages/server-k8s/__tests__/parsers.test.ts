@@ -4,6 +4,10 @@ import {
   parseDescribeOutput,
   parseLogsOutput,
   parseApplyOutput,
+  parseHelmListOutput,
+  parseHelmStatusOutput,
+  parseHelmInstallOutput,
+  parseHelmUpgradeOutput,
 } from "../src/lib/parsers.js";
 
 describe("parseGetOutput", () => {
@@ -215,5 +219,198 @@ describe("parseApplyOutput", () => {
     const result = parseApplyOutput("service/my-svc created\n\n", "", 0);
 
     expect(result.output).toBe("service/my-svc created");
+  });
+});
+
+// ── Helm parsers ────────────────────────────────────────────────────
+
+describe("parseHelmListOutput", () => {
+  it("parses a list of releases from helm list -o json", () => {
+    const stdout = JSON.stringify([
+      {
+        name: "my-release",
+        namespace: "default",
+        revision: "1",
+        status: "deployed",
+        chart: "nginx-1.0.0",
+        app_version: "1.25.0",
+      },
+      {
+        name: "redis",
+        namespace: "default",
+        revision: "3",
+        status: "deployed",
+        chart: "redis-17.0.0",
+        app_version: "7.0.0",
+      },
+    ]);
+
+    const result = parseHelmListOutput(stdout, "", 0, "default");
+
+    expect(result.action).toBe("list");
+    expect(result.success).toBe(true);
+    expect(result.namespace).toBe("default");
+    expect(result.total).toBe(2);
+    expect(result.releases).toHaveLength(2);
+    expect(result.releases[0].name).toBe("my-release");
+    expect(result.releases[0].chart).toBe("nginx-1.0.0");
+    expect(result.releases[1].name).toBe("redis");
+    expect(result.exitCode).toBe(0);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles empty release list", () => {
+    const result = parseHelmListOutput("[]", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.releases).toEqual([]);
+  });
+
+  it("handles failure with stderr", () => {
+    const result = parseHelmListOutput("", "Error: connection refused", 1, "default");
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(0);
+    expect(result.releases).toEqual([]);
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("connection refused");
+  });
+
+  it("handles invalid JSON output", () => {
+    const result = parseHelmListOutput("not-json{", "", 0);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to parse helm JSON output");
+  });
+
+  it("preserves namespace as undefined when not provided", () => {
+    const result = parseHelmListOutput("[]", "", 0);
+    expect(result.namespace).toBeUndefined();
+  });
+});
+
+describe("parseHelmStatusOutput", () => {
+  it("parses successful status output", () => {
+    const stdout = JSON.stringify({
+      name: "my-release",
+      namespace: "default",
+      version: 2,
+      info: {
+        status: "deployed",
+        description: "Upgrade complete",
+        notes: "Visit http://localhost:8080",
+      },
+    });
+
+    const result = parseHelmStatusOutput(stdout, "", 0, "my-release", "default");
+
+    expect(result.action).toBe("status");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.namespace).toBe("default");
+    expect(result.revision).toBe("2");
+    expect(result.status).toBe("deployed");
+    expect(result.description).toBe("Upgrade complete");
+    expect(result.notes).toBe("Visit http://localhost:8080");
+    expect(result.exitCode).toBe(0);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles status failure", () => {
+    const result = parseHelmStatusOutput("", "Error: release: not found", 1, "missing", "default");
+
+    expect(result.success).toBe(false);
+    expect(result.name).toBe("missing");
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("not found");
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseHelmStatusOutput("bad json", "", 0, "test");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to parse helm JSON output");
+  });
+});
+
+describe("parseHelmInstallOutput", () => {
+  it("parses successful install output", () => {
+    const stdout = JSON.stringify({
+      name: "my-release",
+      namespace: "default",
+      version: 1,
+      info: {
+        status: "deployed",
+      },
+    });
+
+    const result = parseHelmInstallOutput(stdout, "", 0, "my-release", "default");
+
+    expect(result.action).toBe("install");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.namespace).toBe("default");
+    expect(result.revision).toBe("1");
+    expect(result.status).toBe("deployed");
+    expect(result.exitCode).toBe(0);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles install failure", () => {
+    const result = parseHelmInstallOutput(
+      "",
+      "Error: cannot re-use a name that is still in use",
+      1,
+      "my-release",
+      "default",
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.name).toBe("my-release");
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("cannot re-use a name");
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseHelmInstallOutput("not json", "", 0, "test");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to parse helm JSON output");
+  });
+});
+
+describe("parseHelmUpgradeOutput", () => {
+  it("parses successful upgrade output", () => {
+    const stdout = JSON.stringify({
+      name: "my-release",
+      namespace: "default",
+      version: 3,
+      info: {
+        status: "deployed",
+      },
+    });
+
+    const result = parseHelmUpgradeOutput(stdout, "", 0, "my-release", "default");
+
+    expect(result.action).toBe("upgrade");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.revision).toBe("3");
+    expect(result.status).toBe("deployed");
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("handles upgrade failure", () => {
+    const result = parseHelmUpgradeOutput(
+      "",
+      "Error: UPGRADE FAILED: release not found",
+      1,
+      "missing",
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("UPGRADE FAILED");
   });
 });
