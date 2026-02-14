@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Dave-London/pare-git",
-  "description": "Pare Git \u05d2\u20ac\u201d Structured git operations (status, log, diff, branch, commit, push) as typed JSON.",
+  "name": "io.github.Dave-London/pare-search",
+  "description": "Pare Search \u05d2\u20ac\u201d Structured code search operations (ripgrep + fd) as typed JSON.",
   "repository": {
     "url": "https://github.com/Dave-London/Pare",
     "source": "github"
@@ -10,7 +10,7 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@paretools/git",
+      "identifier": "@paretools/search",
       "version": "0.8.1",
       "transport": {
         "type": "stdio"
