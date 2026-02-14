@@ -19,6 +19,9 @@ import {
   formatFmtCompact,
   compactDocMap,
   formatDocCompact,
+  formatCargoAudit,
+  compactAuditMap,
+  formatAuditCompact,
 } from "../src/lib/formatters.js";
 import type {
   CargoBuildResult,
@@ -29,6 +32,7 @@ import type {
   CargoRemoveResult,
   CargoFmtResult,
   CargoDocResult,
+  CargoAuditResult,
 } from "../src/schemas/index.js";
 
 describe("formatCargoBuild", () => {
@@ -413,6 +417,88 @@ describe("compactDocMap", () => {
     expect(formatDocCompact({ success: true, warnings: 0 })).toBe("cargo doc: success.");
     expect(formatDocCompact({ success: false, warnings: 3 })).toBe(
       "cargo doc: failed (3 warning(s))",
+    );
+  });
+});
+
+// ── Audit formatters ─────────────────────────────────────────────────
+
+describe("formatCargoAudit", () => {
+  it("formats no vulnerabilities", () => {
+    const data: CargoAuditResult = {
+      vulnerabilities: [],
+      summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0, informational: 0, unknown: 0 },
+    };
+    expect(formatCargoAudit(data)).toBe("cargo audit: no vulnerabilities found.");
+  });
+
+  it("formats vulnerabilities with patched versions", () => {
+    const data: CargoAuditResult = {
+      vulnerabilities: [
+        {
+          id: "RUSTSEC-2022-0090",
+          package: "libsqlite3-sys",
+          version: "0.24.2",
+          severity: "critical",
+          title: "Use-after-free in sqlite",
+          url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
+          patched: [">=0.25.1"],
+          unaffected: [],
+        },
+        {
+          id: "RUSTSEC-2023-0001",
+          package: "some-parser",
+          version: "1.0.0",
+          severity: "medium",
+          title: "Buffer overflow",
+          patched: [],
+        },
+      ],
+      summary: { total: 2, critical: 1, high: 0, medium: 1, low: 0, informational: 0, unknown: 0 },
+    };
+    const output = formatCargoAudit(data);
+    expect(output).toContain("2 vulnerabilities (1 critical, 0 high, 1 medium, 0 low)");
+    expect(output).toContain(
+      "[critical] RUSTSEC-2022-0090 libsqlite3-sys@0.24.2: Use-after-free in sqlite (patched: >=0.25.1)",
+    );
+    expect(output).toContain("[medium] RUSTSEC-2023-0001 some-parser@1.0.0: Buffer overflow");
+    // No patched suffix for the second one
+    expect(output).not.toContain("Buffer overflow (patched:");
+  });
+});
+
+describe("compactAuditMap", () => {
+  it("strips vulnerability details and keeps summary counts", () => {
+    const data: CargoAuditResult = {
+      vulnerabilities: [
+        {
+          id: "RUSTSEC-2022-0090",
+          package: "libsqlite3-sys",
+          version: "0.24.2",
+          severity: "critical",
+          title: "Use-after-free",
+          patched: [">=0.25.1"],
+        },
+      ],
+      summary: { total: 1, critical: 1, high: 0, medium: 0, low: 0, informational: 0, unknown: 0 },
+    };
+    const compact = compactAuditMap(data);
+    expect(compact).toEqual({
+      vulnerabilities: [],
+      total: 1,
+      critical: 1,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+  });
+
+  it("formats compact audit output", () => {
+    expect(formatAuditCompact({ total: 0, critical: 0, high: 0, medium: 0, low: 0 })).toBe(
+      "cargo audit: no vulnerabilities found.",
+    );
+    expect(formatAuditCompact({ total: 3, critical: 1, high: 1, medium: 1, low: 0 })).toBe(
+      "cargo audit: 3 vulnerabilities (1 critical, 1 high, 1 medium, 0 low)",
     );
   });
 });

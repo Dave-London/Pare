@@ -9,6 +9,7 @@ import type {
   CargoDocResult,
   CargoUpdateResult,
   CargoTreeResult,
+  CargoAuditResult,
 } from "../schemas/index.js";
 
 // ── Compact types ────────────────────────────────────────────────────
@@ -332,4 +333,46 @@ export function compactTreeMap(data: CargoTreeResult): CargoTreeCompact {
 
 export function formatTreeCompact(data: CargoTreeCompact): string {
   return `cargo tree: ${data.packages} unique packages`;
+}
+
+// ── Audit formatters ─────────────────────────────────────────────────
+
+/** Formats structured cargo audit output into a human-readable vulnerability report. */
+export function formatCargoAudit(data: CargoAuditResult): string {
+  if (data.summary.total === 0) return "cargo audit: no vulnerabilities found.";
+
+  const lines = [
+    `cargo audit: ${data.summary.total} vulnerabilities (${data.summary.critical} critical, ${data.summary.high} high, ${data.summary.medium} medium, ${data.summary.low} low)`,
+  ];
+  for (const v of data.vulnerabilities) {
+    const patched = v.patched.length > 0 ? ` (patched: ${v.patched.join(", ")})` : "";
+    lines.push(`  [${v.severity}] ${v.id} ${v.package}@${v.version}: ${v.title}${patched}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact audit: summary counts only, no individual vulnerabilities. */
+export interface CargoAuditCompact {
+  [key: string]: unknown;
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
+  return {
+    vulnerabilities: [],
+    total: data.summary.total,
+    critical: data.summary.critical,
+    high: data.summary.high,
+    medium: data.summary.medium,
+    low: data.summary.low,
+  };
+}
+
+export function formatAuditCompact(data: CargoAuditCompact): string {
+  if (data.total === 0) return "cargo audit: no vulnerabilities found.";
+  return `cargo audit: ${data.total} vulnerabilities (${data.critical} critical, ${data.high} high, ${data.medium} medium, ${data.low} low)`;
 }

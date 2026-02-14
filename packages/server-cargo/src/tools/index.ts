@@ -11,6 +11,7 @@ import { registerDocTool } from "./doc.js";
 import { registerCheckTool } from "./check.js";
 import { registerUpdateTool } from "./update.js";
 import { registerTreeTool } from "./tree.js";
+import { registerAuditTool } from "./audit.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("cargo", name);
@@ -25,4 +26,5 @@ export function registerAllTools(server: McpServer) {
   if (s("check")) registerCheckTool(server);
   if (s("update")) registerUpdateTool(server);
   if (s("tree")) registerTreeTool(server);
+  if (s("audit")) registerAuditTool(server);
 }

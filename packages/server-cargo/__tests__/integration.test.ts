@@ -29,11 +29,12 @@ describe("@paretools/cargo integration", () => {
     await transport.close();
   });
 
-  it("lists all 11 tools", async () => {
+  it("lists all 12 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "add",
+      "audit",
       "build",
       "check",
       "clippy",
@@ -231,6 +232,30 @@ describe("@paretools/cargo integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(sc.warnings).toEqual(expect.any(Number));
+      }
+    });
+  });
+
+  describe("audit", () => {
+    it("returns structured output or error for an invalid path", async () => {
+      const result = await client.callTool({
+        name: "audit",
+        arguments: { path: INVALID_PATH },
+      });
+
+      if (result.isError) {
+        // cargo-audit not installed or other error — verify meaningful error
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toBeDefined();
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.vulnerabilities)).toBe(true);
+        expect(sc.summary).toBeDefined();
+        const summary = sc.summary as Record<string, number>;
+        expect(summary.total).toEqual(expect.any(Number));
+        expect(summary.critical).toEqual(expect.any(Number));
+        expect(summary.high).toEqual(expect.any(Number));
       }
     });
   });
