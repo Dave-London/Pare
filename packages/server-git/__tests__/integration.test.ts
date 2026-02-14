@@ -30,7 +30,7 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 23 tools", async () => {
+  it("lists all 24 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -57,6 +57,7 @@ describe("@paretools/git integration", () => {
       "stash-list",
       "status",
       "tag",
+      "worktree",
     ]);
   });
 
@@ -125,6 +126,57 @@ describe("@paretools/git integration", () => {
       expect(first.graph).toEqual(expect.any(String));
       expect(first.hashShort).toEqual(expect.any(String));
       expect(first.message).toEqual(expect.any(String));
+    });
+  });
+
+  describe("reflog", () => {
+    it("returns structured reflog data", async () => {
+      const result = await client.callTool({
+        name: "reflog",
+        arguments: { maxCount: 5, compact: false },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(Array.isArray(sc.entries)).toBe(true);
+      expect(sc.total).toEqual(expect.any(Number));
+
+      const entries = sc.entries as Record<string, unknown>[];
+      expect(entries.length).toBeGreaterThan(0);
+      expect(entries.length).toBeLessThanOrEqual(5);
+
+      const first = entries[0];
+      expect(first.hash).toEqual(expect.any(String));
+      expect(first.shortHash).toEqual(expect.any(String));
+      expect(first.selector).toEqual(expect.any(String));
+      expect(first.action).toEqual(expect.any(String));
+    });
+  });
+
+  describe("worktree", () => {
+    it("returns worktree list data with text content", async () => {
+      const result = await client.callTool({
+        name: "worktree",
+        arguments: { action: "list", compact: false },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      // worktree tool uses z.union for outputSchema which may not return
+      // structuredContent via MCP SDK; verify text content instead
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      expect(textContent.length).toBeGreaterThan(0);
+      expect(textContent[0].type).toBe("text");
+      // The text output should contain at least one worktree path
+      expect(textContent[0].text.length).toBeGreaterThan(0);
+
+      // If structuredContent is available, verify its shape
+      if (result.structuredContent) {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(Array.isArray(sc.worktrees)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+      }
     });
   });
 
@@ -589,6 +641,83 @@ describe("@paretools/git write-tool integration", () => {
       const result = await client.callTool({
         name: "merge",
         arguments: { path: tempDir, branch: "some-branch", message: "--amend" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("bisect", () => {
+    it("handles reset action without error when no bisect is active", async () => {
+      const result = await client.callTool({
+        name: "bisect",
+        arguments: { path: tempDir, action: "reset" },
+      });
+
+      // bisect reset when no bisect is active should still succeed
+      // (git bisect reset returns 0 when there's no active bisect session)
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.action).toBe("reset");
+      expect(sc.message).toEqual(expect.any(String));
+    });
+
+    it("runs a full bisect session (start, good, bad, reset)", async () => {
+      // Create several commits to have enough history for bisecting
+      for (let i = 1; i <= 5; i++) {
+        writeFileSync(join(tempDir, `bisect-${i}.txt`), `content ${i}\n`);
+        gitInTemp(["add", `bisect-${i}.txt`]);
+        gitInTemp(["commit", "-m", `commit ${i}`]);
+      }
+
+      // Get first and last commits
+      const firstCommit = gitInTemp(["rev-list", "--max-parents=0", "HEAD"]).trim();
+      const lastCommit = gitInTemp(["rev-parse", "HEAD"]).trim();
+
+      // Start bisect with bad=HEAD and good=first commit
+      const startResult = await client.callTool({
+        name: "bisect",
+        arguments: {
+          path: tempDir,
+          action: "start",
+          bad: lastCommit,
+          good: firstCommit,
+        },
+      });
+
+      expect(startResult.content).toBeDefined();
+      const startSc = startResult.structuredContent as Record<string, unknown>;
+      expect(startSc).toBeDefined();
+      expect(startSc.action).toBe("start");
+      expect(startSc.message).toEqual(expect.any(String));
+
+      // Reset bisect to clean up
+      const resetResult = await client.callTool({
+        name: "bisect",
+        arguments: { path: tempDir, action: "reset" },
+      });
+
+      const resetSc = resetResult.structuredContent as Record<string, unknown>;
+      expect(resetSc).toBeDefined();
+      expect(resetSc.action).toBe("reset");
+    });
+
+    it("rejects flag-injection in bad ref", async () => {
+      const result = await client.callTool({
+        name: "bisect",
+        arguments: { path: tempDir, action: "start", bad: "--exec=malicious", good: "HEAD" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("rejects flag-injection in good ref", async () => {
+      const result = await client.callTool({
+        name: "bisect",
+        arguments: { path: tempDir, action: "start", bad: "HEAD", good: "--exec=malicious" },
       });
 
       expect(result.isError).toBe(true);

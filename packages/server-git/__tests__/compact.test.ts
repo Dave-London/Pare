@@ -20,6 +20,8 @@ import {
   formatLogGraphCompact,
   compactReflogMap,
   formatReflogCompact,
+  compactWorktreeListMap,
+  formatWorktreeListCompact,
 } from "../src/lib/formatters.js";
 import type { GitLog, GitDiff, GitShow } from "../src/schemas/index.js";
 import type {
@@ -30,6 +32,7 @@ import type {
   GitBlameFull,
   GitLogGraphFull,
   GitReflogFull,
+  GitWorktreeListFull,
 } from "../src/schemas/index.js";
 
 describe("compactLogMap", () => {
@@ -515,5 +518,77 @@ describe("formatReflogCompact", () => {
   it("formats empty reflog", () => {
     const compact = { entries: [], total: 0 };
     expect(formatReflogCompact(compact)).toBe("No reflog entries found");
+  });
+});
+
+describe("compactWorktreeListMap", () => {
+  it("reduces worktrees to string array with path and branch", () => {
+    const worktrees: GitWorktreeListFull = {
+      worktrees: [
+        {
+          path: "/home/user/repo",
+          head: "abc123def456full",
+          branch: "main",
+          bare: false,
+        },
+        {
+          path: "/home/user/repo-feature",
+          head: "def456abc789full",
+          branch: "feature/auth",
+          bare: false,
+        },
+        {
+          path: "/home/user/repo-bare",
+          head: "000000000000",
+          branch: "",
+          bare: true,
+        },
+      ],
+      total: 3,
+    };
+
+    const compact = compactWorktreeListMap(worktrees);
+
+    expect(compact.total).toBe(3);
+    expect(compact.worktrees).toEqual([
+      "/home/user/repo (main)",
+      "/home/user/repo-feature (feature/auth)",
+      "/home/user/repo-bare",
+    ]);
+  });
+
+  it("handles worktree with detached HEAD (no branch)", () => {
+    const worktrees: GitWorktreeListFull = {
+      worktrees: [
+        {
+          path: "/home/user/repo",
+          head: "abc123def456",
+          branch: "(detached)",
+          bare: false,
+        },
+      ],
+      total: 1,
+    };
+
+    const compact = compactWorktreeListMap(worktrees);
+
+    expect(compact.worktrees).toEqual(["/home/user/repo ((detached))"]);
+  });
+});
+
+describe("formatWorktreeListCompact", () => {
+  it("formats compact worktree list", () => {
+    const compact = {
+      worktrees: ["/home/user/repo (main)", "/home/user/repo-feature (feature/auth)"],
+      total: 2,
+    };
+    const output = formatWorktreeListCompact(compact);
+
+    expect(output).toBe("/home/user/repo (main)\n/home/user/repo-feature (feature/auth)");
+  });
+
+  it("formats empty worktree list", () => {
+    const compact = { worktrees: [], total: 0 };
+    expect(formatWorktreeListCompact(compact)).toBe("No worktrees found");
   });
 });

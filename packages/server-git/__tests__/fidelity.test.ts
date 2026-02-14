@@ -22,6 +22,10 @@ import {
   parseCheckout,
   parsePush,
   parsePull,
+  parseLogGraph,
+  parseReflogOutput,
+  parseBisect,
+  parseWorktreeList,
 } from "../src/lib/parsers.js";
 
 const CWD = process.cwd();
@@ -980,5 +984,297 @@ Automatic merge failed; fix conflicts and then commit the result.`;
     expect(result.filesChanged).toBe(5);
     expect(result.insertions).toBe(30);
     expect(result.deletions).toBe(10);
+  });
+});
+
+// ── Fidelity tests for new tools (log-graph, reflog, bisect, worktree) ──
+
+describe("fidelity: git log-graph (fixture-based)", () => {
+  it("parseLogGraph preserves commit hashes and messages from graph output", () => {
+    const raw = [
+      "* abc1234 (HEAD -> main, origin/main) feat: add log-graph tool",
+      "* def5678 fix: handle edge case in parser",
+      "* aaa9012 chore: update dependencies",
+    ].join("\n");
+
+    const result = parseLogGraph(raw);
+
+    expect(result.total).toBe(3);
+    expect(result.commits).toHaveLength(3);
+
+    expect(result.commits[0].hashShort).toBe("abc1234");
+    expect(result.commits[0].message).toBe("feat: add log-graph tool");
+    expect(result.commits[0].refs).toBe("HEAD -> main, origin/main");
+    expect(result.commits[0].graph).toBe("*");
+
+    expect(result.commits[1].hashShort).toBe("def5678");
+    expect(result.commits[1].message).toBe("fix: handle edge case in parser");
+    expect(result.commits[1].refs).toBeUndefined();
+
+    expect(result.commits[2].hashShort).toBe("aaa9012");
+    expect(result.commits[2].message).toBe("chore: update dependencies");
+  });
+
+  it("parseLogGraph handles merge graph topology with continuation lines", () => {
+    const raw = [
+      "*   abc1234 (HEAD -> main) Merge branch 'feature'",
+      "|\\",
+      "| * def5678 feat: add feature",
+      "| * aaa9012 feat: scaffold feature",
+      "|/",
+      "* bbb3456 chore: initial commit",
+    ].join("\n");
+
+    const result = parseLogGraph(raw);
+
+    // 4 actual commits + 2 continuation lines
+    expect(result.total).toBe(4);
+    expect(result.commits).toHaveLength(6);
+
+    // Continuation lines have empty hashShort
+    const realCommits = result.commits.filter((c) => c.hashShort !== "");
+    expect(realCommits).toHaveLength(4);
+    expect(realCommits[0].hashShort).toBe("abc1234");
+    expect(realCommits[0].refs).toBe("HEAD -> main");
+    expect(realCommits[1].hashShort).toBe("def5678");
+    expect(realCommits[2].hashShort).toBe("aaa9012");
+    expect(realCommits[3].hashShort).toBe("bbb3456");
+  });
+
+  it("parseLogGraph handles empty output", () => {
+    const result = parseLogGraph("");
+    expect(result.total).toBe(0);
+    expect(result.commits).toHaveLength(0);
+  });
+
+  it("parseLogGraph handles multiple refs on a single commit", () => {
+    const raw = "* abc1234 (HEAD -> main, tag: v1.0.0, origin/main) release: v1.0.0";
+
+    const result = parseLogGraph(raw);
+
+    expect(result.total).toBe(1);
+    expect(result.commits[0].refs).toBe("HEAD -> main, tag: v1.0.0, origin/main");
+    expect(result.commits[0].message).toBe("release: v1.0.0");
+  });
+
+  it("parseLogGraph preserves commit data from real repo output", () => {
+    if (!hasParentCommit()) return; // shallow clone in CI
+
+    const raw = gitRaw(["log", "--graph", "--oneline", "--decorate", "--max-count=5"]);
+    const result = parseLogGraph(raw);
+
+    // Cross-check with oneline output for commit count
+    const rawOneline = gitRaw(["log", "--oneline", "--max-count=5"]);
+    const rawHashes = rawOneline
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => l.split(" ")[0]);
+
+    const graphHashes = result.commits.filter((c) => c.hashShort !== "").map((c) => c.hashShort);
+
+    // Every hash from oneline should appear in graph output
+    for (const hash of rawHashes) {
+      expect(graphHashes).toContain(hash);
+    }
+  });
+});
+
+describe("fidelity: git reflog (fixture-based)", () => {
+  it("parseReflogOutput preserves all fields from tab-delimited output", () => {
+    const raw = [
+      "abc123def456full\tabc1234\tHEAD@{0}\tcheckout: moving from main to feature\t2024-01-15 10:30:00 +0000",
+      "def456abc789full\tdef5678\tHEAD@{1}\tcommit: fix the parser bug\t2024-01-14 09:00:00 +0000",
+      "ghi789jkl012full\tghi9012\tHEAD@{2}\tpull: Fast-forward\t2024-01-13 08:00:00 +0000",
+    ].join("\n");
+
+    const result = parseReflogOutput(raw);
+
+    expect(result.total).toBe(3);
+    expect(result.entries).toHaveLength(3);
+
+    // First entry
+    expect(result.entries[0].hash).toBe("abc123def456full");
+    expect(result.entries[0].shortHash).toBe("abc1234");
+    expect(result.entries[0].selector).toBe("HEAD@{0}");
+    expect(result.entries[0].action).toBe("checkout");
+    expect(result.entries[0].description).toBe("moving from main to feature");
+    expect(result.entries[0].date).toBe("2024-01-15 10:30:00 +0000");
+
+    // Second entry
+    expect(result.entries[1].hash).toBe("def456abc789full");
+    expect(result.entries[1].shortHash).toBe("def5678");
+    expect(result.entries[1].selector).toBe("HEAD@{1}");
+    expect(result.entries[1].action).toBe("commit");
+    expect(result.entries[1].description).toBe("fix the parser bug");
+
+    // Third entry
+    expect(result.entries[2].action).toBe("pull");
+    expect(result.entries[2].description).toBe("Fast-forward");
+  });
+
+  it("parseReflogOutput handles empty output", () => {
+    const result = parseReflogOutput("");
+    expect(result.total).toBe(0);
+    expect(result.entries).toHaveLength(0);
+  });
+
+  it("parseReflogOutput handles entry without description (no colon separator)", () => {
+    const raw = "abc123full\tabc1234\tHEAD@{0}\treset\t2024-01-15 10:00:00 +0000";
+
+    const result = parseReflogOutput(raw);
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0].action).toBe("reset");
+    expect(result.entries[0].description).toBe("");
+  });
+
+  it("parseReflogOutput preserves data from real repo output", () => {
+    const FORMAT = "%H\t%h\t%gd\t%gs\t%ci";
+    const raw = gitRaw(["reflog", `--format=${FORMAT}`, "--max-count=5"]);
+
+    if (!raw.trim()) return; // no reflog entries
+
+    const result = parseReflogOutput(raw);
+
+    // Cross-check: count should match raw lines
+    const rawLines = raw.trim().split("\n").filter(Boolean);
+    expect(result.total).toBe(rawLines.length);
+
+    // Every entry should have a non-empty hash and selector
+    for (const entry of result.entries) {
+      expect(entry.hash.length).toBeGreaterThan(0);
+      expect(entry.shortHash.length).toBeGreaterThan(0);
+      expect(entry.selector).toMatch(/HEAD@\{\d+\}/);
+    }
+  });
+});
+
+describe("fidelity: git bisect parser (fixture-based)", () => {
+  it("parseBisect captures culprit commit from bisect result output", () => {
+    const hash = "abc123def456abc123def456abc123def456abcd"; // exactly 40 hex chars
+    const stdout = `${hash} is the first bad commit
+commit ${hash}
+Author: Jane Doe <jane@example.com>
+Date:   Mon Jan 15 10:30:00 2024 +0000
+
+    feat: introduce the bug`;
+
+    const result = parseBisect(stdout, "", "bad");
+
+    expect(result.action).toBe("bad");
+    expect(result.result).toBeDefined();
+    expect(result.result!.hash).toBe(hash);
+    expect(result.result!.message).toBe("feat: introduce the bug");
+    expect(result.result!.author).toBe("Jane Doe <jane@example.com>");
+    expect(result.result!.date).toBe("Mon Jan 15 10:30:00 2024 +0000");
+  });
+
+  it("parseBisect captures mid-bisect status with remaining steps", () => {
+    const stdout = `Bisecting: 5 revisions left to test after this (roughly 3 steps)
+[abc1234] chore: some commit message`;
+
+    const result = parseBisect(stdout, "", "good");
+
+    expect(result.action).toBe("good");
+    expect(result.remaining).toBe(3);
+    expect(result.current).toBe("abc1234");
+    expect(result.result).toBeUndefined();
+  });
+
+  it("parseBisect handles reset with simple message", () => {
+    const stdout = "Previous HEAD position was abc1234... some message\nSwitched to branch 'main'";
+
+    const result = parseBisect(stdout, "", "reset");
+
+    expect(result.action).toBe("reset");
+    expect(result.message).toContain("Switched to branch");
+    expect(result.result).toBeUndefined();
+  });
+
+  it("parseBisect handles empty output for reset", () => {
+    const result = parseBisect("", "", "reset");
+
+    expect(result.action).toBe("reset");
+    expect(result.message).toBe("Bisect reset completed");
+  });
+});
+
+describe("fidelity: git worktree parser (fixture-based)", () => {
+  it("parseWorktreeList parses porcelain output with multiple worktrees", () => {
+    const stdout = [
+      "worktree /home/user/repo",
+      "HEAD abc123def456abc123def456abc123def456abcdef01",
+      "branch refs/heads/main",
+      "",
+      "worktree /home/user/repo-feature",
+      "HEAD def456abc789def456abc789def456abc789defabc02",
+      "branch refs/heads/feature/auth",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.worktrees).toHaveLength(2);
+
+    expect(result.worktrees[0].path).toBe("/home/user/repo");
+    expect(result.worktrees[0].head).toBe("abc123def456abc123def456abc123def456abcdef01");
+    expect(result.worktrees[0].branch).toBe("main");
+    expect(result.worktrees[0].bare).toBe(false);
+
+    expect(result.worktrees[1].path).toBe("/home/user/repo-feature");
+    expect(result.worktrees[1].head).toBe("def456abc789def456abc789def456abc789defabc02");
+    expect(result.worktrees[1].branch).toBe("feature/auth");
+    expect(result.worktrees[1].bare).toBe(false);
+  });
+
+  it("parseWorktreeList handles bare repository entry", () => {
+    const stdout = [
+      "worktree /home/user/repo.git",
+      "HEAD abc123def456abc123def456abc123def456abcdef01",
+      "bare",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].bare).toBe(true);
+    expect(result.worktrees[0].branch).toBe("");
+  });
+
+  it("parseWorktreeList handles detached HEAD worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo-detached",
+      "HEAD abc123def456abc123def456abc123def456abcdef01",
+      "detached",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].branch).toBe("(detached)");
+    expect(result.worktrees[0].bare).toBe(false);
+  });
+
+  it("parseWorktreeList handles empty output", () => {
+    const result = parseWorktreeList("");
+    expect(result.total).toBe(0);
+    expect(result.worktrees).toHaveLength(0);
+  });
+
+  it("parseWorktreeList strips refs/heads/ prefix from branch", () => {
+    const stdout = [
+      "worktree /home/user/repo",
+      "HEAD abc123",
+      "branch refs/heads/feature/deep/nested",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.worktrees[0].branch).toBe("feature/deep/nested");
   });
 });
