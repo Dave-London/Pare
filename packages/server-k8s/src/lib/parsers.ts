@@ -4,6 +4,11 @@ import type {
   KubectlLogsResult,
   KubectlApplyResult,
   K8sResource,
+  HelmListResult,
+  HelmStatusResult,
+  HelmInstallResult,
+  HelmUpgradeResult,
+  HelmRelease,
 } from "../schemas/index.js";
 
 /**
@@ -147,4 +152,199 @@ export function parseApplyOutput(
     exitCode,
     error: exitCode !== 0 ? stderr.trim() || undefined : undefined,
   };
+}
+
+// ── Helm parsers ────────────────────────────────────────────────────
+
+/**
+ * Parses `helm list -o json` output into a structured list result.
+ */
+export function parseHelmListOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  namespace?: string,
+): HelmListResult {
+  if (exitCode !== 0) {
+    return {
+      action: "list",
+      success: false,
+      namespace,
+      releases: [],
+      total: 0,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  let releases: HelmRelease[] = [];
+  try {
+    const parsed = JSON.parse(stdout);
+    if (Array.isArray(parsed)) {
+      releases = parsed.map((r: Record<string, unknown>) => ({
+        name: String(r.name ?? ""),
+        namespace: String(r.namespace ?? ""),
+        revision: String(r.revision ?? ""),
+        status: String(r.status ?? ""),
+        chart: String(r.chart ?? ""),
+        app_version: r.app_version != null ? String(r.app_version) : undefined,
+      }));
+    }
+  } catch {
+    return {
+      action: "list",
+      success: false,
+      namespace,
+      releases: [],
+      total: 0,
+      exitCode,
+      error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
+    };
+  }
+
+  return {
+    action: "list",
+    success: true,
+    namespace,
+    releases,
+    total: releases.length,
+    exitCode,
+  };
+}
+
+/**
+ * Parses `helm status <release> -o json` output into a structured status result.
+ */
+export function parseHelmStatusOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  namespace?: string,
+): HelmStatusResult {
+  if (exitCode !== 0) {
+    return {
+      action: "status",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(stdout);
+    const info = parsed.info as Record<string, unknown> | undefined;
+    return {
+      action: "status",
+      success: true,
+      name: String(parsed.name ?? release),
+      namespace: String(parsed.namespace ?? namespace ?? ""),
+      revision: parsed.version != null ? String(parsed.version) : undefined,
+      status: info?.status != null ? String(info.status) : undefined,
+      description: info?.description != null ? String(info.description) : undefined,
+      notes: info?.notes != null ? String(info.notes).trimEnd() : undefined,
+      exitCode,
+    };
+  } catch {
+    return {
+      action: "status",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
+    };
+  }
+}
+
+/**
+ * Parses `helm install` output into a structured install result.
+ */
+export function parseHelmInstallOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  namespace?: string,
+): HelmInstallResult {
+  if (exitCode !== 0) {
+    return {
+      action: "install",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(stdout);
+    const info = parsed.info as Record<string, unknown> | undefined;
+    return {
+      action: "install",
+      success: true,
+      name: String(parsed.name ?? release),
+      namespace: String(parsed.namespace ?? namespace ?? ""),
+      revision: parsed.version != null ? String(parsed.version) : undefined,
+      status: info?.status != null ? String(info.status) : undefined,
+      exitCode,
+    };
+  } catch {
+    return {
+      action: "install",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
+    };
+  }
+}
+
+/**
+ * Parses `helm upgrade` output into a structured upgrade result.
+ */
+export function parseHelmUpgradeOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  namespace?: string,
+): HelmUpgradeResult {
+  if (exitCode !== 0) {
+    return {
+      action: "upgrade",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(stdout);
+    const info = parsed.info as Record<string, unknown> | undefined;
+    return {
+      action: "upgrade",
+      success: true,
+      name: String(parsed.name ?? release),
+      namespace: String(parsed.namespace ?? namespace ?? ""),
+      revision: parsed.version != null ? String(parsed.version) : undefined,
+      status: info?.status != null ? String(info.status) : undefined,
+      exitCode,
+    };
+  } catch {
+    return {
+      action: "upgrade",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
+    };
+  }
 }

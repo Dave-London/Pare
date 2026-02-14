@@ -93,3 +93,83 @@ export const KubectlResultSchema = z.discriminatedUnion("action", [
 ]);
 
 export type KubectlResult = z.infer<typeof KubectlResultSchema>;
+
+// ── Helm schemas ───────────────────────────────────────────────────
+
+/** A single Helm release from `helm list -o json`. */
+export const HelmReleaseSchema = z.object({
+  name: z.string(),
+  namespace: z.string(),
+  revision: z.string(),
+  status: z.string(),
+  chart: z.string(),
+  app_version: z.string().optional(),
+});
+
+export type HelmRelease = z.infer<typeof HelmReleaseSchema>;
+
+/** Helm list result. */
+export const HelmListResultSchema = z.object({
+  action: z.literal("list"),
+  success: z.boolean(),
+  namespace: z.string().optional(),
+  releases: z.array(HelmReleaseSchema),
+  total: z.number(),
+  exitCode: z.number(),
+  error: z.string().optional(),
+});
+
+export type HelmListResult = z.infer<typeof HelmListResultSchema>;
+
+/** Helm status result. */
+export const HelmStatusResultSchema = z.object({
+  action: z.literal("status"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  revision: z.string().optional(),
+  status: z.string().optional(),
+  description: z.string().optional(),
+  notes: z.string().optional(),
+  exitCode: z.number(),
+  error: z.string().optional(),
+});
+
+export type HelmStatusResult = z.infer<typeof HelmStatusResultSchema>;
+
+/** Helm install/upgrade result. */
+export const HelmInstallResultSchema = z.object({
+  action: z.literal("install"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  revision: z.string().optional(),
+  status: z.string().optional(),
+  exitCode: z.number(),
+  error: z.string().optional(),
+});
+
+export type HelmInstallResult = z.infer<typeof HelmInstallResultSchema>;
+
+export const HelmUpgradeResultSchema = z.object({
+  action: z.literal("upgrade"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  revision: z.string().optional(),
+  status: z.string().optional(),
+  exitCode: z.number(),
+  error: z.string().optional(),
+});
+
+export type HelmUpgradeResult = z.infer<typeof HelmUpgradeResultSchema>;
+
+/** Union of all helm result types. */
+export const HelmResultSchema = z.discriminatedUnion("action", [
+  HelmListResultSchema,
+  HelmStatusResultSchema,
+  HelmInstallResultSchema,
+  HelmUpgradeResultSchema,
+]);
+
+export type HelmResult = z.infer<typeof HelmResultSchema>;

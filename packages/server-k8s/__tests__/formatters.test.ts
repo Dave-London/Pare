@@ -12,12 +12,28 @@ import {
   formatLogsCompact,
   compactApplyMap,
   formatApplyCompact,
+  formatHelmList,
+  formatHelmStatus,
+  formatHelmInstall,
+  formatHelmUpgrade,
+  compactHelmListMap,
+  formatHelmListCompact,
+  compactHelmStatusMap,
+  formatHelmStatusCompact,
+  compactHelmInstallMap,
+  formatHelmInstallCompact,
+  compactHelmUpgradeMap,
+  formatHelmUpgradeCompact,
 } from "../src/lib/formatters.js";
 import type {
   KubectlGetResult,
   KubectlDescribeResult,
   KubectlLogsResult,
   KubectlApplyResult,
+  HelmListResult,
+  HelmStatusResult,
+  HelmInstallResult,
+  HelmUpgradeResult,
 } from "../src/schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -330,6 +346,325 @@ describe("formatApplyCompact", () => {
   it("formats failure", () => {
     expect(formatApplyCompact({ action: "apply", success: false, exitCode: 1 })).toBe(
       "kubectl apply: failed (exit 1)",
+    );
+  });
+});
+
+// ── Helm formatters ─────────────────────────────────────────────────
+
+describe("formatHelmList", () => {
+  it("formats successful list with releases", () => {
+    const data: HelmListResult = {
+      action: "list",
+      success: true,
+      namespace: "default",
+      releases: [
+        {
+          name: "nginx",
+          namespace: "default",
+          revision: "1",
+          status: "deployed",
+          chart: "nginx-1.0.0",
+        },
+        {
+          name: "redis",
+          namespace: "default",
+          revision: "2",
+          status: "deployed",
+          chart: "redis-17.0.0",
+        },
+      ],
+      total: 2,
+      exitCode: 0,
+    };
+    const output = formatHelmList(data);
+    expect(output).toContain("helm list -n default: 2 release(s)");
+    expect(output).toContain("nginx (nginx-1.0.0) - deployed");
+    expect(output).toContain("redis (redis-17.0.0) - deployed");
+  });
+
+  it("formats failed list", () => {
+    const data: HelmListResult = {
+      action: "list",
+      success: false,
+      releases: [],
+      total: 0,
+      exitCode: 1,
+      error: "connection refused",
+    };
+    const output = formatHelmList(data);
+    expect(output).toContain("helm list: failed (exit 1)");
+    expect(output).toContain("connection refused");
+  });
+});
+
+describe("formatHelmStatus", () => {
+  it("formats successful status", () => {
+    const data: HelmStatusResult = {
+      action: "status",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "2",
+      status: "deployed",
+      description: "Upgrade complete",
+      exitCode: 0,
+    };
+    const output = formatHelmStatus(data);
+    expect(output).toContain("helm status my-release: deployed");
+    expect(output).toContain("revision: 2");
+    expect(output).toContain("description: Upgrade complete");
+  });
+
+  it("formats failed status", () => {
+    const data: HelmStatusResult = {
+      action: "status",
+      success: false,
+      name: "missing",
+      exitCode: 1,
+      error: "not found",
+    };
+    const output = formatHelmStatus(data);
+    expect(output).toContain("helm status missing: failed (exit 1)");
+    expect(output).toContain("not found");
+  });
+});
+
+describe("formatHelmInstall", () => {
+  it("formats successful install", () => {
+    const data: HelmInstallResult = {
+      action: "install",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "1",
+      status: "deployed",
+      exitCode: 0,
+    };
+    const output = formatHelmInstall(data);
+    expect(output).toContain("helm install my-release: deployed");
+    expect(output).toContain("(revision 1)");
+  });
+
+  it("formats failed install", () => {
+    const data: HelmInstallResult = {
+      action: "install",
+      success: false,
+      name: "my-release",
+      exitCode: 1,
+      error: "name already in use",
+    };
+    const output = formatHelmInstall(data);
+    expect(output).toContain("helm install my-release: failed (exit 1)");
+    expect(output).toContain("name already in use");
+  });
+});
+
+describe("formatHelmUpgrade", () => {
+  it("formats successful upgrade", () => {
+    const data: HelmUpgradeResult = {
+      action: "upgrade",
+      success: true,
+      name: "my-release",
+      revision: "3",
+      status: "deployed",
+      exitCode: 0,
+    };
+    const output = formatHelmUpgrade(data);
+    expect(output).toContain("helm upgrade my-release: deployed");
+    expect(output).toContain("(revision 3)");
+  });
+
+  it("formats failed upgrade", () => {
+    const data: HelmUpgradeResult = {
+      action: "upgrade",
+      success: false,
+      name: "missing",
+      exitCode: 1,
+      error: "UPGRADE FAILED",
+    };
+    const output = formatHelmUpgrade(data);
+    expect(output).toContain("helm upgrade missing: failed (exit 1)");
+  });
+});
+
+// ── Helm compact mappers and formatters ─────────────────────────────
+
+describe("compactHelmListMap", () => {
+  it("keeps names, drops full release details", () => {
+    const data: HelmListResult = {
+      action: "list",
+      success: true,
+      namespace: "default",
+      releases: [
+        {
+          name: "nginx",
+          namespace: "default",
+          revision: "1",
+          status: "deployed",
+          chart: "nginx-1.0.0",
+        },
+        {
+          name: "redis",
+          namespace: "default",
+          revision: "2",
+          status: "deployed",
+          chart: "redis-17.0.0",
+        },
+      ],
+      total: 2,
+      exitCode: 0,
+    };
+
+    const compact = compactHelmListMap(data);
+
+    expect(compact.action).toBe("list");
+    expect(compact.success).toBe(true);
+    expect(compact.total).toBe(2);
+    expect(compact.names).toEqual(["nginx", "redis"]);
+    expect(compact).not.toHaveProperty("releases");
+  });
+});
+
+describe("formatHelmListCompact", () => {
+  it("formats successful compact list", () => {
+    expect(
+      formatHelmListCompact({
+        action: "list",
+        success: true,
+        namespace: "prod",
+        total: 5,
+        names: [],
+      }),
+    ).toBe("helm list -n prod: 5 release(s)");
+  });
+
+  it("formats failed compact list", () => {
+    expect(formatHelmListCompact({ action: "list", success: false, total: 0, names: [] })).toBe(
+      "helm list: failed",
+    );
+  });
+});
+
+describe("compactHelmStatusMap", () => {
+  it("keeps key fields, drops notes and description", () => {
+    const data: HelmStatusResult = {
+      action: "status",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "2",
+      status: "deployed",
+      description: "Upgrade complete",
+      notes: "Very long notes...",
+      exitCode: 0,
+    };
+
+    const compact = compactHelmStatusMap(data);
+
+    expect(compact.name).toBe("my-release");
+    expect(compact.status).toBe("deployed");
+    expect(compact.revision).toBe("2");
+    expect(compact).not.toHaveProperty("notes");
+    expect(compact).not.toHaveProperty("description");
+  });
+});
+
+describe("formatHelmStatusCompact", () => {
+  it("formats success", () => {
+    expect(
+      formatHelmStatusCompact({
+        action: "status",
+        success: true,
+        name: "nginx",
+        status: "deployed",
+      }),
+    ).toBe("helm status nginx: deployed");
+  });
+
+  it("formats failure", () => {
+    expect(formatHelmStatusCompact({ action: "status", success: false, name: "missing" })).toBe(
+      "helm status missing: failed",
+    );
+  });
+});
+
+describe("compactHelmInstallMap", () => {
+  it("keeps success and status, drops revision", () => {
+    const data: HelmInstallResult = {
+      action: "install",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "1",
+      status: "deployed",
+      exitCode: 0,
+    };
+
+    const compact = compactHelmInstallMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.name).toBe("my-release");
+    expect(compact.status).toBe("deployed");
+    expect(compact).not.toHaveProperty("revision");
+  });
+});
+
+describe("formatHelmInstallCompact", () => {
+  it("formats success", () => {
+    expect(
+      formatHelmInstallCompact({
+        action: "install",
+        success: true,
+        name: "nginx",
+        status: "deployed",
+      }),
+    ).toBe("helm install nginx: deployed");
+  });
+
+  it("formats failure", () => {
+    expect(formatHelmInstallCompact({ action: "install", success: false, name: "nginx" })).toBe(
+      "helm install nginx: failed",
+    );
+  });
+});
+
+describe("compactHelmUpgradeMap", () => {
+  it("keeps success and status", () => {
+    const data: HelmUpgradeResult = {
+      action: "upgrade",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "3",
+      status: "deployed",
+      exitCode: 0,
+    };
+
+    const compact = compactHelmUpgradeMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.name).toBe("my-release");
+    expect(compact.status).toBe("deployed");
+    expect(compact).not.toHaveProperty("revision");
+  });
+});
+
+describe("formatHelmUpgradeCompact", () => {
+  it("formats success", () => {
+    expect(
+      formatHelmUpgradeCompact({
+        action: "upgrade",
+        success: true,
+        name: "nginx",
+        status: "deployed",
+      }),
+    ).toBe("helm upgrade nginx: deployed");
+  });
+
+  it("formats failure", () => {
+    expect(formatHelmUpgradeCompact({ action: "upgrade", success: false, name: "nginx" })).toBe(
+      "helm upgrade nginx: failed",
     );
   });
 });

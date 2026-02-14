@@ -4,6 +4,11 @@ import type {
   KubectlLogsResult,
   KubectlApplyResult,
   KubectlResult,
+  HelmListResult,
+  HelmStatusResult,
+  HelmInstallResult,
+  HelmUpgradeResult,
+  HelmResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -162,4 +167,170 @@ export function compactApplyMap(data: KubectlApplyResult): KubectlApplyCompact {
 export function formatApplyCompact(data: KubectlApplyCompact): string {
   if (!data.success) return `kubectl apply: failed (exit ${data.exitCode})`;
   return "kubectl apply: success";
+}
+
+// ── Helm formatters ─────────────────────────────────────────────────
+
+/** Formats a helm list result into human-readable text. */
+export function formatHelmList(data: HelmListResult): string {
+  if (!data.success) {
+    return `helm list: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+  }
+  const ns = data.namespace ? ` -n ${data.namespace}` : "";
+  const lines = [`helm list${ns}: ${data.total} release(s)`];
+  for (const r of data.releases) {
+    lines.push(`  ${r.name} (${r.chart}) - ${r.status}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats a helm status result into human-readable text. */
+export function formatHelmStatus(data: HelmStatusResult): string {
+  if (!data.success) {
+    return `helm status ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+  }
+  const lines = [`helm status ${data.name}: ${data.status ?? "unknown"}`];
+  if (data.revision) lines.push(`  revision: ${data.revision}`);
+  if (data.description) lines.push(`  description: ${data.description}`);
+  if (data.notes) lines.push(`  notes: ${data.notes}`);
+  return lines.join("\n");
+}
+
+/** Formats a helm install result into human-readable text. */
+export function formatHelmInstall(data: HelmInstallResult): string {
+  if (!data.success) {
+    return `helm install ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+  }
+  const parts = [`helm install ${data.name}: ${data.status ?? "success"}`];
+  if (data.revision) parts.push(`(revision ${data.revision})`);
+  return parts.join(" ");
+}
+
+/** Formats a helm upgrade result into human-readable text. */
+export function formatHelmUpgrade(data: HelmUpgradeResult): string {
+  if (!data.success) {
+    return `helm upgrade ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+  }
+  const parts = [`helm upgrade ${data.name}: ${data.status ?? "success"}`];
+  if (data.revision) parts.push(`(revision ${data.revision})`);
+  return parts.join(" ");
+}
+
+/** Dispatches formatting to the correct helm action formatter. */
+export function formatHelmResult(data: HelmResult): string {
+  switch (data.action) {
+    case "list":
+      return formatHelmList(data);
+    case "status":
+      return formatHelmStatus(data);
+    case "install":
+      return formatHelmInstall(data);
+    case "upgrade":
+      return formatHelmUpgrade(data);
+  }
+}
+
+// ── Helm compact types, mappers, and formatters ─────────────────────
+
+/** Compact list: release names only. */
+export interface HelmListCompact {
+  [key: string]: unknown;
+  action: "list";
+  success: boolean;
+  namespace?: string;
+  total: number;
+  names: string[];
+}
+
+export function compactHelmListMap(data: HelmListResult): HelmListCompact {
+  return {
+    action: "list",
+    success: data.success,
+    namespace: data.namespace,
+    total: data.total,
+    names: data.releases.map((r) => r.name),
+  };
+}
+
+export function formatHelmListCompact(data: HelmListCompact): string {
+  if (!data.success) return "helm list: failed";
+  const ns = data.namespace ? ` -n ${data.namespace}` : "";
+  return `helm list${ns}: ${data.total} release(s)`;
+}
+
+/** Compact status: key fields only, no notes. */
+export interface HelmStatusCompact {
+  [key: string]: unknown;
+  action: "status";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  status?: string;
+  revision?: string;
+}
+
+export function compactHelmStatusMap(data: HelmStatusResult): HelmStatusCompact {
+  return {
+    action: "status",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    status: data.status,
+    revision: data.revision,
+  };
+}
+
+export function formatHelmStatusCompact(data: HelmStatusCompact): string {
+  if (!data.success) return `helm status ${data.name}: failed`;
+  return `helm status ${data.name}: ${data.status ?? "unknown"}`;
+}
+
+/** Compact install: success/failure only. */
+export interface HelmInstallCompact {
+  [key: string]: unknown;
+  action: "install";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  status?: string;
+}
+
+export function compactHelmInstallMap(data: HelmInstallResult): HelmInstallCompact {
+  return {
+    action: "install",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    status: data.status,
+  };
+}
+
+export function formatHelmInstallCompact(data: HelmInstallCompact): string {
+  if (!data.success) return `helm install ${data.name}: failed`;
+  return `helm install ${data.name}: ${data.status ?? "success"}`;
+}
+
+/** Compact upgrade: success/failure only. */
+export interface HelmUpgradeCompact {
+  [key: string]: unknown;
+  action: "upgrade";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  status?: string;
+}
+
+export function compactHelmUpgradeMap(data: HelmUpgradeResult): HelmUpgradeCompact {
+  return {
+    action: "upgrade",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    status: data.status,
+  };
+}
+
+export function formatHelmUpgradeCompact(data: HelmUpgradeCompact): string {
+  if (!data.success) return `helm upgrade ${data.name}: failed`;
+  return `helm upgrade ${data.name}: ${data.status ?? "success"}`;
 }
