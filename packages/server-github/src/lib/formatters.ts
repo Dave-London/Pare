@@ -6,6 +6,7 @@ import type {
   CommentResult,
   PrReviewResult,
   EditResult,
+  PrChecksResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -72,6 +73,43 @@ export function formatPrReview(data: PrReviewResult): string {
 /** Formats structured PR update data into human-readable text. */
 export function formatPrUpdate(data: EditResult): string {
   return `Updated PR #${data.number}: ${data.url}`;
+}
+
+/** Formats structured PR checks data into human-readable text. */
+export function formatPrChecks(data: PrChecksResult): string {
+  const { summary } = data;
+  const lines = [
+    `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`,
+  ];
+  for (const c of data.checks) {
+    const workflow = c.workflow ? ` [${c.workflow}]` : "";
+    lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact PR checks: summary only, no individual checks. */
+export interface PrChecksCompact {
+  [key: string]: unknown;
+  pr: number;
+  total: number;
+  passed: number;
+  failed: number;
+  pending: number;
+}
+
+export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
+  return {
+    pr: data.pr,
+    total: data.summary.total,
+    passed: data.summary.passed,
+    failed: data.summary.failed,
+    pending: data.summary.pending,
+  };
+}
+
+export function formatPrChecksCompact(data: PrChecksCompact): string {
+  return `PR #${data.pr}: ${data.total} checks (${data.passed} passed, ${data.failed} failed, ${data.pending} pending)`;
 }
 
 /** Formats structured issue view data into human-readable text. */
