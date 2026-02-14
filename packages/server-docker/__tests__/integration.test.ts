@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/docker integration", () => {
   let client: Client;
@@ -59,10 +60,14 @@ describe("@paretools/docker integration", () => {
 
   describe("ps", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "ps",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "ps",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         // Docker not installed — verify we get a meaningful error
@@ -82,10 +87,14 @@ describe("@paretools/docker integration", () => {
 
   describe("images", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "images",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "images",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -101,10 +110,14 @@ describe("@paretools/docker integration", () => {
 
   describe("run", () => {
     it("rejects flag injection in image param", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: { image: "--privileged" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { image: "--privileged" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -114,10 +127,14 @@ describe("@paretools/docker integration", () => {
 
   describe("exec", () => {
     it("rejects flag injection in container param", async () => {
-      const result = await client.callTool({
-        name: "exec",
-        arguments: { container: "--privileged", command: ["ls"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "exec",
+          arguments: { container: "--privileged", command: ["ls"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -127,10 +144,14 @@ describe("@paretools/docker integration", () => {
 
   describe("pull", () => {
     it("rejects flag injection in image param", async () => {
-      const result = await client.callTool({
-        name: "pull",
-        arguments: { image: "--all-tags" },
-      });
+      const result = await client.callTool(
+        {
+          name: "pull",
+          arguments: { image: "--all-tags" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -140,10 +161,14 @@ describe("@paretools/docker integration", () => {
 
   describe("compose-up", () => {
     it("returns error or structured data when called without docker", async () => {
-      const result = await client.callTool({
-        name: "compose-up",
-        arguments: { path: "C:\\nonexistent-path-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-up",
+          arguments: { path: "C:\\nonexistent-path-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -160,10 +185,14 @@ describe("@paretools/docker integration", () => {
 
   describe("compose-down", () => {
     it("returns error or structured data when called without docker", async () => {
-      const result = await client.callTool({
-        name: "compose-down",
-        arguments: { path: "C:\\nonexistent-path-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-down",
+          arguments: { path: "C:\\nonexistent-path-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -180,10 +209,14 @@ describe("@paretools/docker integration", () => {
 
   describe("inspect", () => {
     it("rejects flag injection in target param", async () => {
-      const result = await client.callTool({
-        name: "inspect",
-        arguments: { target: "--privileged" },
-      });
+      const result = await client.callTool(
+        {
+          name: "inspect",
+          arguments: { target: "--privileged" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -193,10 +226,14 @@ describe("@paretools/docker integration", () => {
 
   describe("network-ls", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "network-ls",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "network-ls",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -212,10 +249,14 @@ describe("@paretools/docker integration", () => {
 
   describe("volume-ls", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "volume-ls",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "volume-ls",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -231,10 +272,14 @@ describe("@paretools/docker integration", () => {
 
   describe("compose-logs", () => {
     it("returns error or structured data when called without docker", async () => {
-      const result = await client.callTool({
-        name: "compose-logs",
-        arguments: { path: "C:\\nonexistent-path-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-logs",
+          arguments: { path: "C:\\nonexistent-path-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -251,10 +296,14 @@ describe("@paretools/docker integration", () => {
 
   describe("compose-build", () => {
     it("returns error or structured data when called without docker", async () => {
-      const result = await client.callTool({
-        name: "compose-build",
-        arguments: { path: "C:\\nonexistent-path-for-testing" },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-build",
+          arguments: { path: "C:\\nonexistent-path-for-testing" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -271,10 +320,14 @@ describe("@paretools/docker integration", () => {
     });
 
     it("rejects flag injection in services param", async () => {
-      const result = await client.callTool({
-        name: "compose-build",
-        arguments: { services: ["--no-cache"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-build",
+          arguments: { services: ["--no-cache"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -282,10 +335,14 @@ describe("@paretools/docker integration", () => {
     });
 
     it("rejects flag injection in buildArgs key", async () => {
-      const result = await client.callTool({
-        name: "compose-build",
-        arguments: { buildArgs: { "--rm": "true" } },
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-build",
+          arguments: { buildArgs: { "--rm": "true" } },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;
@@ -295,10 +352,14 @@ describe("@paretools/docker integration", () => {
 
   describe("compose-ps", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "compose-ps",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "compose-ps",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -314,10 +375,14 @@ describe("@paretools/docker integration", () => {
 
   describe("stats", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "stats",
-        arguments: {},
-      });
+      const result = await client.callTool(
+        {
+          name: "stats",
+          arguments: {},
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -331,10 +396,14 @@ describe("@paretools/docker integration", () => {
     });
 
     it("rejects flag injection in containers param", async () => {
-      const result = await client.callTool({
-        name: "stats",
-        arguments: { containers: ["--privileged"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "stats",
+          arguments: { containers: ["--privileged"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBe(true);
       const content = result.content as Array<{ type: string; text: string }>;

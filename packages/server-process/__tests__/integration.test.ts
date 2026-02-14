@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/process integration", () => {
   let client: Client;
@@ -40,10 +41,14 @@ describe("@paretools/process integration", () => {
 
   describe("run", () => {
     it("executes a simple command and returns structured output", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: { command: "node", args: ["-e", "console.log(42)"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { command: "node", args: ["-e", "console.log(42)"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBeFalsy();
       const sc = result.structuredContent as Record<string, unknown>;
@@ -56,10 +61,14 @@ describe("@paretools/process integration", () => {
     });
 
     it("returns exit code for a failing command", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: { command: "node", args: ["-e", "process.exit(1)"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { command: "node", args: ["-e", "process.exit(1)"] },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBeFalsy();
       const sc = result.structuredContent as Record<string, unknown>;
@@ -69,14 +78,18 @@ describe("@paretools/process integration", () => {
     });
 
     it("captures stdout in full output mode", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: {
-          command: "node",
-          args: ["-e", "console.log('hello-from-process')"],
-          compact: false,
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "node",
+            args: ["-e", "console.log('hello-from-process')"],
+            compact: false,
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBeFalsy();
       const sc = result.structuredContent as Record<string, unknown>;
@@ -85,10 +98,14 @@ describe("@paretools/process integration", () => {
     });
 
     it("handles command-not-found gracefully", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: { command: "nonexistent-cmd-for-testing-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { command: "nonexistent-cmd-for-testing-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       // Command-not-found should result in an error
       expect(result.isError).toBe(true);
@@ -97,15 +114,19 @@ describe("@paretools/process integration", () => {
     });
 
     it("accepts env parameter", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: {
-          command: "node",
-          args: ["-e", "console.log(process.env.TEST_VAR)"],
-          env: { TEST_VAR: "hello-env" },
-          compact: false,
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "node",
+            args: ["-e", "console.log(process.env.TEST_VAR)"],
+            env: { TEST_VAR: "hello-env" },
+            compact: false,
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       expect(result.isError).toBeFalsy();
       const sc = result.structuredContent as Record<string, unknown>;

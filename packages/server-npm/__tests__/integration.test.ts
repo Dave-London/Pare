@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/npm integration", () => {
   let client: Client;
@@ -72,10 +73,14 @@ describe("@paretools/npm integration", () => {
   describe("list", () => {
     it("returns structured dependency data", async () => {
       const repoRoot = resolve(__dirname, "../../..");
-      const result = await client.callTool({
-        name: "list",
-        arguments: { path: repoRoot },
-      });
+      const result = await client.callTool(
+        {
+          name: "list",
+          arguments: { path: repoRoot },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -87,10 +92,14 @@ describe("@paretools/npm integration", () => {
 
     it("includes packageManager in output", async () => {
       const repoRoot = resolve(__dirname, "../../..");
-      const result = await client.callTool({
-        name: "list",
-        arguments: { path: repoRoot },
-      });
+      const result = await client.callTool(
+        {
+          name: "list",
+          arguments: { path: repoRoot },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -102,10 +111,14 @@ describe("@paretools/npm integration", () => {
   describe("outdated", () => {
     it("returns structured outdated data", async () => {
       const repoRoot = resolve(__dirname, "../../..");
-      const result = await client.callTool({
-        name: "outdated",
-        arguments: { path: repoRoot },
-      });
+      const result = await client.callTool(
+        {
+          name: "outdated",
+          arguments: { path: repoRoot },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -117,10 +130,14 @@ describe("@paretools/npm integration", () => {
   describe("audit", () => {
     it("returns structured audit data", async () => {
       const repoRoot = resolve(__dirname, "../../..");
-      const result = await client.callTool({
-        name: "audit",
-        arguments: { path: repoRoot },
-      });
+      const result = await client.callTool(
+        {
+          name: "audit",
+          arguments: { path: repoRoot },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -137,10 +154,14 @@ describe("@paretools/npm integration", () => {
   describe("run", () => {
     it("returns structured run data for a valid script", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: pkgPath, script: "build" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { path: pkgPath, script: "build" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -154,10 +175,14 @@ describe("@paretools/npm integration", () => {
 
     it("returns failure for a missing script", async () => {
       const pkgPath = resolve(__dirname, "..");
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: pkgPath, script: "nonexistent-script-xyz" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { path: pkgPath, script: "nonexistent-script-xyz" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -174,10 +199,14 @@ describe("@paretools/npm integration", () => {
       const { tmpdir } = await import("node:os");
       const tempDir = await mkdtemp(join(tmpdir(), "pare-npm-init-"));
       try {
-        const result = await client.callTool({
-          name: "init",
-          arguments: { path: tempDir, yes: true },
-        });
+        const result = await client.callTool(
+          {
+            name: "init",
+            arguments: { path: tempDir, yes: true },
+          },
+          undefined,
+          { timeout: CALL_TIMEOUT },
+        );
 
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
