@@ -217,9 +217,9 @@ Done in 35ms
 
 | Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ---------------- | ---------- | --------- | ------------ | ------- |
-| Successful build | ~30        | ~25       | ~12          | 17--60% |
-| 2 build errors   | ~150       | ~60       | ~12          | 60--92% |
-| With warnings    | ~80        | ~35       | ~12          | 56--85% |
+| Successful build | ~30        | ~25       | ~12          | 17-60%  |
+| 2 build errors   | ~150       | ~60       | ~12          | 60-92%  |
+| With warnings    | ~80        | ~35       | ~12          | 56-85%  |
 
 ## Notes
 

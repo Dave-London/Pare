@@ -139,8 +139,8 @@ npm ERR! Error: command failed
 
 | Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------ | ---------- | --------- | ------------ | ------- |
-| Build passes | ~120       | ~25       | ~15          | 79--88% |
-| Build fails  | ~180       | ~40       | ~15          | 78--92% |
+| Build passes | ~120       | ~25       | ~15          | 79-88%  |
+| Build fails  | ~180       | ~40       | ~15          | 78-92%  |
 
 ## Notes
 
