@@ -15,6 +15,7 @@ import type {
   CondaInfo,
   CondaEnvList,
   PyenvResult,
+  PoetryResult,
 } from "../schemas/index.js";
 import { z } from "zod";
 
@@ -604,4 +605,73 @@ export function parseCondaEnvListJson(stdout: string, activePrefix?: string): Co
   });
 
   return { action: "env-list", environments: envs, total: envs.length };
+}
+// ─── poetry parsers ──────────────────────────────────────────────────────────
+
+/** Regex matching `poetry show --no-ansi` lines: "package-name  version  description" */
+const POETRY_SHOW_RE = /^(\S+)\s+(\S+)/;
+
+/** Regex matching `poetry build` artifact lines: " - Built package-1.0.0.tar.gz" or "  Built package-1.0.0-py3-none-any.whl" */
+const POETRY_BUILT_RE = /Built\s+(\S+)/;
+
+/** Regex matching `poetry add/remove` installed/removed lines with version e.g. "  - Installing requests (2.31.0)" */
+const POETRY_INSTALL_LINE_RE = /(?:Installing|Updating|Removing)\s+(\S+)\s+\(([^)]+)\)/;
+
+/** Parses poetry output into structured data based on the action performed. */
+export function parsePoetryOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  action: "install" | "add" | "remove" | "show" | "build",
+): PoetryResult {
+  const output = stdout + "\n" + stderr;
+  const lines = output.split("\n");
+
+  if (action === "show") {
+    const packages: { name: string; version: string }[] = [];
+    for (const line of lines) {
+      const match = line.match(POETRY_SHOW_RE);
+      if (match) {
+        packages.push({ name: match[1], version: match[2] });
+      }
+    }
+    return {
+      success: exitCode === 0,
+      action,
+      packages,
+      total: packages.length,
+    };
+  }
+
+  if (action === "build") {
+    const artifacts: { file: string }[] = [];
+    for (const line of lines) {
+      const match = line.match(POETRY_BUILT_RE);
+      if (match) {
+        artifacts.push({ file: match[1] });
+      }
+    }
+    return {
+      success: exitCode === 0,
+      action,
+      artifacts,
+      total: artifacts.length,
+    };
+  }
+
+  // install, add, remove — parse installed/updated/removed packages
+  const packages: { name: string; version: string }[] = [];
+  for (const line of lines) {
+    const match = line.match(POETRY_INSTALL_LINE_RE);
+    if (match) {
+      packages.push({ name: match[1], version: match[2] });
+    }
+  }
+
+  return {
+    success: exitCode === 0,
+    action,
+    packages,
+    total: packages.length,
+  };
 }

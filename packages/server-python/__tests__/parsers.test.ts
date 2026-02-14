@@ -13,6 +13,7 @@ import {
   parseCondaListJson,
   parseCondaInfoJson,
   parseCondaEnvListJson,
+  parsePoetryOutput,
 } from "../src/lib/parsers.js";
 
 describe("parsePipInstall", () => {
@@ -711,5 +712,160 @@ describe("parseCondaEnvListJson", () => {
     const result = parseCondaEnvListJson(json);
 
     expect(result.environments[0].active).toBe(false);
+// ─── poetry parser tests ────────────────────────────────────────────────────
+
+describe("parsePoetryOutput — show", () => {
+  it("parses poetry show output with packages", () => {
+    const stdout = [
+      "certifi            2023.7.22 Python package for Mozilla's CA Bundle.",
+      "charset-normalizer 3.3.0     The Real First Universal Charset Detector.",
+      "requests           2.31.0    Python HTTP for Humans.",
+    ].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "show");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("show");
+    expect(result.total).toBe(3);
+    expect(result.packages).toEqual([
+      { name: "certifi", version: "2023.7.22" },
+      { name: "charset-normalizer", version: "3.3.0" },
+      { name: "requests", version: "2.31.0" },
+    ]);
+  });
+
+  it("parses empty show output", () => {
+    const result = parsePoetryOutput("", "", 0, "show");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("show");
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+});
+
+describe("parsePoetryOutput — build", () => {
+  it("parses poetry build output with artifacts", () => {
+    const stdout = [
+      "Building mypackage (1.0.0)",
+      "  - Built mypackage-1.0.0.tar.gz",
+      "  - Built mypackage-1.0.0-py3-none-any.whl",
+    ].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "build");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("build");
+    expect(result.total).toBe(2);
+    expect(result.artifacts).toEqual([
+      { file: "mypackage-1.0.0.tar.gz" },
+      { file: "mypackage-1.0.0-py3-none-any.whl" },
+    ]);
+  });
+
+  it("handles empty build output", () => {
+    const result = parsePoetryOutput("", "", 0, "build");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("build");
+    expect(result.total).toBe(0);
+    expect(result.artifacts).toEqual([]);
+  });
+
+  it("handles failed build", () => {
+    const result = parsePoetryOutput("", "Build error", 1, "build");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("build");
+  });
+});
+
+describe("parsePoetryOutput — install", () => {
+  it("parses poetry install output with installed packages", () => {
+    const stderr = [
+      "Installing dependencies from lock file",
+      "",
+      "Package operations: 3 installs, 0 updates, 0 removals",
+      "",
+      "  - Installing certifi (2023.7.22)",
+      "  - Installing charset-normalizer (3.3.0)",
+      "  - Installing requests (2.31.0)",
+    ].join("\n");
+
+    const result = parsePoetryOutput("", stderr, 0, "install");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("install");
+    expect(result.total).toBe(3);
+    expect(result.packages).toEqual([
+      { name: "certifi", version: "2023.7.22" },
+      { name: "charset-normalizer", version: "3.3.0" },
+      { name: "requests", version: "2.31.0" },
+    ]);
+  });
+
+  it("handles already up to date", () => {
+    const stderr = "No dependencies to install or update";
+    const result = parsePoetryOutput("", stderr, 0, "install");
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.packages).toEqual([]);
+  });
+});
+
+describe("parsePoetryOutput — add", () => {
+  it("parses poetry add with installed packages", () => {
+    const stderr = [
+      "Using version ^2.31.0 for requests",
+      "",
+      "Updating dependencies",
+      "Resolving dependencies...",
+      "",
+      "Package operations: 4 installs, 0 updates, 0 removals",
+      "",
+      "  - Installing certifi (2023.7.22)",
+      "  - Installing urllib3 (2.1.0)",
+      "  - Installing requests (2.31.0)",
+    ].join("\n");
+
+    const result = parsePoetryOutput("", stderr, 0, "add");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("add");
+    expect(result.total).toBe(3);
+    expect(result.packages![0]).toEqual({ name: "certifi", version: "2023.7.22" });
+  });
+});
+
+describe("parsePoetryOutput — remove", () => {
+  it("parses poetry remove with removed packages", () => {
+    const stderr = [
+      "Updating dependencies",
+      "Resolving dependencies...",
+      "",
+      "Package operations: 0 installs, 0 updates, 2 removals",
+      "",
+      "  - Removing requests (2.31.0)",
+      "  - Removing urllib3 (2.1.0)",
+    ].join("\n");
+
+    const result = parsePoetryOutput("", stderr, 0, "remove");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("remove");
+    expect(result.total).toBe(2);
+    expect(result.packages).toEqual([
+      { name: "requests", version: "2.31.0" },
+      { name: "urllib3", version: "2.1.0" },
+    ]);
+  });
+
+  it("handles failed remove", () => {
+    const result = parsePoetryOutput("", "Package not found", 1, "remove");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("remove");
+    expect(result.total).toBe(0);
   });
 });
