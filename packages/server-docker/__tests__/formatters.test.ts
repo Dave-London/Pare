@@ -8,9 +8,13 @@ import {
   formatNetworkLs,
   formatVolumeLs,
   formatComposePs,
-
   formatComposeLogs,
+  formatComposeBuild,
+  formatComposeBuildCompact,
   formatStats,
+  formatStatsCompact,
+  compactComposeBuildMap,
+  compactStatsMap,
 } from "../src/lib/formatters.js";
 import type {
   DockerPs,
@@ -21,8 +25,8 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
-
   DockerComposeLogs,
+  DockerComposeBuild,
   DockerStats,
 } from "../src/schemas/index.js";
 
@@ -356,7 +360,6 @@ describe("formatComposePs", () => {
   });
 });
 
-
 describe("formatComposeLogs", () => {
   it("formats compose logs with timestamps", () => {
     const data: DockerComposeLogs = {
@@ -404,6 +407,94 @@ describe("formatComposeLogs", () => {
     };
     const output = formatComposeLogs(data);
     expect(output).toContain("0 services, 0 entries");
+  });
+});
+
+describe("formatComposeBuild", () => {
+  it("formats successful compose build with multiple services", () => {
+    const data: DockerComposeBuild = {
+      success: true,
+      services: [
+        { service: "web", success: true, duration: 5.2 },
+        { service: "api", success: true, duration: 8.1 },
+      ],
+      built: 2,
+      failed: 0,
+      duration: 10.3,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("2 built, 0 failed (10.3s)");
+    expect(output).toContain("web: built");
+    expect(output).toContain("api: built");
+  });
+
+  it("formats partial compose build with failures", () => {
+    const data: DockerComposeBuild = {
+      success: false,
+      services: [
+        { service: "web", success: true, duration: 5.2 },
+        { service: "worker", success: false, error: "Dockerfile not found" },
+      ],
+      built: 1,
+      failed: 1,
+      duration: 6.0,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("1 built, 1 failed (6s)");
+    expect(output).toContain("web: built");
+    expect(output).toContain("worker: failed");
+    expect(output).toContain("Dockerfile not found");
+  });
+
+  it("formats completely failed compose build", () => {
+    const data: DockerComposeBuild = {
+      success: false,
+      services: [{ service: "app", success: false, error: "build context missing" }],
+      built: 0,
+      failed: 1,
+      duration: 1.5,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("Compose build failed (1.5s)");
+    expect(output).toContain("app: build context missing");
+  });
+});
+
+describe("formatComposeBuildCompact", () => {
+  it("formats successful compact compose build", () => {
+    const data: DockerComposeBuild = {
+      success: true,
+      services: [
+        { service: "web", success: true, duration: 5.2 },
+        { service: "api", success: true, duration: 8.1 },
+      ],
+      built: 2,
+      failed: 0,
+      duration: 10.3,
+    };
+    const compact = compactComposeBuildMap(data);
+    const output = formatComposeBuildCompact(compact);
+    expect(output).toBe("Compose build: 2 built, 0 failed (10.3s)");
+    expect(compact.success).toBe(true);
+    expect(compact.built).toBe(2);
+    expect(compact.failed).toBe(0);
+    expect(compact.duration).toBe(10.3);
+  });
+
+  it("formats failed compact compose build", () => {
+    const data: DockerComposeBuild = {
+      success: false,
+      services: [{ service: "app", success: false, error: "error" }],
+      built: 0,
+      failed: 1,
+      duration: 2.0,
+    };
+    const compact = compactComposeBuildMap(data);
+    const output = formatComposeBuildCompact(compact);
+    expect(output).toBe("Compose build failed (2s)");
+  });
+});
+
 describe("formatStats", () => {
   it("formats container stats with CPU, memory, and I/O", () => {
     const data: DockerStats = {
@@ -445,5 +536,43 @@ describe("formatStats", () => {
   it("formats empty stats", () => {
     const data: DockerStats = { containers: [], total: 0 };
     expect(formatStats(data)).toBe("No container stats available.");
+  });
+});
+
+describe("formatStatsCompact", () => {
+  it("formats compact stats with CPU and memory percentages", () => {
+    const data: DockerStats = {
+      containers: [
+        {
+          id: "abc123",
+          name: "web",
+          cpuPercent: 1.23,
+          memoryUsage: "150MiB",
+          memoryLimit: "1GiB",
+          memoryPercent: 14.65,
+          netIO: "1.5kB / 2.3kB",
+          blockIO: "8.19kB / 0B",
+          pids: 12,
+        },
+      ],
+      total: 1,
+    };
+    const compact = compactStatsMap(data);
+    const output = formatStatsCompact(compact);
+    expect(output).toContain("1 containers:");
+    expect(output).toContain("web (abc123) CPU: 1.23%");
+    expect(output).toContain("Mem: 14.65%");
+    expect(output).toContain("PIDs: 12");
+    // Compact should NOT contain I/O details
+    expect(output).not.toContain("Net:");
+    expect(output).not.toContain("Block:");
+    expect(compact.containers[0].cpuPercent).toBe(1.23);
+    expect(compact.containers[0].memoryPercent).toBe(14.65);
+  });
+
+  it("formats empty compact stats", () => {
+    const data: DockerStats = { containers: [], total: 0 };
+    const compact = compactStatsMap(data);
+    expect(formatStatsCompact(compact)).toBe("No container stats available.");
   });
 });

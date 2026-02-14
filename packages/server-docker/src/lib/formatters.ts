@@ -12,7 +12,6 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
-
   DockerComposeLogs,
   DockerComposeBuild,
   DockerStats,
@@ -436,7 +435,6 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
   return lines.join("\n");
 }
 
-
 // ── Compose Build ────────────────────────────────────────────────────
 
 /** Formats structured Docker Compose build output into a human-readable summary. */
@@ -454,6 +452,10 @@ export function formatComposeBuild(data: DockerComposeBuild): string {
     const status = s.success ? "built" : "failed";
     const error = s.error ? ` — ${s.error}` : "";
     lines.push(`  ${s.service}: ${status}${error}`);
+  }
+  return lines.join("\n");
+}
+
 // ── Stats ────────────────────────────────────────────────────────────
 
 /** Formats structured Docker stats data into a human-readable listing with CPU, memory, and I/O. */
@@ -468,7 +470,6 @@ export function formatStats(data: DockerStats): string {
   }
   return lines.join("\n");
 }
-
 
 /** Compact compose build: success, built, failed, duration. Drop per-service details. */
 export interface DockerComposeBuildCompact {
@@ -493,6 +494,8 @@ export function formatComposeBuildCompact(data: DockerComposeBuildCompact): stri
     return `Compose build failed (${data.duration}s)`;
   }
   return `Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`;
+}
+
 /** Compact stats: name, cpuPercent, memoryPercent, pids only. Drop I/O details. */
 export interface DockerStatsCompact {
   [key: string]: unknown;
