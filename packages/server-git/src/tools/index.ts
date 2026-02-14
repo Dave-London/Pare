@@ -22,6 +22,7 @@ import { registerMergeTool } from "./merge.js";
 import { registerRebaseTool } from "./rebase.js";
 import { registerLogGraphTool } from "./log-graph.js";
 import { registerReflogTool } from "./reflog.js";
+import { registerBisectTool } from "./bisect.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
@@ -47,4 +48,5 @@ export function registerAllTools(server: McpServer) {
   if (s("merge")) registerMergeTool(server);
   if (s("rebase")) registerRebaseTool(server);
   if (s("reflog")) registerReflogTool(server);
+  if (s("bisect")) registerBisectTool(server);
 }
