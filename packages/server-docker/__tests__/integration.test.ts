@@ -26,11 +26,12 @@ describe("@paretools/docker integration", () => {
     await transport.close();
   });
 
-  it("lists all 14 tools", async () => {
+  it("lists all 15 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "build",
+      "compose-build",
       "compose-down",
       "compose-logs",
       "compose-ps",
@@ -244,6 +245,50 @@ describe("@paretools/docker integration", () => {
         expect(Array.isArray(sc.entries)).toBe(true);
         expect(sc.total).toEqual(expect.any(Number));
       }
+    });
+  });
+
+  describe("compose-build", () => {
+    it("returns error or structured data when called without docker", async () => {
+      const result = await client.callTool({
+        name: "compose-build",
+        arguments: { path: "C:\\nonexistent-path-for-testing" },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|compose|not found|failed|error|no configuration/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.success).toBe("boolean");
+        expect(typeof sc.built).toBe("number");
+        expect(typeof sc.failed).toBe("number");
+        expect(typeof sc.duration).toBe("number");
+        expect(Array.isArray(sc.services)).toBe(true);
+      }
+    });
+
+    it("rejects flag injection in services param", async () => {
+      const result = await client.callTool({
+        name: "compose-build",
+        arguments: { services: ["--no-cache"] },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toMatch(/Invalid services|argument injection/i);
+    });
+
+    it("rejects flag injection in buildArgs key", async () => {
+      const result = await client.callTool({
+        name: "compose-build",
+        arguments: { buildArgs: { "--rm": "true" } },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toMatch(/Invalid buildArgs|argument injection/i);
     });
   });
 

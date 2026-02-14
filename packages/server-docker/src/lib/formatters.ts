@@ -13,6 +13,7 @@ import type {
   DockerVolumeLs,
   DockerComposePs,
   DockerComposeLogs,
+  DockerComposeBuild,
 } from "../schemas/index.js";
 
 /** Formats structured Docker container data into a human-readable listing with state and ports. */
@@ -431,6 +432,52 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
     lines.push(`  ${v.name} (${v.driver})`);
   }
   return lines.join("\n");
+}
+
+// ── Compose Build ────────────────────────────────────────────────────
+
+/** Formats structured Docker Compose build output into a human-readable summary. */
+export function formatComposeBuild(data: DockerComposeBuild): string {
+  if (!data.success && data.built === 0) {
+    const lines = [`Compose build failed (${data.duration}s)`];
+    for (const s of data.services) {
+      if (s.error) lines.push(`  ${s.service}: ${s.error}`);
+    }
+    return lines.join("\n");
+  }
+
+  const lines = [`Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`];
+  for (const s of data.services) {
+    const status = s.success ? "built" : "failed";
+    const error = s.error ? ` — ${s.error}` : "";
+    lines.push(`  ${s.service}: ${status}${error}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact compose build: success, built, failed, duration. Drop per-service details. */
+export interface DockerComposeBuildCompact {
+  [key: string]: unknown;
+  success: boolean;
+  built: number;
+  failed: number;
+  duration: number;
+}
+
+export function compactComposeBuildMap(data: DockerComposeBuild): DockerComposeBuildCompact {
+  return {
+    success: data.success,
+    built: data.built,
+    failed: data.failed,
+    duration: data.duration,
+  };
+}
+
+export function formatComposeBuildCompact(data: DockerComposeBuildCompact): string {
+  if (!data.success && data.built === 0) {
+    return `Compose build failed (${data.duration}s)`;
+  }
+  return `Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`;
 }
 
 // ── Compose PS ───────────────────────────────────────────────────────

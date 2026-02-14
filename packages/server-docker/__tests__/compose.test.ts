@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { parseComposeUpOutput, parseComposeDownOutput } from "../src/lib/parsers.js";
-import { formatComposeUp, formatComposeDown } from "../src/lib/formatters.js";
-import type { DockerComposeUp, DockerComposeDown } from "../src/schemas/index.js";
+import {
+  parseComposeUpOutput,
+  parseComposeDownOutput,
+  parseComposeBuildOutput,
+} from "../src/lib/parsers.js";
+import { formatComposeUp, formatComposeDown, formatComposeBuild } from "../src/lib/formatters.js";
+import type {
+  DockerComposeUp,
+  DockerComposeDown,
+  DockerComposeBuild,
+} from "../src/schemas/index.js";
 
 describe("parseComposeUpOutput", () => {
   it("parses compose up with multiple started services", () => {
@@ -242,5 +250,153 @@ describe("formatComposeDown", () => {
     };
     const output = formatComposeDown(data);
     expect(output).toBe("Compose down failed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseComposeBuildOutput
+// ---------------------------------------------------------------------------
+
+describe("parseComposeBuildOutput", () => {
+  it("parses compose build with multiple successful services", () => {
+    const stderr = [" ✔ Service web Built", " ✔ Service api Built", " ✔ Service worker Built"].join(
+      "\n",
+    );
+
+    const result = parseComposeBuildOutput("", stderr, 0, 15.3);
+
+    expect(result.success).toBe(true);
+    expect(result.built).toBe(3);
+    expect(result.failed).toBe(0);
+    expect(result.duration).toBe(15.3);
+    expect(result.services).toHaveLength(3);
+    expect(result.services.map((s) => s.service)).toContain("web");
+    expect(result.services.map((s) => s.service)).toContain("api");
+    expect(result.services.map((s) => s.service)).toContain("worker");
+    expect(result.services.every((s) => s.success)).toBe(true);
+  });
+
+  it("parses compose build failure", () => {
+    const stderr = "no configuration file provided: not found";
+
+    const result = parseComposeBuildOutput("", stderr, 1, 0.5);
+
+    expect(result.success).toBe(false);
+    expect(result.built).toBe(0);
+    expect(result.duration).toBe(0.5);
+  });
+
+  it("handles empty output with success", () => {
+    const result = parseComposeBuildOutput("", "", 0, 1.0);
+
+    expect(result.success).toBe(true);
+    expect(result.built).toBe(0);
+    expect(result.failed).toBe(0);
+    expect(result.services).toEqual([]);
+  });
+
+  it("parses build step output to discover services", () => {
+    const stdout = [
+      "#1 [web internal] load build definition from Dockerfile",
+      "#2 [web 1/3] FROM docker.io/library/node:20",
+      "#3 [web 2/3] COPY package.json .",
+      "#4 [web 3/3] RUN npm install",
+      "#5 [api internal] load build definition from Dockerfile",
+      "#6 [api 1/2] FROM docker.io/library/python:3.12",
+    ].join("\n");
+
+    const result = parseComposeBuildOutput(stdout, "", 0, 20.0);
+
+    expect(result.success).toBe(true);
+    expect(result.services.map((s) => s.service)).toContain("web");
+    expect(result.services.map((s) => s.service)).toContain("api");
+  });
+
+  it("parses Building service lines", () => {
+    const stderr = ["Building web", "Building api"].join("\n");
+
+    const result = parseComposeBuildOutput("", stderr, 0, 5.0);
+
+    expect(result.success).toBe(true);
+    expect(result.services.map((s) => s.service)).toContain("web");
+    expect(result.services.map((s) => s.service)).toContain("api");
+  });
+
+  it("does not include internal as a service name from build steps", () => {
+    const stdout = "#1 [internal] load build definition from Dockerfile\n";
+
+    const result = parseComposeBuildOutput(stdout, "", 0, 2.0);
+
+    expect(result.services.map((s) => s.service)).not.toContain("internal");
+  });
+
+  it("records correct duration", () => {
+    const result = parseComposeBuildOutput("", "", 0, 42.7);
+    expect(result.duration).toBe(42.7);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatComposeBuild
+// ---------------------------------------------------------------------------
+
+describe("formatComposeBuild", () => {
+  it("formats successful compose build with services", () => {
+    const data: DockerComposeBuild = {
+      success: true,
+      services: [
+        { service: "web", success: true },
+        { service: "api", success: true },
+      ],
+      built: 2,
+      failed: 0,
+      duration: 15.3,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("Compose build: 2 built, 0 failed (15.3s)");
+    expect(output).toContain("web: built");
+    expect(output).toContain("api: built");
+  });
+
+  it("formats failed compose build with no services built", () => {
+    const data: DockerComposeBuild = {
+      success: false,
+      services: [{ service: "web", success: false, error: "Dockerfile not found" }],
+      built: 0,
+      failed: 1,
+      duration: 0.5,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("Compose build failed (0.5s)");
+    expect(output).toContain("web: Dockerfile not found");
+  });
+
+  it("formats partial failure", () => {
+    const data: DockerComposeBuild = {
+      success: false,
+      services: [
+        { service: "web", success: true },
+        { service: "api", success: false, error: "build error" },
+      ],
+      built: 1,
+      failed: 1,
+      duration: 10.0,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("Compose build: 1 built, 1 failed (10s)");
+    expect(output).toContain("web: built");
+    expect(output).toContain("api: failed");
+  });
+
+  it("formats empty build (no services)", () => {
+    const data: DockerComposeBuild = {
+      success: true,
+      services: [],
+      built: 0,
+      failed: 0,
+      duration: 1.0,
+    };
+    const output = formatComposeBuild(data);
+    expect(output).toContain("Compose build: 0 built, 0 failed (1s)");
   });
 });
