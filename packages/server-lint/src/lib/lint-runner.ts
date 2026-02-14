@@ -23,3 +23,7 @@ export async function oxlintCmd(args: string[], cwd?: string): Promise<RunResult
 export async function shellcheckCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("shellcheck", args, { cwd, timeout: 120_000 });
 }
+
+export async function hadolintCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("hadolint", args, { cwd, timeout: 120_000 });
+}

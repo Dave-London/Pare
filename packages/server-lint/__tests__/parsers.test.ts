@@ -5,6 +5,7 @@ import {
   parseStylelintJson,
   parseOxlintJson,
   parseShellcheckJson,
+  parseHadolintJson,
 } from "../src/lib/parsers.js";
 
 describe("parseEslintJson", () => {
@@ -459,5 +460,133 @@ describe("parseShellcheckJson", () => {
     const result = parseShellcheckJson(json);
     expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseHadolintJson
+// ---------------------------------------------------------------------------
+
+describe("parseHadolintJson", () => {
+  it("parses Hadolint JSON with errors, warnings, and info issues", () => {
+    const json = JSON.stringify([
+      {
+        file: "Dockerfile",
+        line: 3,
+        column: 1,
+        level: "error",
+        code: "DL3006",
+        message: "Always tag the version of an image explicitly.",
+      },
+      {
+        file: "Dockerfile",
+        line: 7,
+        column: 1,
+        level: "warning",
+        code: "DL3008",
+        message: "Pin versions in apt get install.",
+      },
+      {
+        file: "Dockerfile.dev",
+        line: 1,
+        column: 1,
+        level: "info",
+        code: "DL3048",
+        message: "Invalid label key.",
+      },
+    ]);
+
+    const result = parseHadolintJson(json);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(1);
+    expect(result.filesChecked).toBe(2);
+    expect(result.diagnostics[0]).toEqual({
+      file: "Dockerfile",
+      line: 3,
+      severity: "error",
+      rule: "DL3006",
+      message: "Always tag the version of an image explicitly.",
+    });
+    expect(result.diagnostics[1].severity).toBe("warning");
+    expect(result.diagnostics[1].rule).toBe("DL3008");
+    expect(result.diagnostics[2].severity).toBe("info");
+    expect(result.diagnostics[2].rule).toBe("DL3048");
+  });
+
+  it("parses clean Hadolint output (empty array)", () => {
+    const result = parseHadolintJson("[]");
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.filesChecked).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles invalid JSON gracefully", () => {
+    const result = parseHadolintJson("not json");
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles empty string gracefully", () => {
+    const result = parseHadolintJson("");
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("maps style level to info", () => {
+    const json = JSON.stringify([
+      {
+        file: "Dockerfile",
+        line: 1,
+        column: 1,
+        level: "style",
+        code: "DL3000",
+        message: "Use absolute WORKDIR.",
+      },
+    ]);
+
+    const result = parseHadolintJson(json);
+    expect(result.diagnostics[0].severity).toBe("info");
+  });
+
+  it("handles missing code", () => {
+    const json = JSON.stringify([
+      {
+        file: "Dockerfile",
+        line: 1,
+        column: 1,
+        level: "error",
+        message: "Some error.",
+      },
+    ]);
+
+    const result = parseHadolintJson(json);
+    expect(result.diagnostics[0].rule).toBe("unknown");
+  });
+
+  it("handles non-array JSON gracefully", () => {
+    const json = JSON.stringify({ error: "something went wrong" });
+    const result = parseHadolintJson(json);
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles SC-prefixed codes from ShellCheck-in-Hadolint", () => {
+    const json = JSON.stringify([
+      {
+        file: "Dockerfile",
+        line: 5,
+        column: 1,
+        level: "warning",
+        code: "SC2046",
+        message: "Quote this to prevent word splitting.",
+      },
+    ]);
+
+    const result = parseHadolintJson(json);
+    expect(result.diagnostics[0].rule).toBe("SC2046");
   });
 });

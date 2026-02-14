@@ -418,6 +418,78 @@ interface ShellcheckJsonEntry {
 }
 
 /**
+ * Parses Hadolint JSON output (from `hadolint --format json`).
+ *
+ * Hadolint JSON format is an array of objects:
+ * [{ line, code, message, column, file, level }]
+ *
+ * Levels: "error", "warning", "info", "style"
+ * We map "style" to "info" to fit the LintDiagnostic schema.
+ */
+export function parseHadolintJson(stdout: string): LintResult {
+  let findings: HadolintJsonEntry[];
+  try {
+    findings = JSON.parse(stdout);
+  } catch {
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+  }
+
+  if (!Array.isArray(findings)) {
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+  }
+
+  const diagnostics: LintDiagnostic[] = [];
+  const filesSet = new Set<string>();
+
+  for (const finding of findings) {
+    const file = finding.file ?? "unknown";
+    filesSet.add(file);
+
+    diagnostics.push({
+      file,
+      line: finding.line ?? 0,
+      severity: mapHadolintLevel(finding.level),
+      rule: finding.code ?? "unknown",
+      message: finding.message ?? "",
+    });
+  }
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+
+  return {
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    filesChecked: filesSet.size,
+  };
+}
+
+function mapHadolintLevel(level: string | undefined): "error" | "warning" | "info" {
+  switch (level) {
+    case "error":
+      return "error";
+    case "warning":
+      return "warning";
+    case "info":
+    case "style":
+      return "info";
+    default:
+      return "warning";
+  }
+}
+
+interface HadolintJsonEntry {
+  file?: string;
+  line?: number;
+  column?: number;
+  level?: string;
+  code?: string;
+  message?: string;
+}
+
+/**
  * Parses Biome `format --write` output.
  *
  * Biome format --write outputs lines like:
