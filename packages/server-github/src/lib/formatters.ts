@@ -5,6 +5,7 @@ import type {
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
+  IssueCloseResult,
   RunViewResult,
   RunListResult,
 } from "../schemas/index.js";
@@ -82,6 +83,11 @@ export function formatIssueList(data: IssueListResult): string {
 /** Formats structured issue create data into human-readable text. */
 export function formatIssueCreate(data: IssueCreateResult): string {
   return `Created issue #${data.number}: ${data.url}`;
+}
+
+/** Formats structured issue close data into human-readable text. */
+export function formatIssueClose(data: IssueCloseResult): string {
+  return `Closed issue #${data.number}: ${data.url}`;
 }
 
 /** Formats structured run view data into human-readable text. */

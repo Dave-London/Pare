@@ -96,6 +96,15 @@ export const IssueCreateResultSchema = z.object({
 
 export type IssueCreateResult = z.infer<typeof IssueCreateResultSchema>;
 
+/** Zod schema for structured issue-close output. */
+export const IssueCloseResultSchema = z.object({
+  number: z.number(),
+  state: z.string(),
+  url: z.string(),
+});
+
+export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
+
 // ── Run schemas ──────────────────────────────────────────────────────
 
 /** Zod schema for a single job in a workflow run. */
