@@ -1,5 +1,11 @@
 # @paretools/github
 
+## 0.8.1
+
+### Patch Changes
+
+- [#295](https://github.com/Dave-London/Pare/pull/295) [`5e11f81`](https://github.com/Dave-London/Pare/commit/5e11f81070c1c6dfd38030d088e0e4f3711219c3) Thanks [@Dave-London](https://github.com/Dave-London)! - Align remaining packages from 0.8.0 to 0.8.1 for consistent monorepo versioning.
+
 ## 0.8.0
 
 ### Minor Changes
