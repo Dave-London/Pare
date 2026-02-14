@@ -10,7 +10,7 @@ Searches file contents using ripgrep with structured JSON output. Returns match 
 | --------------- | ------- | ------- | ---------------------------------------------------------- |
 | `pattern`       | string  | —       | Regular expression pattern to search for                   |
 | `path`          | string  | cwd     | Directory or file to search in                             |
-| `glob`          | string  | —       | Glob pattern to filter files (e.g., `*.ts`, `*.{js,jsx}`) |
+| `glob`          | string  | —       | Glob pattern to filter files (e.g., `*.ts`, `*.{js,jsx}`)  |
 | `caseSensitive` | boolean | `true`  | Case-sensitive search                                      |
 | `maxResults`    | number  | `1000`  | Maximum number of matches to return                        |
 | `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
@@ -172,11 +172,11 @@ error: unclosed character class
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 5 matches      | ~220       | ~120      | ~15          | 45-93%  |
-| No matches     | ~10        | ~20       | ~15          | —       |
-| Invalid regex  | ~25        | ~20       | ~15          | 20-40%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| 5 matches     | ~220       | ~120      | ~15          | 45-93%  |
+| No matches    | ~10        | ~20       | ~15          | —       |
+| Invalid regex | ~25        | ~20       | ~15          | 20-40%  |
 
 ## Notes
 

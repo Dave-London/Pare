@@ -6,14 +6,14 @@ Finds files and directories using fd with structured output. Returns file paths,
 
 ## Input Parameters
 
-| Parameter    | Type                                         | Default | Description                                                |
-| ------------ | -------------------------------------------- | ------- | ---------------------------------------------------------- |
-| `pattern`    | string                                       | —       | Regex pattern to match file/directory names                |
-| `path`       | string                                       | cwd     | Directory to search in                                     |
-| `type`       | `"file"` \| `"directory"` \| `"symlink"`     | —       | Filter by entry type                                       |
-| `extension`  | string                                       | —       | Filter by file extension (e.g., `ts`, `js`)                |
-| `maxResults` | number                                       | `1000`  | Maximum number of results to return                        |
-| `compact`    | boolean                                      | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter    | Type                                     | Default | Description                                                |
+| ------------ | ---------------------------------------- | ------- | ---------------------------------------------------------- |
+| `pattern`    | string                                   | —       | Regex pattern to match file/directory names                |
+| `path`       | string                                   | cwd     | Directory to search in                                     |
+| `type`       | `"file"` \| `"directory"` \| `"symlink"` | —       | Filter by entry type                                       |
+| `extension`  | string                                   | —       | Filter by file extension (e.g., `ts`, `js`)                |
+| `maxResults` | number                                   | `1000`  | Maximum number of results to return                        |
+| `compact`    | boolean                                  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Files Found
 
@@ -142,11 +142,11 @@ error: unclosed character class
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings  |
-| -------------- | ---------- | --------- | ------------ | -------- |
-| 7 files found  | ~80        | ~130      | ~8           | —/90%    |
-| No files found | ~5         | ~12       | ~8           | —        |
-| Invalid pattern| ~30        | ~12       | ~8           | 60-73%   |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 7 files found   | ~80        | ~130      | ~8           | —/90%   |
+| No files found  | ~5         | ~12       | ~8           | —       |
+| Invalid pattern | ~30        | ~12       | ~8           | 60-73%  |
 
 ## Notes
 

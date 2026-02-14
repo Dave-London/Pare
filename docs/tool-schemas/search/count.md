@@ -10,7 +10,7 @@ Counts pattern matches per file using ripgrep. Returns per-file match counts and
 | --------------- | ------- | ------- | ---------------------------------------------------------- |
 | `pattern`       | string  | —       | Regular expression pattern to count matches for            |
 | `path`          | string  | cwd     | Directory or file to search in                             |
-| `glob`          | string  | —       | Glob pattern to filter files (e.g., `*.ts`, `*.{js,jsx}`) |
+| `glob`          | string  | —       | Glob pattern to filter files (e.g., `*.ts`, `*.{js,jsx}`)  |
 | `caseSensitive` | boolean | `true`  | Case-sensitive search                                      |
 | `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
@@ -145,11 +145,11 @@ error: unclosed character class
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings  |
-| -------------- | ---------- | --------- | ------------ | -------- |
-| 7 files matched| ~65        | ~85       | ~15          | —/77%    |
-| No matches     | ~10        | ~18       | ~15          | —        |
-| Invalid regex  | ~25        | ~18       | ~15          | 28-40%   |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 7 files matched | ~65        | ~85       | ~15          | —/77%   |
+| No matches      | ~10        | ~18       | ~15          | —       |
+| Invalid regex   | ~25        | ~18       | ~15          | 28-40%  |
 
 ## Notes
 
