@@ -5,6 +5,7 @@ import type {
   PrMergeResult,
   CommentResult,
   PrReviewResult,
+  EditResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -67,6 +68,11 @@ export function formatPrReview(data: PrReviewResult): string {
   return `Reviewed PR #${data.number} (${data.event}): ${data.url}`;
 }
 
+/** Formats structured PR update data into human-readable text. */
+export function formatPrUpdate(data: EditResult): string {
+  return `Updated PR #${data.number}: ${data.url}`;
+}
+
 /** Formats structured issue view data into human-readable text. */
 export function formatIssueView(data: IssueViewResult): string {
   const lines = [
@@ -106,6 +112,11 @@ export function formatIssueCreate(data: IssueCreateResult): string {
 /** Formats structured issue close data into human-readable text. */
 export function formatIssueClose(data: IssueCloseResult): string {
   return `Closed issue #${data.number}: ${data.url}`;
+}
+
+/** Formats structured issue update data into human-readable text. */
+export function formatIssueUpdate(data: EditResult): string {
+  return `Updated issue #${data.number}: ${data.url}`;
 }
 
 /** Formats structured run view data into human-readable text. */

@@ -176,6 +176,88 @@ describe("security: issue-comment — body validation", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// pr-update / issue-update security tests
+// ---------------------------------------------------------------------------
+
+describe("security: pr-update — title validation", () => {
+  it("rejects flag-like titles", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "title")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe titles", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "title")).not.toThrow();
+    }
+  });
+});
+
+describe("security: pr-update / issue-update — addLabels validation", () => {
+  it("rejects flag-like labels in addLabels", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "addLabels")).toThrow(
+        /must not start with "-"/,
+      );
+    }
+  });
+
+  it("accepts safe labels in addLabels", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "addLabels")).not.toThrow();
+    }
+  });
+});
+
+describe("security: pr-update / issue-update — removeLabels validation", () => {
+  it("rejects flag-like labels in removeLabels", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "removeLabels")).toThrow(
+        /must not start with "-"/,
+      );
+    }
+  });
+
+  it("accepts safe labels in removeLabels", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "removeLabels")).not.toThrow();
+    }
+  });
+});
+
+describe("security: pr-update / issue-update — addAssignees validation", () => {
+  it("rejects flag-like assignees in addAssignees", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "addAssignees")).toThrow(
+        /must not start with "-"/,
+      );
+    }
+  });
+
+  it("accepts safe assignees in addAssignees", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "addAssignees")).not.toThrow();
+    }
+  });
+});
+
+describe("security: pr-update / issue-update — removeAssignees validation", () => {
+  it("rejects flag-like assignees in removeAssignees", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "removeAssignees")).toThrow(
+        /must not start with "-"/,
+      );
+    }
+  });
+
+  it("accepts safe assignees in removeAssignees", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "removeAssignees")).not.toThrow();
+    }
+  });
+});
+
 describe("security: run-list — branch validation", () => {
   it("rejects flag-like branch names", () => {
     for (const malicious of MALICIOUS_INPUTS) {

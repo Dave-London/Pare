@@ -6,11 +6,13 @@ import { registerPrCreateTool } from "./pr-create.js";
 import { registerPrMergeTool } from "./pr-merge.js";
 import { registerPrCommentTool } from "./pr-comment.js";
 import { registerPrReviewTool } from "./pr-review.js";
+import { registerPrUpdateTool } from "./pr-update.js";
 import { registerIssueViewTool } from "./issue-view.js";
 import { registerIssueListTool } from "./issue-list.js";
 import { registerIssueCreateTool } from "./issue-create.js";
 import { registerIssueCloseTool } from "./issue-close.js";
 import { registerIssueCommentTool } from "./issue-comment.js";
+import { registerIssueUpdateTool } from "./issue-update.js";
 import { registerRunViewTool } from "./run-view.js";
 import { registerRunListTool } from "./run-list.js";
 
@@ -22,11 +24,13 @@ export function registerAllTools(server: McpServer) {
   if (s("pr-merge")) registerPrMergeTool(server);
   if (s("pr-comment")) registerPrCommentTool(server);
   if (s("pr-review")) registerPrReviewTool(server);
+  if (s("pr-update")) registerPrUpdateTool(server);
   if (s("issue-view")) registerIssueViewTool(server);
   if (s("issue-list")) registerIssueListTool(server);
   if (s("issue-create")) registerIssueCreateTool(server);
   if (s("issue-close")) registerIssueCloseTool(server);
   if (s("issue-comment")) registerIssueCommentTool(server);
+  if (s("issue-update")) registerIssueUpdateTool(server);
   if (s("run-view")) registerRunViewTool(server);
   if (s("run-list")) registerRunListTool(server);
 }
