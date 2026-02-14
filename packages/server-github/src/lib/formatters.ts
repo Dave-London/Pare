@@ -12,6 +12,7 @@ import type {
   IssueCloseResult,
   RunViewResult,
   RunListResult,
+  RunRerunResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -330,4 +331,11 @@ export function formatRunListCompact(data: RunListCompact): string {
     lines.push(`  #${r.id} ${r.workflowName} (${r.status}${conclusion})`);
   }
   return lines.join("\n");
+}
+
+/** Formats structured run rerun data into human-readable text. */
+export function formatRunRerun(data: RunRerunResult): string {
+  const mode = data.failedOnly ? "failed jobs only" : "all jobs";
+  const urlPart = data.url ? `: ${data.url}` : "";
+  return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
 }

@@ -12,6 +12,7 @@ import type {
   IssueCloseResult,
   RunViewResult,
   RunListResult,
+  RunRerunResult,
 } from "../schemas/index.js";
 
 /**
@@ -265,4 +266,30 @@ export function parseRunList(json: string): RunListResult {
   );
 
   return { runs, total: runs.length };
+}
+
+/**
+ * Parses `gh run rerun` output into structured data.
+ * The gh CLI prints a confirmation message to stderr on success.
+ * We construct the URL from the run ID and repo info.
+ */
+export function parseRunRerun(
+  stdout: string,
+  stderr: string,
+  runId: number,
+  failedOnly: boolean,
+): RunRerunResult {
+  // gh run rerun outputs confirmation to stderr, e.g.:
+  // "✓ Requested rerun of run 12345"
+  // Try to extract URL from stdout/stderr if present
+  const combined = `${stdout}\n${stderr}`;
+  const urlMatch = combined.match(/(https:\/\/github\.com\/[^\s]+\/actions\/runs\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : "";
+
+  return {
+    runId,
+    status: "requested",
+    failedOnly,
+    url,
+  };
 }
