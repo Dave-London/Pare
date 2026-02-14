@@ -236,6 +236,22 @@ describe("security: reset tool — files validation", () => {
   });
 });
 
+describe("security: merge tool — branch validation", () => {
+  it("rejects flag-like branch names", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(/must not start with "-"/);
+    }
+  });
+});
+
+describe("security: merge tool — message validation", () => {
+  it("rejects flag-like merge messages", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "message")).toThrow(/must not start with "-"/);
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Git tool schemas
 // ---------------------------------------------------------------------------

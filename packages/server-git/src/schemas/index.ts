@@ -288,3 +288,14 @@ export const GitCherryPickSchema = z.object({
 });
 
 export type GitCherryPick = z.infer<typeof GitCherryPickSchema>;
+
+/** Zod schema for structured git merge output with merge status, conflicts, and optional commit hash. */
+export const GitMergeSchema = z.object({
+  merged: z.boolean(),
+  fastForward: z.boolean(),
+  branch: z.string(),
+  conflicts: z.array(z.string()),
+  commitHash: z.string().optional(),
+});
+
+export type GitMerge = z.infer<typeof GitMergeSchema>;

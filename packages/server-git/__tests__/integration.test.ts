@@ -30,7 +30,7 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 17 tools", async () => {
+  it("lists all 19 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -42,6 +42,7 @@ describe("@paretools/git integration", () => {
       "commit",
       "diff",
       "log",
+      "merge",
       "pull",
       "push",
       "remote",
@@ -435,6 +436,130 @@ describe("@paretools/git write-tool integration", () => {
       const result = await client.callTool({
         name: "pull",
         arguments: { path: tempDir, branch: "--no-verify" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  describe("merge", () => {
+    it("fast-forward merges a branch and returns structured data", async () => {
+      // Ensure we are on the default branch
+      const branches = gitInTemp(["branch"]).trim().split("\n");
+      const defaultBranch =
+        branches
+          .find((b) => b.startsWith("*"))
+          ?.replace("* ", "")
+          .trim() || "master";
+
+      // Create a feature branch, commit on it, then switch back and merge
+      gitInTemp(["checkout", "-b", "merge-ff-test"]);
+      writeFileSync(join(tempDir, "merge-ff.txt"), "merge ff content\n");
+      gitInTemp(["add", "merge-ff.txt"]);
+      gitInTemp(["commit", "-m", "feat: add merge-ff file"]);
+      gitInTemp(["checkout", defaultBranch]);
+
+      const result = await client.callTool({
+        name: "merge",
+        arguments: { path: tempDir, branch: "merge-ff-test" },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.merged).toBe(true);
+      expect(sc.fastForward).toBe(true);
+      expect(sc.branch).toBe("merge-ff-test");
+      expect(Array.isArray(sc.conflicts)).toBe(true);
+      expect((sc.conflicts as string[]).length).toBe(0);
+    });
+
+    it("non-ff merges a branch with --no-ff and returns merge commit hash", async () => {
+      // Create a feature branch, commit, switch back, merge with --no-ff
+      const branches = gitInTemp(["branch"]).trim().split("\n");
+      const defaultBranch =
+        branches
+          .find((b) => b.startsWith("*"))
+          ?.replace("* ", "")
+          .trim() || "master";
+
+      gitInTemp(["checkout", "-b", "merge-noff-test"]);
+      writeFileSync(join(tempDir, "merge-noff.txt"), "merge noff content\n");
+      gitInTemp(["add", "merge-noff.txt"]);
+      gitInTemp(["commit", "-m", "feat: add merge-noff file"]);
+      gitInTemp(["checkout", defaultBranch]);
+
+      const result = await client.callTool({
+        name: "merge",
+        arguments: { path: tempDir, branch: "merge-noff-test", noFf: true },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.merged).toBe(true);
+      expect(sc.fastForward).toBe(false);
+      expect(sc.branch).toBe("merge-noff-test");
+      expect((sc.conflicts as string[]).length).toBe(0);
+    });
+
+    it("reports conflicts as structured data without throwing", async () => {
+      const branches = gitInTemp(["branch"]).trim().split("\n");
+      const defaultBranch =
+        branches
+          .find((b) => b.startsWith("*"))
+          ?.replace("* ", "")
+          .trim() || "master";
+
+      // Create conflicting changes
+      writeFileSync(join(tempDir, "conflict-file.txt"), "main content\n");
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "add conflict file on main"]);
+
+      gitInTemp(["checkout", "-b", "merge-conflict-test"]);
+      writeFileSync(join(tempDir, "conflict-file.txt"), "branch content\n");
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "change conflict file on branch"]);
+
+      gitInTemp(["checkout", defaultBranch]);
+      writeFileSync(join(tempDir, "conflict-file.txt"), "different main content\n");
+      gitInTemp(["add", "conflict-file.txt"]);
+      gitInTemp(["commit", "-m", "change conflict file on main"]);
+
+      const result = await client.callTool({
+        name: "merge",
+        arguments: { path: tempDir, branch: "merge-conflict-test" },
+      });
+
+      // Should NOT be an error — conflicts are returned as structured data
+      expect(result.isError).not.toBe(true);
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.merged).toBe(false);
+      expect(sc.fastForward).toBe(false);
+      expect(sc.branch).toBe("merge-conflict-test");
+      expect((sc.conflicts as string[]).length).toBeGreaterThan(0);
+      expect(sc.conflicts as string[]).toContain("conflict-file.txt");
+
+      // Clean up: abort the merge
+      gitInTemp(["merge", "--abort"]);
+    });
+
+    it("rejects flag-injection in branch name", async () => {
+      const result = await client.callTool({
+        name: "merge",
+        arguments: { path: tempDir, branch: "--force" },
+      });
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("rejects flag-injection in message", async () => {
+      const result = await client.callTool({
+        name: "merge",
+        arguments: { path: tempDir, branch: "some-branch", message: "--amend" },
       });
 
       expect(result.isError).toBe(true);

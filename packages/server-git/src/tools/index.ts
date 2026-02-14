@@ -18,6 +18,7 @@ import { registerBlameTool } from "./blame.js";
 import { registerRestoreTool } from "./restore.js";
 import { registerResetTool } from "./reset.js";
 import { registerCherryPickTool } from "./cherry-pick.js";
+import { registerMergeTool } from "./merge.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
@@ -39,4 +40,5 @@ export function registerAllTools(server: McpServer) {
   if (s("restore")) registerRestoreTool(server);
   if (s("reset")) registerResetTool(server);
   if (s("cherry-pick")) registerCherryPickTool(server);
+  if (s("merge")) registerMergeTool(server);
 }
