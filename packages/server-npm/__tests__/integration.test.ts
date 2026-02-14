@@ -42,6 +42,32 @@ describe("@paretools/npm integration", () => {
     ]);
   });
 
+  it("tools accept packageManager input", async () => {
+    const { tools } = await client.listTools();
+    // All tools except search should have packageManager input
+    const toolsWithPm = tools.filter(
+      (t) =>
+        t.inputSchema &&
+        typeof t.inputSchema === "object" &&
+        "properties" in t.inputSchema &&
+        t.inputSchema.properties &&
+        typeof t.inputSchema.properties === "object" &&
+        "packageManager" in t.inputSchema.properties,
+    );
+    const pmNames = toolsWithPm.map((t) => t.name).sort();
+    // search does not have packageManager (always uses npm)
+    expect(pmNames).toEqual([
+      "audit",
+      "info",
+      "init",
+      "install",
+      "list",
+      "outdated",
+      "run",
+      "test",
+    ]);
+  });
+
   describe("list", () => {
     it("returns structured dependency data", async () => {
       const repoRoot = resolve(__dirname, "../../..");
@@ -56,6 +82,19 @@ describe("@paretools/npm integration", () => {
       expect(sc.version).toEqual(expect.any(String));
       expect(sc.total).toEqual(expect.any(Number));
       expect(typeof sc.dependencies).toBe("object");
+    });
+
+    it("includes packageManager in output", async () => {
+      const repoRoot = resolve(__dirname, "../../..");
+      const result = await client.callTool({
+        name: "list",
+        arguments: { path: repoRoot },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      // Should auto-detect and include the package manager used
+      expect(["npm", "pnpm"]).toContain(sc.packageManager);
     });
   });
 

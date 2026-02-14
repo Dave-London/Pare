@@ -1,18 +1,21 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
-import { npm } from "../lib/npm-runner.js";
+import { runPm } from "../lib/npm-runner.js";
+import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseListJson } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { NpmListSchema } from "../schemas/index.js";
+import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
 export function registerListTool(server: McpServer) {
   server.registerTool(
     "list",
     {
-      title: "npm List",
+      title: "List Packages",
       description:
-        "Lists installed packages as structured dependency data. Use instead of running `npm list` in the terminal.",
+        "Lists installed packages as structured dependency data. " +
+        "Auto-detects pnpm via pnpm-lock.yaml. Use instead of running `npm list` or `pnpm list` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -31,20 +34,46 @@ export function registerListTool(server: McpServer) {
           .describe(
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
+        packageManager: packageManagerInput,
+        filter: filterInput,
       },
       outputSchema: NpmListSchema,
     },
-    async ({ path, depth, compact }) => {
+    async ({ path, depth, compact, packageManager, filter }) => {
       const cwd = path || process.cwd();
-      const result = await npm(["ls", "--json", `--depth=${depth ?? 0}`], cwd);
+      const pm = await detectPackageManager(cwd, packageManager);
+
+      const pmArgs: string[] = [];
+      if (pm === "pnpm" && filter) pmArgs.push(`--filter=${filter}`);
+      // pnpm uses "list" while npm uses "ls" — both accept "ls" too
+      pmArgs.push(pm === "pnpm" ? "list" : "ls", "--json", `--depth=${depth ?? 0}`);
+
+      const result = await runPm(pm, pmArgs, cwd);
 
       if (result.exitCode !== 0 && !result.stdout) {
-        throw new Error(`npm ls failed: ${result.stderr}`);
+        throw new Error(`${pm} list failed: ${result.stderr}`);
       }
 
-      const list = parseListJson(result.stdout);
+      // pnpm list --json returns an array (one entry per matched project in a workspace)
+      // while npm ls --json returns a single object. Normalize pnpm's array to a single object.
+      let jsonStr = result.stdout;
+      if (pm === "pnpm") {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (Array.isArray(parsed)) {
+            jsonStr = JSON.stringify(
+              parsed[0] ?? { name: "unknown", version: "0.0.0", dependencies: {} },
+            );
+          }
+        } catch {
+          // fall through, let parseListJson handle the error
+        }
+      }
+
+      const list = parseListJson(jsonStr);
+      const listWithPm = { ...list, packageManager: pm };
       return compactDualOutput(
-        list,
+        listWithPm,
         result.stdout,
         formatList,
         compactListMap,
