@@ -17,6 +17,7 @@ import type {
   GitRestore,
   GitReset,
   GitCherryPick,
+  GitMerge,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -389,4 +390,28 @@ export function formatCherryPick(cp: GitCherryPick): string {
     return "Cherry-pick completed (no commits applied)";
   }
   return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}`;
+}
+
+// ── Merge formatters ──────────────────────────────────────────────────
+
+/** Formats structured git merge data into a human-readable merge summary. */
+export function formatMerge(m: GitMerge): string {
+  if (!m.merged && m.conflicts.length > 0) {
+    return `Merge of '${m.branch}' failed with ${m.conflicts.length} conflict(s): ${m.conflicts.join(", ")}`;
+  }
+
+  if (!m.merged && m.branch === "") {
+    return "Merge aborted";
+  }
+
+  const parts: string[] = [];
+  if (m.fastForward) {
+    parts.push(`Fast-forward merge of '${m.branch}'`);
+  } else {
+    parts.push(`Merged '${m.branch}'`);
+  }
+  if (m.commitHash) {
+    parts.push(`(${m.commitHash})`);
+  }
+  return parts.join(" ");
 }

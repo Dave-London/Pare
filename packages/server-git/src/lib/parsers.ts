@@ -17,6 +17,7 @@ import type {
   GitRestore,
   GitReset,
   GitCherryPick,
+  GitMerge,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -559,5 +560,52 @@ export function parseCherryPick(
     success: false,
     applied: [],
     conflicts,
+  };
+}
+
+/** Parses `git merge` output into structured merge result data with conflict detection. */
+export function parseMerge(stdout: string, stderr: string, branch: string): GitMerge {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Check for conflicts
+  const mergeConflicts: string[] = [];
+  const mergeConflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+  let mergeMatch;
+  while ((mergeMatch = mergeConflictPattern.exec(combined)) !== null) {
+    mergeConflicts.push(mergeMatch[1].trim());
+  }
+
+  if (mergeConflicts.length > 0) {
+    return {
+      merged: false,
+      fastForward: false,
+      branch,
+      conflicts: mergeConflicts,
+    };
+  }
+
+  // Detect fast-forward
+  const fastForward = /Fast-forward|fast-forward/i.test(combined);
+
+  // Extract merge commit hash from output
+  const hashMatch = combined.match(/([a-f0-9]{7,40})\.\.[a-f0-9]{7,40}/);
+  const commitHash = hashMatch ? hashMatch[0].split("..")[1] : undefined;
+
+  return {
+    merged: true,
+    fastForward,
+    branch,
+    conflicts: [],
+    ...(commitHash ? { commitHash } : {}),
+  };
+}
+
+/** Parses `git merge --abort` output into structured merge result data. */
+export function parseMergeAbort(_stdout: string, _stderr: string): GitMerge {
+  return {
+    merged: false,
+    fastForward: false,
+    branch: "",
+    conflicts: [],
   };
 }
