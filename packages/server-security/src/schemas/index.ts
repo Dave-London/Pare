@@ -67,3 +67,37 @@ export const SemgrepScanResultSchema = z.object({
 });
 
 export type SemgrepScanResult = z.infer<typeof SemgrepScanResultSchema>;
+
+// -- Gitleaks schemas ---------------------------------------------------------
+
+/** Zod schema for a single Gitleaks finding. */
+export const GitleaksFindingSchema = z.object({
+  ruleID: z.string(),
+  description: z.string(),
+  match: z.string(),
+  secret: z.string(),
+  file: z.string(),
+  startLine: z.number(),
+  endLine: z.number(),
+  commit: z.string(),
+  author: z.string(),
+  date: z.string(),
+});
+
+export type GitleaksFinding = z.infer<typeof GitleaksFindingSchema>;
+
+/** Zod schema for Gitleaks summary. */
+export const GitleaksSummarySchema = z.object({
+  totalFindings: z.number(),
+});
+
+export type GitleaksSummary = z.infer<typeof GitleaksSummarySchema>;
+
+/** Zod schema for the structured Gitleaks scan result. */
+export const GitleaksScanResultSchema = z.object({
+  totalFindings: z.number(),
+  findings: z.array(GitleaksFindingSchema),
+  summary: GitleaksSummarySchema,
+});
+
+export type GitleaksScanResult = z.infer<typeof GitleaksScanResultSchema>;

@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/security", version: "0.1.0" },
   {
     instructions:
-      "Structured security scanning operations (trivy, semgrep). Returns typed JSON with vulnerability and finding data. Use instead of running trivy or semgrep in the terminal.",
+      "Structured security scanning operations (trivy, semgrep, gitleaks). Returns typed JSON with vulnerability and finding data. Use instead of running trivy, semgrep, or gitleaks in the terminal.",
   },
 );
 

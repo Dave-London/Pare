@@ -1,4 +1,4 @@
-import type { TrivyScanResult, SemgrepScanResult } from "../schemas/index.js";
+import type { TrivyScanResult, SemgrepScanResult, GitleaksScanResult } from "../schemas/index.js";
 
 // -- Full formatters ----------------------------------------------------------
 
@@ -113,4 +113,43 @@ export function formatSemgrepScanCompact(data: SemgrepScanCompact): string {
     `${data.totalFindings} findings ` +
     `(${data.summary.error}E/${data.summary.warning}W/${data.summary.info}I)`
   );
+}
+
+// -- Gitleaks formatters ------------------------------------------------------
+
+/** Formats a Gitleaks scan result into human-readable text. */
+export function formatGitleaksScan(data: GitleaksScanResult): string {
+  const lines: string[] = [];
+
+  lines.push(`Gitleaks secret detection scan`);
+  lines.push(`Found ${data.totalFindings} secret(s)`);
+
+  if (data.findings.length > 0) {
+    lines.push("");
+    for (const f of data.findings) {
+      const commit = f.commit ? ` (commit: ${f.commit.slice(0, 8)})` : "";
+      lines.push(`  [${f.ruleID}] ${f.file}:${f.startLine}-${f.endLine}${commit}`);
+      lines.push(`    ${f.description} -- secret: ${f.secret}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// -- Gitleaks compact types, mappers, and formatters --------------------------
+
+/** Compact scan result: summary and total only, no individual findings. */
+export interface GitleaksScanCompact {
+  [key: string]: unknown;
+  totalFindings: number;
+}
+
+export function compactGitleaksScanMap(data: GitleaksScanResult): GitleaksScanCompact {
+  return {
+    totalFindings: data.totalFindings,
+  };
+}
+
+export function formatGitleaksScanCompact(data: GitleaksScanCompact): string {
+  return `Gitleaks scan -- ${data.totalFindings} secret(s) detected`;
 }

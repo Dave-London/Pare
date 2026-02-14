@@ -5,6 +5,8 @@ import type {
   SemgrepScanResult,
   SemgrepFinding,
   SemgrepSeveritySummary,
+  GitleaksScanResult,
+  GitleaksFinding,
 } from "../schemas/index.js";
 
 /** Raw Trivy JSON vulnerability shape (from `trivy --format json`). */
@@ -240,4 +242,73 @@ function computeSemgrepSummary(findings: SemgrepFinding[]): SemgrepSeveritySumma
     }
   }
   return summary;
+}
+
+// -- Gitleaks parser ----------------------------------------------------------
+
+/** Raw Gitleaks JSON finding shape (from `gitleaks detect --report-format json`). */
+interface GitleaksJsonFinding {
+  RuleID?: string;
+  Description?: string;
+  Match?: string;
+  Secret?: string;
+  File?: string;
+  StartLine?: number;
+  EndLine?: number;
+  Commit?: string;
+  Author?: string;
+  Date?: string;
+}
+
+/**
+ * Redacts a secret string, keeping only the first 3 and last 3 characters
+ * and replacing the rest with asterisks. Secrets 8 chars or shorter are fully
+ * redacted.
+ */
+function redactSecret(secret: string): string {
+  if (secret.length <= 8) return "***";
+  return secret.slice(0, 3) + "***" + secret.slice(-3);
+}
+
+/**
+ * Parses raw Gitleaks JSON output into a structured GitleaksScanResult.
+ *
+ * Gitleaks outputs a JSON array of findings. Each finding contains
+ * RuleID, Description, Match, Secret, File, StartLine, EndLine,
+ * Commit, Author, and Date fields.
+ */
+export function parseGitleaksJson(jsonStr: string): GitleaksScanResult {
+  let parsed: GitleaksJsonFinding[];
+  try {
+    const raw = JSON.parse(jsonStr) as unknown;
+    if (!Array.isArray(raw)) {
+      return { totalFindings: 0, findings: [], summary: { totalFindings: 0 } };
+    }
+    parsed = raw as GitleaksJsonFinding[];
+  } catch {
+    return { totalFindings: 0, findings: [], summary: { totalFindings: 0 } };
+  }
+
+  const findings: GitleaksFinding[] = [];
+
+  for (const f of parsed) {
+    findings.push({
+      ruleID: f.RuleID || "unknown",
+      description: f.Description || "",
+      match: f.Match || "",
+      secret: redactSecret(f.Secret || ""),
+      file: f.File || "unknown",
+      startLine: f.StartLine ?? 0,
+      endLine: f.EndLine ?? 0,
+      commit: f.Commit || "",
+      author: f.Author || "",
+      date: f.Date || "",
+    });
+  }
+
+  return {
+    totalFindings: findings.length,
+    findings,
+    summary: { totalFindings: findings.length },
+  };
 }
