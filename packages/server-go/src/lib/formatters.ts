@@ -9,6 +9,7 @@ import type {
   GoEnvResult,
   GoListResult,
   GoGetResult,
+  GolangciLintResult,
 } from "../schemas/index.js";
 
 /** Formats structured go build results into a human-readable error summary. */
@@ -320,4 +321,51 @@ export function compactGetMap(data: GoGetResult): GoGetCompact {
 export function formatGetCompact(data: GoGetCompact): string {
   if (data.success) return "go get: success.";
   return "go get: FAIL";
+}
+
+// ── golangci-lint ────────────────────────────────────────────────────
+
+/** Formats structured golangci-lint results into a human-readable diagnostic listing. */
+export function formatGolangciLint(data: GolangciLintResult): string {
+  if (data.total === 0) return "golangci-lint: no issues found.";
+
+  const lines = [
+    `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)`,
+  ];
+
+  for (const d of data.diagnostics ?? []) {
+    const col = d.column ? `:${d.column}` : "";
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})`);
+  }
+
+  if (data.byLinter && data.byLinter.length > 0) {
+    lines.push("");
+    lines.push("By linter:");
+    for (const entry of data.byLinter) {
+      lines.push(`  ${entry.linter}: ${entry.count}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/** Compact golangci-lint: total, errors, warnings. Drop individual diagnostics. */
+export interface GolangciLintCompact {
+  [key: string]: unknown;
+  total: number;
+  errors: number;
+  warnings: number;
+}
+
+export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCompact {
+  return {
+    total: data.total,
+    errors: data.errors,
+    warnings: data.warnings,
+  };
+}
+
+export function formatGolangciLintCompact(data: GolangciLintCompact): string {
+  if (data.total === 0) return "golangci-lint: no issues found.";
+  return `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)`;
 }

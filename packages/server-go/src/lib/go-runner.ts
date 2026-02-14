@@ -8,3 +8,7 @@ export async function goCmd(args: string[], cwd?: string): Promise<RunResult> {
 export async function gofmtCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("gofmt", args, { cwd, timeout: 120_000 });
 }
+
+export async function golangciLintCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("golangci-lint", args, { cwd, timeout: 300_000 });
+}

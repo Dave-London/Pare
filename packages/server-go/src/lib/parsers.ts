@@ -9,6 +9,8 @@ import type {
   GoEnvResult,
   GoListResult,
   GoGetResult,
+  GolangciLintResult,
+  GolangciLintDiagnostic,
 } from "../schemas/index.js";
 
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
@@ -262,6 +264,82 @@ function splitJsonObjects(text: string): string[] {
   }
 
   return results;
+}
+
+/**
+ * Parses `golangci-lint run --out-format json` output into structured diagnostics.
+ * The JSON output has the shape: { Issues: [...], Report: { Linters: [...] } }
+ */
+export function parseGolangciLintJson(stdout: string, exitCode: number): GolangciLintResult {
+  const diagnostics: GolangciLintDiagnostic[] = [];
+
+  if (!stdout.trim()) {
+    return { diagnostics, total: 0, errors: 0, warnings: 0, byLinter: [] };
+  }
+
+  let parsed: GolangciLintJsonOutput;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    // If JSON parsing fails, return empty result
+    return { diagnostics, total: 0, errors: 0, warnings: 0, byLinter: [] };
+  }
+
+  const issues = parsed.Issues ?? [];
+  for (const issue of issues) {
+    const severity = mapSeverity(issue.Severity);
+    diagnostics.push({
+      file: issue.Pos?.Filename ?? "",
+      line: issue.Pos?.Line ?? 0,
+      column: issue.Pos?.Column || undefined,
+      linter: issue.FromLinter ?? "",
+      severity,
+      message: issue.Text ?? "",
+      sourceLine: issue.SourceLines?.[0] || undefined,
+    });
+  }
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+
+  // Build by-linter summary
+  const linterCounts = new Map<string, number>();
+  for (const d of diagnostics) {
+    linterCounts.set(d.linter, (linterCounts.get(d.linter) ?? 0) + 1);
+  }
+  const byLinter = Array.from(linterCounts.entries())
+    .map(([linter, count]) => ({ linter, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    byLinter,
+  };
+}
+
+function mapSeverity(severity?: string): "error" | "warning" | "info" {
+  if (!severity) return "warning";
+  const lower = severity.toLowerCase();
+  if (lower === "error") return "error";
+  if (lower === "info") return "info";
+  return "warning";
+}
+
+interface GolangciLintJsonOutput {
+  Issues?: Array<{
+    FromLinter?: string;
+    Text?: string;
+    Severity?: string;
+    SourceLines?: string[];
+    Pos?: {
+      Filename?: string;
+      Line?: number;
+      Column?: number;
+    };
+  }>;
 }
 
 /** Parses `go get` output into structured result with success status and output text. */
