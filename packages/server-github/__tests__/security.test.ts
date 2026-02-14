@@ -162,6 +162,23 @@ describe("security: run-list — branch validation", () => {
   });
 });
 
+describe("security: pr-merge — method enum validation", () => {
+  const methodSchema = z.enum(["squash", "merge", "rebase"]);
+
+  it("accepts valid merge methods", () => {
+    expect(methodSchema.safeParse("squash").success).toBe(true);
+    expect(methodSchema.safeParse("merge").success).toBe(true);
+    expect(methodSchema.safeParse("rebase").success).toBe(true);
+  });
+
+  it("rejects invalid merge methods", () => {
+    expect(methodSchema.safeParse("--exec=rm -rf /").success).toBe(false);
+    expect(methodSchema.safeParse("-v").success).toBe(false);
+    expect(methodSchema.safeParse("invalid").success).toBe(false);
+    expect(methodSchema.safeParse("").success).toBe(false);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — GitHub tool schemas
 // ---------------------------------------------------------------------------
