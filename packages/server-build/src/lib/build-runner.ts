@@ -24,3 +24,7 @@ export async function viteCmd(args: string[], cwd?: string): Promise<RunResult> 
 export async function webpackCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["webpack", ...args], { cwd, timeout: 300_000 });
 }
+
+export async function turboCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["turbo", ...args], { cwd, timeout: 300_000 });
+}

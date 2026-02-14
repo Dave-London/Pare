@@ -10,6 +10,8 @@ import {
   formatWebpackCompact,
   compactBuildMap,
   formatBuildCompact,
+  compactTurboMap,
+  formatTurboCompact,
 } from "../src/lib/formatters.js";
 import type {
   TscResult,
@@ -17,6 +19,7 @@ import type {
   ViteBuildResult,
   WebpackResult,
   BuildResult,
+  TurboResult,
 } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
@@ -424,5 +427,131 @@ describe("formatBuildCompact", () => {
     };
     const output = formatBuildCompact(compact);
     expect(output).toContain("Build failed (2.5s)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// turbo compact
+// ---------------------------------------------------------------------------
+
+describe("compactTurboMap", () => {
+  it("keeps summary counts; drops tasks array", () => {
+    const data: TurboResult = {
+      success: true,
+      duration: 5.0,
+      tasks: [
+        {
+          package: "@paretools/shared",
+          task: "build",
+          status: "pass",
+          duration: "100ms",
+          cache: "hit",
+        },
+        {
+          package: "@paretools/git",
+          task: "build",
+          status: "pass",
+          duration: "2.5s",
+          cache: "miss",
+        },
+      ],
+      totalTasks: 2,
+      passed: 2,
+      failed: 0,
+      cached: 1,
+    };
+
+    const compact = compactTurboMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.duration).toBe(5.0);
+    expect(compact.totalTasks).toBe(2);
+    expect(compact.passed).toBe(2);
+    expect(compact.failed).toBe(0);
+    expect(compact.cached).toBe(1);
+    // Verify dropped fields
+    expect(compact).not.toHaveProperty("tasks");
+  });
+
+  it("handles failed run", () => {
+    const data: TurboResult = {
+      success: false,
+      duration: 3.2,
+      tasks: [
+        { package: "@paretools/shared", task: "build", status: "pass", cache: "hit" },
+        { package: "@paretools/git", task: "build", status: "fail", cache: "miss" },
+      ],
+      totalTasks: 2,
+      passed: 1,
+      failed: 1,
+      cached: 1,
+    };
+
+    const compact = compactTurboMap(data);
+
+    expect(compact.success).toBe(false);
+    expect(compact.passed).toBe(1);
+    expect(compact.failed).toBe(1);
+  });
+
+  it("handles empty run", () => {
+    const data: TurboResult = {
+      success: true,
+      duration: 0.05,
+      tasks: [],
+      totalTasks: 0,
+      passed: 0,
+      failed: 0,
+      cached: 0,
+    };
+
+    const compact = compactTurboMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.totalTasks).toBe(0);
+  });
+});
+
+describe("formatTurboCompact", () => {
+  it("formats successful run with cached tasks", () => {
+    const compact = {
+      success: true,
+      duration: 2.5,
+      totalTasks: 3,
+      passed: 3,
+      failed: 0,
+      cached: 2,
+    };
+    const output = formatTurboCompact(compact);
+    expect(output).toContain("turbo: 3 tasks completed in 2.5s");
+    expect(output).toContain("2 cached");
+  });
+
+  it("formats failed run", () => {
+    const compact = {
+      success: false,
+      duration: 3.2,
+      totalTasks: 2,
+      passed: 1,
+      failed: 1,
+      cached: 0,
+    };
+    const output = formatTurboCompact(compact);
+    expect(output).toContain("turbo: failed (3.2s)");
+    expect(output).toContain("1 passed");
+    expect(output).toContain("1 failed");
+  });
+
+  it("formats run with no cached tasks", () => {
+    const compact = {
+      success: true,
+      duration: 5.0,
+      totalTasks: 1,
+      passed: 1,
+      failed: 0,
+      cached: 0,
+    };
+    const output = formatTurboCompact(compact);
+    expect(output).toBe("turbo: 1 tasks completed in 5s");
   });
 });

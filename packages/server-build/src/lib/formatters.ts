@@ -4,6 +4,7 @@ import type {
   EsbuildResult,
   ViteBuildResult,
   WebpackResult,
+  TurboResult,
 } from "../schemas/index.js";
 
 /** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
@@ -268,4 +269,70 @@ export function formatBuildCompact(data: BuildCompact): string {
     return `Build succeeded in ${data.duration}s`;
   }
   return `Build failed (${data.duration}s)`;
+}
+
+// ---------------------------------------------------------------------------
+// turbo
+// ---------------------------------------------------------------------------
+
+/** Formats structured Turbo run results into a human-readable summary. */
+export function formatTurbo(data: TurboResult): string {
+  if (data.success) {
+    const parts = [`turbo: ${data.totalTasks} tasks completed in ${data.duration}s`];
+    if (data.cached > 0) parts.push(`${data.cached} cached`);
+    if (data.failed > 0) parts.push(`${data.failed} failed`);
+
+    const lines = [parts.join(", ")];
+    for (const t of data.tasks) {
+      const cachePart = t.cache ? ` [${t.cache}]` : "";
+      const durationPart = t.duration ? ` (${t.duration})` : "";
+      lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
+    }
+    return lines.join("\n");
+  }
+
+  const lines = [
+    `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`,
+  ];
+  for (const t of data.tasks) {
+    const cachePart = t.cache ? ` [${t.cache}]` : "";
+    const durationPart = t.duration ? ` (${t.duration})` : "";
+    lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// turbo compact
+// ---------------------------------------------------------------------------
+
+/** Compact turbo: success, duration, and summary counts only. Schema-compatible (tasks array omitted). */
+export interface TurboCompact {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  totalTasks: number;
+  passed: number;
+  failed: number;
+  cached: number;
+}
+
+export function compactTurboMap(data: TurboResult): TurboCompact {
+  return {
+    success: data.success,
+    duration: data.duration,
+    totalTasks: data.totalTasks,
+    passed: data.passed,
+    failed: data.failed,
+    cached: data.cached,
+  };
+}
+
+export function formatTurboCompact(data: TurboCompact): string {
+  if (data.success) {
+    const parts = [`turbo: ${data.totalTasks} tasks completed in ${data.duration}s`];
+    if (data.cached > 0) parts.push(`${data.cached} cached`);
+    return parts.join(", ");
+  }
+  return `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`;
 }

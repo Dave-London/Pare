@@ -191,3 +191,50 @@ export interface WebpackResult {
   warnings: string[];
   modules?: number;
 }
+
+// ---------------------------------------------------------------------------
+// turbo
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single Turbo task result entry with package name, task, status, duration, and cache info. */
+export const TurboTaskSchema = z.object({
+  package: z.string(),
+  task: z.string(),
+  status: z.enum(["pass", "fail"]),
+  duration: z.string().optional(),
+  cache: z.enum(["hit", "miss"]).optional(),
+});
+
+/** Zod schema for structured Turbo run output with per-package task results and summary counts.
+ *  In compact mode, the tasks array is omitted; only summary counts are returned. */
+export const TurboResultSchema = z.object({
+  success: z.boolean(),
+  duration: z.number(),
+  tasks: z.array(TurboTaskSchema).optional(),
+  totalTasks: z.number(),
+  passed: z.number(),
+  failed: z.number(),
+  cached: z.number(),
+});
+
+/** Full turbo task entry. */
+export interface TurboTask {
+  [key: string]: unknown;
+  package: string;
+  task: string;
+  status: "pass" | "fail";
+  duration?: string;
+  cache?: "hit" | "miss";
+}
+
+/** Full turbo result -- always returned by the parser. */
+export interface TurboResult {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  tasks: TurboTask[];
+  totalTasks: number;
+  passed: number;
+  failed: number;
+  cached: number;
+}

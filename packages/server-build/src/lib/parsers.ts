@@ -8,6 +8,8 @@ import type {
   ViteBuildResult,
   ViteOutputFile,
   WebpackResult,
+  TurboResult,
+  TurboTask,
 } from "../schemas/index.js";
 
 // tsc output format: file(line,col): error TSxxxx: message
@@ -337,5 +339,112 @@ function parseWebpackText(
     assets: [],
     errors,
     warnings,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// turbo
+// ---------------------------------------------------------------------------
+
+// Turbo task line format: <package>#<task>
+// e.g. "@paretools/shared#build: cache hit, replaying logs abc123 (100ms)"
+// or   "@paretools/git#build: cache miss, executing abc123 (2.5s)"
+// or   "web#build: computed xyz ... (1.2s)"
+// Summary line: "Tasks:    5 successful, 5 total"
+// Cached line:  "Cached:   3 cached, 5 total"
+// Duration line:"Duration:  2.5s"
+
+// Match task status lines like:
+//   @paretools/shared#build: cache hit, replaying logs ... (100ms)
+//   @scope/pkg#test: cache miss, executing ... (2.5s)
+//   myapp#lint: cache bypass (5.1s)
+const TURBO_TASK_RE = /^(.+?)#(\S+):\s+cache\s+(hit|miss|bypass)(?:,\s+\w+[^(]*)?\(([^)]+)\)/;
+
+// Match task failure lines:
+//   @scope/pkg#build: command ... exited (1)
+//   pkg#test: ERROR ... (500ms)
+const TURBO_TASK_FAIL_RE = /^(.+?)#(\S+):.*(?:exited\s*\(\d+\)|ERROR)/;
+
+// Summary lines
+const TURBO_TASKS_SUMMARY_RE = /Tasks:\s+(\d+)\s+successful,\s+(\d+)\s+total/;
+const TURBO_CACHED_RE = /Cached:\s+(\d+)\s+cached,\s+(\d+)\s+total/;
+
+/** Parses Turborepo `turbo run` output into structured per-package task results with cache info. */
+export function parseTurboOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): TurboResult {
+  const tasks: TurboTask[] = [];
+  const seenTasks = new Set<string>();
+  const combined = stdout + "\n" + stderr;
+  const lines = combined.split("\n");
+
+  let summaryTotal = 0;
+  let summaryCached = 0;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Check for task status lines
+    const taskMatch = trimmed.match(TURBO_TASK_RE);
+    if (taskMatch) {
+      const key = `${taskMatch[1]}#${taskMatch[2]}`;
+      if (!seenTasks.has(key)) {
+        seenTasks.add(key);
+        tasks.push({
+          package: taskMatch[1],
+          task: taskMatch[2],
+          status: "pass",
+          duration: taskMatch[4],
+          cache: taskMatch[3] === "hit" ? "hit" : "miss",
+        });
+      }
+      continue;
+    }
+
+    // Check for failure lines
+    const failMatch = trimmed.match(TURBO_TASK_FAIL_RE);
+    if (failMatch) {
+      const key = `${failMatch[1]}#${failMatch[2]}`;
+      if (!seenTasks.has(key)) {
+        seenTasks.add(key);
+        tasks.push({
+          package: failMatch[1],
+          task: failMatch[2],
+          status: "fail",
+          cache: "miss",
+        });
+      }
+      continue;
+    }
+
+    // Check for summary lines
+    const summaryMatch = trimmed.match(TURBO_TASKS_SUMMARY_RE);
+    if (summaryMatch) {
+      summaryTotal = parseInt(summaryMatch[2], 10);
+      continue;
+    }
+
+    const cachedMatch = trimmed.match(TURBO_CACHED_RE);
+    if (cachedMatch) {
+      summaryCached = parseInt(cachedMatch[1], 10);
+    }
+  }
+
+  const passed = tasks.filter((t) => t.status === "pass").length;
+  const failed = tasks.filter((t) => t.status === "fail").length;
+  const cached = tasks.filter((t) => t.cache === "hit").length;
+  const totalTasks = summaryTotal || tasks.length;
+
+  return {
+    success: exitCode === 0,
+    duration,
+    tasks,
+    totalTasks,
+    passed,
+    failed,
+    cached: summaryCached || cached,
   };
 }

@@ -29,10 +29,10 @@ describe("@paretools/build integration", () => {
     await transport.close();
   });
 
-  it("lists all 5 tools", async () => {
+  it("lists all 6 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["build", "esbuild", "tsc", "vite-build", "webpack"]);
+    expect(names).toEqual(["build", "esbuild", "tsc", "turbo", "vite-build", "webpack"]);
   });
 
   it("each tool has an outputSchema", async () => {
@@ -215,5 +215,56 @@ describe("@paretools/build integration", () => {
         // since webpack may not be installed and npx resolution can fail.
       }
     });
+  });
+
+  describe("turbo", () => {
+    it("accepts input and returns structured turbo result", async () => {
+      try {
+        const repoRoot = resolve(__dirname, "../../..");
+        const result = await client.callTool(
+          {
+            name: "turbo",
+            arguments: {
+              task: "build",
+              filter: "@paretools/shared",
+              path: repoRoot,
+            },
+          },
+          undefined,
+          CALL_TIMEOUT,
+        );
+
+        expect(result.content).toBeDefined();
+        expect(Array.isArray(result.content)).toBe(true);
+
+        if (result.structuredContent) {
+          const sc = result.structuredContent as Record<string, unknown>;
+          expect(typeof sc.success).toBe("boolean");
+          expect(typeof sc.duration).toBe("number");
+          expect(typeof sc.totalTasks).toBe("number");
+          expect(typeof sc.passed).toBe("number");
+          expect(typeof sc.failed).toBe("number");
+          expect(typeof sc.cached).toBe("number");
+          // In compact mode, tasks array is omitted; in full mode it is present
+          if (sc.tasks !== undefined) {
+            expect(Array.isArray(sc.tasks)).toBe(true);
+          }
+        } else {
+          expect(result.isError).toBe(true);
+        }
+      } catch {
+        // MCP SDK may throw (timeout, transport error, etc.) — acceptable
+        // since turbo may not be installed.
+      }
+    });
+
+    it("rejects flag injection in task parameter", async () => {
+      const result = await client.callTool({
+        name: "turbo",
+        arguments: { task: "--output-logs=full" },
+      });
+
+      expect(result.isError).toBe(true);
+    }, 10_000);
   });
 });
