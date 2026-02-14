@@ -6,16 +6,16 @@ Makes an HTTP request via curl and returns structured response data (status, hea
 
 ## Input Parameters
 
-| Parameter         | Type                                                                          | Default             | Description                                                |
-| ----------------- | ----------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------- |
-| `url`             | string                                                                        | (required)          | The URL to request (http:// or https:// only)              |
-| `method`          | `"GET"` \| `"POST"` \| `"PUT"` \| `"PATCH"` \| `"DELETE"` \| `"HEAD"` \| `"OPTIONS"` | `"GET"`             | HTTP method                                                |
-| `headers`         | Record\<string, string\>                                                      | —                   | Request headers as key-value pairs                         |
-| `body`            | string                                                                        | —                   | Request body (for POST, PUT, PATCH)                        |
-| `timeout`         | number (1–300)                                                                | `30`                | Request timeout in seconds                                 |
-| `followRedirects` | boolean                                                                       | `true`              | Follow HTTP redirects                                      |
-| `compact`         | boolean                                                                       | `true`              | Auto-compact when structured output exceeds raw CLI tokens |
-| `path`            | string                                                                        | cwd                 | Working directory                                          |
+| Parameter         | Type                                                                                 | Default    | Description                                                |
+| ----------------- | ------------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------------- |
+| `url`             | string                                                                               | (required) | The URL to request (http:// or https:// only)              |
+| `method`          | `"GET"` \| `"POST"` \| `"PUT"` \| `"PATCH"` \| `"DELETE"` \| `"HEAD"` \| `"OPTIONS"` | `"GET"`    | HTTP method                                                |
+| `headers`         | Record\<string, string\>                                                             | —          | Request headers as key-value pairs                         |
+| `body`            | string                                                                               | —          | Request body (for POST, PUT, PATCH)                        |
+| `timeout`         | number (1–300)                                                                       | `30`       | Request timeout in seconds                                 |
+| `followRedirects` | boolean                                                                              | `true`     | Follow HTTP redirects                                      |
+| `compact`         | boolean                                                                              | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
+| `path`            | string                                                                               | cwd        | Working directory                                          |
 
 ## Success — JSON API Response
 

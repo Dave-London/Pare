@@ -147,10 +147,10 @@ content-length: 74
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| 201 Created      | ~180       | ~100      | ~30          | 44–83%  |
-| 422 Validation   | ~140       | ~80       | ~25          | 43–82%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| 201 Created    | ~180       | ~100      | ~30          | 44–83%  |
+| 422 Validation | ~140       | ~80       | ~25          | 43–82%  |
 
 ## Notes
 

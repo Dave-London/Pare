@@ -119,10 +119,10 @@ curl: (28) Operation timed out after 30001 milliseconds
 
 ## Token Savings
 
-| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------ | ---------- | --------- | ------------ | ------- |
-| HTML page    | ~200       | ~110      | ~30          | 45–85%  |
-| Timeout      | ~25        | ~30       | ~30          | 0%      |
+| Scenario  | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------- | ---------- | --------- | ------------ | ------- |
+| HTML page | ~200       | ~110      | ~30          | 45–85%  |
+| Timeout   | ~25        | ~30       | ~30          | 0%      |
 
 ## Notes
 

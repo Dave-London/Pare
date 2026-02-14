@@ -137,10 +137,10 @@ content-length: 0
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| Resource headers      | ~150       | ~80       | ~20          | 47–87%  |
-| 301 Redirect          | ~80        | ~55       | ~15          | 31–81%  |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| Resource headers | ~150       | ~80       | ~20          | 47–87%  |
+| 301 Redirect     | ~80        | ~55       | ~15          | 31–81%  |
 
 ## Notes
 
