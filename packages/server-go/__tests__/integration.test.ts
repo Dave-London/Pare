@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const CALL_TIMEOUT = 120_000;
 
 describe("@paretools/go integration", () => {
   let client: Client;
@@ -54,17 +55,16 @@ describe("@paretools/go integration", () => {
 
   describe("vet", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "vet",
-        arguments: { path: resolve(__dirname, "../../..") },
-      });
+      const result = await client.callTool(
+        { name: "vet", arguments: { path: resolve(__dirname, "../../..") } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
-        // go not installed — verify meaningful error
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/go|command|not found/i);
       } else {
-        // go is available — verify structured output
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(sc.total).toEqual(expect.any(Number));
@@ -75,10 +75,11 @@ describe("@paretools/go integration", () => {
 
   describe("build", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "build",
-        arguments: { path: resolve(__dirname, "../../..") },
-      });
+      const result = await client.callTool(
+        { name: "build", arguments: { path: resolve(__dirname, "../../..") } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -95,10 +96,11 @@ describe("@paretools/go integration", () => {
 
   describe("test", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "test",
-        arguments: { path: resolve(__dirname, "../../..") },
-      });
+      const result = await client.callTool(
+        { name: "test", arguments: { path: resolve(__dirname, "../../..") } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -118,10 +120,14 @@ describe("@paretools/go integration", () => {
 
   describe("run", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: resolve(__dirname, "../../.."), file: ".", compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { path: resolve(__dirname, "../../.."), file: ".", compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -139,10 +145,11 @@ describe("@paretools/go integration", () => {
 
   describe("mod-tidy", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "mod-tidy",
-        arguments: { path: resolve(__dirname, "../../.."), compact: false },
-      });
+      const result = await client.callTool(
+        { name: "mod-tidy", arguments: { path: resolve(__dirname, "../../.."), compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -158,10 +165,14 @@ describe("@paretools/go integration", () => {
 
   describe("fmt", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "fmt",
-        arguments: { path: resolve(__dirname, "../../.."), check: true, compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "fmt",
+          arguments: { path: resolve(__dirname, "../../.."), check: true, compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -178,10 +189,11 @@ describe("@paretools/go integration", () => {
 
   describe("generate", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "generate",
-        arguments: { path: resolve(__dirname, "../../.."), compact: false },
-      });
+      const result = await client.callTool(
+        { name: "generate", arguments: { path: resolve(__dirname, "../../.."), compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -197,10 +209,11 @@ describe("@paretools/go integration", () => {
 
   describe("env", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "env",
-        arguments: { compact: false },
-      });
+      const result = await client.callTool(
+        { name: "env", arguments: { compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -220,10 +233,11 @@ describe("@paretools/go integration", () => {
 
   describe("list", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "list",
-        arguments: { path: resolve(__dirname, "../../.."), compact: false },
-      });
+      const result = await client.callTool(
+        { name: "list", arguments: { path: resolve(__dirname, "../../.."), compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -239,14 +253,18 @@ describe("@paretools/go integration", () => {
 
   describe("get", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "get",
-        arguments: {
-          packages: ["github.com/pkg/errors@v0.9.1"],
-          path: resolve(__dirname, "../../.."),
-          compact: false,
+      const result = await client.callTool(
+        {
+          name: "get",
+          arguments: {
+            packages: ["github.com/pkg/errors@v0.9.1"],
+            path: resolve(__dirname, "../../.."),
+            compact: false,
+          },
         },
-      });
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
         const content = result.content as Array<{ type: string; text: string }>;
@@ -261,17 +279,19 @@ describe("@paretools/go integration", () => {
 
   describe("golangci-lint", () => {
     it("returns structured data or a command-not-found error", async () => {
-      const result = await client.callTool({
-        name: "golangci-lint",
-        arguments: { path: resolve(__dirname, "../../.."), compact: false },
-      });
+      const result = await client.callTool(
+        {
+          name: "golangci-lint",
+          arguments: { path: resolve(__dirname, "../../.."), compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
 
       if (result.isError) {
-        // golangci-lint not installed — verify meaningful error
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/golangci-lint|command|not found/i);
       } else {
-        // golangci-lint is available — verify structured output
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(sc.total).toEqual(expect.any(Number));
