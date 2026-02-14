@@ -10,6 +10,8 @@ import type {
   WebpackResult,
   TurboResult,
   TurboTask,
+  NxResult,
+  NxTask,
 } from "../schemas/index.js";
 
 // tsc output format: file(line,col): error TSxxxx: message
@@ -446,5 +448,77 @@ export function parseTurboOutput(
     passed,
     failed,
     cached: summaryCached || cached,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// nx
+// ---------------------------------------------------------------------------
+
+// Nx task line format (from `nx run-many` / `nx affected`):
+//   ✔  nx run project:target  [local cache]        (1.2s)
+//   ✔  nx run project:target                        (3.4s)
+//   ✖  nx run project:target                        (0.5s)
+//   >  NX   Successfully ran target build for 3 projects (5.2s)
+//   >  NX   Ran target build for 5 projects (10.1s)
+// Also matches lines without duration or cache indicator.
+const NX_TASK_RE =
+  /^\s*[✔✓✗✖]\s+nx run\s+([\w@/.:-]+):([\w-]+)\s*(?:\[([^\]]+)])?\s*(?:\((\d+(?:\.\d+)?)\s*s\))?/i;
+
+// Summary line: "Successfully ran target <target> for N projects (Xs)"
+// or: "Ran target <target> for N projects (Xs)"
+const NX_SUMMARY_RE = /ran target\s+\S+\s+for\s+(\d+)\s+projects?\s*\((\d+(?:\.\d+)?)\s*s\)/i;
+
+// Cache hit summary: "N out of N tasks were retrieved from cache"
+// or individual [local cache] / [remote cache] on task lines (handled inline)
+
+/** Parses Nx workspace command output into structured per-project task results. */
+export function parseNxOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): NxResult {
+  const combined = stdout + "\n" + stderr;
+  const lines = combined.split("\n");
+
+  const tasks: NxTask[] = [];
+
+  for (const line of lines) {
+    const taskMatch = line.match(NX_TASK_RE);
+    if (taskMatch) {
+      const project = taskMatch[1];
+      const target = taskMatch[2];
+      const cacheInfo = taskMatch[3]; // e.g. "local cache", "remote cache"
+      const dur = taskMatch[4] ? parseFloat(taskMatch[4]) : undefined;
+
+      // Determine status from the leading character
+      const trimmed = line.trimStart();
+      const isFailure = trimmed.startsWith("✖") || trimmed.startsWith("✗");
+      const status: "success" | "failure" | "skipped" = isFailure ? "failure" : "success";
+
+      tasks.push({
+        project,
+        target,
+        status,
+        duration: dur,
+        cache: cacheInfo ? true : undefined,
+      });
+      continue;
+    }
+  }
+
+  const passed = tasks.filter((t) => t.status === "success").length;
+  const failed = tasks.filter((t) => t.status === "failure").length;
+  const cached = tasks.filter((t) => t.cache === true).length;
+
+  return {
+    success: exitCode === 0,
+    duration,
+    tasks,
+    total: tasks.length,
+    passed,
+    failed,
+    cached,
   };
 }

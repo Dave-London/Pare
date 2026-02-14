@@ -28,3 +28,7 @@ export async function webpackCmd(args: string[], cwd?: string): Promise<RunResul
 export async function turboCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["turbo", ...args], { cwd, timeout: 300_000 });
 }
+
+export async function nxCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["nx", ...args], { cwd, timeout: 300_000 });
+}

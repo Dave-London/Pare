@@ -238,3 +238,50 @@ export interface TurboResult {
   failed: number;
   cached: number;
 }
+
+// ---------------------------------------------------------------------------
+// nx
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single Nx task result entry. */
+export const NxTaskSchema = z.object({
+  project: z.string(),
+  target: z.string(),
+  status: z.enum(["success", "failure", "skipped"]),
+  duration: z.number().optional(),
+  cache: z.boolean().optional(),
+});
+
+/** Zod schema for structured Nx output with per-project task results and summary.
+ *  In compact mode, tasks array is omitted; only summary counts are returned. */
+export const NxResultSchema = z.object({
+  success: z.boolean(),
+  duration: z.number(),
+  tasks: z.array(NxTaskSchema).optional(),
+  total: z.number(),
+  passed: z.number(),
+  failed: z.number(),
+  cached: z.number(),
+});
+
+/** Full Nx task entry. */
+export interface NxTask {
+  [key: string]: unknown;
+  project: string;
+  target: string;
+  status: "success" | "failure" | "skipped";
+  duration?: number;
+  cache?: boolean;
+}
+
+/** Full Nx result -- always returned by the parser. */
+export interface NxResult {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  tasks: NxTask[];
+  total: number;
+  passed: number;
+  failed: number;
+  cached: number;
+}
