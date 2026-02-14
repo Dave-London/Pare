@@ -16,6 +16,7 @@ import type {
   GitBlameFull,
   GitRestore,
   GitReset,
+  GitCherryPick,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -494,14 +495,10 @@ export function parseRestore(files: string[], source: string, staged: boolean): 
 
 /** Parses `git reset` output into structured reset data with the ref and list of unstaged files. */
 export function parseReset(stdout: string, stderr: string, ref: string): GitReset {
-  // git reset outputs lines like "Unstaged changes after reset:" followed by
-  // status-prefixed file lines, e.g., "M\tsrc/index.ts" or "D\told-file.ts".
-  // It may also be empty if nothing was staged.
   const combined = `${stdout}\n${stderr}`.trim();
   const unstaged: string[] = [];
 
   for (const line of combined.split("\n")) {
-    // Lines with a single-char status and a tab-separated file path
     const match = line.match(/^[A-Z]\t(.+)$/);
     if (match) {
       unstaged.push(match[1]);
@@ -509,4 +506,58 @@ export function parseReset(stdout: string, stderr: string, ref: string): GitRese
   }
 
   return { ref, unstaged };
+}
+
+/** Parses `git cherry-pick` output into structured cherry-pick result data. */
+export function parseCherryPick(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  commits: string[],
+): GitCherryPick {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Detect conflicts
+  const conflicts: string[] = [];
+  const conflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+  let match;
+  while ((match = conflictPattern.exec(combined)) !== null) {
+    conflicts.push(match[1].trim());
+  }
+
+  // If exit code is non-zero and we found conflicts, it's a conflict pause
+  if (exitCode !== 0 && conflicts.length > 0) {
+    return {
+      success: false,
+      applied: [],
+      conflicts,
+    };
+  }
+
+  // Detect abort
+  if (/cherry-pick.*abort/i.test(combined) || /abort/i.test(combined)) {
+    if (exitCode === 0) {
+      return {
+        success: true,
+        applied: [],
+        conflicts: [],
+      };
+    }
+  }
+
+  // Success — all commits applied
+  if (exitCode === 0) {
+    return {
+      success: true,
+      applied: commits,
+      conflicts: [],
+    };
+  }
+
+  // Non-zero exit code without conflicts — something else went wrong
+  return {
+    success: false,
+    applied: [],
+    conflicts,
+  };
 }

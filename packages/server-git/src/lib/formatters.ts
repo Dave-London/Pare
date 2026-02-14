@@ -16,6 +16,7 @@ import type {
   GitBlameFull,
   GitRestore,
   GitReset,
+  GitCherryPick,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -372,4 +373,20 @@ function compressLineRanges(nums: number[]): string {
 export function formatBlameCompact(b: GitBlameCompact): string {
   if (b.totalLines === 0) return `No blame data for ${b.file}`;
   return b.commits.map((c) => `${c.hash}: lines ${compressLineRanges(c.lines)}`).join("\n");
+}
+
+// ── Cherry-pick formatters ───────────────────────────────────────────
+
+/** Formats structured git cherry-pick data into a human-readable summary. */
+export function formatCherryPick(cp: GitCherryPick): string {
+  if (!cp.success && cp.conflicts.length > 0) {
+    return `Cherry-pick paused due to conflicts:\n${cp.conflicts.map((f) => `  CONFLICT: ${f}`).join("\n")}`;
+  }
+  if (!cp.success) {
+    return "Cherry-pick failed";
+  }
+  if (cp.applied.length === 0) {
+    return "Cherry-pick completed (no commits applied)";
+  }
+  return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}`;
 }
