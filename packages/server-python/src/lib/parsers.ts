@@ -14,6 +14,7 @@ import type {
   CondaList,
   CondaInfo,
   CondaEnvList,
+  PyenvResult,
 } from "../schemas/index.js";
 import { z } from "zod";
 
@@ -405,6 +406,70 @@ export function parsePipShowOutput(stdout: string): PipShow {
     location: data["Location"] || undefined,
     requires,
   };
+}
+
+/** Parses `pyenv` command output into structured version management data. */
+export function parsePyenvOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  action: "versions" | "version" | "install" | "local" | "global",
+): PyenvResult {
+  const output = stdout + "\n" + stderr;
+
+  if (exitCode !== 0) {
+    const errorMsg = stderr.trim() || stdout.trim() || "pyenv command failed";
+    return { action, success: false, error: errorMsg };
+  }
+
+  switch (action) {
+    case "versions": {
+      const versions: string[] = [];
+      let current: string | undefined;
+      for (const line of stdout.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        // Lines starting with * indicate current version
+        if (trimmed.startsWith("*")) {
+          const ver = trimmed
+            .replace(/^\*\s*/, "")
+            .replace(/\s+\(.*\)$/, "")
+            .trim();
+          if (ver) {
+            versions.push(ver);
+            current = ver;
+          }
+        } else {
+          const ver = trimmed.replace(/\s+\(.*\)$/, "").trim();
+          if (ver) versions.push(ver);
+        }
+      }
+      return { action, success: true, versions, current };
+    }
+    case "version": {
+      const ver = stdout
+        .trim()
+        .replace(/\s+\(.*\)$/, "")
+        .trim();
+      return { action, success: true, current: ver || undefined };
+    }
+    case "install": {
+      // pyenv install outputs to stderr typically
+      const installed =
+        output.match(/Installed Python-(\S+)/)?.[1] || output.match(/Installing Python-(\S+)/)?.[1];
+      return {
+        action,
+        success: true,
+        installed: installed || undefined,
+      };
+    }
+    case "local": {
+      return { action, success: true, localVersion: stdout.trim() || undefined };
+    }
+    case "global": {
+      return { action, success: true, globalVersion: stdout.trim() || undefined };
+    }
+  }
 }
 
 const RUFF_FORMAT_FILE_RE = /^(?:Would reformat|reformatted): (.+)$/;

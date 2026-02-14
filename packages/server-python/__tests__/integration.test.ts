@@ -29,7 +29,7 @@ describe("@paretools/python integration", () => {
     await transport.close();
   });
 
-  it("lists all 12 tools", async () => {
+  it("lists all 13 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -40,6 +40,7 @@ describe("@paretools/python integration", () => {
       "pip-install",
       "pip-list",
       "pip-show",
+      "pyenv",
       "pytest",
       "ruff-check",
       "ruff-format",
@@ -358,6 +359,26 @@ describe("@paretools/python integration", () => {
         expect(sc.action).toBe("list");
         expect(Array.isArray(sc.packages)).toBe(true);
         expect(typeof sc.total).toBe("number");
+      }
+    });
+  });
+
+  describe("pyenv", () => {
+    it("returns structured data or a command-not-found error", async () => {
+      const result = await client.callTool(
+        { name: "pyenv", arguments: { action: "version" } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/pyenv|command|not found/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.action).toBe("version");
+        expect(typeof sc.success).toBe("boolean");
       }
     });
   });
