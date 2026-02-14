@@ -53,3 +53,13 @@ export const CountResultSchema = z.object({
 });
 
 export type CountResult = z.infer<typeof CountResultSchema>;
+
+// ── Jq (jq) ────────────────────────────────────────────────────────
+
+/** Zod schema for structured jq output with the transformed result. */
+export const JqResultSchema = z.object({
+  output: z.string(),
+  exitCode: z.number(),
+});
+
+export type JqResult = z.infer<typeof JqResultSchema>;

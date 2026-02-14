@@ -1,4 +1,4 @@
-import type { SearchResult, FindResult, CountResult } from "../schemas/index.js";
+import type { SearchResult, FindResult, CountResult, JqResult } from "../schemas/index.js";
 
 // ── Full formatters ─────────────────────────────────────────────────
 
@@ -90,4 +90,35 @@ export function compactCountMap(data: CountResult): CountCompact {
 export function formatCountCompact(data: CountCompact): string {
   if (data.totalFiles === 0) return "count: no matches found.";
   return `count: ${data.totalMatches} matches in ${data.totalFiles} files`;
+}
+
+// ── Jq formatters ───────────────────────────────────────────────────
+
+/** Formats jq result into a human-readable string. */
+export function formatJq(data: JqResult): string {
+  if (data.exitCode !== 0) {
+    return `jq: error (exit ${data.exitCode})\n${data.output}`;
+  }
+  return data.output;
+}
+
+/** Compact jq: same as full — output is already minimal. */
+export interface JqCompact {
+  [key: string]: unknown;
+  output: string;
+  exitCode: number;
+}
+
+export function compactJqMap(data: JqResult): JqCompact {
+  return {
+    output: data.output,
+    exitCode: data.exitCode,
+  };
+}
+
+export function formatJqCompact(data: JqCompact): string {
+  if (data.exitCode !== 0) {
+    return `jq: error (exit ${data.exitCode})\n${data.output}`;
+  }
+  return data.output;
 }
