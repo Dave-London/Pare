@@ -3,6 +3,7 @@ import type {
   PrListResult,
   PrCreateResult,
   PrMergeResult,
+  CommentResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -96,6 +97,15 @@ export function parsePrMerge(stdout: string, number: number, method: string): Pr
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
   return { number, merged: true, method, url };
+}
+
+/**
+ * Parses `gh pr comment` / `gh issue comment` output into structured data.
+ * The gh CLI prints the new comment URL to stdout.
+ */
+export function parseComment(stdout: string): CommentResult {
+  const url = stdout.trim();
+  return { url };
 }
 
 /**

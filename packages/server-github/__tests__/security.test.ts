@@ -148,6 +148,34 @@ describe("security: issue-close — comment validation", () => {
   });
 });
 
+describe("security: pr-comment — body validation", () => {
+  it("rejects flag-like body text", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "body")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe body text", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "body")).not.toThrow();
+    }
+  });
+});
+
+describe("security: issue-comment — body validation", () => {
+  it("rejects flag-like body text", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "body")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe body text", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "body")).not.toThrow();
+    }
+  });
+});
+
 describe("security: run-list — branch validation", () => {
   it("rejects flag-like branch names", () => {
     for (const malicious of MALICIOUS_INPUTS) {
