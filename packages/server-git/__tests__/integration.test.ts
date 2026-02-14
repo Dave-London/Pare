@@ -38,6 +38,7 @@ describe("@paretools/git integration", () => {
       "blame",
       "branch",
       "checkout",
+      "cherry-pick",
       "commit",
       "diff",
       "log",

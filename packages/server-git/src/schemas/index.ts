@@ -279,3 +279,12 @@ export const GitResetSchema = z.object({
 });
 
 export type GitReset = z.infer<typeof GitResetSchema>;
+
+/** Zod schema for structured git cherry-pick output with applied commits and conflict list. */
+export const GitCherryPickSchema = z.object({
+  success: z.boolean(),
+  applied: z.array(z.string()),
+  conflicts: z.array(z.string()),
+});
+
+export type GitCherryPick = z.infer<typeof GitCherryPickSchema>;
