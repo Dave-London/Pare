@@ -169,8 +169,8 @@ describe("@paretools/git restore integration", () => {
     expect(sc.source).toBe("HEAD");
     expect(sc.staged).toBe(false);
 
-    // Verify file is restored to original content
-    const afterContent = readFileSync(join(tempDir, "tracked.txt"), "utf-8");
+    // Verify file is restored to original content (normalize line endings for Windows)
+    const afterContent = readFileSync(join(tempDir, "tracked.txt"), "utf-8").replace(/\r\n/g, "\n");
     expect(afterContent).toBe("original content\n");
   });
 
