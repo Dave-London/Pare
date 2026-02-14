@@ -141,6 +141,42 @@ export const EditResultSchema = z.object({
 
 export type EditResult = z.infer<typeof EditResultSchema>;
 
+// ── PR Checks schemas ───────────────────────────────────────────────
+
+/** Zod schema for a single check entry from `gh pr checks`. */
+export const PrChecksItemSchema = z.object({
+  name: z.string(),
+  state: z.string(),
+  bucket: z.string(),
+  description: z.string(),
+  event: z.string(),
+  workflow: z.string(),
+  link: z.string(),
+  startedAt: z.string(),
+  completedAt: z.string(),
+});
+
+/** Zod schema for summary counts of PR checks. */
+export const PrChecksSummarySchema = z.object({
+  total: z.number(),
+  passed: z.number(),
+  failed: z.number(),
+  pending: z.number(),
+  skipped: z.number(),
+  cancelled: z.number(),
+});
+
+/** Zod schema for structured pr-checks output. */
+export const PrChecksResultSchema = z.object({
+  pr: z.number(),
+  checks: z.array(PrChecksItemSchema),
+  summary: PrChecksSummarySchema,
+});
+
+export type PrChecksItem = z.infer<typeof PrChecksItemSchema>;
+export type PrChecksSummary = z.infer<typeof PrChecksSummarySchema>;
+export type PrChecksResult = z.infer<typeof PrChecksResultSchema>;
+
 // ── Run schemas ──────────────────────────────────────────────────────
 
 /** Zod schema for a single job in a workflow run. */

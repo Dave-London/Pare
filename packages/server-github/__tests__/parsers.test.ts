@@ -3,6 +3,7 @@ import {
   parsePrView,
   parsePrList,
   parsePrCreate,
+  parsePrChecks,
   parseComment,
   parseIssueView,
   parseIssueList,
@@ -175,6 +176,116 @@ describe("parsePrCreate", () => {
     const result = parsePrCreate("https://github.com/unknown-format");
     expect(result.number).toBe(0);
     expect(result.url).toBe("https://github.com/unknown-format");
+  });
+});
+
+describe("parsePrChecks", () => {
+  it("parses full PR checks JSON with summary", () => {
+    const json = JSON.stringify([
+      {
+        name: "CI / build",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Build succeeded",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/456",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:05:00Z",
+      },
+      {
+        name: "CI / test",
+        state: "FAILURE",
+        bucket: "fail",
+        description: "Tests failed",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/789",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:06:00Z",
+      },
+      {
+        name: "CI / lint",
+        state: "PENDING",
+        bucket: "pending",
+        description: "",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/101",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 42);
+
+    expect(result.pr).toBe(42);
+    expect(result.checks).toHaveLength(3);
+    expect(result.checks[0]).toEqual({
+      name: "CI / build",
+      state: "SUCCESS",
+      bucket: "pass",
+      description: "Build succeeded",
+      event: "pull_request",
+      workflow: "CI",
+      link: "https://github.com/owner/repo/actions/runs/123/job/456",
+      startedAt: "2024-01-15T10:00:00Z",
+      completedAt: "2024-01-15T10:05:00Z",
+    });
+    expect(result.summary.total).toBe(3);
+    expect(result.summary.passed).toBe(1);
+    expect(result.summary.failed).toBe(1);
+    expect(result.summary.pending).toBe(1);
+    expect(result.summary.skipped).toBe(0);
+    expect(result.summary.cancelled).toBe(0);
+  });
+
+  it("handles empty checks list", () => {
+    const result = parsePrChecks("[]", 10);
+
+    expect(result.pr).toBe(10);
+    expect(result.checks).toEqual([]);
+    expect(result.summary).toEqual({
+      total: 0,
+      passed: 0,
+      failed: 0,
+      pending: 0,
+      skipped: 0,
+      cancelled: 0,
+    });
+  });
+
+  it("handles missing optional fields", () => {
+    const json = JSON.stringify([{ name: "check1" }]);
+
+    const result = parsePrChecks(json, 5);
+
+    expect(result.checks[0]).toEqual({
+      name: "check1",
+      state: "",
+      bucket: "",
+      description: "",
+      event: "",
+      workflow: "",
+      link: "",
+      startedAt: "",
+      completedAt: "",
+    });
+  });
+
+  it("counts skipping and cancel buckets", () => {
+    const json = JSON.stringify([
+      { name: "a", bucket: "skipping" },
+      { name: "b", bucket: "cancel" },
+      { name: "c", bucket: "pass" },
+    ]);
+
+    const result = parsePrChecks(json, 1);
+
+    expect(result.summary.skipped).toBe(1);
+    expect(result.summary.cancelled).toBe(1);
+    expect(result.summary.passed).toBe(1);
+    expect(result.summary.total).toBe(3);
   });
 });
 

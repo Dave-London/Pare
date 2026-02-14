@@ -6,6 +6,7 @@ import type {
   CommentResult,
   PrReviewResult,
   EditResult,
+  PrChecksResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -128,6 +129,50 @@ export function parsePrReview(stdout: string, number: number, event: string): Pr
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
   return { number, event, url };
+}
+
+/**
+ * Parses `gh pr checks --json ...` output into structured PR checks data.
+ * Computes summary counts by bucket (pass, fail, pending, skipping, cancel).
+ */
+export function parsePrChecks(json: string, pr: number): PrChecksResult {
+  const raw = JSON.parse(json);
+  const items = Array.isArray(raw) ? raw : [];
+
+  const checks = items.map(
+    (c: {
+      name?: string;
+      state?: string;
+      bucket?: string;
+      description?: string;
+      event?: string;
+      workflow?: string;
+      link?: string;
+      startedAt?: string;
+      completedAt?: string;
+    }) => ({
+      name: c.name ?? "",
+      state: c.state ?? "",
+      bucket: c.bucket ?? "",
+      description: c.description ?? "",
+      event: c.event ?? "",
+      workflow: c.workflow ?? "",
+      link: c.link ?? "",
+      startedAt: c.startedAt ?? "",
+      completedAt: c.completedAt ?? "",
+    }),
+  );
+
+  const summary = {
+    total: checks.length,
+    passed: checks.filter((c) => c.bucket === "pass").length,
+    failed: checks.filter((c) => c.bucket === "fail").length,
+    pending: checks.filter((c) => c.bucket === "pending").length,
+    skipped: checks.filter((c) => c.bucket === "skipping").length,
+    cancelled: checks.filter((c) => c.bucket === "cancel").length,
+  };
+
+  return { pr, checks, summary };
 }
 
 /**

@@ -3,6 +3,9 @@ import {
   formatPrView,
   formatPrList,
   formatPrCreate,
+  formatPrChecks,
+  compactPrChecksMap,
+  formatPrChecksCompact,
   formatComment,
   formatIssueView,
   formatIssueList,
@@ -26,6 +29,7 @@ import type {
   PrViewResult,
   PrListResult,
   PrCreateResult,
+  PrChecksResult,
   CommentResult,
   IssueViewResult,
   IssueListResult,
@@ -157,6 +161,108 @@ describe("formatPrCreate", () => {
   it("formats PR create result", () => {
     const data: PrCreateResult = { number: 99, url: "https://github.com/owner/repo/pull/99" };
     expect(formatPrCreate(data)).toBe("Created PR #99: https://github.com/owner/repo/pull/99");
+  });
+});
+
+// ── PR Checks ────────────────────────────────────────────────────────
+
+describe("formatPrChecks", () => {
+  const data: PrChecksResult = {
+    pr: 42,
+    checks: [
+      {
+        name: "CI / build",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Build succeeded",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/456",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:05:00Z",
+      },
+      {
+        name: "CI / test",
+        state: "FAILURE",
+        bucket: "fail",
+        description: "Tests failed",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/789",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:06:00Z",
+      },
+    ],
+    summary: { total: 2, passed: 1, failed: 1, pending: 0, skipped: 0, cancelled: 0 },
+  };
+
+  it("formats PR checks with summary header", () => {
+    const output = formatPrChecks(data);
+    expect(output).toContain("PR #42: 2 checks (1 passed, 1 failed, 0 pending)");
+  });
+
+  it("formats individual checks with workflow", () => {
+    const output = formatPrChecks(data);
+    expect(output).toContain("CI / build: SUCCESS (pass) [CI]");
+    expect(output).toContain("CI / test: FAILURE (fail) [CI]");
+  });
+
+  it("omits workflow tag when empty", () => {
+    const noWorkflow: PrChecksResult = {
+      pr: 1,
+      checks: [
+        {
+          name: "check",
+          state: "SUCCESS",
+          bucket: "pass",
+          description: "",
+          event: "",
+          workflow: "",
+          link: "",
+          startedAt: "",
+          completedAt: "",
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, pending: 0, skipped: 0, cancelled: 0 },
+    };
+    const output = formatPrChecks(noWorkflow);
+    expect(output).toContain("check: SUCCESS (pass)");
+    expect(output).not.toContain("[");
+  });
+});
+
+describe("compactPrChecks", () => {
+  it("maps to compact format", () => {
+    const data: PrChecksResult = {
+      pr: 42,
+      checks: [
+        {
+          name: "CI / build",
+          state: "SUCCESS",
+          bucket: "pass",
+          description: "",
+          event: "",
+          workflow: "CI",
+          link: "",
+          startedAt: "",
+          completedAt: "",
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, pending: 0, skipped: 0, cancelled: 0 },
+    };
+    const compact = compactPrChecksMap(data);
+    expect(compact.pr).toBe(42);
+    expect(compact.total).toBe(1);
+    expect(compact.passed).toBe(1);
+    expect(compact.failed).toBe(0);
+    expect(compact.pending).toBe(0);
+    expect(compact).not.toHaveProperty("checks");
+    expect(compact).not.toHaveProperty("summary");
+
+    const text = formatPrChecksCompact(compact);
+    expect(text).toContain("PR #42");
+    expect(text).toContain("1 checks");
+    expect(text).toContain("1 passed");
   });
 });
 
