@@ -163,8 +163,8 @@ $ npx nx run-many --target=build
 
 | Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------------ | ---------- | --------- | ------------ | ------- |
-| 4 tasks, all pass  | ~180       | ~80       | ~30          | 56--83% |
-| 3 tasks, 1 failure | ~200       | ~60       | ~30          | 70--85% |
+| 4 tasks, all pass  | ~180       | ~80       | ~30          | 56-83%  |
+| 3 tasks, 1 failure | ~200       | ~60       | ~30          | 70-85%  |
 
 ## Notes
 

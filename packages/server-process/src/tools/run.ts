@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS, run } from "@paretools/shared";
+import {
+  compactDualOutput,
+  INPUT_LIMITS,
+  run,
+  assertAllowedByPolicy,
+  assertAllowedRoot,
+} from "@paretools/shared";
 import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { ProcessRunResultSchema } from "../schemas/index.js";
@@ -51,7 +57,9 @@ export function registerRunTool(server: McpServer) {
       outputSchema: ProcessRunResultSchema,
     },
     async ({ command, args, cwd, timeout, env, compact }) => {
+      assertAllowedByPolicy(command, "process");
       const workDir = cwd || process.cwd();
+      assertAllowedRoot(workDir, "process");
       const timeoutMs = timeout ?? 60_000;
 
       const start = Date.now();

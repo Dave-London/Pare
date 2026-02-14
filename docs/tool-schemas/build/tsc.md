@@ -156,7 +156,7 @@ Found 4 errors in 3 files.
 | Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------- | ---------- | --------- | ------------ | ------- |
 | No errors     | ~10        | ~20       | ~20          | 0%      |
-| 4 diagnostics | ~200       | ~120      | ~55          | 40--73% |
+| 4 diagnostics | ~200       | ~120      | ~55          | 40-73%  |
 
 ## Notes
 

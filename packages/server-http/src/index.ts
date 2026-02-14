@@ -5,7 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerAllTools } from "./tools/index.js";
 
 const server = new McpServer(
-  { name: "@paretools/http", version: "0.7.0" },
+  { name: "@paretools/http", version: "0.8.1" },
   {
     instructions:
       "Structured HTTP request operations via curl (request, get, post, head). Use instead of running curl commands via bash. Returns typed JSON with status, headers, body, timing, and size.",

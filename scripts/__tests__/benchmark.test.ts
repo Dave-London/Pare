@@ -11,7 +11,7 @@ import {
   type BenchmarkConfig,
   type ScenarioSummary,
 } from "../benchmark.js";
-import { SCENARIOS, type BenchmarkScenario } from "../benchmark-scenarios.js";
+import { SCENARIOS } from "../benchmark-scenarios.js";
 import {
   TOOL_REGISTRY,
   linkScenariosToRegistry,

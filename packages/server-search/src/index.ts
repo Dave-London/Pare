@@ -5,7 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerAllTools } from "./tools/index.js";
 
 const server = new McpServer(
-  { name: "@paretools/search", version: "0.7.0" },
+  { name: "@paretools/search", version: "0.8.1" },
   {
     instructions:
       "Structured code search operations (ripgrep + fd). Returns typed JSON with match locations, file lists, and match counts. Use instead of running rg/fd/grep/find in the terminal.",

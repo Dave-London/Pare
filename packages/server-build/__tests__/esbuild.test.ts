@@ -52,11 +52,6 @@ const ESBUILD_INLINE_MIXED = [
   `> src/app.ts:20:3: error: Unexpected token`,
 ].join("\n");
 
-const ESBUILD_ERROR_NO_LOCATION = [
-  '✘ [ERROR] No matching export in "node_modules/missing/index.js"',
-  "",
-].join("\n");
-
 // ---------------------------------------------------------------------------
 // Parser tests
 // ---------------------------------------------------------------------------
