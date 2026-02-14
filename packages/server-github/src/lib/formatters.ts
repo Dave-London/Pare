@@ -16,6 +16,7 @@ import type {
   RunListResult,
   RunRerunResult,
   ReleaseCreateResult,
+  GistCreateResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -414,6 +415,14 @@ export function formatRunRerun(data: RunRerunResult): string {
   const mode = data.failedOnly ? "failed jobs only" : "all jobs";
   const urlPart = data.url ? `: ${data.url}` : "";
   return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
+}
+
+// ── Gist ────────────────────────────────────────────────────────────
+
+/** Formats structured gist create data into human-readable text. */
+export function formatGistCreate(data: GistCreateResult): string {
+  const visibility = data.public ? "public" : "secret";
+  return `Created ${visibility} gist ${data.id}: ${data.url}`;
 }
 
 // ── Release ─────────────────────────────────────────────────────────
