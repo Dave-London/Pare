@@ -263,6 +263,206 @@ export function parseInfoJson(jsonStr: string): NpmInfo {
   return result;
 }
 
+/**
+ * Parses `yarn audit --json` output into structured vulnerability data.
+ * Yarn Classic (v1) outputs NDJSON (one JSON object per line) with type "auditAdvisory" entries.
+ * Yarn Berry (v2+) outputs a single JSON object similar to npm v7+ format.
+ */
+export function parseYarnAuditJson(jsonStr: string): NpmAudit {
+  // Try single-object JSON first (Yarn Berry format, similar to npm v7+)
+  try {
+    const data = JSON.parse(jsonStr);
+    if (data.vulnerabilities) {
+      return parseAuditJson(jsonStr);
+    }
+    // Yarn Berry may use advisories format
+    if (data.advisories) {
+      return parsePnpmAuditJson(jsonStr);
+    }
+  } catch {
+    // Not valid single JSON — likely Yarn Classic NDJSON
+  }
+
+  // Yarn Classic NDJSON: each line is a JSON object
+  const vulnerabilities: NpmAudit["vulnerabilities"] = [];
+  const seen = new Set<string>();
+  let summaryTotal = 0;
+  let critical = 0;
+  let high = 0;
+  let moderate = 0;
+  let low = 0;
+  let info = 0;
+
+  for (const line of jsonStr.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const entry = JSON.parse(trimmed);
+      if (entry.type === "auditAdvisory" && entry.data?.advisory) {
+        const adv = entry.data.advisory;
+        const name = adv.module_name ?? "unknown";
+        // Deduplicate by advisory id
+        const id = String(adv.id ?? name);
+        if (seen.has(id)) continue;
+        seen.add(id);
+
+        vulnerabilities.push({
+          name,
+          severity: adv.severity ?? "info",
+          title: adv.title ?? "Unknown",
+          url: adv.url,
+          range: adv.vulnerable_versions,
+          fixAvailable: !!adv.patched_versions && adv.patched_versions !== "<0.0.0",
+        });
+      } else if (entry.type === "auditSummary" && entry.data) {
+        const v = entry.data.vulnerabilities ?? {};
+        summaryTotal =
+          (v.critical ?? 0) + (v.high ?? 0) + (v.moderate ?? 0) + (v.low ?? 0) + (v.info ?? 0);
+        critical = v.critical ?? 0;
+        high = v.high ?? 0;
+        moderate = v.moderate ?? 0;
+        low = v.low ?? 0;
+        info = v.info ?? 0;
+      }
+    } catch {
+      // skip non-JSON lines
+    }
+  }
+
+  return {
+    vulnerabilities,
+    summary: {
+      total: summaryTotal || vulnerabilities.length,
+      critical,
+      high,
+      moderate,
+      low,
+      info,
+    },
+  };
+}
+
+/**
+ * Parses `yarn list --json` output into structured dependency data.
+ * Yarn Classic outputs a JSON object with { type: "tree", data: { trees: [...] } }.
+ * Yarn Berry outputs a different format — we handle both.
+ */
+export function parseYarnListJson(jsonStr: string): NpmList {
+  // Yarn Classic NDJSON: may have multiple lines
+  for (const line of jsonStr.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const data = JSON.parse(trimmed);
+      // Yarn Classic: { type: "tree", data: { type: "list", trees: [...] } }
+      if (data.type === "tree" && data.data?.trees) {
+        const trees: any[] = data.data.trees;
+        const deps: Record<string, NpmListDep> = {};
+
+        function parseTreeNode(node: any): [string, NpmListDep] {
+          // name is "pkg@version"
+          const nameStr = node.name ?? "";
+          const atIdx = nameStr.lastIndexOf("@");
+          const name = atIdx > 0 ? nameStr.slice(0, atIdx) : nameStr;
+          const version = atIdx > 0 ? nameStr.slice(atIdx + 1) : "unknown";
+          const entry: NpmListDep = { version };
+          if (node.children && node.children.length > 0) {
+            entry.dependencies = {};
+            for (const child of node.children) {
+              const [childName, childDep] = parseTreeNode(child);
+              entry.dependencies[childName] = childDep;
+            }
+          }
+          return [name, entry];
+        }
+
+        for (const tree of trees) {
+          const [name, dep] = parseTreeNode(tree);
+          deps[name] = dep;
+        }
+
+        function countDeps(d: Record<string, NpmListDep>): number {
+          let count = 0;
+          for (const dep of Object.values(d)) {
+            count++;
+            if (dep.dependencies) count += countDeps(dep.dependencies);
+          }
+          return count;
+        }
+
+        return {
+          name: "project",
+          version: "0.0.0",
+          dependencies: deps,
+          total: countDeps(deps),
+        };
+      }
+
+      // Yarn Berry / npm-compatible format
+      if (data.name || data.dependencies) {
+        return parseListJson(JSON.stringify(data));
+      }
+    } catch {
+      // skip non-JSON lines
+    }
+  }
+
+  // Fallback: try parsing as plain JSON (npm-compatible)
+  try {
+    return parseListJson(jsonStr);
+  } catch {
+    return { name: "unknown", version: "0.0.0", dependencies: {}, total: 0 };
+  }
+}
+
+/**
+ * Parses `yarn outdated --json` output into structured outdated data.
+ * Yarn Classic outputs NDJSON with { type: "table", data: { head: [...], body: [...] } }.
+ * Yarn Berry may output npm-compatible JSON.
+ */
+export function parseYarnOutdatedJson(jsonStr: string): NpmOutdated {
+  // Try npm-compatible format first
+  try {
+    const data = JSON.parse(jsonStr);
+    // If it looks like npm format (object keyed by package name), reuse that parser
+    if (!data.type && !Array.isArray(data)) {
+      return parseOutdatedJson(jsonStr);
+    }
+    if (Array.isArray(data)) {
+      return parseOutdatedJson(jsonStr);
+    }
+  } catch {
+    // Not single JSON; likely NDJSON
+  }
+
+  // Yarn Classic NDJSON table format
+  const packages: NpmOutdated["packages"] = [];
+  for (const line of jsonStr.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const entry = JSON.parse(trimmed);
+      if (entry.type === "table" && entry.data?.body) {
+        // head: ["Package", "Current", "Wanted", "Latest", "Package Type", "URL"]
+        // body: [["pkg", "1.0.0", "1.1.0", "2.0.0", "dependencies", "..."]]
+        for (const row of entry.data.body) {
+          packages.push({
+            name: row[0] ?? "unknown",
+            current: row[1] ?? "N/A",
+            wanted: row[2] ?? "N/A",
+            latest: row[3] ?? "N/A",
+            ...(row[4] ? { type: row[4] } : {}),
+          });
+        }
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  return { packages, total: packages.length };
+}
+
 /** Parses `npm search <query> --json` output into structured search results. */
 export function parseSearchJson(jsonStr: string): NpmSearch {
   const data = JSON.parse(jsonStr);

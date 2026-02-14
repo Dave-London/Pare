@@ -14,9 +14,9 @@ export function registerInstallTool(server: McpServer) {
     {
       title: "Install Packages",
       description:
-        "Runs npm/pnpm install and returns a structured summary of added/removed packages and vulnerabilities. " +
-        "Use instead of running `npm install` or `pnpm install` in the terminal. " +
-        "Auto-detects pnpm via pnpm-lock.yaml. " +
+        "Runs npm/pnpm/yarn install and returns a structured summary of added/removed packages and vulnerabilities. " +
+        "Use instead of running `npm install`, `pnpm install`, or `yarn install` in the terminal. " +
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
         "Lifecycle scripts (preinstall/postinstall) are skipped by default for safety. " +
         "Set ignoreScripts to false if packages need postinstall scripts to work (e.g., esbuild, sharp).",
       inputSchema: {

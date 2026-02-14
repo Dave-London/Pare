@@ -1,11 +1,11 @@
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 
-export type PackageManager = "npm" | "pnpm";
+export type PackageManager = "npm" | "pnpm" | "yarn";
 
 /**
  * Detects the package manager for a given project directory by checking lock files.
- * Priority: pnpm-lock.yaml > package-lock.json > default (npm).
+ * Priority: pnpm-lock.yaml > yarn.lock > package-lock.json > default (npm).
  * If `explicit` is provided, it is returned directly (user override).
  */
 export async function detectPackageManager(
@@ -19,6 +19,13 @@ export async function detectPackageManager(
     return "pnpm";
   } catch {
     // no pnpm-lock.yaml
+  }
+
+  try {
+    await access(join(cwd, "yarn.lock"));
+    return "yarn";
+  } catch {
+    // no yarn.lock
   }
 
   return "npm";

@@ -94,7 +94,7 @@ describe("@paretools/npm integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       // Should auto-detect and include the package manager used
-      expect(["npm", "pnpm"]).toContain(sc.packageManager);
+      expect(["npm", "pnpm", "yarn"]).toContain(sc.packageManager);
     });
   });
 

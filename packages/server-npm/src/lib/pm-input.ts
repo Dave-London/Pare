@@ -3,10 +3,10 @@ import { INPUT_LIMITS } from "@paretools/shared";
 
 /** Reusable Zod field for packageManager input on all tools. */
 export const packageManagerInput = z
-  .enum(["npm", "pnpm"])
+  .enum(["npm", "pnpm", "yarn"])
   .optional()
   .describe(
-    "Package manager to use. Auto-detected from lock files if not specified (pnpm-lock.yaml → pnpm, otherwise npm).",
+    "Package manager to use. Auto-detected from lock files if not specified (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
   );
 
 /** Reusable Zod field for pnpm workspace --filter. */

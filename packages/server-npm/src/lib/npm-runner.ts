@@ -23,7 +23,13 @@ export async function pnpm(args: string[], cwd?: string): Promise<RunResult> {
   return run("pnpm", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 60_000 });
 }
 
+export async function yarn(args: string[], cwd?: string): Promise<RunResult> {
+  return run("yarn", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 60_000 });
+}
+
 /** Run a command with the appropriate package manager. */
 export async function runPm(pm: PackageManager, args: string[], cwd?: string): Promise<RunResult> {
-  return pm === "pnpm" ? pnpm(args, cwd) : npm(args, cwd);
+  if (pm === "pnpm") return pnpm(args, cwd);
+  if (pm === "yarn") return yarn(args, cwd);
+  return npm(args, cwd);
 }

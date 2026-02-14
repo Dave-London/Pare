@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
-import { parseListJson } from "../lib/parsers.js";
+import { parseListJson, parseYarnListJson } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { NpmListSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
@@ -15,7 +15,8 @@ export function registerListTool(server: McpServer) {
       title: "List Packages",
       description:
         "Lists installed packages as structured dependency data. " +
-        "Auto-detects pnpm via pnpm-lock.yaml. Use instead of running `npm list` or `pnpm list` in the terminal.",
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
+        "Use instead of running `npm list`, `pnpm list`, or `yarn list` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -45,8 +46,14 @@ export function registerListTool(server: McpServer) {
 
       const pmArgs: string[] = [];
       if (pm === "pnpm" && filter) pmArgs.push(`--filter=${filter}`);
-      // pnpm uses "list" while npm uses "ls" — both accept "ls" too
-      pmArgs.push(pm === "pnpm" ? "list" : "ls", "--json", `--depth=${depth ?? 0}`);
+
+      if (pm === "yarn") {
+        // yarn list --json --depth=N
+        pmArgs.push("list", "--json", `--depth=${depth ?? 0}`);
+      } else {
+        // pnpm uses "list" while npm uses "ls" — both accept "ls" too
+        pmArgs.push(pm === "pnpm" ? "list" : "ls", "--json", `--depth=${depth ?? 0}`);
+      }
 
       const result = await runPm(pm, pmArgs, cwd);
 
@@ -70,7 +77,7 @@ export function registerListTool(server: McpServer) {
         }
       }
 
-      const list = parseListJson(jsonStr);
+      const list = pm === "yarn" ? parseYarnListJson(jsonStr) : parseListJson(jsonStr);
       const listWithPm = { ...list, packageManager: pm };
       return compactDualOutput(
         listWithPm,
