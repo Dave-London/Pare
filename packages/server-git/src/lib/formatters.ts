@@ -15,6 +15,7 @@ import type {
   GitRemoteFull,
   GitBlameFull,
   GitRestore,
+  GitReset,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -106,6 +107,12 @@ export function formatRestore(r: GitRestore): string {
   const mode = r.staged ? "staged" : "working tree";
   const src = r.source !== "HEAD" ? ` from ${r.source}` : "";
   return `Restored ${r.restored.length} file(s) (${mode})${src}: ${r.restored.join(", ")}`;
+}
+
+/** Formats structured git reset data into a human-readable reset summary. */
+export function formatReset(r: GitReset): string {
+  if (r.unstaged.length === 0) return `Reset to ${r.ref} — no files unstaged`;
+  return `Reset to ${r.ref}: unstaged ${r.unstaged.length} file(s): ${r.unstaged.join(", ")}`;
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────

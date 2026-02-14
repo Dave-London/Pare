@@ -15,6 +15,7 @@ import {
   formatStash,
   formatRemote,
   formatBlame,
+  formatReset,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -32,6 +33,7 @@ import type {
   GitStash,
   GitRemoteFull,
   GitBlameFull,
+  GitReset,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -696,5 +698,22 @@ describe("formatBlame", () => {
   it("formats empty blame output", () => {
     const blame: GitBlameFull = { commits: [], file: "empty.ts", totalLines: 0 };
     expect(formatBlame(blame)).toBe("No blame data for empty.ts");
+  });
+});
+
+describe("formatReset", () => {
+  it("formats reset with unstaged files", () => {
+    const data: GitReset = { ref: "HEAD", unstaged: ["src/a.ts", "src/b.ts"] };
+    expect(formatReset(data)).toBe("Reset to HEAD: unstaged 2 file(s): src/a.ts, src/b.ts");
+  });
+
+  it("formats reset with no unstaged files", () => {
+    const data: GitReset = { ref: "HEAD", unstaged: [] };
+    expect(formatReset(data)).toBe("Reset to HEAD — no files unstaged");
+  });
+
+  it("formats reset with single file", () => {
+    const data: GitReset = { ref: "HEAD", unstaged: ["README.md"] };
+    expect(formatReset(data)).toBe("Reset to HEAD: unstaged 1 file(s): README.md");
   });
 });
