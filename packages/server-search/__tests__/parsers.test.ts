@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { parseRgJsonOutput, parseFdOutput, parseRgCountOutput } from "../src/lib/parsers.js";
+import {
+  parseRgJsonOutput,
+  parseFdOutput,
+  parseRgCountOutput,
+  parseJqOutput,
+} from "../src/lib/parsers.js";
 
 describe("parseRgJsonOutput", () => {
   it("parses match events from rg --json output", () => {
@@ -299,5 +304,50 @@ describe("parseRgCountOutput", () => {
     expect(result.totalFiles).toBe(1);
     expect(result.totalMatches).toBe(10);
     expect(result.files[0]).toEqual({ file: "other.ts", count: 10 });
+  });
+});
+
+describe("parseJqOutput", () => {
+  it("parses successful jq output", () => {
+    const result = parseJqOutput('{"name":"Alice","age":30}\n', "", 0);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe('{"name":"Alice","age":30}');
+  });
+
+  it("returns stderr on failure", () => {
+    const result = parseJqOutput("", "jq: error: syntax error (at <stdin>:0)", 2);
+
+    expect(result.exitCode).toBe(2);
+    expect(result.output).toContain("syntax error");
+  });
+
+  it("returns stdout on failure when stderr is empty", () => {
+    const result = parseJqOutput("some output\n", "", 5);
+
+    expect(result.exitCode).toBe(5);
+    expect(result.output).toBe("some output");
+  });
+
+  it("handles empty output on success", () => {
+    const result = parseJqOutput("", "", 0);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe("");
+  });
+
+  it("trims trailing whitespace from successful output", () => {
+    const result = parseJqOutput('"hello"\n\n', "", 0);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe('"hello"');
+  });
+
+  it("handles multi-line output", () => {
+    const stdout = "[\n  1,\n  2,\n  3\n]\n";
+    const result = parseJqOutput(stdout, "", 0);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toBe("[\n  1,\n  2,\n  3\n]");
   });
 });

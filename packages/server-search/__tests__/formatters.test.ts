@@ -3,14 +3,17 @@ import {
   formatSearch,
   formatFind,
   formatCount,
+  formatJq,
   compactSearchMap,
   compactFindMap,
   compactCountMap,
+  compactJqMap,
   formatSearchCompact,
   formatFindCompact,
   formatCountCompact,
+  formatJqCompact,
 } from "../src/lib/formatters.js";
-import type { SearchResult, FindResult, CountResult } from "../src/schemas/index.js";
+import type { SearchResult, FindResult, CountResult, JqResult } from "../src/schemas/index.js";
 
 // ── Full formatters ─────────────────────────────────────────────────
 
@@ -162,5 +165,40 @@ describe("formatCountCompact", () => {
 
   it("formats no matches", () => {
     expect(formatCountCompact({ totalMatches: 0, totalFiles: 0 })).toBe("count: no matches found.");
+  });
+});
+
+// ── Jq formatters ───────────────────────────────────────────────────
+
+describe("formatJq", () => {
+  it("formats successful output", () => {
+    const data: JqResult = { output: '{"name":"Alice"}', exitCode: 0 };
+    expect(formatJq(data)).toBe('{"name":"Alice"}');
+  });
+
+  it("formats error output", () => {
+    const data: JqResult = { output: "jq: error: syntax error", exitCode: 2 };
+    const output = formatJq(data);
+    expect(output).toContain("jq: error (exit 2)");
+    expect(output).toContain("syntax error");
+  });
+});
+
+describe("compactJqMap", () => {
+  it("maps jq result to compact form", () => {
+    const data: JqResult = { output: '"hello"', exitCode: 0 };
+    const compact = compactJqMap(data);
+    expect(compact).toEqual({ output: '"hello"', exitCode: 0 });
+  });
+});
+
+describe("formatJqCompact", () => {
+  it("formats compact jq success", () => {
+    expect(formatJqCompact({ output: '"hello"', exitCode: 0 })).toBe('"hello"');
+  });
+
+  it("formats compact jq error", () => {
+    const output = formatJqCompact({ output: "bad filter", exitCode: 2 });
+    expect(output).toContain("jq: error (exit 2)");
   });
 });

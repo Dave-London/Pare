@@ -1,4 +1,4 @@
-import type { SearchResult, FindResult, CountResult } from "../schemas/index.js";
+import type { SearchResult, FindResult, CountResult, JqResult } from "../schemas/index.js";
 import * as path from "node:path";
 
 // ── rg --json parser ────────────────────────────────────────────────
@@ -150,5 +150,26 @@ export function parseRgCountOutput(stdout: string): CountResult {
     files,
     totalMatches,
     totalFiles: files.length,
+  };
+}
+
+// ── jq parser ────────────────────────────────────────────────────────
+
+/**
+ * Parses jq command output into a structured JqResult.
+ * If the command failed (non-zero exit), stderr is used as the output.
+ */
+export function parseJqOutput(stdout: string, stderr: string, exitCode: number): JqResult {
+  if (exitCode !== 0) {
+    // jq failed — return stderr as the output so the caller sees the error
+    return {
+      output: stderr.trim() || stdout.trim(),
+      exitCode,
+    };
+  }
+
+  return {
+    output: stdout.trimEnd(),
+    exitCode,
   };
 }
