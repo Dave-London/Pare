@@ -1,6 +1,6 @@
 {
   "name": "@paretools/k8s",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "mcpName": "io.github.Dave-London/pare-k8s",
   "description": "MCP server for Kubernetes kubectl with structured, token-efficient output",
   "license": "MIT",
