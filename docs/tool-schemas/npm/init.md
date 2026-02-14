@@ -6,11 +6,11 @@ Initializes a new package.json in the target directory. Returns structured outpu
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                            |
-| ---------------- | -------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `path`           | string                           | cwd         | Directory to initialize                                                |
-| `yes`            | boolean                          | `true`      | Use `-y` flag for non-interactive init with defaults                   |
-| `scope`          | string                           | —           | npm scope for the package (e.g., `@myorg`)                             |
+| Parameter        | Type                            | Default     | Description                                                            |
+| ---------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Directory to initialize                                                |
+| `yes`            | boolean                         | `true`      | Use `-y` flag for non-interactive init with defaults                   |
+| `scope`          | string                          | —           | npm scope for the package (e.g., `@myorg`)                             |
 | `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified |
 
 ## Success — Package Initialized

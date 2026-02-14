@@ -6,13 +6,13 @@ Runs npm/pnpm/yarn install and returns a structured summary of added/removed pac
 
 ## Input Parameters
 
-| Parameter        | Type                                  | Default     | Description                                                                                                             |
-| ---------------- | ------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `path`           | string                                | cwd         | Project root path                                                                                                       |
-| `args`           | string[]                              | `[]`        | Additional arguments (e.g., package names to install)                                                                   |
-| `ignoreScripts`  | boolean                               | `true`      | Skip lifecycle scripts (preinstall/postinstall). Set to false if packages need postinstall scripts (e.g., esbuild, sharp) |
-| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"`      | auto-detect | Package manager to use. Auto-detected from lock files if not specified                                                  |
-| `filter`         | string                                | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm                                                |
+| Parameter        | Type                            | Default     | Description                                                                                                               |
+| ---------------- | ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Project root path                                                                                                         |
+| `args`           | string[]                        | `[]`        | Additional arguments (e.g., package names to install)                                                                     |
+| `ignoreScripts`  | boolean                         | `true`      | Skip lifecycle scripts (preinstall/postinstall). Set to false if packages need postinstall scripts (e.g., esbuild, sharp) |
+| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified                                                    |
+| `filter`         | string                          | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm                                                   |
 
 ## Success — Clean Install
 

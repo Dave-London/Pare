@@ -6,12 +6,12 @@ Shows detailed package metadata from the npm registry. Returns structured data w
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                                          |
-| ---------------- | -------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
-| `package`        | string                           | *(required)* | Package name to look up (e.g., `express`, `lodash@4.17.21`)                         |
-| `path`           | string                           | cwd         | Project root path                                                                    |
-| `compact`        | boolean                          | `true`      | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
-| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified                |
+| Parameter        | Type                            | Default      | Description                                                                           |
+| ---------------- | ------------------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `package`        | string                          | _(required)_ | Package name to look up (e.g., `express`, `lodash@4.17.21`)                           |
+| `path`           | string                          | cwd          | Project root path                                                                     |
+| `compact`        | boolean                         | `true`       | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
+| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect  | Package manager to use. Auto-detected from lock files if not specified                |
 
 ## Success — Package Found
 
@@ -122,10 +122,10 @@ npm info failed: 404 Not Found - 'nonexistent-pkg-xyz' is not in this registry.
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings    |
-| ----------------- | ---------- | --------- | ------------ | ---------- |
-| Package found     | ~350       | ~120      | ~35          | 66–90%     |
-| Package not found | ~40        | error     | error        | n/a        |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Package found     | ~350       | ~120      | ~35          | 66–90%  |
+| Package not found | ~40        | error     | error        | n/a     |
 
 ## Notes
 

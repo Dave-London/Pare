@@ -6,9 +6,9 @@ Lists installed Node.js versions and shows the current version via nvm. Supports
 
 ## Input Parameters
 
-| Parameter | Type                       | Default | Description                                                                                  |
-| --------- | -------------------------- | ------- | -------------------------------------------------------------------------------------------- |
-| `action`  | `"list"` \| `"current"`   | *(required)* | Action to perform: `list` shows all installed versions, `current` shows the active version |
+| Parameter | Type                    | Default      | Description                                                                                |
+| --------- | ----------------------- | ------------ | ------------------------------------------------------------------------------------------ |
+| `action`  | `"list"` \| `"current"` | _(required)_ | Action to perform: `list` shows all installed versions, `current` shows the active version |
 
 ## Success — List Versions
 
@@ -34,11 +34,7 @@ Lists installed Node.js versions and shows the current version via nvm. Supports
 ```json
 {
   "current": "v20.11.1",
-  "versions": [
-    "v20.11.1",
-    "v18.19.0",
-    "v16.20.2"
-  ]
+  "versions": ["v20.11.1", "v18.19.0", "v16.20.2"]
 }
 ```
 
@@ -112,11 +108,7 @@ lts/* -> lts/iron (-> v20.11.1)
 ```json
 {
   "current": "v20.11.1",
-  "versions": [
-    "v20.11.1",
-    "v18.19.0",
-    "v16.20.2"
-  ],
+  "versions": ["v20.11.1", "v18.19.0", "v16.20.2"],
   "default": "v20.11.1"
 }
 ```
@@ -154,12 +146,12 @@ nvm list failed: nvm: command not found
 
 ## Token Savings
 
-| Scenario               | CLI Tokens | Pare Full | Savings |
-| ---------------------- | ---------- | --------- | ------- |
-| 3 versions (Windows)   | ~60        | ~25       | 58%     |
-| Current version only   | ~10        | ~15       | -50%    |
-| 3 versions (Unix)      | ~80        | ~30       | 63%     |
-| nvm not installed      | ~15        | error     | n/a     |
+| Scenario             | CLI Tokens | Pare Full | Savings |
+| -------------------- | ---------- | --------- | ------- |
+| 3 versions (Windows) | ~60        | ~25       | 58%     |
+| Current version only | ~10        | ~15       | -50%    |
+| 3 versions (Unix)    | ~80        | ~30       | 63%     |
+| nvm not installed    | ~15        | error     | n/a     |
 
 ## Notes
 

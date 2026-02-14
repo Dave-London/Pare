@@ -6,13 +6,13 @@ Lists installed packages as structured dependency data with version information.
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                                          |
-| ---------------- | -------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
-| `path`           | string                           | cwd         | Project root path                                                                    |
-| `depth`          | number                           | `0`         | Dependency tree depth (0 = top-level only)                                           |
-| `compact`        | boolean                          | `true`      | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
+| Parameter        | Type                            | Default     | Description                                                                           |
+| ---------------- | ------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Project root path                                                                     |
+| `depth`          | number                          | `0`         | Dependency tree depth (0 = top-level only)                                            |
+| `compact`        | boolean                         | `true`      | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
 | `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified                |
-| `filter`         | string                           | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm              |
+| `filter`         | string                          | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm               |
 
 ## Success — Top-Level Dependencies
 
@@ -166,10 +166,10 @@ my-app@1.0.0 /home/user/my-app
 
 ## Token Savings
 
-| Scenario                | CLI Tokens | Pare Full | Pare Compact | Savings    |
-| ----------------------- | ---------- | --------- | ------------ | ---------- |
-| 4 top-level deps        | ~100       | ~60       | ~45          | 40–55%     |
-| 8 deps (depth=1)        | ~250       | ~100      | ~70          | 60–72%     |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| 4 top-level deps | ~100       | ~60       | ~45          | 40–55%  |
+| 8 deps (depth=1) | ~250       | ~100      | ~70          | 60–72%  |
 
 ## Notes
 

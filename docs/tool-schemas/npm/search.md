@@ -6,12 +6,12 @@ Searches the npm registry for packages matching a query. Always uses npm (pnpm a
 
 ## Input Parameters
 
-| Parameter | Type    | Default     | Description                                                                          |
-| --------- | ------- | ----------- | ------------------------------------------------------------------------------------ |
-| `query`   | string  | *(required)* | Search query string                                                                 |
-| `path`    | string  | cwd         | Project root path                                                                    |
-| `limit`   | number  | `20`        | Maximum number of results to return                                                  |
-| `compact` | boolean | `true`      | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
+| Parameter | Type    | Default      | Description                                                                           |
+| --------- | ------- | ------------ | ------------------------------------------------------------------------------------- |
+| `query`   | string  | _(required)_ | Search query string                                                                   |
+| `path`    | string  | cwd          | Project root path                                                                     |
+| `limit`   | number  | `20`         | Maximum number of results to return                                                   |
+| `compact` | boolean | `true`       | Auto-compact when structured output exceeds raw CLI tokens. Set false for full schema |
 
 ## Success — Packages Found
 
@@ -160,10 +160,10 @@ No matches found for "xyznonexistentpackage123"
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings    |
-| ----------------- | ---------- | --------- | ------------ | ---------- |
-| 5 results         | ~200       | ~100      | ~75          | 50–63%     |
-| No results        | ~10        | ~10       | ~10          | 0%         |
+| Scenario   | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------- | ---------- | --------- | ------------ | ------- |
+| 5 results  | ~200       | ~100      | ~75          | 50–63%  |
+| No results | ~10        | ~10       | ~10          | 0%      |
 
 ## Notes
 

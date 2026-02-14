@@ -6,13 +6,13 @@ Runs a package.json script and returns structured output with exit code, stdout,
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                            |
-| ---------------- | -------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `path`           | string                           | cwd         | Project root path                                                      |
-| `script`         | string                           | *(required)* | The package.json script name to run                                   |
-| `args`           | string[]                         | `[]`        | Additional arguments passed after `--` to the script                   |
-| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified |
-| `filter`         | string                           | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
+| Parameter        | Type                            | Default      | Description                                                             |
+| ---------------- | ------------------------------- | ------------ | ----------------------------------------------------------------------- |
+| `path`           | string                          | cwd          | Project root path                                                       |
+| `script`         | string                          | _(required)_ | The package.json script name to run                                     |
+| `args`           | string[]                        | `[]`         | Additional arguments passed after `--` to the script                    |
+| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect  | Package manager to use. Auto-detected from lock files if not specified  |
+| `filter`         | string                          | —            | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
 
 ## Success — Script Completes
 

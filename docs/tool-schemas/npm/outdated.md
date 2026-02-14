@@ -6,11 +6,11 @@ Checks for outdated packages and returns structured update information with curr
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                            |
-| ---------------- | -------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `path`           | string                           | cwd         | Project root path                                                      |
-| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified |
-| `filter`         | string                           | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
+| Parameter        | Type                            | Default     | Description                                                             |
+| ---------------- | ------------------------------- | ----------- | ----------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Project root path                                                       |
+| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified  |
+| `filter`         | string                          | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
 
 ## Success — All Up To Date
 

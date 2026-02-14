@@ -6,12 +6,12 @@ Runs `npm test` / `pnpm test` / `yarn test` and returns structured output with e
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                            |
-| ---------------- | -------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `path`           | string                           | cwd         | Project root path                                                      |
-| `args`           | string[]                         | `[]`        | Additional arguments passed after `--` to the test script              |
-| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified |
-| `filter`         | string                           | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
+| Parameter        | Type                            | Default     | Description                                                             |
+| ---------------- | ------------------------------- | ----------- | ----------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Project root path                                                       |
+| `args`           | string[]                        | `[]`        | Additional arguments passed after `--` to the test script               |
+| `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified  |
+| `filter`         | string                          | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm |
 
 ## Success — Tests Pass
 
@@ -111,10 +111,10 @@ npm ERR! Test failed.  See above for more details.
 
 ## Token Savings
 
-| Scenario    | CLI Tokens | Pare Full | Savings |
-| ----------- | ---------- | --------- | ------- |
-| Tests pass  | ~100       | ~40       | 60%     |
-| Tests fail  | ~150       | ~55       | 63%     |
+| Scenario   | CLI Tokens | Pare Full | Savings |
+| ---------- | ---------- | --------- | ------- |
+| Tests pass | ~100       | ~40       | 60%     |
+| Tests fail | ~150       | ~55       | 63%     |
 
 ## Notes
 

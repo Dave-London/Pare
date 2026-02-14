@@ -6,9 +6,9 @@ Runs npm/pnpm/yarn audit and returns structured vulnerability data with severity
 
 ## Input Parameters
 
-| Parameter        | Type                             | Default     | Description                                                            |
-| ---------------- | -------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `path`           | string                           | cwd         | Project root path                                                      |
+| Parameter        | Type                            | Default     | Description                                                            |
+| ---------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------- |
+| `path`           | string                          | cwd         | Project root path                                                      |
 | `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified |
 
 ## Success — No Vulnerabilities
@@ -140,10 +140,10 @@ minimatch  <3.0.5
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Savings |
-| --------------------- | ---------- | --------- | ------- |
-| No vulnerabilities    | ~30        | ~25       | 17%     |
-| 3 vulnerabilities     | ~250       | ~100      | 60%     |
+| Scenario           | CLI Tokens | Pare Full | Savings |
+| ------------------ | ---------- | --------- | ------- |
+| No vulnerabilities | ~30        | ~25       | 17%     |
+| 3 vulnerabilities  | ~250       | ~100      | 60%     |
 
 ## Notes
 
