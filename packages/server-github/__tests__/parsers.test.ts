@@ -10,7 +10,6 @@ import {
   parseIssueCreate,
   parseRunView,
   parseRunList,
-  parseRunRerun,
 } from "../src/lib/parsers.js";
 
 describe("parsePrView", () => {

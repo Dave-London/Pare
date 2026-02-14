@@ -33,11 +33,6 @@ function fail(server: string, tool: string, details: string) {
   log(`  ❌ ${tool}: ${details}`);
 }
 
-function skip(server: string, tool: string, details: string) {
-  results.push({ server, tool, status: "SKIP", details });
-  log(`  ⏭️  ${tool}: ${details}`);
-}
-
 async function createClient(
   serverPackage: string,
 ): Promise<{ client: Client; transport: StdioClientTransport }> {

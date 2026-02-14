@@ -3,12 +3,12 @@
  * These cover getRunCommand, getCoverageCommand, readJsonOutput,
  * and extractJson edge cases not covered by extract-json.test.ts.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
-import { getRunCommand, readJsonOutput, extractJson } from "../src/tools/run.js";
+import { getRunCommand, readJsonOutput } from "../src/tools/run.js";
 import { getCoverageCommand } from "../src/tools/coverage.js";
 
 // ---------------------------------------------------------------------------
