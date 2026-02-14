@@ -1,18 +1,21 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { npm } from "../lib/npm-runner.js";
+import { runPm } from "../lib/npm-runner.js";
+import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseInfoJson } from "../lib/parsers.js";
 import { formatInfo, compactInfoMap, formatInfoCompact } from "../lib/formatters.js";
 import { NpmInfoSchema } from "../schemas/index.js";
+import { packageManagerInput } from "../lib/pm-input.js";
 
 export function registerInfoTool(server: McpServer) {
   server.registerTool(
     "info",
     {
-      title: "npm Info",
+      title: "Package Info",
       description:
-        "Shows detailed package metadata from the npm registry. Use instead of running `npm info` in the terminal.",
+        "Shows detailed package metadata from the npm registry. " +
+        "Works with both npm and pnpm (both query the same registry). Use instead of running `npm info` in the terminal.",
       inputSchema: {
         package: z
           .string()
@@ -30,22 +33,26 @@ export function registerInfoTool(server: McpServer) {
           .describe(
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
+        packageManager: packageManagerInput,
       },
       outputSchema: NpmInfoSchema,
     },
-    async ({ package: pkg, path, compact }) => {
+    async ({ package: pkg, path, compact, packageManager }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(pkg, "package");
+      const pm = await detectPackageManager(cwd, packageManager);
 
-      const result = await npm(["info", pkg, "--json"], cwd);
+      // pnpm info is an alias for npm info — both work the same way
+      const result = await runPm(pm, ["info", pkg, "--json"], cwd);
 
       if (result.exitCode !== 0 && !result.stdout) {
-        throw new Error(`npm info failed: ${result.stderr}`);
+        throw new Error(`${pm} info failed: ${result.stderr}`);
       }
 
       const info = parseInfoJson(result.stdout);
+      const infoWithPm = { ...info, packageManager: pm };
       return compactDualOutput(
-        info,
+        infoWithPm,
         result.stdout,
         formatInfo,
         compactInfoMap,

@@ -1,18 +1,21 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { npm } from "../lib/npm-runner.js";
+import { runPm } from "../lib/npm-runner.js";
+import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun } from "../lib/formatters.js";
 import { NpmRunSchema } from "../schemas/index.js";
+import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",
     {
-      title: "npm Run",
+      title: "Run Script",
       description:
-        "Runs a package.json script via `npm run <script>` and returns structured output with exit code, stdout, stderr, and duration. Use instead of running `npm run` in the terminal.",
+        "Runs a package.json script via `npm run <script>` or `pnpm run <script>` and returns structured output with exit code, stdout, stderr, and duration. " +
+        "Auto-detects pnpm via pnpm-lock.yaml. Use instead of running `npm run` or `pnpm run` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -29,29 +32,34 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the script"),
+        packageManager: packageManagerInput,
+        filter: filterInput,
       },
       outputSchema: NpmRunSchema,
     },
-    async ({ path, script, args }) => {
+    async ({ path, script, args, packageManager, filter }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(script, "script");
-      // Defense-in-depth: validate args even though they come after "--" separator
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
+      if (filter) assertNoFlagInjection(filter, "filter");
 
-      const npmArgs = ["run", script];
+      const pm = await detectPackageManager(cwd, packageManager);
+
+      const pmArgs = ["run", script];
+      if (pm === "pnpm" && filter) pmArgs.splice(0, 0, `--filter=${filter}`);
       if (args && args.length > 0) {
-        npmArgs.push("--");
-        npmArgs.push(...args);
+        pmArgs.push("--");
+        pmArgs.push(...args);
       }
 
       const start = Date.now();
-      const result = await npm(npmArgs, cwd);
+      const result = await runPm(pm, pmArgs, cwd);
       const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
 
       const data = parseRunOutput(script, result.exitCode, result.stdout, result.stderr, duration);
-      return dualOutput(data, formatRun);
+      return dualOutput({ ...data, packageManager: pm }, formatRun);
     },
   );
 }

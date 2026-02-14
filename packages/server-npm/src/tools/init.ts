@@ -1,10 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { npm } from "../lib/npm-runner.js";
+import { runPm } from "../lib/npm-runner.js";
+import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseInitOutput } from "../lib/parsers.js";
 import { formatInit } from "../lib/formatters.js";
 import { NpmInitSchema } from "../schemas/index.js";
+import { packageManagerInput } from "../lib/pm-input.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -12,9 +14,10 @@ export function registerInitTool(server: McpServer) {
   server.registerTool(
     "init",
     {
-      title: "npm Init",
+      title: "Init Package",
       description:
-        "Initializes a new package.json in the target directory. Returns structured output with the package name, version, and path.",
+        "Initializes a new package.json in the target directory. " +
+        "Works with both npm and pnpm. Returns structured output with the package name, version, and path.",
       inputSchema: {
         path: z
           .string()
@@ -31,22 +34,24 @@ export function registerInitTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("npm scope for the package (e.g., '@myorg')"),
+        packageManager: packageManagerInput,
       },
       outputSchema: NpmInitSchema,
     },
-    async ({ path, yes, scope }) => {
+    async ({ path, yes, scope, packageManager }) => {
       const cwd = path || process.cwd();
       if (scope) assertNoFlagInjection(scope, "scope");
+      const pm = await detectPackageManager(cwd, packageManager);
 
-      const npmArgs = ["init"];
+      const pmArgs = ["init"];
       if (scope) {
-        npmArgs.push(`--scope=${scope}`);
+        pmArgs.push(`--scope=${scope}`);
       }
       if (yes !== false) {
-        npmArgs.push("-y");
+        pmArgs.push("-y");
       }
 
-      const result = await npm(npmArgs, cwd);
+      const result = await runPm(pm, pmArgs, cwd);
       const packageJsonPath = join(cwd, "package.json");
 
       let packageName = "unknown";
@@ -60,13 +65,12 @@ export function registerInitTool(server: McpServer) {
           packageName = pkg.name ?? "unknown";
           version = pkg.version ?? "0.0.0";
         } catch {
-          // package.json might not exist if init failed silently
           success = false;
         }
       }
 
       const data = parseInitOutput(success, packageName, version, packageJsonPath);
-      return dualOutput(data, formatInit);
+      return dualOutput({ ...data, packageManager: pm }, formatInit);
     },
   );
 }

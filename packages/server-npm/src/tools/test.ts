@@ -1,18 +1,21 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { npm } from "../lib/npm-runner.js";
+import { runPm } from "../lib/npm-runner.js";
+import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseTestOutput } from "../lib/parsers.js";
 import { formatTest } from "../lib/formatters.js";
 import { NpmTestSchema } from "../schemas/index.js";
+import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
 export function registerTestTool(server: McpServer) {
   server.registerTool(
     "test",
     {
-      title: "npm Test",
+      title: "Run Tests",
       description:
-        "Runs `npm test` and returns structured output with exit code, stdout, stderr, and duration. Shorthand for running the test script defined in package.json.",
+        "Runs `npm test` or `pnpm test` and returns structured output with exit code, stdout, stderr, and duration. " +
+        "Auto-detects pnpm via pnpm-lock.yaml. Shorthand for running the test script defined in package.json.",
       inputSchema: {
         path: z
           .string()
@@ -25,29 +28,34 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the test script"),
+        packageManager: packageManagerInput,
+        filter: filterInput,
       },
       outputSchema: NpmTestSchema,
     },
-    async ({ path, args }) => {
-      // Defense-in-depth: validate args even though they come after "--" separator
+    async ({ path, args, packageManager, filter }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
+      if (filter) assertNoFlagInjection(filter, "filter");
 
       const cwd = path || process.cwd();
+      const pm = await detectPackageManager(cwd, packageManager);
 
-      const npmArgs = ["test"];
+      const pmArgs: string[] = [];
+      if (pm === "pnpm" && filter) pmArgs.push(`--filter=${filter}`);
+      pmArgs.push("test");
       if (args && args.length > 0) {
-        npmArgs.push("--");
-        npmArgs.push(...args);
+        pmArgs.push("--");
+        pmArgs.push(...args);
       }
 
       const start = Date.now();
-      const result = await npm(npmArgs, cwd);
+      const result = await runPm(pm, pmArgs, cwd);
       const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
 
       const data = parseTestOutput(result.exitCode, result.stdout, result.stderr, duration);
-      return dualOutput(data, formatTest);
+      return dualOutput({ ...data, packageManager: pm }, formatTest);
     },
   );
 }

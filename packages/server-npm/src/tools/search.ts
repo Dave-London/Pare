@@ -10,9 +10,10 @@ export function registerSearchTool(server: McpServer) {
   server.registerTool(
     "search",
     {
-      title: "npm Search",
+      title: "Search npm Registry",
       description:
-        "Searches the npm registry for packages matching a query. Use instead of running `npm search` in the terminal.",
+        "Searches the npm registry for packages matching a query. Use instead of running `npm search` in the terminal. " +
+        "Note: pnpm does not have a search command, so this always uses npm.",
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Search query string"),
         path: z
@@ -44,6 +45,7 @@ export function registerSearchTool(server: McpServer) {
         args.push(`--searchlimit=${limit}`);
       }
 
+      // Always use npm for search — pnpm doesn't have a search command
       const result = await npm(args, cwd);
 
       if (result.exitCode !== 0 && !result.stdout) {
@@ -51,8 +53,9 @@ export function registerSearchTool(server: McpServer) {
       }
 
       const search = parseSearchJson(result.stdout || "[]");
+      const searchWithPm = { ...search, packageManager: "npm" as const };
       return compactDualOutput(
-        search,
+        searchWithPm,
         result.stdout || "[]",
         formatSearch,
         compactSearchMap,

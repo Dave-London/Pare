@@ -11,7 +11,9 @@ import type {
   NpmSearch,
 } from "../schemas/index.js";
 
-/** Parses `npm install` summary output into structured data with package counts and vulnerability info. */
+import type { PackageManager } from "./detect-pm.js";
+
+/** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
   // npm install doesn't have a great --json output, so we parse the summary line
   // "added X packages, removed Y packages, changed Z packages in Ns"
@@ -80,18 +82,70 @@ export function parseAuditJson(jsonStr: string): NpmAudit {
   return { vulnerabilities, summary };
 }
 
-/** Parses `npm outdated --json` output into structured data with current, wanted, and latest versions. */
-export function parseOutdatedJson(jsonStr: string): NpmOutdated {
+/**
+ * Parses `pnpm audit --json` output into structured vulnerability data.
+ * pnpm audit --json returns { advisories: { [id]: { ... } }, metadata: { ... } }
+ * which differs from npm's { vulnerabilities: { [name]: { ... } } } format.
+ */
+export function parsePnpmAuditJson(jsonStr: string): NpmAudit {
   const data = JSON.parse(jsonStr);
 
-  // npm outdated --json returns { [name]: { current, wanted, latest, ... } }
+  // pnpm audit --json may use the npm v7+ format OR the classic advisories format
+  // Try npm-compatible format first (pnpm v8+ matches npm's format)
+  if (data.vulnerabilities) {
+    return parseAuditJson(jsonStr);
+  }
+
+  // Classic pnpm/npm v6 advisories format
+  const advisories = data.advisories ?? {};
+  const vulnerabilities = Object.values(advisories).map((a: any) => ({
+    name: a.module_name ?? a.name ?? "unknown",
+    severity: a.severity ?? "info",
+    title: a.title ?? "Unknown",
+    url: a.url,
+    range: a.vulnerable_versions ?? a.range,
+    fixAvailable: !!a.patched_versions && a.patched_versions !== "<0.0.0",
+  }));
+
+  const meta = data.metadata ?? {};
+  const summary = {
+    total: meta.totalDependencies ? vulnerabilities.length : vulnerabilities.length,
+    critical: meta.vulnerabilities?.critical ?? 0,
+    high: meta.vulnerabilities?.high ?? 0,
+    moderate: meta.vulnerabilities?.moderate ?? 0,
+    low: meta.vulnerabilities?.low ?? 0,
+    info: meta.vulnerabilities?.info ?? 0,
+  };
+
+  return { vulnerabilities, summary };
+}
+
+/** Parses `npm outdated --json` or `pnpm outdated --json` output into structured data with current, wanted, and latest versions. */
+export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"): NpmOutdated {
+  const data = JSON.parse(jsonStr);
+
+  // pnpm outdated --json returns an object keyed by package name, same as npm
+  // but may also return an array in some versions
+  if (Array.isArray(data)) {
+    // pnpm outdated --json may return an array of { name, current, wanted, latest }
+    const packages = data.map((v: any) => ({
+      name: v.packageName ?? v.name ?? "unknown",
+      current: v.current ?? "N/A",
+      wanted: v.wanted ?? "N/A",
+      latest: v.latest ?? "N/A",
+      ...(v.dependencyType ? { type: v.dependencyType } : {}),
+    }));
+    return { packages, total: packages.length };
+  }
+
+  // npm-style { [name]: { current, wanted, latest, ... } }
   const packages = Object.entries(data).map(([name, v]: [string, any]) => ({
     name,
     current: v.current ?? "N/A",
     wanted: v.wanted ?? "N/A",
     latest: v.latest ?? "N/A",
     ...(v.location ? { location: v.location } : {}),
-    ...(v.type ? { type: v.type } : {}),
+    ...(v.type ? { type: v.type } : v.dependencyType ? { type: v.dependencyType } : {}),
   }));
 
   return { packages, total: packages.length };

@@ -1,7 +1,14 @@
 import { z } from "zod";
 
+/** Reusable schema field indicating which package manager was used. */
+const packageManagerField = z
+  .enum(["npm", "pnpm"])
+  .optional()
+  .describe("Package manager that was used (npm or pnpm)");
+
 /** Zod schema for structured npm install output including package counts, vulnerabilities, and duration. */
 export const NpmInstallSchema = z.object({
+  packageManager: packageManagerField,
   added: z.number(),
   removed: z.number(),
   changed: z.number(),
@@ -34,6 +41,7 @@ export const NpmAuditVulnSchema = z.object({
 
 /** Zod schema for structured npm audit output with vulnerability list and severity summary. */
 export const NpmAuditSchema = z.object({
+  packageManager: packageManagerField,
   vulnerabilities: z.array(NpmAuditVulnSchema),
   summary: z.object({
     total: z.number(),
@@ -59,6 +67,7 @@ export const NpmOutdatedEntrySchema = z.object({
 
 /** Zod schema for structured npm outdated output with a list of packages needing updates. */
 export const NpmOutdatedSchema = z.object({
+  packageManager: packageManagerField,
   packages: z.array(NpmOutdatedEntrySchema),
   total: z.number(),
 });
@@ -84,6 +93,7 @@ export const NpmListDepSchema: z.ZodType<NpmListDep> = z.object({
 
 /** Zod schema for structured npm list output with project name, version, and dependency map. */
 export const NpmListSchema = z.object({
+  packageManager: packageManagerField,
   name: z.string(),
   version: z.string(),
   dependencies: z.record(z.string(), NpmListDepSchema),
@@ -94,6 +104,7 @@ export type NpmList = z.infer<typeof NpmListSchema>;
 
 /** Zod schema for structured npm run output with script name, exit code, and captured output. */
 export const NpmRunSchema = z.object({
+  packageManager: packageManagerField,
   script: z.string().describe("The script that was executed"),
   exitCode: z.number().describe("Process exit code (0 = success)"),
   stdout: z.string().describe("Standard output from the script"),
@@ -106,6 +117,7 @@ export type NpmRun = z.infer<typeof NpmRunSchema>;
 
 /** Zod schema for structured npm test output with exit code and captured output. */
 export const NpmTestSchema = z.object({
+  packageManager: packageManagerField,
   exitCode: z.number().describe("Process exit code (0 = success)"),
   stdout: z.string().describe("Standard output from the test run"),
   stderr: z.string().describe("Standard error from the test run"),
@@ -117,6 +129,7 @@ export type NpmTest = z.infer<typeof NpmTestSchema>;
 
 /** Zod schema for structured npm init output with package metadata. */
 export const NpmInitSchema = z.object({
+  packageManager: packageManagerField,
   success: z.boolean().describe("Whether package.json was created successfully"),
   packageName: z.string().describe("The name field from the generated package.json"),
   version: z.string().describe("The version field from the generated package.json"),
@@ -127,6 +140,7 @@ export type NpmInit = z.infer<typeof NpmInitSchema>;
 
 /** Zod schema for structured npm info output with package metadata. */
 export const NpmInfoSchema = z.object({
+  packageManager: packageManagerField,
   name: z.string(),
   version: z.string(),
   description: z.string(),
@@ -153,6 +167,7 @@ export const NpmSearchPackageSchema = z.object({
 
 /** Zod schema for structured npm search output with matching packages. */
 export const NpmSearchSchema = z.object({
+  packageManager: packageManagerField,
   packages: z.array(NpmSearchPackageSchema),
   total: z.number(),
 });
