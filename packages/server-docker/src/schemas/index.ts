@@ -178,3 +178,21 @@ export const DockerComposePsSchema = z.object({
 });
 
 export type DockerComposePs = z.infer<typeof DockerComposePsSchema>;
+
+/** Zod schema for a single compose log entry with timestamp, service, and message. */
+export const ComposeLogEntrySchema = z.object({
+  timestamp: z.string().optional(),
+  service: z.string(),
+  message: z.string(),
+});
+
+/** Zod schema for structured docker compose logs output with service-separated log entries. */
+export const DockerComposeLogsSchema = z.object({
+  services: z.array(z.string()),
+  entries: z.array(ComposeLogEntrySchema),
+  total: z.number(),
+  isTruncated: z.boolean().optional(),
+  totalEntries: z.number().optional(),
+});
+
+export type DockerComposeLogs = z.infer<typeof DockerComposeLogsSchema>;

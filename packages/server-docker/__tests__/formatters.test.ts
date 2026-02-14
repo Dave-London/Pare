@@ -8,6 +8,7 @@ import {
   formatNetworkLs,
   formatVolumeLs,
   formatComposePs,
+  formatComposeLogs,
 } from "../src/lib/formatters.js";
 import type {
   DockerPs,
@@ -18,6 +19,7 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+  DockerComposeLogs,
 } from "../src/schemas/index.js";
 
 describe("formatPs", () => {
@@ -347,5 +349,55 @@ describe("formatComposePs", () => {
   it("formats empty compose service list", () => {
     const data: DockerComposePs = { services: [], total: 0 };
     expect(formatComposePs(data)).toBe("No compose services found.");
+  });
+});
+
+describe("formatComposeLogs", () => {
+  it("formats compose logs with timestamps", () => {
+    const data: DockerComposeLogs = {
+      services: ["web-1", "db-1"],
+      entries: [
+        { timestamp: "2024-06-01T10:00:00.000Z", service: "web-1", message: "Starting..." },
+        { timestamp: "2024-06-01T10:00:01.000Z", service: "db-1", message: "Ready" },
+      ],
+      total: 2,
+    };
+    const output = formatComposeLogs(data);
+    expect(output).toContain("2 services, 2 entries");
+    expect(output).toContain("web-1 | 2024-06-01T10:00:00.000Z Starting...");
+    expect(output).toContain("db-1 | 2024-06-01T10:00:01.000Z Ready");
+  });
+
+  it("formats compose logs without timestamps", () => {
+    const data: DockerComposeLogs = {
+      services: ["web-1"],
+      entries: [{ service: "web-1", message: "Hello world" }],
+      total: 1,
+    };
+    const output = formatComposeLogs(data);
+    expect(output).toContain("1 services, 1 entries");
+    expect(output).toContain("web-1 | Hello world");
+  });
+
+  it("formats truncated compose logs", () => {
+    const data: DockerComposeLogs = {
+      services: ["web-1"],
+      entries: [{ service: "web-1", message: "line 1" }],
+      total: 1,
+      isTruncated: true,
+      totalEntries: 500,
+    };
+    const output = formatComposeLogs(data);
+    expect(output).toContain("1 of 500 entries (truncated)");
+  });
+
+  it("formats empty compose logs", () => {
+    const data: DockerComposeLogs = {
+      services: [],
+      entries: [],
+      total: 0,
+    };
+    const output = formatComposeLogs(data);
+    expect(output).toContain("0 services, 0 entries");
   });
 });

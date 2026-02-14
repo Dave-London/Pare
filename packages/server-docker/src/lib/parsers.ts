@@ -12,6 +12,7 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+  DockerComposeLogs,
 } from "../schemas/index.js";
 
 /** Parses `docker ps --format json` output into structured container data with ports and state. */
@@ -330,4 +331,53 @@ export function parseComposePsJson(stdout: string): DockerComposePs {
   });
 
   return { services, total: services.length };
+}
+
+/** Parses `docker compose logs` output into structured entries grouped by service.
+ *
+ * Compose logs format: `service-name  | [timestamp] message`
+ * or with --timestamps: `service-name  | 2024-01-01T00:00:00.000000000Z message`
+ */
+export function parseComposeLogsOutput(stdout: string, limit?: number): DockerComposeLogs {
+  const allLines = stdout.split("\n").filter(Boolean);
+  const serviceSet = new Set<string>();
+
+  // Parse each line: "service  | [timestamp] message"
+  // The pipe separator may have varying whitespace
+  const entries = allLines.map((line) => {
+    const pipeIdx = line.indexOf("|");
+    if (pipeIdx === -1) {
+      // No pipe — treat entire line as message with unknown service
+      return { service: "unknown", message: line.trim() };
+    }
+
+    const service = line.slice(0, pipeIdx).trim();
+    const rest = line.slice(pipeIdx + 1).trimStart();
+    serviceSet.add(service);
+
+    // Try to extract an ISO timestamp at the beginning
+    const tsMatch = rest.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)\s+(.*)/);
+    if (tsMatch) {
+      return { timestamp: tsMatch[1], service, message: tsMatch[2] };
+    }
+
+    return { service, message: rest };
+  });
+
+  const totalEntries = entries.length;
+  const isTruncated = limit != null && totalEntries > limit;
+  const limited = isTruncated ? entries.slice(0, limit) : entries;
+
+  // Rebuild service set from limited entries
+  if (isTruncated) {
+    serviceSet.clear();
+    for (const e of limited) serviceSet.add(e.service);
+  }
+
+  return {
+    services: [...serviceSet],
+    entries: limited,
+    total: limited.length,
+    ...(isTruncated ? { isTruncated: true, totalEntries } : {}),
+  };
 }

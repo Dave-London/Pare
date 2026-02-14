@@ -26,12 +26,13 @@ describe("@paretools/docker integration", () => {
     await transport.close();
   });
 
-  it("lists all 13 tools", async () => {
+  it("lists all 14 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "build",
       "compose-down",
+      "compose-logs",
       "compose-ps",
       "compose-up",
       "exec",
@@ -221,6 +222,26 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.volumes)).toBe(true);
+        expect(sc.total).toEqual(expect.any(Number));
+      }
+    });
+  });
+
+  describe("compose-logs", () => {
+    it("returns error or structured data when called without docker", async () => {
+      const result = await client.callTool({
+        name: "compose-logs",
+        arguments: { path: "C:\\nonexistent-path-for-testing" },
+      });
+
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/docker|compose|not found|failed|error|no configuration/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.services)).toBe(true);
+        expect(Array.isArray(sc.entries)).toBe(true);
         expect(sc.total).toEqual(expect.any(Number));
       }
     });
