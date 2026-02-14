@@ -9,6 +9,7 @@ import type {
   NpmInit,
   NpmInfo,
   NpmSearch,
+  NvmResult,
 } from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
@@ -235,6 +236,26 @@ export function formatSearchCompact(data: NpmSearchCompact): string {
   const lines = [`${data.total} packages found:`];
   for (const pkg of data.packages) {
     lines.push(`  ${pkg.name}@${pkg.version} — ${pkg.description}`);
+  }
+  return lines.join("\n");
+}
+
+// ── Nvm formatters ───────────────────────────────────────────────────
+
+/** Formats structured nvm data into a human-readable version summary. */
+export function formatNvm(data: NvmResult): string {
+  const lines = [`Current: ${data.current}`];
+  if (data.default) {
+    lines.push(`Default: ${data.default}`);
+  }
+  if (data.versions.length > 0) {
+    lines.push(`Installed (${data.versions.length}):`);
+    for (const v of data.versions) {
+      const marker = v === data.current ? " (current)" : "";
+      lines.push(`  ${v}${marker}`);
+    }
+  } else {
+    lines.push("No versions installed.");
   }
   return lines.join("\n");
 }

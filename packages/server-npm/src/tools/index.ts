@@ -9,6 +9,7 @@ import { registerTestTool } from "./test.js";
 import { registerInitTool } from "./init.js";
 import { registerInfoTool } from "./info.js";
 import { registerSearchTool } from "./search.js";
+import { registerNvmTool } from "./nvm.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("npm", name);
@@ -21,4 +22,5 @@ export function registerAllTools(server: McpServer) {
   if (s("init")) registerInitTool(server);
   if (s("info")) registerInfoTool(server);
   if (s("search")) registerSearchTool(server);
+  if (s("nvm")) registerNvmTool(server);
 }
