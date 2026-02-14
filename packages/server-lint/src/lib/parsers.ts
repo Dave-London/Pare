@@ -343,6 +343,81 @@ interface OxlintJsonEntry {
 }
 
 /**
+ * Parses ShellCheck JSON output (from `shellcheck --format=json`).
+ *
+ * ShellCheck JSON format is an array of objects:
+ * [{ file, line, endLine, column, endColumn, level, code, message, fix }]
+ *
+ * Levels: "error", "warning", "info", "style"
+ * We map "style" to "info" to fit the LintDiagnostic schema.
+ */
+export function parseShellcheckJson(stdout: string): LintResult {
+  let findings: ShellcheckJsonEntry[];
+  try {
+    findings = JSON.parse(stdout);
+  } catch {
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+  }
+
+  if (!Array.isArray(findings)) {
+    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+  }
+
+  const diagnostics: LintDiagnostic[] = [];
+  const filesSet = new Set<string>();
+
+  for (const finding of findings) {
+    const file = finding.file ?? "unknown";
+    filesSet.add(file);
+
+    diagnostics.push({
+      file,
+      line: finding.line ?? 0,
+      severity: mapShellcheckLevel(finding.level),
+      rule: finding.code != null ? `SC${finding.code}` : "unknown",
+      message: finding.message ?? "",
+    });
+  }
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+
+  return {
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    filesChecked: filesSet.size,
+  };
+}
+
+function mapShellcheckLevel(level: string | undefined): "error" | "warning" | "info" {
+  switch (level) {
+    case "error":
+      return "error";
+    case "warning":
+      return "warning";
+    case "info":
+    case "style":
+      return "info";
+    default:
+      return "warning";
+  }
+}
+
+interface ShellcheckJsonEntry {
+  file?: string;
+  line?: number;
+  endLine?: number;
+  column?: number;
+  endColumn?: number;
+  level?: string;
+  code?: number;
+  message?: string;
+  fix?: unknown;
+}
+
+/**
  * Parses Biome `format --write` output.
  *
  * Biome format --write outputs lines like:

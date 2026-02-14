@@ -19,3 +19,7 @@ export async function stylelintCmd(args: string[], cwd?: string): Promise<RunRes
 export async function oxlintCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["oxlint", ...args], { cwd, timeout: 120_000 });
 }
+
+export async function shellcheckCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("shellcheck", args, { cwd, timeout: 120_000 });
+}
