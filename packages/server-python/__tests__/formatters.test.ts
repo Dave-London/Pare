@@ -12,6 +12,7 @@ import {
   formatCondaList,
   formatCondaInfo,
   formatCondaEnvList,
+  formatPoetry,
 } from "../src/lib/formatters.js";
 import type {
   PipInstall,
@@ -26,6 +27,7 @@ import type {
   CondaList,
   CondaInfo,
   CondaEnvList,
+  PoetryResult,
 } from "../src/schemas/index.js";
 
 describe("formatPipInstall", () => {
@@ -547,5 +549,113 @@ describe("formatCondaEnvList", () => {
     expect(output).toContain("base *: /home/user/miniconda3");
     expect(output).toContain("dev: /home/user/miniconda3/envs/dev");
     expect(output).not.toContain("dev *:");
+// ─── poetry formatter tests ─────────────────────────────────────────────────
+
+describe("formatPoetry", () => {
+  it("formats failed action", () => {
+    const data: PoetryResult = {
+      success: false,
+      action: "install",
+      total: 0,
+    };
+    expect(formatPoetry(data)).toBe("poetry install failed.");
+  });
+
+  it("formats show with packages", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "show",
+      packages: [
+        { name: "requests", version: "2.31.0" },
+        { name: "flask", version: "3.0.0" },
+      ],
+      total: 2,
+    };
+    const output = formatPoetry(data);
+    expect(output).toContain("2 packages:");
+    expect(output).toContain("requests==2.31.0");
+    expect(output).toContain("flask==3.0.0");
+  });
+
+  it("formats show with no packages", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "show",
+      packages: [],
+      total: 0,
+    };
+    expect(formatPoetry(data)).toBe("No packages found.");
+  });
+
+  it("formats build with artifacts", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "build",
+      artifacts: [{ file: "mypackage-1.0.0.tar.gz" }, { file: "mypackage-1.0.0-py3-none-any.whl" }],
+      total: 2,
+    };
+    const output = formatPoetry(data);
+    expect(output).toContain("Built 2 artifacts:");
+    expect(output).toContain("mypackage-1.0.0.tar.gz");
+    expect(output).toContain("mypackage-1.0.0-py3-none-any.whl");
+  });
+
+  it("formats build with no artifacts", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "build",
+      artifacts: [],
+      total: 0,
+    };
+    expect(formatPoetry(data)).toBe("poetry build: no artifacts produced.");
+  });
+
+  it("formats install with packages", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "install",
+      packages: [{ name: "requests", version: "2.31.0" }],
+      total: 1,
+    };
+    const output = formatPoetry(data);
+    expect(output).toContain("poetry install: 1 packages:");
+    expect(output).toContain("requests==2.31.0");
+  });
+
+  it("formats install with no changes", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "install",
+      packages: [],
+      total: 0,
+    };
+    expect(formatPoetry(data)).toBe("poetry install: no changes.");
+  });
+
+  it("formats add with packages", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "add",
+      packages: [
+        { name: "certifi", version: "2023.7.22" },
+        { name: "requests", version: "2.31.0" },
+      ],
+      total: 2,
+    };
+    const output = formatPoetry(data);
+    expect(output).toContain("poetry add: 2 packages:");
+    expect(output).toContain("certifi==2023.7.22");
+  });
+
+  it("formats remove with packages", () => {
+    const data: PoetryResult = {
+      success: true,
+      action: "remove",
+      packages: [{ name: "requests", version: "2.31.0" }],
+      total: 1,
+    };
+    const output = formatPoetry(data);
+    expect(output).toContain("poetry remove: 1 packages:");
+    expect(output).toContain("requests==2.31.0");
   });
 });

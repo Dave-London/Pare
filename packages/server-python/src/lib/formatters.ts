@@ -15,6 +15,7 @@ import type {
   CondaEnvList,
   CondaResult,
   PyenvResult,
+  PoetryResult,
 } from "../schemas/index.js";
 
 /** Formats structured pip install results into a human-readable summary of installed packages. */
@@ -634,4 +635,71 @@ export function compactPyenvMap(data: PyenvResult): PyenvResultCompact {
 export function formatPyenvCompact(data: PyenvResultCompact): string {
   if (!data.success) return `pyenv ${data.action} failed.`;
   return `pyenv ${data.action}: success.`;
+// ── poetry formatters ────────────────────────────────────────────────
+
+/** Formats structured poetry results into a human-readable summary. */
+export function formatPoetry(data: PoetryResult): string {
+  if (!data.success) return `poetry ${data.action} failed.`;
+
+  if (data.action === "show") {
+    const pkgs = data.packages ?? [];
+    if (pkgs.length === 0) return "No packages found.";
+    const lines = [`${pkgs.length} packages:`];
+    for (const pkg of pkgs) {
+      lines.push(`  ${pkg.name}==${pkg.version}`);
+    }
+    return lines.join("\n");
+  }
+
+  if (data.action === "build") {
+    const arts = data.artifacts ?? [];
+    if (arts.length === 0) return "poetry build: no artifacts produced.";
+    const lines = [`Built ${arts.length} artifacts:`];
+    for (const a of arts) {
+      lines.push(`  ${a.file}`);
+    }
+    return lines.join("\n");
+  }
+
+  // install, add, remove
+  const pkgs = data.packages ?? [];
+  if (pkgs.length === 0) return `poetry ${data.action}: no changes.`;
+  const lines = [`poetry ${data.action}: ${pkgs.length} packages:`];
+  for (const pkg of pkgs) {
+    lines.push(`  ${pkg.name}==${pkg.version}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact poetry: success + action + total count. Drop individual package/artifact details. */
+export interface PoetryResultCompact {
+  [key: string]: unknown;
+  success: boolean;
+  action: string;
+  total: number;
+}
+
+export function compactPoetryMap(data: PoetryResult): PoetryResultCompact {
+  return {
+    success: data.success,
+    action: data.action,
+    total: data.total,
+  };
+}
+
+export function formatPoetryCompact(data: PoetryResultCompact): string {
+  if (!data.success) return `poetry ${data.action} failed.`;
+
+  if (data.action === "show") {
+    if (data.total === 0) return "No packages found.";
+    return `${data.total} packages installed.`;
+  }
+
+  if (data.action === "build") {
+    if (data.total === 0) return "poetry build: no artifacts produced.";
+    return `Built ${data.total} artifacts.`;
+  }
+
+  if (data.total === 0) return `poetry ${data.action}: no changes.`;
+  return `poetry ${data.action}: ${data.total} packages.`;
 }

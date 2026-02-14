@@ -13,6 +13,7 @@ import { registerUvRunTool } from "./uv-run.js";
 import { registerBlackTool } from "./black.js";
 import { registerCondaTool } from "./conda.js";
 import { registerPyenvTool } from "./pyenv.js";
+import { registerPoetryTool } from "./poetry.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("python", name);
@@ -29,4 +30,5 @@ export function registerAllTools(server: McpServer) {
   if (s("black")) registerBlackTool(server);
   if (s("conda")) registerCondaTool(server);
   if (s("pyenv")) registerPyenvTool(server);
+  if (s("poetry")) registerPoetryTool(server);
 }

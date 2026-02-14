@@ -31,3 +31,6 @@ export async function conda(args: string[], cwd?: string): Promise<RunResult> {
 export async function pyenv(args: string[], cwd?: string): Promise<RunResult> {
   return run("pyenv", args, { cwd, timeout: 120_000 });
 }
+export async function poetry(args: string[], cwd?: string): Promise<RunResult> {
+  return run("poetry", args, { cwd, timeout: 120_000 });
+}

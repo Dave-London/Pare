@@ -244,3 +244,24 @@ export const PyenvResultSchema = z.object({
 });
 
 export type PyenvResult = z.infer<typeof PyenvResultSchema>;
+/** Zod schema for a single package entry from poetry show. */
+export const PoetryPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+});
+
+/** Zod schema for a build artifact from poetry build. */
+export const PoetryArtifactSchema = z.object({
+  file: z.string(),
+});
+
+/** Zod schema for structured poetry output covering install/add/remove/show/build actions. */
+export const PoetryResultSchema = z.object({
+  success: z.boolean(),
+  action: z.enum(["install", "add", "remove", "show", "build"]),
+  packages: z.array(PoetryPackageSchema).optional(),
+  artifacts: z.array(PoetryArtifactSchema).optional(),
+  total: z.number(),
+});
+
+export type PoetryResult = z.infer<typeof PoetryResultSchema>;
