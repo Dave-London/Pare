@@ -254,8 +254,8 @@ Estimated percentage of daily CLI tool usage that Pare can handle (v0.8.1, 147 t
 
 - [Shell history analysis (Jerry Ng 2024)](https://jerryng.com/blog/2024-shell-history-analysis/): git 59%, npm 6.5%, docker 6.1%
 - [Anthropic "How People Prompt" (2025)](https://www.anthropic.com/research/how-people-prompt): File Read 35-45%, Terminal 15-25%, Git 10-15%
-- CLI Tool Landscape Report (2026-02-13): 150+ tools surveyed across 28 categories
-- MCP Dev Tools Landscape gap analysis (2026-02-10)
-- Direct observation: tools used via Bash fallback in Pare development sessions
 - [SWE-bench Agent Traces (2024-2025)](https://www.swebench.com/): heavy git/test usage patterns
 - [Stack Overflow Developer Survey 2025](https://survey.stackoverflow.co/2025/)
+- Direct observation: tools used via Bash fallback in Pare development sessions
+- CLI Tool Landscape Report (2026-02-13): synthesis of public ecosystem data across 150+ tools and 28 categories
+- MCP Dev Tools Landscape (2026-02-10): comparative analysis drawing on registry data, community discussions, and published benchmarks
