@@ -184,3 +184,13 @@ export const RunListResultSchema = z.object({
 });
 
 export type RunListResult = z.infer<typeof RunListResultSchema>;
+
+/** Zod schema for structured run-rerun output. */
+export const RunRerunResultSchema = z.object({
+  runId: z.number(),
+  status: z.string(),
+  failedOnly: z.boolean(),
+  url: z.string(),
+});
+
+export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
