@@ -1,1 +1,2 @@
 pnpm-lock.yaml
+packages/server-lint/__tests__/fixtures/
