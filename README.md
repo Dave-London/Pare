@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Pare" width="128" />
+</p>
+
 # Pare
 
 [![CI](https://github.com/Dave-London/Pare/actions/workflows/ci.yml/badge.svg)](https://github.com/Dave-London/Pare/actions/workflows/ci.yml)
