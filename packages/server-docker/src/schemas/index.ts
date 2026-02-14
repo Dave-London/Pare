@@ -196,3 +196,22 @@ export const DockerComposeLogsSchema = z.object({
 });
 
 export type DockerComposeLogs = z.infer<typeof DockerComposeLogsSchema>;
+
+/** Zod schema for a single service build result in docker compose build output. */
+export const ComposeBuildServiceSchema = z.object({
+  service: z.string(),
+  success: z.boolean(),
+  duration: z.number().optional(),
+  error: z.string().optional(),
+});
+
+/** Zod schema for structured docker compose build output with per-service build status. */
+export const DockerComposeBuildSchema = z.object({
+  success: z.boolean(),
+  services: z.array(ComposeBuildServiceSchema),
+  built: z.number(),
+  failed: z.number(),
+  duration: z.number(),
+});
+
+export type DockerComposeBuild = z.infer<typeof DockerComposeBuildSchema>;

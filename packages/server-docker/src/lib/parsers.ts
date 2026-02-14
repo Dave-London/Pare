@@ -13,6 +13,7 @@ import type {
   DockerVolumeLs,
   DockerComposePs,
   DockerComposeLogs,
+  DockerComposeBuild,
 } from "../schemas/index.js";
 
 /** Parses `docker ps --format json` output into structured container data with ports and state. */
@@ -312,6 +313,87 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
   });
 
   return { volumes, total: volumes.length };
+}
+
+/** Parses `docker compose build` output into structured per-service build status. */
+export function parseComposeBuildOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): DockerComposeBuild {
+  const combined = stdout + "\n" + stderr;
+  const serviceMap = new Map<string, { success: boolean; error?: string }>();
+
+  // Match successful builds: "Service web Built" or "web Built" patterns
+  // Compose v2 outputs lines like: " ✔ Service web Built" or just "web Built"
+  const builtPattern = /(?:Service\s+)?(\S+)\s+Built/g;
+  let match: RegExpExecArray | null;
+  while ((match = builtPattern.exec(combined)) !== null) {
+    serviceMap.set(match[1], { success: true });
+  }
+
+  // Match build step patterns: "#N [service ...]" to discover service names
+  const stepPattern = /\[(\S+)\s+/g;
+  while ((match = stepPattern.exec(combined)) !== null) {
+    const svc = match[1];
+    // Only add if not already tracked (don't overwrite success)
+    if (!serviceMap.has(svc) && svc !== "internal") {
+      serviceMap.set(svc, { success: exitCode === 0 });
+    }
+  }
+
+  // Match "Building <service>" lines (compose v2 progress output)
+  const buildingPattern = /Building\s+(\S+)/g;
+  while ((match = buildingPattern.exec(combined)) !== null) {
+    const svc = match[1];
+    if (!serviceMap.has(svc)) {
+      serviceMap.set(svc, { success: exitCode === 0 });
+    }
+  }
+
+  // Match error lines referencing services: "failed to solve: ..." or "ERROR: Service 'web' failed to build"
+  const errorPattern =
+    /(?:ERROR|error).*?(?:Service\s+'?(\S+?)'?|service\s+"?(\S+?)"?)\s+.*?(?:failed|error)/gi;
+  while ((match = errorPattern.exec(combined)) !== null) {
+    const svc = match[1] || match[2];
+    if (svc) {
+      serviceMap.set(svc, {
+        success: false,
+        error: match[0].trim(),
+      });
+    }
+  }
+
+  // If no services were detected but there's output and success, try to infer
+  // If the build failed and no services found, create a generic entry from error
+  if (serviceMap.size === 0 && exitCode !== 0) {
+    const errorLines = combined
+      .split("\n")
+      .filter((l) => l.match(/error|ERROR|failed/i))
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (errorLines.length > 0) {
+      // Cannot determine service name — leave services empty
+    }
+  }
+
+  const services = [...serviceMap.entries()].map(([service, status]) => ({
+    service,
+    success: status.success,
+    ...(status.error ? { error: status.error } : {}),
+  }));
+
+  const built = services.filter((s) => s.success).length;
+  const failed = services.filter((s) => !s.success).length;
+
+  return {
+    success: exitCode === 0,
+    services,
+    built,
+    failed,
+    duration,
+  };
 }
 
 /** Parses `docker compose ps --format json` output into structured compose service data. */
