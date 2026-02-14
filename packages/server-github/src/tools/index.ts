@@ -5,6 +5,7 @@ import { registerPrListTool } from "./pr-list.js";
 import { registerPrCreateTool } from "./pr-create.js";
 import { registerPrMergeTool } from "./pr-merge.js";
 import { registerPrCommentTool } from "./pr-comment.js";
+import { registerPrReviewTool } from "./pr-review.js";
 import { registerIssueViewTool } from "./issue-view.js";
 import { registerIssueListTool } from "./issue-list.js";
 import { registerIssueCreateTool } from "./issue-create.js";
@@ -20,6 +21,7 @@ export function registerAllTools(server: McpServer) {
   if (s("pr-create")) registerPrCreateTool(server);
   if (s("pr-merge")) registerPrMergeTool(server);
   if (s("pr-comment")) registerPrCommentTool(server);
+  if (s("pr-review")) registerPrReviewTool(server);
   if (s("issue-view")) registerIssueViewTool(server);
   if (s("issue-list")) registerIssueListTool(server);
   if (s("issue-create")) registerIssueCreateTool(server);

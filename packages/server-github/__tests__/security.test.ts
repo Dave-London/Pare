@@ -190,6 +190,37 @@ describe("security: run-list — branch validation", () => {
   });
 });
 
+describe("security: pr-review — body validation", () => {
+  it("rejects flag-like body values", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "body")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe body values", () => {
+    for (const safe of SAFE_INPUTS) {
+      expect(() => assertNoFlagInjection(safe, "body")).not.toThrow();
+    }
+  });
+});
+
+describe("security: pr-review — event enum validation", () => {
+  const eventSchema = z.enum(["approve", "request-changes", "comment"]);
+
+  it("accepts valid review events", () => {
+    expect(eventSchema.safeParse("approve").success).toBe(true);
+    expect(eventSchema.safeParse("request-changes").success).toBe(true);
+    expect(eventSchema.safeParse("comment").success).toBe(true);
+  });
+
+  it("rejects invalid review events", () => {
+    expect(eventSchema.safeParse("--exec=rm -rf /").success).toBe(false);
+    expect(eventSchema.safeParse("-v").success).toBe(false);
+    expect(eventSchema.safeParse("invalid").success).toBe(false);
+    expect(eventSchema.safeParse("").success).toBe(false);
+  });
+});
+
 describe("security: pr-merge — method enum validation", () => {
   const methodSchema = z.enum(["squash", "merge", "rebase"]);
 
