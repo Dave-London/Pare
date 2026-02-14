@@ -12,6 +12,7 @@ import {
   stylelintCmd,
   oxlintCmd,
   shellcheckCmd,
+  hadolintCmd,
 } from "../src/lib/lint-runner.js";
 import { run } from "@paretools/shared";
 
@@ -338,6 +339,72 @@ describe("shellcheckCmd()", () => {
     mockRun.mockResolvedValue({ exitCode: 0, stdout: "[]", stderr: "" });
 
     const result = await shellcheckCmd(["--format=json", "deploy.sh"], "/project");
+
+    expect(result).toEqual({ exitCode: 0, stdout: "[]", stderr: "" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hadolintCmd() argument construction
+// ---------------------------------------------------------------------------
+
+describe("hadolintCmd()", () => {
+  it("passes arguments through to run() with hadolint command (no npx)", async () => {
+    await hadolintCmd(["--format=json", "Dockerfile"], "/project");
+
+    expect(mockRun).toHaveBeenCalledOnce();
+    expect(mockRun).toHaveBeenCalledWith("hadolint", ["--format=json", "Dockerfile"], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("constructs correct args with trusted registry", async () => {
+    await hadolintCmd(["--format=json", "--trusted-registry=docker.io", "Dockerfile"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith(
+      "hadolint",
+      ["--format=json", "--trusted-registry=docker.io", "Dockerfile"],
+      { cwd: "/project", timeout: 120_000 },
+    );
+  });
+
+  it("constructs correct args with ignore rules", async () => {
+    await hadolintCmd(
+      ["--format=json", "--ignore=DL3008", "--ignore=DL3013", "Dockerfile"],
+      "/project",
+    );
+
+    expect(mockRun).toHaveBeenCalledWith(
+      "hadolint",
+      ["--format=json", "--ignore=DL3008", "--ignore=DL3013", "Dockerfile"],
+      { cwd: "/project", timeout: 120_000 },
+    );
+  });
+
+  it("constructs correct args with multiple files", async () => {
+    await hadolintCmd(["--format=json", "Dockerfile", "Dockerfile.dev"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith(
+      "hadolint",
+      ["--format=json", "Dockerfile", "Dockerfile.dev"],
+      { cwd: "/project", timeout: 120_000 },
+    );
+  });
+
+  it("passes undefined cwd when not specified", async () => {
+    await hadolintCmd(["--format=json", "Dockerfile"]);
+
+    expect(mockRun).toHaveBeenCalledWith("hadolint", ["--format=json", "Dockerfile"], {
+      cwd: undefined,
+      timeout: 120_000,
+    });
+  });
+
+  it("returns the RunResult from run()", async () => {
+    mockRun.mockResolvedValue({ exitCode: 0, stdout: "[]", stderr: "" });
+
+    const result = await hadolintCmd(["--format=json", "Dockerfile"], "/project");
 
     expect(result).toEqual({ exitCode: 0, stdout: "[]", stderr: "" });
   });

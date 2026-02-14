@@ -120,6 +120,36 @@ describe("security: oxlint — patterns validation", () => {
   });
 });
 
+describe("security: shellcheck — patterns validation", () => {
+  it("rejects flag-like patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe shell script patterns", () => {
+    const shellSafe = ["deploy.sh", "scripts/build.sh", "*.sh", "ci/"];
+    for (const safe of shellSafe) {
+      expect(() => assertNoFlagInjection(safe, "patterns")).not.toThrow();
+    }
+  });
+});
+
+describe("security: hadolint — patterns validation", () => {
+  it("rejects flag-like patterns", () => {
+    for (const malicious of MALICIOUS_INPUTS) {
+      expect(() => assertNoFlagInjection(malicious, "patterns")).toThrow(/must not start with "-"/);
+    }
+  });
+
+  it("accepts safe Dockerfile patterns", () => {
+    const dockerSafe = ["Dockerfile", "Dockerfile.dev", "docker/Dockerfile.prod", "."];
+    for (const safe of dockerSafe) {
+      expect(() => assertNoFlagInjection(safe, "patterns")).not.toThrow();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Lint tool schemas
 // ---------------------------------------------------------------------------
