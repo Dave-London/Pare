@@ -17,6 +17,7 @@ import type {
   RunRerunResult,
   ReleaseCreateResult,
   GistCreateResult,
+  ReleaseListResult,
   ApiResult,
 } from "../schemas/index.js";
 
@@ -355,6 +356,34 @@ export function parseReleaseCreate(
 ): ReleaseCreateResult {
   const url = stdout.trim();
   return { tag, url, draft, prerelease };
+}
+
+/**
+ * Parses `gh release list --json ...` output into structured release list data.
+ */
+export function parseReleaseList(json: string): ReleaseListResult {
+  const raw = JSON.parse(json);
+  const items = Array.isArray(raw) ? raw : [];
+
+  const releases = items.map(
+    (r: {
+      tagName: string;
+      name: string;
+      isDraft: boolean;
+      isPrerelease: boolean;
+      publishedAt: string;
+      url: string;
+    }) => ({
+      tag: r.tagName ?? "",
+      name: r.name ?? "",
+      draft: r.isDraft ?? false,
+      prerelease: r.isPrerelease ?? false,
+      publishedAt: r.publishedAt ?? "",
+      url: r.url ?? "",
+    }),
+  );
+
+  return { releases, total: releases.length };
 }
 
 /**

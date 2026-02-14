@@ -280,6 +280,23 @@ export const GistCreateResultSchema = z.object({
 });
 
 export type GistCreateResult = z.infer<typeof GistCreateResultSchema>;
+/** Zod schema for a single release in list output. */
+export const ReleaseListItemSchema = z.object({
+  tag: z.string(),
+  name: z.string(),
+  draft: z.boolean(),
+  prerelease: z.boolean(),
+  publishedAt: z.string(),
+  url: z.string(),
+});
+
+/** Zod schema for structured release-list output. */
+export const ReleaseListResultSchema = z.object({
+  releases: z.array(ReleaseListItemSchema),
+  total: z.number(),
+});
+
+export type ReleaseListResult = z.infer<typeof ReleaseListResultSchema>;
 
 // ── API schemas ─────────────────────────────────────────────────────
 
