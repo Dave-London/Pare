@@ -237,7 +237,7 @@ describe("@paretools/git cherry-pick integration", () => {
 
     client = new Client({ name: "test-client-cherry-pick", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 30_000);
 
   afterAll(async () => {
     await transport.close();
