@@ -4,6 +4,8 @@ import {
   formatDescribe,
   formatLogs,
   formatApply,
+  formatResult,
+  formatHelmResult,
   compactGetMap,
   formatGetCompact,
   compactDescribeMap,
@@ -30,10 +32,12 @@ import type {
   KubectlDescribeResult,
   KubectlLogsResult,
   KubectlApplyResult,
+  KubectlResult,
   HelmListResult,
   HelmStatusResult,
   HelmInstallResult,
   HelmUpgradeResult,
+  HelmResult,
 } from "../src/schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -666,5 +670,92 @@ describe("formatHelmUpgradeCompact", () => {
     expect(formatHelmUpgradeCompact({ action: "upgrade", success: false, name: "nginx" })).toBe(
       "helm upgrade nginx: failed",
     );
+  });
+});
+
+// ── Dispatch formatters ─────────────────────────────────────────────
+
+describe("formatResult", () => {
+  it("dispatches get action", () => {
+    const data: KubectlResult = {
+      action: "get",
+      success: true,
+      resource: "pods",
+      namespace: "default",
+      items: [],
+      total: 0,
+    };
+    expect(formatResult(data)).toContain("kubectl get pods");
+  });
+
+  it("dispatches describe action", () => {
+    const data: KubectlResult = {
+      action: "describe",
+      success: true,
+      resource: "pod",
+      name: "nginx",
+      namespace: "default",
+      output: "Name: nginx",
+    };
+    expect(formatResult(data)).toBe("Name: nginx");
+  });
+
+  it("dispatches logs action", () => {
+    const data: KubectlResult = {
+      action: "logs",
+      success: true,
+      pod: "nginx",
+      lines: [],
+      total: 0,
+    };
+    expect(formatResult(data)).toContain("kubectl logs nginx");
+  });
+
+  it("dispatches apply action", () => {
+    const data: KubectlResult = {
+      action: "apply",
+      success: true,
+      exitCode: 0,
+      output: "configured",
+    };
+    expect(formatResult(data)).toContain("kubectl apply");
+  });
+});
+
+describe("formatHelmResult", () => {
+  it("dispatches list action", () => {
+    const data: HelmResult = { action: "list", success: true, releases: [] };
+    expect(formatHelmResult(data)).toContain("helm list");
+  });
+
+  it("dispatches status action", () => {
+    const data: HelmResult = {
+      action: "status",
+      success: true,
+      name: "nginx",
+      status: "deployed",
+      namespace: "default",
+    };
+    expect(formatHelmResult(data)).toContain("helm status nginx");
+  });
+
+  it("dispatches install action", () => {
+    const data: HelmResult = {
+      action: "install",
+      success: true,
+      name: "nginx",
+      status: "deployed",
+    };
+    expect(formatHelmResult(data)).toContain("helm install nginx");
+  });
+
+  it("dispatches upgrade action", () => {
+    const data: HelmResult = {
+      action: "upgrade",
+      success: true,
+      name: "nginx",
+      status: "deployed",
+    };
+    expect(formatHelmResult(data)).toContain("helm upgrade nginx");
   });
 });
