@@ -8,6 +8,7 @@ import {
   parseNetworkLsJson,
   parseVolumeLsJson,
   parseComposePsJson,
+  parseComposeLogsOutput,
 } from "../src/lib/parsers.js";
 
 describe("parsePsJson", () => {
@@ -615,5 +616,89 @@ describe("parseComposePsJson", () => {
     const result = parseComposePsJson(stdout);
     expect(result.services[0].state).toBe("exited");
     expect(result.services[0].status).toBe("Exited (0) 5 minutes ago");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseComposeLogsOutput
+// ---------------------------------------------------------------------------
+
+describe("parseComposeLogsOutput", () => {
+  it("parses multi-service compose logs with timestamps", () => {
+    const stdout = [
+      "web-1  | 2024-06-01T10:00:00.000000000Z Starting server...",
+      "web-1  | 2024-06-01T10:00:01.000000000Z Listening on port 3000",
+      "db-1   | 2024-06-01T10:00:00.500000000Z PostgreSQL init",
+      "db-1   | 2024-06-01T10:00:02.000000000Z Ready to accept connections",
+    ].join("\n");
+
+    const result = parseComposeLogsOutput(stdout);
+
+    expect(result.services).toContain("web-1");
+    expect(result.services).toContain("db-1");
+    expect(result.total).toBe(4);
+    expect(result.entries[0]).toEqual({
+      timestamp: "2024-06-01T10:00:00.000000000Z",
+      service: "web-1",
+      message: "Starting server...",
+    });
+    expect(result.entries[2]).toEqual({
+      timestamp: "2024-06-01T10:00:00.500000000Z",
+      service: "db-1",
+      message: "PostgreSQL init",
+    });
+  });
+
+  it("parses logs without timestamps", () => {
+    const stdout = ["web-1  | Starting server...", "web-1  | Listening on port 3000"].join("\n");
+
+    const result = parseComposeLogsOutput(stdout);
+
+    expect(result.services).toEqual(["web-1"]);
+    expect(result.total).toBe(2);
+    expect(result.entries[0]).toEqual({
+      service: "web-1",
+      message: "Starting server...",
+    });
+    expect(result.entries[0].timestamp).toBeUndefined();
+  });
+
+  it("handles empty output", () => {
+    const result = parseComposeLogsOutput("");
+    expect(result.services).toEqual([]);
+    expect(result.entries).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
+  it("truncates entries when limit is exceeded", () => {
+    const lines = Array.from(
+      { length: 100 },
+      (_, i) => `svc-1  | 2024-01-01T00:00:${String(i).padStart(2, "0")}.000Z line ${i + 1}`,
+    );
+    const stdout = lines.join("\n");
+    const result = parseComposeLogsOutput(stdout, 10);
+
+    expect(result.total).toBe(10);
+    expect(result.entries).toHaveLength(10);
+    expect(result.isTruncated).toBe(true);
+    expect(result.totalEntries).toBe(100);
+  });
+
+  it("does not truncate when within limit", () => {
+    const stdout = "svc-1  | line 1\nsvc-1  | line 2";
+    const result = parseComposeLogsOutput(stdout, 100);
+
+    expect(result.total).toBe(2);
+    expect(result.isTruncated).toBeUndefined();
+    expect(result.totalEntries).toBeUndefined();
+  });
+
+  it("handles lines without pipe separator", () => {
+    const stdout = "some raw output without pipe";
+    const result = parseComposeLogsOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.entries[0].service).toBe("unknown");
+    expect(result.entries[0].message).toBe("some raw output without pipe");
   });
 });

@@ -12,6 +12,7 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
+  DockerComposeLogs,
 } from "../schemas/index.js";
 
 /** Formats structured Docker container data into a human-readable listing with state and ports. */
@@ -471,4 +472,57 @@ export function formatComposePsCompact(data: DockerComposePsCompact): string {
     lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service})`);
   }
   return lines.join("\n");
+}
+
+// ── Compose Logs ─────────────────────────────────────────────────────
+
+/** Formats structured Docker Compose logs into a human-readable output grouped by service. */
+export function formatComposeLogs(data: DockerComposeLogs): string {
+  const header = data.isTruncated
+    ? `Compose logs: ${data.services.length} services, ${data.total} of ${data.totalEntries} entries (truncated)`
+    : `Compose logs: ${data.services.length} services, ${data.total} entries`;
+
+  const lines = [header];
+  for (const entry of data.entries) {
+    const ts = entry.timestamp ? `${entry.timestamp} ` : "";
+    lines.push(`  ${entry.service} | ${ts}${entry.message}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact compose-logs: service list, total, head/tail entries. */
+export interface DockerComposeLogsCompact {
+  [key: string]: unknown;
+  services: string[];
+  total: number;
+  head: Array<{ service: string; message: string }>;
+  tail: Array<{ service: string; message: string }>;
+}
+
+export function compactComposeLogsMap(data: DockerComposeLogs): DockerComposeLogsCompact {
+  const HEAD_SIZE = 5;
+  const TAIL_SIZE = 5;
+  return {
+    services: data.services,
+    total: data.total,
+    head: data.entries.slice(0, HEAD_SIZE).map((e) => ({ service: e.service, message: e.message })),
+    tail:
+      data.total > HEAD_SIZE + TAIL_SIZE
+        ? data.entries.slice(-TAIL_SIZE).map((e) => ({ service: e.service, message: e.message }))
+        : [],
+  };
+}
+
+export function formatComposeLogsCompact(data: DockerComposeLogsCompact): string {
+  const parts = [`Compose logs: ${data.services.length} services, ${data.total} entries`];
+  for (const e of data.head) {
+    parts.push(`  ${e.service} | ${e.message}`);
+  }
+  if (data.tail.length) {
+    parts.push(`  ... ${data.total - data.head.length - data.tail.length} entries omitted ...`);
+    for (const e of data.tail) {
+      parts.push(`  ${e.service} | ${e.message}`);
+    }
+  }
+  return parts.join("\n");
 }
