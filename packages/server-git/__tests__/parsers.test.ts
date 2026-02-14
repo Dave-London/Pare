@@ -17,6 +17,7 @@ import {
   parseBlameOutput,
   parseReset,
   parseLogGraph,
+  parseReflogOutput,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -799,5 +800,71 @@ describe("parseLogGraph", () => {
     expect(result.total).toBe(1);
     expect(result.commits[0].refs).toBe("HEAD -> main, origin/main, tag: v1.0");
     expect(result.commits[0].message).toBe("Release 1.0");
+  });
+});
+
+describe("parseReflogOutput", () => {
+  it("parses reflog entries with checkout action", () => {
+    const stdout = [
+      "abc123full\tabc1234\tHEAD@{0}\tcheckout: moving from main to feature\t2024-01-15 10:30:00 +0000",
+      "def456full\tdef5678\tHEAD@{1}\tcommit: fix the bug\t2024-01-14 09:00:00 +0000",
+    ].join("\n");
+
+    const result = parseReflogOutput(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.entries[0]).toEqual({
+      hash: "abc123full",
+      shortHash: "abc1234",
+      selector: "HEAD@{0}",
+      action: "checkout",
+      description: "moving from main to feature",
+      date: "2024-01-15 10:30:00 +0000",
+    });
+    expect(result.entries[1]).toEqual({
+      hash: "def456full",
+      shortHash: "def5678",
+      selector: "HEAD@{1}",
+      action: "commit",
+      description: "fix the bug",
+      date: "2024-01-14 09:00:00 +0000",
+    });
+  });
+
+  it("handles empty reflog output", () => {
+    const result = parseReflogOutput("");
+
+    expect(result.total).toBe(0);
+    expect(result.entries).toEqual([]);
+  });
+
+  it("parses single reflog entry", () => {
+    const stdout =
+      "aaa111full\taaa1111\tHEAD@{0}\tcommit (initial): initial commit\t2024-01-01 00:00:00 +0000";
+
+    const result = parseReflogOutput(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.entries[0].selector).toBe("HEAD@{0}");
+    expect(result.entries[0].action).toBe("commit (initial)");
+    expect(result.entries[0].description).toBe("initial commit");
+  });
+
+  it("parses various reflog actions", () => {
+    const stdout = [
+      "aaa\ta1\tHEAD@{0}\tmerge feature: Fast-forward\t2024-01-15 10:00:00 +0000",
+      "bbb\tb1\tHEAD@{1}\treset: moving to HEAD~1\t2024-01-14 09:00:00 +0000",
+      "ccc\tc1\tHEAD@{2}\trebase (finish): returning to refs/heads/main\t2024-01-13 08:00:00 +0000",
+    ].join("\n");
+
+    const result = parseReflogOutput(stdout);
+
+    expect(result.total).toBe(3);
+    expect(result.entries[0].action).toBe("merge feature");
+    expect(result.entries[0].description).toBe("Fast-forward");
+    expect(result.entries[1].action).toBe("reset");
+    expect(result.entries[1].description).toBe("moving to HEAD~1");
+    expect(result.entries[2].action).toBe("rebase (finish)");
+    expect(result.entries[2].description).toBe("returning to refs/heads/main");
   });
 });

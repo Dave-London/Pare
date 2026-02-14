@@ -20,6 +20,7 @@ import type {
   GitMerge,
   GitRebase,
   GitLogGraphFull,
+  GitReflogFull,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -479,4 +480,39 @@ export function compactLogGraphMap(lg: GitLogGraphFull): GitLogGraphCompact {
 export function formatLogGraphCompact(lg: GitLogGraphCompact): string {
   if (lg.total === 0) return "No commits found";
   return lg.commits.map((c) => `${c.g} ${c.h} ${c.m}${c.r ? ` (${c.r})` : ""}`).join("\n");
+}
+
+// ── Reflog formatters ─────────────────────────────────────────────────
+
+/** Formats structured git reflog data into a human-readable reflog listing. */
+export function formatReflog(r: GitReflogFull): string {
+  if (r.entries.length === 0) return "No reflog entries found";
+  return r.entries
+    .map((e) => {
+      const desc = e.description ? `: ${e.description}` : "";
+      return `${e.shortHash} ${e.selector} ${e.action}${desc} (${e.date})`;
+    })
+    .join("\n");
+}
+
+/** Compact reflog: selector + action as string array + total. */
+export interface GitReflogCompact {
+  [key: string]: unknown;
+  entries: string[];
+  total: number;
+}
+
+export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
+  return {
+    entries: r.entries.map((e) => {
+      const desc = e.description ? `: ${e.description}` : "";
+      return `${e.shortHash} ${e.selector} ${e.action}${desc}`;
+    }),
+    total: r.total,
+  };
+}
+
+export function formatReflogCompact(r: GitReflogCompact): string {
+  if (r.entries.length === 0) return "No reflog entries found";
+  return r.entries.join("\n");
 }
