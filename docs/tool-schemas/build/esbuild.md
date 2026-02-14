@@ -6,19 +6,19 @@ Runs the esbuild bundler and returns structured errors, warnings, and output fil
 
 ## Input Parameters
 
-| Parameter     | Type                                    | Default  | Description                                                |
-| ------------- | --------------------------------------- | -------- | ---------------------------------------------------------- |
-| `entryPoints` | string[]                                | ---      | Entry point files to bundle (e.g., `['src/index.ts']`)     |
-| `outdir`      | string                                  | ---      | Output directory                                           |
-| `outfile`     | string                                  | ---      | Output file (single entry point)                           |
-| `bundle`      | boolean                                 | `true`   | Bundle dependencies                                        |
-| `minify`      | boolean                                 | `false`  | Minify output                                              |
-| `format`      | `"esm"` \| `"cjs"` \| `"iife"`         | ---      | Output format                                              |
-| `platform`    | `"browser"` \| `"node"` \| `"neutral"` | ---      | Target platform                                            |
-| `sourcemap`   | boolean                                 | `false`  | Generate source maps                                       |
-| `args`        | string[]                                | `[]`     | Additional esbuild flags                                   |
-| `path`        | string                                  | cwd      | Project root path                                          |
-| `compact`     | boolean                                 | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter     | Type                                   | Default | Description                                                |
+| ------------- | -------------------------------------- | ------- | ---------------------------------------------------------- |
+| `entryPoints` | string[]                               | ---     | Entry point files to bundle (e.g., `['src/index.ts']`)     |
+| `outdir`      | string                                 | ---     | Output directory                                           |
+| `outfile`     | string                                 | ---     | Output file (single entry point)                           |
+| `bundle`      | boolean                                | `true`  | Bundle dependencies                                        |
+| `minify`      | boolean                                | `false` | Minify output                                              |
+| `format`      | `"esm"` \| `"cjs"` \| `"iife"`         | ---     | Output format                                              |
+| `platform`    | `"browser"` \| `"node"` \| `"neutral"` | ---     | Target platform                                            |
+| `sourcemap`   | boolean                                | `false` | Generate source maps                                       |
+| `args`        | string[]                               | `[]`    | Additional esbuild flags                                   |
+| `path`        | string                                 | cwd     | Project root path                                          |
+| `compact`     | boolean                                | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success --- Bundle Succeeds
 

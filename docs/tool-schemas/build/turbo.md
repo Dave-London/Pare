@@ -48,11 +48,41 @@ $ npx turbo run build
   "success": true,
   "duration": 4.2,
   "tasks": [
-    { "package": "@scope/shared", "task": "build", "status": "pass", "duration": "100ms", "cache": "hit" },
-    { "package": "@scope/utils", "task": "build", "status": "pass", "duration": "95ms", "cache": "hit" },
-    { "package": "@scope/core", "task": "build", "status": "pass", "duration": "110ms", "cache": "hit" },
-    { "package": "@scope/api", "task": "build", "status": "pass", "duration": "2.1s", "cache": "miss" },
-    { "package": "@scope/web", "task": "build", "status": "pass", "duration": "1.8s", "cache": "miss" }
+    {
+      "package": "@scope/shared",
+      "task": "build",
+      "status": "pass",
+      "duration": "100ms",
+      "cache": "hit"
+    },
+    {
+      "package": "@scope/utils",
+      "task": "build",
+      "status": "pass",
+      "duration": "95ms",
+      "cache": "hit"
+    },
+    {
+      "package": "@scope/core",
+      "task": "build",
+      "status": "pass",
+      "duration": "110ms",
+      "cache": "hit"
+    },
+    {
+      "package": "@scope/api",
+      "task": "build",
+      "status": "pass",
+      "duration": "2.1s",
+      "cache": "miss"
+    },
+    {
+      "package": "@scope/web",
+      "task": "build",
+      "status": "pass",
+      "duration": "1.8s",
+      "cache": "miss"
+    }
   ],
   "totalTasks": 5,
   "passed": 5,
@@ -119,8 +149,20 @@ ERROR: command finished with error: exit status 1
   "success": false,
   "duration": 3.5,
   "tasks": [
-    { "package": "@scope/shared", "task": "build", "status": "pass", "duration": "100ms", "cache": "hit" },
-    { "package": "@scope/core", "task": "build", "status": "pass", "duration": "1.2s", "cache": "miss" },
+    {
+      "package": "@scope/shared",
+      "task": "build",
+      "status": "pass",
+      "duration": "100ms",
+      "cache": "hit"
+    },
+    {
+      "package": "@scope/core",
+      "task": "build",
+      "status": "pass",
+      "duration": "1.2s",
+      "cache": "miss"
+    },
     { "package": "@scope/web", "task": "build", "status": "fail", "cache": "miss" }
   ],
   "totalTasks": 3,

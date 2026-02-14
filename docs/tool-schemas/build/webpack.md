@@ -6,13 +6,13 @@ Runs webpack build with JSON stats output and returns structured assets, errors,
 
 ## Input Parameters
 
-| Parameter | Type                                              | Default | Description                                                |
-| --------- | ------------------------------------------------- | ------- | ---------------------------------------------------------- |
-| `path`    | string                                            | cwd     | Project root path                                          |
-| `config`  | string                                            | ---     | Path to webpack config file                                |
-| `mode`    | `"production"` \| `"development"` \| `"none"`     | ---     | Build mode                                                 |
-| `args`    | string[]                                          | `[]`    | Additional webpack flags                                   |
-| `compact` | boolean                                           | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type                                          | Default | Description                                                |
+| --------- | --------------------------------------------- | ------- | ---------------------------------------------------------- |
+| `path`    | string                                        | cwd     | Project root path                                          |
+| `config`  | string                                        | ---     | Path to webpack config file                                |
+| `mode`    | `"production"` \| `"development"` \| `"none"` | ---     | Build mode                                                 |
+| `args`    | string[]                                      | `[]`    | Additional webpack flags                                   |
+| `compact` | boolean                                       | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success --- Build With Assets
 
@@ -154,10 +154,10 @@ $ npx webpack --json --mode production
 
 ## Token Savings
 
-| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------- | ---------- | --------- | ------------ | ------- |
-| 3 assets, OK  | ~250       | ~55       | ~18          | 78--93% |
-| 2 errors      | ~200       | ~45       | ~18          | 78--91% |
+| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------ | ---------- | --------- | ------------ | ------- |
+| 3 assets, OK | ~250       | ~55       | ~18          | 78--93% |
+| 2 errors     | ~200       | ~45       | ~18          | 78--91% |
 
 ## Notes
 

@@ -111,9 +111,7 @@ Error: Could not resolve import
   "success": false,
   "duration": 1.2,
   "outputs": [],
-  "errors": [
-    "error during build:"
-  ],
+  "errors": ["error during build:"],
   "warnings": []
 }
 ```
@@ -140,10 +138,10 @@ Error: Could not resolve import
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 4 output files    | ~140       | ~60       | ~12          | 57--91% |
-| Build failure     | ~100       | ~30       | ~12          | 70--88% |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| 4 output files | ~140       | ~60       | ~12          | 57--91% |
+| Build failure  | ~100       | ~30       | ~12          | 70--88% |
 
 ## Notes
 
