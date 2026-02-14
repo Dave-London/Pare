@@ -8,6 +8,7 @@ import { registerBiomeFormatTool } from "./biome-format.js";
 import { registerStylelintTool } from "./stylelint.js";
 import { registerOxlintTool } from "./oxlint.js";
 import { registerShellcheckTool } from "./shellcheck.js";
+import { registerHadolintTool } from "./hadolint.js";
 
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("lint", name);
@@ -19,4 +20,5 @@ export function registerAllTools(server: McpServer) {
   if (s("stylelint")) registerStylelintTool(server);
   if (s("oxlint")) registerOxlintTool(server);
   if (s("shellcheck")) registerShellcheckTool(server);
+  if (s("hadolint")) registerHadolintTool(server);
 }
