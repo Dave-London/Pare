@@ -6,8 +6,11 @@ import {
   formatTestRunCompact,
   compactCoverageMap,
   formatCoverageCompact,
+  formatPlaywrightResult,
+  compactPlaywrightResultMap,
+  formatPlaywrightResultCompact,
 } from "../src/lib/formatters.js";
-import type { TestRun, Coverage } from "../src/schemas/index.js";
+import type { TestRun, Coverage, PlaywrightResult } from "../src/schemas/index.js";
 
 describe("formatTestRun", () => {
   it("formats passing run", () => {
@@ -450,5 +453,220 @@ describe("formatCoverageCompact", () => {
 
     expect(output).toContain("0% lines");
     expect(output).toContain("0 file(s) analyzed");
+  });
+});
+
+// ── Playwright formatters ─────────────────────────────────────────────
+
+describe("formatPlaywrightResult", () => {
+  it("formats passing run", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 5,
+        passed: 5,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 2.5,
+      },
+      suites: [],
+      failures: [],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).toContain("PASS");
+    expect(output).toContain("(playwright)");
+    expect(output).toContain("5 tests");
+    expect(output).toContain("5 passed");
+    expect(output).toContain("0 failed");
+    expect(output).toContain("2.5s");
+  });
+
+  it("formats failing run with failure details", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 3,
+        passed: 1,
+        failed: 1,
+        skipped: 0,
+        timedOut: 1,
+        interrupted: 0,
+        duration: 35.2,
+      },
+      suites: [],
+      failures: [
+        { title: "should login", file: "auth.spec.ts", line: 5, error: "Expected visible" },
+        { title: "should load page", file: "page.spec.ts", line: 10, error: "Timeout 30000ms" },
+      ],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("3 tests");
+    expect(output).toContain("1 failed");
+    expect(output).toContain("1 timed out");
+    expect(output).toContain("should login");
+    expect(output).toContain("auth.spec.ts:5");
+    expect(output).toContain("Expected visible");
+    expect(output).toContain("should load page");
+  });
+
+  it("marks as FAIL when timedOut > 0 even if failed is 0", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 1,
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        timedOut: 1,
+        interrupted: 0,
+        duration: 30,
+      },
+      suites: [],
+      failures: [{ title: "slow test", error: "Timeout" }],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).toContain("FAIL");
+  });
+
+  it("formats failures without file or error", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 1,
+        passed: 0,
+        failed: 1,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 0.1,
+      },
+      suites: [],
+      failures: [{ title: "broken test" }],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).toContain("FAIL broken test");
+    expect(output).not.toContain("undefined");
+  });
+});
+
+describe("compactPlaywrightResultMap", () => {
+  it("keeps summary and failure titles, drops suites and per-test details", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 3,
+        passed: 1,
+        failed: 1,
+        skipped: 1,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 5.0,
+      },
+      suites: [
+        {
+          title: "suite.spec.ts",
+          file: "tests/suite.spec.ts",
+          tests: [
+            {
+              title: "test 1",
+              file: "tests/suite.spec.ts",
+              line: 3,
+              status: "passed",
+              duration: 100,
+            },
+            {
+              title: "test 2",
+              file: "tests/suite.spec.ts",
+              line: 10,
+              status: "failed",
+              duration: 200,
+              error: "Error msg",
+            },
+          ],
+        },
+      ],
+      failures: [{ title: "test 2", file: "tests/suite.spec.ts", line: 10, error: "Error msg" }],
+    };
+
+    const compact = compactPlaywrightResultMap(result);
+
+    expect(compact.summary).toEqual({
+      total: 3,
+      passed: 1,
+      failed: 1,
+      skipped: 1,
+      timedOut: 0,
+      interrupted: 0,
+      duration: 5.0,
+    });
+    expect(compact.failures).toEqual([{ title: "test 2", error: "Error msg" }]);
+    expect(compact).not.toHaveProperty("suites");
+  });
+
+  it("omits error when failure has no error", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 1,
+        passed: 0,
+        failed: 1,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 0.1,
+      },
+      suites: [],
+      failures: [{ title: "broken" }],
+    };
+
+    const compact = compactPlaywrightResultMap(result);
+
+    expect(compact.failures).toEqual([{ title: "broken" }]);
+    expect(compact.failures[0]).not.toHaveProperty("error");
+  });
+});
+
+describe("formatPlaywrightResultCompact", () => {
+  it("formats compact result with failure titles and errors", () => {
+    const compact = {
+      summary: {
+        total: 4,
+        passed: 2,
+        failed: 1,
+        skipped: 1,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 3.0,
+      },
+      failures: [{ title: "should work", error: "Expected true" }],
+    };
+
+    const output = formatPlaywrightResultCompact(compact);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("(playwright)");
+    expect(output).toContain("4 tests");
+    expect(output).toContain("FAIL should work: Expected true");
+  });
+
+  it("formats compact passing run as single line", () => {
+    const compact = {
+      summary: {
+        total: 3,
+        passed: 3,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        duration: 1.5,
+      },
+      failures: [] as Array<{ title: string; error?: string }>,
+    };
+
+    const output = formatPlaywrightResultCompact(compact);
+
+    expect(output).toContain("PASS");
+    expect(output.split("\n")).toHaveLength(1);
   });
 });

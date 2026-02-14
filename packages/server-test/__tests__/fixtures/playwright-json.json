@@ -1,0 +1,137 @@
+{
+  "config": {
+    "rootDir": "/home/user/project"
+  },
+  "suites": [
+    {
+      "title": "auth.spec.ts",
+      "file": "tests/auth.spec.ts",
+      "specs": [
+        {
+          "title": "should login with valid credentials",
+          "file": "tests/auth.spec.ts",
+          "line": 5,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "duration": 1200,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "should show error for invalid password",
+          "file": "tests/auth.spec.ts",
+          "line": 15,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 3500,
+                  "retry": 0,
+                  "error": {
+                    "message": "Expected element to be visible",
+                    "stack": "Error: Expected element to be visible\n    at tests/auth.spec.ts:20:15"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "should redirect after login",
+          "file": "tests/auth.spec.ts",
+          "line": 25,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "duration": 800,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboard.spec.ts",
+      "file": "tests/dashboard.spec.ts",
+      "specs": [
+        {
+          "title": "should display user name",
+          "file": "tests/dashboard.spec.ts",
+          "line": 3,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "passed",
+                  "duration": 600,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "should load dashboard widgets",
+          "file": "tests/dashboard.spec.ts",
+          "line": 12,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "skipped",
+                  "duration": 0,
+                  "retry": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "should handle slow network",
+          "file": "tests/dashboard.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "results": [
+                {
+                  "status": "timedOut",
+                  "duration": 30000,
+                  "retry": 0,
+                  "error": {
+                    "message": "Test timeout of 30000ms exceeded"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "startTime": "2024-01-15T10:00:00.000Z",
+    "duration": 36100,
+    "expected": 3,
+    "unexpected": 1,
+    "flaky": 0,
+    "skipped": 1,
+    "interrupted": 0
+  }
+}

@@ -1,4 +1,4 @@
-import type { TestRun, Coverage } from "../schemas/index.js";
+import type { TestRun, Coverage, PlaywrightResult } from "../schemas/index.js";
 
 /** Formats structured test run results into a human-readable summary with pass/fail counts and failure details. */
 export function formatTestRun(r: TestRun): string {
@@ -96,6 +96,61 @@ export function formatCoverageCompact(c: CoverageCompact): string {
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
   parts.push(`${c.totalFiles} file(s) analyzed`);
+
+  return parts.join("\n");
+}
+
+// ── Playwright formatters ─────────────────────────────────────────────
+
+/** Formats Playwright results into a human-readable summary with failure details. */
+export function formatPlaywrightResult(r: PlaywrightResult): string {
+  const status = r.summary.failed > 0 || r.summary.timedOut > 0 ? "FAIL" : "PASS";
+  const parts = [
+    `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out [${r.summary.duration}s]`,
+  ];
+
+  for (const f of r.failures) {
+    const loc = f.file ? `${f.file}${f.line ? `:${f.line}` : ""}` : "";
+    parts.push(`  FAIL ${f.title}${loc ? ` (${loc})` : ""}${f.error ? `: ${f.error}` : ""}`);
+  }
+
+  return parts.join("\n");
+}
+
+/** Compact Playwright result: summary + failure titles and errors (no suites or per-test details). */
+export interface PlaywrightResultCompact {
+  [key: string]: unknown;
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    timedOut: number;
+    interrupted: number;
+    duration: number;
+  };
+  failures: Array<{ title: string; error?: string }>;
+}
+
+export function compactPlaywrightResultMap(r: PlaywrightResult): PlaywrightResultCompact {
+  return {
+    summary: { ...r.summary },
+    failures: r.failures.map((f) => ({
+      title: f.title,
+      ...(f.error ? { error: f.error } : {}),
+    })),
+  };
+}
+
+export function formatPlaywrightResultCompact(r: PlaywrightResultCompact): string {
+  const status = r.summary.failed > 0 || r.summary.timedOut > 0 ? "FAIL" : "PASS";
+  const parts = [
+    `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out [${r.summary.duration}s]`,
+  ];
+
+  for (const f of r.failures) {
+    parts.push(`  FAIL ${f.title}${f.error ? `: ${f.error}` : ""}`);
+  }
 
   return parts.join("\n");
 }

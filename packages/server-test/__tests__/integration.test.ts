@@ -29,10 +29,10 @@ describe("@paretools/test integration", () => {
     await transport.close();
   });
 
-  it("lists all 2 tools", async () => {
+  it("lists all 3 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["coverage", "run"]);
+    expect(names).toEqual(["coverage", "playwright", "run"]);
   });
 
   describe("run", () => {
