@@ -120,6 +120,133 @@ describe("formatFormatCheck", () => {
 });
 
 // ---------------------------------------------------------------------------
+// formatLint with shellcheck-shaped data (SC codes, shell script files)
+// ---------------------------------------------------------------------------
+
+describe("formatLint with shellcheck-shaped data", () => {
+  it("formats shellcheck diagnostics with SC rule codes", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "deploy.sh",
+          line: 5,
+          severity: "error",
+          rule: "SC2086",
+          message: "Double quote to prevent globbing and word splitting.",
+        },
+        {
+          file: "deploy.sh",
+          line: 10,
+          severity: "warning",
+          rule: "SC2034",
+          message: "foo appears unused. Verify use (or export).",
+        },
+        {
+          file: "build.sh",
+          line: 3,
+          severity: "info",
+          rule: "SC2148",
+          message: "Tips depend on target shell and target OS.",
+        },
+      ],
+      total: 3,
+      errors: 1,
+      warnings: 1,
+      filesChecked: 2,
+    };
+
+    const output = formatLint(data);
+    expect(output).toContain("Lint: 1 errors, 1 warnings");
+    expect(output).toContain(
+      "deploy.sh:5 error SC2086: Double quote to prevent globbing and word splitting.",
+    );
+    expect(output).toContain(
+      "deploy.sh:10 warning SC2034: foo appears unused. Verify use (or export).",
+    );
+    expect(output).toContain("build.sh:3 info SC2148: Tips depend on target shell and target OS.");
+  });
+
+  it("formats clean shellcheck result", () => {
+    const data: LintResult = {
+      diagnostics: [],
+      total: 0,
+      errors: 0,
+      warnings: 0,
+      filesChecked: 3,
+    };
+    expect(formatLint(data)).toBe("Lint: no issues found (3 files checked).");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatLint with hadolint-shaped data (DL/SC codes, Dockerfile paths)
+// ---------------------------------------------------------------------------
+
+describe("formatLint with hadolint-shaped data", () => {
+  it("formats hadolint diagnostics with DL rule codes", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "Dockerfile",
+          line: 3,
+          severity: "error",
+          rule: "DL3006",
+          message: "Always tag the version of an image explicitly.",
+        },
+        {
+          file: "Dockerfile",
+          line: 7,
+          severity: "warning",
+          rule: "DL3008",
+          message: "Pin versions in apt get install.",
+        },
+        {
+          file: "Dockerfile.dev",
+          line: 1,
+          severity: "info",
+          rule: "DL3048",
+          message: "Invalid label key.",
+        },
+      ],
+      total: 3,
+      errors: 1,
+      warnings: 1,
+      filesChecked: 2,
+    };
+
+    const output = formatLint(data);
+    expect(output).toContain("Lint: 1 errors, 1 warnings");
+    expect(output).toContain(
+      "Dockerfile:3 error DL3006: Always tag the version of an image explicitly.",
+    );
+    expect(output).toContain("Dockerfile:7 warning DL3008: Pin versions in apt get install.");
+    expect(output).toContain("Dockerfile.dev:1 info DL3048: Invalid label key.");
+  });
+
+  it("formats hadolint diagnostics with SC-prefixed codes (ShellCheck rules in Dockerfile RUN)", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "Dockerfile",
+          line: 5,
+          severity: "warning",
+          rule: "SC2046",
+          message: "Quote this to prevent word splitting.",
+        },
+      ],
+      total: 1,
+      errors: 0,
+      warnings: 1,
+      filesChecked: 1,
+    };
+
+    const output = formatLint(data);
+    expect(output).toContain("Lint: 0 errors, 1 warnings");
+    expect(output).toContain("Dockerfile:5 warning SC2046: Quote this to prevent word splitting.");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // formatLint edge cases
 // ---------------------------------------------------------------------------
 

@@ -498,6 +498,92 @@ describe("@paretools/lint integration", () => {
   });
 
   // -------------------------------------------------------------------------
+  // ShellCheck
+  // -------------------------------------------------------------------------
+
+  describe("shellcheck", () => {
+    it("returns structured result or graceful error when binary is not installed", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool(
+        { name: "shellcheck", arguments: { path: pkgPath, patterns: ["."] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      if (result.isError) {
+        // Binary not installed — verify graceful error message
+        const textContent = result.content as Array<{ type: string; text: string }>;
+        expect(textContent[0].type).toBe("text");
+        expect(textContent[0].text).toContain("shellcheck");
+      } else {
+        // Binary installed — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.errors).toEqual(expect.any(Number));
+        expect(sc.warnings).toEqual(expect.any(Number));
+        expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
+      }
+    });
+
+    it("rejects flag injection in patterns via MCP", async () => {
+      const result = await client.callTool(
+        { name: "shellcheck", arguments: { patterns: ["--shell"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Hadolint
+  // -------------------------------------------------------------------------
+
+  describe("hadolint", () => {
+    it("returns structured result or graceful error when binary is not installed", async () => {
+      const pkgPath = resolve(__dirname, "..");
+      const result = await client.callTool(
+        { name: "hadolint", arguments: { path: pkgPath, patterns: ["Dockerfile"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      if (result.isError) {
+        // Binary not installed — verify graceful error message
+        const textContent = result.content as Array<{ type: string; text: string }>;
+        expect(textContent[0].type).toBe("text");
+        expect(textContent[0].text).toContain("hadolint");
+      } else {
+        // Binary installed — verify structured output
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(sc.total).toEqual(expect.any(Number));
+        expect(sc.errors).toEqual(expect.any(Number));
+        expect(sc.warnings).toEqual(expect.any(Number));
+        expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
+      }
+    });
+
+    it("rejects flag injection in patterns via MCP", async () => {
+      const result = await client.callTool(
+        { name: "hadolint", arguments: { patterns: ["--format"] } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Oxlint
   // -------------------------------------------------------------------------
 

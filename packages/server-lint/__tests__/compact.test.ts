@@ -82,6 +82,84 @@ describe("formatLintCompact", () => {
 });
 
 // ---------------------------------------------------------------------------
+// compactLintMap with shellcheck-shaped data
+// ---------------------------------------------------------------------------
+
+describe("compactLintMap with shellcheck-shaped data", () => {
+  it("keeps only counts, drops SC-code diagnostics", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "deploy.sh",
+          line: 5,
+          severity: "error",
+          rule: "SC2086",
+          message: "Double quote to prevent globbing and word splitting.",
+        },
+        {
+          file: "build.sh",
+          line: 3,
+          severity: "info",
+          rule: "SC2148",
+          message: "Tips depend on target shell and target OS.",
+        },
+      ],
+      total: 2,
+      errors: 1,
+      warnings: 0,
+      filesChecked: 2,
+    };
+
+    const compact = compactLintMap(data);
+
+    expect(compact.total).toBe(2);
+    expect(compact.errors).toBe(1);
+    expect(compact.warnings).toBe(0);
+    expect(compact.filesChecked).toBe(2);
+    expect(compact).not.toHaveProperty("diagnostics");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// compactLintMap with hadolint-shaped data
+// ---------------------------------------------------------------------------
+
+describe("compactLintMap with hadolint-shaped data", () => {
+  it("keeps only counts, drops DL-code diagnostics", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "Dockerfile",
+          line: 3,
+          severity: "error",
+          rule: "DL3006",
+          message: "Always tag the version of an image explicitly.",
+        },
+        {
+          file: "Dockerfile",
+          line: 7,
+          severity: "warning",
+          rule: "DL3008",
+          message: "Pin versions in apt get install.",
+        },
+      ],
+      total: 2,
+      errors: 1,
+      warnings: 1,
+      filesChecked: 1,
+    };
+
+    const compact = compactLintMap(data);
+
+    expect(compact.total).toBe(2);
+    expect(compact.errors).toBe(1);
+    expect(compact.warnings).toBe(1);
+    expect(compact.filesChecked).toBe(1);
+    expect(compact).not.toHaveProperty("diagnostics");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // compactFormatCheckMap
 // ---------------------------------------------------------------------------
 
