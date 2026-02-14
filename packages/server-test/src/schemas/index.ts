@@ -50,3 +50,47 @@ export const CoverageSchema = z.object({
 });
 
 export type Coverage = z.infer<typeof CoverageSchema>;
+
+/** Zod schema for a single Playwright test result with title, status, duration, and optional error. */
+export const PlaywrightTestResultSchema = z.object({
+  title: z.string(),
+  file: z.string().optional(),
+  line: z.number().optional(),
+  status: z.enum(["passed", "failed", "timedOut", "skipped", "interrupted"]),
+  duration: z.number(),
+  error: z.string().optional(),
+  retry: z.number().optional(),
+});
+
+/** Zod schema for a Playwright suite containing specs. */
+export const PlaywrightSuiteSchema = z.object({
+  title: z.string(),
+  file: z.string().optional(),
+  tests: z.array(PlaywrightTestResultSchema),
+});
+
+/** Zod schema for structured Playwright test run output. */
+export const PlaywrightResultSchema = z.object({
+  summary: z.object({
+    total: z.number(),
+    passed: z.number(),
+    failed: z.number(),
+    skipped: z.number(),
+    timedOut: z.number(),
+    interrupted: z.number(),
+    duration: z.number(),
+  }),
+  suites: z.array(PlaywrightSuiteSchema),
+  failures: z.array(
+    z.object({
+      title: z.string(),
+      file: z.string().optional(),
+      line: z.number().optional(),
+      error: z.string().optional(),
+    }),
+  ),
+});
+
+export type PlaywrightTestResult = z.infer<typeof PlaywrightTestResultSchema>;
+export type PlaywrightSuite = z.infer<typeof PlaywrightSuiteSchema>;
+export type PlaywrightResult = z.infer<typeof PlaywrightResultSchema>;
