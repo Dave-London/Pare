@@ -6,12 +6,12 @@ Runs conda commands (list, info, env-list) and returns structured JSON output fo
 
 ## Input Parameters
 
-| Parameter | Type                                       | Default | Description                                                |
-| --------- | ------------------------------------------ | ------- | ---------------------------------------------------------- |
-| `action`  | `"list"` \| `"info"` \| `"env-list"`      | --      | Conda action to perform (required)                         |
-| `name`    | string                                     | --      | Environment name (used with `list` action)                 |
-| `path`    | string                                     | cwd     | Working directory                                          |
-| `compact` | boolean                                    | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type                                 | Default | Description                                                |
+| --------- | ------------------------------------ | ------- | ---------------------------------------------------------- |
+| `action`  | `"list"` \| `"info"` \| `"env-list"` | --      | Conda action to perform (required)                         |
+| `name`    | string                               | --      | Environment name (used with `list` action)                 |
+| `path`    | string                               | cwd     | Working directory                                          |
+| `compact` | boolean                              | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Action: list -- List Packages
 
@@ -44,12 +44,37 @@ python                    3.12.1          hab00c5b_1_cpython    conda-forge
 {
   "action": "list",
   "packages": [
-    { "name": "ca-certificates", "version": "2024.2.2", "channel": "conda-forge", "buildString": "hbcca054_0" },
-    { "name": "certifi", "version": "2024.2.2", "channel": "conda-forge", "buildString": "pyhd8ed1ab_0" },
+    {
+      "name": "ca-certificates",
+      "version": "2024.2.2",
+      "channel": "conda-forge",
+      "buildString": "hbcca054_0"
+    },
+    {
+      "name": "certifi",
+      "version": "2024.2.2",
+      "channel": "conda-forge",
+      "buildString": "pyhd8ed1ab_0"
+    },
     { "name": "libffi", "version": "3.4.2", "channel": "conda-forge", "buildString": "h7f98852_5" },
-    { "name": "numpy", "version": "1.26.4", "channel": "conda-forge", "buildString": "py312hc5e2394_0" },
-    { "name": "openssl", "version": "3.2.1", "channel": "conda-forge", "buildString": "h0b41bf4_0" },
-    { "name": "python", "version": "3.12.1", "channel": "conda-forge", "buildString": "hab00c5b_1_cpython" }
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "channel": "conda-forge",
+      "buildString": "py312hc5e2394_0"
+    },
+    {
+      "name": "openssl",
+      "version": "3.2.1",
+      "channel": "conda-forge",
+      "buildString": "h0b41bf4_0"
+    },
+    {
+      "name": "python",
+      "version": "3.12.1",
+      "channel": "conda-forge",
+      "buildString": "hab00c5b_1_cpython"
+    }
   ],
   "total": 6,
   "environment": "base"
@@ -202,11 +227,11 @@ web-api                  /home/user/miniconda3/envs/web-api
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| list (6 packages)  | ~200       | ~90       | ~10          | 55-95%  |
-| info               | ~180       | ~60       | ~15          | 67-92%  |
-| env-list (3 envs)  | ~60        | ~55       | ~10          | 8-83%   |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| list (6 packages) | ~200       | ~90       | ~10          | 55-95%  |
+| info              | ~180       | ~60       | ~15          | 67-92%  |
+| env-list (3 envs) | ~60        | ~55       | ~10          | 8-83%   |
 
 ## Notes
 

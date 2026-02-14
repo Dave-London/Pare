@@ -85,11 +85,7 @@ All done! ✨ 🍰 ✨
   "filesUnchanged": 5,
   "filesChecked": 8,
   "success": true,
-  "wouldReformat": [
-    "src/api/views.py",
-    "src/utils/helpers.py",
-    "tests/test_api.py"
-  ]
+  "wouldReformat": ["src/api/views.py", "src/utils/helpers.py", "tests/test_api.py"]
 }
 ```
 
@@ -143,10 +139,7 @@ Oh no! 💥 💔 💥
   "filesUnchanged": 6,
   "filesChecked": 8,
   "success": false,
-  "wouldReformat": [
-    "src/api/views.py",
-    "src/utils/helpers.py"
-  ]
+  "wouldReformat": ["src/api/views.py", "src/utils/helpers.py"]
 }
 ```
 
@@ -156,11 +149,11 @@ Oh no! 💥 💔 💥
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| All formatted     | ~15        | ~20       | ~20          | 0%      |
-| 3 files changed   | ~60        | ~40       | ~15          | 33-75%  |
-| Check mode (2)    | ~50        | ~35       | ~15          | 30-70%  |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| All formatted   | ~15        | ~20       | ~20          | 0%      |
+| 3 files changed | ~60        | ~40       | ~15          | 33-75%  |
+| Check mode (2)  | ~50        | ~35       | ~15          | 30-70%  |
 
 ## Notes
 

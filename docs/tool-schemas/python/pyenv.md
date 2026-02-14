@@ -6,12 +6,12 @@ Manages Python versions via pyenv. Supports listing, inspecting, installing, and
 
 ## Input Parameters
 
-| Parameter | Type                                                                  | Default | Description                                                |
-| --------- | --------------------------------------------------------------------- | ------- | ---------------------------------------------------------- |
-| `action`  | `"versions"` \| `"version"` \| `"install"` \| `"local"` \| `"global"` | --      | The pyenv action to perform (required)                     |
+| Parameter | Type                                                                  | Default | Description                                                             |
+| --------- | --------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| `action`  | `"versions"` \| `"version"` \| `"install"` \| `"local"` \| `"global"` | --      | The pyenv action to perform (required)                                  |
 | `version` | string                                                                | --      | Python version string (required for install, optional for local/global) |
-| `path`    | string                                                                | cwd     | Working directory                                          |
-| `compact` | boolean                                                               | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `path`    | string                                                                | cwd     | Working directory                                                       |
+| `compact` | boolean                                                               | `true`  | Auto-compact when structured output exceeds raw CLI tokens              |
 
 ## Action: versions -- List Installed
 
@@ -162,12 +162,12 @@ pyenv: version `3.99.0` is not installed
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| versions (4)    | ~40        | ~30       | ~10          | 25-75%  |
-| version         | ~15        | ~15       | ~10          | 0-33%   |
-| install         | ~60        | ~15       | ~10          | 75-83%  |
-| action failed   | ~20        | ~20       | ~10          | 0-50%   |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| versions (4)  | ~40        | ~30       | ~10          | 25-75%  |
+| version       | ~15        | ~15       | ~10          | 0-33%   |
+| install       | ~60        | ~15       | ~10          | 75-83%  |
+| action failed | ~20        | ~20       | ~10          | 0-50%   |
 
 ## Notes
 

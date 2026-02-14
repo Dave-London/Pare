@@ -77,10 +77,7 @@ reformatted: src/utils/helpers.py
 {
   "success": true,
   "filesChanged": 2,
-  "files": [
-    "src/api/views.py",
-    "src/utils/helpers.py"
-  ]
+  "files": ["src/api/views.py", "src/utils/helpers.py"]
 }
 ```
 
@@ -129,10 +126,7 @@ Would reformat: src/utils/helpers.py
 {
   "success": false,
   "filesChanged": 2,
-  "files": [
-    "src/api/views.py",
-    "src/utils/helpers.py"
-  ]
+  "files": ["src/api/views.py", "src/utils/helpers.py"]
 }
 ```
 
@@ -142,11 +136,11 @@ Would reformat: src/utils/helpers.py
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| All formatted   | ~10        | ~10       | ~10          | 0%      |
-| 2 reformatted   | ~40        | ~25       | ~10          | 38-75%  |
-| Check mode (2)  | ~40        | ~25       | ~10          | 38-75%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| All formatted  | ~10        | ~10       | ~10          | 0%      |
+| 2 reformatted  | ~40        | ~25       | ~10          | 38-75%  |
+| Check mode (2) | ~40        | ~25       | ~10          | 38-75%  |
 
 ## Notes
 

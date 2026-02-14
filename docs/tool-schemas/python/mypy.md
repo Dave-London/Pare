@@ -141,10 +141,10 @@ Found 3 errors in 2 files (checked 12 source files)
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| No errors       | ~15        | ~20       | ~20          | 0%      |
-| 4 diagnostics   | ~120       | ~100      | ~20          | 17-83%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| No errors     | ~15        | ~20       | ~20          | 0%      |
+| 4 diagnostics | ~120       | ~100      | ~20          | 17-83%  |
 
 ## Notes
 

@@ -6,13 +6,13 @@ Runs uv pip install and returns a structured summary of installed packages with 
 
 ## Input Parameters
 
-| Parameter      | Type     | Default | Description                                                |
-| -------------- | -------- | ------- | ---------------------------------------------------------- |
-| `path`         | string   | cwd     | Working directory                                          |
-| `packages`     | string[] | --      | Packages to install                                        |
-| `requirements` | string   | --      | Path to requirements file                                  |
+| Parameter      | Type     | Default | Description                                                 |
+| -------------- | -------- | ------- | ----------------------------------------------------------- |
+| `path`         | string   | cwd     | Working directory                                           |
+| `packages`     | string[] | --      | Packages to install                                         |
+| `requirements` | string   | --      | Path to requirements file                                   |
 | `dryRun`       | boolean  | `false` | Preview what would be installed without actually installing |
-| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens  |
 
 ## Success -- Packages Installed
 

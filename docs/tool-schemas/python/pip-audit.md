@@ -126,10 +126,10 @@ Found 3 known vulnerabilities in 3 packages
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| No vulnerabilities    | ~20        | ~10       | ~10          | 50%     |
-| 3 vulnerabilities     | ~150       | ~90       | ~5           | 40-97%  |
+| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------ | ---------- | --------- | ------------ | ------- |
+| No vulnerabilities | ~20        | ~10       | ~10          | 50%     |
+| 3 vulnerabilities  | ~150       | ~90       | ~5           | 40-97%  |
 
 ## Notes
 

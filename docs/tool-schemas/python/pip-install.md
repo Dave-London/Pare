@@ -6,13 +6,13 @@ Runs pip install and returns a structured summary of installed packages with sat
 
 ## Input Parameters
 
-| Parameter      | Type     | Default | Description                                                |
-| -------------- | -------- | ------- | ---------------------------------------------------------- |
-| `packages`     | string[] | `[]`    | Packages to install (empty for requirements.txt)           |
-| `requirements` | string   | --      | Path to requirements file                                  |
-| `path`         | string   | cwd     | Working directory                                          |
+| Parameter      | Type     | Default | Description                                                 |
+| -------------- | -------- | ------- | ----------------------------------------------------------- |
+| `packages`     | string[] | `[]`    | Packages to install (empty for requirements.txt)            |
+| `requirements` | string   | --      | Path to requirements file                                   |
+| `path`         | string   | cwd     | Working directory                                           |
 | `dryRun`       | boolean  | `false` | Preview what would be installed without actually installing |
-| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens  |
 
 ## Success -- Packages Installed
 
@@ -147,11 +147,11 @@ ERROR: No matching distribution found for nonexistent-pkg
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 5 packages installed | ~120    | ~55       | ~15          | 54-88%  |
-| Already satisfied | ~25        | ~20       | ~20          | 20%     |
-| Package not found | ~35        | ~20       | ~20          | 43%     |
+| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------------- | ---------- | --------- | ------------ | ------- |
+| 5 packages installed | ~120       | ~55       | ~15          | 54-88%  |
+| Already satisfied    | ~25        | ~20       | ~20          | 20%     |
+| Package not found    | ~35        | ~20       | ~20          | 43%     |
 
 ## Notes
 

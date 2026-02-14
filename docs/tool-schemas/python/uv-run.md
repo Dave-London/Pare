@@ -6,11 +6,11 @@ Runs a command in a uv-managed environment and returns structured output with ex
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                                                      |
-| --------- | -------- | ------- | ---------------------------------------------------------------- |
-| `path`    | string   | cwd     | Working directory                                                |
+| Parameter | Type     | Default | Description                                                              |
+| --------- | -------- | ------- | ------------------------------------------------------------------------ |
+| `path`    | string   | cwd     | Working directory                                                        |
 | `command` | string[] | --      | Command and arguments to run (e.g. `["python", "script.py"]`) (required) |
-| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens       |
+| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens               |
 
 ## Success -- Command Completed
 
@@ -102,10 +102,10 @@ ValueError: Invalid input
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| Command success  | ~30        | ~35       | ~15          | 0-50%   |
-| Command failed   | ~40        | ~40       | ~15          | 0-63%   |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| Command success | ~30        | ~35       | ~15          | 0-50%   |
+| Command failed  | ~40        | ~40       | ~15          | 0-63%   |
 
 ## Notes
 

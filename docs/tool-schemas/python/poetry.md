@@ -6,12 +6,12 @@ Runs Poetry commands and returns structured output for dependency management and
 
 ## Input Parameters
 
-| Parameter  | Type                                                               | Default | Description                                                |
-| ---------- | ------------------------------------------------------------------ | ------- | ---------------------------------------------------------- |
-| `action`   | `"install"` \| `"add"` \| `"remove"` \| `"show"` \| `"build"`    | --      | Poetry action to perform (required)                        |
-| `packages` | string[]                                                           | --      | Packages for add/remove actions                            |
-| `path`     | string                                                             | cwd     | Working directory                                          |
-| `compact`  | boolean                                                            | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter  | Type                                                          | Default | Description                                                |
+| ---------- | ------------------------------------------------------------- | ------- | ---------------------------------------------------------- |
+| `action`   | `"install"` \| `"add"` \| `"remove"` \| `"show"` \| `"build"` | --      | Poetry action to perform (required)                        |
+| `packages` | string[]                                                      | --      | Packages for add/remove actions                            |
+| `path`     | string                                                        | cwd     | Working directory                                          |
+| `compact`  | boolean                                                       | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Action: show -- List Dependencies
 
@@ -194,11 +194,11 @@ Building myproject (0.1.0)
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| show (5 packages) | ~80        | ~45       | ~15          | 44-81%  |
-| add (5 packages)  | ~100       | ~50       | ~15          | 50-85%  |
-| build (2 artifacts) | ~30      | ~25       | ~15          | 17-50%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| show (5 packages)   | ~80        | ~45       | ~15          | 44-81%  |
+| add (5 packages)    | ~100       | ~50       | ~15          | 50-85%  |
+| build (2 artifacts) | ~30        | ~25       | ~15          | 17-50%  |
 
 ## Notes
 
