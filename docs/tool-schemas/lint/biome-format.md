@@ -77,11 +77,7 @@ Formatted 10 files in 60ms. Fixed 3 files.
 ```json
 {
   "filesChanged": 3,
-  "files": [
-    "src/index.ts",
-    "src/utils.ts",
-    "src/components/App.tsx"
-  ],
+  "files": ["src/index.ts", "src/utils.ts", "src/components/App.tsx"],
   "success": true
 }
 ```
@@ -139,11 +135,11 @@ sh: biome: command not found
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Already formatted    | ~40        | ~15       | ~15          | 63%     |
-| 3 files formatted    | ~80        | ~30       | ~10          | 63-88%  |
-| Biome not found      | ~30        | ~15       | ~15          | 50%     |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Already formatted | ~40        | ~15       | ~15          | 63%     |
+| 3 files formatted | ~80        | ~30       | ~10          | 63-88%  |
+| Biome not found   | ~30        | ~15       | ~15          | 50%     |
 
 ## Notes
 

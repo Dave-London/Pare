@@ -174,11 +174,11 @@ sh: stylelint: command not found
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| No issues (6 files) | ~30       | ~25       | ~25          | 17%     |
-| 3 diagnostics      | ~250       | ~100      | ~20          | 60-92%  |
-| Stylelint not found | ~30       | ~25       | ~25          | 17%     |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| No issues (6 files) | ~30        | ~25       | ~25          | 17%     |
+| 3 diagnostics       | ~250       | ~100      | ~20          | 60-92%  |
+| Stylelint not found | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

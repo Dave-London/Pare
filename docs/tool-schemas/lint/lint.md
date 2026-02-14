@@ -190,11 +190,11 @@ sh: eslint: command not found
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| No issues (12 files) | ~50    | ~25       | ~25          | 50%     |
-| 5 diagnostics     | ~350       | ~130      | ~20          | 63-94%  |
-| ESLint not found  | ~30        | ~25       | ~25          | 17%     |
+| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------------- | ---------- | --------- | ------------ | ------- |
+| No issues (12 files) | ~50        | ~25       | ~25          | 50%     |
+| 5 diagnostics        | ~350       | ~130      | ~20          | 63-94%  |
+| ESLint not found     | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

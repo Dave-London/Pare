@@ -6,13 +6,13 @@ Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line
 
 ## Input Parameters
 
-| Parameter           | Type     | Default          | Description                                                |
-| ------------------- | -------- | ---------------- | ---------------------------------------------------------- |
-| `path`              | string   | cwd              | Project root path                                          |
-| `patterns`          | string[] | `["Dockerfile"]` | Dockerfile paths to check                                  |
+| Parameter           | Type     | Default          | Description                                                  |
+| ------------------- | -------- | ---------------- | ------------------------------------------------------------ |
+| `path`              | string   | cwd              | Project root path                                            |
+| `patterns`          | string[] | `["Dockerfile"]` | Dockerfile paths to check                                    |
 | `trustedRegistries` | string[] | --               | Trusted Docker registries (e.g., `["docker.io", "ghcr.io"]`) |
-| `ignoreRules`       | string[] | --               | Rule codes to ignore (e.g., `["DL3008", "DL3013"]`)       |
-| `compact`           | boolean  | `true`           | Auto-compact when structured output exceeds raw CLI tokens |
+| `ignoreRules`       | string[] | --               | Rule codes to ignore (e.g., `["DL3008", "DL3013"]`)          |
+| `compact`           | boolean  | `true`           | Auto-compact when structured output exceeds raw CLI tokens   |
 
 ## Success — No Issues
 
@@ -177,11 +177,11 @@ sh: hadolint: command not found
 
 ## Token Savings
 
-| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------- | ---------- | --------- | ------------ | ------- |
-| No issues           | ~15        | ~25       | ~25          | 0%      |
-| 3 diagnostics       | ~250       | ~100      | ~20          | 60-92%  |
-| Hadolint not found  | ~30        | ~25       | ~25          | 17%     |
+| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------ | ---------- | --------- | ------------ | ------- |
+| No issues          | ~15        | ~25       | ~25          | 0%      |
+| 3 diagnostics      | ~250       | ~100      | ~20          | 60-92%  |
+| Hadolint not found | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

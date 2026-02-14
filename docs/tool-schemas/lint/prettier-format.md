@@ -76,11 +76,7 @@ src/components/App.tsx 23ms
 ```json
 {
   "filesChanged": 3,
-  "files": [
-    "src/index.ts",
-    "src/utils.ts",
-    "src/components/App.tsx"
-  ],
+  "files": ["src/index.ts", "src/utils.ts", "src/components/App.tsx"],
   "success": true
 }
 ```
@@ -138,11 +134,11 @@ sh: prettier: command not found
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Already formatted    | ~30        | ~15       | ~15          | 50%     |
-| 3 files formatted    | ~80        | ~30       | ~10          | 63-88%  |
-| Prettier not found   | ~30        | ~15       | ~15          | 50%     |
+| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------ | ---------- | --------- | ------------ | ------- |
+| Already formatted  | ~30        | ~15       | ~15          | 50%     |
+| 3 files formatted  | ~80        | ~30       | ~10          | 63-88%  |
+| Prettier not found | ~30        | ~15       | ~15          | 50%     |
 
 ## Notes
 

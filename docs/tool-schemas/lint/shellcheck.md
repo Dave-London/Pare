@@ -6,12 +6,12 @@ Runs ShellCheck (shell script linter) and returns structured diagnostics (file, 
 
 ## Input Parameters
 
-| Parameter  | Type                                               | Default | Description                                                |
-| ---------- | -------------------------------------------------- | ------- | ---------------------------------------------------------- |
-| `path`     | string                                             | cwd     | Project root path                                          |
-| `patterns` | string[]                                           | `["."]` | File patterns to check                                     |
+| Parameter  | Type                                              | Default | Description                                                |
+| ---------- | ------------------------------------------------- | ------- | ---------------------------------------------------------- |
+| `path`     | string                                            | cwd     | Project root path                                          |
+| `patterns` | string[]                                          | `["."]` | File patterns to check                                     |
 | `severity` | `"error"` \| `"warning"` \| `"info"` \| `"style"` | --      | Minimum severity level to report (default: style)          |
-| `compact`  | boolean                                            | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`  | boolean                                           | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — No Issues
 
@@ -190,11 +190,11 @@ sh: shellcheck: command not found
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| No issues             | ~20        | ~25       | ~25          | 0%      |
-| 4 diagnostics         | ~300       | ~120      | ~20          | 60-93%  |
-| ShellCheck not found  | ~30        | ~25       | ~25          | 17%     |
+| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------------- | ---------- | --------- | ------------ | ------- |
+| No issues            | ~20        | ~25       | ~25          | 0%      |
+| 4 diagnostics        | ~300       | ~120      | ~20          | 60-93%  |
+| ShellCheck not found | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

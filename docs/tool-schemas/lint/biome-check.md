@@ -175,11 +175,11 @@ sh: biome: command not found
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| No issues          | ~50        | ~25       | ~25          | 50%     |
-| 3 diagnostics      | ~300       | ~100      | ~20          | 67-93%  |
-| Biome not found    | ~30        | ~25       | ~25          | 17%     |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| No issues       | ~50        | ~25       | ~25          | 50%     |
+| 3 diagnostics   | ~300       | ~100      | ~20          | 67-93%  |
+| Biome not found | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

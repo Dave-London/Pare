@@ -80,12 +80,7 @@ Checking formatting...
 ```json
 {
   "formatted": false,
-  "files": [
-    "src/index.ts",
-    "src/utils.ts",
-    "src/components/App.tsx",
-    "tests/helpers.ts"
-  ],
+  "files": ["src/index.ts", "src/utils.ts", "src/components/App.tsx", "tests/helpers.ts"],
   "total": 4
 }
 ```
@@ -143,11 +138,11 @@ sh: prettier: command not found
 
 ## Token Savings
 
-| Scenario               | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------------- | ---------- | --------- | ------------ | ------- |
-| All formatted          | ~40        | ~15       | ~15          | 63%     |
-| 4 files need formatting | ~120      | ~40       | ~10          | 67-92%  |
-| Prettier not found     | ~30        | ~15       | ~15          | 50%     |
+| Scenario                | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------------- | ---------- | --------- | ------------ | ------- |
+| All formatted           | ~40        | ~15       | ~15          | 63%     |
+| 4 files need formatting | ~120       | ~40       | ~10          | 67-92%  |
+| Prettier not found      | ~30        | ~15       | ~15          | 50%     |
 
 ## Notes
 

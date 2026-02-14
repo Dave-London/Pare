@@ -184,11 +184,11 @@ sh: oxlint: command not found
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| No issues          | ~40        | ~25       | ~25          | 38%     |
-| 3 diagnostics      | ~280       | ~100      | ~20          | 64-93%  |
-| Oxlint not found   | ~30        | ~25       | ~25          | 17%     |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| No issues        | ~40        | ~25       | ~25          | 38%     |
+| 3 diagnostics    | ~280       | ~100      | ~20          | 64-93%  |
+| Oxlint not found | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 
