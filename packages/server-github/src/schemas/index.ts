@@ -230,3 +230,15 @@ export const RunRerunResultSchema = z.object({
 });
 
 export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
+
+// ── API schemas ─────────────────────────────────────────────────────
+
+/** Zod schema for structured gh api output. */
+export const ApiResultSchema = z.object({
+  status: z.number(),
+  body: z.unknown(),
+  endpoint: z.string(),
+  method: z.string(),
+});
+
+export type ApiResult = z.infer<typeof ApiResultSchema>;

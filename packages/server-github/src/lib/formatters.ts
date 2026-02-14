@@ -14,6 +14,7 @@ import type {
   RunViewResult,
   RunListResult,
   RunRerunResult,
+  ApiResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -376,4 +377,13 @@ export function formatRunRerun(data: RunRerunResult): string {
   const mode = data.failedOnly ? "failed jobs only" : "all jobs";
   const urlPart = data.url ? `: ${data.url}` : "";
   return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
+}
+
+// ── API ─────────────────────────────────────────────────────────────
+
+/** Formats structured API result into human-readable text. */
+export function formatApi(data: ApiResult): string {
+  const bodyStr = typeof data.body === "string" ? data.body : JSON.stringify(data.body, null, 2);
+  const preview = bodyStr.length > 500 ? bodyStr.slice(0, 500) + "..." : bodyStr;
+  return `${data.method} ${data.endpoint} → ${data.status}\n${preview}`;
 }

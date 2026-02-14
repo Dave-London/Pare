@@ -14,6 +14,7 @@ import type {
   RunViewResult,
   RunListResult,
   RunRerunResult,
+  ApiResult,
 } from "../schemas/index.js";
 
 /**
@@ -337,4 +338,27 @@ export function parseRunRerun(
     failedOnly,
     url,
   };
+}
+
+/**
+ * Parses `gh api` stdout into structured API result data.
+ * Attempts to parse stdout as JSON; falls back to raw string body.
+ */
+export function parseApi(
+  stdout: string,
+  exitCode: number,
+  endpoint: string,
+  method: string,
+): ApiResult {
+  // gh api returns exit code 0 for success. Map to HTTP-like status codes.
+  const status = exitCode === 0 ? 200 : 422;
+
+  let body: unknown;
+  try {
+    body = JSON.parse(stdout);
+  } catch {
+    body = stdout;
+  }
+
+  return { status, body, endpoint, method };
 }
