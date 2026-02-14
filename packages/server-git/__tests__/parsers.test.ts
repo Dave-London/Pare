@@ -16,6 +16,7 @@ import {
   parseRemoteOutput,
   parseBlameOutput,
   parseReset,
+  parseLogGraph,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -717,5 +718,86 @@ describe("parseReset", () => {
     const result = parseReset(stdout, "", "HEAD");
 
     expect(result.unstaged).toEqual(["modified.ts", "deleted.ts", "added.ts"]);
+  });
+});
+
+describe("parseLogGraph", () => {
+  it("parses simple linear graph output", () => {
+    const stdout = [
+      "* abc1234 (HEAD -> main) Latest commit",
+      "* def5678 Previous commit",
+      "* 1234abc Initial commit",
+    ].join("\n");
+
+    const result = parseLogGraph(stdout);
+
+    expect(result.total).toBe(3);
+    expect(result.commits).toHaveLength(3);
+    expect(result.commits[0]).toEqual({
+      graph: "*",
+      hashShort: "abc1234",
+      message: "Latest commit",
+      refs: "HEAD -> main",
+    });
+    expect(result.commits[1]).toEqual({
+      graph: "*",
+      hashShort: "def5678",
+      message: "Previous commit",
+    });
+    expect(result.commits[2]).toEqual({
+      graph: "*",
+      hashShort: "1234abc",
+      message: "Initial commit",
+    });
+  });
+
+  it("parses branching graph with merge", () => {
+    const stdout = [
+      "*   abc1234 (HEAD -> main) Merge branch 'feature'",
+      "|\\",
+      "| * def5678 (feature) Add feature",
+      "* | 9876543 Fix bug on main",
+      "|/",
+      "* aaa1111 Common ancestor",
+    ].join("\n");
+
+    const result = parseLogGraph(stdout);
+
+    // 4 real commits + 2 graph-only lines
+    expect(result.total).toBe(4);
+    expect(result.commits).toHaveLength(6);
+    expect(result.commits[0].hashShort).toBe("abc1234");
+    expect(result.commits[0].refs).toBe("HEAD -> main");
+    // graph-only line
+    expect(result.commits[1].hashShort).toBe("");
+    expect(result.commits[1].graph).toBe("|\\");
+    // feature branch commit
+    expect(result.commits[2].hashShort).toBe("def5678");
+    expect(result.commits[2].graph).toBe("| *");
+    expect(result.commits[2].refs).toBe("feature");
+  });
+
+  it("handles empty output", () => {
+    const result = parseLogGraph("");
+    expect(result.total).toBe(0);
+    expect(result.commits).toEqual([]);
+  });
+
+  it("parses commits without refs", () => {
+    const stdout = "* abc1234 Just a plain commit";
+    const result = parseLogGraph(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.commits[0].refs).toBeUndefined();
+    expect(result.commits[0].message).toBe("Just a plain commit");
+  });
+
+  it("parses commits with multiple refs", () => {
+    const stdout = "* abc1234 (HEAD -> main, origin/main, tag: v1.0) Release 1.0";
+    const result = parseLogGraph(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.commits[0].refs).toBe("HEAD -> main, origin/main, tag: v1.0");
+    expect(result.commits[0].message).toBe("Release 1.0");
   });
 });

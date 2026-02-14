@@ -30,7 +30,7 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 20 tools", async () => {
+  it("lists all 21 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -42,6 +42,7 @@ describe("@paretools/git integration", () => {
       "commit",
       "diff",
       "log",
+      "log-graph",
       "merge",
       "pull",
       "push",
@@ -96,6 +97,31 @@ describe("@paretools/git integration", () => {
       expect(first.hashShort).toEqual(expect.any(String));
       expect(first.author).toEqual(expect.any(String));
       expect(first.date).toEqual(expect.any(String));
+      expect(first.message).toEqual(expect.any(String));
+    });
+  });
+
+  describe("log-graph", () => {
+    it("returns structured graph topology", async () => {
+      const result = await client.callTool({
+        name: "log-graph",
+        arguments: { maxCount: 5, compact: false },
+      });
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(Array.isArray(sc.commits)).toBe(true);
+      expect(sc.total).toEqual(expect.any(Number));
+
+      const commits = sc.commits as Record<string, unknown>[];
+      // Should have at least one actual commit
+      const realCommits = commits.filter((c) => c.hashShort !== "");
+      expect(realCommits.length).toBeGreaterThan(0);
+      expect(realCommits.length).toBeLessThanOrEqual(5);
+
+      const first = realCommits[0];
+      expect(first.graph).toEqual(expect.any(String));
+      expect(first.hashShort).toEqual(expect.any(String));
       expect(first.message).toEqual(expect.any(String));
     });
   });

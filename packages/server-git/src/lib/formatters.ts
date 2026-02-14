@@ -19,6 +19,7 @@ import type {
   GitCherryPick,
   GitMerge,
   GitRebase,
+  GitLogGraphFull,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -438,4 +439,44 @@ export function formatMerge(m: GitMerge): string {
     parts.push(`(${m.commitHash})`);
   }
   return parts.join(" ");
+}
+
+// ── Log-graph formatters ──────────────────────────────────────────────
+
+/** Formats structured git log-graph data into a human-readable graph view. */
+export function formatLogGraph(lg: GitLogGraphFull): string {
+  if (lg.total === 0) return "No commits found";
+  return lg.commits
+    .map((c) => {
+      if (c.hashShort === "") return c.graph;
+      const refs = c.refs ? ` (${c.refs})` : "";
+      return `${c.graph} ${c.hashShort} ${c.message}${refs}`;
+    })
+    .join("\n");
+}
+
+/** Compact log-graph: drops pure graph continuation lines, keeps only commit entries. */
+export interface GitLogGraphCompact {
+  [key: string]: unknown;
+  commits: Array<{ g: string; h: string; m: string; r?: string }>;
+  total: number;
+}
+
+export function compactLogGraphMap(lg: GitLogGraphFull): GitLogGraphCompact {
+  return {
+    commits: lg.commits
+      .filter((c) => c.hashShort !== "")
+      .map((c) => ({
+        g: c.graph,
+        h: c.hashShort,
+        m: c.message,
+        ...(c.refs ? { r: c.refs } : {}),
+      })),
+    total: lg.total,
+  };
+}
+
+export function formatLogGraphCompact(lg: GitLogGraphCompact): string {
+  if (lg.total === 0) return "No commits found";
+  return lg.commits.map((c) => `${c.g} ${c.h} ${c.m}${c.r ? ` (${c.r})` : ""}`).join("\n");
 }

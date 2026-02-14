@@ -16,6 +16,8 @@ import {
   formatRemoteCompact,
   compactBlameMap,
   formatBlameCompact,
+  compactLogGraphMap,
+  formatLogGraphCompact,
 } from "../src/lib/formatters.js";
 import type { GitLog, GitDiff, GitShow } from "../src/schemas/index.js";
 import type {
@@ -24,6 +26,7 @@ import type {
   GitStashListFull,
   GitRemoteFull,
   GitBlameFull,
+  GitLogGraphFull,
 } from "../src/schemas/index.js";
 
 describe("compactLogMap", () => {
@@ -393,5 +396,65 @@ describe("formatBlameCompact", () => {
   it("formats empty blame", () => {
     const compact = { commits: [], file: "empty.ts", totalLines: 0 };
     expect(formatBlameCompact(compact)).toBe("No blame data for empty.ts");
+  });
+});
+
+describe("compactLogGraphMap", () => {
+  it("filters out graph-only lines and uses short keys", () => {
+    const data: GitLogGraphFull = {
+      commits: [
+        { graph: "*  ", hashShort: "abc1234", message: "Merge commit", refs: "HEAD -> main" },
+        { graph: "|\\", hashShort: "", message: "" },
+        { graph: "| *", hashShort: "def5678", message: "Feature commit", refs: "feature" },
+        { graph: "|/", hashShort: "", message: "" },
+        { graph: "*", hashShort: "aaa1111", message: "Base commit" },
+      ],
+      total: 3,
+    };
+
+    const compact = compactLogGraphMap(data);
+
+    expect(compact.total).toBe(3);
+    // Only actual commits, no continuation lines
+    expect(compact.commits).toHaveLength(3);
+    expect(compact.commits[0]).toEqual({
+      g: "*  ",
+      h: "abc1234",
+      m: "Merge commit",
+      r: "HEAD -> main",
+    });
+    expect(compact.commits[1]).toEqual({
+      g: "| *",
+      h: "def5678",
+      m: "Feature commit",
+      r: "feature",
+    });
+    expect(compact.commits[2]).toEqual({
+      g: "*",
+      h: "aaa1111",
+      m: "Base commit",
+    });
+    // No refs key when absent
+    expect(compact.commits[2]).not.toHaveProperty("r");
+  });
+});
+
+describe("formatLogGraphCompact", () => {
+  it("formats compact log-graph entries", () => {
+    const compact = {
+      commits: [
+        { g: "*", h: "abc1234", m: "Fix bug", r: "HEAD -> main" },
+        { g: "| *", h: "def5678", m: "Add feature" },
+      ],
+      total: 2,
+    };
+    const output = formatLogGraphCompact(compact);
+
+    expect(output).toBe("* abc1234 Fix bug (HEAD -> main)\n| * def5678 Add feature");
+  });
+
+  it("formats empty log-graph", () => {
+    const compact = { commits: [], total: 0 };
+    expect(formatLogGraphCompact(compact)).toBe("No commits found");
   });
 });

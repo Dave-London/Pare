@@ -19,6 +19,7 @@ import type {
   GitCherryPick,
   GitMerge,
   GitRebase,
+  GitLogGraphFull,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -657,4 +658,51 @@ export function parseRebase(
     conflicts,
     ...(rebasedCommits !== undefined ? { rebasedCommits } : {}),
   };
+}
+
+/** Parses `git log --graph --oneline --decorate` output into structured log-graph data.
+ *  Each line is split into graph characters (the ASCII art prefix) and the commit info. */
+export function parseLogGraph(stdout: string): GitLogGraphFull {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const commits: GitLogGraphFull["commits"] = [];
+
+  for (const line of lines) {
+    // Graph lines contain ASCII art (|, /, \, *, space) followed by a short hash + message.
+    // The commit marker is '*'. Lines without '*' are pure graph continuation lines;
+    // we still include them to preserve topology.
+    // Pattern: graph chars end where the short hash begins (first hex word after graph art).
+    const commitMatch = line.match(/^([|/\\\s*_.-]+?)\s([a-f0-9]{7,12})\s(.+)$/);
+    if (commitMatch) {
+      const graph = commitMatch[1];
+      const hashShort = commitMatch[2];
+      let rest = commitMatch[3];
+
+      // Extract refs from decoration: (HEAD -> main, origin/main, tag: v1.0)
+      let refs: string | undefined;
+      const refsMatch = rest.match(/^\(([^)]+)\)\s*/);
+      if (refsMatch) {
+        refs = refsMatch[1];
+        rest = rest.slice(refsMatch[0].length);
+      }
+
+      commits.push({
+        graph,
+        hashShort,
+        message: rest,
+        ...(refs ? { refs } : {}),
+      });
+    } else {
+      // Pure graph continuation line (no commit) — store with empty hash/message
+      // to preserve the visual topology
+      commits.push({
+        graph: line,
+        hashShort: "",
+        message: "",
+      });
+    }
+  }
+
+  // Count only actual commits (non-empty hashShort)
+  const total = commits.filter((c) => c.hashShort !== "").length;
+  return { commits, total };
 }
