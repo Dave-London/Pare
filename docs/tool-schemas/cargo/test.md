@@ -6,11 +6,11 @@ Runs cargo test and returns structured test results (name, status, pass/fail cou
 
 ## Input Parameters
 
-| Parameter | Type   | Default | Description                                                |
-| --------- | ------ | ------- | ---------------------------------------------------------- |
-| `path`    | string | cwd     | Project root path                                          |
-| `filter`  | string | --      | Test name filter pattern                                   |
-| `compact` | boolean | `true` | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type    | Default | Description                                                |
+| --------- | ------- | ------- | ---------------------------------------------------------- |
+| `path`    | string  | cwd     | Project root path                                          |
+| `filter`  | string  | --      | Test name filter pattern                                   |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — All Tests Passing
 
@@ -165,10 +165,10 @@ test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; 
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| 4 tests passing       | ~200       | ~70       | ~25          | 65-88%  |
-| 4 tests, 2 failures   | ~400       | ~75       | ~25          | 81-94%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| 4 tests passing     | ~200       | ~70       | ~25          | 65-88%  |
+| 4 tests, 2 failures | ~400       | ~75       | ~25          | 81-94%  |
 
 ## Notes
 

@@ -140,10 +140,10 @@ warning: `my-app` (bin "my-app") generated 2 warnings
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| No warnings       | ~80        | ~20       | ~20          | 75%     |
-| 2 lint warnings   | ~400       | ~100      | ~20          | 75-95%  |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| No warnings     | ~80        | ~20       | ~20          | 75%     |
+| 2 lint warnings | ~400       | ~100      | ~20          | 75-95%  |
 
 ## Notes
 

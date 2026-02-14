@@ -9,7 +9,7 @@ Adds dependencies to a Rust project and returns structured output with added pac
 | Parameter  | Type     | Default | Description                                                |
 | ---------- | -------- | ------- | ---------------------------------------------------------- |
 | `path`     | string   | cwd     | Project root path                                          |
-| `packages` | string[] | --      | Packages to add (e.g. `["serde", "tokio@1.0"]`)           |
+| `packages` | string[] | --      | Packages to add (e.g. `["serde", "tokio@1.0"]`)            |
 | `dev`      | boolean  | `false` | Add as dev dependency (--dev)                              |
 | `features` | string[] | --      | Features to enable (e.g. `["derive", "full"]`)             |
 | `dryRun`   | boolean  | `false` | Preview without modifying Cargo.toml (--dry-run)           |
@@ -112,10 +112,10 @@ error: could not find `nonexistent-crate` in registry `crates-io`
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| Adding 2 packages  | ~150       | ~45       | ~20          | 70-87%  |
-| Package not found  | ~60        | ~15       | ~15          | 75%     |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Adding 2 packages | ~150       | ~45       | ~20          | 70-87%  |
+| Package not found | ~60        | ~15       | ~15          | 75%     |
 
 ## Notes
 

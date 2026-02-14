@@ -88,10 +88,7 @@ Diff in /home/user/my-app/src/lib.rs at line 12:
 {
   "success": false,
   "filesChanged": 2,
-  "files": [
-    "src/main.rs",
-    "src/lib.rs"
-  ]
+  "files": ["src/main.rs", "src/lib.rs"]
 }
 ```
 
@@ -117,9 +114,9 @@ Diff in /home/user/my-app/src/lib.rs at line 12:
 
 ## Token Savings
 
-| Scenario               | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------------- | ---------- | --------- | ------------ | ------- |
-| All formatted          | ~10        | ~15       | ~10          | 0%      |
+| Scenario                | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------------- | ---------- | --------- | ------------ | ------- |
+| All formatted           | ~10        | ~15       | ~10          | 0%      |
 | 2 files need formatting | ~250       | ~30       | ~10          | 88-96%  |
 
 ## Notes

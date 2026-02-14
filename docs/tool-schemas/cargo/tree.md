@@ -9,8 +9,8 @@ Displays the dependency tree for a Rust project with unique package count.
 | Parameter | Type    | Default | Description                                                |
 | --------- | ------- | ------- | ---------------------------------------------------------- |
 | `path`    | string  | cwd     | Project root path                                          |
-| `depth`   | number  | --      | Maximum depth of the dependency tree to display             |
-| `package` | string  | --      | Focus on a specific package in the tree                     |
+| `depth`   | number  | --      | Maximum depth of the dependency tree to display            |
+| `package` | string  | --      | Focus on a specific package in the tree                    |
 | `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Dependency Tree
@@ -106,8 +106,8 @@ my-app v0.1.0 (/home/user/my-app)
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
 | Full tree (12 deps) | ~200       | ~220      | ~5           | 0-98%   |
 | Depth-limited tree  | ~80        | ~50       | ~5           | 38-94%  |
 

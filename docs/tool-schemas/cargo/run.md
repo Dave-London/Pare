@@ -106,10 +106,10 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Normal run     | ~100       | ~40       | ~10          | 60-90%  |
-| Runtime panic  | ~200       | ~50       | ~10          | 75-95%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Normal run    | ~100       | ~40       | ~10          | 60-90%  |
+| Runtime panic | ~200       | ~50       | ~10          | 75-95%  |
 
 ## Notes
 

@@ -6,11 +6,11 @@ Updates dependencies in the lock file and returns structured output.
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                |
-| --------- | ------- | ------- | ---------------------------------------------------------- |
-| `path`    | string  | cwd     | Project root path                                          |
+| Parameter | Type    | Default | Description                                                    |
+| --------- | ------- | ------- | -------------------------------------------------------------- |
+| `path`    | string  | cwd     | Project root path                                              |
 | `package` | string  | --      | Specific package to update (e.g. `serde`). Omit to update all. |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens     |
 
 ## Success — Updating All Dependencies
 

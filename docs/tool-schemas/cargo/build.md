@@ -195,11 +195,11 @@ error: aborting due to 1 previous error
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Clean build          | ~120       | ~30       | ~30          | 75%     |
+| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------- | ---------- | --------- | ------------ | ------- |
+| Clean build           | ~120       | ~30       | ~30          | 75%     |
 | Build with 2 warnings | ~350       | ~100      | ~25          | 71-93%  |
-| Compilation error    | ~250       | ~65       | ~25          | 74-90%  |
+| Compilation error     | ~250       | ~65       | ~25          | 74-90%  |
 
 ## Notes
 

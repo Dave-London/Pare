@@ -143,10 +143,10 @@ error: aborting due to 2 previous errors
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| Clean check     | ~80        | ~30       | ~30          | 63%     |
-| 2 type errors   | ~350       | ~100      | ~25          | 71-93%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Clean check   | ~80        | ~30       | ~30          | 63%     |
+| 2 type errors | ~350       | ~100      | ~25          | 71-93%  |
 
 ## Notes
 

@@ -109,10 +109,10 @@ Same as full (output is already minimal).
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| Clean docs         | ~100       | ~10       | ~10          | 90%     |
-| 2 doc warnings     | ~300       | ~10       | ~10          | 97%     |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| Clean docs     | ~100       | ~10       | ~10          | 90%     |
+| 2 doc warnings | ~300       | ~10       | ~10          | 97%     |
 
 ## Notes
 

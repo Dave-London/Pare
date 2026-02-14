@@ -87,10 +87,10 @@ error: the dependency `nonexistent` could not be found in `dependencies`
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Removing 2 packages  | ~80        | ~25       | ~25          | 69%     |
-| Package not found    | ~60        | ~15       | ~15          | 75%     |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| Removing 2 packages | ~80        | ~25       | ~25          | 69%     |
+| Package not found   | ~60        | ~15       | ~15          | 75%     |
 
 ## Notes
 
