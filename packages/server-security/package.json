@@ -2,7 +2,7 @@
   "name": "@paretools/security",
   "version": "0.1.0",
   "mcpName": "io.github.Dave-London/pare-security",
-  "description": "MCP server for security scanning (Trivy, Semgrep) with structured, token-efficient output",
+  "description": "MCP server for security scanning (Trivy, Semgrep, Gitleaks) with structured, token-efficient output",
   "license": "MIT",
   "keywords": [
     "mcp",
@@ -25,7 +25,9 @@
     "iac",
     "semgrep",
     "static-analysis",
-    "sast"
+    "sast",
+    "gitleaks",
+    "secret-detection"
   ],
   "homepage": "https://github.com/Dave-London/Pare/tree/main/packages/server-security",
   "engines": {

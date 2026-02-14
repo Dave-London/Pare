@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTrivyJson, parseSemgrepJson } from "../src/lib/parsers.js";
+import { parseTrivyJson, parseSemgrepJson, parseGitleaksJson } from "../src/lib/parsers.js";
 
 describe("parseTrivyJson", () => {
   it("parses a full Trivy JSON output with vulnerabilities", () => {
@@ -403,5 +403,150 @@ describe("parseSemgrepJson", () => {
     const result = parseSemgrepJson(json, "auto");
     expect(result.findings[0].severity).toBe("INFO");
     expect(result.summary.info).toBe(1);
+  });
+});
+
+describe("parseGitleaksJson", () => {
+  it("parses a full Gitleaks JSON output with findings", () => {
+    const json = JSON.stringify([
+      {
+        RuleID: "generic-api-key",
+        Description: "Generic API Key",
+        Match: 'apiKey = "AKIAIOSFODNN7EXAMPLE"',
+        Secret: "AKIAIOSFODNN7EXAMPLE",
+        File: "config/settings.py",
+        StartLine: 15,
+        EndLine: 15,
+        Commit: "abc123def456789",
+        Author: "dev@example.com",
+        Date: "2024-01-15T10:30:00Z",
+      },
+      {
+        RuleID: "aws-secret-access-key",
+        Description: "AWS Secret Access Key",
+        Match: 'secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"',
+        Secret: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        File: ".env",
+        StartLine: 3,
+        EndLine: 3,
+        Commit: "def456abc789012",
+        Author: "admin@example.com",
+        Date: "2024-02-20T14:00:00Z",
+      },
+    ]);
+
+    const result = parseGitleaksJson(json);
+
+    expect(result.totalFindings).toBe(2);
+    expect(result.findings).toHaveLength(2);
+
+    expect(result.findings[0]).toEqual({
+      ruleID: "generic-api-key",
+      description: "Generic API Key",
+      match: 'apiKey = "AKIAIOSFODNN7EXAMPLE"',
+      secret: "AKI***PLE",
+      file: "config/settings.py",
+      startLine: 15,
+      endLine: 15,
+      commit: "abc123def456789",
+      author: "dev@example.com",
+      date: "2024-01-15T10:30:00Z",
+    });
+
+    // Secret should be redacted
+    expect(result.findings[1].secret).toBe("wJa***KEY");
+
+    expect(result.summary).toEqual({ totalFindings: 2 });
+  });
+
+  it("handles empty array", () => {
+    const json = JSON.stringify([]);
+    const result = parseGitleaksJson(json);
+
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+    expect(result.summary).toEqual({ totalFindings: 0 });
+  });
+
+  it("handles invalid JSON gracefully", () => {
+    const result = parseGitleaksJson("not valid json");
+
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+    expect(result.summary).toEqual({ totalFindings: 0 });
+  });
+
+  it("handles non-array JSON gracefully", () => {
+    const json = JSON.stringify({ notAnArray: true });
+    const result = parseGitleaksJson(json);
+
+    expect(result.totalFindings).toBe(0);
+    expect(result.findings).toEqual([]);
+  });
+
+  it("handles missing fields with defaults", () => {
+    const json = JSON.stringify([{}]);
+    const result = parseGitleaksJson(json);
+
+    expect(result.findings[0]).toEqual({
+      ruleID: "unknown",
+      description: "",
+      match: "",
+      secret: "***",
+      file: "unknown",
+      startLine: 0,
+      endLine: 0,
+      commit: "",
+      author: "",
+      date: "",
+    });
+  });
+
+  it("redacts short secrets completely", () => {
+    const json = JSON.stringify([
+      {
+        RuleID: "test-rule",
+        Description: "Test",
+        Secret: "abc",
+        File: "test.txt",
+        StartLine: 1,
+        EndLine: 1,
+      },
+    ]);
+
+    const result = parseGitleaksJson(json);
+    expect(result.findings[0].secret).toBe("***");
+  });
+
+  it("redacts secrets of exactly 8 characters completely", () => {
+    const json = JSON.stringify([
+      {
+        RuleID: "test-rule",
+        Description: "Test",
+        Secret: "12345678",
+        File: "test.txt",
+        StartLine: 1,
+        EndLine: 1,
+      },
+    ]);
+
+    const result = parseGitleaksJson(json);
+    expect(result.findings[0].secret).toBe("***");
+  });
+
+  it("partially redacts secrets longer than 8 characters", () => {
+    const json = JSON.stringify([
+      {
+        RuleID: "test-rule",
+        Description: "Test",
+        Secret: "123456789",
+        File: "test.txt",
+        StartLine: 1,
+        EndLine: 1,
+      },
+    ]);
+
+    const result = parseGitleaksJson(json);
+    expect(result.findings[0].secret).toBe("123***789");
   });
 });

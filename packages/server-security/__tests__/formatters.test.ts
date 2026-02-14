@@ -6,8 +6,15 @@ import {
   formatSemgrepScan,
   compactSemgrepScanMap,
   formatSemgrepScanCompact,
+  formatGitleaksScan,
+  compactGitleaksScanMap,
+  formatGitleaksScanCompact,
 } from "../src/lib/formatters.js";
-import type { TrivyScanResult, SemgrepScanResult } from "../src/schemas/index.js";
+import type {
+  TrivyScanResult,
+  SemgrepScanResult,
+  GitleaksScanResult,
+} from "../src/schemas/index.js";
 
 // -- Full formatters ----------------------------------------------------------
 
@@ -264,5 +271,105 @@ describe("formatSemgrepScanCompact", () => {
     });
 
     expect(output).toBe("Semgrep scan (config: p/security-audit) -- 0 findings (0E/0W/0I)");
+  });
+});
+
+// -- Gitleaks formatters ------------------------------------------------------
+
+describe("formatGitleaksScan", () => {
+  it("formats scan with findings", () => {
+    const data: GitleaksScanResult = {
+      totalFindings: 2,
+      findings: [
+        {
+          ruleID: "generic-api-key",
+          description: "Generic API Key",
+          match: 'apiKey = "AKI***PLE"',
+          secret: "AKI***PLE",
+          file: "config/settings.py",
+          startLine: 15,
+          endLine: 15,
+          commit: "abc123def456789",
+          author: "dev@example.com",
+          date: "2024-01-15T10:30:00Z",
+        },
+        {
+          ruleID: "aws-secret-access-key",
+          description: "AWS Secret Access Key",
+          match: 'secret_key = "wJa***KEY"',
+          secret: "wJa***KEY",
+          file: ".env",
+          startLine: 3,
+          endLine: 3,
+          commit: "def456abc789012",
+          author: "admin@example.com",
+          date: "2024-02-20T14:00:00Z",
+        },
+      ],
+      summary: { totalFindings: 2 },
+    };
+
+    const output = formatGitleaksScan(data);
+
+    expect(output).toContain("Gitleaks secret detection scan");
+    expect(output).toContain("Found 2 secret(s)");
+    expect(output).toContain("[generic-api-key] config/settings.py:15-15 (commit: abc123de)");
+    expect(output).toContain("Generic API Key -- secret: AKI***PLE");
+    expect(output).toContain("[aws-secret-access-key] .env:3-3 (commit: def456ab)");
+  });
+
+  it("formats scan with no findings", () => {
+    const data: GitleaksScanResult = {
+      totalFindings: 0,
+      findings: [],
+      summary: { totalFindings: 0 },
+    };
+
+    const output = formatGitleaksScan(data);
+
+    expect(output).toContain("Gitleaks secret detection scan");
+    expect(output).toContain("Found 0 secret(s)");
+    expect(output).not.toContain("[");
+  });
+});
+
+describe("compactGitleaksScanMap", () => {
+  it("keeps total, drops individual findings", () => {
+    const data: GitleaksScanResult = {
+      totalFindings: 2,
+      findings: [
+        {
+          ruleID: "rule1",
+          description: "desc",
+          match: "match",
+          secret: "***",
+          file: "test.py",
+          startLine: 1,
+          endLine: 1,
+          commit: "abc123",
+          author: "dev",
+          date: "2024-01-01",
+        },
+      ],
+      summary: { totalFindings: 2 },
+    };
+
+    const compact = compactGitleaksScanMap(data);
+
+    expect(compact.totalFindings).toBe(2);
+    expect(compact).not.toHaveProperty("findings");
+    expect(compact).not.toHaveProperty("summary");
+  });
+});
+
+describe("formatGitleaksScanCompact", () => {
+  it("formats compact summary", () => {
+    const output = formatGitleaksScanCompact({ totalFindings: 5 });
+    expect(output).toBe("Gitleaks scan -- 5 secret(s) detected");
+  });
+
+  it("formats compact with zero findings", () => {
+    const output = formatGitleaksScanCompact({ totalFindings: 0 });
+    expect(output).toBe("Gitleaks scan -- 0 secret(s) detected");
   });
 });
