@@ -26,7 +26,6 @@ describe("@paretools/docker integration", () => {
     await transport.close();
   });
 
-
   it("lists all 16 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
