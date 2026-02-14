@@ -6,13 +6,13 @@ Runs a make or just target and returns structured output with stdout, stderr, ex
 
 ## Input Parameters
 
-| Parameter | Type                                    | Default  | Description                                                |
-| --------- | --------------------------------------- | -------- | ---------------------------------------------------------- |
-| `target`  | string                                  | —        | Target to run (required)                                   |
-| `args`    | string[]                                | `[]`     | Additional arguments to pass to the target                 |
-| `path`    | string                                  | cwd      | Project root path                                          |
-| `tool`    | `"auto"` \| `"make"` \| `"just"`       | `"auto"` | Task runner to use; "auto" detects from files              |
-| `compact` | boolean                                 | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type                             | Default  | Description                                                |
+| --------- | -------------------------------- | -------- | ---------------------------------------------------------- |
+| `target`  | string                           | —        | Target to run (required)                                   |
+| `args`    | string[]                         | `[]`     | Additional arguments to pass to the target                 |
+| `path`    | string                           | cwd      | Project root path                                          |
+| `tool`    | `"auto"` \| `"make"` \| `"just"` | `"auto"` | Task runner to use; "auto" detects from files              |
+| `compact` | boolean                          | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Target Completes
 

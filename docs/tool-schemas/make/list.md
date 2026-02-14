@@ -6,11 +6,11 @@ Lists available make or just targets with optional descriptions. Auto-detects ma
 
 ## Input Parameters
 
-| Parameter | Type                                    | Default  | Description                                                |
-| --------- | --------------------------------------- | -------- | ---------------------------------------------------------- |
-| `path`    | string                                  | cwd      | Project root path                                          |
-| `tool`    | `"auto"` \| `"make"` \| `"just"`       | `"auto"` | Task runner to use; "auto" detects from files              |
-| `compact` | boolean                                 | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type                             | Default  | Description                                                |
+| --------- | -------------------------------- | -------- | ---------------------------------------------------------- |
+| `path`    | string                           | cwd      | Project root path                                          |
+| `tool`    | `"auto"` \| `"make"` \| `"just"` | `"auto"` | Task runner to use; "auto" detects from files              |
+| `compact` | boolean                          | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Just Targets with Descriptions
 
@@ -165,11 +165,11 @@ make: *** No targets specified and no makefile found. Stop.
 
 ## Token Savings
 
-| Scenario                    | CLI Tokens | Pare Full | Pare Compact | Savings   |
-| --------------------------- | ---------- | --------- | ------------ | --------- |
-| Just targets (5 with desc.) | ~55        | ~65       | ~10          | 82%*      |
-| Make targets (5 targets)    | ~800       | ~50       | ~10          | 94–99%    |
-| No targets found            | ~30        | ~15       | ~15          | 50%       |
+| Scenario                    | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------------- | ---------- | --------- | ------------ | ------- |
+| Just targets (5 with desc.) | ~55        | ~65       | ~10          | 82%\*   |
+| Make targets (5 targets)    | ~800       | ~50       | ~10          | 94–99%  |
+| No targets found            | ~30        | ~15       | ~15          | 50%     |
 
 \* Just list output is already concise; full Pare response is slightly larger due to JSON structure, but compact mode still provides significant savings. The real savings come from make, where `make -pRrq` outputs the entire internal database (often hundreds of lines) while Pare extracts just the target names.
 
