@@ -3,6 +3,7 @@ import type {
   PrListResult,
   PrCreateResult,
   PrMergeResult,
+  PrDiffResult,
   CommentResult,
   PrReviewResult,
   EditResult,
@@ -361,4 +362,43 @@ export function parseApi(
   }
 
   return { status, body, endpoint, method };
+}
+
+/**
+ * Parses `gh pr diff --numstat` output into structured PR diff data.
+ * The numstat format is: additions\tdeletions\tfilename per line.
+ */
+export function parsePrDiffNumstat(stdout: string): PrDiffResult {
+  const lines = stdout.trim().split("\n").filter(Boolean);
+  const files = lines.map((line) => {
+    const [add, del, ...fileParts] = line.split("\t");
+    const filePath = fileParts.join("\t");
+    // Detect renames: "old => new" or "{old => new}/path"
+    const renameMatch =
+      filePath.match(/(.+)\{(.+) => (.+)\}(.*)/) || filePath.match(/(.+) => (.+)/);
+    const isRename = !!renameMatch;
+    const additions = add === "-" ? 0 : parseInt(add, 10);
+    const deletions = del === "-" ? 0 : parseInt(del, 10);
+
+    return {
+      file: filePath,
+      status: (additions > 0 && deletions === 0 && !isRename
+        ? "added"
+        : isRename
+          ? "renamed"
+          : deletions > 0 && additions === 0
+            ? "deleted"
+            : "modified") as PrDiffResult["files"][number]["status"],
+      additions,
+      deletions,
+      ...(isRename && renameMatch ? { oldFile: renameMatch[1] ?? renameMatch[0] } : {}),
+    };
+  });
+
+  return {
+    files,
+    totalAdditions: files.reduce((sum, f) => sum + f.additions, 0),
+    totalDeletions: files.reduce((sum, f) => sum + f.deletions, 0),
+    totalFiles: files.length,
+  };
 }

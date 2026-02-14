@@ -3,6 +3,7 @@ import type {
   PrListResult,
   PrCreateResult,
   PrMergeResult,
+  PrDiffResult,
   CommentResult,
   PrReviewResult,
   EditResult,
@@ -111,6 +112,12 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
 
 export function formatPrChecksCompact(data: PrChecksCompact): string {
   return `PR #${data.pr}: ${data.total} checks (${data.passed} passed, ${data.failed} failed, ${data.pending} pending)`;
+}
+
+/** Formats structured PR diff data into a human-readable file change summary. */
+export function formatPrDiff(diff: PrDiffResult): string {
+  const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
+  return `${diff.totalFiles} files changed, +${diff.totalAdditions} -${diff.totalDeletions}\n${files}`;
 }
 
 /** Formats structured issue view data into human-readable text. */
@@ -256,6 +263,35 @@ export function formatPrListCompact(data: PrListCompact): string {
     lines.push(`  #${pr.number} ${pr.title} (${pr.state})`);
   }
   return lines.join("\n");
+}
+
+/** Compact PR diff: file-level stats only, no chunks or aggregate totals. */
+export interface PrDiffCompact {
+  [key: string]: unknown;
+  files: Array<{
+    file: string;
+    status: "added" | "modified" | "deleted" | "renamed" | "copied";
+    additions: number;
+    deletions: number;
+  }>;
+  totalFiles: number;
+}
+
+export function compactPrDiffMap(data: PrDiffResult): PrDiffCompact {
+  return {
+    files: data.files.map((f) => ({
+      file: f.file,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+    })),
+    totalFiles: data.totalFiles,
+  };
+}
+
+export function formatPrDiffCompact(diff: PrDiffCompact): string {
+  const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
+  return `${diff.totalFiles} files changed\n${files}`;
 }
 
 /** Compact issue view: key fields, no body. */
