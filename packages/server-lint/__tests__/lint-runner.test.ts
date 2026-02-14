@@ -5,7 +5,14 @@ vi.mock("@paretools/shared", () => ({
   run: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
 }));
 
-import { eslint, prettier, biome, stylelintCmd, oxlintCmd } from "../src/lib/lint-runner.js";
+import {
+  eslint,
+  prettier,
+  biome,
+  stylelintCmd,
+  oxlintCmd,
+  shellcheckCmd,
+} from "../src/lib/lint-runner.js";
 import { run } from "@paretools/shared";
 
 const mockRun = vi.mocked(run);
@@ -281,5 +288,57 @@ describe("oxlintCmd()", () => {
     const result = await oxlintCmd(["--format", "json", "."], "/project");
 
     expect(result).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// shellcheckCmd() argument construction
+// ---------------------------------------------------------------------------
+
+describe("shellcheckCmd()", () => {
+  it("passes arguments through to run() with shellcheck command (no npx)", async () => {
+    await shellcheckCmd(["--format=json", "deploy.sh"], "/project");
+
+    expect(mockRun).toHaveBeenCalledOnce();
+    expect(mockRun).toHaveBeenCalledWith("shellcheck", ["--format=json", "deploy.sh"], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("constructs correct args with severity filter", async () => {
+    await shellcheckCmd(["--format=json", "--severity=warning", "deploy.sh"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith(
+      "shellcheck",
+      ["--format=json", "--severity=warning", "deploy.sh"],
+      { cwd: "/project", timeout: 120_000 },
+    );
+  });
+
+  it("constructs correct args with multiple files", async () => {
+    await shellcheckCmd(["--format=json", "deploy.sh", "build.sh"], "/project");
+
+    expect(mockRun).toHaveBeenCalledWith("shellcheck", ["--format=json", "deploy.sh", "build.sh"], {
+      cwd: "/project",
+      timeout: 120_000,
+    });
+  });
+
+  it("passes undefined cwd when not specified", async () => {
+    await shellcheckCmd(["--format=json", "deploy.sh"]);
+
+    expect(mockRun).toHaveBeenCalledWith("shellcheck", ["--format=json", "deploy.sh"], {
+      cwd: undefined,
+      timeout: 120_000,
+    });
+  });
+
+  it("returns the RunResult from run()", async () => {
+    mockRun.mockResolvedValue({ exitCode: 0, stdout: "[]", stderr: "" });
+
+    const result = await shellcheckCmd(["--format=json", "deploy.sh"], "/project");
+
+    expect(result).toEqual({ exitCode: 0, stdout: "[]", stderr: "" });
   });
 });

@@ -4,6 +4,7 @@ import {
   parsePrettierCheck,
   parseStylelintJson,
   parseOxlintJson,
+  parseShellcheckJson,
 } from "../src/lib/parsers.js";
 
 describe("parseEslintJson", () => {
@@ -340,5 +341,123 @@ describe("parseOxlintJson", () => {
 
     const result = parseOxlintJson(lines);
     expect(result.total).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseShellcheckJson
+// ---------------------------------------------------------------------------
+
+describe("parseShellcheckJson", () => {
+  it("parses ShellCheck JSON with errors, warnings, and style issues", () => {
+    const json = JSON.stringify([
+      {
+        file: "deploy.sh",
+        line: 5,
+        endLine: 5,
+        column: 3,
+        endColumn: 10,
+        level: "error",
+        code: 2086,
+        message: "Double quote to prevent globbing and word splitting.",
+      },
+      {
+        file: "deploy.sh",
+        line: 10,
+        endLine: 10,
+        column: 1,
+        endColumn: 5,
+        level: "warning",
+        code: 2034,
+        message: "foo appears unused. Verify use (or export).",
+      },
+      {
+        file: "build.sh",
+        line: 3,
+        endLine: 3,
+        column: 1,
+        endColumn: 8,
+        level: "style",
+        code: 2148,
+        message: "Tips depend on target shell and target OS.",
+      },
+    ]);
+
+    const result = parseShellcheckJson(json);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(1);
+    expect(result.filesChecked).toBe(2);
+    expect(result.diagnostics[0]).toEqual({
+      file: "deploy.sh",
+      line: 5,
+      severity: "error",
+      rule: "SC2086",
+      message: "Double quote to prevent globbing and word splitting.",
+    });
+    expect(result.diagnostics[1].severity).toBe("warning");
+    expect(result.diagnostics[1].rule).toBe("SC2034");
+    expect(result.diagnostics[2].severity).toBe("info");
+    expect(result.diagnostics[2].rule).toBe("SC2148");
+  });
+
+  it("parses clean ShellCheck output (empty array)", () => {
+    const result = parseShellcheckJson("[]");
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.filesChecked).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles invalid JSON gracefully", () => {
+    const result = parseShellcheckJson("not json");
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("handles empty string gracefully", () => {
+    const result = parseShellcheckJson("");
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("maps info level correctly", () => {
+    const json = JSON.stringify([
+      {
+        file: "test.sh",
+        line: 1,
+        column: 1,
+        level: "info",
+        code: 1234,
+        message: "Some info.",
+      },
+    ]);
+
+    const result = parseShellcheckJson(json);
+    expect(result.diagnostics[0].severity).toBe("info");
+  });
+
+  it("handles missing code", () => {
+    const json = JSON.stringify([
+      {
+        file: "test.sh",
+        line: 1,
+        column: 1,
+        level: "error",
+        message: "Some error.",
+      },
+    ]);
+
+    const result = parseShellcheckJson(json);
+    expect(result.diagnostics[0].rule).toBe("unknown");
+  });
+
+  it("handles non-array JSON gracefully", () => {
+    const json = JSON.stringify({ error: "something went wrong" });
+    const result = parseShellcheckJson(json);
+    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
   });
 });

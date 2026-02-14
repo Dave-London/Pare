@@ -36,7 +36,7 @@ describe("@paretools/lint integration", () => {
     await transport.close();
   });
 
-  it("lists all 7 tools", async () => {
+  it("lists all 8 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -46,6 +46,7 @@ describe("@paretools/lint integration", () => {
       "lint",
       "oxlint",
       "prettier-format",
+      "shellcheck",
       "stylelint",
     ]);
   });
