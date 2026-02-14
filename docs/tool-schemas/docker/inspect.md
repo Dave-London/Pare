@@ -117,10 +117,10 @@ Throws `Error`: `docker inspect failed: Error: No such object: nonexistent`
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Running container    | ~2000+     | ~40       | ~25          | 98-99%  |
-| Target not found     | ~20        | ---       | ---          | error   |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Running container | ~2000+     | ~40       | ~25          | 98-99%  |
+| Target not found  | ~20        | ---       | ---          | error   |
 
 ## Notes
 

@@ -38,10 +38,34 @@ redis        7         d4e5f6a7b8c9   2 weeks ago    138MB
 ```json
 {
   "images": [
-    { "id": "a1b2c3d4e5f6", "repository": "nginx", "tag": "latest", "size": "187MB", "created": "2 days ago" },
-    { "id": "b2c3d4e5f6a7", "repository": "node", "tag": "20-slim", "size": "228MB", "created": "5 days ago" },
-    { "id": "c3d4e5f6a7b8", "repository": "postgres", "tag": "16", "size": "432MB", "created": "1 week ago" },
-    { "id": "d4e5f6a7b8c9", "repository": "redis", "tag": "7", "size": "138MB", "created": "2 weeks ago" }
+    {
+      "id": "a1b2c3d4e5f6",
+      "repository": "nginx",
+      "tag": "latest",
+      "size": "187MB",
+      "created": "2 days ago"
+    },
+    {
+      "id": "b2c3d4e5f6a7",
+      "repository": "node",
+      "tag": "20-slim",
+      "size": "228MB",
+      "created": "5 days ago"
+    },
+    {
+      "id": "c3d4e5f6a7b8",
+      "repository": "postgres",
+      "tag": "16",
+      "size": "432MB",
+      "created": "1 week ago"
+    },
+    {
+      "id": "d4e5f6a7b8c9",
+      "repository": "redis",
+      "tag": "7",
+      "size": "138MB",
+      "created": "2 weeks ago"
+    }
   ],
   "total": 4
 }

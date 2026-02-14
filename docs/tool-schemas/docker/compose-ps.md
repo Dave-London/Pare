@@ -36,7 +36,13 @@ myapp-cache-1    redis:7        "docker-entrypoint.s…"   cache     2 hours ago
 ```json
 {
   "services": [
-    { "name": "myapp-web-1", "service": "web", "state": "running", "status": "Up 2 hours", "ports": "0.0.0.0:8080->80/tcp" },
+    {
+      "name": "myapp-web-1",
+      "service": "web",
+      "state": "running",
+      "status": "Up 2 hours",
+      "ports": "0.0.0.0:8080->80/tcp"
+    },
     { "name": "myapp-db-1", "service": "db", "state": "running", "status": "Up 2 hours" },
     { "name": "myapp-cache-1", "service": "cache", "state": "running", "status": "Up 2 hours" }
   ],

@@ -6,14 +6,14 @@ Builds Docker Compose service images and returns structured per-service build st
 
 ## Input Parameters
 
-| Parameter   | Type                | Default | Description                                                     |
-| ----------- | ------------------- | ------- | --------------------------------------------------------------- |
-| `path`      | string              | cwd     | Directory containing docker-compose.yml                         |
-| `services`  | string[]            | `[]`    | Specific services to build (default: all)                       |
-| `noCache`   | boolean             | `false` | Do not use cache when building images                           |
-| `pull`      | boolean             | `false` | Always pull a newer version of the base image                   |
-| `buildArgs` | Record<string, string> | `{}`  | Build arguments as key-value pairs (e.g., `{NODE_ENV: "production"}`) |
-| `compact`   | boolean             | `true`  | Auto-compact when structured output exceeds raw CLI tokens      |
+| Parameter   | Type                   | Default | Description                                                           |
+| ----------- | ---------------------- | ------- | --------------------------------------------------------------------- |
+| `path`      | string                 | cwd     | Directory containing docker-compose.yml                               |
+| `services`  | string[]               | `[]`    | Specific services to build (default: all)                             |
+| `noCache`   | boolean                | `false` | Do not use cache when building images                                 |
+| `pull`      | boolean                | `false` | Always pull a newer version of the base image                         |
+| `buildArgs` | Record<string, string> | `{}`    | Build arguments as key-value pairs (e.g., `{NODE_ENV: "production"}`) |
+| `compact`   | boolean                | `true`  | Auto-compact when structured output exceeds raw CLI tokens            |
 
 ## Success — Services Built
 
@@ -108,7 +108,11 @@ Builds Docker Compose service images and returns structured per-service build st
 {
   "success": false,
   "services": [
-    { "service": "web", "success": false, "error": "ERROR: Service 'web' failed to build: exit code 1" }
+    {
+      "service": "web",
+      "success": false,
+      "error": "ERROR: Service 'web' failed to build: exit code 1"
+    }
   ],
   "built": 0,
   "failed": 1,
@@ -122,10 +126,10 @@ Builds Docker Compose service images and returns structured per-service build st
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 2 services built   | ~400       | ~40       | ~20          | 90-95%  |
-| 1 service failed   | ~250       | ~40       | ~20          | 84-92%  |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| 2 services built | ~400       | ~40       | ~20          | 90-95%  |
+| 1 service failed | ~250       | ~40       | ~20          | 84-92%  |
 
 ## Notes
 

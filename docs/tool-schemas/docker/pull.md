@@ -6,12 +6,12 @@ Pulls a Docker image from a registry and returns structured result with digest i
 
 ## Input Parameters
 
-| Parameter  | Type    | Default | Description                                                |
-| ---------- | ------- | ------- | ---------------------------------------------------------- |
+| Parameter  | Type    | Default | Description                                                     |
+| ---------- | ------- | ------- | --------------------------------------------------------------- |
 | `image`    | string  | ---     | Image to pull (e.g., `nginx:latest`, `ubuntu:22.04`) (required) |
-| `platform` | string  | ---     | Target platform (e.g., `linux/amd64`, `linux/arm64`)       |
-| `path`     | string  | cwd     | Working directory                                          |
-| `compact`  | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `platform` | string  | ---     | Target platform (e.g., `linux/amd64`, `linux/arm64`)            |
+| `path`     | string  | cwd     | Working directory                                               |
+| `compact`  | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens      |
 
 ## Success — Image Pulled
 
@@ -96,9 +96,9 @@ Throws `Error`: `docker pull failed: Error response from daemon: manifest for no
 
 ## Token Savings
 
-| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------- | ---------- | --------- | ------------ | ------- |
-| Image pulled  | ~100       | ~25       | ~15          | 75-85%  |
+| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------ | ---------- | --------- | ------------ | ------- |
+| Image pulled | ~100       | ~25       | ~15          | 75-85%  |
 
 ## Notes
 

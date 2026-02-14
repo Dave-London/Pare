@@ -6,13 +6,13 @@ Retrieves container logs as structured line arrays. Use instead of running `dock
 
 ## Input Parameters
 
-| Parameter   | Type    | Default | Description                                                                    |
-| ----------- | ------- | ------- | ------------------------------------------------------------------------------ |
-| `container` | string  | ---     | Container name or ID (required)                                                |
-| `tail`      | number  | `100`   | Number of lines to return from Docker                                          |
-| `since`     | string  | ---     | Show logs since timestamp (e.g., `10m`, `2024-01-01`)                          |
-| `limit`     | number  | `100`   | Max lines in structured output. Lines beyond this are truncated with a flag.   |
-| `compact`   | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens                     |
+| Parameter   | Type    | Default | Description                                                                  |
+| ----------- | ------- | ------- | ---------------------------------------------------------------------------- |
+| `container` | string  | ---     | Container name or ID (required)                                              |
+| `tail`      | number  | `100`   | Number of lines to return from Docker                                        |
+| `since`     | string  | ---     | Show logs since timestamp (e.g., `10m`, `2024-01-01`)                        |
+| `limit`     | number  | `100`   | Max lines in structured output. Lines beyond this are truncated with a flag. |
+| `compact`   | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens                   |
 
 ## Success — Container Logs
 
@@ -128,10 +128,10 @@ Retrieves container logs as structured line arrays. Use instead of running `dock
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| 5 log lines     | ~120       | ~60       | ~45          | 50-63%  |
-| 5000 lines (truncated) | ~500+  | ~65       | ~35          | 87-93%  |
+| Scenario               | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------------- | ---------- | --------- | ------------ | ------- |
+| 5 log lines            | ~120       | ~60       | ~45          | 50-63%  |
+| 5000 lines (truncated) | ~500+      | ~65       | ~35          | 87-93%  |
 
 ## Notes
 

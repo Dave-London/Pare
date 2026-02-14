@@ -42,11 +42,31 @@ cache-1  | 2024-01-15T10:00:01.000Z Ready to accept connections
 {
   "services": ["web-1", "db-1", "cache-1"],
   "entries": [
-    { "timestamp": "2024-01-15T10:00:01.000Z", "service": "web-1", "message": "Server starting on port 3000" },
-    { "timestamp": "2024-01-15T10:00:02.000Z", "service": "web-1", "message": "Ready to accept connections" },
-    { "timestamp": "2024-01-15T10:00:01.000Z", "service": "db-1", "message": "PostgreSQL init process complete" },
-    { "timestamp": "2024-01-15T10:00:02.000Z", "service": "db-1", "message": "database system is ready to accept connections" },
-    { "timestamp": "2024-01-15T10:00:01.000Z", "service": "cache-1", "message": "Ready to accept connections" }
+    {
+      "timestamp": "2024-01-15T10:00:01.000Z",
+      "service": "web-1",
+      "message": "Server starting on port 3000"
+    },
+    {
+      "timestamp": "2024-01-15T10:00:02.000Z",
+      "service": "web-1",
+      "message": "Ready to accept connections"
+    },
+    {
+      "timestamp": "2024-01-15T10:00:01.000Z",
+      "service": "db-1",
+      "message": "PostgreSQL init process complete"
+    },
+    {
+      "timestamp": "2024-01-15T10:00:02.000Z",
+      "service": "db-1",
+      "message": "database system is ready to accept connections"
+    },
+    {
+      "timestamp": "2024-01-15T10:00:01.000Z",
+      "service": "cache-1",
+      "message": "Ready to accept connections"
+    }
   ],
   "total": 5
 }

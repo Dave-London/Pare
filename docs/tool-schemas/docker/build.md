@@ -122,9 +122,7 @@ error: Could not find tsconfig.json
   "success": false,
   "duration": 3.5,
   "steps": 4,
-  "errors": [
-    "error: Could not find tsconfig.json"
-  ]
+  "errors": ["error: Could not find tsconfig.json"]
 }
 ```
 

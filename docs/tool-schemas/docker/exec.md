@@ -102,10 +102,10 @@ OCI runtime exec failed: exec failed: unable to start container process: exec: "
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| ls -la output   | ~80        | ~55       | ~10          | 31-88%  |
-| Command failed  | ~20        | ~20       | ~10          | 0-50%   |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| ls -la output  | ~80        | ~55       | ~10          | 31-88%  |
+| Command failed | ~20        | ~20       | ~10          | 0-50%   |
 
 ## Notes
 

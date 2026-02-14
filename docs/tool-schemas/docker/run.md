@@ -94,9 +94,9 @@ Throws `Error`: `docker run failed: Error response from daemon: pull access deni
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| Container started | ~25       | ~20       | ~15          | 20-40%  |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Container started | ~25        | ~20       | ~15          | 20-40%  |
 
 ## Notes
 

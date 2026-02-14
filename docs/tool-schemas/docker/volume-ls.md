@@ -36,9 +36,24 @@ local     a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
 ```json
 {
   "volumes": [
-    { "name": "myapp_postgres_data", "driver": "local", "mountpoint": "/var/lib/docker/volumes/myapp_postgres_data/_data", "scope": "local" },
-    { "name": "myapp_redis_data", "driver": "local", "mountpoint": "/var/lib/docker/volumes/myapp_redis_data/_data", "scope": "local" },
-    { "name": "a1b2c3d4e5f6a7b8", "driver": "local", "mountpoint": "/var/lib/docker/volumes/a1b2c3d4e5f6a7b8/_data", "scope": "local" }
+    {
+      "name": "myapp_postgres_data",
+      "driver": "local",
+      "mountpoint": "/var/lib/docker/volumes/myapp_postgres_data/_data",
+      "scope": "local"
+    },
+    {
+      "name": "myapp_redis_data",
+      "driver": "local",
+      "mountpoint": "/var/lib/docker/volumes/myapp_redis_data/_data",
+      "scope": "local"
+    },
+    {
+      "name": "a1b2c3d4e5f6a7b8",
+      "driver": "local",
+      "mountpoint": "/var/lib/docker/volumes/a1b2c3d4e5f6a7b8/_data",
+      "scope": "local"
+    }
   ],
   "total": 3
 }
