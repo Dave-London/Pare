@@ -6,14 +6,14 @@ Creates a new pull request. Returns structured data with PR number and URL.
 
 ## Input Parameters
 
-| Parameter | Type    | Default              | Description                         |
-| --------- | ------- | -------------------- | ----------------------------------- |
-| `title`   | string  | —                    | Pull request title                  |
-| `body`    | string  | —                    | Pull request body/description       |
-| `base`    | string  | repo default branch  | Base branch                         |
-| `head`    | string  | current branch       | Head branch                         |
-| `draft`   | boolean | `false`              | Create as draft PR                  |
-| `path`    | string  | cwd                  | Repository path                     |
+| Parameter | Type    | Default             | Description                   |
+| --------- | ------- | ------------------- | ----------------------------- |
+| `title`   | string  | —                   | Pull request title            |
+| `body`    | string  | —                   | Pull request body/description |
+| `base`    | string  | repo default branch | Base branch                   |
+| `head`    | string  | current branch      | Head branch                   |
+| `draft`   | boolean | `false`             | Create as draft PR            |
+| `path`    | string  | cwd                 | Repository path               |
 
 ## Success
 
@@ -87,10 +87,10 @@ pull request create failed: GraphQL: No commits between main and main
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| PR created      | ~30        | ~15       | ~15          | 50%     |
-| No commits      | ~30        | ~25       | ~25          | 17%     |
+| Scenario   | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------- | ---------- | --------- | ------------ | ------- |
+| PR created | ~30        | ~15       | ~15          | 50%     |
+| No commits | ~30        | ~25       | ~25          | 17%     |
 
 ## Notes
 

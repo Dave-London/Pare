@@ -110,10 +110,10 @@ Some checks were not successful
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
 | 3 checks, 1 fail | ~200       | ~120      | ~25          | 40-88%  |
-| All passing       | ~150       | ~100      | ~25          | 33-83%  |
+| All passing      | ~150       | ~100      | ~25          | 33-83%  |
 
 ## Notes
 

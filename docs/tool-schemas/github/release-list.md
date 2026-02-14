@@ -38,9 +38,30 @@ v1.0.0   v1.0.0   about 1 month ago   false  false
 ```json
 {
   "releases": [
-    { "tag": "v1.2.0", "name": "v1.2.0", "draft": false, "prerelease": false, "publishedAt": "2025-01-13T10:00:00Z", "url": "https://github.com/owner/repo/releases/tag/v1.2.0" },
-    { "tag": "v1.1.0", "name": "v1.1.0", "draft": false, "prerelease": false, "publishedAt": "2025-01-01T10:00:00Z", "url": "https://github.com/owner/repo/releases/tag/v1.1.0" },
-    { "tag": "v1.0.0", "name": "v1.0.0", "draft": false, "prerelease": false, "publishedAt": "2024-12-15T10:00:00Z", "url": "https://github.com/owner/repo/releases/tag/v1.0.0" }
+    {
+      "tag": "v1.2.0",
+      "name": "v1.2.0",
+      "draft": false,
+      "prerelease": false,
+      "publishedAt": "2025-01-13T10:00:00Z",
+      "url": "https://github.com/owner/repo/releases/tag/v1.2.0"
+    },
+    {
+      "tag": "v1.1.0",
+      "name": "v1.1.0",
+      "draft": false,
+      "prerelease": false,
+      "publishedAt": "2025-01-01T10:00:00Z",
+      "url": "https://github.com/owner/repo/releases/tag/v1.1.0"
+    },
+    {
+      "tag": "v1.0.0",
+      "name": "v1.0.0",
+      "draft": false,
+      "prerelease": false,
+      "publishedAt": "2024-12-15T10:00:00Z",
+      "url": "https://github.com/owner/repo/releases/tag/v1.0.0"
+    }
   ],
   "total": 3
 }
@@ -72,10 +93,10 @@ v1.0.0   v1.0.0   about 1 month ago   false  false
 
 ## Token Savings
 
-| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------- | ---------- | --------- | ------------ | ------- |
-| 3 releases    | ~150       | ~80       | ~45          | 47-70%  |
-| No releases   | ~20        | ~10       | ~10          | 50%     |
+| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------- | ---------- | --------- | ------------ | ------- |
+| 3 releases  | ~150       | ~80       | ~45          | 47-70%  |
+| No releases | ~20        | ~10       | ~10          | 50%     |
 
 ## Notes
 

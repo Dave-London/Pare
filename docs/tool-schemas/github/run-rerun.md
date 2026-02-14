@@ -6,12 +6,12 @@ Re-runs a workflow run by ID. Optionally re-runs only failed jobs. Returns struc
 
 ## Input Parameters
 
-| Parameter    | Type    | Default      | Description                                          |
-| ------------ | ------- | ------------ | ---------------------------------------------------- |
-| `runId`      | number  | —            | Workflow run ID to re-run                            |
-| `failedOnly` | boolean | `false`      | Re-run only failed jobs                              |
-| `repo`       | string  | current repo | Repository in OWNER/REPO format                      |
-| `path`       | string  | cwd          | Repository path                                      |
+| Parameter    | Type    | Default      | Description                     |
+| ------------ | ------- | ------------ | ------------------------------- |
+| `runId`      | number  | —            | Workflow run ID to re-run       |
+| `failedOnly` | boolean | `false`      | Re-run only failed jobs         |
+| `repo`       | string  | current repo | Repository in OWNER/REPO format |
+| `path`       | string  | cwd          | Repository path                 |
 
 ## Success
 

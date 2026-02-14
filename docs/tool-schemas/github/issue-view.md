@@ -83,10 +83,10 @@ View this issue on GitHub: https://github.com/owner/repo/issues/100
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| Issue with body  | ~180       | ~80       | ~45          | 56-75%  |
-| Issue not found  | ~25        | ~20       | ~20          | 20%     |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| Issue with body | ~180       | ~80       | ~45          | 56-75%  |
+| Issue not found | ~25        | ~20       | ~20          | 20%     |
 
 ## Notes
 

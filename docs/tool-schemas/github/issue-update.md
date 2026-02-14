@@ -6,16 +6,16 @@ Updates issue metadata (title, body, labels, assignees). Returns structured data
 
 ## Input Parameters
 
-| Parameter         | Type     | Default | Description           |
-| ----------------- | -------- | ------- | --------------------- |
-| `number`          | number   | —       | Issue number          |
-| `title`           | string   | —       | New issue title       |
-| `body`            | string   | —       | New issue body        |
-| `addLabels`       | string[] | —       | Labels to add         |
-| `removeLabels`    | string[] | —       | Labels to remove      |
-| `addAssignees`    | string[] | —       | Assignees to add      |
-| `removeAssignees` | string[] | —       | Assignees to remove   |
-| `path`            | string   | cwd     | Repository path       |
+| Parameter         | Type     | Default | Description         |
+| ----------------- | -------- | ------- | ------------------- |
+| `number`          | number   | —       | Issue number        |
+| `title`           | string   | —       | New issue title     |
+| `body`            | string   | —       | New issue body      |
+| `addLabels`       | string[] | —       | Labels to add       |
+| `removeLabels`    | string[] | —       | Labels to remove    |
+| `addAssignees`    | string[] | —       | Assignees to add    |
+| `removeAssignees` | string[] | —       | Assignees to remove |
+| `path`            | string   | cwd     | Repository path     |
 
 ## Success
 

@@ -6,12 +6,12 @@ Submits a review on a pull request (approve, request-changes, or comment). Retur
 
 ## Input Parameters
 
-| Parameter | Type                                                    | Default | Description                                             |
-| --------- | ------------------------------------------------------- | ------- | ------------------------------------------------------- |
-| `number`  | number                                                  | —       | Pull request number                                     |
-| `event`   | `"approve"` \| `"request-changes"` \| `"comment"`      | —       | Review type                                             |
-| `body`    | string                                                  | —       | Review body (required for request-changes and comment)  |
-| `path`    | string                                                  | cwd     | Repository path                                        |
+| Parameter | Type                                              | Default | Description                                            |
+| --------- | ------------------------------------------------- | ------- | ------------------------------------------------------ |
+| `number`  | number                                            | —       | Pull request number                                    |
+| `event`   | `"approve"` \| `"request-changes"` \| `"comment"` | —       | Review type                                            |
+| `body`    | string                                            | —       | Review body (required for request-changes and comment) |
+| `path`    | string                                            | cwd     | Repository path                                        |
 
 ## Success
 
@@ -77,9 +77,9 @@ Same as full (output is already minimal).
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| PR approved     | ~20        | ~15       | ~15          | 25%     |
+| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------- | ---------- | --------- | ------------ | ------- |
+| PR approved | ~20        | ~15       | ~15          | 25%     |
 
 ## Notes
 

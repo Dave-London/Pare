@@ -6,12 +6,12 @@ Closes an issue with an optional comment and reason. Returns structured data wit
 
 ## Input Parameters
 
-| Parameter | Type                                    | Default | Description                          |
-| --------- | --------------------------------------- | ------- | ------------------------------------ |
-| `number`  | number                                  | —       | Issue number                         |
-| `comment` | string                                  | —       | Closing comment                      |
-| `reason`  | `"completed"` \| `"not planned"`        | —       | Close reason                         |
-| `path`    | string                                  | cwd     | Repository path                      |
+| Parameter | Type                             | Default | Description     |
+| --------- | -------------------------------- | ------- | --------------- |
+| `number`  | number                           | —       | Issue number    |
+| `comment` | string                           | —       | Closing comment |
+| `reason`  | `"completed"` \| `"not planned"` | —       | Close reason    |
+| `path`    | string                           | cwd     | Repository path |
 
 ## Success
 

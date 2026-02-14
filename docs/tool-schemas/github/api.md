@@ -6,15 +6,15 @@ Makes arbitrary GitHub API calls via `gh api`. Supports all HTTP methods, reques
 
 ## Input Parameters
 
-| Parameter  | Type                                                 | Default | Description                                         |
-| ---------- | ---------------------------------------------------- | ------- | --------------------------------------------------- |
-| `endpoint` | string                                               | —       | GitHub API endpoint (e.g., `repos/owner/repo/pulls`, `/user`) |
-| `method`   | `"GET"` \| `"POST"` \| `"PATCH"` \| `"DELETE"` \| `"PUT"` | `"GET"` | HTTP method                                         |
-| `body`     | object                                               | —       | JSON request body as key-value pairs                |
-| `fields`   | object                                               | —       | Key-value pairs sent as `--raw-field` parameters    |
-| `paginate` | boolean                                              | `false` | Enable pagination (fetch all pages)                 |
-| `jq`       | string                                               | —       | jq filter expression                                |
-| `path`     | string                                               | cwd     | Repository path                                     |
+| Parameter  | Type                                                      | Default | Description                                                   |
+| ---------- | --------------------------------------------------------- | ------- | ------------------------------------------------------------- |
+| `endpoint` | string                                                    | —       | GitHub API endpoint (e.g., `repos/owner/repo/pulls`, `/user`) |
+| `method`   | `"GET"` \| `"POST"` \| `"PATCH"` \| `"DELETE"` \| `"PUT"` | `"GET"` | HTTP method                                                   |
+| `body`     | object                                                    | —       | JSON request body as key-value pairs                          |
+| `fields`   | object                                                    | —       | Key-value pairs sent as `--raw-field` parameters              |
+| `paginate` | boolean                                                   | `false` | Enable pagination (fetch all pages)                           |
+| `jq`       | string                                                    | —       | jq filter expression                                          |
+| `path`     | string                                                    | cwd     | Repository path                                               |
 
 ## Success
 
@@ -110,10 +110,10 @@ gh: Not Found (HTTP 404)
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| API GET response  | ~300       | ~85       | ~85          | 72%     |
-| API 404 error     | ~30        | ~20       | ~20          | 33%     |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| API GET response | ~300       | ~85       | ~85          | 72%     |
+| API 404 error    | ~30        | ~20       | ~20          | 33%     |
 
 ## Notes
 

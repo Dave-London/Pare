@@ -6,14 +6,14 @@ Lists pull requests with optional filters. Returns structured list with PR numbe
 
 ## Input Parameters
 
-| Parameter | Type                                         | Default  | Description                                                |
-| --------- | -------------------------------------------- | -------- | ---------------------------------------------------------- |
+| Parameter | Type                                            | Default  | Description                                                |
+| --------- | ----------------------------------------------- | -------- | ---------------------------------------------------------- |
 | `state`   | `"open"` \| `"closed"` \| `"merged"` \| `"all"` | `"open"` | Filter by PR state                                         |
-| `limit`   | number                                       | `30`     | Maximum number of PRs to return                            |
-| `author`  | string                                       | —        | Filter by author username                                  |
-| `label`   | string                                       | —        | Filter by label                                            |
-| `path`    | string                                       | cwd      | Repository path                                            |
-| `compact` | boolean                                      | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| `limit`   | number                                          | `30`     | Maximum number of PRs to return                            |
+| `author`  | string                                          | —        | Filter by author username                                  |
+| `label`   | string                                          | —        | Filter by label                                            |
+| `path`    | string                                          | cwd      | Repository path                                            |
+| `compact` | boolean                                         | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success
 
@@ -41,9 +41,30 @@ Showing 3 of 3 open pull requests in owner/repo
 ```json
 {
   "prs": [
-    { "number": 42, "state": "OPEN", "title": "feat: add dark mode", "url": "https://github.com/owner/repo/pull/42", "headBranch": "feature/dark-mode", "author": "alice" },
-    { "number": 39, "state": "OPEN", "title": "fix: login redirect", "url": "https://github.com/owner/repo/pull/39", "headBranch": "fix/login", "author": "bob" },
-    { "number": 37, "state": "OPEN", "title": "docs: update README", "url": "https://github.com/owner/repo/pull/37", "headBranch": "docs/readme", "author": "alice" }
+    {
+      "number": 42,
+      "state": "OPEN",
+      "title": "feat: add dark mode",
+      "url": "https://github.com/owner/repo/pull/42",
+      "headBranch": "feature/dark-mode",
+      "author": "alice"
+    },
+    {
+      "number": 39,
+      "state": "OPEN",
+      "title": "fix: login redirect",
+      "url": "https://github.com/owner/repo/pull/39",
+      "headBranch": "fix/login",
+      "author": "bob"
+    },
+    {
+      "number": 37,
+      "state": "OPEN",
+      "title": "docs: update README",
+      "url": "https://github.com/owner/repo/pull/37",
+      "headBranch": "docs/readme",
+      "author": "alice"
+    }
   ],
   "total": 3
 }
@@ -75,10 +96,10 @@ Showing 3 of 3 open pull requests in owner/repo
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 3 open PRs     | ~200       | ~75       | ~40          | 63-80%  |
-| No PRs found   | ~30        | ~10       | ~10          | 67%     |
+| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------ | ---------- | --------- | ------------ | ------- |
+| 3 open PRs   | ~200       | ~75       | ~40          | 63-80%  |
+| No PRs found | ~30        | ~10       | ~10          | 67%     |
 
 ## Notes
 

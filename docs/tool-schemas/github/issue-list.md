@@ -6,14 +6,14 @@ Lists issues with optional filters. Returns structured list with issue number, s
 
 ## Input Parameters
 
-| Parameter  | Type                                  | Default  | Description                                                |
-| ---------- | ------------------------------------- | -------- | ---------------------------------------------------------- |
-| `state`    | `"open"` \| `"closed"` \| `"all"`    | `"open"` | Filter by issue state                                      |
-| `limit`    | number                                | `30`     | Maximum number of issues to return                         |
-| `label`    | string                                | —        | Filter by label                                            |
-| `assignee` | string                                | —        | Filter by assignee username                                |
-| `path`     | string                                | cwd      | Repository path                                            |
-| `compact`  | boolean                               | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter  | Type                              | Default  | Description                                                |
+| ---------- | --------------------------------- | -------- | ---------------------------------------------------------- |
+| `state`    | `"open"` \| `"closed"` \| `"all"` | `"open"` | Filter by issue state                                      |
+| `limit`    | number                            | `30`     | Maximum number of issues to return                         |
+| `label`    | string                            | —        | Filter by label                                            |
+| `assignee` | string                            | —        | Filter by assignee username                                |
+| `path`     | string                            | cwd      | Repository path                                            |
+| `compact`  | boolean                           | `true`   | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success
 
@@ -41,9 +41,30 @@ Showing 3 of 12 issues in owner/repo that match your search
 ```json
 {
   "issues": [
-    { "number": 100, "state": "OPEN", "title": "Bug: login fails on Safari", "url": "https://github.com/owner/repo/issues/100", "labels": ["bug", "priority:high"], "assignees": ["alice"] },
-    { "number": 98, "state": "OPEN", "title": "Feature: dark mode toggle", "url": "https://github.com/owner/repo/issues/98", "labels": ["enhancement"], "assignees": [] },
-    { "number": 95, "state": "OPEN", "title": "Docs: update API reference", "url": "https://github.com/owner/repo/issues/95", "labels": ["documentation"], "assignees": ["bob"] }
+    {
+      "number": 100,
+      "state": "OPEN",
+      "title": "Bug: login fails on Safari",
+      "url": "https://github.com/owner/repo/issues/100",
+      "labels": ["bug", "priority:high"],
+      "assignees": ["alice"]
+    },
+    {
+      "number": 98,
+      "state": "OPEN",
+      "title": "Feature: dark mode toggle",
+      "url": "https://github.com/owner/repo/issues/98",
+      "labels": ["enhancement"],
+      "assignees": []
+    },
+    {
+      "number": 95,
+      "state": "OPEN",
+      "title": "Docs: update API reference",
+      "url": "https://github.com/owner/repo/issues/95",
+      "labels": ["documentation"],
+      "assignees": ["bob"]
+    }
   ],
   "total": 3
 }

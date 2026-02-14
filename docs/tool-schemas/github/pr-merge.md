@@ -6,13 +6,13 @@ Merges a pull request by number. Returns structured data with merge status, meth
 
 ## Input Parameters
 
-| Parameter      | Type                                     | Default    | Description                                                |
-| -------------- | ---------------------------------------- | ---------- | ---------------------------------------------------------- |
-| `number`       | number                                   | —          | Pull request number                                       |
-| `method`       | `"squash"` \| `"merge"` \| `"rebase"`   | `"squash"` | Merge method                                               |
-| `deleteBranch` | boolean                                  | `false`    | Delete branch after merge                                  |
-| `path`         | string                                   | cwd        | Repository path                                            |
-| `compact`      | boolean                                  | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter      | Type                                  | Default    | Description                                                |
+| -------------- | ------------------------------------- | ---------- | ---------------------------------------------------------- |
+| `number`       | number                                | —          | Pull request number                                        |
+| `method`       | `"squash"` \| `"merge"` \| `"rebase"` | `"squash"` | Merge method                                               |
+| `deleteBranch` | boolean                               | `false`    | Delete branch after merge                                  |
+| `path`         | string                                | cwd        | Repository path                                            |
+| `compact`      | boolean                               | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success
 

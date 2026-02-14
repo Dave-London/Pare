@@ -6,12 +6,12 @@ Creates a new issue. Returns structured data with issue number and URL.
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description           |
-| --------- | -------- | ------- | --------------------- |
-| `title`   | string   | —       | Issue title           |
-| `body`    | string   | —       | Issue body            |
-| `labels`  | string[] | —       | Labels to apply       |
-| `path`    | string   | cwd     | Repository path       |
+| Parameter | Type     | Default | Description     |
+| --------- | -------- | ------- | --------------- |
+| `title`   | string   | —       | Issue title     |
+| `body`    | string   | —       | Issue body      |
+| `labels`  | string[] | —       | Labels to apply |
+| `path`    | string   | cwd     | Repository path |
 
 ## Success
 

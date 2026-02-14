@@ -6,12 +6,12 @@ Creates a new GitHub gist from one or more files. Returns structured data with g
 
 ## Input Parameters
 
-| Parameter     | Type     | Default   | Description                         |
-| ------------- | -------- | --------- | ----------------------------------- |
-| `files`       | string[] | —         | File paths to include in the gist   |
-| `description` | string   | —         | Gist description                    |
-| `public`      | boolean  | `false`   | Create as public gist (default: secret) |
-| `path`        | string   | cwd       | Working directory                   |
+| Parameter     | Type     | Default | Description                             |
+| ------------- | -------- | ------- | --------------------------------------- |
+| `files`       | string[] | —       | File paths to include in the gist       |
+| `description` | string   | —       | Gist description                        |
+| `public`      | boolean  | `false` | Create as public gist (default: secret) |
+| `path`        | string   | cwd     | Working directory                       |
 
 ## Success
 
@@ -84,9 +84,9 @@ failed to collect files for gist: open nonexistent.ts: no such file or directory
 
 ## Token Savings
 
-| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------- | ---------- | --------- | ------------ | ------- |
-| Gist created  | ~15        | ~15       | ~15          | 0%      |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| Gist created   | ~15        | ~15       | ~15          | 0%      |
 | File not found | ~15        | ~20       | ~20          | -33%    |
 
 ## Notes

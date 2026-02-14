@@ -117,10 +117,10 @@ could not find any workflows with ID 99999
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Run with 3 jobs      | ~200       | ~90       | ~35          | 55-83%  |
-| Run not found        | ~20        | ~20       | ~20          | 0%      |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| Run with 3 jobs | ~200       | ~90       | ~35          | 55-83%  |
+| Run not found   | ~20        | ~20       | ~20          | 0%      |
 
 ## Notes
 

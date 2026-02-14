@@ -6,11 +6,11 @@ Adds a comment to a pull request. Returns structured data with the comment URL.
 
 ## Input Parameters
 
-| Parameter | Type   | Default | Description          |
-| --------- | ------ | ------- | -------------------- |
-| `number`  | number | —       | Pull request number  |
-| `body`    | string | —       | Comment text         |
-| `path`    | string | cwd     | Repository path      |
+| Parameter | Type   | Default | Description         |
+| --------- | ------ | ------- | ------------------- |
+| `number`  | number | —       | Pull request number |
+| `body`    | string | —       | Comment text        |
+| `path`    | string | cwd     | Repository path     |
 
 ## Success
 

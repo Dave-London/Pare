@@ -6,16 +6,16 @@ Creates a new GitHub release. Returns structured data with tag, URL, draft, and 
 
 ## Input Parameters
 
-| Parameter    | Type    | Default      | Description                              |
-| ------------ | ------- | ------------ | ---------------------------------------- |
-| `tag`        | string  | —            | Tag name for the release                 |
-| `title`      | string  | tag name     | Release title                            |
-| `notes`      | string  | —            | Release notes/body                       |
-| `draft`      | boolean | `false`      | Create as draft release                  |
-| `prerelease` | boolean | `false`      | Mark as prerelease                       |
-| `target`     | string  | —            | Target commitish (branch or commit SHA)  |
-| `repo`       | string  | current repo | Repository in owner/repo format          |
-| `path`       | string  | cwd          | Repository path                          |
+| Parameter    | Type    | Default      | Description                             |
+| ------------ | ------- | ------------ | --------------------------------------- |
+| `tag`        | string  | —            | Tag name for the release                |
+| `title`      | string  | tag name     | Release title                           |
+| `notes`      | string  | —            | Release notes/body                      |
+| `draft`      | boolean | `false`      | Create as draft release                 |
+| `prerelease` | boolean | `false`      | Mark as prerelease                      |
+| `target`     | string  | —            | Target commitish (branch or commit SHA) |
+| `repo`       | string  | current repo | Repository in owner/repo format         |
+| `path`       | string  | cwd          | Repository path                         |
 
 ## Success
 

@@ -6,16 +6,16 @@ Updates pull request metadata (title, body, labels, assignees). Returns structur
 
 ## Input Parameters
 
-| Parameter         | Type     | Default | Description           |
-| ----------------- | -------- | ------- | --------------------- |
-| `number`          | number   | —       | Pull request number   |
-| `title`           | string   | —       | New PR title          |
-| `body`            | string   | —       | New PR body           |
-| `addLabels`       | string[] | —       | Labels to add         |
-| `removeLabels`    | string[] | —       | Labels to remove      |
-| `addAssignees`    | string[] | —       | Assignees to add      |
-| `removeAssignees` | string[] | —       | Assignees to remove   |
-| `path`            | string   | cwd     | Repository path       |
+| Parameter         | Type     | Default | Description         |
+| ----------------- | -------- | ------- | ------------------- |
+| `number`          | number   | —       | Pull request number |
+| `title`           | string   | —       | New PR title        |
+| `body`            | string   | —       | New PR body         |
+| `addLabels`       | string[] | —       | Labels to add       |
+| `removeLabels`    | string[] | —       | Labels to remove    |
+| `addAssignees`    | string[] | —       | Assignees to add    |
+| `removeAssignees` | string[] | —       | Assignees to remove |
+| `path`            | string   | cwd     | Repository path     |
 
 ## Success
 
