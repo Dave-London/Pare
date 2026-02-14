@@ -9,6 +9,9 @@ import {
   formatPipList,
   formatPipShow,
   formatRuffFormat,
+  formatCondaList,
+  formatCondaInfo,
+  formatCondaEnvList,
 } from "../src/lib/formatters.js";
 import type {
   PipInstall,
@@ -20,6 +23,9 @@ import type {
   PipList,
   PipShow,
   RuffFormatResult,
+  CondaList,
+  CondaInfo,
+  CondaEnvList,
 } from "../src/schemas/index.js";
 
 describe("formatPipInstall", () => {
@@ -440,5 +446,106 @@ describe("formatRuffFormat", () => {
     const output = formatRuffFormat(data);
     expect(output).toContain("3 files reformatted");
     expect(output.split("\n")).toHaveLength(1);
+  });
+});
+
+// ─── conda list formatter tests ──────────────────────────────────────────────
+
+describe("formatCondaList", () => {
+  it("formats empty package list", () => {
+    const data: CondaList = { action: "list", packages: [], total: 0 };
+    expect(formatCondaList(data)).toBe("conda: no packages found.");
+  });
+
+  it("formats package list with multiple packages", () => {
+    const data: CondaList = {
+      action: "list",
+      packages: [
+        { name: "numpy", version: "1.26.0", channel: "defaults" },
+        { name: "pandas", version: "2.1.0", channel: "conda-forge" },
+      ],
+      total: 2,
+    };
+    const output = formatCondaList(data);
+    expect(output).toContain("conda list: 2 packages:");
+    expect(output).toContain("numpy==1.26.0 (defaults)");
+    expect(output).toContain("pandas==2.1.0 (conda-forge)");
+  });
+
+  it("formats package list with environment name", () => {
+    const data: CondaList = {
+      action: "list",
+      packages: [{ name: "flask", version: "3.0.0", channel: "defaults" }],
+      total: 1,
+      environment: "myenv",
+    };
+    const output = formatCondaList(data);
+    expect(output).toContain("conda list (env: myenv): 1 packages:");
+  });
+});
+
+// ─── conda info formatter tests ──────────────────────────────────────────────
+
+describe("formatCondaInfo", () => {
+  it("formats full conda info", () => {
+    const data: CondaInfo = {
+      action: "info",
+      condaVersion: "24.1.0",
+      platform: "win-64",
+      pythonVersion: "3.11.7",
+      defaultPrefix: "C:\\miniconda3",
+      activePrefix: "C:\\miniconda3\\envs\\dev",
+      channels: ["defaults", "conda-forge"],
+      envsDirs: ["C:\\miniconda3\\envs"],
+      pkgsDirs: ["C:\\miniconda3\\pkgs"],
+    };
+    const output = formatCondaInfo(data);
+    expect(output).toContain("conda 24.1.0");
+    expect(output).toContain("platform: win-64");
+    expect(output).toContain("python: 3.11.7");
+    expect(output).toContain("default prefix: C:\\miniconda3");
+    expect(output).toContain("active prefix: C:\\miniconda3\\envs\\dev");
+    expect(output).toContain("channels: defaults, conda-forge");
+  });
+
+  it("formats conda info without active prefix", () => {
+    const data: CondaInfo = {
+      action: "info",
+      condaVersion: "24.1.0",
+      platform: "linux-64",
+      pythonVersion: "3.11.7",
+      defaultPrefix: "/home/user/miniconda3",
+      channels: [],
+      envsDirs: [],
+      pkgsDirs: [],
+    };
+    const output = formatCondaInfo(data);
+    expect(output).not.toContain("active prefix:");
+    expect(output).not.toContain("channels:");
+  });
+});
+
+// ─── conda env list formatter tests ──────────────────────────────────────────
+
+describe("formatCondaEnvList", () => {
+  it("formats empty environment list", () => {
+    const data: CondaEnvList = { action: "env-list", environments: [], total: 0 };
+    expect(formatCondaEnvList(data)).toBe("conda: no environments found.");
+  });
+
+  it("formats environment list with active marker", () => {
+    const data: CondaEnvList = {
+      action: "env-list",
+      environments: [
+        { name: "base", path: "/home/user/miniconda3", active: true },
+        { name: "dev", path: "/home/user/miniconda3/envs/dev", active: false },
+      ],
+      total: 2,
+    };
+    const output = formatCondaEnvList(data);
+    expect(output).toContain("conda environments: 2");
+    expect(output).toContain("base *: /home/user/miniconda3");
+    expect(output).toContain("dev: /home/user/miniconda3/envs/dev");
+    expect(output).not.toContain("dev *:");
   });
 });

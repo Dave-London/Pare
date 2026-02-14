@@ -11,6 +11,9 @@ import type {
   PipList,
   PipShow,
   RuffFormatResult,
+  CondaList,
+  CondaInfo,
+  CondaEnvList,
 } from "../schemas/index.js";
 import { z } from "zod";
 
@@ -434,4 +437,106 @@ export function parseRuffFormatOutput(
     filesChanged: filesChanged || files.length,
     files: files.length > 0 ? files : undefined,
   };
+}
+
+// ── conda parsers ────────────────────────────────────────────────────
+
+interface CondaListJsonEntry {
+  name: string;
+  version: string;
+  channel: string;
+  build_string?: string;
+}
+
+/** Parses `conda list --json` output into structured package list. */
+export function parseCondaListJson(stdout: string, envName?: string): CondaList {
+  let entries: CondaListJsonEntry[];
+  try {
+    entries = JSON.parse(stdout);
+  } catch {
+    return { action: "list", packages: [], total: 0, environment: envName };
+  }
+
+  if (!Array.isArray(entries)) {
+    return { action: "list", packages: [], total: 0, environment: envName };
+  }
+
+  const packages = entries.map((e) => ({
+    name: e.name,
+    version: e.version,
+    channel: e.channel,
+    buildString: e.build_string || undefined,
+  }));
+
+  return { action: "list", packages, total: packages.length, environment: envName };
+}
+
+interface CondaInfoJson {
+  conda_version?: string;
+  platform?: string;
+  python_version?: string;
+  default_prefix?: string;
+  active_prefix?: string;
+  active_prefix_name?: string;
+  channels?: string[];
+  envs_dirs?: string[];
+  pkgs_dirs?: string[];
+}
+
+/** Parses `conda info --json` output into structured conda metadata. */
+export function parseCondaInfoJson(stdout: string): CondaInfo {
+  let data: CondaInfoJson;
+  try {
+    data = JSON.parse(stdout);
+  } catch {
+    return {
+      action: "info",
+      condaVersion: "",
+      platform: "",
+      pythonVersion: "",
+      defaultPrefix: "",
+      channels: [],
+      envsDirs: [],
+      pkgsDirs: [],
+    };
+  }
+
+  return {
+    action: "info",
+    condaVersion: data.conda_version ?? "",
+    platform: data.platform ?? "",
+    pythonVersion: data.python_version ?? "",
+    defaultPrefix: data.default_prefix ?? "",
+    activePrefix: data.active_prefix || undefined,
+    channels: data.channels ?? [],
+    envsDirs: data.envs_dirs ?? [],
+    pkgsDirs: data.pkgs_dirs ?? [],
+  };
+}
+
+interface CondaEnvListJson {
+  envs?: string[];
+}
+
+/** Parses `conda env list --json` output into structured environment list. */
+export function parseCondaEnvListJson(stdout: string, activePrefix?: string): CondaEnvList {
+  let data: CondaEnvListJson;
+  try {
+    data = JSON.parse(stdout);
+  } catch {
+    return { action: "env-list", environments: [], total: 0 };
+  }
+
+  const envs = (data.envs ?? []).map((envPath) => {
+    // Extract name from the last path segment, or "base" for the root env
+    const segments = envPath.replace(/\\/g, "/").split("/");
+    const name = segments[segments.length - 1] || "base";
+    return {
+      name,
+      path: envPath,
+      active: activePrefix ? envPath === activePrefix : false,
+    };
+  });
+
+  return { action: "env-list", environments: envs, total: envs.length };
 }
