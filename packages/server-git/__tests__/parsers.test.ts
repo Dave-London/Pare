@@ -18,6 +18,8 @@ import {
   parseReset,
   parseLogGraph,
   parseReflogOutput,
+  parseWorktreeList,
+  parseWorktreeResult,
 } from "../src/lib/parsers.js";
 
 describe("parseStatus", () => {
@@ -866,5 +868,102 @@ describe("parseReflogOutput", () => {
     expect(result.entries[1].description).toBe("moving to HEAD~1");
     expect(result.entries[2].action).toBe("rebase (finish)");
     expect(result.entries[2].description).toBe("returning to refs/heads/main");
+  });
+});
+
+describe("parseWorktreeList", () => {
+  it("parses porcelain output with single worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/main",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0]).toEqual({
+      path: "/home/user/repo",
+      head: "abc1234567890abcdef1234567890abcdef123456",
+      branch: "main",
+      bare: false,
+    });
+  });
+
+  it("parses porcelain output with multiple worktrees", () => {
+    const stdout = [
+      "worktree /home/user/repo",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/main",
+      "",
+      "worktree /home/user/repo-feature",
+      "HEAD def5678901234567890abcdef1234567890abcdef",
+      "branch refs/heads/feature",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.worktrees[0].path).toBe("/home/user/repo");
+    expect(result.worktrees[0].branch).toBe("main");
+    expect(result.worktrees[1].path).toBe("/home/user/repo-feature");
+    expect(result.worktrees[1].branch).toBe("feature");
+  });
+
+  it("parses bare worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo.git",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "bare",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].bare).toBe(true);
+    expect(result.worktrees[0].branch).toBe("");
+  });
+
+  it("parses detached HEAD worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo-detached",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "detached",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].branch).toBe("(detached)");
+    expect(result.worktrees[0].bare).toBe(false);
+  });
+
+  it("handles empty output", () => {
+    const result = parseWorktreeList("");
+
+    expect(result.total).toBe(0);
+    expect(result.worktrees).toEqual([]);
+  });
+});
+
+describe("parseWorktreeResult", () => {
+  it("returns structured result for add", () => {
+    const result = parseWorktreeResult("Preparing worktree", "", "/tmp/wt", "feature");
+
+    expect(result.success).toBe(true);
+    expect(result.path).toBe("/tmp/wt");
+    expect(result.branch).toBe("feature");
+  });
+
+  it("returns structured result for remove", () => {
+    const result = parseWorktreeResult("", "", "/tmp/wt", "");
+
+    expect(result.success).toBe(true);
+    expect(result.path).toBe("/tmp/wt");
+    expect(result.branch).toBe("");
   });
 });

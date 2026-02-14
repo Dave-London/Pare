@@ -18,6 +18,8 @@ import {
   formatReset,
   formatLogGraph,
   formatReflog,
+  formatWorktreeList,
+  formatWorktree,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -38,6 +40,8 @@ import type {
   GitReset,
   GitLogGraphFull,
   GitReflogFull,
+  GitWorktreeListFull,
+  GitWorktree,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -814,5 +818,62 @@ describe("formatReflog", () => {
 
     expect(output).toContain("aaa1111 HEAD@{0} reset");
     expect(output).not.toContain(": (");
+  });
+});
+
+describe("formatWorktreeList", () => {
+  it("formats worktree list with multiple entries", () => {
+    const data: GitWorktreeListFull = {
+      worktrees: [
+        { path: "/home/user/repo", head: "abc1234567890abcdef", branch: "main", bare: false },
+        {
+          path: "/home/user/repo-feature",
+          head: "def5678901234567890",
+          branch: "feature",
+          bare: false,
+        },
+      ],
+      total: 2,
+    };
+    const output = formatWorktreeList(data);
+
+    expect(output).toContain("/home/user/repo");
+    expect(output).toContain("abc12345");
+    expect(output).toContain("(main)");
+    expect(output).toContain("/home/user/repo-feature");
+    expect(output).toContain("(feature)");
+  });
+
+  it("formats bare worktree", () => {
+    const data: GitWorktreeListFull = {
+      worktrees: [
+        { path: "/home/user/repo.git", head: "abc1234567890abcdef", branch: "", bare: true },
+      ],
+      total: 1,
+    };
+    const output = formatWorktreeList(data);
+
+    expect(output).toContain("[bare]");
+  });
+
+  it("formats empty worktree list", () => {
+    const data: GitWorktreeListFull = { worktrees: [], total: 0 };
+    expect(formatWorktreeList(data)).toBe("No worktrees found");
+  });
+});
+
+describe("formatWorktree", () => {
+  it("formats worktree add result with branch", () => {
+    const data: GitWorktree = { success: true, path: "/tmp/wt", branch: "feature" };
+    const output = formatWorktree(data);
+
+    expect(output).toBe("Worktree at '/tmp/wt' on branch 'feature'");
+  });
+
+  it("formats worktree remove result without branch", () => {
+    const data: GitWorktree = { success: true, path: "/tmp/wt", branch: "" };
+    const output = formatWorktree(data);
+
+    expect(output).toBe("Worktree at '/tmp/wt'");
   });
 });

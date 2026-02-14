@@ -22,6 +22,8 @@ import type {
   GitLogGraphFull,
   GitReflogFull,
   GitBisect,
+  GitWorktreeListFull,
+  GitWorktree,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -777,5 +779,60 @@ export function parseBisect(
     ...(current ? { current } : {}),
     ...(remaining !== undefined ? { remaining } : {}),
     message: combined || `Bisect ${action} completed`,
+  };
+}
+
+/** Parses `git worktree list --porcelain` output into structured worktree list data. */
+export function parseWorktreeList(stdout: string): GitWorktreeListFull {
+  // Porcelain format outputs blocks separated by blank lines:
+  //   worktree /path/to/worktree
+  //   HEAD abc1234...
+  //   branch refs/heads/main
+  //
+  //   worktree /path/to/other
+  //   HEAD def5678...
+  //   branch refs/heads/feature
+  //
+  // Bare repos show "bare" instead of "branch ..."
+  const blocks = stdout.trim().split(/\n\n+/).filter(Boolean);
+  const worktrees = blocks.map((block) => {
+    const lines = block.split("\n");
+    let path = "";
+    let head = "";
+    let branch = "";
+    let bare = false;
+
+    for (const line of lines) {
+      if (line.startsWith("worktree ")) {
+        path = line.slice("worktree ".length);
+      } else if (line.startsWith("HEAD ")) {
+        head = line.slice("HEAD ".length);
+      } else if (line.startsWith("branch ")) {
+        // Strip refs/heads/ prefix for readability
+        branch = line.slice("branch ".length).replace(/^refs\/heads\//, "");
+      } else if (line === "bare") {
+        bare = true;
+      } else if (line === "detached") {
+        branch = "(detached)";
+      }
+    }
+
+    return { path, head, branch, bare };
+  });
+
+  return { worktrees, total: worktrees.length };
+}
+
+/** Parses `git worktree add/remove` output into structured worktree result data. */
+export function parseWorktreeResult(
+  stdout: string,
+  stderr: string,
+  path: string,
+  branch: string,
+): GitWorktree {
+  return {
+    success: true,
+    path,
+    branch,
   };
 }
