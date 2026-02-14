@@ -37,27 +37,30 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (100 tools, 14 packages)
+## Available Servers (139 tools, 16 packages)
 
-| Package                                         | Tools                                                                                                          | Wraps                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| [`@paretools/git`](./packages/server-git)       | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame      | git                                        |
-| [`@paretools/github`](./packages/server-github) | pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list                          | gh                                         |
-| [`@paretools/search`](./packages/server-search) | search, find, count                                                                                            | ripgrep, fd                                |
-| [`@paretools/test`](./packages/server-test)     | run, coverage                                                                                                  | pytest, jest, vitest, mocha                |
-| [`@paretools/npm`](./packages/server-npm)       | install, audit, outdated, list, run, test, init, info, search                                                  | npm                                        |
-| [`@paretools/docker`](./packages/server-docker) | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps | docker, docker compose                     |
-| [`@paretools/build`](./packages/server-build)   | tsc, build, esbuild, vite-build, webpack                                                                       | tsc, esbuild, vite, webpack                |
-| [`@paretools/lint`](./packages/server-lint)     | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint                              | eslint, prettier, biome, stylelint, oxlint |
-| [`@paretools/http`](./packages/server-http)     | request, get, post, head                                                                                       | curl                                       |
-| [`@paretools/make`](./packages/server-make)     | run, list                                                                                                      | make, just                                 |
-| [`@paretools/python`](./packages/server-python) | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format   | pip, mypy, ruff, pytest, uv, black         |
-| [`@paretools/cargo`](./packages/server-cargo)   | build, test, clippy, run, add, remove, fmt, doc, check, update, tree                                           | cargo                                      |
-| [`@paretools/go`](./packages/server-go)         | build, test, vet, run, mod-tidy, fmt, generate, env, list, get                                                 | go, gofmt                                  |
+| Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`@paretools/git`](./packages/server-git)           | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, reflog, bisect, worktree                                                                                                             | git                                                              |
+| [`@paretools/github`](./packages/server-github)     | pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, api, release-create, release-list, gist-create | gh                                                               |
+| [`@paretools/search`](./packages/server-search)     | search, find, count                                                                                                                                                                                                                                        | ripgrep, fd                                                      |
+| [`@paretools/test`](./packages/server-test)         | run, coverage, playwright                                                                                                                                                                                                                                  | pytest, jest, vitest, mocha, playwright                          |
+| [`@paretools/npm`](./packages/server-npm)           | install, audit, outdated, list, run, test, init, info, search, nvm                                                                                                                                                                                         | npm, nvm                                                         |
+| [`@paretools/docker`](./packages/server-docker)     | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats                                                                                                         | docker, docker compose                                           |
+| [`@paretools/build`](./packages/server-build)       | tsc, build, esbuild, vite-build, webpack, turbo, nx                                                                                                                                                                                                        | tsc, esbuild, vite, webpack, turbo, nx                           |
+| [`@paretools/lint`](./packages/server-lint)         | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint                                                                                                                                                    | eslint, prettier, biome, stylelint, oxlint, shellcheck, hadolint |
+| [`@paretools/http`](./packages/server-http)         | request, get, post, head                                                                                                                                                                                                                                   | curl                                                             |
+| [`@paretools/make`](./packages/server-make)         | run, list                                                                                                                                                                                                                                                  | make, just                                                       |
+| [`@paretools/python`](./packages/server-python)     | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format, conda, pyenv, poetry                                                                                                                         | pip, mypy, ruff, pytest, uv, black, conda, pyenv, poetry         |
+| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree                                                                                                                                                                                       | cargo                                                            |
+| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get                                                                                                                                                                                             | go, gofmt                                                        |
+| [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                   | trivy, semgrep, gitleaks                                         |
+| [`@paretools/k8s`](./packages/server-k8s)           | kubectl-get, kubectl-describe, kubectl-logs, kubectl-apply, helm                                                                                                                                                                                           | kubectl, helm                                                    |
+| [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                        | child_process                                                    |
 
 ## Quick Start
 
-**Claude Code (recommended):**
+**Claude Code:**
 
 ```bash
 claude mcp add --transport stdio pare-git -- npx -y @paretools/git
@@ -217,6 +220,8 @@ Untracked files:
 ```
 
 50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
+
+> See [Tool Schemas](./docs/tool-schemas/) for detailed response examples and token comparisons for every tool.
 
 ## Telling Agents to Use Pare
 
