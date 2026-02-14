@@ -9,7 +9,8 @@ import { parseMochaCoverage } from "../lib/parsers/mocha.js";
 import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../lib/formatters.js";
 import { CoverageSchema } from "../schemas/index.js";
 
-function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: string[] } {
+/** Exported for unit testing. */
+export function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
       return {

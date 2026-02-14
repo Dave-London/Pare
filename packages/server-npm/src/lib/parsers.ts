@@ -14,6 +14,60 @@ import type {
 
 import type { PackageManager } from "./detect-pm.js";
 
+/** Shape of an npm audit vulnerability entry from `npm audit --json`. */
+interface NpmAuditVulnEntry {
+  severity?: string;
+  title?: string;
+  via?: Array<{ title?: string; url?: string }> | unknown[];
+  range?: string;
+  fixAvailable?: boolean;
+}
+
+/** Shape of a pnpm/npm v6 audit advisory entry. */
+interface NpmAuditAdvisory {
+  module_name?: string;
+  name?: string;
+  severity?: string;
+  title?: string;
+  url?: string;
+  vulnerable_versions?: string;
+  range?: string;
+  patched_versions?: string;
+}
+
+/** Shape of an npm outdated entry from `npm outdated --json`. */
+interface NpmOutdatedEntry {
+  packageName?: string;
+  name?: string;
+  current?: string;
+  wanted?: string;
+  latest?: string;
+  location?: string;
+  type?: string;
+  dependencyType?: string;
+}
+
+/** Shape of an npm list dependency entry from `npm list --json`. */
+interface NpmListRawDep {
+  version?: string;
+  dependencies?: Record<string, NpmListRawDep>;
+}
+
+/** Shape of a yarn tree node from `yarn list --json`. */
+interface YarnTreeNode {
+  name?: string;
+  children?: YarnTreeNode[];
+}
+
+/** Shape of an npm search result entry from `npm search --json`. */
+interface NpmSearchEntry {
+  name?: string;
+  version?: string;
+  description?: string;
+  author?: { name?: string } | string;
+  date?: string;
+}
+
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
   // npm install doesn't have a great --json output, so we parse the summary line
@@ -61,14 +115,17 @@ export function parseAuditJson(jsonStr: string): NpmAudit {
 
   // npm audit --json returns { vulnerabilities: { [name]: { ... } }, metadata: { ... } }
   const vulns = data.vulnerabilities ?? {};
-  const vulnerabilities = Object.entries(vulns).map(([name, v]: [string, any]) => ({
-    name,
-    severity: v.severity ?? "info",
-    title: v.title ?? v.via?.[0]?.title ?? "Unknown",
-    url: v.via?.[0]?.url,
-    range: v.range,
-    fixAvailable: !!v.fixAvailable,
-  }));
+  const vulnerabilities = Object.entries(vulns).map(([name, raw]) => {
+    const v = raw as NpmAuditVulnEntry;
+    return {
+      name,
+      severity: (v.severity ?? "info") as NpmAudit["vulnerabilities"][number]["severity"],
+      title: v.title ?? (v.via?.[0] as { title?: string })?.title ?? "Unknown",
+      url: (v.via?.[0] as { url?: string })?.url,
+      range: v.range,
+      fixAvailable: !!v.fixAvailable,
+    };
+  });
 
   const meta = data.metadata?.vulnerabilities ?? {};
   const summary = {
@@ -99,14 +156,17 @@ export function parsePnpmAuditJson(jsonStr: string): NpmAudit {
 
   // Classic pnpm/npm v6 advisories format
   const advisories = data.advisories ?? {};
-  const vulnerabilities = Object.values(advisories).map((a: any) => ({
-    name: a.module_name ?? a.name ?? "unknown",
-    severity: a.severity ?? "info",
-    title: a.title ?? "Unknown",
-    url: a.url,
-    range: a.vulnerable_versions ?? a.range,
-    fixAvailable: !!a.patched_versions && a.patched_versions !== "<0.0.0",
-  }));
+  const vulnerabilities = Object.values(advisories).map((a: unknown) => {
+    const adv = a as NpmAuditAdvisory;
+    return {
+      name: adv.module_name ?? adv.name ?? "unknown",
+      severity: (adv.severity ?? "info") as NpmAudit["vulnerabilities"][number]["severity"],
+      title: adv.title ?? "Unknown",
+      url: adv.url,
+      range: adv.vulnerable_versions ?? adv.range,
+      fixAvailable: !!adv.patched_versions && adv.patched_versions !== "<0.0.0",
+    };
+  });
 
   const meta = data.metadata ?? {};
   const summary = {
@@ -129,25 +189,35 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
   // but may also return an array in some versions
   if (Array.isArray(data)) {
     // pnpm outdated --json may return an array of { name, current, wanted, latest }
-    const packages = data.map((v: any) => ({
-      name: v.packageName ?? v.name ?? "unknown",
-      current: v.current ?? "N/A",
-      wanted: v.wanted ?? "N/A",
-      latest: v.latest ?? "N/A",
-      ...(v.dependencyType ? { type: v.dependencyType } : {}),
-    }));
+    const packages = data.map((v: unknown) => {
+      const entry = v as NpmOutdatedEntry;
+      return {
+        name: entry.packageName ?? entry.name ?? "unknown",
+        current: entry.current ?? "N/A",
+        wanted: entry.wanted ?? "N/A",
+        latest: entry.latest ?? "N/A",
+        ...(entry.dependencyType ? { type: entry.dependencyType } : {}),
+      };
+    });
     return { packages, total: packages.length };
   }
 
   // npm-style { [name]: { current, wanted, latest, ... } }
-  const packages = Object.entries(data).map(([name, v]: [string, any]) => ({
-    name,
-    current: v.current ?? "N/A",
-    wanted: v.wanted ?? "N/A",
-    latest: v.latest ?? "N/A",
-    ...(v.location ? { location: v.location } : {}),
-    ...(v.type ? { type: v.type } : v.dependencyType ? { type: v.dependencyType } : {}),
-  }));
+  const packages = Object.entries(data).map(([name, v]: [string, unknown]) => {
+    const entry = v as NpmOutdatedEntry;
+    return {
+      name,
+      current: entry.current ?? "N/A",
+      wanted: entry.wanted ?? "N/A",
+      latest: entry.latest ?? "N/A",
+      ...(entry.location ? { location: entry.location } : {}),
+      ...(entry.type
+        ? { type: entry.type }
+        : entry.dependencyType
+          ? { type: entry.dependencyType }
+          : {}),
+    };
+  });
 
   return { packages, total: packages.length };
 }
@@ -156,15 +226,15 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
 export function parseListJson(jsonStr: string): NpmList {
   const data = JSON.parse(jsonStr);
 
-  function parseDeps(raw: Record<string, any> | undefined): Record<string, NpmListDep> {
+  function parseDeps(raw: Record<string, unknown> | undefined): Record<string, NpmListDep> {
     const deps: Record<string, NpmListDep> = {};
     for (const [name, v] of Object.entries(raw ?? {})) {
-      const dep = v as any;
+      const dep = v as NpmListRawDep;
       const entry: NpmListDep = {
         version: dep.version ?? "unknown",
       };
       if (dep.dependencies && Object.keys(dep.dependencies).length > 0) {
-        entry.dependencies = parseDeps(dep.dependencies);
+        entry.dependencies = parseDeps(dep.dependencies as Record<string, unknown>);
       }
       deps[name] = entry;
     }
@@ -357,10 +427,10 @@ export function parseYarnListJson(jsonStr: string): NpmList {
       const data = JSON.parse(trimmed);
       // Yarn Classic: { type: "tree", data: { type: "list", trees: [...] } }
       if (data.type === "tree" && data.data?.trees) {
-        const trees: any[] = data.data.trees;
+        const trees: YarnTreeNode[] = data.data.trees;
         const deps: Record<string, NpmListDep> = {};
 
-        function parseTreeNode(node: any): [string, NpmListDep] {
+        function parseTreeNode(node: YarnTreeNode): [string, NpmListDep] {
           // name is "pkg@version"
           const nameStr = node.name ?? "";
           const atIdx = nameStr.lastIndexOf("@");
@@ -470,17 +540,20 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
 
   // npm search --json returns an array of package objects
   const arr = Array.isArray(data) ? data : [];
-  const packages = arr.map((pkg: any) => ({
-    name: pkg.name ?? "unknown",
-    version: pkg.version ?? "0.0.0",
-    description: pkg.description ?? "",
-    ...(pkg.author?.name
-      ? { author: pkg.author.name }
-      : pkg.author && typeof pkg.author === "string"
-        ? { author: pkg.author }
-        : {}),
-    ...(pkg.date ? { date: pkg.date } : {}),
-  }));
+  const packages = arr.map((pkg: unknown) => {
+    const p = pkg as NpmSearchEntry;
+    return {
+      name: p.name ?? "unknown",
+      version: p.version ?? "0.0.0",
+      description: p.description ?? "",
+      ...(typeof p.author === "object" && p.author?.name
+        ? { author: p.author.name }
+        : p.author && typeof p.author === "string"
+          ? { author: p.author }
+          : {}),
+      ...(p.date ? { date: p.date } : {}),
+    };
+  });
 
   return { packages, total: packages.length };
 }

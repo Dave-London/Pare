@@ -1,6 +1,6 @@
 # Pare CLI Tools Roadmap
 
-**Last updated**: 2026-02-13 | **Current**: v0.8.0 — 112 tools across 14 packages
+**Last updated**: 2026-02-14 | **Current**: v0.8.1 — 147 tools across 16 packages
 
 This roadmap tracks CLI tools and capabilities we plan to wrap with structured, token-efficient MCP output in future Pare releases. Priorities are based on real-world coding agent usage patterns, ecosystem gap analysis, and implementation complexity.
 
@@ -224,7 +224,7 @@ Tools that are better served by dedicated MCP servers, are interactive/TUI-based
 
 ## Coverage by Developer Profile
 
-Estimated percentage of daily CLI tool usage that Pare can handle (v0.8.0, 112 tools):
+Estimated percentage of daily CLI tool usage that Pare can handle (v0.8.1, 147 tools):
 
 | Developer Profile          | Current | With Full Roadmap |
 | -------------------------- | ------- | ----------------- |
@@ -252,10 +252,10 @@ Estimated percentage of daily CLI tool usage that Pare can handle (v0.8.0, 112 t
 
 ## Sources
 
-- Shell history analysis (Jerry Ng 2024): git 59%, npm 6.5%, docker 6.1%
-- Anthropic "How People Prompt" (2025): File Read 35-45%, Terminal 15-25%, Git 10-15%
+- [Shell history analysis (Jerry Ng 2024)](https://jerryng.com/blog/2024-shell-history-analysis/): git 59%, npm 6.5%, docker 6.1%
+- [Anthropic "How People Prompt" (2025)](https://www.anthropic.com/research/how-people-prompt): File Read 35-45%, Terminal 15-25%, Git 10-15%
 - CLI Tool Landscape Report (2026-02-13): 150+ tools surveyed across 28 categories
 - MCP Dev Tools Landscape gap analysis (2026-02-10)
 - Direct observation: tools used via Bash fallback in Pare development sessions
-- SWE-bench Agent Traces (2024-2025): heavy git/test usage patterns
-- Stack Overflow Developer Survey 2025
+- [SWE-bench Agent Traces (2024-2025)](https://www.swebench.com/): heavy git/test usage patterns
+- [Stack Overflow Developer Survey 2025](https://survey.stackoverflow.co/2025/)
