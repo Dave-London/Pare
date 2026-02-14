@@ -73,6 +73,33 @@ export const PrReviewResultSchema = z.object({
 
 export type PrReviewResult = z.infer<typeof PrReviewResultSchema>;
 
+/** Zod schema for a single file entry in a PR diff. */
+export const PrDiffFileSchema = z.object({
+  file: z.string(),
+  status: z.enum(["added", "modified", "deleted", "renamed", "copied"]),
+  additions: z.number(),
+  deletions: z.number(),
+  oldFile: z.string().optional(),
+  chunks: z
+    .array(
+      z.object({
+        header: z.string(),
+        lines: z.string(),
+      }),
+    )
+    .optional(),
+});
+
+/** Zod schema for structured pr-diff output. */
+export const PrDiffResultSchema = z.object({
+  files: z.array(PrDiffFileSchema),
+  totalAdditions: z.number(),
+  totalDeletions: z.number(),
+  totalFiles: z.number(),
+});
+
+export type PrDiffResult = z.infer<typeof PrDiffResultSchema>;
+
 // ── Issue schemas ────────────────────────────────────────────────────
 
 /** Zod schema for structured issue-view output. */
