@@ -1,6 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { formatInstall, formatAudit, formatOutdated, formatList } from "../src/lib/formatters.js";
-import type { NpmInstall, NpmAudit, NpmOutdated, NpmList } from "../src/schemas/index.js";
+import {
+  formatInstall,
+  formatAudit,
+  formatOutdated,
+  formatList,
+  formatRun,
+  formatTest,
+  formatInit,
+  formatInfo,
+  formatSearch,
+  formatNvm,
+} from "../src/lib/formatters.js";
+import type {
+  NpmInstall,
+  NpmAudit,
+  NpmOutdated,
+  NpmList,
+  NpmRun,
+  NpmTest,
+  NpmInit,
+  NpmInfo,
+  NpmSearch,
+  NvmResult,
+} from "../src/schemas/index.js";
 
 describe("formatInstall", () => {
   it("formats install with added packages", () => {
@@ -153,5 +175,184 @@ describe("formatList", () => {
     };
     const output = formatList(data);
     expect(output).toBe("empty-app@0.1.0 (0 dependencies)");
+  });
+});
+
+describe("formatRun", () => {
+  it("formats successful script run", () => {
+    const data: NpmRun = {
+      packageManager: "npm",
+      script: "build",
+      exitCode: 0,
+      stdout: "Build completed.",
+      stderr: "",
+      success: true,
+      duration: 2.5,
+    };
+    const output = formatRun(data);
+    expect(output).toContain('Script "build" completed successfully in 2.5s');
+    expect(output).toContain("Build completed.");
+  });
+
+  it("formats failed script run with stderr", () => {
+    const data: NpmRun = {
+      packageManager: "npm",
+      script: "lint",
+      exitCode: 1,
+      stdout: "",
+      stderr: "ESLint found 3 errors",
+      success: false,
+      duration: 1.2,
+    };
+    const output = formatRun(data);
+    expect(output).toContain('Script "lint" failed (exit code 1) in 1.2s');
+    expect(output).toContain("ESLint found 3 errors");
+  });
+});
+
+describe("formatTest", () => {
+  it("formats passing tests", () => {
+    const data: NpmTest = {
+      packageManager: "npm",
+      exitCode: 0,
+      stdout: "All tests passed",
+      stderr: "",
+      success: true,
+      duration: 4.0,
+    };
+    const output = formatTest(data);
+    expect(output).toContain("Tests passed in 4s");
+    expect(output).toContain("All tests passed");
+  });
+
+  it("formats failing tests", () => {
+    const data: NpmTest = {
+      packageManager: "npm",
+      exitCode: 1,
+      stdout: "",
+      stderr: "2 tests failed",
+      success: false,
+      duration: 3.1,
+    };
+    const output = formatTest(data);
+    expect(output).toContain("Tests failed (exit code 1) in 3.1s");
+    expect(output).toContain("2 tests failed");
+  });
+});
+
+describe("formatInit", () => {
+  it("formats successful init", () => {
+    const data: NpmInit = {
+      packageManager: "npm",
+      success: true,
+      packageName: "my-new-project",
+      version: "1.0.0",
+      path: "/home/user/my-new-project/package.json",
+    };
+    const output = formatInit(data);
+    expect(output).toBe("Created my-new-project@1.0.0 at /home/user/my-new-project/package.json");
+  });
+
+  it("formats failed init", () => {
+    const data: NpmInit = {
+      packageManager: "npm",
+      success: false,
+      packageName: "",
+      version: "",
+      path: "/home/user/restricted",
+    };
+    const output = formatInit(data);
+    expect(output).toBe("Failed to initialize package.json at /home/user/restricted");
+  });
+});
+
+describe("formatInfo", () => {
+  it("formats package info with all fields", () => {
+    const data: NpmInfo = {
+      packageManager: "npm",
+      name: "express",
+      version: "4.18.2",
+      description: "Fast, unopinionated, minimalist web framework",
+      license: "MIT",
+      homepage: "http://expressjs.com/",
+      dependencies: { "body-parser": "1.20.1", cookie: "0.5.0" },
+      dist: { tarball: "https://registry.npmjs.org/express/-/express-4.18.2.tgz" },
+    };
+    const output = formatInfo(data);
+    expect(output).toContain("express@4.18.2");
+    expect(output).toContain("Fast, unopinionated, minimalist web framework");
+    expect(output).toContain("License: MIT");
+    expect(output).toContain("Homepage: http://expressjs.com/");
+    expect(output).toContain("Dependencies: 2");
+    expect(output).toContain("body-parser: 1.20.1");
+    expect(output).toContain("Tarball:");
+  });
+
+  it("formats minimal package info", () => {
+    const data: NpmInfo = {
+      packageManager: "npm",
+      name: "tiny-pkg",
+      version: "0.0.1",
+      description: "A tiny package",
+    };
+    const output = formatInfo(data);
+    expect(output).toContain("tiny-pkg@0.0.1");
+    expect(output).toContain("A tiny package");
+    expect(output).not.toContain("License:");
+    expect(output).not.toContain("Dependencies:");
+  });
+});
+
+describe("formatSearch", () => {
+  it("formats search results with packages", () => {
+    const data: NpmSearch = {
+      packageManager: "npm",
+      packages: [
+        { name: "express", version: "4.18.2", description: "Web framework", author: "TJ" },
+        { name: "koa", version: "2.14.0", description: "Koa web framework" },
+      ],
+      total: 2,
+    };
+    const output = formatSearch(data);
+    expect(output).toContain("2 packages found:");
+    expect(output).toContain("express@4.18.2 — Web framework by TJ");
+    expect(output).toContain("koa@2.14.0 — Koa web framework");
+    expect(output).not.toContain("koa@2.14.0 — Koa web framework by");
+  });
+
+  it("formats empty search results", () => {
+    const data: NpmSearch = {
+      packageManager: "npm",
+      packages: [],
+      total: 0,
+    };
+    expect(formatSearch(data)).toBe("No packages found.");
+  });
+});
+
+describe("formatNvm", () => {
+  it("formats nvm with current, default, and installed versions", () => {
+    const data: NvmResult = {
+      current: "v20.11.0",
+      versions: ["v18.19.0", "v20.11.0", "v22.0.0"],
+      default: "v20.11.0",
+    };
+    const output = formatNvm(data);
+    expect(output).toContain("Current: v20.11.0");
+    expect(output).toContain("Default: v20.11.0");
+    expect(output).toContain("Installed (3):");
+    expect(output).toContain("v20.11.0 (current)");
+    expect(output).toContain("v18.19.0");
+    expect(output).not.toContain("v18.19.0 (current)");
+  });
+
+  it("formats nvm with no installed versions", () => {
+    const data: NvmResult = {
+      current: "system",
+      versions: [],
+    };
+    const output = formatNvm(data);
+    expect(output).toContain("Current: system");
+    expect(output).toContain("No versions installed.");
   });
 });

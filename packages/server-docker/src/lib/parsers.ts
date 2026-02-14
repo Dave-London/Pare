@@ -12,7 +12,6 @@ import type {
   DockerNetworkLs,
   DockerVolumeLs,
   DockerComposePs,
-
   DockerComposeLogs,
   DockerComposeBuild,
   DockerStats,
@@ -317,7 +316,6 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
   return { volumes, total: volumes.length };
 }
 
-
 /** Parses `docker compose build` output into structured per-service build status. */
 export function parseComposeBuildOutput(
   stdout: string,
@@ -397,6 +395,8 @@ export function parseComposeBuildOutput(
     failed,
     duration,
   };
+}
+
 /** Parses percentage string like "1.23%" into a number. Returns 0 for unparseable values. */
 function parsePercent(value: string): number {
   const n = parseFloat(value.replace("%", ""));

@@ -93,4 +93,44 @@ describe("@paretools/test integration", () => {
       expect(summary.lines).toEqual(expect.any(Number));
     });
   });
+
+  describe("playwright", () => {
+    it("handles missing playwright gracefully and returns error or structured output", async () => {
+      // Call playwright on a directory that may or may not have Playwright.
+      // The tool should either return an error or structured output — never crash.
+      const result = await client.callTool(
+        {
+          name: "playwright",
+          arguments: { path: resolve(__dirname, "..") },
+        },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      expect(result.content).toBeDefined();
+      expect(Array.isArray(result.content)).toBe(true);
+
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      expect(textContent.length).toBeGreaterThan(0);
+      expect(textContent[0].type).toBe("text");
+      expect(typeof textContent[0].text).toBe("string");
+
+      if (result.isError) {
+        // Error path: Playwright not installed or not configured
+        expect(textContent[0].text.length).toBeGreaterThan(0);
+      } else {
+        // Structured path: Playwright ran (possibly with 0 tests found)
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+
+        const summary = sc.summary as Record<string, unknown>;
+        expect(summary).toBeDefined();
+        expect(typeof summary.total).toBe("number");
+        expect(typeof summary.passed).toBe("number");
+        expect(typeof summary.failed).toBe("number");
+        expect(typeof summary.duration).toBe("number");
+        expect(Array.isArray(sc.failures)).toBe(true);
+      }
+    });
+  });
 });
