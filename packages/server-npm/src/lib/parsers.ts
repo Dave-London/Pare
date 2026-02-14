@@ -9,6 +9,7 @@ import type {
   NpmInit,
   NpmInfo,
   NpmSearch,
+  NvmResult,
 } from "../schemas/index.js";
 
 import type { PackageManager } from "./detect-pm.js";
@@ -482,4 +483,85 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
   }));
 
   return { packages, total: packages.length };
+}
+
+/**
+ * Parses `nvm list` output into structured data.
+ *
+ * nvm-windows output looks like:
+ *   * 20.11.1 (Currently using 64-bit executable)
+ *     18.19.0
+ *     16.20.2
+ *
+ * Unix nvm output looks like:
+ *   ->     v20.11.1
+ *          v18.19.0
+ *          v16.20.2
+ *   default -> 20.11.1 (-> v20.11.1)
+ *
+ * @param listOutput - stdout from `nvm list`
+ * @param currentOutput - stdout from `nvm current` (used as fallback for current version)
+ */
+export function parseNvmOutput(listOutput: string, currentOutput: string): NvmResult {
+  const versions: string[] = [];
+  let current = "";
+  let defaultVersion: string | undefined;
+
+  for (const line of listOutput.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed === "No installations recognized.") continue;
+
+    // nvm-windows: "* 20.11.1 (Currently using ...)" marks the current version
+    const winCurrentMatch = trimmed.match(/^\*\s+([\d.]+)/);
+    if (winCurrentMatch) {
+      const ver = normalizeVersion(winCurrentMatch[1]);
+      current = ver;
+      versions.push(ver);
+      continue;
+    }
+
+    // Unix nvm: "->     v20.11.1" marks the current version
+    const unixCurrentMatch = trimmed.match(/^->\s+v?([\d.]+)/);
+    if (unixCurrentMatch) {
+      const ver = normalizeVersion(unixCurrentMatch[1]);
+      current = ver;
+      versions.push(ver);
+      continue;
+    }
+
+    // Unix nvm: "default -> 20.11.1 (-> v20.11.1)" or "default -> 20.11.1"
+    const defaultMatch = trimmed.match(/^default\s+->\s+v?([\d.]+)/);
+    if (defaultMatch) {
+      defaultVersion = normalizeVersion(defaultMatch[1]);
+      continue;
+    }
+
+    // Skip other alias lines like "node -> stable", "lts/* -> ...", etc.
+    if (trimmed.includes("->")) continue;
+
+    // Plain version line: "  18.19.0" or "  v18.19.0" or "system"
+    const versionMatch = trimmed.match(/^v?([\d.]+)$/);
+    if (versionMatch) {
+      versions.push(normalizeVersion(versionMatch[1]));
+    }
+  }
+
+  // Fallback: use `nvm current` output if we didn't detect current from list
+  if (!current && currentOutput) {
+    const currentMatch = currentOutput.trim().match(/v?([\d.]+)/);
+    if (currentMatch) {
+      current = normalizeVersion(currentMatch[1]);
+    }
+  }
+
+  return {
+    current: current || "none",
+    versions,
+    ...(defaultVersion ? { default: defaultVersion } : {}),
+  };
+}
+
+/** Ensures version strings have a "v" prefix. */
+function normalizeVersion(version: string): string {
+  return version.startsWith("v") ? version : `v${version}`;
 }

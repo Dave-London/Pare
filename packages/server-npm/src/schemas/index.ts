@@ -173,3 +173,12 @@ export const NpmSearchSchema = z.object({
 });
 
 export type NpmSearch = z.infer<typeof NpmSearchSchema>;
+
+/** Zod schema for structured nvm output with current version and installed versions list. */
+export const NvmResultSchema = z.object({
+  current: z.string().describe("Currently active Node.js version"),
+  versions: z.array(z.string()).describe("List of installed Node.js versions"),
+  default: z.string().optional().describe("Default Node.js version (alias default)"),
+});
+
+export type NvmResult = z.infer<typeof NvmResultSchema>;
