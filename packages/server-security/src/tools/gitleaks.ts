@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, run, INPUT_LIMITS, assertAllowedRoot } from "@paretools/shared";
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
   formatGitleaksScan,
@@ -46,6 +46,7 @@ export function registerGitleaksTool(server: McpServer) {
     },
     async ({ path, noGit, verbose, compact }) => {
       const cwd = path || process.cwd();
+      assertAllowedRoot(cwd, "security");
 
       const args: string[] = ["detect", "--report-format", "json", "--report-path", "/dev/stdout"];
 

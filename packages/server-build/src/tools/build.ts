@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertAllowedCommand, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertAllowedCommand,
+  assertNoPathQualifiedCommand,
+  assertAllowedRoot,
+  INPUT_LIMITS,
+} from "@paretools/shared";
 import { runBuildCommand } from "../lib/build-runner.js";
 import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
@@ -40,7 +46,9 @@ export function registerBuildTool(server: McpServer) {
     },
     async ({ command, args, path, compact }) => {
       assertAllowedCommand(command);
+      assertNoPathQualifiedCommand(command);
       const cwd = path || process.cwd();
+      assertAllowedRoot(cwd, "build");
       const start = Date.now();
       const result = await runBuildCommand(command, args || [], cwd);
       const duration = Math.round((Date.now() - start) / 100) / 10;

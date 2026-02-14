@@ -1,0 +1,7 @@
+#,Scenario,Description,Weight %,Raw Tokens,Pare Regular,Pare Compact,Saved,Reduction %,Raw ms,Pare ms,Added ms
+5A,log-5,5 commits oneline,6,80,197,109,-29,-36,21,22,1
+5B,log-20,20 commits oneline,6,313,759,409,-96,-31,25,26,1
+5C,log-50,50 commits oneline,6,889,1884,1009,-120,-13,25,23,-2
+15A,show-head,Show HEAD (latest commit),1.5,294,445,11,283,96,24,53,29
+15B,show-mid,Show HEAD~3 (recent commit),1.5,597,672,11,586,98,22,46,24
+15C,show-deep,Show HEAD~8 (older commit),1.5,695,594,11,684,98,27,49,22

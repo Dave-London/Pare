@@ -5,7 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerAllTools } from "./tools/index.js";
 
 const server = new McpServer(
-  { name: "@paretools/test", version: "0.7.0" },
+  { name: "@paretools/test", version: "0.8.1" },
   {
     instructions:
       "Structured test runner operations (run, coverage). Auto-detects pytest, jest, vitest, and mocha. Use instead of running test commands via bash. Returns typed JSON with structured pass/fail results and failure details.",

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, run, INPUT_LIMITS, assertAllowedRoot } from "@paretools/shared";
 import { parseTrivyJson } from "../lib/parsers.js";
 import { formatTrivyScan, compactTrivyScanMap, formatTrivyScanCompact } from "../lib/formatters.js";
 import { TrivyScanResultSchema } from "../schemas/index.js";
@@ -25,12 +25,9 @@ export function registerTrivyTool(server: McpServer) {
             'Scan type: "image" for container images, "fs" for filesystem, "config" for IaC misconfigurations',
           ),
         severity: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"])
           .optional()
-          .describe(
-            "Comma-separated severity filter (e.g. 'CRITICAL,HIGH'). Default: all severities",
-          ),
+          .describe("Severity filter. Default: all severities"),
         ignoreUnfixed: z
           .boolean()
           .optional()
@@ -53,6 +50,7 @@ export function registerTrivyTool(server: McpServer) {
     },
     async ({ target, scanType, severity, ignoreUnfixed, path, compact }) => {
       const cwd = path || process.cwd();
+      assertAllowedRoot(cwd, "security");
 
       const args: string[] = [scanType, "--format", "json", "--quiet"];
 

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  INPUT_LIMITS,
+  assertNoFlagInjection,
+  assertAllowedRoot,
+} from "@paretools/shared";
 import { parseSemgrepJson } from "../lib/parsers.js";
 import {
   formatSemgrepScan,
@@ -32,12 +38,9 @@ export function registerSemgrepTool(server: McpServer) {
             'Semgrep config/ruleset (e.g. "auto", "p/security-audit", "p/owasp-top-ten"). Default: "auto"',
           ),
         severity: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .enum(["INFO", "WARNING", "ERROR"])
           .optional()
-          .describe(
-            "Comma-separated severity filter (e.g. 'ERROR,WARNING'). Default: all severities",
-          ),
+          .describe("Severity filter. Default: all severities"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -55,6 +58,13 @@ export function registerSemgrepTool(server: McpServer) {
     },
     async ({ patterns, config, severity, path, compact }) => {
       const cwd = path || process.cwd();
+      assertAllowedRoot(cwd, "security");
+
+      // Validate inputs against flag injection
+      if (config) assertNoFlagInjection(config, "config");
+      for (const p of patterns) {
+        assertNoFlagInjection(p, "patterns");
+      }
 
       const args: string[] = ["scan", "--json", "--quiet"];
 

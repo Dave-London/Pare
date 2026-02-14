@@ -5,7 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerAllTools } from "./tools/index.js";
 
 const server = new McpServer(
-  { name: "@paretools/make", version: "0.7.0" },
+  { name: "@paretools/make", version: "0.8.1" },
   {
     instructions:
       "Structured Make/Just task runner operations (run, list). Auto-detects make vs just. Returns typed JSON. Use instead of running make/just in the terminal.",
