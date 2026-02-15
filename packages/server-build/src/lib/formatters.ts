@@ -2,6 +2,8 @@ import type {
   TscResult,
   BuildResult,
   EsbuildResult,
+  EsbuildError,
+  EsbuildWarning,
   ViteBuildResult,
   WebpackResult,
   TurboResult,
@@ -183,18 +185,23 @@ export function formatTscCompact(data: TscCompact): string {
 // esbuild compact
 // ---------------------------------------------------------------------------
 
-/** Compact esbuild: success and duration only. Schema-compatible (all arrays omitted). */
+/** Compact esbuild: success and duration. Error/warning arrays included when non-empty. */
 export interface EsbuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: EsbuildError[];
+  warnings?: EsbuildWarning[];
 }
 
 export function compactEsbuildMap(data: EsbuildResult): EsbuildCompact {
-  return {
+  const compact: EsbuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatEsbuildCompact(data: EsbuildCompact): string {
@@ -208,18 +215,23 @@ export function formatEsbuildCompact(data: EsbuildCompact): string {
 // vite-build compact
 // ---------------------------------------------------------------------------
 
-/** Compact vite-build: success and duration only. Schema-compatible (all arrays omitted). */
+/** Compact vite-build: success and duration. Error/warning arrays included when non-empty. */
 export interface ViteBuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactViteBuildMap(data: ViteBuildResult): ViteBuildCompact {
-  return {
+  const compact: ViteBuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatViteBuildCompact(data: ViteBuildCompact): string {
@@ -233,12 +245,14 @@ export function formatViteBuildCompact(data: ViteBuildCompact): string {
 // webpack compact
 // ---------------------------------------------------------------------------
 
-/** Compact webpack: success, duration, and optional modules count. Schema-compatible (arrays omitted). */
+/** Compact webpack: success, duration, optional modules count. Error/warning arrays included when non-empty. */
 export interface WebpackCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
   modules?: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactWebpackMap(data: WebpackResult): WebpackCompact {
@@ -247,6 +261,8 @@ export function compactWebpackMap(data: WebpackResult): WebpackCompact {
     duration: data.duration,
   };
   if (data.modules !== undefined) compact.modules = data.modules;
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
   return compact;
 }
 
@@ -263,18 +279,23 @@ export function formatWebpackCompact(data: WebpackCompact): string {
 // build (generic) compact
 // ---------------------------------------------------------------------------
 
-/** Compact build: success and duration only. Schema-compatible (arrays omitted). */
+/** Compact build: success and duration only. Error/warning arrays included when non-empty. */
 export interface BuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactBuildMap(data: BuildResult): BuildCompact {
-  return {
+  const compact: BuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatBuildCompact(data: BuildCompact): string {

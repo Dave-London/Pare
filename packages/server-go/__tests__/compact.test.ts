@@ -263,7 +263,7 @@ describe("formatRunCompact", () => {
 // generate
 // ---------------------------------------------------------------------------
 describe("compactGenerateMap", () => {
-  it("keeps only success, drops output", () => {
+  it("includes output when non-empty", () => {
     const data: GoGenerateResult = {
       success: true,
       output: "mockgen -source=service.go -destination=mock_service.go",
@@ -272,10 +272,22 @@ describe("compactGenerateMap", () => {
     const compact = compactGenerateMap(data);
 
     expect(compact.success).toBe(true);
+    expect(compact.output).toBe("mockgen -source=service.go -destination=mock_service.go");
+  });
+
+  it("omits output when empty", () => {
+    const data: GoGenerateResult = {
+      success: true,
+      output: "",
+    };
+
+    const compact = compactGenerateMap(data);
+
+    expect(compact.success).toBe(true);
     expect(compact).not.toHaveProperty("output");
   });
 
-  it("preserves failure state", () => {
+  it("preserves failure state with output", () => {
     const data: GoGenerateResult = {
       success: false,
       output: 'main.go:3: running "mockgen": exec: "mockgen": executable file not found',
@@ -284,6 +296,9 @@ describe("compactGenerateMap", () => {
     const compact = compactGenerateMap(data);
 
     expect(compact.success).toBe(false);
+    expect(compact.output).toBe(
+      'main.go:3: running "mockgen": exec: "mockgen": executable file not found',
+    );
   });
 });
 
@@ -301,7 +316,7 @@ describe("formatGenerateCompact", () => {
 // mod-tidy
 // ---------------------------------------------------------------------------
 describe("compactModTidyMap", () => {
-  it("keeps only success, drops summary text", () => {
+  it("includes summary when non-empty", () => {
     const data: GoModTidyResult = {
       success: true,
       summary: "go.mod and go.sum are already tidy.",
@@ -310,10 +325,22 @@ describe("compactModTidyMap", () => {
     const compact = compactModTidyMap(data);
 
     expect(compact.success).toBe(true);
+    expect(compact.summary).toBe("go.mod and go.sum are already tidy.");
+  });
+
+  it("omits summary when empty", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "",
+    };
+
+    const compact = compactModTidyMap(data);
+
+    expect(compact.success).toBe(true);
     expect(compact).not.toHaveProperty("summary");
   });
 
-  it("preserves failure state", () => {
+  it("preserves failure state with summary", () => {
     const data: GoModTidyResult = {
       success: false,
       summary: "go.mod file not found in current directory or any parent directory",
@@ -322,6 +349,9 @@ describe("compactModTidyMap", () => {
     const compact = compactModTidyMap(data);
 
     expect(compact.success).toBe(false);
+    expect(compact.summary).toBe(
+      "go.mod file not found in current directory or any parent directory",
+    );
   });
 });
 
@@ -445,7 +475,7 @@ describe("formatListCompact", () => {
 // get
 // ---------------------------------------------------------------------------
 describe("compactGetMap", () => {
-  it("keeps only success, drops output", () => {
+  it("includes output when non-empty", () => {
     const data: GoGetResult = {
       success: true,
       output: "go: downloading github.com/pkg/errors v0.9.1",
@@ -454,10 +484,22 @@ describe("compactGetMap", () => {
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(true);
+    expect(compact.output).toBe("go: downloading github.com/pkg/errors v0.9.1");
+  });
+
+  it("omits output when empty", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "",
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact.success).toBe(true);
     expect(compact).not.toHaveProperty("output");
   });
 
-  it("preserves failure state", () => {
+  it("preserves failure state with output", () => {
     const data: GoGetResult = {
       success: false,
       output: 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
@@ -466,6 +508,9 @@ describe("compactGetMap", () => {
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(false);
+    expect(compact.output).toBe(
+      'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
+    );
   });
 });
 
