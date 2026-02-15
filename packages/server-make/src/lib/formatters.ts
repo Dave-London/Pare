@@ -20,7 +20,7 @@ export function formatList(data: MakeListResult): string {
   if (data.total === 0) return `${data.tool}: no targets found.`;
 
   const lines = [`${data.tool}: ${data.total} targets`];
-  for (const t of data.targets) {
+  for (const t of data.targets ?? []) {
     const desc = t.description ? ` # ${t.description}` : "";
     lines.push(`  ${t.name}${desc}`);
   }

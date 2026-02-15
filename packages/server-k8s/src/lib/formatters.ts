@@ -20,7 +20,7 @@ export function formatGet(data: KubectlGetResult): string {
   }
   const ns = data.namespace ? ` -n ${data.namespace}` : "";
   const lines = [`kubectl get ${data.resource}${ns}: ${data.total} item(s)`];
-  for (const item of data.items) {
+  for (const item of data.items ?? []) {
     const name = item.metadata?.name ?? "unknown";
     const kind = item.kind ?? "";
     lines.push(`  ${kind} ${name}`);
@@ -33,13 +33,13 @@ export function formatDescribe(data: KubectlDescribeResult): string {
   if (!data.success) {
     return `kubectl describe ${data.resource} ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
   }
-  return data.output;
+  return data.output ?? "";
 }
 
 /** Formats a kubectl logs result into human-readable text. */
 export function formatLogs(data: KubectlLogsResult): string {
   if (!data.success) {
-    return `kubectl logs ${data.pod}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `kubectl logs ${data.pod}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   const header = `kubectl logs ${data.pod}: ${data.lineCount} line(s)`;
   if (!data.logs) return header;
@@ -49,9 +49,9 @@ export function formatLogs(data: KubectlLogsResult): string {
 /** Formats a kubectl apply result into human-readable text. */
 export function formatApply(data: KubectlApplyResult): string {
   if (!data.success) {
-    return `kubectl apply: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `kubectl apply: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
-  return `kubectl apply: success\n${data.output}`;
+  return `kubectl apply: success${data.output ? `\n${data.output}` : ""}`;
 }
 
 /** Dispatches formatting to the correct action formatter. */
@@ -88,7 +88,7 @@ export function compactGetMap(data: KubectlGetResult): KubectlGetCompact {
     resource: data.resource,
     namespace: data.namespace,
     total: data.total,
-    names: data.items.map((i) => i.metadata?.name ?? "unknown"),
+    names: (data.items ?? []).map((i) => i.metadata?.name ?? "unknown"),
   };
 }
 
@@ -160,7 +160,7 @@ export function compactApplyMap(data: KubectlApplyResult): KubectlApplyCompact {
   return {
     action: "apply",
     success: data.success,
-    exitCode: data.exitCode,
+    exitCode: data.exitCode ?? 0,
   };
 }
 
@@ -174,11 +174,11 @@ export function formatApplyCompact(data: KubectlApplyCompact): string {
 /** Formats a helm list result into human-readable text. */
 export function formatHelmList(data: HelmListResult): string {
   if (!data.success) {
-    return `helm list: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `helm list: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   const ns = data.namespace ? ` -n ${data.namespace}` : "";
   const lines = [`helm list${ns}: ${data.total} release(s)`];
-  for (const r of data.releases) {
+  for (const r of data.releases ?? []) {
     lines.push(`  ${r.name} (${r.chart}) - ${r.status}`);
   }
   return lines.join("\n");
@@ -187,7 +187,7 @@ export function formatHelmList(data: HelmListResult): string {
 /** Formats a helm status result into human-readable text. */
 export function formatHelmStatus(data: HelmStatusResult): string {
   if (!data.success) {
-    return `helm status ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `helm status ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   const lines = [`helm status ${data.name}: ${data.status ?? "unknown"}`];
   if (data.revision) lines.push(`  revision: ${data.revision}`);
@@ -199,7 +199,7 @@ export function formatHelmStatus(data: HelmStatusResult): string {
 /** Formats a helm install result into human-readable text. */
 export function formatHelmInstall(data: HelmInstallResult): string {
   if (!data.success) {
-    return `helm install ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `helm install ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   const parts = [`helm install ${data.name}: ${data.status ?? "success"}`];
   if (data.revision) parts.push(`(revision ${data.revision})`);
@@ -209,7 +209,7 @@ export function formatHelmInstall(data: HelmInstallResult): string {
 /** Formats a helm upgrade result into human-readable text. */
 export function formatHelmUpgrade(data: HelmUpgradeResult): string {
   if (!data.success) {
-    return `helm upgrade ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
+    return `helm upgrade ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   const parts = [`helm upgrade ${data.name}: ${data.status ?? "success"}`];
   if (data.revision) parts.push(`(revision ${data.revision})`);
@@ -248,7 +248,7 @@ export function compactHelmListMap(data: HelmListResult): HelmListCompact {
     success: data.success,
     namespace: data.namespace,
     total: data.total,
-    names: data.releases.map((r) => r.name),
+    names: (data.releases ?? []).map((r) => r.name),
   };
 }
 

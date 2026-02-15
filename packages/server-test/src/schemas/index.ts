@@ -80,7 +80,7 @@ export const PlaywrightResultSchema = z.object({
     interrupted: z.number(),
     duration: z.number(),
   }),
-  suites: z.array(PlaywrightSuiteSchema),
+  suites: z.array(PlaywrightSuiteSchema).optional(),
   failures: z.array(
     z.object({
       title: z.string(),

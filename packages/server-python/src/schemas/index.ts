@@ -3,12 +3,14 @@ import { z } from "zod";
 /** Zod schema for structured pip install output with installed packages and satisfaction status. */
 export const PipInstallSchema = z.object({
   success: z.boolean(),
-  installed: z.array(
-    z.object({
-      name: z.string(),
-      version: z.string(),
-    }),
-  ),
+  installed: z
+    .array(
+      z.object({
+        name: z.string(),
+        version: z.string(),
+      }),
+    )
+    .optional(),
   alreadySatisfied: z.boolean(),
   total: z.number(),
 });
@@ -28,7 +30,7 @@ export const MypyDiagnosticSchema = z.object({
 /** Zod schema for structured mypy output including success status, diagnostics, and error/warning counts. */
 export const MypyResultSchema = z.object({
   success: z.boolean(),
-  diagnostics: z.array(MypyDiagnosticSchema),
+  diagnostics: z.array(MypyDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
@@ -50,7 +52,7 @@ export const RuffDiagnosticSchema = z.object({
 
 /** Zod schema for structured ruff check output with diagnostics, total count, and fixable count. */
 export const RuffResultSchema = z.object({
-  diagnostics: z.array(RuffDiagnosticSchema),
+  diagnostics: z.array(RuffDiagnosticSchema).optional(),
   total: z.number(),
   fixable: z.number(),
 });
@@ -68,7 +70,7 @@ export const PipAuditVulnSchema = z.object({
 
 /** Zod schema for structured pip-audit output with vulnerability list and total count. */
 export const PipAuditResultSchema = z.object({
-  vulnerabilities: z.array(PipAuditVulnSchema),
+  vulnerabilities: z.array(PipAuditVulnSchema).optional(),
   total: z.number(),
 });
 
@@ -89,7 +91,7 @@ export const PytestResultSchema = z.object({
   skipped: z.number(),
   total: z.number(),
   duration: z.number(),
-  failures: z.array(PytestFailureSchema),
+  failures: z.array(PytestFailureSchema).optional(),
 });
 
 export type PytestResult = z.infer<typeof PytestResultSchema>;
@@ -97,12 +99,14 @@ export type PytestResult = z.infer<typeof PytestResultSchema>;
 /** Zod schema for structured uv install output with installed packages and count. */
 export const UvInstallSchema = z.object({
   success: z.boolean(),
-  installed: z.array(
-    z.object({
-      name: z.string(),
-      version: z.string(),
-    }),
-  ),
+  installed: z
+    .array(
+      z.object({
+        name: z.string(),
+        version: z.string(),
+      }),
+    )
+    .optional(),
   total: z.number(),
   duration: z.number(),
 });
@@ -112,8 +116,8 @@ export type UvInstall = z.infer<typeof UvInstallSchema>;
 /** Zod schema for structured uv run output with exit code and stdout/stderr. */
 export const UvRunSchema = z.object({
   exitCode: z.number(),
-  stdout: z.string(),
-  stderr: z.string(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
   success: z.boolean(),
   duration: z.number(),
 });
@@ -126,7 +130,7 @@ export const BlackResultSchema = z.object({
   filesUnchanged: z.number(),
   filesChecked: z.number(),
   success: z.boolean(),
-  wouldReformat: z.array(z.string()),
+  wouldReformat: z.array(z.string()).optional(),
 });
 
 export type BlackResult = z.infer<typeof BlackResultSchema>;
@@ -139,7 +143,7 @@ export const PipListPackageSchema = z.object({
 
 /** Zod schema for structured pip list output with packages and total count. */
 export const PipListSchema = z.object({
-  packages: z.array(PipListPackageSchema),
+  packages: z.array(PipListPackageSchema).optional(),
   total: z.number(),
 });
 
@@ -154,7 +158,7 @@ export const PipShowSchema = z.object({
   author: z.string().optional(),
   license: z.string().optional(),
   location: z.string().optional(),
-  requires: z.array(z.string()),
+  requires: z.array(z.string()).optional(),
 });
 
 export type PipShow = z.infer<typeof PipShowSchema>;
