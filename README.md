@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Pare" width="128" />
-</p>
-
-# Pare
+<h1><img src="assets/logo.png" alt="" width="80" valign="middle" />&nbsp;&nbsp;Pare</h1>
 
 [![CI](https://github.com/Dave-London/Pare/actions/workflows/ci.yml/badge.svg)](https://github.com/Dave-London/Pare/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@paretools/git.svg?label=npm)](https://www.npmjs.com/package/@paretools/git)
@@ -225,7 +221,8 @@ Untracked files:
 
 50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
 
-> See [Tool Schemas](./docs/tool-schemas/) for detailed response examples and token comparisons for every tool.
+> [!TIP]
+> **[Tool Schemas](./docs/tool-schemas/)** — detailed response examples and token comparisons for every tool.
 
 ## Telling Agents to Use Pare
 

@@ -140,8 +140,8 @@ Error: Could not resolve import
 
 | Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
 | -------------- | ---------- | --------- | ------------ | ------- |
-| 4 output files | ~140       | ~60       | ~12          | 57--91% |
-| Build failure  | ~100       | ~30       | ~12          | 70--88% |
+| 4 output files | ~140       | ~60       | ~12          | 57-91%  |
+| Build failure  | ~100       | ~30       | ~12          | 70-88%  |
 
 ## Notes
 

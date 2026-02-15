@@ -200,8 +200,8 @@ ERROR: command finished with error: exit status 1
 
 | Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------------ | ---------- | --------- | ------------ | ------- |
-| 5 tasks, all pass  | ~200       | ~100      | ~30          | 50--85% |
-| 3 tasks, 1 failure | ~180       | ~70       | ~30          | 61--83% |
+| 5 tasks, all pass  | ~200       | ~100      | ~30          | 50-85%  |
+| 3 tasks, 1 failure | ~180       | ~70       | ~30          | 61-83%  |
 
 ## Notes
 

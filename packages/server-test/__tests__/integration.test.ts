@@ -8,7 +8,7 @@ const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
 /** MCP SDK defaults to 60 s request timeout; override for CI where process spawning is slow. */
-const CALL_TIMEOUT = { timeout: 120_000 };
+const CALL_TIMEOUT = { timeout: 180_000 };
 
 describe("@paretools/test integration", () => {
   let client: Client;

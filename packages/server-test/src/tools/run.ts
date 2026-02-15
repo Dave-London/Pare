@@ -13,7 +13,11 @@ import { parseMochaJson } from "../lib/parsers/mocha.js";
 import { formatTestRun, compactTestRunMap, formatTestRunCompact } from "../lib/formatters.js";
 import { TestRunSchema } from "../schemas/index.js";
 
-function getRunCommand(framework: Framework, args: string[]): { cmd: string; cmdArgs: string[] } {
+/** Exported for unit testing. */
+export function getRunCommand(
+  framework: Framework,
+  args: string[],
+): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
       return { cmd: "python", cmdArgs: ["-m", "pytest", "-v", ...args] };
@@ -114,7 +118,7 @@ export function registerRunTool(server: McpServer) {
         cmdArgs.push(`--outputFile=${tempPath}`);
       }
 
-      const result = await run(cmd, cmdArgs, { cwd, timeout: 120_000 });
+      const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
       // Combine stdout and stderr for parsing (some frameworks write to stderr)
       const output = result.stdout + "\n" + result.stderr;
@@ -156,8 +160,9 @@ export function registerRunTool(server: McpServer) {
 /**
  * Reads JSON output from a temp file, falling back to extracting it from
  * stdout if the file was not created. Always cleans up the temp file.
+ * Exported for unit testing.
  */
-async function readJsonOutput(tempPath: string, output: string): Promise<string> {
+export async function readJsonOutput(tempPath: string, output: string): Promise<string> {
   try {
     return await readFile(tempPath, "utf-8");
   } catch {

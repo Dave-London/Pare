@@ -12,23 +12,23 @@ Pare is a monorepo managed with **pnpm** and **TurboRepo**.
 
 ```
 packages/
-  shared/          @paretools/shared   — Dual output helper, command runner, ANSI strip
-  server-git/      @paretools/git      — Git operations (24 tools)
-  server-github/   @paretools/github   — GitHub operations (22 tools)
-  server-test/     @paretools/test     — Test runners (3 tools)
-  server-npm/      @paretools/npm      — npm operations (10 tools)
-  server-build/    @paretools/build    — Build tools (7 tools)
-  server-lint/     @paretools/lint     — Linters & formatters (9 tools)
-  server-python/   @paretools/python   — Python tools (14 tools)
-  server-docker/   @paretools/docker   — Docker operations (16 tools)
-  server-cargo/    @paretools/cargo    — Rust/Cargo tools (12 tools)
-  server-go/       @paretools/go       — Go tools (11 tools)
-  server-search/   @paretools/search   — Code search (4 tools)
-  server-http/     @paretools/http     — HTTP requests (4 tools)
-  server-make/     @paretools/make     — Make/Just runners (2 tools)
-  server-security/ @paretools/security — Security scanning (3 tools)
-  server-k8s/      @paretools/k8s      — Kubernetes (5 tools)
-  server-process/  @paretools/process  — Process execution (1 tool)
+  shared/          @paretools/shared    — Dual output helper, command runner, ANSI strip
+  server-git/      @paretools/git       — Git operations (24 tools)
+  server-github/   @paretools/github    — GitHub PR/issue/run operations (22 tools)
+  server-docker/   @paretools/docker    — Docker & Compose operations (16 tools)
+  server-python/   @paretools/python    — Python tools (14 tools)
+  server-cargo/    @paretools/cargo     — Rust/Cargo tools (12 tools)
+  server-go/       @paretools/go        — Go tools (11 tools)
+  server-npm/      @paretools/npm       — npm/pnpm/yarn operations (10 tools)
+  server-lint/     @paretools/lint      — Linters & formatters (9 tools)
+  server-build/    @paretools/build     — Build tools (7 tools)
+  server-k8s/      @paretools/k8s       — Kubernetes & Helm (5 tools)
+  server-search/   @paretools/search    — File search & jq (4 tools)
+  server-http/     @paretools/http      — HTTP requests (4 tools)
+  server-test/     @paretools/test      — Test runners (3 tools)
+  server-security/ @paretools/security  — Secret & vulnerability scanning (3 tools)
+  server-make/     @paretools/make      — Make operations (2 tools)
+  server-process/  @paretools/process   — Command execution (1 tool)
   tsconfig/        Shared TypeScript config
   eslint-config/   Shared ESLint config
 ```

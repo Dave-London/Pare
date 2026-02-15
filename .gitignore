@@ -3,6 +3,7 @@ dist/
 *.tsbuildinfo
 .turbo/
 coverage/
+test-results/
 .DS_Store
 *.local
 .env

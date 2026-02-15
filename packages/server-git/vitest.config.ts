@@ -1,17 +1,5 @@
-import { defineConfig } from "vitest/config";
+import { createVitestConfig } from "../shared/vitest.shared.js";
 
-export default defineConfig({
-  test: {
-    globals: true,
-    testTimeout: 120_000,
-    hookTimeout: 30_000,
-    coverage: {
-      provider: "v8",
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 70,
-      },
-    },
-  },
+export default createVitestConfig({
+  hookTimeout: 30_000,
 });

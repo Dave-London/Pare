@@ -156,8 +156,8 @@ $ npx webpack --json --mode production
 
 | Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------ | ---------- | --------- | ------------ | ------- |
-| 3 assets, OK | ~250       | ~55       | ~18          | 78--93% |
-| 2 errors     | ~200       | ~45       | ~18          | 78--91% |
+| 3 assets, OK | ~250       | ~55       | ~18          | 78-93%  |
+| 2 errors     | ~200       | ~45       | ~18          | 78-91%  |
 
 ## Notes
 

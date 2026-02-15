@@ -1,5 +1,11 @@
 # @paretools/git
 
+## 0.8.2
+
+### Patch Changes
+
+- [#400](https://github.com/Dave-London/Pare/pull/400) [`e5d12d5`](https://github.com/Dave-London/Pare/commit/e5d12d55484546888d3c9a7be9f1b26d2b927221) Thanks [@Dave-London](https://github.com/Dave-London)! - Add log-graph, reflog, bisect, and worktree tools. Fix file path case mismatch on Windows.
+
 ## 0.8.1
 
 ### Patch Changes

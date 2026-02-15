@@ -1,5 +1,11 @@
 # @paretools/npm
 
+## 0.8.2
+
+### Patch Changes
+
+- [#400](https://github.com/Dave-London/Pare/pull/400) [`e5d12d5`](https://github.com/Dave-London/Pare/commit/e5d12d55484546888d3c9a7be9f1b26d2b927221) Thanks [@Dave-London](https://github.com/Dave-London)! - Add pnpm and yarn package manager support. Add nvm tool for Node.js version management.
+
 ## 0.8.1
 
 ### Patch Changes
