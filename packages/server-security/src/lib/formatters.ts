@@ -14,9 +14,9 @@ export function formatTrivyScan(data: TrivyScanResult): string {
       `${data.summary.unknown} unknown`,
   );
 
-  if (data.vulnerabilities.length > 0) {
+  if ((data.vulnerabilities ?? []).length > 0) {
     lines.push("");
-    for (const v of data.vulnerabilities) {
+    for (const v of data.vulnerabilities ?? []) {
       const fixed = v.fixedVersion ? ` -> ${v.fixedVersion}` : "";
       const title = v.title ? ` - ${v.title}` : "";
       lines.push(`  [${v.severity}] ${v.id}: ${v.package}@${v.installedVersion}${fixed}${title}`);
@@ -73,9 +73,9 @@ export function formatSemgrepScan(data: SemgrepScanResult): string {
       `${data.summary.info} info`,
   );
 
-  if (data.findings.length > 0) {
+  if ((data.findings ?? []).length > 0) {
     lines.push("");
-    for (const f of data.findings) {
+    for (const f of data.findings ?? []) {
       const category = f.category ? ` [${f.category}]` : "";
       lines.push(`  [${f.severity}] ${f.ruleId}: ${f.path}:${f.startLine}-${f.endLine}${category}`);
       lines.push(`    ${f.message}`);
@@ -124,9 +124,9 @@ export function formatGitleaksScan(data: GitleaksScanResult): string {
   lines.push(`Gitleaks secret detection scan`);
   lines.push(`Found ${data.totalFindings} secret(s)`);
 
-  if (data.findings.length > 0) {
+  if ((data.findings ?? []).length > 0) {
     lines.push("");
-    for (const f of data.findings) {
+    for (const f of data.findings ?? []) {
       const commit = f.commit ? ` (commit: ${f.commit.slice(0, 8)})` : "";
       lines.push(`  [${f.ruleID}] ${f.file}:${f.startLine}-${f.endLine}${commit}`);
       lines.push(`    ${f.description} -- secret: ${f.secret}`);

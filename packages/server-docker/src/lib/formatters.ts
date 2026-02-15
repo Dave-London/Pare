@@ -21,10 +21,11 @@ import type {
 export function formatPs(data: DockerPs): string {
   const lines = [`${data.total} containers (${data.running} running, ${data.stopped} stopped)`];
   for (const c of data.containers) {
-    const ports = c.ports.length
-      ? ` [${c.ports.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
+    const portsArr = c.ports ?? [];
+    const ports = portsArr.length
+      ? ` [${portsArr.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
       : "";
-    lines.push(`  ${c.state.padEnd(10)} ${c.name} (${c.image})${ports}`);
+    lines.push(`  ${(c.state ?? "unknown").padEnd(10)} ${c.name} (${c.image})${ports}`);
   }
   return lines.join("\n");
 }
@@ -39,7 +40,7 @@ export function formatBuild(data: DockerBuild): string {
   }
 
   const lines = [`Build failed (${data.duration}s)`];
-  for (const err of data.errors) {
+  for (const err of data.errors ?? []) {
     lines.push(`  ${err}`);
   }
   return lines.join("\n");
@@ -50,7 +51,7 @@ export function formatLogs(data: DockerLogs): string {
   const header = data.isTruncated
     ? `${data.container} (${data.total} of ${data.totalLines} lines, truncated)`
     : `${data.container} (${data.total} lines)`;
-  return `${header}\n${data.lines.join("\n")}`;
+  return `${header}\n${(data.lines ?? []).join("\n")}`;
 }
 
 /** Formats structured Docker image data into a human-readable listing with repository, tag, and size. */
@@ -85,7 +86,7 @@ export function formatExec(data: DockerExec): string {
 export function formatComposeUp(data: DockerComposeUp): string {
   if (!data.success) return "Compose up failed";
   if (data.started === 0) return "Compose up succeeded (no new services started)";
-  return `Compose up: ${data.started} services started (${data.services.join(", ")})`;
+  return `Compose up: ${data.started} services started (${(data.services ?? []).join(", ")})`;
 }
 
 /** Formats structured Docker Compose down output into a human-readable summary. */
@@ -177,7 +178,7 @@ export function compactBuildMap(data: DockerBuild): DockerBuildCompact {
     success: data.success,
     ...(data.imageId ? { imageId: data.imageId } : {}),
     duration: data.duration,
-    errorCount: data.errors.length,
+    errorCount: (data.errors ?? []).length,
   };
 }
 
@@ -201,11 +202,12 @@ export interface DockerLogsCompact {
 export function compactLogsMap(data: DockerLogs): DockerLogsCompact {
   const HEAD_SIZE = 5;
   const TAIL_SIZE = 5;
+  const lines = data.lines ?? [];
   return {
     container: data.container,
     total: data.total,
-    head: data.lines.slice(0, HEAD_SIZE),
-    tail: data.total > HEAD_SIZE + TAIL_SIZE ? data.lines.slice(-TAIL_SIZE) : [],
+    head: lines.slice(0, HEAD_SIZE),
+    tail: data.total > HEAD_SIZE + TAIL_SIZE ? lines.slice(-TAIL_SIZE) : [],
   };
 }
 
@@ -326,10 +328,13 @@ export function formatComposeDownCompact(data: DockerComposeDownCompact): string
 export function formatInspect(data: DockerInspect): string {
   const lines = [`${data.name} (${data.id})`];
   lines.push(`  Image: ${data.image}`);
-  lines.push(`  State: ${data.state.status} (running: ${data.state.running})`);
-  if (data.state.startedAt) lines.push(`  Started: ${data.state.startedAt}`);
+  const state = data.state;
+  if (state) {
+    lines.push(`  State: ${state.status} (running: ${state.running})`);
+    if (state.startedAt) lines.push(`  Started: ${state.startedAt}`);
+  }
   if (data.platform) lines.push(`  Platform: ${data.platform}`);
-  lines.push(`  Created: ${data.created}`);
+  if (data.created) lines.push(`  Created: ${data.created}`);
   return lines.join("\n");
 }
 
@@ -347,8 +352,8 @@ export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
   return {
     id: data.id,
     name: data.name,
-    status: data.state.status,
-    running: data.state.running,
+    status: data.state?.status ?? data.status ?? "unknown",
+    running: data.state?.running ?? data.running ?? false,
     image: data.image,
   };
 }
@@ -441,14 +446,14 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
 export function formatComposeBuild(data: DockerComposeBuild): string {
   if (!data.success && data.built === 0) {
     const lines = [`Compose build failed (${data.duration}s)`];
-    for (const s of data.services) {
+    for (const s of data.services ?? []) {
       if (s.error) lines.push(`  ${s.service}: ${s.error}`);
     }
     return lines.join("\n");
   }
 
   const lines = [`Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`];
-  for (const s of data.services) {
+  for (const s of data.services ?? []) {
     const status = s.success ? "built" : "failed";
     const error = s.error ? ` — ${s.error}` : "";
     lines.push(`  ${s.service}: ${status}${error}`);
@@ -583,7 +588,7 @@ export function formatComposeLogs(data: DockerComposeLogs): string {
     : `Compose logs: ${data.services.length} services, ${data.total} entries`;
 
   const lines = [header];
-  for (const entry of data.entries) {
+  for (const entry of data.entries ?? []) {
     const ts = entry.timestamp ? `${entry.timestamp} ` : "";
     lines.push(`  ${entry.service} | ${ts}${entry.message}`);
   }
@@ -602,13 +607,14 @@ export interface DockerComposeLogsCompact {
 export function compactComposeLogsMap(data: DockerComposeLogs): DockerComposeLogsCompact {
   const HEAD_SIZE = 5;
   const TAIL_SIZE = 5;
+  const entries = data.entries ?? [];
   return {
     services: data.services,
     total: data.total,
-    head: data.entries.slice(0, HEAD_SIZE).map((e) => ({ service: e.service, message: e.message })),
+    head: entries.slice(0, HEAD_SIZE).map((e) => ({ service: e.service, message: e.message })),
     tail:
       data.total > HEAD_SIZE + TAIL_SIZE
-        ? data.entries.slice(-TAIL_SIZE).map((e) => ({ service: e.service, message: e.message }))
+        ? entries.slice(-TAIL_SIZE).map((e) => ({ service: e.service, message: e.message }))
         : [],
   };
 }

@@ -3,7 +3,7 @@ import { compactListMap, formatListCompact } from "../src/lib/formatters.js";
 import type { NpmList } from "../src/schemas/index.js";
 
 describe("compactListMap", () => {
-  it("reduces dependencies to name → version string map", () => {
+  it("keeps name, version, and total; drops dependencies tree", () => {
     const list: NpmList = {
       name: "my-app",
       version: "1.0.0",
@@ -23,10 +23,8 @@ describe("compactListMap", () => {
     expect(compact.name).toBe("my-app");
     expect(compact.version).toBe("1.0.0");
     expect(compact.total).toBe(2);
-    expect(compact.dependencies).toEqual({
-      express: "4.18.2",
-      lodash: "4.17.21",
-    });
+    // dependencies tree is dropped in compact mode (shape incompatible with schema)
+    expect(compact).not.toHaveProperty("dependencies");
   });
 
   it("handles empty dependencies", () => {
@@ -39,26 +37,26 @@ describe("compactListMap", () => {
 
     const compact = compactListMap(list);
 
-    expect(compact.dependencies).toEqual({});
+    expect(compact).not.toHaveProperty("dependencies");
     expect(compact.total).toBe(0);
   });
 
-  it("handles dependencies without resolved field", () => {
+  it("handles list without dependencies field (optional in schema)", () => {
     const list: NpmList = {
       name: "my-app",
       version: "1.0.0",
-      dependencies: {
-        express: { version: "4.18.2" },
-      },
-      total: 1,
+      total: 0,
     };
 
     const compact = compactListMap(list);
 
-    expect(compact.dependencies).toEqual({ express: "4.18.2" });
+    expect(compact.name).toBe("my-app");
+    expect(compact.version).toBe("1.0.0");
+    expect(compact.total).toBe(0);
+    expect(compact).not.toHaveProperty("dependencies");
   });
 
-  it("flattens nested dependencies with > delimited paths", () => {
+  it("handles nested dependencies without leaking tree into compact", () => {
     const list: NpmList = {
       name: "my-app",
       version: "1.0.0",
@@ -82,37 +80,29 @@ describe("compactListMap", () => {
 
     const compact = compactListMap(list);
 
-    expect(compact.dependencies).toEqual({
-      express: "4.18.2",
-      "express>body-parser": "1.20.1",
-      "express>body-parser>bytes": "3.1.2",
-      "express>content-type": "1.0.5",
-      lodash: "4.17.21",
-    });
+    expect(compact.name).toBe("my-app");
+    expect(compact.total).toBe(5);
+    expect(compact).not.toHaveProperty("dependencies");
   });
 });
 
 describe("formatListCompact", () => {
-  it("formats compact list output", () => {
+  it("formats compact list output as summary line", () => {
     const compact = {
       name: "my-app",
       version: "1.0.0",
-      dependencies: { express: "4.18.2", lodash: "4.17.21" },
       total: 2,
     };
 
     const output = formatListCompact(compact);
 
-    expect(output).toContain("my-app@1.0.0 (2 dependencies)");
-    expect(output).toContain("  express@4.18.2");
-    expect(output).toContain("  lodash@4.17.21");
+    expect(output).toBe("my-app@1.0.0 (2 dependencies)");
   });
 
   it("formats empty compact list", () => {
     const compact = {
       name: "empty-app",
       version: "0.0.1",
-      dependencies: {},
       total: 0,
     };
 
