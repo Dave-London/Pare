@@ -104,7 +104,7 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
   // Git subcommand distribution from Source 1 (% of git commands):
   //   commit 56%, status 16%, add 9%, push 5.2%, checkout 3.2%,
   //   branch 2.5%, log 2.3%, pull 1.8%, diff 1.5%
-  // Normalized to overall tool frequency across all 147 tools:
+  // Normalized to overall tool frequency across all 100 tools:
 
   {
     id: "git:status",
@@ -1442,7 +1442,7 @@ export function formatRegistryTable(registry: ToolRegistryEntry[]): string {
   const sorted = [...registry].sort((a, b) => b.frequencyWeight - a.frequencyWeight);
   const lines: string[] = [];
 
-  lines.push("## Tool Coverage Registry (147 tools)");
+  lines.push("## Tool Coverage Registry (100 tools)");
   lines.push("");
 
   const tested = registry.filter((e) => e.status === "tested").length;
