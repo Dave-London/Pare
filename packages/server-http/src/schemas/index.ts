@@ -12,7 +12,7 @@ export const HttpTimingSchema = z.object({
 export const HttpResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
-  headers: HttpHeadersSchema,
+  headers: HttpHeadersSchema.optional(),
   body: z.string().optional(),
   timing: HttpTimingSchema,
   size: z.number(),
@@ -25,7 +25,7 @@ export type HttpResponse = z.infer<typeof HttpResponseSchema>;
 export const HttpHeadResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
-  headers: HttpHeadersSchema,
+  headers: HttpHeadersSchema.optional(),
   timing: HttpTimingSchema,
   contentType: z.string().optional(),
 });

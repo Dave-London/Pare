@@ -27,7 +27,7 @@ export type TrivySeveritySummary = z.infer<typeof TrivySeveritySummarySchema>;
 export const TrivyScanResultSchema = z.object({
   target: z.string(),
   scanType: z.enum(["image", "fs", "config"]),
-  vulnerabilities: z.array(TrivyVulnerabilitySchema),
+  vulnerabilities: z.array(TrivyVulnerabilitySchema).optional(),
   summary: TrivySeveritySummarySchema,
   totalVulnerabilities: z.number(),
 });
@@ -61,7 +61,7 @@ export type SemgrepSeveritySummary = z.infer<typeof SemgrepSeveritySummarySchema
 /** Zod schema for the structured Semgrep scan result. */
 export const SemgrepScanResultSchema = z.object({
   totalFindings: z.number(),
-  findings: z.array(SemgrepFindingSchema),
+  findings: z.array(SemgrepFindingSchema).optional(),
   summary: SemgrepSeveritySummarySchema,
   config: z.string(),
 });
@@ -96,8 +96,8 @@ export type GitleaksSummary = z.infer<typeof GitleaksSummarySchema>;
 /** Zod schema for the structured Gitleaks scan result. */
 export const GitleaksScanResultSchema = z.object({
   totalFindings: z.number(),
-  findings: z.array(GitleaksFindingSchema),
-  summary: GitleaksSummarySchema,
+  findings: z.array(GitleaksFindingSchema).optional(),
+  summary: GitleaksSummarySchema.optional(),
 });
 
 export type GitleaksScanResult = z.infer<typeof GitleaksScanResultSchema>;

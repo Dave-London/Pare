@@ -26,10 +26,10 @@ export interface TscDiagnostic {
   [key: string]: unknown;
   file: string;
   line: number;
-  column: number;
-  code: number;
+  column?: number;
+  code?: number;
   severity: "error" | "warning";
-  message: string;
+  message?: string;
 }
 
 /** Full tsc result -- always returned by the parser. */
@@ -56,8 +56,8 @@ export interface BuildResult {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  errors: string[];
-  warnings: string[];
+  errors?: string[];
+  warnings?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -110,8 +110,8 @@ export interface EsbuildWarning {
 export interface EsbuildResult {
   [key: string]: unknown;
   success: boolean;
-  errors: EsbuildError[];
-  warnings: EsbuildWarning[];
+  errors?: EsbuildError[];
+  warnings?: EsbuildWarning[];
   outputFiles?: string[];
   duration: number;
 }
@@ -148,9 +148,9 @@ export interface ViteBuildResult {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  outputs: ViteOutputFile[];
-  errors: string[];
-  warnings: string[];
+  outputs?: ViteOutputFile[];
+  errors?: string[];
+  warnings?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -186,9 +186,9 @@ export interface WebpackResult {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  assets: WebpackAsset[];
-  errors: string[];
-  warnings: string[];
+  assets?: WebpackAsset[];
+  errors?: string[];
+  warnings?: string[];
   modules?: number;
 }
 
@@ -232,7 +232,7 @@ export interface TurboResult {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  tasks: TurboTask[];
+  tasks?: TurboTask[];
   totalTasks: number;
   passed: number;
   failed: number;
@@ -279,7 +279,7 @@ export interface NxResult {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  tasks: NxTask[];
+  tasks?: NxTask[];
   total: number;
   passed: number;
   failed: number;

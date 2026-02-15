@@ -96,7 +96,7 @@ export const NpmListSchema = z.object({
   packageManager: packageManagerField,
   name: z.string(),
   version: z.string(),
-  dependencies: z.record(z.string(), NpmListDepSchema),
+  dependencies: z.record(z.string(), NpmListDepSchema).optional(),
   total: z.number(),
 });
 

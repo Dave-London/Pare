@@ -13,7 +13,7 @@ export const SearchMatchSchema = z.object({
 
 /** Zod schema for structured ripgrep search output with match list and totals. */
 export const SearchResultSchema = z.object({
-  matches: z.array(SearchMatchSchema),
+  matches: z.array(SearchMatchSchema).optional(),
   totalMatches: z.number(),
   filesSearched: z.number(),
 });
@@ -31,7 +31,7 @@ export const FindFileSchema = z.object({
 
 /** Zod schema for structured fd output with file list and total count. */
 export const FindResultSchema = z.object({
-  files: z.array(FindFileSchema),
+  files: z.array(FindFileSchema).optional(),
   total: z.number(),
 });
 
@@ -47,7 +47,7 @@ export const CountFileSchema = z.object({
 
 /** Zod schema for structured rg --count output with per-file counts and totals. */
 export const CountResultSchema = z.object({
-  files: z.array(CountFileSchema),
+  files: z.array(CountFileSchema).optional(),
   totalMatches: z.number(),
   totalFiles: z.number(),
 });
