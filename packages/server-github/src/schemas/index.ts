@@ -14,16 +14,17 @@ export const PrViewResultSchema = z.object({
   number: z.number(),
   state: z.string(),
   title: z.string(),
-  body: z.string().nullable(),
+  body: z.string().nullable().optional(),
   mergeable: z.string(),
   reviewDecision: z.string(),
-  checks: z.array(PrCheckSchema),
+  checks: z.array(PrCheckSchema).optional(),
   url: z.string(),
   headBranch: z.string(),
   baseBranch: z.string(),
   additions: z.number(),
   deletions: z.number(),
   changedFiles: z.number(),
+  checksTotal: z.number().optional(),
 });
 
 export type PrViewResult = z.infer<typeof PrViewResultSchema>;
@@ -33,9 +34,9 @@ export const PrListItemSchema = z.object({
   number: z.number(),
   state: z.string(),
   title: z.string(),
-  url: z.string(),
-  headBranch: z.string(),
-  author: z.string(),
+  url: z.string().optional(),
+  headBranch: z.string().optional(),
+  author: z.string().optional(),
 });
 
 /** Zod schema for structured pr-list output. */
@@ -93,8 +94,8 @@ export const PrDiffFileSchema = z.object({
 /** Zod schema for structured pr-diff output. */
 export const PrDiffResultSchema = z.object({
   files: z.array(PrDiffFileSchema),
-  totalAdditions: z.number(),
-  totalDeletions: z.number(),
+  totalAdditions: z.number().optional(),
+  totalDeletions: z.number().optional(),
   totalFiles: z.number(),
 });
 
@@ -107,7 +108,7 @@ export const IssueViewResultSchema = z.object({
   number: z.number(),
   state: z.string(),
   title: z.string(),
-  body: z.string().nullable(),
+  body: z.string().nullable().optional(),
   labels: z.array(z.string()),
   assignees: z.array(z.string()),
   url: z.string(),
@@ -121,9 +122,9 @@ export const IssueListItemSchema = z.object({
   number: z.number(),
   state: z.string(),
   title: z.string(),
-  url: z.string(),
-  labels: z.array(z.string()),
-  assignees: z.array(z.string()),
+  url: z.string().optional(),
+  labels: z.array(z.string()).optional(),
+  assignees: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured issue-list output. */
@@ -196,8 +197,12 @@ export const PrChecksSummarySchema = z.object({
 /** Zod schema for structured pr-checks output. */
 export const PrChecksResultSchema = z.object({
   pr: z.number(),
-  checks: z.array(PrChecksItemSchema),
-  summary: PrChecksSummarySchema,
+  checks: z.array(PrChecksItemSchema).optional(),
+  summary: PrChecksSummarySchema.optional(),
+  total: z.number().optional(),
+  passed: z.number().optional(),
+  failed: z.number().optional(),
+  pending: z.number().optional(),
 });
 
 export type PrChecksItem = z.infer<typeof PrChecksItemSchema>;
@@ -218,12 +223,13 @@ export const RunViewResultSchema = z.object({
   id: z.number(),
   status: z.string(),
   conclusion: z.string().nullable(),
-  name: z.string(),
+  name: z.string().optional(),
   workflowName: z.string(),
   headBranch: z.string(),
-  jobs: z.array(RunJobSchema),
+  jobs: z.array(RunJobSchema).optional(),
   url: z.string(),
-  createdAt: z.string(),
+  createdAt: z.string().optional(),
+  jobsTotal: z.number().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;
@@ -233,11 +239,11 @@ export const RunListItemSchema = z.object({
   id: z.number(),
   status: z.string(),
   conclusion: z.string().nullable(),
-  name: z.string(),
+  name: z.string().optional(),
   workflowName: z.string(),
-  headBranch: z.string(),
-  url: z.string(),
-  createdAt: z.string(),
+  headBranch: z.string().optional(),
+  url: z.string().optional(),
+  createdAt: z.string().optional(),
 });
 
 /** Zod schema for structured run-list output. */
@@ -286,8 +292,8 @@ export const ReleaseListItemSchema = z.object({
   name: z.string(),
   draft: z.boolean(),
   prerelease: z.boolean(),
-  publishedAt: z.string(),
-  url: z.string(),
+  publishedAt: z.string().optional(),
+  url: z.string().optional(),
 });
 
 /** Zod schema for structured release-list output. */

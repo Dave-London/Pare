@@ -71,7 +71,7 @@ export function formatList(data: NpmList): string {
       }
     }
   }
-  formatDeps(data.dependencies, "  ");
+  formatDeps(data.dependencies ?? {}, "  ");
   return lines.join("\n");
 }
 
@@ -111,41 +111,24 @@ export function formatInit(data: NpmInit): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact list: flattened dependencies as name → version string map (no nesting). */
+/** Compact list: counts only, no dependency tree (tree shape can't validate against schema). */
 export interface NpmListCompact {
   [key: string]: unknown;
   name: string;
   version: string;
-  dependencies: Record<string, string>;
   total: number;
 }
 
 export function compactListMap(data: NpmList): NpmListCompact {
-  const deps: Record<string, string> = {};
-  function flatten(d: Record<string, NpmListDep>, prefix: string) {
-    for (const [name, dep] of Object.entries(d)) {
-      const key = prefix ? `${prefix}>${name}` : name;
-      deps[key] = dep.version;
-      if (dep.dependencies) {
-        flatten(dep.dependencies, key);
-      }
-    }
-  }
-  flatten(data.dependencies, "");
   return {
     name: data.name,
     version: data.version,
-    dependencies: deps,
     total: data.total,
   };
 }
 
 export function formatListCompact(data: NpmListCompact): string {
-  const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
-  for (const [name, version] of Object.entries(data.dependencies)) {
-    lines.push(`  ${name}@${version}`);
-  }
-  return lines.join("\n");
+  return `${data.name}@${data.version} (${data.total} dependencies)`;
 }
 
 // ── Info formatters ──────────────────────────────────────────────────

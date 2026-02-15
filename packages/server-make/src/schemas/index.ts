@@ -21,7 +21,7 @@ export const MakeTargetSchema = z.object({
 
 /** Zod schema for structured make/just list output with targets and total count. */
 export const MakeListResultSchema = z.object({
-  targets: z.array(MakeTargetSchema),
+  targets: z.array(MakeTargetSchema).optional(),
   total: z.number(),
   tool: z.enum(["make", "just"]),
 });
