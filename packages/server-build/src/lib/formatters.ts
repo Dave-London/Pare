@@ -2,6 +2,8 @@ import type {
   TscResult,
   BuildResult,
   EsbuildResult,
+  EsbuildError,
+  EsbuildWarning,
   ViteBuildResult,
   WebpackResult,
   TurboResult,
@@ -13,8 +15,11 @@ export function formatTsc(data: TscResult): string {
   if (data.success && data.total === 0) return "TypeScript: no errors found.";
 
   const lines = [`TypeScript: ${data.errors} errors, ${data.warnings} warnings`];
-  for (const d of data.diagnostics) {
-    lines.push(`  ${d.file}:${d.line}:${d.column} ${d.severity} TS${d.code}: ${d.message}`);
+  for (const d of data.diagnostics ?? []) {
+    const col = d.column !== undefined ? `:${d.column}` : "";
+    const code = d.code !== undefined ? ` TS${d.code}` : "";
+    const msg = d.message ? `: ${d.message}` : "";
+    lines.push(`  ${d.file}:${d.line}${col} ${d.severity}${code}${msg}`);
   }
   return lines.join("\n");
 }
@@ -23,12 +28,12 @@ export function formatTsc(data: TscResult): string {
 export function formatBuildCommand(data: BuildResult): string {
   if (data.success) {
     const parts = [`Build succeeded in ${data.duration}s`];
-    if (data.warnings.length) parts.push(`${data.warnings.length} warnings`);
+    if ((data.warnings ?? []).length) parts.push(`${(data.warnings ?? []).length} warnings`);
     return parts.join(", ");
   }
 
   const lines = [`Build failed (${data.duration}s)`];
-  for (const err of data.errors) {
+  for (const err of data.errors ?? []) {
     lines.push(`  ${err}`);
   }
   return lines.join("\n");
@@ -40,7 +45,10 @@ export function formatBuildCommand(data: BuildResult): string {
 
 /** Formats structured esbuild results into a human-readable summary. */
 export function formatEsbuild(data: EsbuildResult): string {
-  if (data.success && data.errors.length === 0 && data.warnings.length === 0) {
+  const errors = data.errors ?? [];
+  const warnings = data.warnings ?? [];
+
+  if (data.success && errors.length === 0 && warnings.length === 0) {
     const parts = [`esbuild: build succeeded in ${data.duration}s`];
     if (data.outputFiles && data.outputFiles.length > 0) {
       parts.push(`${data.outputFiles.length} output files`);
@@ -50,22 +58,20 @@ export function formatEsbuild(data: EsbuildResult): string {
 
   const lines: string[] = [];
   if (data.success) {
-    lines.push(
-      `esbuild: build succeeded in ${data.duration}s with ${data.warnings.length} warnings`,
-    );
+    lines.push(`esbuild: build succeeded in ${data.duration}s with ${warnings.length} warnings`);
   } else {
     lines.push(
-      `esbuild: build failed (${data.duration}s) — ${data.errors.length} errors, ${data.warnings.length} warnings`,
+      `esbuild: build failed (${data.duration}s) — ${errors.length} errors, ${warnings.length} warnings`,
     );
   }
 
-  for (const err of data.errors) {
+  for (const err of errors) {
     const loc = err.file
       ? `${err.file}${err.line ? `:${err.line}` : ""}${err.column ? `:${err.column}` : ""}`
       : "";
     lines.push(`  ERROR${loc ? ` ${loc}` : ""}: ${err.message}`);
   }
-  for (const warn of data.warnings) {
+  for (const warn of warnings) {
     const loc = warn.file ? `${warn.file}${warn.line ? `:${warn.line}` : ""}` : "";
     lines.push(`  WARN${loc ? ` ${loc}` : ""}: ${warn.message}`);
   }
@@ -79,22 +85,26 @@ export function formatEsbuild(data: EsbuildResult): string {
 
 /** Formats structured Vite build results into a human-readable summary. */
 export function formatViteBuild(data: ViteBuildResult): string {
+  const outputs = data.outputs ?? [];
+  const warnings = data.warnings ?? [];
+  const errors = data.errors ?? [];
+
   if (data.success) {
     const lines = [`Vite build succeeded in ${data.duration}s`];
-    if (data.outputs.length > 0) {
-      lines.push(`  ${data.outputs.length} output files:`);
-      for (const out of data.outputs) {
+    if (outputs.length > 0) {
+      lines.push(`  ${outputs.length} output files:`);
+      for (const out of outputs) {
         lines.push(`    ${out.file}  ${out.size}`);
       }
     }
-    if (data.warnings.length > 0) {
-      lines.push(`  ${data.warnings.length} warnings`);
+    if (warnings.length > 0) {
+      lines.push(`  ${warnings.length} warnings`);
     }
     return lines.join("\n");
   }
 
   const lines = [`Vite build failed (${data.duration}s)`];
-  for (const err of data.errors) {
+  for (const err of errors) {
     lines.push(`  ${err}`);
   }
   return lines.join("\n");
@@ -106,14 +116,18 @@ export function formatViteBuild(data: ViteBuildResult): string {
 
 /** Formats structured webpack build results into a human-readable summary. */
 export function formatWebpack(data: WebpackResult): string {
+  const assets = data.assets ?? [];
+  const warnings = data.warnings ?? [];
+  const errors = data.errors ?? [];
+
   if (data.success) {
     const parts = [`webpack: build succeeded in ${data.duration}s`];
-    if (data.assets.length > 0) parts.push(`${data.assets.length} assets`);
+    if (assets.length > 0) parts.push(`${assets.length} assets`);
     if (data.modules !== undefined) parts.push(`${data.modules} modules`);
-    if (data.warnings.length > 0) parts.push(`${data.warnings.length} warnings`);
+    if (warnings.length > 0) parts.push(`${warnings.length} warnings`);
 
     const lines = [parts.join(", ")];
-    for (const asset of data.assets) {
+    for (const asset of assets) {
       const sizeKB = (asset.size / 1024).toFixed(1);
       lines.push(`  ${asset.name}  ${sizeKB} kB`);
     }
@@ -121,7 +135,7 @@ export function formatWebpack(data: WebpackResult): string {
   }
 
   const lines = [`webpack: build failed (${data.duration}s)`];
-  for (const err of data.errors) {
+  for (const err of errors) {
     lines.push(`  ${err}`);
   }
   return lines.join("\n");
@@ -149,7 +163,7 @@ export function compactTscMap(data: TscResult): TscCompact {
     success: data.success,
     errors: data.errors,
     warnings: data.warnings,
-    diagnostics: data.diagnostics.slice(0, TSC_COMPACT_DIAG_LIMIT).map((d) => ({
+    diagnostics: (data.diagnostics ?? []).slice(0, TSC_COMPACT_DIAG_LIMIT).map((d) => ({
       file: d.file,
       line: d.line,
       severity: d.severity,
@@ -171,18 +185,23 @@ export function formatTscCompact(data: TscCompact): string {
 // esbuild compact
 // ---------------------------------------------------------------------------
 
-/** Compact esbuild: success and duration only. Schema-compatible (all arrays omitted). */
+/** Compact esbuild: success and duration. Error/warning arrays included when non-empty. */
 export interface EsbuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: EsbuildError[];
+  warnings?: EsbuildWarning[];
 }
 
 export function compactEsbuildMap(data: EsbuildResult): EsbuildCompact {
-  return {
+  const compact: EsbuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatEsbuildCompact(data: EsbuildCompact): string {
@@ -196,18 +215,23 @@ export function formatEsbuildCompact(data: EsbuildCompact): string {
 // vite-build compact
 // ---------------------------------------------------------------------------
 
-/** Compact vite-build: success and duration only. Schema-compatible (all arrays omitted). */
+/** Compact vite-build: success and duration. Error/warning arrays included when non-empty. */
 export interface ViteBuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactViteBuildMap(data: ViteBuildResult): ViteBuildCompact {
-  return {
+  const compact: ViteBuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatViteBuildCompact(data: ViteBuildCompact): string {
@@ -221,12 +245,14 @@ export function formatViteBuildCompact(data: ViteBuildCompact): string {
 // webpack compact
 // ---------------------------------------------------------------------------
 
-/** Compact webpack: success, duration, and optional modules count. Schema-compatible (arrays omitted). */
+/** Compact webpack: success, duration, optional modules count. Error/warning arrays included when non-empty. */
 export interface WebpackCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
   modules?: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactWebpackMap(data: WebpackResult): WebpackCompact {
@@ -235,6 +261,8 @@ export function compactWebpackMap(data: WebpackResult): WebpackCompact {
     duration: data.duration,
   };
   if (data.modules !== undefined) compact.modules = data.modules;
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
   return compact;
 }
 
@@ -251,18 +279,23 @@ export function formatWebpackCompact(data: WebpackCompact): string {
 // build (generic) compact
 // ---------------------------------------------------------------------------
 
-/** Compact build: success and duration only. Schema-compatible (arrays omitted). */
+/** Compact build: success and duration only. Error/warning arrays included when non-empty. */
 export interface BuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  errors?: string[];
+  warnings?: string[];
 }
 
 export function compactBuildMap(data: BuildResult): BuildCompact {
-  return {
+  const compact: BuildCompact = {
     success: data.success,
     duration: data.duration,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
 }
 
 export function formatBuildCompact(data: BuildCompact): string {
@@ -278,13 +311,15 @@ export function formatBuildCompact(data: BuildCompact): string {
 
 /** Formats structured Turbo run results into a human-readable summary. */
 export function formatTurbo(data: TurboResult): string {
+  const tasks = data.tasks ?? [];
+
   if (data.success) {
     const parts = [`turbo: ${data.totalTasks} tasks completed in ${data.duration}s`];
     if (data.cached > 0) parts.push(`${data.cached} cached`);
     if (data.failed > 0) parts.push(`${data.failed} failed`);
 
     const lines = [parts.join(", ")];
-    for (const t of data.tasks) {
+    for (const t of tasks) {
       const cachePart = t.cache ? ` [${t.cache}]` : "";
       const durationPart = t.duration ? ` (${t.duration})` : "";
       lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
@@ -295,7 +330,7 @@ export function formatTurbo(data: TurboResult): string {
   const lines = [
     `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`,
   ];
-  for (const t of data.tasks) {
+  for (const t of tasks) {
     const cachePart = t.cache ? ` [${t.cache}]` : "";
     const durationPart = t.duration ? ` (${t.duration})` : "";
     lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
@@ -309,12 +344,13 @@ export function formatTurbo(data: TurboResult): string {
 
 /** Formats structured Nx results into a human-readable summary. */
 export function formatNx(data: NxResult): string {
+  const tasks = data.tasks ?? [];
   const summary = `nx: ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
 
-  if (data.tasks.length === 0) return summary;
+  if (tasks.length === 0) return summary;
 
   const lines = [summary];
-  for (const task of data.tasks) {
+  for (const task of tasks) {
     const icon = task.status === "success" ? "✔" : "✖";
     const cacheTag = task.cache ? " [cache]" : "";
     const dur = task.duration !== undefined ? ` (${task.duration}s)` : "";

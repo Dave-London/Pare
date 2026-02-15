@@ -7,7 +7,7 @@ export function formatSearch(data: SearchResult): string {
   if (data.totalMatches === 0) return "search: no matches found.";
 
   const lines = [`search: ${data.totalMatches} matches in ${data.filesSearched} files`];
-  for (const m of data.matches) {
+  for (const m of data.matches ?? []) {
     lines.push(`  ${m.file}:${m.line}:${m.column}: ${m.lineContent}`);
   }
   return lines.join("\n");
@@ -18,7 +18,7 @@ export function formatFind(data: FindResult): string {
   if (data.total === 0) return "find: no files found.";
 
   const lines = [`find: ${data.total} files`];
-  for (const f of data.files) {
+  for (const f of data.files ?? []) {
     lines.push(`  ${f.path}`);
   }
   return lines.join("\n");
@@ -29,7 +29,7 @@ export function formatCount(data: CountResult): string {
   if (data.totalFiles === 0) return "count: no matches found.";
 
   const lines = [`count: ${data.totalMatches} matches in ${data.totalFiles} files`];
-  for (const f of data.files) {
+  for (const f of data.files ?? []) {
     lines.push(`  ${f.file}: ${f.count}`);
   }
   return lines.join("\n");

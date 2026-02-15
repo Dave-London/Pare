@@ -28,9 +28,10 @@ export const KubectlGetResultSchema = z.object({
   success: z.boolean(),
   resource: z.string(),
   namespace: z.string().optional(),
-  items: z.array(K8sResourceSchema),
+  items: z.array(K8sResourceSchema).optional(),
   total: z.number(),
-  exitCode: z.number(),
+  names: z.array(z.string()).optional(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -45,8 +46,8 @@ export const KubectlDescribeResultSchema = z.object({
   resource: z.string(),
   name: z.string(),
   namespace: z.string().optional(),
-  output: z.string(),
-  exitCode: z.number(),
+  output: z.string().optional(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -61,9 +62,9 @@ export const KubectlLogsResultSchema = z.object({
   pod: z.string(),
   namespace: z.string().optional(),
   container: z.string().optional(),
-  logs: z.string(),
+  logs: z.string().optional(),
   lineCount: z.number(),
-  exitCode: z.number(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -75,8 +76,8 @@ export type KubectlLogsResult = z.infer<typeof KubectlLogsResultSchema>;
 export const KubectlApplyResultSchema = z.object({
   action: z.literal("apply"),
   success: z.boolean(),
-  output: z.string(),
-  exitCode: z.number(),
+  output: z.string().optional(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -113,9 +114,10 @@ export const HelmListResultSchema = z.object({
   action: z.literal("list"),
   success: z.boolean(),
   namespace: z.string().optional(),
-  releases: z.array(HelmReleaseSchema),
+  releases: z.array(HelmReleaseSchema).optional(),
   total: z.number(),
-  exitCode: z.number(),
+  names: z.array(z.string()).optional(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -131,7 +133,7 @@ export const HelmStatusResultSchema = z.object({
   status: z.string().optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
-  exitCode: z.number(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -145,7 +147,7 @@ export const HelmInstallResultSchema = z.object({
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
-  exitCode: z.number(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
@@ -158,7 +160,7 @@ export const HelmUpgradeResultSchema = z.object({
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
-  exitCode: z.number(),
+  exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 

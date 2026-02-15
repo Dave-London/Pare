@@ -32,9 +32,9 @@ export function formatPrView(data: PrViewResult): string {
     `  +${data.additions} -${data.deletions} (${data.changedFiles} files)`,
     `  ${data.url}`,
   ];
-  if (data.checks.length > 0) {
+  if ((data.checks ?? []).length > 0) {
     lines.push(`  checks:`);
-    for (const c of data.checks) {
+    for (const c of data.checks ?? []) {
       lines.push(`    ${c.name}: ${c.status} (${c.conclusion ?? "pending"})`);
     }
   }
@@ -50,7 +50,9 @@ export function formatPrList(data: PrListResult): string {
 
   const lines = [`${data.total} pull requests:`];
   for (const pr of data.prs) {
-    lines.push(`  #${pr.number} ${pr.title} (${pr.state}) [${pr.headBranch}] @${pr.author}`);
+    const branch = pr.headBranch ? ` [${pr.headBranch}]` : "";
+    const author = pr.author ? ` @${pr.author}` : "";
+    lines.push(`  #${pr.number} ${pr.title} (${pr.state})${branch}${author}`);
   }
   return lines.join("\n");
 }
@@ -82,11 +84,18 @@ export function formatPrUpdate(data: EditResult): string {
 
 /** Formats structured PR checks data into human-readable text. */
 export function formatPrChecks(data: PrChecksResult): string {
-  const { summary } = data;
+  const summary = data.summary ?? {
+    total: 0,
+    passed: 0,
+    failed: 0,
+    pending: 0,
+    skipped: 0,
+    cancelled: 0,
+  };
   const lines = [
     `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`,
   ];
-  for (const c of data.checks) {
+  for (const c of data.checks ?? []) {
     const workflow = c.workflow ? ` [${c.workflow}]` : "";
     lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
   }
@@ -104,12 +113,20 @@ export interface PrChecksCompact {
 }
 
 export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
+  const summary = data.summary ?? {
+    total: 0,
+    passed: 0,
+    failed: 0,
+    pending: 0,
+    skipped: 0,
+    cancelled: 0,
+  };
   return {
     pr: data.pr,
-    total: data.summary.total,
-    passed: data.summary.passed,
-    failed: data.summary.failed,
-    pending: data.summary.pending,
+    total: summary.total,
+    passed: summary.passed,
+    failed: summary.failed,
+    pending: summary.pending,
   };
 }
 
@@ -120,7 +137,7 @@ export function formatPrChecksCompact(data: PrChecksCompact): string {
 /** Formats structured PR diff data into a human-readable file change summary. */
 export function formatPrDiff(diff: PrDiffResult): string {
   const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${diff.totalFiles} files changed, +${diff.totalAdditions} -${diff.totalDeletions}\n${files}`;
+  return `${diff.totalFiles} files changed, +${diff.totalAdditions ?? 0} -${diff.totalDeletions ?? 0}\n${files}`;
 }
 
 /** Formats structured issue view data into human-readable text. */
@@ -148,7 +165,7 @@ export function formatIssueList(data: IssueListResult): string {
 
   const lines = [`${data.total} issues:`];
   for (const issue of data.issues) {
-    const labels = issue.labels.length > 0 ? ` [${issue.labels.join(", ")}]` : "";
+    const labels = (issue.labels ?? []).length > 0 ? ` [${(issue.labels ?? []).join(", ")}]` : "";
     lines.push(`  #${issue.number} ${issue.title} (${issue.state})${labels}`);
   }
   return lines.join("\n");
@@ -178,9 +195,9 @@ export function formatRunView(data: RunViewResult): string {
     `  created: ${data.createdAt}`,
     `  ${data.url}`,
   ];
-  if (data.jobs.length > 0) {
+  if ((data.jobs ?? []).length > 0) {
     lines.push(`  jobs:`);
-    for (const j of data.jobs) {
+    for (const j of data.jobs ?? []) {
       lines.push(`    ${j.name}: ${j.status} (${j.conclusion ?? "pending"})`);
     }
   }
@@ -233,7 +250,7 @@ export function compactPrViewMap(data: PrViewResult): PrViewCompact {
     additions: data.additions,
     deletions: data.deletions,
     changedFiles: data.changedFiles,
-    checksTotal: data.checks.length,
+    checksTotal: (data.checks ?? []).length,
   };
 }
 
@@ -372,7 +389,7 @@ export function compactRunViewMap(data: RunViewResult): RunViewCompact {
     conclusion: data.conclusion,
     workflowName: data.workflowName,
     headBranch: data.headBranch,
-    jobsTotal: data.jobs.length,
+    jobsTotal: (data.jobs ?? []).length,
     url: data.url,
   };
 }
@@ -447,7 +464,7 @@ export function formatReleaseList(data: ReleaseListResult): string {
       .filter(Boolean)
       .join(", ");
     const suffix = flags ? ` (${flags})` : "";
-    lines.push(`  ${r.tag} ${r.name}${suffix} — ${r.publishedAt}`);
+    lines.push(`  ${r.tag} ${r.name}${suffix} — ${r.publishedAt ?? ""}`);
   }
   return lines.join("\n");
 }

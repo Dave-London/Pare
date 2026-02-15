@@ -91,7 +91,7 @@ export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
 
 /** Zod schema for structured go env output with environment variables and key fields. */
 export const GoEnvResultSchema = z.object({
-  vars: z.record(z.string(), z.string()),
+  vars: z.record(z.string(), z.string()).optional(),
   goroot: z.string(),
   gopath: z.string(),
   goversion: z.string(),
@@ -111,7 +111,7 @@ export const GoListPackageSchema = z.object({
 
 /** Zod schema for structured go list output with package list and total count. */
 export const GoListResultSchema = z.object({
-  packages: z.array(GoListPackageSchema),
+  packages: z.array(GoListPackageSchema).optional(),
   total: z.number(),
 });
 

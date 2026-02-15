@@ -319,9 +319,17 @@ export const GitLogGraphEntrySchema = z.object({
   refs: z.string().optional(),
 });
 
+/** Zod schema for a compact log-graph commit entry with abbreviated keys. */
+export const GitLogGraphCompactEntrySchema = z.object({
+  g: z.string(),
+  h: z.string(),
+  m: z.string(),
+  r: z.string().optional(),
+});
+
 /** Zod schema for structured git log --graph output with commits array and total count. */
 export const GitLogGraphSchema = z.object({
-  commits: z.array(GitLogGraphEntrySchema),
+  commits: z.union([z.array(GitLogGraphEntrySchema), z.array(GitLogGraphCompactEntrySchema)]),
   total: z.number(),
 });
 

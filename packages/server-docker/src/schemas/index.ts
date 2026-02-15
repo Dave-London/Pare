@@ -6,15 +6,19 @@ export const ContainerSchema = z.object({
   name: z.string(),
   image: z.string(),
   status: z.string(),
-  state: z.enum(["running", "exited", "paused", "restarting", "dead", "created", "removing"]),
-  ports: z.array(
-    z.object({
-      host: z.number().optional(),
-      container: z.number(),
-      protocol: z.enum(["tcp", "udp"]),
-    }),
-  ),
-  created: z.string(),
+  state: z
+    .enum(["running", "exited", "paused", "restarting", "dead", "created", "removing"])
+    .optional(),
+  ports: z
+    .array(
+      z.object({
+        host: z.number().optional(),
+        container: z.number(),
+        protocol: z.enum(["tcp", "udp"]),
+      }),
+    )
+    .optional(),
+  created: z.string().optional(),
 });
 
 /** Zod schema for structured docker ps output with container list and running/stopped counts. */
@@ -33,7 +37,8 @@ export const DockerBuildSchema = z.object({
   imageId: z.string().optional(),
   duration: z.number(),
   steps: z.number().optional(),
-  errors: z.array(z.string()),
+  errors: z.array(z.string()).optional(),
+  errorCount: z.number().optional(),
 });
 
 export type DockerBuild = z.infer<typeof DockerBuildSchema>;
@@ -41,10 +46,12 @@ export type DockerBuild = z.infer<typeof DockerBuildSchema>;
 /** Zod schema for structured docker logs output with container name, log lines, and total count. */
 export const DockerLogsSchema = z.object({
   container: z.string(),
-  lines: z.array(z.string()),
+  lines: z.array(z.string()).optional(),
   total: z.number(),
   isTruncated: z.boolean().optional(),
   totalLines: z.number().optional(),
+  head: z.array(z.string()).optional(),
+  tail: z.array(z.string()).optional(),
 });
 
 export type DockerLogs = z.infer<typeof DockerLogsSchema>;
@@ -55,7 +62,7 @@ export const ImageSchema = z.object({
   repository: z.string(),
   tag: z.string(),
   size: z.string(),
-  created: z.string(),
+  created: z.string().optional(),
 });
 
 /** Zod schema for structured docker images output with image list and total count. */
@@ -79,8 +86,8 @@ export type DockerRun = z.infer<typeof DockerRunSchema>;
 /** Zod schema for structured docker exec output with exit code, stdout, stderr, and success flag. */
 export const DockerExecSchema = z.object({
   exitCode: z.number(),
-  stdout: z.string(),
-  stderr: z.string(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
   success: z.boolean(),
 });
 
@@ -89,7 +96,7 @@ export type DockerExec = z.infer<typeof DockerExecSchema>;
 /** Zod schema for structured docker compose up output with service list and started count. */
 export const DockerComposeUpSchema = z.object({
   success: z.boolean(),
-  services: z.array(z.string()),
+  services: z.array(z.string()).optional(),
   started: z.number(),
 });
 
@@ -118,24 +125,28 @@ export type DockerPull = z.infer<typeof DockerPullSchema>;
 export const DockerInspectSchema = z.object({
   id: z.string(),
   name: z.string(),
-  state: z.object({
-    status: z.string(),
-    running: z.boolean(),
-    startedAt: z.string().optional(),
-  }),
+  state: z
+    .object({
+      status: z.string(),
+      running: z.boolean(),
+      startedAt: z.string().optional(),
+    })
+    .optional(),
   image: z.string(),
   platform: z.string().optional(),
-  created: z.string(),
+  created: z.string().optional(),
+  status: z.string().optional(),
+  running: z.boolean().optional(),
 });
 
 export type DockerInspect = z.infer<typeof DockerInspectSchema>;
 
 /** Zod schema for a single Docker network entry. */
 export const NetworkSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
   driver: z.string(),
-  scope: z.string(),
+  scope: z.string().optional(),
 });
 
 /** Zod schema for structured docker network ls output. */
@@ -150,8 +161,8 @@ export type DockerNetworkLs = z.infer<typeof DockerNetworkLsSchema>;
 export const VolumeSchema = z.object({
   name: z.string(),
   driver: z.string(),
-  mountpoint: z.string(),
-  scope: z.string(),
+  mountpoint: z.string().optional(),
+  scope: z.string().optional(),
 });
 
 /** Zod schema for structured docker volume ls output. */
@@ -167,7 +178,7 @@ export const ComposeServiceSchema = z.object({
   name: z.string(),
   service: z.string(),
   state: z.string(),
-  status: z.string(),
+  status: z.string().optional(),
   ports: z.string().optional(),
 });
 
@@ -189,10 +200,26 @@ export const ComposeLogEntrySchema = z.object({
 /** Zod schema for structured docker compose logs output with service-separated log entries. */
 export const DockerComposeLogsSchema = z.object({
   services: z.array(z.string()),
-  entries: z.array(ComposeLogEntrySchema),
+  entries: z.array(ComposeLogEntrySchema).optional(),
   total: z.number(),
   isTruncated: z.boolean().optional(),
   totalEntries: z.number().optional(),
+  head: z
+    .array(
+      z.object({
+        service: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
+  tail: z
+    .array(
+      z.object({
+        service: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export type DockerComposeLogs = z.infer<typeof DockerComposeLogsSchema>;
@@ -208,7 +235,7 @@ export const ComposeBuildServiceSchema = z.object({
 /** Zod schema for structured docker compose build output with per-service build status. */
 export const DockerComposeBuildSchema = z.object({
   success: z.boolean(),
-  services: z.array(ComposeBuildServiceSchema),
+  services: z.array(ComposeBuildServiceSchema).optional(),
   built: z.number(),
   failed: z.number(),
   duration: z.number(),
@@ -220,11 +247,11 @@ export const ContainerStatsSchema = z.object({
   id: z.string(),
   name: z.string(),
   cpuPercent: z.number(),
-  memoryUsage: z.string(),
-  memoryLimit: z.string(),
+  memoryUsage: z.string().optional(),
+  memoryLimit: z.string().optional(),
   memoryPercent: z.number(),
-  netIO: z.string(),
-  blockIO: z.string(),
+  netIO: z.string().optional(),
+  blockIO: z.string().optional(),
   pids: z.number(),
 });
 

@@ -17,10 +17,11 @@ export function formatHttpResponse(data: HttpResponse): string {
 
   lines.push(`Size: ${data.size} bytes | Time: ${data.timing.total.toFixed(3)}s`);
 
-  const headerCount = Object.keys(data.headers).length;
+  const headers = data.headers ?? {};
+  const headerCount = Object.keys(headers).length;
   lines.push(`Headers: ${headerCount}`);
 
-  for (const [key, value] of Object.entries(data.headers)) {
+  for (const [key, value] of Object.entries(headers)) {
     lines.push(`  ${key}: ${value}`);
   }
 
@@ -45,10 +46,11 @@ export function formatHttpHeadResponse(data: HttpHeadResponse): string {
 
   lines.push(`Time: ${data.timing.total.toFixed(3)}s`);
 
-  const headerCount = Object.keys(data.headers).length;
+  const headers = data.headers ?? {};
+  const headerCount = Object.keys(headers).length;
   lines.push(`Headers: ${headerCount}`);
 
-  for (const [key, value] of Object.entries(data.headers)) {
+  for (const [key, value] of Object.entries(headers)) {
     lines.push(`  ${key}: ${value}`);
   }
 
