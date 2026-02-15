@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { writeFileSync, unlinkSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { run, escapeCmdArg } from "../src/runner.js";
 
@@ -88,6 +88,56 @@ describe("run", () => {
     } finally {
       unlinkSync(stdinScript);
     }
+  });
+});
+
+describe("run – timeout and process cleanup", () => {
+  const FIXTURE_PATH = resolve(__dirname, "fixtures/parent-with-children.cjs");
+
+  it("kills all descendant processes on timeout", async () => {
+    // The fixture spawns a grandchild and writes its PID to a temp file.
+    // After timeout, both parent and grandchild should be killed via
+    // process group kill (detached: true + kill(-pid)).
+    const pidFile = join(tmpdir(), `pare-test-grandchild-${process.pid}-${Date.now()}.pid`);
+
+    await expect(run("node", [FIXTURE_PATH, pidFile], { timeout: 1000 })).rejects.toThrow(
+      /timed out/,
+    );
+
+    // Wait briefly for OS to clean up the process group
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Read the grandchild PID written by the fixture
+    const { readFileSync } = require("node:fs");
+    const grandchildPid = parseInt(readFileSync(pidFile, "utf-8"), 10);
+    try {
+      unlinkSync(pidFile);
+    } catch {
+      /* ignore */
+    }
+
+    // Verify grandchild is dead — process.kill(pid, 0) throws ESRCH if dead
+    expect(() => process.kill(grandchildPid, 0)).toThrow();
+  });
+
+  it("reports timeout with signal name and correct ms", async () => {
+    await expect(
+      run("node", ["-e", "setInterval(() => {}, 60000)"], { timeout: 200 }),
+    ).rejects.toThrow(/timed out after 200ms.*SIGTERM/);
+  });
+
+  it("does not kill process on normal completion", async () => {
+    const result = await run("node", ["-e", "console.log('done')"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe("done");
+  });
+
+  it("rejects when output exceeds maxBuffer", async () => {
+    // Generate 2 MB of output but set maxBuffer to 1 KB
+    const script = `process.stdout.write("x".repeat(2 * 1024 * 1024))`;
+    await expect(run("node", ["-e", script], { timeout: 10_000, maxBuffer: 1024 })).rejects.toThrow(
+      /maxBuffer/,
+    );
   });
 });
 

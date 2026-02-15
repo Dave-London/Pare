@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { spawn, execFile as nodeExecFile } from "node:child_process";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
@@ -15,6 +15,35 @@ export interface RunOptions {
    *  and `false` elsewhere. Set to `false` for native executables (e.g., git)
    *  whose args contain characters that cmd.exe would misinterpret (like `<>`). */
   shell?: boolean;
+  /** Maximum combined stdout+stderr buffer size in bytes. Defaults to 10 MB. */
+  maxBuffer?: number;
+}
+
+/**
+ * Kills an entire process group (Unix) or process tree (Windows).
+ *
+ * On Unix, `spawn({ detached: true })` calls `setsid(2)`, making the child
+ * a process group leader. Sending a signal to `-pid` reaches every process
+ * in that group, including grandchildren.
+ *
+ * On Windows, `taskkill /T /F` walks the native process tree.
+ *
+ * ESRCH (process already exited) is silently ignored.
+ */
+function killProcessGroup(pid: number): void {
+  if (process.platform === "win32") {
+    try {
+      nodeExecFile("taskkill", ["/pid", String(pid), "/T", "/F"]);
+    } catch {
+      /* best-effort */
+    }
+  } else {
+    try {
+      process.kill(-pid, "SIGTERM");
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code !== "ESRCH") throw err;
+    }
+  }
 }
 
 /** Result of a command execution, containing the exit code and ANSI-stripped stdout/stderr. */
@@ -84,11 +113,14 @@ export function escapeCmdArg(arg: string): string {
 
 /**
  * Executes a command and returns cleaned output with ANSI codes stripped.
- * Uses execFile (not exec) to avoid shell injection. On Windows, shell is
- * enabled so that .cmd/.bat wrappers (like npx) can be executed — args are
- * still passed as an array so they remain properly escaped.
+ * Uses spawn (not exec) to avoid shell injection. The child is spawned in its
+ * own process group (`detached: true` on Unix) so that on timeout we can kill
+ * the entire group — preventing orphaned grandchild processes.
  *
- * Throws on system-level errors (command not found, permission denied).
+ * On Windows, shell is enabled so that .cmd/.bat wrappers (like npx) can be
+ * executed — args are still passed as an array so they remain properly escaped.
+ *
+ * Throws on system-level errors (command not found, permission denied, timeout).
  * Normal non-zero exit codes are returned in the result, not thrown.
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
@@ -103,64 +135,129 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // See escapeCmdArg() for details on what is escaped and why.
     const safeArgs = useShell && process.platform === "win32" ? args.map(escapeCmdArg) : args;
 
-    const child = execFile(
-      cmd,
-      safeArgs,
-      {
-        cwd: opts?.cwd,
-        timeout: opts?.timeout ?? 60_000,
-        env: opts?.env ? { ...process.env, ...opts.env } : undefined,
-        maxBuffer: 10 * 1024 * 1024, // 10 MB
-        shell: useShell,
-      },
-      (error, stdout, stderr) => {
-        if (error) {
-          const errno = error as NodeJS.ErrnoException;
+    const child = spawn(cmd, safeArgs, {
+      cwd: opts?.cwd,
+      env: opts?.env ? { ...process.env, ...opts.env } : undefined,
+      shell: useShell,
+      // Unix: creates a new process group via setsid(2) so we can kill the
+      // entire group on timeout (prevents orphaned grandchild processes).
+      // Windows: skip — detached on Windows creates a visible console window,
+      // not a process group. Use taskkill /T /F instead.
+      detached: process.platform !== "win32",
+      windowsHide: true,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
 
-          // Unix: direct ENOENT from execFile (no shell wrapping)
-          if (errno.code === "ENOENT") {
-            reject(
-              new Error(
-                `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
-              ),
-            );
-            return;
-          }
-          if (errno.code === "EACCES" || errno.code === "EPERM") {
-            reject(new Error(`Permission denied executing "${cmd}": ${errno.message}`));
-            return;
-          }
+    // --- Buffer accumulation (replaces execFile's maxBuffer) ---
+    const maxBuffer = opts?.maxBuffer ?? 10 * 1024 * 1024; // 10 MB
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutLen = 0;
+    let stderrLen = 0;
+    let bufferExceeded = false;
 
-          // Timeout: execFile killed the child after the configured timeout.
-          // Surface this clearly instead of silently returning exitCode 1.
-          if (error.killed && error.signal) {
-            reject(
-              new Error(
-                `Command "${cmd}" timed out after ${opts?.timeout ?? 60_000}ms and was killed (${error.signal}).`,
-              ),
-            );
-            return;
-          }
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdoutLen += chunk.length;
+      if (stdoutLen + stderrLen > maxBuffer && !bufferExceeded) {
+        bufferExceeded = true;
+        killProcessGroup(child.pid!);
+        return;
+      }
+      if (!bufferExceeded) stdoutChunks.push(chunk);
+    });
 
-          // Windows: cmd.exe masks ENOENT — detect via stderr message
-          const cleanStderr = stripAnsi(stderr);
-          if (cleanStderr.includes("is not recognized")) {
-            reject(
-              new Error(
-                `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
-              ),
-            );
-            return;
-          }
-        }
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderrLen += chunk.length;
+      if (stdoutLen + stderrLen > maxBuffer && !bufferExceeded) {
+        bufferExceeded = true;
+        killProcessGroup(child.pid!);
+        return;
+      }
+      if (!bufferExceeded) stderrChunks.push(chunk);
+    });
 
-        resolve({
-          exitCode: error ? (typeof error.code === "number" ? error.code : 1) : 0,
-          stdout: stripAnsi(stdout),
-          stderr: sanitizeErrorOutput(stripAnsi(stderr)),
-        });
-      },
-    );
+    // --- Timeout handling (replaces execFile's timeout) ---
+    let timedOut = false;
+    let timeoutSignal: string | undefined;
+    const timeoutMs = opts?.timeout ?? 60_000;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      timeoutSignal = "SIGTERM";
+      killProcessGroup(child.pid!);
+    }, timeoutMs);
+
+    // --- Settlement guard (prevents double-resolve from close + error) ---
+    let settled = false;
+
+    // Handle spawn errors (ENOENT, EACCES on Unix — spawn emits these as
+    // 'error' events, unlike execFile which passes them to the callback).
+    child.on("error", (err: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      if (settled) return;
+      settled = true;
+
+      if (err.code === "ENOENT") {
+        reject(
+          new Error(
+            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+          ),
+        );
+        return;
+      }
+      if (err.code === "EACCES" || err.code === "EPERM") {
+        reject(new Error(`Permission denied executing "${cmd}": ${err.message}`));
+        return;
+      }
+
+      reject(err);
+    });
+
+    // Resolve on 'close' (not 'exit') — close fires after ALL stdio streams
+    // are flushed, guaranteeing no late data events.
+    child.on("close", (code, signal) => {
+      clearTimeout(timer);
+      if (settled) return;
+      settled = true;
+
+      const stdout = stripAnsi(Buffer.concat(stdoutChunks).toString("utf-8"));
+      const stderr = sanitizeErrorOutput(stripAnsi(Buffer.concat(stderrChunks).toString("utf-8")));
+
+      // Timeout: we killed the process group after the configured timeout.
+      if (timedOut) {
+        reject(
+          new Error(
+            `Command "${cmd}" timed out after ${timeoutMs}ms and was killed (${timeoutSignal ?? signal ?? "SIGTERM"}).`,
+          ),
+        );
+        return;
+      }
+
+      // maxBuffer exceeded
+      if (bufferExceeded) {
+        reject(
+          new Error(
+            `Command "${cmd}" output exceeded maxBuffer (${maxBuffer} bytes) and was killed.`,
+          ),
+        );
+        return;
+      }
+
+      // Windows: cmd.exe masks ENOENT — detect via stderr message
+      if (code !== 0 && stderr.includes("is not recognized")) {
+        reject(
+          new Error(
+            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+          ),
+        );
+        return;
+      }
+
+      resolve({
+        exitCode: code ?? 1,
+        stdout,
+        stderr,
+      });
+    });
 
     // Pipe stdin data if provided, then close the stream so the child
     // process knows input is complete (e.g., `git commit --file -`).
