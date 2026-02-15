@@ -6,6 +6,7 @@ import { registerLogsTool } from "./logs.js";
 import { registerApplyTool } from "./apply.js";
 import { registerHelmTool } from "./helm.js";
 
+/** Registers all Kubernetes tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("k8s", name);
   if (s("get")) registerGetTool(server);

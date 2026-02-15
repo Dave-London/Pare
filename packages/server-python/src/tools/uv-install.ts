@@ -6,6 +6,7 @@ import { parseUvInstall } from "../lib/parsers.js";
 import { formatUvInstall, compactUvInstallMap, formatUvInstallCompact } from "../lib/formatters.js";
 import { UvInstallSchema } from "../schemas/index.js";
 
+/** Registers the `uv-install` tool on the given MCP server. */
 export function registerUvInstallTool(server: McpServer) {
   server.registerTool(
     "uv-install",

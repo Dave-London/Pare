@@ -6,6 +6,7 @@ import { parsePytestOutput } from "../lib/parsers.js";
 import { formatPytest, compactPytestMap, formatPytestCompact } from "../lib/formatters.js";
 import { PytestResultSchema } from "../schemas/index.js";
 
+/** Registers the `pytest` tool on the given MCP server. */
 export function registerPytestTool(server: McpServer) {
   server.registerTool(
     "pytest",

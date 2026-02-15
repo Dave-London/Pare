@@ -8,6 +8,7 @@ import { PrChecksResultSchema } from "../schemas/index.js";
 
 const PR_CHECKS_FIELDS = "name,state,bucket,description,event,workflow,link,startedAt,completedAt";
 
+/** Registers the `pr-checks` tool on the given MCP server. */
 export function registerPrChecksTool(server: McpServer) {
   server.registerTool(
     "pr-checks",

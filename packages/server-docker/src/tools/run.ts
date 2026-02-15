@@ -7,6 +7,7 @@ import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js
 import { DockerRunSchema } from "../schemas/index.js";
 import { assertValidPortMapping, assertSafeVolumeMount } from "../lib/validation.js";
 
+/** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",

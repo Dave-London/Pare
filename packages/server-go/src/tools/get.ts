@@ -6,6 +6,7 @@ import { parseGoGetOutput } from "../lib/parsers.js";
 import { formatGoGet, compactGetMap, formatGetCompact } from "../lib/formatters.js";
 import { GoGetResultSchema } from "../schemas/index.js";
 
+/** Registers the `get` tool on the given MCP server. */
 export function registerGetTool(server: McpServer) {
   server.registerTool(
     "get",

@@ -10,6 +10,7 @@ import { GitShowSchema } from "../schemas/index.js";
 const DELIMITER = "@@";
 const SHOW_FORMAT = `%H${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%B`;
 
+/** Registers the `show` tool on the given MCP server. */
 export function registerShowTool(server: McpServer) {
   server.registerTool(
     "show",

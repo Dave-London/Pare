@@ -6,6 +6,7 @@ import { parseCargoTestOutput } from "../lib/parsers.js";
 import { formatCargoTest, compactTestMap, formatTestCompact } from "../lib/formatters.js";
 import { CargoTestResultSchema } from "../schemas/index.js";
 
+/** Registers the `test` tool on the given MCP server. */
 export function registerTestTool(server: McpServer) {
   server.registerTool(
     "test",

@@ -12,6 +12,7 @@ import { HttpResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
 
+/** Registers the `post` tool on the given MCP server. */
 export function registerPostTool(server: McpServer) {
   server.registerTool(
     "post",

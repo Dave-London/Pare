@@ -6,6 +6,7 @@ import { parseEsbuildOutput } from "../lib/parsers.js";
 import { formatEsbuild, compactEsbuildMap, formatEsbuildCompact } from "../lib/formatters.js";
 import { EsbuildResultSchema } from "../schemas/index.js";
 
+/** Registers the `esbuild` tool on the given MCP server. */
 export function registerEsbuildTool(server: McpServer) {
   server.registerTool(
     "esbuild",

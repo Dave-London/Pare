@@ -6,6 +6,7 @@ import { parseGoEnvOutput } from "../lib/parsers.js";
 import { formatGoEnv, compactEnvMap, formatEnvCompact } from "../lib/formatters.js";
 import { GoEnvResultSchema } from "../schemas/index.js";
 
+/** Registers the `env` tool on the given MCP server. */
 export function registerEnvTool(server: McpServer) {
   server.registerTool(
     "env",

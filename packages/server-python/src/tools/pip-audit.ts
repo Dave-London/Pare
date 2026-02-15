@@ -5,6 +5,7 @@ import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit, compactPipAuditMap, formatPipAuditCompact } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";
 
+/** Registers the `pip-audit` tool on the given MCP server. */
 export function registerPipAuditTool(server: McpServer) {
   server.registerTool(
     "pip-audit",

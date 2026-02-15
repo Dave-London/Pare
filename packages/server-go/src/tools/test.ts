@@ -6,6 +6,7 @@ import { parseGoTestJson } from "../lib/parsers.js";
 import { formatGoTest, compactTestMap, formatTestCompact } from "../lib/formatters.js";
 import { GoTestResultSchema } from "../schemas/index.js";
 
+/** Registers the `test` tool on the given MCP server. */
 export function registerTestTool(server: McpServer) {
   server.registerTool(
     "test",

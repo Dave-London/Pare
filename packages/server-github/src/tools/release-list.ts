@@ -12,6 +12,7 @@ import { ReleaseListResultSchema } from "../schemas/index.js";
 
 const RELEASE_LIST_FIELDS = "tagName,name,isDraft,isPrerelease,publishedAt,url";
 
+/** Registers the `release-list` tool on the given MCP server. */
 export function registerReleaseListTool(server: McpServer) {
   server.registerTool(
     "release-list",

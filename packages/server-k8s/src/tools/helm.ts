@@ -28,6 +28,7 @@ import {
   HelmUpgradeResultSchema,
 } from "../schemas/index.js";
 
+/** Registers the `helm` tool on the given MCP server. */
 export function registerHelmTool(server: McpServer) {
   server.registerTool(
     "helm",

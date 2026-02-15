@@ -6,6 +6,7 @@ import { parsePoetryOutput } from "../lib/parsers.js";
 import { formatPoetry, compactPoetryMap, formatPoetryCompact } from "../lib/formatters.js";
 import { PoetryResultSchema } from "../schemas/index.js";
 
+/** Registers the `poetry` tool on the given MCP server. */
 export function registerPoetryTool(server: McpServer) {
   server.registerTool(
     "poetry",

@@ -8,6 +8,7 @@ import { IssueViewResultSchema } from "../schemas/index.js";
 
 const ISSUE_VIEW_FIELDS = "number,state,title,body,labels,assignees,url,createdAt";
 
+/** Registers the `issue-view` tool on the given MCP server. */
 export function registerIssueViewTool(server: McpServer) {
   server.registerTool(
     "issue-view",

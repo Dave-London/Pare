@@ -6,6 +6,7 @@ import { parsePush } from "../lib/parsers.js";
 import { formatPush } from "../lib/formatters.js";
 import { GitPushSchema } from "../schemas/index.js";
 
+/** Registers the `push` tool on the given MCP server. */
 export function registerPushTool(server: McpServer) {
   server.registerTool(
     "push",

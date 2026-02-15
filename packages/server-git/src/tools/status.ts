@@ -6,6 +6,7 @@ import { parseStatus } from "../lib/parsers.js";
 import { formatStatus } from "../lib/formatters.js";
 import { GitStatusSchema } from "../schemas/index.js";
 
+/** Registers the `status` tool on the given MCP server. */
 export function registerStatusTool(server: McpServer) {
   server.registerTool(
     "status",

@@ -6,6 +6,7 @@ import { parseMerge, parseMergeAbort } from "../lib/parsers.js";
 import { formatMerge } from "../lib/formatters.js";
 import { GitMergeSchema } from "../schemas/index.js";
 
+/** Registers the `merge` tool on the given MCP server. */
 export function registerMergeTool(server: McpServer) {
   server.registerTool(
     "merge",

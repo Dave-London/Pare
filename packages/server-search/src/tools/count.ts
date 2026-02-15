@@ -6,6 +6,7 @@ import { parseRgCountOutput } from "../lib/parsers.js";
 import { formatCount, compactCountMap, formatCountCompact } from "../lib/formatters.js";
 import { CountResultSchema } from "../schemas/index.js";
 
+/** Registers the `count` tool on the given MCP server. */
 export function registerCountTool(server: McpServer) {
   server.registerTool(
     "count",

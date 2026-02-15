@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { PipInstallSchema } from "../schemas/index.js";
 
+/** Registers the `pip-install` tool on the given MCP server. */
 export function registerPipInstallTool(server: McpServer) {
   server.registerTool(
     "pip-install",

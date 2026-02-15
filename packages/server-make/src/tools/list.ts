@@ -6,6 +6,7 @@ import { parseJustList, parseMakeTargets, buildListResult } from "../lib/parsers
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { MakeListResultSchema } from "../schemas/index.js";
 
+/** Registers the `list` tool on the given MCP server. */
 export function registerListTool(server: McpServer) {
   server.registerTool(
     "list",

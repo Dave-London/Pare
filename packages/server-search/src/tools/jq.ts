@@ -6,6 +6,7 @@ import { parseJqOutput } from "../lib/parsers.js";
 import { formatJq, compactJqMap, formatJqCompact } from "../lib/formatters.js";
 import { JqResultSchema } from "../schemas/index.js";
 
+/** Registers the `jq` tool on the given MCP server. */
 export function registerJqTool(server: McpServer) {
   server.registerTool(
     "jq",

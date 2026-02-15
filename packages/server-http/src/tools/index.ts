@@ -5,6 +5,7 @@ import { registerGetTool } from "./get.js";
 import { registerPostTool } from "./post.js";
 import { registerHeadTool } from "./head.js";
 
+/** Registers all HTTP tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("http", name);
   if (s("request")) registerRequestTool(server);

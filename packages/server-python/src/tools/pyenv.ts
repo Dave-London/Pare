@@ -8,6 +8,7 @@ import { PyenvResultSchema } from "../schemas/index.js";
 
 const ACTIONS = ["versions", "version", "install", "local", "global"] as const;
 
+/** Registers the `pyenv` tool on the given MCP server. */
 export function registerPyenvTool(server: McpServer) {
   server.registerTool(
     "pyenv",

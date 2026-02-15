@@ -6,6 +6,7 @@ import { parsePrCreate } from "../lib/parsers.js";
 import { formatPrCreate } from "../lib/formatters.js";
 import { PrCreateResultSchema } from "../schemas/index.js";
 
+/** Registers the `pr-create` tool on the given MCP server. */
 export function registerPrCreateTool(server: McpServer) {
   server.registerTool(
     "pr-create",

@@ -6,6 +6,7 @@ import { parseTurboOutput } from "../lib/parsers.js";
 import { formatTurbo, compactTurboMap, formatTurboCompact } from "../lib/formatters.js";
 import { TurboResultSchema } from "../schemas/index.js";
 
+/** Registers the `turbo` tool on the given MCP server. */
 export function registerTurboTool(server: McpServer) {
   server.registerTool(
     "turbo",

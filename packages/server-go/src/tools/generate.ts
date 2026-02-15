@@ -6,6 +6,7 @@ import { parseGoGenerateOutput } from "../lib/parsers.js";
 import { formatGoGenerate, compactGenerateMap, formatGenerateCompact } from "../lib/formatters.js";
 import { GoGenerateResultSchema } from "../schemas/index.js";
 
+/** Registers the `generate` tool on the given MCP server. */
 export function registerGenerateTool(server: McpServer) {
   server.registerTool(
     "generate",

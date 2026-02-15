@@ -6,6 +6,7 @@ import { parseAdd } from "../lib/parsers.js";
 import { formatAdd } from "../lib/formatters.js";
 import { GitAddSchema } from "../schemas/index.js";
 
+/** Registers the `add` tool on the given MCP server. */
 export function registerAddTool(server: McpServer) {
   server.registerTool(
     "add",

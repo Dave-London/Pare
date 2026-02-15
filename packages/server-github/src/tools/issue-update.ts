@@ -6,6 +6,7 @@ import { parseIssueUpdate } from "../lib/parsers.js";
 import { formatIssueUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
+/** Registers the `issue-update` tool on the given MCP server. */
 export function registerIssueUpdateTool(server: McpServer) {
   server.registerTool(
     "issue-update",

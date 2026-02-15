@@ -10,6 +10,7 @@ import { packageManagerInput } from "../lib/pm-input.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+/** Registers the `init` tool on the given MCP server. */
 export function registerInitTool(server: McpServer) {
   server.registerTool(
     "init",

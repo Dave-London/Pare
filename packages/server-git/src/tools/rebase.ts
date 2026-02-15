@@ -6,6 +6,7 @@ import { parseRebase } from "../lib/parsers.js";
 import { formatRebase } from "../lib/formatters.js";
 import { GitRebaseSchema } from "../schemas/index.js";
 
+/** Registers the `rebase` tool on the given MCP server. */
 export function registerRebaseTool(server: McpServer) {
   server.registerTool(
     "rebase",

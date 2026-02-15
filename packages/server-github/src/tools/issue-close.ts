@@ -6,6 +6,7 @@ import { parseIssueClose } from "../lib/parsers.js";
 import { formatIssueClose } from "../lib/formatters.js";
 import { IssueCloseResultSchema } from "../schemas/index.js";
 
+/** Registers the `issue-close` tool on the given MCP server. */
 export function registerIssueCloseTool(server: McpServer) {
   server.registerTool(
     "issue-close",

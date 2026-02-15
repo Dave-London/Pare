@@ -23,6 +23,7 @@ import { registerReleaseCreateTool } from "./release-create.js";
 import { registerGistCreateTool } from "./gist-create.js";
 import { registerReleaseListTool } from "./release-list.js";
 
+/** Registers all GitHub tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("github", name);
   if (s("pr-view")) registerPrViewTool(server);

@@ -6,6 +6,7 @@ import { parseCherryPick } from "../lib/parsers.js";
 import { formatCherryPick } from "../lib/formatters.js";
 import { GitCherryPickSchema } from "../schemas/index.js";
 
+/** Registers the `cherry-pick` tool on the given MCP server. */
 export function registerCherryPickTool(server: McpServer) {
   server.registerTool(
     "cherry-pick",

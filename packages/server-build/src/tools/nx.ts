@@ -6,6 +6,7 @@ import { parseNxOutput } from "../lib/parsers.js";
 import { formatNx, compactNxMap, formatNxCompact } from "../lib/formatters.js";
 import { NxResultSchema } from "../schemas/index.js";
 
+/** Registers the `nx` tool on the given MCP server. */
 export function registerNxTool(server: McpServer) {
   server.registerTool(
     "nx",

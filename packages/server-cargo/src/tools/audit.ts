@@ -6,6 +6,7 @@ import { parseCargoAuditJson } from "../lib/parsers.js";
 import { formatCargoAudit, compactAuditMap, formatAuditCompact } from "../lib/formatters.js";
 import { CargoAuditResultSchema } from "../schemas/index.js";
 
+/** Registers the `audit` tool on the given MCP server. */
 export function registerAuditTool(server: McpServer) {
   server.registerTool(
     "audit",

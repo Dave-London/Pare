@@ -6,6 +6,7 @@ import { parsePrUpdate } from "../lib/parsers.js";
 import { formatPrUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
+/** Registers the `pr-update` tool on the given MCP server. */
 export function registerPrUpdateTool(server: McpServer) {
   server.registerTool(
     "pr-update",

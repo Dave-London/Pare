@@ -8,6 +8,7 @@ import { formatRun } from "../lib/formatters.js";
 import { NpmRunSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
+/** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",

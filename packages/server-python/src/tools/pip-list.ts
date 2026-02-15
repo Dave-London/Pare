@@ -6,6 +6,7 @@ import { parsePipListJson } from "../lib/parsers.js";
 import { formatPipList, compactPipListMap, formatPipListCompact } from "../lib/formatters.js";
 import { PipListSchema } from "../schemas/index.js";
 
+/** Registers the `pip-list` tool on the given MCP server. */
 export function registerPipListTool(server: McpServer) {
   server.registerTool(
     "pip-list",

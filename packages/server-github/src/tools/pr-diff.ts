@@ -7,6 +7,7 @@ import { parsePrDiffNumstat } from "../lib/parsers.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../lib/formatters.js";
 import { PrDiffResultSchema } from "../schemas/index.js";
 
+/** Registers the `pr-diff` tool on the given MCP server. */
 export function registerPrDiffTool(server: McpServer) {
   server.registerTool(
     "pr-diff",

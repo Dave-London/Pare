@@ -12,6 +12,7 @@ import { HttpHeadResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
 
+/** Registers the `head` tool on the given MCP server. */
 export function registerHeadTool(server: McpServer) {
   server.registerTool(
     "head",

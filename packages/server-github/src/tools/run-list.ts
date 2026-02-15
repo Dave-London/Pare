@@ -8,6 +8,7 @@ import { RunListResultSchema } from "../schemas/index.js";
 
 const RUN_LIST_FIELDS = "databaseId,status,conclusion,name,workflowName,headBranch,url,createdAt";
 
+/** Registers the `run-list` tool on the given MCP server. */
 export function registerRunListTool(server: McpServer) {
   server.registerTool(
     "run-list",

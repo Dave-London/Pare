@@ -6,6 +6,7 @@ import { parseGoBuildOutput } from "../lib/parsers.js";
 import { formatGoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { GoBuildResultSchema } from "../schemas/index.js";
 
+/** Registers the `build` tool on the given MCP server. */
 export function registerBuildTool(server: McpServer) {
   server.registerTool(
     "build",

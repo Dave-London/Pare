@@ -7,6 +7,7 @@ import { parseLogGraph } from "../lib/parsers.js";
 import { formatLogGraph, compactLogGraphMap, formatLogGraphCompact } from "../lib/formatters.js";
 import { GitLogGraphSchema } from "../schemas/index.js";
 
+/** Registers the `log-graph` tool on the given MCP server. */
 export function registerLogGraphTool(server: McpServer) {
   server.registerTool(
     "log-graph",

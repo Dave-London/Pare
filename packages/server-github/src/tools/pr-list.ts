@@ -8,6 +8,7 @@ import { PrListResultSchema } from "../schemas/index.js";
 
 const PR_LIST_FIELDS = "number,state,title,url,headRefName,author";
 
+/** Registers the `pr-list` tool on the given MCP server. */
 export function registerPrListTool(server: McpServer) {
   server.registerTool(
     "pr-list",

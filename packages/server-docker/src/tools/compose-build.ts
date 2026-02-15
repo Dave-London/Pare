@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { DockerComposeBuildSchema } from "../schemas/index.js";
 
+/** Registers the `compose-build` tool on the given MCP server. */
 export function registerComposeBuildTool(server: McpServer) {
   server.registerTool(
     "compose-build",

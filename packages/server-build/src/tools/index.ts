@@ -8,6 +8,7 @@ import { registerWebpackTool } from "./webpack.js";
 import { registerTurboTool } from "./turbo.js";
 import { registerNxTool } from "./nx.js";
 
+/** Registers all build tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("build", name);
   if (s("tsc")) registerTscTool(server);

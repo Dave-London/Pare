@@ -6,6 +6,7 @@ import { parsePullOutput } from "../lib/parsers.js";
 import { formatPull, compactPullMap, formatPullCompact } from "../lib/formatters.js";
 import { DockerPullSchema } from "../schemas/index.js";
 
+/** Registers the `pull` tool on the given MCP server. */
 export function registerPullTool(server: McpServer) {
   server.registerTool(
     "pull",

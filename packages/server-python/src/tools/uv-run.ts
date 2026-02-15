@@ -6,6 +6,7 @@ import { parseUvRun } from "../lib/parsers.js";
 import { formatUvRun, compactUvRunMap, formatUvRunCompact } from "../lib/formatters.js";
 import { UvRunSchema } from "../schemas/index.js";
 
+/** Registers the `uv-run` tool on the given MCP server. */
 export function registerUvRunTool(server: McpServer) {
   server.registerTool(
     "uv-run",

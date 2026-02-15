@@ -6,6 +6,7 @@ import { parseStatsJson } from "../lib/parsers.js";
 import { formatStats, compactStatsMap, formatStatsCompact } from "../lib/formatters.js";
 import { DockerStatsSchema } from "../schemas/index.js";
 
+/** Registers the `stats` tool on the given MCP server. */
 export function registerStatsTool(server: McpServer) {
   server.registerTool(
     "stats",

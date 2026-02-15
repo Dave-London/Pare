@@ -6,6 +6,7 @@ import { parseFdOutput } from "../lib/parsers.js";
 import { formatFind, compactFindMap, formatFindCompact } from "../lib/formatters.js";
 import { FindResultSchema } from "../schemas/index.js";
 
+/** Registers the `find` tool on the given MCP server. */
 export function registerFindTool(server: McpServer) {
   server.registerTool(
     "find",

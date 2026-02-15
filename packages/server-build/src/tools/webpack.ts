@@ -6,6 +6,7 @@ import { parseWebpackOutput } from "../lib/parsers.js";
 import { formatWebpack, compactWebpackMap, formatWebpackCompact } from "../lib/formatters.js";
 import { WebpackResultSchema } from "../schemas/index.js";
 
+/** Registers the `webpack` tool on the given MCP server. */
 export function registerWebpackTool(server: McpServer) {
   server.registerTool(
     "webpack",

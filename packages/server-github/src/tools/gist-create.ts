@@ -6,6 +6,7 @@ import { parseGistCreate } from "../lib/parsers.js";
 import { formatGistCreate } from "../lib/formatters.js";
 import { GistCreateResultSchema } from "../schemas/index.js";
 
+/** Registers the `gist-create` tool on the given MCP server. */
 export function registerGistCreateTool(server: McpServer) {
   server.registerTool(
     "gist-create",

@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { FormatWriteResultSchema } from "../schemas/index.js";
 
+/** Registers the `prettier-format` tool on the given MCP server. */
 export function registerPrettierFormatTool(server: McpServer) {
   server.registerTool(
     "prettier-format",

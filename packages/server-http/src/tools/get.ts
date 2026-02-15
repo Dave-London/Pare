@@ -12,6 +12,7 @@ import { HttpResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
 
+/** Registers the `get` tool on the given MCP server. */
 export function registerGetTool(server: McpServer) {
   server.registerTool(
     "get",

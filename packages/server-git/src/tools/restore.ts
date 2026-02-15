@@ -6,6 +6,7 @@ import { parseRestore } from "../lib/parsers.js";
 import { formatRestore } from "../lib/formatters.js";
 import { GitRestoreSchema } from "../schemas/index.js";
 
+/** Registers the `restore` tool on the given MCP server. */
 export function registerRestoreTool(server: McpServer) {
   server.registerTool(
     "restore",

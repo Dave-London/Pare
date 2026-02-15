@@ -8,6 +8,7 @@ import { formatAudit } from "../lib/formatters.js";
 import { NpmAuditSchema } from "../schemas/index.js";
 import { packageManagerInput } from "../lib/pm-input.js";
 
+/** Registers the `audit` tool on the given MCP server. */
 export function registerAuditTool(server: McpServer) {
   server.registerTool(
     "audit",

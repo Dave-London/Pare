@@ -6,6 +6,7 @@ import { parseCargoUpdateOutput } from "../lib/parsers.js";
 import { formatCargoUpdate, compactUpdateMap, formatUpdateCompact } from "../lib/formatters.js";
 import { CargoUpdateResultSchema } from "../schemas/index.js";
 
+/** Registers the `update` tool on the given MCP server. */
 export function registerUpdateTool(server: McpServer) {
   server.registerTool(
     "update",

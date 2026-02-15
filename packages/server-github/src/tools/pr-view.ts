@@ -9,6 +9,7 @@ import { PrViewResultSchema } from "../schemas/index.js";
 const PR_VIEW_FIELDS =
   "number,state,title,body,mergeable,reviewDecision,statusCheckRollup,url,headRefName,baseRefName,additions,deletions,changedFiles";
 
+/** Registers the `pr-view` tool on the given MCP server. */
 export function registerPrViewTool(server: McpServer) {
   server.registerTool(
     "pr-view",

@@ -6,6 +6,7 @@ import { parseOxlintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `oxlint` tool on the given MCP server. */
 export function registerOxlintTool(server: McpServer) {
   server.registerTool(
     "oxlint",

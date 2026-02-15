@@ -6,6 +6,7 @@ import { parseNetworkLsJson } from "../lib/parsers.js";
 import { formatNetworkLs, compactNetworkLsMap, formatNetworkLsCompact } from "../lib/formatters.js";
 import { DockerNetworkLsSchema } from "../schemas/index.js";
 
+/** Registers the `network-ls` tool on the given MCP server. */
 export function registerNetworkLsTool(server: McpServer) {
   server.registerTool(
     "network-ls",

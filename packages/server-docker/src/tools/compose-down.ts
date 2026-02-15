@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { DockerComposeDownSchema } from "../schemas/index.js";
 
+/** Registers the `compose-down` tool on the given MCP server. */
 export function registerComposeDownTool(server: McpServer) {
   server.registerTool(
     "compose-down",

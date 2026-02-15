@@ -6,6 +6,7 @@ import { parseExecOutput } from "../lib/parsers.js";
 import { formatExec, compactExecMap, formatExecCompact } from "../lib/formatters.js";
 import { DockerExecSchema } from "../schemas/index.js";
 
+/** Registers the `exec` tool on the given MCP server. */
 export function registerExecTool(server: McpServer) {
   server.registerTool(
     "exec",

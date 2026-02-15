@@ -6,6 +6,7 @@ import { parseViteBuildOutput } from "../lib/parsers.js";
 import { formatViteBuild, compactViteBuildMap, formatViteBuildCompact } from "../lib/formatters.js";
 import { ViteBuildResultSchema } from "../schemas/index.js";
 
+/** Registers the `vite-build` tool on the given MCP server. */
 export function registerViteBuildTool(server: McpServer) {
   server.registerTool(
     "vite-build",

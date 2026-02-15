@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { GolangciLintResultSchema } from "../schemas/index.js";
 
+/** Registers the `golangci-lint` tool on the given MCP server. */
 export function registerGolangciLintTool(server: McpServer) {
   server.registerTool(
     "golangci-lint",

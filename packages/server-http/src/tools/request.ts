@@ -13,6 +13,7 @@ import { assertSafeUrl, assertSafeHeader } from "../lib/url-validation.js";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 
+/** Registers the `request` tool on the given MCP server. */
 export function registerRequestTool(server: McpServer) {
   server.registerTool(
     "request",

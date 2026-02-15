@@ -6,6 +6,7 @@ import { parseEslintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `lint` tool on the given MCP server. */
 export function registerLintTool(server: McpServer) {
   server.registerTool(
     "lint",

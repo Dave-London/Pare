@@ -6,6 +6,7 @@ import { parseRemoteOutput } from "../lib/parsers.js";
 import { formatRemote, compactRemoteMap, formatRemoteCompact } from "../lib/formatters.js";
 import { GitRemoteSchema } from "../schemas/index.js";
 
+/** Registers the `remote` tool on the given MCP server. */
 export function registerRemoteTool(server: McpServer) {
   server.registerTool(
     "remote",

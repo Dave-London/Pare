@@ -6,6 +6,7 @@ import { parseReleaseCreate } from "../lib/parsers.js";
 import { formatReleaseCreate } from "../lib/formatters.js";
 import { ReleaseCreateResultSchema } from "../schemas/index.js";
 
+/** Registers the `release-create` tool on the given MCP server. */
 export function registerReleaseCreateTool(server: McpServer) {
   server.registerTool(
     "release-create",

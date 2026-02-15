@@ -6,6 +6,7 @@ import { parseImagesJson } from "../lib/parsers.js";
 import { formatImages, compactImagesMap, formatImagesCompact } from "../lib/formatters.js";
 import { DockerImagesSchema } from "../schemas/index.js";
 
+/** Registers the `images` tool on the given MCP server. */
 export function registerImagesTool(server: McpServer) {
   server.registerTool(
     "images",

@@ -6,6 +6,7 @@ import { parseRuffJson } from "../lib/parsers.js";
 import { formatRuff, compactRuffMap, formatRuffCompact } from "../lib/formatters.js";
 import { RuffResultSchema } from "../schemas/index.js";
 
+/** Registers the `ruff-check` tool on the given MCP server. */
 export function registerRuffTool(server: McpServer) {
   server.registerTool(
     "ruff-check",

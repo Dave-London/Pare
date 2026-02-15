@@ -6,6 +6,7 @@ import { parseHadolintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `hadolint` tool on the given MCP server. */
 export function registerHadolintTool(server: McpServer) {
   server.registerTool(
     "hadolint",

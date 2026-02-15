@@ -9,6 +9,7 @@ import { RunViewResultSchema } from "../schemas/index.js";
 const RUN_VIEW_FIELDS =
   "databaseId,status,conclusion,name,workflowName,headBranch,jobs,url,createdAt";
 
+/** Registers the `run-view` tool on the given MCP server. */
 export function registerRunViewTool(server: McpServer) {
   server.registerTool(
     "run-view",

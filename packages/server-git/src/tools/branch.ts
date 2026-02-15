@@ -7,6 +7,7 @@ import { parseBranch } from "../lib/parsers.js";
 import { formatBranch, compactBranchMap, formatBranchCompact } from "../lib/formatters.js";
 import { GitBranchSchema } from "../schemas/index.js";
 
+/** Registers the `branch` tool on the given MCP server. */
 export function registerBranchTool(server: McpServer) {
   server.registerTool(
     "branch",

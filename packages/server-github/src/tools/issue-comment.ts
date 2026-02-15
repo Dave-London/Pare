@@ -6,6 +6,7 @@ import { parseComment } from "../lib/parsers.js";
 import { formatComment } from "../lib/formatters.js";
 import { CommentResultSchema } from "../schemas/index.js";
 
+/** Registers the `issue-comment` tool on the given MCP server. */
 export function registerIssueCommentTool(server: McpServer) {
   server.registerTool(
     "issue-comment",
