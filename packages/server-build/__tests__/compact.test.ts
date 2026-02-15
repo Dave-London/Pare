@@ -148,7 +148,7 @@ describe("formatTscCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactEsbuildMap", () => {
-  it("keeps success and duration; drops arrays", () => {
+  it("keeps success and duration; includes errors/warnings when non-empty", () => {
     const data: EsbuildResult = {
       success: false,
       errors: [
@@ -164,9 +164,10 @@ describe("compactEsbuildMap", () => {
 
     expect(compact.success).toBe(false);
     expect(compact.duration).toBe(1.5);
-    // Verify dropped fields
-    expect(compact).not.toHaveProperty("errors");
-    expect(compact).not.toHaveProperty("warnings");
+    // Error/warning arrays preserved when non-empty
+    expect(compact.errors).toHaveLength(2);
+    expect(compact.warnings).toHaveLength(1);
+    // Verify other fields are still dropped
     expect(compact).not.toHaveProperty("outputFiles");
     expect(compact).not.toHaveProperty("errorCount");
     expect(compact).not.toHaveProperty("warningCount");
@@ -213,7 +214,7 @@ describe("formatEsbuildCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactViteBuildMap", () => {
-  it("keeps success and duration; drops arrays", () => {
+  it("keeps success and duration; includes warnings when non-empty", () => {
     const data: ViteBuildResult = {
       success: true,
       duration: 1.5,
@@ -230,10 +231,11 @@ describe("compactViteBuildMap", () => {
 
     expect(compact.success).toBe(true);
     expect(compact.duration).toBe(1.5);
-    // Verify dropped fields
-    expect(compact).not.toHaveProperty("outputs");
+    // Warnings preserved when non-empty; empty errors omitted
+    expect(compact.warnings).toEqual(["Chunk size warning"]);
     expect(compact).not.toHaveProperty("errors");
-    expect(compact).not.toHaveProperty("warnings");
+    // Verify other fields are still dropped
+    expect(compact).not.toHaveProperty("outputs");
     expect(compact).not.toHaveProperty("fileCount");
     expect(compact).not.toHaveProperty("errorCount");
     expect(compact).not.toHaveProperty("warningCount");
@@ -377,7 +379,7 @@ describe("formatWebpackCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactBuildMap", () => {
-  it("keeps success and duration; drops error/warning strings", () => {
+  it("keeps success and duration; includes errors/warnings when non-empty", () => {
     const data: BuildResult = {
       success: false,
       duration: 2.5,
@@ -389,9 +391,13 @@ describe("compactBuildMap", () => {
 
     expect(compact.success).toBe(false);
     expect(compact.duration).toBe(2.5);
-    // Verify dropped fields
-    expect(compact).not.toHaveProperty("errors");
-    expect(compact).not.toHaveProperty("warnings");
+    // Error/warning arrays preserved when non-empty
+    expect(compact.errors).toEqual([
+      "Module not found: ./missing",
+      "Syntax error in src/app.ts:15",
+    ]);
+    expect(compact.warnings).toEqual(["Unused variable"]);
+    // Verify other fields are still dropped
     expect(compact).not.toHaveProperty("errorCount");
     expect(compact).not.toHaveProperty("warningCount");
   });

@@ -13,7 +13,7 @@ export const CargoDiagnosticSchema = z.object({
 /** Zod schema for structured cargo build output including success status, diagnostics, and error/warning counts. */
 export const CargoBuildResultSchema = z.object({
   success: z.boolean(),
-  diagnostics: z.array(CargoDiagnosticSchema),
+  diagnostics: z.array(CargoDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
@@ -31,7 +31,7 @@ export const CargoTestCaseSchema = z.object({
 /** Zod schema for structured cargo test output with test list, pass/fail/ignored counts. */
 export const CargoTestResultSchema = z.object({
   success: z.boolean(),
-  tests: z.array(CargoTestCaseSchema),
+  tests: z.array(CargoTestCaseSchema).optional(),
   total: z.number(),
   passed: z.number(),
   failed: z.number(),
@@ -42,7 +42,7 @@ export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
 
 /** Zod schema for structured cargo clippy output with diagnostics and error/warning counts. */
 export const CargoClippyResultSchema = z.object({
-  diagnostics: z.array(CargoDiagnosticSchema),
+  diagnostics: z.array(CargoDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
@@ -53,8 +53,8 @@ export type CargoClippyResult = z.infer<typeof CargoClippyResultSchema>;
 /** Zod schema for structured cargo run output with exit code, stdout, stderr, and success flag. */
 export const CargoRunResultSchema = z.object({
   exitCode: z.number(),
-  stdout: z.string(),
-  stderr: z.string(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
   success: z.boolean(),
 });
 
@@ -69,7 +69,7 @@ export const CargoAddedPackageSchema = z.object({
 /** Zod schema for structured cargo add output with added packages list. */
 export const CargoAddResultSchema = z.object({
   success: z.boolean(),
-  added: z.array(CargoAddedPackageSchema),
+  added: z.array(CargoAddedPackageSchema).optional(),
   total: z.number(),
 });
 
@@ -88,7 +88,7 @@ export type CargoRemoveResult = z.infer<typeof CargoRemoveResultSchema>;
 export const CargoFmtResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
-  files: z.array(z.string()),
+  files: z.array(z.string()).optional(),
 });
 
 export type CargoFmtResult = z.infer<typeof CargoFmtResultSchema>;
@@ -104,14 +104,14 @@ export type CargoDocResult = z.infer<typeof CargoDocResultSchema>;
 /** Zod schema for structured cargo update output with success flag and output text. */
 export const CargoUpdateResultSchema = z.object({
   success: z.boolean(),
-  output: z.string(),
+  output: z.string().optional(),
 });
 
 export type CargoUpdateResult = z.infer<typeof CargoUpdateResultSchema>;
 
 /** Zod schema for structured cargo tree output with tree text and unique package count. */
 export const CargoTreeResultSchema = z.object({
-  tree: z.string(),
+  tree: z.string().optional(),
   packages: z.number(),
 });
 
@@ -133,16 +133,18 @@ export const CargoAuditVulnSchema = z.object({
 
 /** Zod schema for structured cargo audit output with vulnerability list and severity summary. */
 export const CargoAuditResultSchema = z.object({
-  vulnerabilities: z.array(CargoAuditVulnSchema),
-  summary: z.object({
-    total: z.number(),
-    critical: z.number(),
-    high: z.number(),
-    medium: z.number(),
-    low: z.number(),
-    informational: z.number(),
-    unknown: z.number(),
-  }),
+  vulnerabilities: z.array(CargoAuditVulnSchema).optional(),
+  summary: z
+    .object({
+      total: z.number(),
+      critical: z.number(),
+      high: z.number(),
+      medium: z.number(),
+      low: z.number(),
+      informational: z.number(),
+      unknown: z.number(),
+    })
+    .optional(),
 });
 
 export type CargoAuditResult = z.infer<typeof CargoAuditResultSchema>;
