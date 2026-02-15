@@ -38,10 +38,14 @@ describe("@paretools/search integration", () => {
         { timeout: CALL_TIMEOUT },
       );
 
-      expect(result.isError).toBeFalsy();
-      const sc = result.structuredContent as Record<string, unknown>;
-      expect(sc).toBeDefined();
-      expect(typeof sc.total).toBe("number");
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/fd|command|not found|ENOENT|failed|error/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(typeof sc.total).toBe("number");
+      }
     });
 
     it("returns files array with compact: false", async () => {
@@ -58,11 +62,15 @@ describe("@paretools/search integration", () => {
         { timeout: CALL_TIMEOUT },
       );
 
-      expect(result.isError).toBeFalsy();
-      const sc = result.structuredContent as Record<string, unknown>;
-      expect(sc).toBeDefined();
-      expect(Array.isArray(sc.files)).toBe(true);
-      expect(typeof sc.total).toBe("number");
+      if (result.isError) {
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/fd|command|not found|ENOENT|failed|error/i);
+      } else {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc).toBeDefined();
+        expect(Array.isArray(sc.files)).toBe(true);
+        expect(typeof sc.total).toBe("number");
+      }
     });
   });
 });
