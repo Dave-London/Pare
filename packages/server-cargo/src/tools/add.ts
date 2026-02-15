@@ -6,6 +6,7 @@ import { parseCargoAddOutput } from "../lib/parsers.js";
 import { formatCargoAdd, compactAddMap, formatAddCompact } from "../lib/formatters.js";
 import { CargoAddResultSchema } from "../schemas/index.js";
 
+/** Registers the `add` tool on the given MCP server. */
 export function registerAddTool(server: McpServer) {
   server.registerTool(
     "add",

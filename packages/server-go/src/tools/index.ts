@@ -12,6 +12,7 @@ import { registerListTool } from "./list.js";
 import { registerGetTool } from "./get.js";
 import { registerGolangciLintTool } from "./golangci-lint.js";
 
+/** Registers all Go tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("go", name);
   if (s("build")) registerBuildTool(server);

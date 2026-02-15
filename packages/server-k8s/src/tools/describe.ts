@@ -5,6 +5,7 @@ import { parseDescribeOutput } from "../lib/parsers.js";
 import { formatDescribe, compactDescribeMap, formatDescribeCompact } from "../lib/formatters.js";
 import { KubectlDescribeResultSchema } from "../schemas/index.js";
 
+/** Registers the `describe` tool on the given MCP server. */
 export function registerDescribeTool(server: McpServer) {
   server.registerTool(
     "describe",

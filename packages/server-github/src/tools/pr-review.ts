@@ -6,6 +6,7 @@ import { parsePrReview } from "../lib/parsers.js";
 import { formatPrReview } from "../lib/formatters.js";
 import { PrReviewResultSchema } from "../schemas/index.js";
 
+/** Registers the `pr-review` tool on the given MCP server. */
 export function registerPrReviewTool(server: McpServer) {
   server.registerTool(
     "pr-review",

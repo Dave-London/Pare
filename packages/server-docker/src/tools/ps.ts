@@ -6,6 +6,7 @@ import { parsePsJson } from "../lib/parsers.js";
 import { formatPs, compactPsMap, formatPsCompact } from "../lib/formatters.js";
 import { DockerPsSchema } from "../schemas/index.js";
 
+/** Registers the `ps` tool on the given MCP server. */
 export function registerPsTool(server: McpServer) {
   server.registerTool(
     "ps",

@@ -15,6 +15,7 @@ import { registerCondaTool } from "./conda.js";
 import { registerPyenvTool } from "./pyenv.js";
 import { registerPoetryTool } from "./poetry.js";
 
+/** Registers all Python tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("python", name);
   if (s("pip-install")) registerPipInstallTool(server);

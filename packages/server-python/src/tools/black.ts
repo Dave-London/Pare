@@ -6,6 +6,7 @@ import { parseBlackOutput } from "../lib/parsers.js";
 import { formatBlack, compactBlackMap, formatBlackCompact } from "../lib/formatters.js";
 import { BlackResultSchema } from "../schemas/index.js";
 
+/** Registers the `black` tool on the given MCP server. */
 export function registerBlackTool(server: McpServer) {
   server.registerTool(
     "black",

@@ -9,6 +9,7 @@ import { GitReflogSchema } from "../schemas/index.js";
 
 const REFLOG_FORMAT = "%H\t%h\t%gd\t%gs\t%ci";
 
+/** Registers the `reflog` tool on the given MCP server. */
 export function registerReflogTool(server: McpServer) {
   server.registerTool(
     "reflog",

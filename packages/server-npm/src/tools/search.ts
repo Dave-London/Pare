@@ -6,6 +6,7 @@ import { parseSearchJson } from "../lib/parsers.js";
 import { formatSearch, compactSearchMap, formatSearchCompact } from "../lib/formatters.js";
 import { NpmSearchSchema } from "../schemas/index.js";
 
+/** Registers the `search` tool on the given MCP server. */
 export function registerSearchTool(server: McpServer) {
   server.registerTool(
     "search",

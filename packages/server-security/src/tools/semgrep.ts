@@ -15,6 +15,7 @@ import {
 } from "../lib/formatters.js";
 import { SemgrepScanResultSchema } from "../schemas/index.js";
 
+/** Registers the `semgrep` tool on the given MCP server. */
 export function registerSemgrepTool(server: McpServer) {
   server.registerTool(
     "semgrep",

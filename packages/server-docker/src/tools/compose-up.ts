@@ -6,6 +6,7 @@ import { parseComposeUpOutput } from "../lib/parsers.js";
 import { formatComposeUp, compactComposeUpMap, formatComposeUpCompact } from "../lib/formatters.js";
 import { DockerComposeUpSchema } from "../schemas/index.js";
 
+/** Registers the `compose-up` tool on the given MCP server. */
 export function registerComposeUpTool(server: McpServer) {
   server.registerTool(
     "compose-up",

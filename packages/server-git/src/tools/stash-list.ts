@@ -6,6 +6,7 @@ import { parseStashListOutput } from "../lib/parsers.js";
 import { formatStashList, compactStashListMap, formatStashListCompact } from "../lib/formatters.js";
 import { GitStashListSchema } from "../schemas/index.js";
 
+/** Registers the `stash-list` tool on the given MCP server. */
 export function registerStashListTool(server: McpServer) {
   server.registerTool(
     "stash-list",

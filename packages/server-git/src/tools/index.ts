@@ -25,6 +25,7 @@ import { registerReflogTool } from "./reflog.js";
 import { registerBisectTool } from "./bisect.js";
 import { registerWorktreeTool } from "./worktree.js";
 
+/** Registers all git tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("git", name);
   if (s("status")) registerStatusTool(server);

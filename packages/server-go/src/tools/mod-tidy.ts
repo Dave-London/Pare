@@ -6,6 +6,7 @@ import { parseGoModTidyOutput } from "../lib/parsers.js";
 import { formatGoModTidy, compactModTidyMap, formatModTidyCompact } from "../lib/formatters.js";
 import { GoModTidyResultSchema } from "../schemas/index.js";
 
+/** Registers the `mod-tidy` tool on the given MCP server. */
 export function registerModTidyTool(server: McpServer) {
   server.registerTool(
     "mod-tidy",

@@ -11,6 +11,7 @@ import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { ProcessRunResultSchema } from "../schemas/index.js";
 
+/** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",

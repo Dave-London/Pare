@@ -13,6 +13,7 @@ import { registerUpdateTool } from "./update.js";
 import { registerTreeTool } from "./tree.js";
 import { registerAuditTool } from "./audit.js";
 
+/** Registers all Cargo tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("cargo", name);
   if (s("build")) registerBuildTool(server);

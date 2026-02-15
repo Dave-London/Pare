@@ -6,6 +6,7 @@ import { parseVolumeLsJson } from "../lib/parsers.js";
 import { formatVolumeLs, compactVolumeLsMap, formatVolumeLsCompact } from "../lib/formatters.js";
 import { DockerVolumeLsSchema } from "../schemas/index.js";
 
+/** Registers the `volume-ls` tool on the given MCP server. */
 export function registerVolumeLsTool(server: McpServer) {
   server.registerTool(
     "volume-ls",

@@ -10,6 +10,7 @@ import { registerOxlintTool } from "./oxlint.js";
 import { registerShellcheckTool } from "./shellcheck.js";
 import { registerHadolintTool } from "./hadolint.js";
 
+/** Registers all lint tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("lint", name);
   if (s("lint")) registerLintTool(server);

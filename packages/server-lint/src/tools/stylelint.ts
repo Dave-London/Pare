@@ -6,6 +6,7 @@ import { parseStylelintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `stylelint` tool on the given MCP server. */
 export function registerStylelintTool(server: McpServer) {
   server.registerTool(
     "stylelint",

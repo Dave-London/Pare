@@ -5,6 +5,7 @@ import { parseGetOutput } from "../lib/parsers.js";
 import { formatGet, compactGetMap, formatGetCompact } from "../lib/formatters.js";
 import { KubectlGetResultSchema } from "../schemas/index.js";
 
+/** Registers the `get` tool on the given MCP server. */
 export function registerGetTool(server: McpServer) {
   server.registerTool(
     "get",

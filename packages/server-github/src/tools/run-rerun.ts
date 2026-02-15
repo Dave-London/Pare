@@ -6,6 +6,7 @@ import { parseRunRerun } from "../lib/parsers.js";
 import { formatRunRerun } from "../lib/formatters.js";
 import { RunRerunResultSchema } from "../schemas/index.js";
 
+/** Registers the `run-rerun` tool on the given MCP server. */
 export function registerRunRerunTool(server: McpServer) {
   server.registerTool(
     "run-rerun",

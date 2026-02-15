@@ -6,6 +6,7 @@ import { parseComposePsJson } from "../lib/parsers.js";
 import { formatComposePs, compactComposePsMap, formatComposePsCompact } from "../lib/formatters.js";
 import { DockerComposePsSchema } from "../schemas/index.js";
 
+/** Registers the `compose-ps` tool on the given MCP server. */
 export function registerComposePsTool(server: McpServer) {
   server.registerTool(
     "compose-ps",

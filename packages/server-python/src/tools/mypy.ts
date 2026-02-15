@@ -6,6 +6,7 @@ import { parseMypyOutput } from "../lib/parsers.js";
 import { formatMypy, compactMypyMap, formatMypyCompact } from "../lib/formatters.js";
 import { MypyResultSchema } from "../schemas/index.js";
 
+/** Registers the `mypy` tool on the given MCP server. */
 export function registerMypyTool(server: McpServer) {
   server.registerTool(
     "mypy",

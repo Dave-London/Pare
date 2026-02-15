@@ -6,6 +6,7 @@ import { parseGoFmtOutput } from "../lib/parsers.js";
 import { formatGoFmt, compactFmtMap, formatFmtCompact } from "../lib/formatters.js";
 import { GoFmtResultSchema } from "../schemas/index.js";
 
+/** Registers the `fmt` tool on the given MCP server. */
 export function registerFmtTool(server: McpServer) {
   server.registerTool(
     "fmt",

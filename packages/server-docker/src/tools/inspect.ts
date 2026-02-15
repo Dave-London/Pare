@@ -6,6 +6,7 @@ import { parseInspectJson } from "../lib/parsers.js";
 import { formatInspect, compactInspectMap, formatInspectCompact } from "../lib/formatters.js";
 import { DockerInspectSchema } from "../schemas/index.js";
 
+/** Registers the `inspect` tool on the given MCP server. */
 export function registerInspectTool(server: McpServer) {
   server.registerTool(
     "inspect",

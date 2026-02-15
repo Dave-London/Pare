@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { CondaResultSchema } from "../schemas/index.js";
 
+/** Registers the `conda` tool on the given MCP server. */
 export function registerCondaTool(server: McpServer) {
   server.registerTool(
     "conda",

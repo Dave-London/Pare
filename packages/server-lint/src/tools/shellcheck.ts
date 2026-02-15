@@ -6,6 +6,7 @@ import { parseShellcheckJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `shellcheck` tool on the given MCP server. */
 export function registerShellcheckTool(server: McpServer) {
   server.registerTool(
     "shellcheck",

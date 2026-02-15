@@ -6,6 +6,7 @@ import { parseBuildOutput } from "../lib/parsers.js";
 import { formatBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { DockerBuildSchema } from "../schemas/index.js";
 
+/** Registers the `build` tool on the given MCP server. */
 export function registerBuildTool(server: McpServer) {
   server.registerTool(
     "build",

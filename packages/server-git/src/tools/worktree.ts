@@ -16,6 +16,7 @@ import {
 } from "../lib/formatters.js";
 import { GitWorktreeListSchema, GitWorktreeSchema } from "../schemas/index.js";
 
+/** Registers the `worktree` tool on the given MCP server. */
 export function registerWorktreeTool(server: McpServer) {
   server.registerTool(
     "worktree",

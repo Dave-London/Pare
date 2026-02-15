@@ -3,6 +3,7 @@ import { shouldRegisterTool } from "@paretools/shared";
 import { registerRunTool } from "./run.js";
 import { registerListTool } from "./list.js";
 
+/** Registers all Make tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("make", name);
   if (s("run")) registerRunTool(server);

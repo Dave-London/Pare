@@ -6,6 +6,7 @@ import { parseCargoTreeOutput } from "../lib/parsers.js";
 import { formatCargoTree, compactTreeMap, formatTreeCompact } from "../lib/formatters.js";
 import { CargoTreeResultSchema } from "../schemas/index.js";
 
+/** Registers the `tree` tool on the given MCP server. */
 export function registerTreeTool(server: McpServer) {
   server.registerTool(
     "tree",

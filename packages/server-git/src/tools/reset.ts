@@ -6,6 +6,7 @@ import { parseReset } from "../lib/parsers.js";
 import { formatReset } from "../lib/formatters.js";
 import { GitResetSchema } from "../schemas/index.js";
 
+/** Registers the `reset` tool on the given MCP server. */
 export function registerResetTool(server: McpServer) {
   server.registerTool(
     "reset",

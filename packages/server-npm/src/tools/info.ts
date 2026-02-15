@@ -8,6 +8,7 @@ import { formatInfo, compactInfoMap, formatInfoCompact } from "../lib/formatters
 import { NpmInfoSchema } from "../schemas/index.js";
 import { packageManagerInput } from "../lib/pm-input.js";
 
+/** Registers the `info` tool on the given MCP server. */
 export function registerInfoTool(server: McpServer) {
   server.registerTool(
     "info",

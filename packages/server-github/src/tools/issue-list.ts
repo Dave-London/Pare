@@ -8,6 +8,7 @@ import { IssueListResultSchema } from "../schemas/index.js";
 
 const ISSUE_LIST_FIELDS = "number,state,title,url,labels,assignees";
 
+/** Registers the `issue-list` tool on the given MCP server. */
 export function registerIssueListTool(server: McpServer) {
   server.registerTool(
     "issue-list",

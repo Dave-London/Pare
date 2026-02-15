@@ -6,6 +6,7 @@ import { parseBiomeJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
+/** Registers the `biome-check` tool on the given MCP server. */
 export function registerBiomeCheckTool(server: McpServer) {
   server.registerTool(
     "biome-check",

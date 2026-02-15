@@ -6,6 +6,7 @@ import { parseCargoDocOutput } from "../lib/parsers.js";
 import { formatCargoDoc, compactDocMap, formatDocCompact } from "../lib/formatters.js";
 import { CargoDocResultSchema } from "../schemas/index.js";
 
+/** Registers the `doc` tool on the given MCP server. */
 export function registerDocTool(server: McpServer) {
   server.registerTool(
     "doc",

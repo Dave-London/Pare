@@ -6,6 +6,7 @@ import { parseCommit } from "../lib/parsers.js";
 import { formatCommit } from "../lib/formatters.js";
 import { GitCommitSchema } from "../schemas/index.js";
 
+/** Registers the `commit` tool on the given MCP server. */
 export function registerCommitTool(server: McpServer) {
   server.registerTool(
     "commit",

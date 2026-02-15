@@ -8,6 +8,7 @@ import { formatOutdated } from "../lib/formatters.js";
 import { NpmOutdatedSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
+/** Registers the `outdated` tool on the given MCP server. */
 export function registerOutdatedTool(server: McpServer) {
   server.registerTool(
     "outdated",

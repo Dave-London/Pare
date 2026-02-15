@@ -6,6 +6,7 @@ import { parseBisect } from "../lib/parsers.js";
 import { formatBisect } from "../lib/formatters.js";
 import { GitBisectSchema } from "../schemas/index.js";
 
+/** Registers the `bisect` tool on the given MCP server. */
 export function registerBisectTool(server: McpServer) {
   server.registerTool(
     "bisect",

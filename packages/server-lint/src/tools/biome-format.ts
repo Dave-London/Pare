@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { FormatWriteResultSchema } from "../schemas/index.js";
 
+/** Registers the `biome-format` tool on the given MCP server. */
 export function registerBiomeFormatTool(server: McpServer) {
   server.registerTool(
     "biome-format",

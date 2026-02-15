@@ -30,6 +30,7 @@ export function getRunCommand(
   }
 }
 
+/** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",

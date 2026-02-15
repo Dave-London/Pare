@@ -6,6 +6,7 @@ import { parseCargoClippyJson } from "../lib/parsers.js";
 import { formatCargoClippy, compactClippyMap, formatClippyCompact } from "../lib/formatters.js";
 import { CargoClippyResultSchema } from "../schemas/index.js";
 
+/** Registers the `clippy` tool on the given MCP server. */
 export function registerClippyTool(server: McpServer) {
   server.registerTool(
     "clippy",

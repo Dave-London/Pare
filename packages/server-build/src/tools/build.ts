@@ -12,6 +12,7 @@ import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { BuildResultSchema } from "../schemas/index.js";
 
+/** Registers the `build` tool on the given MCP server. */
 export function registerBuildTool(server: McpServer) {
   server.registerTool(
     "build",

@@ -6,6 +6,7 @@ import { parseLogsOutput } from "../lib/parsers.js";
 import { formatLogs, compactLogsMap, formatLogsCompact } from "../lib/formatters.js";
 import { DockerLogsSchema } from "../schemas/index.js";
 
+/** Registers the `logs` tool on the given MCP server. */
 export function registerLogsTool(server: McpServer) {
   server.registerTool(
     "logs",

@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { DockerComposeLogsSchema } from "../schemas/index.js";
 
+/** Registers the `compose-logs` tool on the given MCP server. */
 export function registerComposeLogsTool(server: McpServer) {
   server.registerTool(
     "compose-logs",

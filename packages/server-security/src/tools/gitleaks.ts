@@ -9,6 +9,7 @@ import {
 } from "../lib/formatters.js";
 import { GitleaksScanResultSchema } from "../schemas/index.js";
 
+/** Registers the `gitleaks` tool on the given MCP server. */
 export function registerGitleaksTool(server: McpServer) {
   server.registerTool(
     "gitleaks",

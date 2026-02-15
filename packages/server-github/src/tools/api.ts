@@ -6,6 +6,7 @@ import { parseApi } from "../lib/parsers.js";
 import { formatApi } from "../lib/formatters.js";
 import { ApiResultSchema } from "../schemas/index.js";
 
+/** Registers the `api` tool on the given MCP server. */
 export function registerApiTool(server: McpServer) {
   server.registerTool(
     "api",

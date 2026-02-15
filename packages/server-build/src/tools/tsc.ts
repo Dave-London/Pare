@@ -6,6 +6,7 @@ import { parseTscOutput } from "../lib/parsers.js";
 import { formatTsc, compactTscMap, formatTscCompact } from "../lib/formatters.js";
 import { TscResultSchema } from "../schemas/index.js";
 
+/** Registers the `tsc` tool on the given MCP server. */
 export function registerTscTool(server: McpServer) {
   server.registerTool(
     "tsc",

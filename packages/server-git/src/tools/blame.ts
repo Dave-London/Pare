@@ -6,6 +6,7 @@ import { parseBlameOutput } from "../lib/parsers.js";
 import { formatBlame, compactBlameMap, formatBlameCompact } from "../lib/formatters.js";
 import { GitBlameSchema } from "../schemas/index.js";
 
+/** Registers the `blame` tool on the given MCP server. */
 export function registerBlameTool(server: McpServer) {
   server.registerTool(
     "blame",

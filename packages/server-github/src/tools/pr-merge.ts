@@ -6,6 +6,7 @@ import { parsePrMerge } from "../lib/parsers.js";
 import { formatPrMerge } from "../lib/formatters.js";
 import { PrMergeResultSchema } from "../schemas/index.js";
 
+/** Registers the `pr-merge` tool on the given MCP server. */
 export function registerPrMergeTool(server: McpServer) {
   server.registerTool(
     "pr-merge",

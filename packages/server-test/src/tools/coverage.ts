@@ -26,6 +26,7 @@ export function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs
   }
 }
 
+/** Registers the `coverage` tool on the given MCP server. */
 export function registerCoverageTool(server: McpServer) {
   server.registerTool(
     "coverage",

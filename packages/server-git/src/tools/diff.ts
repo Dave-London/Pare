@@ -7,6 +7,7 @@ import { parseDiffStat } from "../lib/parsers.js";
 import { formatDiff, compactDiffMap, formatDiffCompact } from "../lib/formatters.js";
 import { GitDiffSchema } from "../schemas/index.js";
 
+/** Registers the `diff` tool on the given MCP server. */
 export function registerDiffTool(server: McpServer) {
   server.registerTool(
     "diff",

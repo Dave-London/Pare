@@ -6,6 +6,7 @@ import { parseCargoRunOutput } from "../lib/parsers.js";
 import { formatCargoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { CargoRunResultSchema } from "../schemas/index.js";
 
+/** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
     "run",

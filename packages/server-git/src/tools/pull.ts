@@ -6,6 +6,7 @@ import { parsePull } from "../lib/parsers.js";
 import { formatPull } from "../lib/formatters.js";
 import { GitPullSchema } from "../schemas/index.js";
 
+/** Registers the `pull` tool on the given MCP server. */
 export function registerPullTool(server: McpServer) {
   server.registerTool(
     "pull",

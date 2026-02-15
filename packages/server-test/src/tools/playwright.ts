@@ -13,6 +13,7 @@ import {
 } from "../lib/formatters.js";
 import { PlaywrightResultSchema } from "../schemas/index.js";
 
+/** Registers the `playwright` tool on the given MCP server. */
 export function registerPlaywrightTool(server: McpServer) {
   server.registerTool(
     "playwright",

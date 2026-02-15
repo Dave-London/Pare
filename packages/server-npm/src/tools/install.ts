@@ -8,6 +8,7 @@ import { formatInstall } from "../lib/formatters.js";
 import { NpmInstallSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
+/** Registers the `install` tool on the given MCP server. */
 export function registerInstallTool(server: McpServer) {
   server.registerTool(
     "install",

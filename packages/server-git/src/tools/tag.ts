@@ -6,6 +6,7 @@ import { parseTagOutput } from "../lib/parsers.js";
 import { formatTag, compactTagMap, formatTagCompact } from "../lib/formatters.js";
 import { GitTagSchema } from "../schemas/index.js";
 
+/** Registers the `tag` tool on the given MCP server. */
 export function registerTagTool(server: McpServer) {
   server.registerTool(
     "tag",

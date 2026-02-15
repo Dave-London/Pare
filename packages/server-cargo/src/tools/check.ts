@@ -6,6 +6,7 @@ import { parseCargoBuildJson } from "../lib/parsers.js";
 import { formatCargoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { CargoBuildResultSchema } from "../schemas/index.js";
 
+/** Registers the `check` tool on the given MCP server. */
 export function registerCheckTool(server: McpServer) {
   server.registerTool(
     "check",

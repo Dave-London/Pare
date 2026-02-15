@@ -6,6 +6,7 @@ import { parseCargoRemoveOutput } from "../lib/parsers.js";
 import { formatCargoRemove, compactRemoveMap, formatRemoveCompact } from "../lib/formatters.js";
 import { CargoRemoveResultSchema } from "../schemas/index.js";
 
+/** Registers the `remove` tool on the given MCP server. */
 export function registerRemoveTool(server: McpServer) {
   server.registerTool(
     "remove",

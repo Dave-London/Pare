@@ -6,6 +6,7 @@ import { parseIssueCreate } from "../lib/parsers.js";
 import { formatIssueCreate } from "../lib/formatters.js";
 import { IssueCreateResultSchema } from "../schemas/index.js";
 
+/** Registers the `issue-create` tool on the given MCP server. */
 export function registerIssueCreateTool(server: McpServer) {
   server.registerTool(
     "issue-create",

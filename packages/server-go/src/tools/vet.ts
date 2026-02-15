@@ -6,6 +6,7 @@ import { parseGoVetOutput } from "../lib/parsers.js";
 import { formatGoVet, compactVetMap, formatVetCompact } from "../lib/formatters.js";
 import { GoVetResultSchema } from "../schemas/index.js";
 
+/** Registers the `vet` tool on the given MCP server. */
 export function registerVetTool(server: McpServer) {
   server.registerTool(
     "vet",

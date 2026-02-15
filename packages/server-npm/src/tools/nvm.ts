@@ -5,6 +5,7 @@ import { parseNvmOutput } from "../lib/parsers.js";
 import { formatNvm } from "../lib/formatters.js";
 import { NvmResultSchema } from "../schemas/index.js";
 
+/** Registers the `nvm` tool on the given MCP server. */
 export function registerNvmTool(server: McpServer) {
   server.registerTool(
     "nvm",

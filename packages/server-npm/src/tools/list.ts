@@ -8,6 +8,7 @@ import { formatList, compactListMap, formatListCompact } from "../lib/formatters
 import { NpmListSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
+/** Registers the `list` tool on the given MCP server. */
 export function registerListTool(server: McpServer) {
   server.registerTool(
     "list",

@@ -18,6 +18,7 @@ import { registerComposeLogsTool } from "./compose-logs.js";
 import { registerComposeBuildTool } from "./compose-build.js";
 import { registerStatsTool } from "./stats.js";
 
+/** Registers all Docker tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("docker", name);
   if (s("ps")) registerPsTool(server);

@@ -6,6 +6,7 @@ import { parseGoListOutput } from "../lib/parsers.js";
 import { formatGoList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { GoListResultSchema } from "../schemas/index.js";
 
+/** Registers the `list` tool on the given MCP server. */
 export function registerListTool(server: McpServer) {
   server.registerTool(
     "list",

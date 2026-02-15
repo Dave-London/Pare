@@ -5,6 +5,7 @@ import { parseApplyOutput } from "../lib/parsers.js";
 import { formatApply, compactApplyMap, formatApplyCompact } from "../lib/formatters.js";
 import { KubectlApplyResultSchema } from "../schemas/index.js";
 
+/** Registers the `apply` tool on the given MCP server. */
 export function registerApplyTool(server: McpServer) {
   server.registerTool(
     "apply",

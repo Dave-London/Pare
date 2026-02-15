@@ -6,6 +6,7 @@ import { parseCheckout } from "../lib/parsers.js";
 import { formatCheckout } from "../lib/formatters.js";
 import { GitCheckoutSchema } from "../schemas/index.js";
 
+/** Registers the `checkout` tool on the given MCP server. */
 export function registerCheckoutTool(server: McpServer) {
   server.registerTool(
     "checkout",

@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { RuffFormatResultSchema } from "../schemas/index.js";
 
+/** Registers the `ruff-format` tool on the given MCP server. */
 export function registerRuffFormatTool(server: McpServer) {
   server.registerTool(
     "ruff-format",

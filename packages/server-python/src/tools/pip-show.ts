@@ -6,6 +6,7 @@ import { parsePipShowOutput } from "../lib/parsers.js";
 import { formatPipShow, compactPipShowMap, formatPipShowCompact } from "../lib/formatters.js";
 import { PipShowSchema } from "../schemas/index.js";
 
+/** Registers the `pip-show` tool on the given MCP server. */
 export function registerPipShowTool(server: McpServer) {
   server.registerTool(
     "pip-show",

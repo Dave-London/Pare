@@ -11,6 +11,7 @@ import { registerInfoTool } from "./info.js";
 import { registerSearchTool } from "./search.js";
 import { registerNvmTool } from "./nvm.js";
 
+/** Registers all npm tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
   const s = (name: string) => shouldRegisterTool("npm", name);
   if (s("install")) registerInstallTool(server);

@@ -10,6 +10,7 @@ import { GitLogSchema } from "../schemas/index.js";
 const DELIMITER = "@@";
 const LOG_FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
 
+/** Registers the `log` tool on the given MCP server. */
 export function registerLogTool(server: McpServer) {
   server.registerTool(
     "log",

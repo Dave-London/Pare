@@ -10,6 +10,7 @@ import {
 } from "../lib/formatters.js";
 import { FormatCheckResultSchema } from "../schemas/index.js";
 
+/** Registers the `format-check` tool on the given MCP server. */
 export function registerFormatCheckTool(server: McpServer) {
   server.registerTool(
     "format-check",

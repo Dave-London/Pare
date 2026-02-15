@@ -5,6 +5,7 @@ import { parseTrivyJson } from "../lib/parsers.js";
 import { formatTrivyScan, compactTrivyScanMap, formatTrivyScanCompact } from "../lib/formatters.js";
 import { TrivyScanResultSchema } from "../schemas/index.js";
 
+/** Registers the `trivy` tool on the given MCP server. */
 export function registerTrivyTool(server: McpServer) {
   server.registerTool(
     "trivy",

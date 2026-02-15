@@ -8,6 +8,7 @@ import { formatTest } from "../lib/formatters.js";
 import { NpmTestSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
 
+/** Registers the `test` tool on the given MCP server. */
 export function registerTestTool(server: McpServer) {
   server.registerTool(
     "test",
