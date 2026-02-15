@@ -233,11 +233,12 @@ export function formatGoEnv(data: GoEnvResult): string {
     `GOOS=${data.goos}`,
     `GOARCH=${data.goarch}`,
   ];
-  const otherKeys = Object.keys(data.vars).filter(
+  const vars = data.vars ?? {};
+  const otherKeys = Object.keys(vars).filter(
     (k) => !["GOROOT", "GOPATH", "GOVERSION", "GOOS", "GOARCH"].includes(k),
   );
   for (const k of otherKeys) {
-    lines.push(`${k}=${data.vars[k]}`);
+    lines.push(`${k}=${vars[k]}`);
   }
   return lines.join("\n");
 }
@@ -273,7 +274,7 @@ export function formatGoList(data: GoListResult): string {
   if (data.total === 0) return "go list: no packages found.";
 
   const lines = [`go list: ${data.total} packages`];
-  for (const pkg of data.packages) {
+  for (const pkg of data.packages ?? []) {
     lines.push(`  ${pkg.importPath} (${pkg.name})`);
   }
   return lines.join("\n");

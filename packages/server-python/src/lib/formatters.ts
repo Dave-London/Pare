@@ -24,7 +24,7 @@ export function formatPipInstall(data: PipInstall): string {
   if (!data.success) return "pip install failed.";
 
   const lines = [`Installed ${data.total} packages:`];
-  for (const pkg of data.installed) {
+  for (const pkg of data.installed ?? []) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
@@ -35,7 +35,7 @@ export function formatMypy(data: MypyResult): string {
   if (data.success && data.total === 0) return "mypy: no errors found.";
 
   const lines = [`mypy: ${data.errors} errors, ${data.warnings} warnings/notes`];
-  for (const d of data.diagnostics) {
+  for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
     const code = d.code ? ` [${d.code}]` : "";
     lines.push(`  ${d.file}:${d.line}${col} ${d.severity}: ${d.message}${code}`);
@@ -48,7 +48,7 @@ export function formatRuff(data: RuffResult): string {
   if (data.total === 0) return "ruff: no issues found.";
 
   const lines = [`ruff: ${data.total} issues (${data.fixable} fixable)`];
-  for (const d of data.diagnostics) {
+  for (const d of data.diagnostics ?? []) {
     lines.push(`  ${d.file}:${d.line}:${d.column} ${d.code}: ${d.message}`);
   }
   return lines.join("\n");
@@ -59,7 +59,7 @@ export function formatPipAudit(data: PipAuditResult): string {
   if (data.total === 0) return "No vulnerabilities found.";
 
   const lines = [`${data.total} vulnerabilities:`];
-  for (const v of data.vulnerabilities) {
+  for (const v of data.vulnerabilities ?? []) {
     const fix = v.fixVersions.length ? ` (fix: ${v.fixVersions.join(", ")})` : "";
     lines.push(`  ${v.name}==${v.version} ${v.id}: ${v.description}${fix}`);
   }
@@ -78,7 +78,7 @@ export function formatPytest(data: PytestResult): string {
 
   const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
 
-  for (const f of data.failures) {
+  for (const f of data.failures ?? []) {
     lines.push(`  FAILED ${f.test}: ${f.message}`);
   }
 
@@ -91,7 +91,7 @@ export function formatUvInstall(data: UvInstall): string {
   if (data.total === 0) return "All requirements already satisfied.";
 
   const lines = [`Installed ${data.total} packages in ${data.duration}s:`];
-  for (const pkg of data.installed) {
+  for (const pkg of data.installed ?? []) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
@@ -102,10 +102,10 @@ export function formatUvRun(data: UvRun): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
   const lines = [`uv run ${status} in ${data.duration}s`];
 
-  if (data.stdout.trim()) {
+  if (data.stdout?.trim()) {
     lines.push("stdout:", data.stdout.trim());
   }
-  if (data.stderr.trim()) {
+  if (data.stderr?.trim()) {
     lines.push("stderr:", data.stderr.trim());
   }
 
@@ -121,11 +121,12 @@ export function formatBlack(data: BlackResult): string {
   }
 
   const lines: string[] = [];
-  if (data.wouldReformat.length > 0) {
+  const wouldReformat = data.wouldReformat ?? [];
+  if (wouldReformat.length > 0) {
     lines.push(
       `black: ${data.filesChanged} files ${data.success ? "reformatted" : "would be reformatted"}, ${data.filesUnchanged} unchanged`,
     );
-    for (const f of data.wouldReformat) {
+    for (const f of wouldReformat) {
       lines.push(`  ${f}`);
     }
   } else {
@@ -159,7 +160,7 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
     skipped: data.skipped,
     total: data.total,
     duration: data.duration,
-    failedTests: data.failures.map((f) => f.test),
+    failedTests: (data.failures ?? []).map((f) => f.test),
   };
 }
 
@@ -334,7 +335,7 @@ export function formatPipList(data: PipList): string {
   if (data.total === 0) return "No packages installed.";
 
   const lines = [`${data.total} packages installed:`];
-  for (const pkg of data.packages) {
+  for (const pkg of data.packages ?? []) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
@@ -369,7 +370,8 @@ export function formatPipShow(data: PipShow): string {
   if (data.license) lines.push(`  License: ${data.license}`);
   if (data.homepage) lines.push(`  Homepage: ${data.homepage}`);
   if (data.location) lines.push(`  Location: ${data.location}`);
-  if (data.requires.length > 0) lines.push(`  Requires: ${data.requires.join(", ")}`);
+  const requires = data.requires ?? [];
+  if (requires.length > 0) lines.push(`  Requires: ${requires.join(", ")}`);
   return lines.join("\n");
 }
 
