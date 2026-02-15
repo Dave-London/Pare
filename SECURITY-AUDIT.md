@@ -1,7 +1,7 @@
 # Security Audit — Pare v0.8.0
 
 **Date:** 2026-02-13
-**Scope:** All 14 packages (100 tools)
+**Scope:** All 16 packages (147 tools)
 **Auditor:** Automated + manual review
 
 ## Summary

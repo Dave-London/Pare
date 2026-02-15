@@ -41,13 +41,13 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (139 tools, 16 packages)
+## Available Servers (147 tools, 16 packages)
 
 | Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`@paretools/git`](./packages/server-git)           | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, reflog, bisect, worktree                                                                                                             | git                                                              |
+| [`@paretools/git`](./packages/server-git)           | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree                                                                 | git                                                              |
 | [`@paretools/github`](./packages/server-github)     | pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, api, release-create, release-list, gist-create | gh                                                               |
-| [`@paretools/search`](./packages/server-search)     | search, find, count                                                                                                                                                                                                                                        | ripgrep, fd                                                      |
+| [`@paretools/search`](./packages/server-search)     | search, find, count, jq                                                                                                                                                                                                                                    | ripgrep, fd, jq                                                  |
 | [`@paretools/test`](./packages/server-test)         | run, coverage, playwright                                                                                                                                                                                                                                  | pytest, jest, vitest, mocha, playwright                          |
 | [`@paretools/npm`](./packages/server-npm)           | install, audit, outdated, list, run, test, init, info, search, nvm                                                                                                                                                                                         | npm, nvm                                                         |
 | [`@paretools/docker`](./packages/server-docker)     | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats                                                                                                         | docker, docker compose                                           |
@@ -56,8 +56,8 @@ This uses MCP's `structuredContent` and `outputSchema` features to provide type-
 | [`@paretools/http`](./packages/server-http)         | request, get, post, head                                                                                                                                                                                                                                   | curl                                                             |
 | [`@paretools/make`](./packages/server-make)         | run, list                                                                                                                                                                                                                                                  | make, just                                                       |
 | [`@paretools/python`](./packages/server-python)     | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format, conda, pyenv, poetry                                                                                                                         | pip, mypy, ruff, pytest, uv, black, conda, pyenv, poetry         |
-| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree                                                                                                                                                                                       | cargo                                                            |
-| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get                                                                                                                                                                                             | go, gofmt                                                        |
+| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit                                                                                                                                                                                | cargo                                                            |
+| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint                                                                                                                                                                              | go, gofmt, golangci-lint                                         |
 | [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                   | trivy, semgrep, gitleaks                                         |
 | [`@paretools/k8s`](./packages/server-k8s)           | kubectl-get, kubectl-describe, kubectl-logs, kubectl-apply, helm                                                                                                                                                                                           | kubectl, helm                                                    |
 | [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                        | child_process                                                    |
@@ -264,7 +264,7 @@ fewer tokens than CLI output.
 ```markdown
 ## MCP Servers
 
-This project uses Pare MCP servers (100 tools) for structured, token-efficient dev tool output.
+This project uses Pare MCP servers (147 tools) for structured, token-efficient dev tool output.
 Prefer Pare MCP tools over raw CLI commands for git, testing, building, linting, npm, docker, python, cargo, and go.
 Pare tools return typed JSON, saving tokens and preventing parsing errors.
 ```
@@ -283,7 +283,7 @@ alwaysApply: true
 
 When Pare MCP tools are available, prefer them over running CLI commands in the
 terminal. Pare tools (pare-git, pare-test, pare-build, pare-lint, pare-npm,
-pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 100 tools total) return
+pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 147 tools total) return
 structured JSON with up to 95% fewer tokens than raw CLI output.
 ```
 

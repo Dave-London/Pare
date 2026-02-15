@@ -648,7 +648,7 @@ describe("formatRegistryTable", () => {
 
   it("contains the heading", () => {
     const table = formatRegistryTable(TOOL_REGISTRY);
-    expect(table).toContain("## Tool Coverage Registry (100 tools)");
+    expect(table).toContain("## Tool Coverage Registry (147 tools)");
   });
 
   it("shows tested/skip/pending counts", () => {

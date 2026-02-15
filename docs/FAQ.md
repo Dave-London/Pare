@@ -38,6 +38,6 @@ A proper eval comparing agent accuracy on raw CLI vs Pare structured output is p
 
 ## Configuration
 
-### "Do I have to load all 65 tools?"
+### "Do I have to load all 147 tools?"
 
-No. Pare has ~10 servers with ~6 tools each. You only install the servers you need — if you just want git, that's about 10 tool definitions. We're also exploring more granular per-tool filtering — see [#111](https://github.com/Dave-London/Pare/issues/111).
+No. Pare has 16 servers with ~9 tools each. You only install the servers you need — if you just want git, that's 24 tool definitions. We're also exploring more granular per-tool filtering — see [#111](https://github.com/Dave-London/Pare/issues/111).

@@ -777,7 +777,7 @@ export function formatReport(
   lines.push(`**Date**: ${new Date().toISOString().split("T")[0]}`);
   lines.push(`**Version**: v0.7.0`);
   lines.push(`**Repository**: [Dave-London/pare](https://github.com/Dave-London/pare)`);
-  lines.push(`**Tools**: 100 tools across 14 packages`);
+  lines.push(`**Tools**: 147 tools across 16 packages`);
   lines.push(`**Runs per scenario**: ${config.runs} (median reported)`);
   lines.push("");
   lines.push("---");
@@ -810,7 +810,7 @@ export function formatReport(
     lines.push("");
   }
 
-  // Tool Coverage Registry (100 tools)
+  // Tool Coverage Registry (147 tools)
   const linkedRegistry = linkScenariosToRegistry(TOOL_REGISTRY, summaries);
   lines.push(formatRegistryTable(linkedRegistry));
   lines.push("---");
