@@ -188,16 +188,19 @@ export function formatRunCompact(data: GoRunCompact): string {
   return `go run: exit code ${data.exitCode}.`;
 }
 
-/** Compact generate: success only. Drop full output. */
+/** Compact generate: success. Output included when non-empty. */
 export interface GoGenerateCompact {
   [key: string]: unknown;
   success: boolean;
+  output?: string;
 }
 
 export function compactGenerateMap(data: GoGenerateResult): GoGenerateCompact {
-  return {
+  const compact: GoGenerateCompact = {
     success: data.success,
   };
+  if (data.output) compact.output = data.output;
+  return compact;
 }
 
 export function formatGenerateCompact(data: GoGenerateCompact): string {
@@ -205,16 +208,19 @@ export function formatGenerateCompact(data: GoGenerateCompact): string {
   return "go generate: FAIL";
 }
 
-/** Compact mod-tidy: success only. Drop summary text. */
+/** Compact mod-tidy: success. Summary included when non-empty. */
 export interface GoModTidyCompact {
   [key: string]: unknown;
   success: boolean;
+  summary?: string;
 }
 
 export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
-  return {
+  const compact: GoModTidyCompact = {
     success: data.success,
   };
+  if (data.summary) compact.summary = data.summary;
+  return compact;
 }
 
 export function formatModTidyCompact(data: GoModTidyCompact): string {
@@ -307,16 +313,19 @@ export function formatGoGet(data: GoGetResult): string {
   return `go get: FAIL\n${data.output}`;
 }
 
-/** Compact get: success only. Drop output text. */
+/** Compact get: success. Output included when non-empty. */
 export interface GoGetCompact {
   [key: string]: unknown;
   success: boolean;
+  output?: string;
 }
 
 export function compactGetMap(data: GoGetResult): GoGetCompact {
-  return {
+  const compact: GoGetCompact = {
     success: data.success,
   };
+  if (data.output) compact.output = data.output;
+  return compact;
 }
 
 export function formatGetCompact(data: GoGetCompact): string {
