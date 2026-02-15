@@ -1,7 +1,7 @@
 /**
  * Validates that a string argument is safe to pass as a positional argument to a CLI tool.
  * Prevents flag injection attacks (e.g., passing "--output=/etc/passwd" as a ref name).
- * See: CVE-2025-68144, CVE-2025-68145
+ * See: [CVE-2025-68144](https://nvd.nist.gov/vuln/detail/CVE-2025-68144), [CVE-2025-68145](https://nvd.nist.gov/vuln/detail/CVE-2025-68145)
  */
 export function assertNoFlagInjection(value: string, paramName: string): void {
   if (value.trimStart().startsWith("-")) {
