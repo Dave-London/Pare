@@ -93,10 +93,11 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/pip|command|not found/i);
       } else {
+        // May return compact output (success + total + alreadySatisfied)
+        // or full output (adds installed[]). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(Array.isArray(sc.installed)).toBe(true);
         expect(typeof sc.total).toBe("number");
         expect(typeof sc.alreadySatisfied).toBe("boolean");
       }
@@ -184,10 +185,11 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/uv|command|not found/i);
       } else {
+        // May return compact output (success + total + duration)
+        // or full output (adds installed[]). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(Array.isArray(sc.installed)).toBe(true);
         expect(typeof sc.total).toBe("number");
         expect(typeof sc.duration).toBe("number");
       }
@@ -206,12 +208,12 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/uv|command|not found/i);
       } else {
+        // May return compact output (exitCode + success + duration)
+        // or full output (adds stdout, stderr). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.exitCode).toBe("number");
-        expect(typeof sc.stdout).toBe("string");
-        expect(typeof sc.stderr).toBe("string");
         expect(typeof sc.duration).toBe("number");
       }
     });
@@ -252,9 +254,10 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/pip|command|not found/i);
       } else {
+        // May return compact output (total only) or full output (adds packages[]).
+        // Check the field present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(Array.isArray(sc.packages)).toBe(true);
         expect(typeof sc.total).toBe("number");
       }
     });
