@@ -30,6 +30,7 @@ export const KubectlGetResultSchema = z.object({
   namespace: z.string().optional(),
   items: z.array(K8sResourceSchema).optional(),
   total: z.number(),
+  names: z.array(z.string()).optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
@@ -115,6 +116,7 @@ export const HelmListResultSchema = z.object({
   namespace: z.string().optional(),
   releases: z.array(HelmReleaseSchema).optional(),
   total: z.number(),
+  names: z.array(z.string()).optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
