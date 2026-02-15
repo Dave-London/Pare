@@ -70,13 +70,23 @@ export function parseGetOutput(
 
 /**
  * Extracts a minimal K8sResource from a raw kubectl JSON object.
+ * Only includes fields declared in K8sResourceSchema to avoid
+ * "additional properties" validation errors from the MCP SDK.
  */
 function extractResource(raw: Record<string, unknown>): K8sResource {
   const result: K8sResource = {};
   if (typeof raw.apiVersion === "string") result.apiVersion = raw.apiVersion;
   if (typeof raw.kind === "string") result.kind = raw.kind;
   if (raw.metadata && typeof raw.metadata === "object") {
-    result.metadata = raw.metadata as K8sResource["metadata"];
+    const m = raw.metadata as Record<string, unknown>;
+    const metadata: NonNullable<K8sResource["metadata"]> = {};
+    if (typeof m.name === "string") metadata.name = m.name;
+    if (typeof m.namespace === "string") metadata.namespace = m.namespace;
+    if (typeof m.creationTimestamp === "string") metadata.creationTimestamp = m.creationTimestamp;
+    if (m.labels && typeof m.labels === "object") {
+      metadata.labels = m.labels as Record<string, string>;
+    }
+    result.metadata = metadata;
   }
   if (raw.status && typeof raw.status === "object") {
     result.status = raw.status as Record<string, unknown>;
