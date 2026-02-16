@@ -45,14 +45,14 @@ describe("assertSafeFilePath", () => {
     expect(() => assertSafeFilePath(absPath, TEST_DIR)).not.toThrow();
   });
 
-  it("rejects symlink pointing outside cwd", () => {
+  it.skipIf(process.platform === "win32")("rejects symlink pointing outside cwd", () => {
     const linkPath = join(TEST_DIR, "evil-link");
     symlinkSync("/etc/hosts", linkPath);
 
     expect(() => assertSafeFilePath("evil-link", TEST_DIR)).toThrow(/symlink resolves to/);
   });
 
-  it("accepts symlink pointing inside cwd", () => {
+  it.skipIf(process.platform === "win32")("accepts symlink pointing inside cwd", () => {
     const linkPath = join(TEST_DIR, "safe-link");
     symlinkSync(join(TEST_DIR, "safe.txt"), linkPath);
 
