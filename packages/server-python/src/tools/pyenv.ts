@@ -64,7 +64,8 @@ export function registerPyenvTool(server: McpServer) {
 
       switch (action) {
         case "versions":
-          args.push("versions", "--bare");
+          // Do NOT use --bare: it strips the * marker needed for current version detection
+          args.push("versions");
           break;
         case "version":
           args.push("version");

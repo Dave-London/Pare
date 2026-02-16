@@ -44,6 +44,29 @@ describe("parsePipInstall", () => {
     expect(result.success).toBe(false);
     expect(result.total).toBe(0);
   });
+
+  it("parses dry-run output with Would install line", () => {
+    const stdout = [
+      "Collecting requests",
+      "  Downloading requests-2.31.0-py3-none-any.whl",
+      "Would install requests-2.31.0 urllib3-2.1.0 charset-normalizer-3.3.0",
+    ].join("\n");
+    const result = parsePipInstall(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(true);
+    expect(result.total).toBe(3);
+    expect(result.installed[0]).toEqual({ name: "requests", version: "2.31.0" });
+    expect(result.installed[1]).toEqual({ name: "urllib3", version: "2.1.0" });
+    expect(result.installed[2]).toEqual({ name: "charset-normalizer", version: "3.3.0" });
+  });
+
+  it("sets dryRun false for normal install", () => {
+    const stdout = "Successfully installed requests-2.31.0";
+    const result = parsePipInstall(stdout, "", 0);
+
+    expect(result.dryRun).toBe(false);
+  });
 });
 
 describe("parseMypyOutput", () => {
@@ -339,6 +362,8 @@ describe("parseBlackOutput — error paths", () => {
     expect(result.filesUnchanged).toBe(0);
     expect(result.filesChecked).toBe(0);
     expect(result.wouldReformat).toEqual([]);
+    expect(result.errorType).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
   });
 
   it("handles malformed summary line", () => {
@@ -354,6 +379,16 @@ describe("parseBlackOutput — error paths", () => {
     const stderr = "error: cannot format src/main.py: Cannot parse: 1:0: unexpected token";
     const result = parseBlackOutput("", stderr, 123);
     expect(result.success).toBe(false);
+    expect(result.errorType).toBe("internal_error");
+    expect(result.exitCode).toBe(123);
+  });
+
+  it("handles exit code 1 (check mode failure)", () => {
+    const stderr = ["would reformat src/main.py", "Oh no! 1 file would be reformatted."].join("\n");
+    const result = parseBlackOutput("", stderr, 1);
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("check_failed");
+    expect(result.exitCode).toBe(1);
   });
 
   it("handles summary with only reformatted count and no unchanged", () => {
@@ -362,6 +397,7 @@ describe("parseBlackOutput — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(1);
     expect(result.wouldReformat).toEqual(["app.py"]);
+    expect(result.errorType).toBeUndefined();
   });
 });
 
@@ -371,6 +407,8 @@ describe("parseUvInstall — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.total).toBe(0);
     expect(result.installed).toEqual([]);
+    expect(result.error).toBeUndefined();
+    expect(result.resolutionConflicts).toBeUndefined();
   });
 
   it("handles malformed package lines", () => {
@@ -390,6 +428,33 @@ describe("parseUvInstall — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.installed).toHaveLength(1);
     expect(result.duration).toBe(0);
+  });
+
+  it("parses resolution conflict errors from stderr", () => {
+    const stderr = [
+      "error: version solving failed",
+      "  Because `flask>=3.0` and `werkzeug<2.0` are incompatible",
+      "  and `myapp` depends on `flask>=3.0` and `werkzeug<2.0`",
+    ].join("\n");
+    const result = parseUvInstall("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(result.resolutionConflicts).toBeDefined();
+    expect(result.resolutionConflicts!.length).toBeGreaterThan(0);
+    // Verify the parsed conflict packages
+    const pkgNames = result.resolutionConflicts!.map((c) => c.package);
+    expect(pkgNames).toContain("flask");
+    expect(pkgNames).toContain("werkzeug");
+  });
+
+  it("returns error string on generic failure", () => {
+    const stderr = "error: Could not find package 'nonexistent-pkg-xyz'";
+    const result = parseUvInstall("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("error: Could not find package 'nonexistent-pkg-xyz'");
+    expect(result.resolutionConflicts).toBeUndefined();
   });
 });
 
@@ -528,6 +593,7 @@ describe("parseRuffFormatOutput", () => {
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(2);
     expect(result.files).toEqual(["src/main.py", "src/utils.py"]);
+    expect(result.checkMode).toBe(true);
   });
 
   it("parses format mode with reformatted files", () => {
@@ -538,6 +604,7 @@ describe("parseRuffFormatOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(1);
     expect(result.files).toEqual(["src/main.py"]);
+    expect(result.checkMode).toBe(false);
   });
 
   it("parses clean output (no files need formatting)", () => {
@@ -548,6 +615,7 @@ describe("parseRuffFormatOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.files).toBeUndefined();
+    expect(result.checkMode).toBe(false);
   });
 
   it("handles empty output", () => {
@@ -556,6 +624,15 @@ describe("parseRuffFormatOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.files).toBeUndefined();
+    expect(result.checkMode).toBe(false);
+  });
+
+  it("detects check mode from summary line only", () => {
+    const stderr = "3 files would be reformatted";
+    const result = parseRuffFormatOutput("", stderr, 1);
+
+    expect(result.checkMode).toBe(true);
+    expect(result.filesChanged).toBe(3);
   });
 });
 

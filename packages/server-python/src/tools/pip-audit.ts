@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { pipAudit } from "../lib/python-runner.js";
 import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit, compactPipAuditMap, formatPipAuditCompact } from "../lib/formatters.js";
 import { PipAuditResultSchema } from "../schemas/index.js";
@@ -113,9 +114,8 @@ export function registerPipAuditTool(server: McpServer) {
         args.push("--ignore-vuln", v);
       }
 
-      // pip-audit is a separate tool: pip-audit (not pip audit)
-      const { run } = await import("@paretools/shared");
-      const result = await run("pip-audit", args, { cwd });
+      // pip-audit is a standalone binary, NOT a pip subcommand
+      const result = await pipAudit(args, cwd);
       const data = parsePipAuditJson(result.stdout, result.exitCode);
       return compactDualOutput(
         data,

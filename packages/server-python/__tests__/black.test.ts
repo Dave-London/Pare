@@ -18,6 +18,8 @@ describe("parseBlackOutput", () => {
     expect(result.filesUnchanged).toBe(3);
     expect(result.filesChecked).toBe(5);
     expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
+    expect(result.errorType).toBe("check_failed");
+    expect(result.exitCode).toBe(1);
   });
 
   it("parses check mode with all files formatted", () => {
@@ -30,6 +32,8 @@ describe("parseBlackOutput", () => {
     expect(result.filesUnchanged).toBe(5);
     expect(result.filesChecked).toBe(5);
     expect(result.wouldReformat).toEqual([]);
+    expect(result.errorType).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
   });
 
   it("parses format mode with reformatted files", () => {
@@ -46,6 +50,7 @@ describe("parseBlackOutput", () => {
     expect(result.filesUnchanged).toBe(1);
     expect(result.filesChecked).toBe(3);
     expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
+    expect(result.errorType).toBeUndefined();
   });
 
   it("parses format mode with no changes needed", () => {
@@ -81,6 +86,16 @@ describe("parseBlackOutput", () => {
     expect(result.filesChanged).toBe(1);
     expect(result.wouldReformat).toEqual(["app.py"]);
   });
+
+  it("distinguishes exit code 123 (internal error) from exit code 1 (check failed)", () => {
+    const result123 = parseBlackOutput("", "error: Cannot parse: 1:0: unexpected token", 123);
+    expect(result123.errorType).toBe("internal_error");
+    expect(result123.exitCode).toBe(123);
+
+    const result1 = parseBlackOutput("", "would reformat app.py", 1);
+    expect(result1.errorType).toBe("check_failed");
+    expect(result1.exitCode).toBe(1);
+  });
 });
 
 describe("formatBlack", () => {
@@ -112,6 +127,7 @@ describe("formatBlack", () => {
       filesUnchanged: 3,
       filesChecked: 5,
       success: false,
+      errorType: "check_failed",
       wouldReformat: ["src/main.py", "src/utils.py"],
     };
     const output = formatBlack(data);
@@ -133,5 +149,18 @@ describe("formatBlack", () => {
 
     expect(output).toContain("1 files reformatted, 4 unchanged");
     expect(output).toContain("src/main.py");
+  });
+
+  it("formats internal error (exit 123)", () => {
+    const data: BlackResult = {
+      filesChanged: 0,
+      filesUnchanged: 0,
+      filesChecked: 0,
+      success: false,
+      exitCode: 123,
+      errorType: "internal_error",
+      wouldReformat: [],
+    };
+    expect(formatBlack(data)).toBe("black: internal error (exit 123). Check for syntax errors.");
   });
 });

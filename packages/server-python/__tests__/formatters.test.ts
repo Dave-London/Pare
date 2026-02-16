@@ -350,6 +350,19 @@ describe("formatBlack — edge cases", () => {
     // Should not list any files
     expect(output.split("\n")).toHaveLength(1);
   });
+
+  it("formats internal error (exit 123)", () => {
+    const data: BlackResult = {
+      filesChanged: 0,
+      filesUnchanged: 0,
+      filesChecked: 0,
+      success: false,
+      exitCode: 123,
+      errorType: "internal_error",
+      wouldReformat: [],
+    };
+    expect(formatBlack(data)).toBe("black: internal error (exit 123). Check for syntax errors.");
+  });
 });
 
 // ─── pip-list formatter tests ────────────────────────────────────────────────
@@ -443,6 +456,7 @@ describe("formatRuffFormat", () => {
       success: true,
       filesChanged: 2,
       files: ["src/main.py", "src/utils.py"],
+      checkMode: false,
     };
     const output = formatRuffFormat(data);
     expect(output).toContain("2 files reformatted");
@@ -455,6 +469,7 @@ describe("formatRuffFormat", () => {
       success: false,
       filesChanged: 1,
       files: ["src/main.py"],
+      checkMode: true,
     };
     const output = formatRuffFormat(data);
     expect(output).toContain("1 files would be reformatted");

@@ -12,6 +12,7 @@ export const PipInstallSchema = z.object({
     )
     .optional(),
   alreadySatisfied: z.boolean(),
+  dryRun: z.boolean().optional(),
   total: z.number(),
 });
 
@@ -99,6 +100,12 @@ export const PytestResultSchema = z.object({
 
 export type PytestResult = z.infer<typeof PytestResultSchema>;
 
+/** Zod schema for a single resolution conflict from uv install. */
+export const UvResolutionConflictSchema = z.object({
+  package: z.string(),
+  constraint: z.string(),
+});
+
 /** Zod schema for structured uv install output with installed packages and count. */
 export const UvInstallSchema = z.object({
   success: z.boolean(),
@@ -112,6 +119,8 @@ export const UvInstallSchema = z.object({
     .optional(),
   total: z.number(),
   duration: z.number(),
+  error: z.string().optional(),
+  resolutionConflicts: z.array(UvResolutionConflictSchema).optional(),
 });
 
 export type UvInstall = z.infer<typeof UvInstallSchema>;
@@ -127,12 +136,16 @@ export const UvRunSchema = z.object({
 
 export type UvRun = z.infer<typeof UvRunSchema>;
 
-/** Zod schema for structured Black formatter output with file counts and reformat list. */
+/** Zod schema for structured Black formatter output with file counts and reformat list.
+ *  errorType distinguishes "check_failed" (exit 1, files need reformatting) from
+ *  "internal_error" (exit 123, parse error or crash). */
 export const BlackResultSchema = z.object({
   filesChanged: z.number(),
   filesUnchanged: z.number(),
   filesChecked: z.number(),
   success: z.boolean(),
+  exitCode: z.number().optional(),
+  errorType: z.enum(["check_failed", "internal_error"]).optional(),
   wouldReformat: z.array(z.string()).optional(),
 });
 
@@ -179,6 +192,7 @@ export const RuffFormatResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
   files: z.array(z.string()).optional(),
+  checkMode: z.boolean().optional(),
 });
 
 export type RuffFormatResult = z.infer<typeof RuffFormatResultSchema>;

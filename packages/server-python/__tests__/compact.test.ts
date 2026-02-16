@@ -522,7 +522,7 @@ describe("formatRuffFormatCompact", () => {
   });
 
   it("formats check mode with files needing formatting", () => {
-    const compact = { success: false, filesChanged: 2 };
+    const compact = { success: false, filesChanged: 2, checkMode: true };
     expect(formatRuffFormatCompact(compact)).toBe("ruff format: 2 files would be reformatted");
   });
 });

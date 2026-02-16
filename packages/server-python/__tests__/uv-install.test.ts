@@ -49,13 +49,15 @@ describe("parseUvInstall", () => {
     expect(result.installed).toEqual([]);
   });
 
-  it("handles install failure", () => {
+  it("handles install failure with error message", () => {
     const stderr = "error: Could not find package 'nonexistent-pkg-xyz'";
 
     const result = parseUvInstall("", stderr, 1);
 
     expect(result.success).toBe(false);
     expect(result.total).toBe(0);
+    expect(result.error).toBe("error: Could not find package 'nonexistent-pkg-xyz'");
+    expect(result.resolutionConflicts).toBeUndefined();
   });
 
   it("handles empty output", () => {
@@ -64,6 +66,23 @@ describe("parseUvInstall", () => {
     expect(result.success).toBe(true);
     expect(result.total).toBe(0);
     expect(result.installed).toEqual([]);
+  });
+
+  it("parses resolution conflict errors", () => {
+    const stderr = [
+      "error: version solving failed",
+      "  Because `flask>=3.0` and `werkzeug<2.0` are incompatible",
+    ].join("\n");
+
+    const result = parseUvInstall("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(result.resolutionConflicts).toBeDefined();
+    expect(result.resolutionConflicts!.length).toBeGreaterThan(0);
+    const pkgNames = result.resolutionConflicts!.map((c) => c.package);
+    expect(pkgNames).toContain("flask");
+    expect(pkgNames).toContain("werkzeug");
   });
 });
 
@@ -103,5 +122,37 @@ describe("formatUvInstall", () => {
       duration: 0,
     };
     expect(formatUvInstall(data)).toBe("uv install failed.");
+  });
+
+  it("formats failure with resolution conflicts", () => {
+    const data: UvInstall = {
+      success: false,
+      installed: [],
+      total: 0,
+      duration: 0,
+      error: "version solving failed",
+      resolutionConflicts: [
+        { package: "flask", constraint: ">=3.0" },
+        { package: "werkzeug", constraint: "<2.0" },
+      ],
+    };
+    const output = formatUvInstall(data);
+    expect(output).toContain("uv install failed.");
+    expect(output).toContain("Resolution conflicts:");
+    expect(output).toContain("flask >=3.0");
+    expect(output).toContain("werkzeug <2.0");
+  });
+
+  it("formats failure with generic error", () => {
+    const data: UvInstall = {
+      success: false,
+      installed: [],
+      total: 0,
+      duration: 0,
+      error: "error: Could not find package 'nonexistent-pkg'",
+    };
+    const output = formatUvInstall(data);
+    expect(output).toContain("uv install failed.");
+    expect(output).toContain("error: Could not find package 'nonexistent-pkg'");
   });
 });
