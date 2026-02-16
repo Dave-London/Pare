@@ -35,7 +35,7 @@ export function formatPipInstall(data: PipInstall): string {
 export function formatMypy(data: MypyResult): string {
   if (data.success && data.total === 0) return "mypy: no errors found.";
 
-  const lines = [`mypy: ${data.errors} errors, ${data.warnings} warnings/notes`];
+  const lines = [`mypy: ${data.errors} errors, ${data.warnings} warnings, ${data.notes} notes`];
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
     const code = d.code ? ` [${d.code}]` : "";
@@ -50,7 +50,8 @@ export function formatRuff(data: RuffResult): string {
 
   const lines = [`ruff: ${data.total} issues (${data.fixable} fixable)`];
   for (const d of data.diagnostics ?? []) {
-    lines.push(`  ${d.file}:${d.line}:${d.column} ${d.code}: ${d.message}`);
+    const fixInfo = d.fixApplicability ? ` [fix: ${d.fixApplicability}]` : "";
+    lines.push(`  ${d.file}:${d.line}:${d.column} ${d.code}: ${d.message}${fixInfo}`);
   }
   return lines.join("\n");
 }
@@ -62,7 +63,9 @@ export function formatPipAudit(data: PipAuditResult): string {
   const lines = [`${data.total} vulnerabilities:`];
   for (const v of data.vulnerabilities ?? []) {
     const fix = v.fixVersions.length ? ` (fix: ${v.fixVersions.join(", ")})` : "";
-    lines.push(`  ${v.name}==${v.version} ${v.id}: ${v.description}${fix}`);
+    const severity = v.severity ? ` [${v.severity}]` : "";
+    const score = v.cvssScore != null ? ` CVSS:${v.cvssScore}` : "";
+    lines.push(`  ${v.name}==${v.version} ${v.id}${severity}${score}: ${v.description}${fix}`);
   }
   return lines.join("\n");
 }
@@ -76,6 +79,7 @@ export function formatPytest(data: PytestResult): string {
   if (data.failed > 0) parts.push(`${data.failed} failed`);
   if (data.errors > 0) parts.push(`${data.errors} errors`);
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
+  if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
   const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
 
@@ -162,6 +166,7 @@ export interface PytestResultCompact {
   failed: number;
   errors: number;
   skipped: number;
+  warnings: number;
   total: number;
   duration: number;
   failedTests: string[];
@@ -174,6 +179,7 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
     failed: data.failed,
     errors: data.errors,
     skipped: data.skipped,
+    warnings: data.warnings,
     total: data.total,
     duration: data.duration,
     failedTests: (data.failures ?? []).map((f) => f.test),
@@ -188,6 +194,7 @@ export function formatPytestCompact(data: PytestResultCompact): string {
   if (data.failed > 0) parts.push(`${data.failed} failed`);
   if (data.errors > 0) parts.push(`${data.errors} errors`);
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
+  if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
   const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
   for (const t of data.failedTests) {
@@ -203,6 +210,7 @@ export interface MypyResultCompact {
   total: number;
   errors: number;
   warnings: number;
+  notes: number;
 }
 
 export function compactMypyMap(data: MypyResult): MypyResultCompact {
@@ -211,12 +219,13 @@ export function compactMypyMap(data: MypyResult): MypyResultCompact {
     total: data.total,
     errors: data.errors,
     warnings: data.warnings,
+    notes: data.notes,
   };
 }
 
 export function formatMypyCompact(data: MypyResultCompact): string {
   if (data.success && data.total === 0) return "mypy: no errors found.";
-  return `mypy: ${data.errors} errors, ${data.warnings} warnings/notes (${data.total} total)`;
+  return `mypy: ${data.errors} errors, ${data.warnings} warnings, ${data.notes} notes (${data.total} total)`;
 }
 
 /** Compact ruff: success + diagnostic count. Drop individual entries. */
@@ -369,6 +378,7 @@ export function formatUvRunCompact(data: UvRunCompact): string {
 
 /** Formats structured pip list results into a human-readable package listing. */
 export function formatPipList(data: PipList): string {
+  if (data.error) return `pip list error: ${data.error}`;
   if (data.total === 0) return "No packages installed.";
 
   const lines = [`${data.total} packages installed:`];
@@ -383,16 +393,19 @@ export interface PipListCompact {
   [key: string]: unknown;
   success: boolean;
   total: number;
+  error?: string;
 }
 
 export function compactPipListMap(data: PipList): PipListCompact {
   return {
     success: data.success,
     total: data.total,
+    error: data.error,
   };
 }
 
 export function formatPipListCompact(data: PipListCompact): string {
+  if (data.error) return `pip list error: ${data.error}`;
   if (data.total === 0) return "No packages installed.";
   return `${data.total} packages installed.`;
 }
@@ -403,19 +416,45 @@ export function formatPipListCompact(data: PipListCompact): string {
 export function formatPipShow(data: PipShow): string {
   if (!data.name) return "Package not found.";
 
-  const lines = [`${data.name}==${data.version}`];
-  if (data.summary) lines.push(`  Summary: ${data.summary}`);
-  if (data.author) lines.push(`  Author: ${data.author}`);
-  if (data.authorEmail) lines.push(`  Author-email: ${data.authorEmail}`);
-  if (data.license) lines.push(`  License: ${data.license}`);
-  if (data.homepage) lines.push(`  Homepage: ${data.homepage}`);
-  if (data.location) lines.push(`  Location: ${data.location}`);
-  if (data.metadataVersion) lines.push(`  Metadata-Version: ${data.metadataVersion}`);
-  const requires = data.requires ?? [];
+  // If multiple packages, format each
+  if (data.packages && data.packages.length > 1) {
+    const sections: string[] = [];
+    for (const pkg of data.packages) {
+      sections.push(formatSinglePipShowPackage(pkg));
+    }
+    return sections.join("\n---\n");
+  }
+
+  return formatSinglePipShowPackage(data);
+}
+
+function formatSinglePipShowPackage(pkg: {
+  name: string;
+  version: string;
+  summary: string;
+  homepage?: string;
+  author?: string;
+  authorEmail?: string;
+  license?: string;
+  location?: string;
+  metadataVersion?: string;
+  requires?: string[];
+  requiredBy?: string[];
+  classifiers?: string[];
+}): string {
+  const lines = [`${pkg.name}==${pkg.version}`];
+  if (pkg.summary) lines.push(`  Summary: ${pkg.summary}`);
+  if (pkg.author) lines.push(`  Author: ${pkg.author}`);
+  if (pkg.authorEmail) lines.push(`  Author-email: ${pkg.authorEmail}`);
+  if (pkg.license) lines.push(`  License: ${pkg.license}`);
+  if (pkg.homepage) lines.push(`  Homepage: ${pkg.homepage}`);
+  if (pkg.location) lines.push(`  Location: ${pkg.location}`);
+  if (pkg.metadataVersion) lines.push(`  Metadata-Version: ${pkg.metadataVersion}`);
+  const requires = pkg.requires ?? [];
   if (requires.length > 0) lines.push(`  Requires: ${requires.join(", ")}`);
-  const requiredBy = data.requiredBy ?? [];
+  const requiredBy = pkg.requiredBy ?? [];
   if (requiredBy.length > 0) lines.push(`  Required-by: ${requiredBy.join(", ")}`);
-  const classifiers = data.classifiers ?? [];
+  const classifiers = pkg.classifiers ?? [];
   if (classifiers.length > 0) lines.push(`  Classifiers: ${classifiers.join(", ")}`);
   return lines.join("\n");
 }
@@ -428,6 +467,7 @@ export interface PipShowCompact {
   version: string;
   summary: string;
   requires: string[];
+  packageCount: number;
 }
 
 export function compactPipShowMap(data: PipShow): PipShowCompact {
@@ -437,11 +477,15 @@ export function compactPipShowMap(data: PipShow): PipShowCompact {
     version: data.version,
     summary: data.summary,
     requires: data.requires ?? [],
+    packageCount: data.packages?.length ?? 1,
   };
 }
 
 export function formatPipShowCompact(data: PipShowCompact): string {
   if (!data.name) return "Package not found.";
+  if (data.packageCount > 1) {
+    return `${data.name}==${data.version}: ${data.summary} (+${data.packageCount - 1} more)`;
+  }
   return `${data.name}==${data.version}: ${data.summary}`;
 }
 
@@ -675,6 +719,10 @@ export function formatPyenv(data: PyenvResult): string {
       return data.installed
         ? `pyenv: installed Python ${data.installed}`
         : "pyenv: installation completed.";
+    case "uninstall":
+      return data.uninstalled
+        ? `pyenv: uninstalled Python ${data.uninstalled}`
+        : "pyenv: uninstall completed.";
     case "local":
       return data.localVersion
         ? `pyenv: local version set to ${data.localVersion}`

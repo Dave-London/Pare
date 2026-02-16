@@ -91,6 +91,7 @@ describe("formatMypy", () => {
       total: 0,
       errors: 0,
       warnings: 0,
+      notes: 0,
     };
     expect(formatMypy(data)).toBe("mypy: no errors found.");
   });
@@ -116,10 +117,11 @@ describe("formatMypy", () => {
       ],
       total: 2,
       errors: 1,
-      warnings: 1,
+      warnings: 0,
+      notes: 1,
     };
     const output = formatMypy(data);
-    expect(output).toContain("mypy: 1 errors, 1 warnings/notes");
+    expect(output).toContain("mypy: 1 errors, 0 warnings, 1 notes");
     expect(output).toContain(
       "src/main.py:10:5 error: Incompatible return value type [return-value]",
     );
@@ -140,6 +142,7 @@ describe("formatMypy", () => {
       total: 1,
       errors: 1,
       warnings: 0,
+      notes: 0,
     };
     const output = formatMypy(data);
     expect(output).toContain("app.py:1 error: Cannot find implementation or library stub");
@@ -248,6 +251,7 @@ describe("formatMypy — edge cases", () => {
       total: 1,
       errors: 1,
       warnings: 0,
+      notes: 0,
     };
     const output = formatMypy(data);
     expect(output).toContain("src/app.py:42 error: Cannot find implementation or library stub");
@@ -271,6 +275,7 @@ describe("formatMypy — edge cases", () => {
       total: 1,
       errors: 0,
       warnings: 1,
+      notes: 0,
     };
     const output = formatMypy(data);
     expect(output).toContain("lib.py:5:10 warning: Unused type: ignore comment");
@@ -290,6 +295,7 @@ describe("formatPytest — edge cases", () => {
       failed: 20,
       errors: 0,
       skipped: 0,
+      warnings: 0,
       total: 100,
       duration: 15.5,
       failures,
@@ -310,6 +316,7 @@ describe("formatPytest — edge cases", () => {
       failed: 0,
       errors: 3,
       skipped: 2,
+      warnings: 0,
       total: 5,
       duration: 0.5,
       failures: [],
@@ -1072,5 +1079,185 @@ describe("formatPoetryCompact", () => {
       total: 1,
     } as PoetryResult);
     expect(formatPoetryCompact(data)).toBe("poetry remove: 1 packages.");
+  });
+});
+
+// ─── P1 Gap Formatter Tests ──────────────────────────────────────────────
+
+describe("formatMypy — notes separated", () => {
+  it("formats result with separate notes and warnings", () => {
+    const data: MypyResult = {
+      success: false,
+      diagnostics: [
+        { file: "a.py", line: 1, severity: "error", message: "err", code: "misc" },
+        { file: "b.py", line: 2, severity: "warning", message: "warn", code: "unused-ignore" },
+        { file: "c.py", line: 3, severity: "note", message: "info" },
+      ],
+      total: 3,
+      errors: 1,
+      warnings: 1,
+      notes: 1,
+    };
+    const output = formatMypy(data);
+    expect(output).toContain("mypy: 1 errors, 1 warnings, 1 notes");
+  });
+});
+
+describe("formatPipAudit — severity fields", () => {
+  it("includes severity and CVSS score in output", () => {
+    const data: PipAuditResult = {
+      success: false,
+      total: 1,
+      vulnerabilities: [
+        {
+          name: "requests",
+          version: "2.25.0",
+          id: "PYSEC-2023-001",
+          description: "SSRF vulnerability",
+          fixVersions: ["2.31.0"],
+          severity: "HIGH",
+          cvssScore: 8.1,
+        },
+      ],
+    };
+    const output = formatPipAudit(data);
+    expect(output).toContain("[HIGH]");
+    expect(output).toContain("CVSS:8.1");
+  });
+});
+
+describe("formatPipList — error surfacing", () => {
+  it("formats error in output", () => {
+    const data: PipList = {
+      success: false,
+      packages: [],
+      total: 0,
+      error: "Failed to parse JSON",
+    };
+    expect(formatPipList(data)).toContain("pip list error: Failed to parse JSON");
+  });
+});
+
+describe("formatPipShow — multiple packages", () => {
+  it("formats multiple packages with separator", () => {
+    const data: PipShow = {
+      success: true,
+      name: "requests",
+      version: "2.31.0",
+      summary: "HTTP library",
+      packages: [
+        { name: "requests", version: "2.31.0", summary: "HTTP library" },
+        { name: "flask", version: "3.0.0", summary: "Web framework" },
+      ],
+    };
+    const output = formatPipShow(data);
+    expect(output).toContain("requests==2.31.0");
+    expect(output).toContain("flask==3.0.0");
+    expect(output).toContain("---");
+  });
+});
+
+describe("formatPyenv — uninstall", () => {
+  it("formats successful uninstall with version", () => {
+    const data: PyenvResult = {
+      action: "uninstall",
+      success: true,
+      uninstalled: "3.10.13",
+    };
+    expect(formatPyenv(data)).toBe("pyenv: uninstalled Python 3.10.13");
+  });
+
+  it("formats uninstall without version info", () => {
+    const data: PyenvResult = {
+      action: "uninstall",
+      success: true,
+    };
+    expect(formatPyenv(data)).toBe("pyenv: uninstall completed.");
+  });
+
+  it("formats failed uninstall", () => {
+    const data: PyenvResult = {
+      action: "uninstall",
+      success: false,
+      error: "version not installed",
+    };
+    expect(formatPyenv(data)).toBe("pyenv uninstall failed: version not installed");
+  });
+});
+
+describe("formatPytest — warnings in output", () => {
+  it("includes warnings in formatted output", () => {
+    const data: PytestResult = {
+      success: true,
+      passed: 10,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 3,
+      total: 10,
+      duration: 1.5,
+      failures: [],
+    };
+    const output = formatPytest(data);
+    expect(output).toContain("3 warnings");
+  });
+
+  it("omits warnings from output when zero", () => {
+    const data: PytestResult = {
+      success: true,
+      passed: 5,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      total: 5,
+      duration: 0.5,
+      failures: [],
+    };
+    const output = formatPytest(data);
+    expect(output).not.toContain("warnings");
+  });
+});
+
+describe("formatRuff — fixApplicability", () => {
+  it("includes fix applicability in formatted output", () => {
+    const data: RuffResult = {
+      success: false,
+      total: 1,
+      fixable: 1,
+      diagnostics: [
+        {
+          file: "a.py",
+          line: 1,
+          column: 1,
+          code: "F401",
+          message: "unused import",
+          fixable: true,
+          fixApplicability: "safe",
+        },
+      ],
+    };
+    const output = formatRuff(data);
+    expect(output).toContain("[fix: safe]");
+  });
+
+  it("omits fix applicability when not present", () => {
+    const data: RuffResult = {
+      success: false,
+      total: 1,
+      fixable: 0,
+      diagnostics: [
+        {
+          file: "a.py",
+          line: 1,
+          column: 1,
+          code: "E501",
+          message: "line too long",
+          fixable: false,
+        },
+      ],
+    };
+    const output = formatRuff(data);
+    expect(output).not.toContain("[fix:");
   });
 });

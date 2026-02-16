@@ -6,7 +6,15 @@ import { parsePyenvOutput } from "../lib/parsers.js";
 import { formatPyenv, compactPyenvMap, formatPyenvCompact } from "../lib/formatters.js";
 import { PyenvResultSchema } from "../schemas/index.js";
 
-const ACTIONS = ["versions", "version", "install", "installList", "local", "global"] as const;
+const ACTIONS = [
+  "versions",
+  "version",
+  "install",
+  "installList",
+  "local",
+  "global",
+  "uninstall",
+] as const;
 
 /** Registers the `pyenv` tool on the given MCP server. */
 export function registerPyenvTool(server: McpServer) {
@@ -18,7 +26,8 @@ export function registerPyenvTool(server: McpServer) {
         "Manages Python versions via pyenv. " +
         "Actions: `versions` (list installed), `version` (show current), " +
         "`install` (install a version), `installList` (list available versions), " +
-        "`local` (set local version), `global` (set global version). " +
+        "`local` (set local version), `global` (set global version), " +
+        "`uninstall` (remove an installed version). " +
         "Use instead of running `pyenv` in the terminal.",
       inputSchema: {
         action: z.enum(ACTIONS).describe("The pyenv action to perform"),
@@ -26,7 +35,9 @@ export function registerPyenvTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("Python version string (required for install/local/global, e.g. '3.12.0')"),
+          .describe(
+            "Python version string (required for install/uninstall/local/global, e.g. '3.12.0')",
+          ),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -84,6 +95,21 @@ export function registerPyenvTool(server: McpServer) {
           if (skipExisting) args.push("--skip-existing");
           if (force) args.push("--force");
           args.push(version);
+          break;
+        case "uninstall":
+          if (!version) {
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: "Error: version is required for uninstall action",
+                },
+              ],
+              isError: true,
+            };
+          }
+          // -f for non-interactive uninstall
+          args.push("uninstall", "-f", version);
           break;
         case "installList":
           args.push("install", "--list");

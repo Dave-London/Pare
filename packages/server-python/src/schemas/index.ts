@@ -28,13 +28,14 @@ export const MypyDiagnosticSchema = z.object({
   code: z.string().optional(),
 });
 
-/** Zod schema for structured mypy output including success status, diagnostics, and error/warning counts. */
+/** Zod schema for structured mypy output including success status, diagnostics, and error/warning/note counts. */
 export const MypyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(MypyDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
+  notes: z.number().describe("Count of note-level diagnostics, separated from warnings"),
 });
 
 export type MypyResult = z.infer<typeof MypyResultSchema>;
@@ -49,6 +50,10 @@ export const RuffDiagnosticSchema = z.object({
   code: z.string(),
   message: z.string(),
   fixable: z.boolean(),
+  fixApplicability: z
+    .enum(["safe", "unsafe", "display"])
+    .optional()
+    .describe("Fix applicability level from ruff (safe/unsafe/display)"),
   url: z.string().optional(),
 });
 
@@ -69,6 +74,13 @@ export const PipAuditVulnSchema = z.object({
   id: z.string(),
   description: z.string(),
   fixVersions: z.array(z.string()),
+  aliases: z
+    .array(z.string())
+    .optional()
+    .describe("Alternative vulnerability IDs (e.g. CVE aliases)"),
+  url: z.string().optional().describe("URL with vulnerability details"),
+  severity: z.string().optional().describe("Severity level (e.g. HIGH, CRITICAL)"),
+  cvssScore: z.number().optional().describe("CVSS score if available (0.0-10.0)"),
 });
 
 /** Zod schema for structured pip-audit output with vulnerability list, total count, and success status. */
@@ -93,6 +105,7 @@ export const PytestResultSchema = z.object({
   failed: z.number(),
   errors: z.number(),
   skipped: z.number(),
+  warnings: z.number().describe("Count of warnings from pytest warnings summary"),
   total: z.number(),
   duration: z.number(),
   failures: z.array(PytestFailureSchema).optional(),
@@ -172,13 +185,34 @@ export const PipListSchema = z.object({
   success: z.boolean(),
   packages: z.array(PipListPackageSchema).optional(),
   total: z.number(),
+  error: z.string().optional().describe("Parse error message when JSON parsing fails"),
+  rawOutput: z.string().optional().describe("Raw CLI output included when parsing fails"),
 });
 
 export type PipList = z.infer<typeof PipListSchema>;
 
-/** Zod schema for structured pip show output with package metadata. */
+/** Zod schema for a single pip-show package info entry. */
+export const PipShowPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  summary: z.string(),
+  homepage: z.string().optional(),
+  author: z.string().optional(),
+  authorEmail: z.string().optional(),
+  license: z.string().optional(),
+  location: z.string().optional(),
+  requires: z.array(z.string()).optional(),
+  requiredBy: z.array(z.string()).optional(),
+  metadataVersion: z.string().optional(),
+  classifiers: z.array(z.string()).optional(),
+});
+
+/** Zod schema for structured pip show output with package metadata.
+ *  Supports both single and multiple packages. */
 export const PipShowSchema = z.object({
   success: z.boolean(),
+  packages: z.array(PipShowPackageSchema).describe("Array of package info (one or more)"),
+  // Keep top-level fields for backward compat (first package)
   name: z.string(),
   version: z.string(),
   summary: z.string(),
@@ -271,11 +305,12 @@ export type CondaEnvList = CondaResult & {
 
 /** Zod schema for structured pyenv output with action results and version info. */
 export const PyenvResultSchema = z.object({
-  action: z.enum(["versions", "version", "install", "installList", "local", "global"]),
+  action: z.enum(["versions", "version", "install", "installList", "local", "global", "uninstall"]),
   success: z.boolean(),
   current: z.string().optional(),
   versions: z.array(z.string()).optional(),
   installed: z.string().optional(),
+  uninstalled: z.string().optional().describe("Version that was uninstalled (uninstall action)"),
   localVersion: z.string().optional(),
   globalVersion: z.string().optional(),
   availableVersions: z

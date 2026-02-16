@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   parsePipInstall,
   parseMypyOutput,
+  parseMypyJsonOutput,
+  parseMypyTextOutput,
   parseRuffJson,
   parsePipAuditJson,
   parsePytestOutput,
@@ -84,7 +86,8 @@ describe("parseMypyOutput", () => {
     expect(result.success).toBe(false);
     expect(result.total).toBe(3);
     expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(1);
+    expect(result.warnings).toBe(0);
+    expect(result.notes).toBe(1);
     expect(result.diagnostics[0]).toEqual({
       file: "src/main.py",
       line: 10,
@@ -141,6 +144,8 @@ describe("parseRuffJson", () => {
       code: "F401",
       message: "`os` imported but unused",
       fixable: true,
+      fixApplicability: "safe",
+      url: undefined,
     });
     expect(result.diagnostics[1].fixable).toBe(false);
   });
@@ -481,22 +486,30 @@ describe("parsePipListJson", () => {
     expect(result.packages).toEqual([]);
   });
 
-  it("handles invalid JSON", () => {
+  it("handles invalid JSON with error info", () => {
     const result = parsePipListJson("not json", 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.rawOutput).toBe("not json");
   });
 
-  it("handles empty string", () => {
+  it("handles empty string with error info", () => {
     const result = parsePipListJson("", 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
   });
 
-  it("handles non-array JSON", () => {
+  it("handles non-array JSON with error info", () => {
     const result = parsePipListJson('{"key": "value"}', 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("pip list output is not a JSON array");
+    expect(result.rawOutput).toBe('{"key": "value"}');
   });
 });
 
@@ -1084,5 +1097,558 @@ describe("parsePyenvOutput installList action", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("command not found");
+  });
+});
+
+// ─── P1 Gap Tests ──────────────────────────────────────────────────────────
+
+// Gap #183: mypy JSON output parsing
+describe("parseMypyJsonOutput", () => {
+  it("parses mypy JSON output array", () => {
+    const json = JSON.stringify([
+      {
+        file: "src/main.py",
+        line: 10,
+        column: 5,
+        message: "Incompatible return value type",
+        hint: null,
+        code: "return-value",
+        severity: "error",
+      },
+      {
+        file: "src/utils.py",
+        line: 3,
+        column: 0,
+        message: "See https://mypy.readthedocs.io for more info",
+        hint: null,
+        code: null,
+        severity: "note",
+      },
+    ]);
+
+    const result = parseMypyJsonOutput(json, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(2);
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(0);
+    expect(result.notes).toBe(1);
+    expect(result.diagnostics![0]).toEqual({
+      file: "src/main.py",
+      line: 10,
+      column: 5,
+      severity: "error",
+      message: "Incompatible return value type",
+      code: "return-value",
+    });
+    expect(result.diagnostics![1]).toEqual({
+      file: "src/utils.py",
+      line: 3,
+      column: undefined,
+      severity: "note",
+      message: "See https://mypy.readthedocs.io for more info",
+      code: undefined,
+    });
+  });
+
+  it("parses clean JSON output", () => {
+    const result = parseMypyJsonOutput("[]", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(0);
+    expect(result.notes).toBe(0);
+  });
+
+  it("falls back to text parsing on invalid JSON", () => {
+    const textOutput = [
+      'src/main.py:10:5: error: Argument 1 to "foo" has incompatible type  [arg-type]',
+      "src/utils.py:5: note: See docs for more info",
+      "Found 1 error in 1 file",
+    ].join("\n");
+
+    const result = parseMypyJsonOutput(textOutput, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(2);
+    expect(result.errors).toBe(1);
+    expect(result.notes).toBe(1);
+    expect(result.warnings).toBe(0);
+    expect(result.diagnostics![0].file).toBe("src/main.py");
+  });
+
+  it("falls back to text on non-array JSON", () => {
+    const result = parseMypyJsonOutput('{"error": true}', 1);
+
+    // Falls back to text parsing which finds no diagnostics
+    expect(result.total).toBe(0);
+  });
+
+  it("handles JSON with all severity levels", () => {
+    const json = JSON.stringify([
+      {
+        file: "a.py",
+        line: 1,
+        column: 1,
+        message: "err",
+        hint: null,
+        code: "misc",
+        severity: "error",
+      },
+      {
+        file: "b.py",
+        line: 2,
+        column: 1,
+        message: "warn",
+        hint: null,
+        code: "misc",
+        severity: "warning",
+      },
+      {
+        file: "c.py",
+        line: 3,
+        column: 1,
+        message: "info",
+        hint: null,
+        code: null,
+        severity: "note",
+      },
+    ]);
+
+    const result = parseMypyJsonOutput(json, 1);
+
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(1);
+    expect(result.notes).toBe(1);
+    expect(result.total).toBe(3);
+  });
+});
+
+// Gap #184: Separate notes from warnings in text parsing
+describe("parseMypyTextOutput — notes separated from warnings", () => {
+  it("separates notes from warnings", () => {
+    const stdout = [
+      'src/main.py:5:1: warning: Unused "type: ignore" comment  [unused-ignore]',
+      "src/main.py:10: note: See https://mypy.readthedocs.io for more info",
+      "src/main.py:10:5: error: Incompatible types in assignment  [assignment]",
+    ].join("\n");
+
+    const result = parseMypyTextOutput(stdout, 1);
+
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(1);
+    expect(result.notes).toBe(1);
+    expect(result.total).toBe(3);
+  });
+
+  it("reports zero notes when there are none", () => {
+    const stdout = ['src/main.py:1: error: Name "foo" is not defined  [name-defined]'].join("\n");
+
+    const result = parseMypyTextOutput(stdout, 1);
+
+    expect(result.errors).toBe(1);
+    expect(result.warnings).toBe(0);
+    expect(result.notes).toBe(0);
+    expect(result.total).toBe(1);
+  });
+});
+
+// Gap #185: pip-audit severity/aliases
+describe("parsePipAuditJson — severity and aliases", () => {
+  it("parses vulnerabilities with severity and aliases", () => {
+    const json = JSON.stringify({
+      dependencies: [
+        {
+          name: "requests",
+          version: "2.25.0",
+          vulns: [
+            {
+              id: "PYSEC-2023-001",
+              description: "SSRF vulnerability",
+              fix_versions: ["2.31.0"],
+              aliases: ["CVE-2023-32681"],
+              url: "https://osv.dev/vulnerability/PYSEC-2023-001",
+              severity: "HIGH",
+              cvss_score: 8.1,
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parsePipAuditJson(json, 1);
+
+    expect(result.total).toBe(1);
+    const vuln = result.vulnerabilities![0];
+    expect(vuln.aliases).toEqual(["CVE-2023-32681"]);
+    expect(vuln.url).toBe("https://osv.dev/vulnerability/PYSEC-2023-001");
+    expect(vuln.severity).toBe("HIGH");
+    expect(vuln.cvssScore).toBe(8.1);
+  });
+
+  it("omits optional fields when not present", () => {
+    const json = JSON.stringify({
+      dependencies: [
+        {
+          name: "flask",
+          version: "1.0.0",
+          vulns: [
+            {
+              id: "CVE-2023-999",
+              description: "XSS vulnerability",
+              fix_versions: ["2.0.0"],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parsePipAuditJson(json, 1);
+
+    const vuln = result.vulnerabilities![0];
+    expect(vuln.aliases).toBeUndefined();
+    expect(vuln.url).toBeUndefined();
+    expect(vuln.severity).toBeUndefined();
+    expect(vuln.cvssScore).toBeUndefined();
+  });
+
+  it("handles empty aliases array", () => {
+    const json = JSON.stringify({
+      dependencies: [
+        {
+          name: "pkg",
+          version: "1.0",
+          vulns: [
+            {
+              id: "VULN-1",
+              description: "test",
+              fix_versions: [],
+              aliases: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parsePipAuditJson(json, 0);
+    expect(result.vulnerabilities![0].aliases).toBeUndefined();
+  });
+});
+
+// Gap #186: pip-list parse errors
+describe("parsePipListJson — error surfacing", () => {
+  it("surfaces JSON parse errors with raw output", () => {
+    const badOutput = "WARNING: pip is configured with locations\n[broken json";
+    const result = parsePipListJson(badOutput, 0);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.rawOutput).toBe(badOutput);
+  });
+
+  it("surfaces non-array JSON error", () => {
+    const result = parsePipListJson('{"packages": []}', 0);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("pip list output is not a JSON array");
+    expect(result.rawOutput).toBeDefined();
+  });
+
+  it("truncates raw output when longer than 500 chars", () => {
+    const longOutput = "x".repeat(600);
+    const result = parsePipListJson(longOutput, 0);
+
+    expect(result.rawOutput!.length).toBeLessThanOrEqual(503); // 500 + "..."
+    expect(result.rawOutput).toContain("...");
+  });
+
+  it("returns no error for valid JSON", () => {
+    const json = JSON.stringify([{ name: "pkg", version: "1.0" }]);
+    const result = parsePipListJson(json, 0);
+
+    expect(result.error).toBeUndefined();
+    expect(result.rawOutput).toBeUndefined();
+    expect(result.success).toBe(true);
+  });
+});
+
+// Gap #187: pip-show multiple packages
+describe("parsePipShowOutput — multiple packages", () => {
+  it("parses multiple packages separated by ---", () => {
+    const stdout = [
+      "Name: requests",
+      "Version: 2.31.0",
+      "Summary: Python HTTP for Humans.",
+      "Requires: charset-normalizer, idna, urllib3, certifi",
+      "---",
+      "Name: flask",
+      "Version: 3.0.0",
+      "Summary: A micro web framework.",
+      "Requires: click, jinja2, werkzeug",
+    ].join("\n");
+
+    const result = parsePipShowOutput(stdout, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.packages).toHaveLength(2);
+    expect(result.packages[0].name).toBe("requests");
+    expect(result.packages[0].version).toBe("2.31.0");
+    expect(result.packages[1].name).toBe("flask");
+    expect(result.packages[1].version).toBe("3.0.0");
+    // Backward compat: top-level fields from first package
+    expect(result.name).toBe("requests");
+    expect(result.version).toBe("2.31.0");
+  });
+
+  it("handles single package (backward compat)", () => {
+    const stdout = ["Name: requests", "Version: 2.31.0", "Summary: Python HTTP for Humans."].join(
+      "\n",
+    );
+
+    const result = parsePipShowOutput(stdout, 0);
+
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages[0].name).toBe("requests");
+    expect(result.name).toBe("requests");
+  });
+
+  it("handles three packages", () => {
+    const stdout = [
+      "Name: pkg1",
+      "Version: 1.0.0",
+      "Summary: First",
+      "---",
+      "Name: pkg2",
+      "Version: 2.0.0",
+      "Summary: Second",
+      "---",
+      "Name: pkg3",
+      "Version: 3.0.0",
+      "Summary: Third",
+    ].join("\n");
+
+    const result = parsePipShowOutput(stdout, 0);
+
+    expect(result.packages).toHaveLength(3);
+    expect(result.packages[2].name).toBe("pkg3");
+  });
+});
+
+// Gap #188: Poetry POETRY_SHOW_RE regex
+describe("parsePoetryOutput — strict regex", () => {
+  it("does not match status/header lines", () => {
+    const stdout = [
+      "Loading packages...",
+      "certifi            2023.7.22 Python package for Mozilla's CA Bundle.",
+      "requests           2.31.0    Python HTTP for Humans.",
+      "Resolving dependencies...",
+    ].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "show");
+
+    // Should only match the two actual package lines
+    expect(result.total).toBe(2);
+    expect(result.packages![0].name).toBe("certifi");
+    expect(result.packages![1].name).toBe("requests");
+  });
+
+  it("matches packages with dots and underscores in names", () => {
+    const stdout = ["my.package_v2   1.0.0  A package with dots and underscores"].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "show");
+
+    expect(result.total).toBe(1);
+    expect(result.packages![0].name).toBe("my.package_v2");
+    expect(result.packages![0].version).toBe("1.0.0");
+  });
+
+  it("does not match lines starting with special chars", () => {
+    const stdout = [
+      " - Installing requests (2.31.0)",
+      "  * certifi 2023.7.22",
+      "requests           2.31.0    Python HTTP for Humans.",
+    ].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "show");
+
+    // Should only match the properly formatted package line
+    expect(result.total).toBe(1);
+    expect(result.packages![0].name).toBe("requests");
+  });
+
+  it("requires version to start with a digit", () => {
+    const stdout = [
+      "loading             status  Some status message",
+      "requests            2.31.0  Python HTTP for Humans.",
+    ].join("\n");
+
+    const result = parsePoetryOutput(stdout, "", 0, "show");
+
+    // "loading status" should not match (version doesn't start with digit)
+    expect(result.total).toBe(1);
+    expect(result.packages![0].name).toBe("requests");
+  });
+});
+
+// Gap #189: pyenv uninstall
+describe("parsePyenvOutput — uninstall", () => {
+  it("parses successful uninstall", () => {
+    const stderr = "pyenv: remove /home/user/.pyenv/versions/3.10.13\n";
+    const result = parsePyenvOutput("", stderr, 0, "uninstall");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("uninstall");
+    expect(result.uninstalled).toBeDefined();
+  });
+
+  it("parses uninstall with version in output", () => {
+    const stdout = "";
+    const stderr = "pyenv: remove 3.10.13\n";
+    const result = parsePyenvOutput(stdout, stderr, 0, "uninstall");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("uninstall");
+    expect(result.uninstalled).toBe("3.10.13");
+  });
+
+  it("handles uninstall failure", () => {
+    const stderr = "pyenv: version '99.99.99' not installed\n";
+    const result = parsePyenvOutput("", stderr, 1, "uninstall");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("not installed");
+  });
+
+  it("handles silent successful uninstall", () => {
+    // Some pyenv versions produce no output on success
+    const result = parsePyenvOutput("", "", 0, "uninstall");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("uninstall");
+  });
+});
+
+// Gap #191: pytest warnings count
+describe("parsePytestOutput — warnings count", () => {
+  it("parses warnings from summary line", () => {
+    const stdout = [
+      "========================= short test summary info =========================",
+      "==================== 5 passed, 2 warnings in 1.23s ====================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.passed).toBe(5);
+    expect(result.warnings).toBe(2);
+    expect(result.total).toBe(5);
+  });
+
+  it("parses warnings with mixed results", () => {
+    const stdout = [
+      "==================== 3 passed, 1 failed, 4 warnings in 2.50s ====================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.passed).toBe(3);
+    expect(result.failed).toBe(1);
+    expect(result.warnings).toBe(4);
+  });
+
+  it("reports zero warnings when none present", () => {
+    const stdout = ["4 passed in 0.52s"].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.warnings).toBe(0);
+  });
+
+  it("handles single warning", () => {
+    const stdout = ["10 passed, 1 warning in 3.00s"].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.warnings).toBe(1);
+  });
+});
+
+// Gap #192: ruff fixApplicability
+describe("parseRuffJson — fixApplicability", () => {
+  it("extracts safe fix applicability", () => {
+    const json = JSON.stringify([
+      {
+        code: "F401",
+        message: "unused import",
+        filename: "a.py",
+        location: { row: 1, column: 1 },
+        fix: { applicability: "safe", message: "Remove import", edits: [] },
+      },
+    ]);
+
+    const result = parseRuffJson(json, 1);
+    expect(result.diagnostics![0].fixApplicability).toBe("safe");
+  });
+
+  it("extracts unsafe fix applicability", () => {
+    const json = JSON.stringify([
+      {
+        code: "UP035",
+        message: "deprecated import",
+        filename: "b.py",
+        location: { row: 5, column: 1 },
+        fix: { applicability: "unsafe", message: "Replace import", edits: [] },
+      },
+    ]);
+
+    const result = parseRuffJson(json, 1);
+    expect(result.diagnostics![0].fixApplicability).toBe("unsafe");
+  });
+
+  it("extracts display fix applicability", () => {
+    const json = JSON.stringify([
+      {
+        code: "E711",
+        message: "comparison to None",
+        filename: "c.py",
+        location: { row: 10, column: 5 },
+        fix: { applicability: "display", message: "Use 'is None'", edits: [] },
+      },
+    ]);
+
+    const result = parseRuffJson(json, 1);
+    expect(result.diagnostics![0].fixApplicability).toBe("display");
+  });
+
+  it("returns undefined when no fix", () => {
+    const json = JSON.stringify([
+      {
+        code: "E501",
+        message: "line too long",
+        filename: "d.py",
+        location: { row: 1, column: 89 },
+        fix: null,
+      },
+    ]);
+
+    const result = parseRuffJson(json, 1);
+    expect(result.diagnostics![0].fixApplicability).toBeUndefined();
+    expect(result.diagnostics![0].fixable).toBe(false);
+  });
+
+  it("returns undefined when fix has no applicability field", () => {
+    const json = JSON.stringify([
+      {
+        code: "F401",
+        message: "unused import",
+        filename: "e.py",
+        location: { row: 1, column: 1 },
+        fix: { message: "Remove import", edits: [] },
+      },
+    ]);
+
+    const result = parseRuffJson(json, 1);
+    expect(result.diagnostics![0].fixApplicability).toBeUndefined();
+    expect(result.diagnostics![0].fixable).toBe(true);
   });
 });
