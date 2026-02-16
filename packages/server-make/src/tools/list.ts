@@ -25,6 +25,16 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default("auto")
           .describe('Task runner to use: "auto" detects from files, or force "make"/"just"'),
+        includeSubmodules: z
+          .boolean()
+          .optional()
+          .describe("Include recipes from justfile submodules (just --list-submodules, just only)"),
+        unsorted: z
+          .boolean()
+          .optional()
+          .describe(
+            "List targets in definition order instead of alphabetical (just --unsorted, just only)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -35,7 +45,7 @@ export function registerListTool(server: McpServer) {
       },
       outputSchema: MakeListResultSchema,
     },
-    async ({ path, tool, compact }) => {
+    async ({ path, tool, includeSubmodules, unsorted, compact }) => {
       const cwd = path || process.cwd();
       const resolved = resolveTool(tool || "auto", cwd);
 
@@ -43,7 +53,10 @@ export function registerListTool(server: McpServer) {
       let rawOutput: string;
 
       if (resolved === "just") {
-        const result = await justCmd(["--list"], cwd);
+        const justArgs = ["--list"];
+        if (includeSubmodules) justArgs.push("--list-submodules");
+        if (unsorted) justArgs.push("--unsorted");
+        const result = await justCmd(justArgs, cwd);
         rawOutput = result.stdout.trim();
         parsed = parseJustList(result.stdout);
       } else {
