@@ -208,12 +208,35 @@ export function registerRunTool(server: McpServer) {
 
       const result = await docker(args, path);
 
+      // #121: Return structured error instead of throwing for non-zero exits
       if (result.exitCode !== 0) {
-        const errorMsg = result.stderr || result.stdout || "Unknown error";
-        throw new Error(`docker run failed: ${errorMsg.trim()}`);
+        const data = parseRunOutput(
+          result.stdout,
+          image,
+          detach ?? true,
+          name,
+          result.exitCode,
+          result.stderr,
+        );
+        return compactDualOutput(
+          data,
+          result.stdout || result.stderr,
+          formatRun,
+          compactRunMap,
+          formatRunCompact,
+          compact === false,
+        );
       }
 
-      const data = parseRunOutput(result.stdout, image, detach ?? true, name);
+      // #122: Pass exitCode and stderr for non-detached runs
+      const data = parseRunOutput(
+        result.stdout,
+        image,
+        detach ?? true,
+        name,
+        result.exitCode,
+        result.stderr,
+      );
       return compactDualOutput(
         data,
         result.stdout,

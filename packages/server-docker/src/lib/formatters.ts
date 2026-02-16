@@ -25,12 +25,19 @@ export function formatPs(data: DockerPs): string {
     const ports = portsArr.length
       ? ` [${portsArr.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
       : "";
-    lines.push(`  ${(c.state ?? "unknown").padEnd(10)} ${c.name} (${c.image})${ports}`);
+    // #117/#118: Show labels count and networks
+    const labelsInfo =
+      c.labels && Object.keys(c.labels).length > 0 ? ` labels=${Object.keys(c.labels).length}` : "";
+    const networksInfo = c.networks && c.networks.length > 0 ? ` nets=${c.networks.join(",")}` : "";
+    lines.push(
+      `  ${(c.state ?? "unknown").padEnd(10)} ${c.name} (${c.image})${ports}${labelsInfo}${networksInfo}`,
+    );
   }
   return lines.join("\n");
 }
 
-/** Formats structured Docker build results into a human-readable success/failure summary. */
+/** Formats structured Docker build results into a human-readable success/failure summary.
+ *  #97: Includes structured error details with line numbers. */
 export function formatBuild(data: DockerBuild): string {
   if (data.success) {
     const parts = [`Build succeeded in ${data.duration}s`];
@@ -41,20 +48,37 @@ export function formatBuild(data: DockerBuild): string {
 
   const lines = [`Build failed (${data.duration}s)`];
   for (const err of data.errors ?? []) {
-    lines.push(`  ${err}`);
+    if (typeof err === "string") {
+      lines.push(`  ${err}`);
+    } else {
+      const lineInfo = err.line != null ? `:${err.line}` : "";
+      const fileInfo = err.dockerfile
+        ? `${err.dockerfile}${lineInfo}`
+        : lineInfo
+          ? `line${lineInfo}`
+          : "";
+      const prefix = fileInfo ? `${fileInfo}: ` : "";
+      lines.push(`  ${prefix}${err.message}`);
+    }
   }
   return lines.join("\n");
 }
 
-/** Formats structured Docker logs data into a human-readable output with container name and line count. */
+/** Formats structured Docker logs data into a human-readable output with container name and line count.
+ *  #113: Notes when separate stdout/stderr streams are available. */
 export function formatLogs(data: DockerLogs): string {
   const header = data.isTruncated
     ? `${data.container} (${data.total} of ${data.totalLines} lines, truncated)`
     : `${data.container} (${data.total} lines)`;
-  return `${header}\n${(data.lines ?? []).join("\n")}`;
+  const streamInfo =
+    data.stdoutLines || data.stderrLines
+      ? ` [stdout=${(data.stdoutLines ?? []).length}, stderr=${(data.stderrLines ?? []).length}]`
+      : "";
+  return `${header}${streamInfo}\n${(data.lines ?? []).join("\n")}`;
 }
 
-/** Formats structured Docker image data into a human-readable listing with repository, tag, and size. */
+/** Formats structured Docker image data into a human-readable listing with repository, tag, and size.
+ *  #110: Shows ISO creation timestamp when available. */
 export function formatImages(data: DockerImages): string {
   if (data.total === 0) return "No images found.";
 
@@ -62,47 +86,83 @@ export function formatImages(data: DockerImages): string {
   for (const img of data.images) {
     const tag = img.tag && img.tag !== "<none>" ? `:${img.tag}` : "";
     const digest = img.digest ? ` [${img.digest.slice(0, 19)}...]` : "";
-    lines.push(`  ${img.repository}${tag} (${img.size}, ${img.created})${digest}`);
+    const createdAt = img.createdAt ? ` (${img.createdAt})` : ` (${img.created})`;
+    lines.push(`  ${img.repository}${tag} (${img.size})${createdAt}${digest}`);
   }
   return lines.join("\n");
 }
 
-/** Formats structured Docker run output into a human-readable summary. */
+/** Formats structured Docker run output into a human-readable summary.
+ *  #121/#122: Shows exitCode, errorCategory, and stdout/stderr for non-detached runs. */
 export function formatRun(data: DockerRun): string {
   const name = data.name ? ` (${data.name})` : "";
   const mode = data.detached ? "detached" : "attached";
-  return `Container ${data.containerId}${name} started from ${data.image} [${mode}]`;
+  const lines = [`Container ${data.containerId}${name} started from ${data.image} [${mode}]`];
+
+  if (data.exitCode != null && data.exitCode !== 0) {
+    lines.push(`  Exit code: ${data.exitCode}`);
+    if (data.errorCategory) lines.push(`  Error: ${data.errorCategory}`);
+    if (data.stderr) lines.push(`  stderr: ${data.stderr.slice(0, 200)}`);
+  } else if (!data.detached) {
+    if (data.stdout) lines.push(data.stdout);
+    if (data.stderr) lines.push(`stderr: ${data.stderr}`);
+  }
+
+  return lines.join("\n");
 }
 
-/** Formats structured Docker exec output into a human-readable summary. */
+/** Formats structured Docker exec output into a human-readable summary.
+ *  #108: Shows truncation indicator. */
 export function formatExec(data: DockerExec): string {
   const status = data.success ? "succeeded" : `failed (exit code ${data.exitCode})`;
   const dur = data.duration != null ? ` in ${data.duration}s` : "";
-  const lines = [`Exec ${status}${dur}`];
+  const trunc = data.isTruncated ? " [truncated]" : "";
+  const lines = [`Exec ${status}${dur}${trunc}`];
   if (data.stdout) lines.push(data.stdout);
   if (data.stderr) lines.push(`stderr: ${data.stderr}`);
   return lines.join("\n");
 }
 
-/** Formats structured Docker Compose up output into a human-readable summary. */
+/** Formats structured Docker Compose up output into a human-readable summary.
+ *  #107: Shows per-service state details when available. */
 export function formatComposeUp(data: DockerComposeUp): string {
   if (!data.success) return "Compose up failed";
   if (data.started === 0) return "Compose up succeeded (no new services started)";
-  return `Compose up: ${data.started} services started (${(data.services ?? []).join(", ")})`;
+  const lines = [
+    `Compose up: ${data.started} services started (${(data.services ?? []).join(", ")})`,
+  ];
+  if (data.serviceStates && data.serviceStates.length > 0) {
+    for (const ss of data.serviceStates) {
+      lines.push(`  ${ss.name}: ${ss.action}`);
+    }
+  }
+  return lines.join("\n");
 }
 
-/** Formats structured Docker Compose down output into a human-readable summary. */
+/** Formats structured Docker Compose down output into a human-readable summary.
+ *  #100: Shows per-container details.
+ *  #101: Shows separate volume and network counts. */
 export function formatComposeDown(data: DockerComposeDown): string {
   if (!data.success) return "Compose down failed";
-  return `Compose down: ${data.stopped} stopped, ${data.removed} removed`;
+  const parts = [`Compose down: ${data.stopped} stopped, ${data.removed} removed`];
+  if (data.volumesRemoved) parts[0] += `, ${data.volumesRemoved} volumes removed`;
+  if (data.networksRemoved) parts[0] += `, ${data.networksRemoved} networks removed`;
+  if (data.containers && data.containers.length > 0) {
+    for (const c of data.containers) {
+      parts.push(`  ${c.name}: ${c.action}`);
+    }
+  }
+  return parts.join("\n");
 }
 
-/** Formats structured Docker pull output into a human-readable summary. */
+/** Formats structured Docker pull output into a human-readable summary.
+ *  #120: Shows size when available. */
 export function formatPull(data: DockerPull): string {
   if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
+  const size = data.size ? ` [${data.size}]` : "";
   if (data.status === "up-to-date") return `${data.image}:${data.tag} is up to date${digest}`;
-  return `Pulled ${data.image}:${data.tag}${digest}`;
+  return `Pulled ${data.image}:${data.tag}${digest}${size}`;
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────
@@ -345,7 +405,9 @@ export function formatInspect(data: DockerInspect): string {
   return formatContainerInspect(data);
 }
 
-/** Formats a container inspect result. */
+/** Formats a container inspect result.
+ *  #111: Shows network settings.
+ *  #112: Shows mount information. */
 function formatContainerInspect(data: DockerInspect): string {
   const lines = [`${data.name} (${data.id})`];
   lines.push(`  Image: ${data.image}`);
@@ -360,6 +422,18 @@ function formatContainerInspect(data: DockerInspect): string {
   if (data.created) lines.push(`  Created: ${data.created}`);
   if (data.env && data.env.length > 0) {
     lines.push(`  Env: ${data.env.length} variables`);
+  }
+  // #111: Show network settings
+  if (data.networkSettings) {
+    lines.push(`  Network: IP=${data.networkSettings.ipAddress}`);
+  }
+  // #112: Show mounts
+  if (data.mounts && data.mounts.length > 0) {
+    lines.push(`  Mounts: ${data.mounts.length} mount(s)`);
+    for (const m of data.mounts) {
+      const mode = m.mode ? ` [${m.mode}]` : "";
+      lines.push(`    ${m.source} → ${m.destination}${mode}`);
+    }
   }
   return lines.join("\n");
 }
@@ -439,14 +513,23 @@ export function formatInspectCompact(data: DockerInspectCompact): string {
 
 // ── Network LS ───────────────────────────────────────────────────────
 
-/** Formats structured Docker network list into a human-readable listing. */
+/** Formats structured Docker network list into a human-readable listing.
+ *  #115: Shows labels when present.
+ *  #116: Shows boolean flags. */
 export function formatNetworkLs(data: DockerNetworkLs): string {
   if (data.total === 0) return "No networks found.";
 
   const lines = [`${data.total} networks:`];
   for (const n of data.networks) {
     const created = n.createdAt ? ` (${n.createdAt})` : "";
-    lines.push(`  ${n.name} (${n.driver}, ${n.scope})${created}`);
+    const flags: string[] = [];
+    if (n.ipv6) flags.push("ipv6");
+    if (n.internal) flags.push("internal");
+    if (n.attachable) flags.push("attachable");
+    const flagStr = flags.length > 0 ? ` [${flags.join(", ")}]` : "";
+    const labelCount =
+      n.labels && Object.keys(n.labels).length > 0 ? ` labels=${Object.keys(n.labels).length}` : "";
+    lines.push(`  ${n.name} (${n.driver}, ${n.scope})${created}${flagStr}${labelCount}`);
   }
   return lines.join("\n");
 }
@@ -481,14 +564,17 @@ export function formatNetworkLsCompact(data: DockerNetworkLsCompact): string {
 
 // ── Volume LS ────────────────────────────────────────────────────────
 
-/** Formats structured Docker volume list into a human-readable listing. */
+/** Formats structured Docker volume list into a human-readable listing.
+ *  #125: Shows labels when present. */
 export function formatVolumeLs(data: DockerVolumeLs): string {
   if (data.total === 0) return "No volumes found.";
 
   const lines = [`${data.total} volumes:`];
   for (const v of data.volumes) {
     const created = v.createdAt ? ` (${v.createdAt})` : "";
-    lines.push(`  ${v.name} (${v.driver}, ${v.scope})${created}`);
+    const labelCount =
+      v.labels && Object.keys(v.labels).length > 0 ? ` labels=${Object.keys(v.labels).length}` : "";
+    lines.push(`  ${v.name} (${v.driver}, ${v.scope})${created}${labelCount}`);
   }
   return lines.join("\n");
 }
@@ -523,7 +609,8 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
 
 // ── Compose Build ────────────────────────────────────────────────────
 
-/** Formats structured Docker Compose build output into a human-readable summary. */
+/** Formats structured Docker Compose build output into a human-readable summary.
+ *  #99: Shows per-service duration. */
 export function formatComposeBuild(data: DockerComposeBuild): string {
   if (!data.success && data.built === 0) {
     const lines = [`Compose build failed (${data.duration}s)`];
@@ -537,14 +624,16 @@ export function formatComposeBuild(data: DockerComposeBuild): string {
   for (const s of data.services ?? []) {
     const status = s.success ? "built" : "failed";
     const error = s.error ? ` — ${s.error}` : "";
-    lines.push(`  ${s.service}: ${status}${error}`);
+    const dur = s.duration != null ? ` (${s.duration}s)` : "";
+    lines.push(`  ${s.service}: ${status}${dur}${error}`);
   }
   return lines.join("\n");
 }
 
 // ── Stats ────────────────────────────────────────────────────────────
 
-/** Formats structured Docker stats data into a human-readable listing with CPU, memory, and I/O. */
+/** Formats structured Docker stats data into a human-readable listing with CPU, memory, and I/O.
+ *  #123/#124: Shows numeric memory and I/O values. */
 export function formatStats(data: DockerStats): string {
   if (data.total === 0) return "No container stats available.";
 
@@ -624,17 +713,24 @@ export function formatStatsCompact(data: DockerStatsCompact): string {
 
 // ── Compose PS ───────────────────────────────────────────────────────
 
-/** Formats structured Docker Compose ps data into a human-readable listing. */
+/** Formats structured Docker Compose ps data into a human-readable listing.
+ *  #105: Shows health status.
+ *  #106: Shows running/stopped counts. */
 export function formatComposePs(data: DockerComposePs): string {
   if (data.total === 0) return "No compose services found.";
 
-  const lines = [`${data.total} services:`];
+  const countInfo =
+    data.running != null && data.stopped != null
+      ? ` (${data.running} running, ${data.stopped} stopped)`
+      : "";
+  const lines = [`${data.total} services${countInfo}:`];
   for (const s of data.services) {
     const portsArr = s.ports ?? [];
     const ports = portsArr.length
       ? ` [${portsArr.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
       : "";
-    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}`);
+    const health = s.health ? ` health=${s.health}` : "";
+    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}${health}`);
   }
   return lines.join("\n");
 }
@@ -668,7 +764,8 @@ export function formatComposePsCompact(data: DockerComposePsCompact): string {
 
 // ── Compose Logs ─────────────────────────────────────────────────────
 
-/** Formats structured Docker Compose logs into a human-readable output grouped by service. */
+/** Formats structured Docker Compose logs into a human-readable output grouped by service.
+ *  #104: Shows log level when available. */
 export function formatComposeLogs(data: DockerComposeLogs): string {
   const header = data.isTruncated
     ? `Compose logs: ${data.services.length} services, ${data.total} of ${data.totalEntries} entries (truncated)`
@@ -677,7 +774,8 @@ export function formatComposeLogs(data: DockerComposeLogs): string {
   const lines = [header];
   for (const entry of data.entries ?? []) {
     const ts = entry.timestamp ? `${entry.timestamp} ` : "";
-    lines.push(`  ${entry.service} | ${ts}${entry.message}`);
+    const level = entry.level ? `[${entry.level.toUpperCase()}] ` : "";
+    lines.push(`  ${entry.service} | ${ts}${level}${entry.message}`);
   }
   return lines.join("\n");
 }

@@ -48,6 +48,14 @@ export function registerExecTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run command in the background (default: false)"),
+        /** #108: Add output truncation with limit param. */
+        limit: z
+          .number()
+          .optional()
+          .describe(
+            "Maximum number of characters to return in stdout. " +
+              "Output exceeding this limit will be truncated and isTruncated set to true.",
+          ),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -63,7 +71,7 @@ export function registerExecTool(server: McpServer) {
       },
       outputSchema: DockerExecSchema,
     },
-    async ({ container, command, workdir, user, env, envFile, detach, path, compact }) => {
+    async ({ container, command, workdir, user, env, envFile, detach, limit, path, compact }) => {
       if (!command || command.length === 0) {
         throw new Error("command array must not be empty");
       }
@@ -90,7 +98,8 @@ export function registerExecTool(server: McpServer) {
       const result = await docker(args, path);
       const duration = Math.round((Date.now() - start) / 100) / 10;
 
-      const data = parseExecOutput(result.stdout, result.stderr, result.exitCode, duration);
+      // #108: Pass limit to parseExecOutput for output truncation
+      const data = parseExecOutput(result.stdout, result.stderr, result.exitCode, duration, limit);
       return compactDualOutput(
         data,
         result.stdout,

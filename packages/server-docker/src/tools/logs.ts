@@ -20,7 +20,10 @@ export function registerLogsTool(server: McpServer) {
           .number()
           .optional()
           .default(100)
-          .describe("Number of lines to return (default: 100)"),
+          .describe(
+            "Number of lines to fetch from Docker (passed to --tail). " +
+              "This controls how many lines Docker returns from the end of the log. Default: 100.",
+          ),
         since: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -33,12 +36,14 @@ export function registerLogsTool(server: McpServer) {
           .describe(
             "Show logs until timestamp (e.g., '5m', '2024-01-02') for time-bounded queries",
           ),
+        /** #114: Clarified - 'limit' truncates the structured output AFTER Docker returns lines.
+         *  Use 'tail' to control how many lines Docker returns, and 'limit' to cap the structured response. */
         limit: z
           .number()
           .optional()
-          .default(100)
           .describe(
-            "Max lines in structured output (default: 100). Lines beyond this are truncated with isTruncated flag.",
+            "Max lines in structured output. Truncates AFTER Docker returns lines (sets isTruncated=true). " +
+              "Use 'tail' to limit what Docker returns; use 'limit' to cap the structured response size.",
           ),
         timestamps: z
           .boolean()
@@ -72,11 +77,12 @@ export function registerLogsTool(server: McpServer) {
       if (details) args.push("--details");
 
       const result = await docker(args);
-      const output = result.stdout || result.stderr;
-      const data = parseLogsOutput(output, container, limit);
+      // #113: Capture stdout and stderr separately
+      const combinedOutput = result.stdout || result.stderr;
+      const data = parseLogsOutput(combinedOutput, container, limit, result.stderr);
       return compactDualOutput(
         data,
-        output,
+        combinedOutput,
         formatLogs,
         compactLogsMap,
         formatLogsCompact,

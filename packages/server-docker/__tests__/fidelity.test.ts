@@ -306,7 +306,7 @@ describe("fidelity: parseBuildOutput", () => {
     expect(result.success).toBe(true);
     expect(result.imageId).toBe("a1b2c3d4e5f6");
     expect(result.duration).toBe(45.3);
-    expect(result.errors).toEqual([]);
+    expect(result.errors).toBeUndefined();
     expect(result.steps).toBeGreaterThanOrEqual(1);
   });
 
@@ -319,7 +319,7 @@ describe("fidelity: parseBuildOutput", () => {
     expect(result.errors.length).toBeGreaterThan(0);
 
     // Verify error content is preserved
-    const allErrors = result.errors.join(" ");
+    const allErrors = (result.errors ?? []).map((e: { message: string }) => e.message).join(" ");
     expect(allErrors).toContain("npm install");
   });
 
