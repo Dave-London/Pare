@@ -543,7 +543,7 @@ export function parseGoGenerateOutput(
  * When specific vars are queried, the result only contains those vars from the JSON output.
  * The queriedVars parameter is used to ensure compact mode includes the queried variables.
  */
-export function parseGoEnvOutput(stdout: string, queriedVars?: string[]): GoEnvResult {
+export function parseGoEnvOutput(stdout: string, _queriedVars?: string[]): GoEnvResult {
   let vars: Record<string, string>;
   try {
     vars = JSON.parse(stdout || "{}");
