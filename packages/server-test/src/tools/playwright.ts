@@ -43,6 +43,38 @@ export function registerPlaywrightTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Update snapshots (adds --update-snapshots flag)"),
+        workers: z
+          .number()
+          .optional()
+          .describe("Number of parallel workers for test execution (maps to --workers)"),
+        retries: z
+          .number()
+          .optional()
+          .describe("Number of retries for failed tests (maps to --retries)"),
+        maxFailures: z
+          .number()
+          .optional()
+          .describe("Stop after this many test failures (maps to --max-failures)"),
+        timeout: z
+          .number()
+          .optional()
+          .describe("Per-test timeout in milliseconds (maps to --timeout)"),
+        lastFailed: z
+          .boolean()
+          .optional()
+          .describe("Re-run only previously failed tests (maps to --last-failed)"),
+        onlyChanged: z
+          .boolean()
+          .optional()
+          .describe("Run only tests affected by recent changes (maps to --only-changed)"),
+        forbidOnly: z
+          .boolean()
+          .optional()
+          .describe("Fail if test.only is found — CI safety check (maps to --forbid-only)"),
+        passWithNoTests: z
+          .boolean()
+          .optional()
+          .describe("Exit successfully when no tests are found (maps to --pass-with-no-tests)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -59,7 +91,23 @@ export function registerPlaywrightTool(server: McpServer) {
       },
       outputSchema: PlaywrightResultSchema,
     },
-    async ({ path, filter, project, headed, updateSnapshots, args, compact }) => {
+    async ({
+      path,
+      filter,
+      project,
+      headed,
+      updateSnapshots,
+      workers,
+      retries,
+      maxFailures,
+      timeout,
+      lastFailed,
+      onlyChanged,
+      forbidOnly,
+      passWithNoTests,
+      args,
+      compact,
+    }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -83,6 +131,31 @@ export function registerPlaywrightTool(server: McpServer) {
 
       if (updateSnapshots) {
         extraArgs.push("--update-snapshots");
+      }
+
+      if (workers !== undefined) {
+        extraArgs.push(`--workers=${workers}`);
+      }
+      if (retries !== undefined) {
+        extraArgs.push(`--retries=${retries}`);
+      }
+      if (maxFailures !== undefined) {
+        extraArgs.push(`--max-failures=${maxFailures}`);
+      }
+      if (timeout !== undefined) {
+        extraArgs.push(`--timeout=${timeout}`);
+      }
+      if (lastFailed) {
+        extraArgs.push("--last-failed");
+      }
+      if (onlyChanged) {
+        extraArgs.push("--only-changed");
+      }
+      if (forbidOnly) {
+        extraArgs.push("--forbid-only");
+      }
+      if (passWithNoTests) {
+        extraArgs.push("--pass-with-no-tests");
       }
 
       // Write JSON output to a temp file to avoid stdout parsing issues on Windows

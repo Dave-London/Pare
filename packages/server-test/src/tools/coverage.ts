@@ -44,6 +44,16 @@ export function registerCoverageTool(server: McpServer) {
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
           .describe("Force a specific framework instead of auto-detecting"),
+        branch: z
+          .boolean()
+          .optional()
+          .describe("Collect branch coverage (maps to --cov-branch for pytest)"),
+        all: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include all source files in coverage, even untested ones (maps to --coverage.all for vitest, --all for nyc)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -54,10 +64,31 @@ export function registerCoverageTool(server: McpServer) {
       },
       outputSchema: CoverageSchema,
     },
-    async ({ path, framework, compact }) => {
+    async ({ path, framework, branch, all, compact }) => {
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const { cmd, cmdArgs } = getCoverageCommand(detected);
+
+      if (branch && detected === "pytest") {
+        cmdArgs.push("--cov-branch");
+      }
+      if (all) {
+        switch (detected) {
+          case "vitest":
+            cmdArgs.push("--coverage.all");
+            break;
+          case "mocha":
+            cmdArgs.push("--all");
+            break;
+          case "jest":
+            cmdArgs.push("--collectCoverageFrom=**/*.{js,jsx,ts,tsx}");
+            break;
+          case "pytest":
+            // pytest-cov doesn't have a direct --all flag
+            break;
+        }
+      }
+
       const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
       const output = result.stdout + "\n" + result.stderr;

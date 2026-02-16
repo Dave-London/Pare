@@ -63,6 +63,24 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run with coverage (adds --coverage for vitest/jest, --cov for pytest)"),
+        onlyChanged: z
+          .boolean()
+          .optional()
+          .describe(
+            "Run only tests affected by recent changes (maps to --lf for pytest, --onlyChanged for jest, --changed for vitest)",
+          ),
+        exitFirst: z
+          .boolean()
+          .optional()
+          .describe(
+            "Stop on first test failure (maps to -x for pytest, --bail=1 for jest/vitest, -b for mocha)",
+          ),
+        passWithNoTests: z
+          .boolean()
+          .optional()
+          .describe(
+            "Exit successfully when no tests are found (maps to --passWithNoTests for jest/vitest)",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -79,7 +97,18 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: TestRunSchema,
     },
-    async ({ path, framework, filter, updateSnapshots, coverage, args, compact }) => {
+    async ({
+      path,
+      framework,
+      filter,
+      updateSnapshots,
+      coverage,
+      onlyChanged,
+      exitFirst,
+      passWithNoTests,
+      args,
+      compact,
+    }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -125,6 +154,45 @@ export function registerRunTool(server: McpServer) {
             // mocha uses nyc wrapper; not supported via flag
             break;
         }
+      }
+
+      // Only-changed support
+      if (onlyChanged) {
+        switch (detected) {
+          case "pytest":
+            extraArgs.push("--lf");
+            break;
+          case "jest":
+            extraArgs.push("--onlyChanged");
+            break;
+          case "vitest":
+            extraArgs.push("--changed");
+            break;
+          case "mocha":
+            // mocha does not support only-changed natively
+            break;
+        }
+      }
+
+      // Exit-first / bail support
+      if (exitFirst) {
+        switch (detected) {
+          case "pytest":
+            extraArgs.push("-x");
+            break;
+          case "jest":
+          case "vitest":
+            extraArgs.push("--bail=1");
+            break;
+          case "mocha":
+            extraArgs.push("-b");
+            break;
+        }
+      }
+
+      // Pass-with-no-tests support
+      if (passWithNoTests && (detected === "jest" || detected === "vitest")) {
+        extraArgs.push("--passWithNoTests");
       }
 
       // For vitest/jest, write JSON to a temp file instead of relying on
