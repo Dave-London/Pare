@@ -29,6 +29,36 @@ export function registerGitleaksTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path to scan (default: cwd)"),
+        redact: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Redact raw secrets in output (--redact). Defaults to true to prevent secret leakage to LLM context.",
+          ),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to custom gitleaks rule file (--config)"),
+        baselinePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to baseline report for differential scanning (--baseline-path)"),
+        logOpts: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Git log options for scanning specific commit ranges/time windows (--log-opts, e.g., '--since=2024-01-01')",
+          ),
+        enableRule: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Enable specific rules by ID (--enable-rule, e.g., ['aws-access-key'])"),
         noGit: z
           .boolean()
           .optional()
@@ -72,6 +102,11 @@ export function registerGitleaksTool(server: McpServer) {
     },
     async ({
       path,
+      redact,
+      config,
+      baselinePath,
+      logOpts,
+      enableRule,
       noGit,
       verbose,
       followSymlinks,
@@ -80,11 +115,39 @@ export function registerGitleaksTool(server: McpServer) {
       exitCode,
       compact,
     }) => {
+      if (config) assertNoFlagInjection(config, "config");
+      if (baselinePath) assertNoFlagInjection(baselinePath, "baselinePath");
+      if (logOpts) assertNoFlagInjection(logOpts, "logOpts");
       if (logLevel) assertNoFlagInjection(logLevel, "logLevel");
+      for (const r of enableRule ?? []) {
+        assertNoFlagInjection(r, "enableRule");
+      }
+
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
       const args: string[] = ["detect", "--report-format", "json", "--report-path", "/dev/stdout"];
+
+      // Default to redacting secrets to prevent leakage
+      if (redact !== false) {
+        args.push("--redact");
+      }
+
+      if (config) {
+        args.push("--config", config);
+      }
+
+      if (baselinePath) {
+        args.push("--baseline-path", baselinePath);
+      }
+
+      if (logOpts) {
+        args.push("--log-opts", logOpts);
+      }
+
+      for (const r of enableRule ?? []) {
+        args.push("--enable-rule", r);
+      }
 
       if (noGit) {
         args.push("--no-git");
