@@ -4,14 +4,43 @@ import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretoo
 import { makeCmd, justCmd, resolveTool } from "../lib/make-runner.js";
 import {
   parseJustList,
+  parseJustDumpJson,
   parseMakeTargets,
   enrichMakeTargetDescriptions,
+  parsePhonyTargets,
+  enrichPhonyFlags,
   buildListResult,
 } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { MakeListResultSchema } from "../schemas/index.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+
+/** Attempts to use `just --dump-format json` for structured recipe parsing. */
+async function tryJustJsonDump(
+  cwd: string,
+  file?: string,
+): Promise<{
+  targets: {
+    name: string;
+    description?: string;
+    isPhony?: boolean;
+    dependencies?: string[];
+  }[];
+  total: number;
+} | null> {
+  try {
+    const jsonArgs = ["--dump-format", "json"];
+    if (file) jsonArgs.push("--justfile", file);
+    const jsonResult = await justCmd(jsonArgs, cwd);
+    if (jsonResult.exitCode === 0 && jsonResult.stdout.trim()) {
+      return parseJustDumpJson(jsonResult.stdout);
+    }
+  } catch {
+    // JSON dump not supported or failed — fall back
+  }
+  return null;
+}
 
 /** Registers the `list` tool on the given MCP server. */
 export function registerListTool(server: McpServer) {
@@ -73,17 +102,62 @@ export function registerListTool(server: McpServer) {
       const cwd = path || process.cwd();
       const resolved = resolveTool(tool || "auto", cwd);
 
-      let parsed: { targets: { name: string; description?: string }[]; total: number };
+      let parsed: {
+        targets: {
+          name: string;
+          description?: string;
+          isPhony?: boolean;
+          dependencies?: string[];
+        }[];
+        total: number;
+      };
       let rawOutput: string;
 
       if (resolved === "just") {
-        const justArgs = ["--list"];
-        if (file) justArgs.push("--justfile", file);
-        if (includeSubmodules) justArgs.push("--list-submodules");
-        if (unsorted) justArgs.push("--unsorted");
-        const result = await justCmd(justArgs, cwd);
-        rawOutput = result.stdout.trim();
-        parsed = parseJustList(result.stdout);
+        // Try JSON dump first for more reliable parsing (Gap #171)
+        const jsonParsed = await tryJustJsonDump(cwd, file);
+
+        if (jsonParsed) {
+          parsed = jsonParsed;
+
+          // Get --list output for raw display and optional ordering
+          const listArgs = ["--list"];
+          if (file) listArgs.push("--justfile", file);
+          if (includeSubmodules) listArgs.push("--list-submodules");
+          if (unsorted) {
+            listArgs.push("--unsorted");
+            // Reorder JSON-parsed targets to match --list definition order
+            const listResult = await justCmd(listArgs, cwd);
+            rawOutput = listResult.stdout.trim();
+            const listParsed = parseJustList(listResult.stdout);
+            const orderMap = new Map(listParsed.targets.map((t, i) => [t.name, i]));
+            parsed.targets.sort((a, b) => {
+              const aIdx = orderMap.get(a.name) ?? Infinity;
+              const bIdx = orderMap.get(b.name) ?? Infinity;
+              return aIdx - bIdx;
+            });
+          } else {
+            const listResult = await justCmd(listArgs, cwd);
+            rawOutput = listResult.stdout.trim();
+          }
+        } else {
+          // Fall back to text parsing if JSON dump fails
+          const justArgs = ["--list"];
+          if (file) justArgs.push("--justfile", file);
+          if (includeSubmodules) justArgs.push("--list-submodules");
+          if (unsorted) justArgs.push("--unsorted");
+          const result = await justCmd(justArgs, cwd);
+          rawOutput = result.stdout.trim();
+          const textParsed = parseJustList(result.stdout);
+          // Mark all just targets as phony (Gap #172: just recipes are inherently phony)
+          parsed = {
+            targets: textParsed.targets.map((t) => ({
+              ...t,
+              isPhony: true as const,
+            })),
+            total: textParsed.total,
+          };
+        }
       } else {
         const makeArgs = ["-pRrq"];
         if (file) makeArgs.push("-f", file);
@@ -94,11 +168,15 @@ export function registerListTool(server: McpServer) {
         rawOutput = result.stdout.trim();
         parsed = parseMakeTargets(result.stdout);
 
-        // Enrich targets with ## descriptions from the Makefile source
+        // Enrich targets with ## descriptions and .PHONY info from the Makefile source
         const makefilePath = file || join(cwd, "Makefile");
         try {
           const makefileSource = await readFile(makefilePath, "utf-8");
           enrichMakeTargetDescriptions(parsed.targets, makefileSource);
+
+          // Gap #172: Extract .PHONY declarations
+          const phonySet = parsePhonyTargets(makefileSource);
+          enrichPhonyFlags(parsed.targets, phonySet);
         } catch {
           // Makefile not readable (e.g. generated targets only) — skip enrichment
         }

@@ -11,15 +11,17 @@ export function parseRunOutput(
   exitCode: number,
   duration: number,
   tool: MakeTool,
+  timedOut: boolean = false,
 ): MakeRunResult {
   return {
     target,
-    success: exitCode === 0,
+    success: exitCode === 0 && !timedOut,
     exitCode,
     stdout: stdout.trimEnd() || undefined,
     stderr: stderr.trimEnd() || undefined,
     duration,
     tool,
+    timedOut,
   };
 }
 
@@ -56,6 +58,80 @@ export function parseJustList(stdout: string): {
   return { targets, total: targets.length };
 }
 
+/** Shape returned by `just --dump-format json`. */
+export interface JustDumpRecipe {
+  name?: string;
+  doc?: string | null;
+  parameters?: Array<{ name: string; default?: string | null }>;
+  dependencies?: Array<{ recipe: string } | string>;
+  body?: unknown;
+}
+
+export interface JustDump {
+  recipes?: Record<string, JustDumpRecipe>;
+  aliases?: Record<string, { target: string }>;
+}
+
+/**
+ * Parses `just --dump-format json` output into structured target data.
+ *
+ * The JSON dump includes recipe names, parameters, dependencies, and docs.
+ * All just recipes are inherently phony (no file targets).
+ */
+export function parseJustDumpJson(jsonOutput: string): {
+  targets: { name: string; description?: string; isPhony?: boolean; dependencies?: string[] }[];
+  total: number;
+} {
+  const dump: JustDump = JSON.parse(jsonOutput);
+  const targets: {
+    name: string;
+    description?: string;
+    isPhony?: boolean;
+    dependencies?: string[];
+  }[] = [];
+
+  if (dump.recipes) {
+    for (const [recipeName, recipe] of Object.entries(dump.recipes)) {
+      const deps: string[] = [];
+      if (recipe.dependencies && recipe.dependencies.length > 0) {
+        for (const dep of recipe.dependencies) {
+          if (typeof dep === "string") {
+            deps.push(dep);
+          } else if (dep && typeof dep === "object" && "recipe" in dep) {
+            deps.push(dep.recipe);
+          }
+        }
+      }
+
+      targets.push({
+        name: recipeName,
+        description: recipe.doc?.trim() || undefined,
+        isPhony: true,
+        dependencies: deps.length > 0 ? deps : undefined,
+      });
+    }
+  }
+
+  // Sort alphabetically by default (consistent with just --list default)
+  targets.sort((a, b) => a.name.localeCompare(b.name));
+
+  return { targets, total: targets.length };
+}
+
+/**
+ * Strips order-only dependencies from a make dependency list.
+ * In make, `target: normal_dep1 | order_only_dep` — everything after `|` is order-only.
+ * We only return dependencies before the `|` separator.
+ */
+function stripOrderOnlyDeps(tokens: string[]): string[] {
+  const result: string[] = [];
+  for (const token of tokens) {
+    if (token === "|") break;
+    if (token.length > 0) result.push(token);
+  }
+  return result;
+}
+
 /**
  * Parses `make -pRrq` database output to extract user-defined target names.
  *
@@ -70,15 +146,15 @@ export function parseJustList(stdout: string): {
  * (starting with `.`) and not comments.
  */
 export function parseMakeTargets(stdout: string): {
-  targets: { name: string; description?: string }[];
+  targets: { name: string; description?: string; dependencies?: string[] }[];
   total: number;
 } {
-  const targets: { name: string; description?: string }[] = [];
+  const targets: { name: string; description?: string; dependencies?: string[] }[] = [];
   const seen = new Set<string>();
 
   // The make -pRrq output includes a "# Files" section followed by rules.
   // Target lines appear as: "targetname: deps" or "targetname:"
-  const targetRe = /^([a-zA-Z0-9_][a-zA-Z0-9_.\-/]*):/;
+  const targetRe = /^([a-zA-Z0-9_][a-zA-Z0-9_.\-/]*):\s*(.*)/;
 
   for (const line of stdout.split("\n")) {
     // Skip comments and empty lines
@@ -91,12 +167,61 @@ export function parseMakeTargets(stdout: string): {
       if (name.startsWith(".") || name === "Makefile" || name === "makefile") continue;
       if (!seen.has(name)) {
         seen.add(name);
-        targets.push({ name });
+        // Parse dependencies from the right side of ":"
+        const depsStr = match[2].trim();
+        const tokens = depsStr ? depsStr.split(/\s+/) : [];
+        const deps = stripOrderOnlyDeps(tokens);
+        targets.push({
+          name,
+          dependencies: deps.length > 0 ? deps : undefined,
+        });
       }
     }
   }
 
   return { targets, total: targets.length };
+}
+
+/**
+ * Parses `.PHONY` declarations from Makefile source to determine which targets are phony.
+ *
+ * @param makefileSource - Raw contents of the Makefile
+ * @returns Set of target names declared as .PHONY
+ */
+export function parsePhonyTargets(makefileSource: string): Set<string> {
+  const phonySet = new Set<string>();
+  const phonyRe = /^\.PHONY\s*:\s*(.+)$/;
+
+  for (const line of makefileSource.split("\n")) {
+    const trimmed = line.trim();
+    const match = trimmed.match(phonyRe);
+    if (match) {
+      const names = match[1].split(/\s+/).filter((n) => n.length > 0);
+      for (const name of names) {
+        phonySet.add(name);
+      }
+    }
+  }
+
+  return phonySet;
+}
+
+/**
+ * Enriches targets with isPhony flag based on .PHONY declarations.
+ *
+ * @param targets - Targets previously extracted from `make -pRrq` output
+ * @param phonySet - Set of phony target names from parsePhonyTargets
+ * @returns The same targets array, mutated with `isPhony` fields where applicable
+ */
+export function enrichPhonyFlags(
+  targets: { name: string; description?: string; isPhony?: boolean; dependencies?: string[] }[],
+  phonySet: Set<string>,
+): void {
+  for (const target of targets) {
+    if (phonySet.has(target.name)) {
+      target.isPhony = true;
+    }
+  }
 }
 
 /**
@@ -142,10 +267,45 @@ export function enrichMakeTargetDescriptions(
 }
 
 /**
+ * Parses dependency lists from Makefile source for best-effort dependency enrichment.
+ * This extracts dependencies from `target: dep1 dep2` lines in the Makefile source
+ * (not the make database output), providing cleaner results for user-defined rules.
+ */
+export function parseMakeDependencies(makefileSource: string): Map<string, string[]> {
+  const depMap = new Map<string, string[]>();
+  const depRe = /^([a-zA-Z0-9_][a-zA-Z0-9_.\-/]*):\s*([^#\n]*)/;
+
+  for (const line of makefileSource.split("\n")) {
+    const match = line.match(depRe);
+    if (match) {
+      const name = match[1];
+      const depsStr = match[2].trim();
+      if (depsStr) {
+        const tokens = depsStr.split(/\s+/);
+        const deps = stripOrderOnlyDeps(tokens);
+        if (deps.length > 0) {
+          depMap.set(name, deps);
+        }
+      }
+    }
+  }
+
+  return depMap;
+}
+
+/**
  * Builds a full MakeListResult from parsed target data and the detected tool.
  */
 export function buildListResult(
-  parsed: { targets: { name: string; description?: string }[]; total: number },
+  parsed: {
+    targets: {
+      name: string;
+      description?: string;
+      isPhony?: boolean;
+      dependencies?: string[];
+    }[];
+    total: number;
+  },
   tool: MakeTool,
 ): MakeListResult {
   return {

@@ -9,14 +9,17 @@ export const MakeRunResultSchema = z.object({
   stderr: z.string().optional(),
   duration: z.number(),
   tool: z.enum(["make", "just"]),
+  timedOut: z.boolean(),
 });
 
 export type MakeRunResult = z.infer<typeof MakeRunResultSchema>;
 
-/** Zod schema for a single target entry with name and optional description. */
+/** Zod schema for a single target entry with name, optional description, phony flag, and dependencies. */
 export const MakeTargetSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
+  isPhony: z.boolean().optional(),
+  dependencies: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured make/just list output with targets and total count. */
