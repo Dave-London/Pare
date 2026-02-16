@@ -46,7 +46,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm test --continue -- --coverage
+      # Exclude server-git: its V8 coverage provider crashes with forked
+      # pool (ENOENT on coverage temp files). Tests still run in build-and-test.
+      - run: pnpm --filter '!@paretools/git' test --continue -- --coverage
 
   lint:
     runs-on: ubuntu-latest
