@@ -46,6 +46,9 @@ export function registerTagTool(server: McpServer) {
         "--sort=-creatordate",
         "--format=%(refname:short)\t%(creatordate:iso-strict)\t%(subject)",
       ];
+      if (force) args.push("--force");
+      if (sign) args.push("--sign");
+      if (verify) args.push("--verify");
       if (merged) args.push("--merged");
       if (noMerged) args.push("--no-merged");
 
