@@ -359,17 +359,48 @@ export function parseGoRunOutput(stdout: string, stderr: string, exitCode: numbe
   };
 }
 
-/** Parses `go mod tidy` output into structured result with success status and summary. */
+/**
+ * Parses `go mod tidy` output into structured result with success status, summary,
+ * and whether changes were made.
+ *
+ * @param goModHashBefore - MD5/hash of go.mod before tidy (optional, for change detection)
+ * @param goModHashAfter - MD5/hash of go.mod after tidy (optional, for change detection)
+ * @param goSumHashBefore - MD5/hash of go.sum before tidy (optional, for change detection)
+ * @param goSumHashAfter - MD5/hash of go.sum after tidy (optional, for change detection)
+ */
 export function parseGoModTidyOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  goModHashBefore?: string,
+  goModHashAfter?: string,
+  goSumHashBefore?: string,
+  goSumHashAfter?: string,
 ): GoModTidyResult {
   if (exitCode === 0) {
     const combined = (stdout + "\n" + stderr).trim();
+
+    // Determine whether changes were made
+    let madeChanges: boolean | undefined;
+    if (goModHashBefore !== undefined && goModHashAfter !== undefined) {
+      const modChanged = goModHashBefore !== goModHashAfter;
+      const sumChanged =
+        goSumHashBefore !== undefined &&
+        goSumHashAfter !== undefined &&
+        goSumHashBefore !== goSumHashAfter;
+      madeChanges = modChanged || sumChanged;
+    } else if (combined) {
+      // If we have output (e.g., "go: downloading..."), changes were likely made
+      madeChanges = true;
+    } else {
+      // No output and no hashes: assume no changes
+      madeChanges = false;
+    }
+
     return {
       success: true,
       summary: combined || "go.mod and go.sum are already tidy.",
+      madeChanges,
     };
   }
 
@@ -379,6 +410,12 @@ export function parseGoModTidyOutput(
     summary: combined || "go mod tidy failed.",
   };
 }
+
+/**
+ * Regex for gofmt stderr parse errors.
+ * Matches patterns like: "file.go:10:5: expected ..." or "file.go:10: expected ..."
+ */
+const GOFMT_ERROR_RE = /^(.+?):(\d+)(?::(\d+))?: (.+)$/;
 
 /** Parses `gofmt -l` or `gofmt -l -w` output into structured result with file list. */
 export function parseGoFmtOutput(
@@ -397,12 +434,48 @@ export function parseGoFmtOutput(
 
   const hasErrors = exitCode !== 0 || (checkMode && files.length > 0);
 
+  // Parse stderr for parse errors (Gap #151)
+  const parseErrors: { file: string; line: number; column?: number; message: string }[] = [];
+  if (stderr) {
+    const stderrLines = stderr.split("\n");
+    for (const line of stderrLines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const match = trimmed.match(GOFMT_ERROR_RE);
+      if (match) {
+        parseErrors.push({
+          file: match[1],
+          line: parseInt(match[2], 10),
+          column: match[3] ? parseInt(match[3], 10) : undefined,
+          message: match[4],
+        });
+      }
+    }
+  }
+
   return {
     success: !hasErrors,
     filesChanged: files.length,
     files,
+    parseErrors: parseErrors.length > 0 ? parseErrors : undefined,
   };
 }
+
+/**
+ * Regex for go generate -v output: prints package name as it's processed.
+ * Format: "mypackage" (just package name on stderr when -v is used)
+ *
+ * Regex for go generate -x output: prints the command being executed.
+ * Format on stderr: "cd /path/to/pkg; <command>" or just the command
+ *
+ * Combined regex for go generate verbose output lines indicating per-directive status.
+ * Patterns:
+ *   - `<file>:<line>: running "<command>"...` (from -v, not always present)
+ *   - `<file>.go:<line>: <command>` (from stderr with -x)
+ *   - `cd /path; <command>` (from -x)
+ */
+const GO_GENERATE_DIRECTIVE_RE = /^(.+\.go):(\d+): running "(.+?)"$/;
+const GO_GENERATE_X_FILE_RE = /^(.+\.go):(\d+): (.+)$/;
 
 /** Parses `go generate` output into structured result with success status and output text. */
 export function parseGoGenerateOutput(
@@ -411,14 +484,66 @@ export function parseGoGenerateOutput(
   exitCode: number,
 ): GoGenerateResult {
   const combined = (stdout + "\n" + stderr).trim();
+
+  // Parse per-directive output from -v/-x flags (Gap #152)
+  const directives: {
+    file: string;
+    line?: number;
+    command: string;
+    status?: "running" | "completed" | "failed";
+  }[] = [];
+
+  const allLines = combined.split("\n");
+  for (const line of allLines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Match "file.go:10: running "command""
+    const verboseMatch = trimmed.match(GO_GENERATE_DIRECTIVE_RE);
+    if (verboseMatch) {
+      directives.push({
+        file: verboseMatch[1],
+        line: parseInt(verboseMatch[2], 10),
+        command: verboseMatch[3],
+        status: exitCode === 0 ? "completed" : "running",
+      });
+      continue;
+    }
+
+    // Match "file.go:10: <command>" from -x output
+    const xMatch = trimmed.match(GO_GENERATE_X_FILE_RE);
+    if (xMatch) {
+      // Avoid matching error messages that look like file:line: patterns
+      const command = xMatch[3];
+      // Skip lines that look like error messages (contain "exec:", "not found", etc.)
+      if (
+        !command.startsWith("running ") &&
+        !command.includes("executable file not found") &&
+        !command.startsWith("bad flag syntax")
+      ) {
+        directives.push({
+          file: xMatch[1],
+          line: parseInt(xMatch[2], 10),
+          command: command,
+          status: exitCode === 0 ? "completed" : undefined,
+        });
+      }
+    }
+  }
+
   return {
     success: exitCode === 0,
     output: combined,
+    directives: directives.length > 0 ? directives : undefined,
   };
 }
 
-/** Parses `go env -json` output into structured result with environment variables and key fields. */
-export function parseGoEnvOutput(stdout: string): GoEnvResult {
+/**
+ * Parses `go env -json` output into structured result with environment variables and key fields.
+ * When specific vars are queried, the result only contains those vars from the JSON output.
+ * The queriedVars parameter is used to ensure compact mode includes the queried variables.
+ */
+export function parseGoEnvOutput(stdout: string, _queriedVars?: string[]): GoEnvResult {
   let vars: Record<string, string>;
   try {
     vars = JSON.parse(stdout || "{}");
@@ -441,6 +566,7 @@ export function parseGoEnvOutput(stdout: string): GoEnvResult {
     goversion: vars.GOVERSION ?? "",
     goos: vars.GOOS ?? "",
     goarch: vars.GOARCH ?? "",
+    // Store queriedVars for compact mode usage (handled in formatter)
   };
 }
 
@@ -456,6 +582,7 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
     goFiles?: string[];
     testGoFiles?: string[];
     imports?: string[];
+    error?: { err: string };
   }[] = [];
 
   if (!stdout.trim()) {
@@ -469,14 +596,29 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
   for (const chunk of chunks) {
     try {
       const pkg = JSON.parse(chunk);
-      packages.push({
+      const entry: {
+        dir: string;
+        importPath: string;
+        name: string;
+        goFiles?: string[];
+        testGoFiles?: string[];
+        imports?: string[];
+        error?: { err: string };
+      } = {
         dir: pkg.Dir ?? "",
         importPath: pkg.ImportPath ?? "",
         name: pkg.Name ?? "",
         goFiles: pkg.GoFiles,
         testGoFiles: pkg.TestGoFiles,
         imports: pkg.Imports,
-      });
+      };
+
+      // Capture Error field (Gap #155)
+      if (pkg.Error && typeof pkg.Error === "object" && pkg.Error.Err) {
+        entry.error = { err: String(pkg.Error.Err) };
+      }
+
+      packages.push(entry);
     } catch {
       // skip malformed JSON chunks
     }
@@ -571,7 +713,7 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
   const issues = parsed.Issues ?? [];
   for (const issue of issues) {
     const severity = mapSeverity(issue.Severity);
-    diagnostics.push({
+    const diag: GolangciLintDiagnostic = {
       file: issue.Pos?.Filename ?? "",
       line: issue.Pos?.Line ?? 0,
       column: issue.Pos?.Column || undefined,
@@ -579,7 +721,38 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
       severity,
       message: issue.Text ?? "",
       sourceLine: issue.SourceLines?.[0] || undefined,
-    });
+    };
+
+    // Capture Replacement/fix data (Gap #154)
+    if (issue.Replacement) {
+      const replacement = issue.Replacement;
+      if (replacement.NeedOnlyDelete || replacement.NewLines !== undefined) {
+        const fix: GolangciLintDiagnostic["fix"] = {
+          text: replacement.NeedOnlyDelete ? "" : (replacement.NewLines ?? []).join("\n"),
+        };
+
+        // Include range if inline fix info is present
+        if (replacement.Inline) {
+          fix.range = {
+            start: {
+              line: replacement.Inline.StartLine ?? issue.Pos?.Line ?? 0,
+              column: replacement.Inline.StartCol,
+            },
+            end: {
+              line: replacement.Inline.EndLine ?? issue.Pos?.Line ?? 0,
+              column: replacement.Inline.EndCol,
+            },
+          };
+        }
+
+        diag.fix = fix;
+      } else if (typeof replacement.NewLines === "undefined" && !replacement.NeedOnlyDelete) {
+        // Some replacements only have NewLines without inline info
+        // If Replacement exists but has no expected structure, still try to capture it
+      }
+    }
+
+    diagnostics.push(diag);
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
@@ -622,6 +795,16 @@ interface GolangciLintJsonOutput {
       Line?: number;
       Column?: number;
     };
+    Replacement?: {
+      NeedOnlyDelete?: boolean;
+      NewLines?: string[];
+      Inline?: {
+        StartLine?: number;
+        StartCol?: number;
+        EndLine?: number;
+        EndCol?: number;
+      };
+    };
   }>;
 }
 
@@ -634,15 +817,30 @@ interface GolangciLintJsonOutput {
  */
 const GO_GET_UPGRADED_RE = /^go: (?:upgraded|downgraded)\s+(\S+)\s+(\S+)\s+=>\s+(\S+)$/;
 const GO_GET_ADDED_RE = /^go: added\s+(\S+)\s+(\S+)$/;
+/**
+ * Regex for go get error lines per package.
+ * Examples:
+ *   go: module github.com/nonexistent/pkg: no matching versions for query "latest"
+ *   go: github.com/some/pkg@v1.0.0: verifying module: ...
+ */
+const GO_GET_ERROR_RE = /^go: (?:module\s+)?(\S+?)(?:@(\S+))?:\s+(.+)$/;
 
-/** Parses `go get` output into structured result with success status, output text, and resolved packages. */
-export function parseGoGetOutput(stdout: string, stderr: string, exitCode: number): GoGetResult {
+/** Parses `go get` output into structured result with success status, output text, resolved packages, and per-package status. */
+export function parseGoGetOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  requestedPackages?: string[],
+): GoGetResult {
   const combined = (stdout + "\n" + stderr).trim();
   const resolvedPackages: {
     package: string;
     previousVersion?: string;
     newVersion: string;
   }[] = [];
+
+  // Per-package status tracking (Gap #153)
+  const packageStatuses = new Map<string, { path: string; version?: string; error?: string }>();
 
   const lines = combined.split("\n");
   for (const line of lines) {
@@ -656,6 +854,10 @@ export function parseGoGetOutput(stdout: string, stderr: string, exitCode: numbe
         previousVersion: upgradeMatch[2],
         newVersion: upgradeMatch[3],
       });
+      packageStatuses.set(upgradeMatch[1], {
+        path: upgradeMatch[1],
+        version: upgradeMatch[3],
+      });
       continue;
     }
 
@@ -666,13 +868,49 @@ export function parseGoGetOutput(stdout: string, stderr: string, exitCode: numbe
         package: addedMatch[1],
         newVersion: addedMatch[2],
       });
+      packageStatuses.set(addedMatch[1], {
+        path: addedMatch[1],
+        version: addedMatch[2],
+      });
       continue;
     }
+
+    // Match per-package error lines (Gap #153)
+    const errorMatch = trimmed.match(GO_GET_ERROR_RE);
+    if (errorMatch) {
+      const pkgPath = errorMatch[1];
+      const errMsg = errorMatch[3];
+      // Skip "downloading" lines which are progress, not errors
+      if (!errMsg.startsWith("downloading ")) {
+        packageStatuses.set(pkgPath, {
+          path: pkgPath,
+          version: errorMatch[2] || undefined,
+          error: errMsg,
+        });
+      }
+    }
   }
+
+  // If we have requestedPackages but some aren't in statuses, add them as successful (no error, no explicit status)
+  if (requestedPackages) {
+    for (const reqPkg of requestedPackages) {
+      // Strip version suffix from request (e.g., "github.com/pkg/errors@latest" -> "github.com/pkg/errors")
+      const pkgPath = reqPkg.replace(/@.*$/, "");
+      if (!packageStatuses.has(pkgPath)) {
+        // If the overall command succeeded, mark as successful
+        if (exitCode === 0) {
+          packageStatuses.set(pkgPath, { path: pkgPath });
+        }
+      }
+    }
+  }
+
+  const packages = packageStatuses.size > 0 ? Array.from(packageStatuses.values()) : undefined;
 
   return {
     success: exitCode === 0,
     output: combined || undefined,
     resolvedPackages: resolvedPackages.length > 0 ? resolvedPackages : undefined,
+    packages,
   };
 }

@@ -559,3 +559,199 @@ describe("formatGetCompact", () => {
     );
   });
 });
+
+// ─── Gap #150: env compact mode with queried vars ───────────────────
+import { compactEnvMap } from "../src/lib/formatters.js";
+
+describe("compactEnvMap — queried vars (Gap #150)", () => {
+  it("includes queried variables in compact output", () => {
+    const data: GoEnvResult = {
+      success: true,
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+        CGO_ENABLED: "1",
+        GOMODCACHE: "/home/user/go/pkg/mod",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+
+    const compact = compactEnvMap(data, ["CGO_ENABLED", "GOMODCACHE"]);
+
+    expect(compact.success).toBe(true);
+    expect(compact.goroot).toBe("/usr/local/go");
+    expect(compact.CGO_ENABLED).toBe("1");
+    expect(compact.GOMODCACHE).toBe("/home/user/go/pkg/mod");
+  });
+
+  it("does not duplicate default key fields as extra keys", () => {
+    const data: GoEnvResult = {
+      success: true,
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+
+    const compact = compactEnvMap(data, ["GOROOT", "GOOS"]);
+
+    // GOROOT and GOOS are already top-level fields, should not be added again
+    const keys = Object.keys(compact);
+    expect(keys.filter((k) => k === "GOROOT")).toHaveLength(0); // Not added as extra key
+    expect(compact.goroot).toBe("/usr/local/go");
+  });
+
+  it("works without queried vars (backward compatible)", () => {
+    const data: GoEnvResult = {
+      success: true,
+      vars: {
+        GOROOT: "/usr/local/go",
+        GOPATH: "/home/user/go",
+        GOVERSION: "go1.22.0",
+        GOOS: "linux",
+        GOARCH: "amd64",
+        CGO_ENABLED: "1",
+      },
+      goroot: "/usr/local/go",
+      gopath: "/home/user/go",
+      goversion: "go1.22.0",
+      goos: "linux",
+      goarch: "amd64",
+    };
+
+    const compact = compactEnvMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact).not.toHaveProperty("CGO_ENABLED");
+  });
+});
+
+// ─── Gap #151: fmt compact with parse error count ───────────────────
+import { compactFmtMap, formatFmtCompact } from "../src/lib/formatters.js";
+
+describe("compactFmtMap — parseErrorCount (Gap #151)", () => {
+  it("includes parseErrorCount when parse errors present", () => {
+    const data: GoFmtResult = {
+      success: false,
+      filesChanged: 1,
+      files: ["main.go"],
+      parseErrors: [{ file: "broken.go", line: 5, column: 1, message: "syntax error" }],
+    };
+
+    const compact = compactFmtMap(data);
+
+    expect(compact.parseErrorCount).toBe(1);
+  });
+
+  it("does not include parseErrorCount when no parse errors", () => {
+    const data: GoFmtResult = {
+      success: true,
+      filesChanged: 0,
+      files: [],
+    };
+
+    const compact = compactFmtMap(data);
+
+    expect(compact).not.toHaveProperty("parseErrorCount");
+  });
+});
+
+describe("formatFmtCompact — parseErrorCount (Gap #151)", () => {
+  it("includes parse error count in compact format", () => {
+    expect(formatFmtCompact({ success: false, filesChanged: 2, parseErrorCount: 3 })).toBe(
+      "gofmt: 2 files, 3 parse errors",
+    );
+  });
+});
+
+// ─── Gap #152: generate compact with directiveCount ─────────────────
+import {
+  compactGenerateMap,
+  compactModTidyMap,
+  formatModTidyCompact,
+} from "../src/lib/formatters.js";
+
+describe("compactGenerateMap — directiveCount (Gap #152)", () => {
+  it("includes directiveCount when directives present", () => {
+    const data: GoGenerateResult = {
+      success: true,
+      output: 'main.go:3: running "stringer"',
+      directives: [{ file: "main.go", line: 3, command: "stringer", status: "completed" }],
+    };
+
+    const compact = compactGenerateMap(data);
+
+    expect(compact.directiveCount).toBe(1);
+  });
+
+  it("does not include directiveCount when no directives", () => {
+    const data: GoGenerateResult = {
+      success: true,
+      output: "",
+    };
+
+    const compact = compactGenerateMap(data);
+
+    expect(compact).not.toHaveProperty("directiveCount");
+  });
+});
+
+// ─── Gap #156: mod-tidy compact with madeChanges ────────────────────
+
+describe("compactModTidyMap — madeChanges (Gap #156)", () => {
+  it("includes madeChanges when defined", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "updated",
+      madeChanges: true,
+    };
+
+    const compact = compactModTidyMap(data);
+
+    expect(compact.madeChanges).toBe(true);
+  });
+
+  it("omits madeChanges when undefined", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "success",
+    };
+
+    const compact = compactModTidyMap(data);
+
+    expect(compact).not.toHaveProperty("madeChanges");
+  });
+});
+
+describe("formatModTidyCompact — madeChanges (Gap #156)", () => {
+  it("formats with changes made", () => {
+    expect(formatModTidyCompact({ success: true, madeChanges: true })).toBe(
+      "go mod tidy: success (changes made).",
+    );
+  });
+
+  it("formats with already tidy", () => {
+    expect(formatModTidyCompact({ success: true, madeChanges: false })).toBe(
+      "go mod tidy: success (already tidy).",
+    );
+  });
+
+  it("formats without madeChanges", () => {
+    expect(formatModTidyCompact({ success: true })).toBe("go mod tidy: success.");
+  });
+});
