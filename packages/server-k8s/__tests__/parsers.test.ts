@@ -2,8 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   parseGetOutput,
   parseDescribeOutput,
+  parseDescribeConditions,
+  parseDescribeEvents,
   parseLogsOutput,
   parseApplyOutput,
+  parseApplyLine,
   parseHelmListOutput,
   parseHelmStatusOutput,
   parseHelmInstallOutput,
@@ -162,6 +165,158 @@ describe("parseGetOutput", () => {
   });
 });
 
+describe("parseDescribeConditions", () => {
+  it("parses basic conditions table with Type and Status columns", () => {
+    const output = [
+      "Name:         nginx-abc",
+      "Conditions:",
+      "  Type              Status",
+      "  Initialized       True",
+      "  Ready             True",
+      "  ContainersReady   True",
+      "  PodScheduled      True",
+    ].join("\n");
+
+    const conditions = parseDescribeConditions(output);
+
+    expect(conditions).toHaveLength(4);
+    expect(conditions[0]).toEqual({ type: "Initialized", status: "True" });
+    expect(conditions[1]).toEqual({ type: "Ready", status: "True" });
+    expect(conditions[2]).toEqual({ type: "ContainersReady", status: "True" });
+    expect(conditions[3]).toEqual({ type: "PodScheduled", status: "True" });
+  });
+
+  it("parses conditions with separator line", () => {
+    const output = [
+      "Conditions:",
+      "  Type              Status",
+      "  ----              ------",
+      "  Initialized       True",
+      "  Ready             False",
+    ].join("\n");
+
+    const conditions = parseDescribeConditions(output);
+
+    expect(conditions).toHaveLength(2);
+    expect(conditions[0]).toEqual({ type: "Initialized", status: "True" });
+    expect(conditions[1]).toEqual({ type: "Ready", status: "False" });
+  });
+
+  it("parses conditions with Reason and Message columns", () => {
+    const output = [
+      "Conditions:",
+      "  Type              Status  Reason             Message",
+      "  ----              ------  ------             -------",
+      "  Initialized       True    PodInitialized     Pod initialized",
+      "  Ready             False   ContainersNotReady Containers not ready",
+    ].join("\n");
+
+    const conditions = parseDescribeConditions(output);
+
+    expect(conditions).toHaveLength(2);
+    expect(conditions[0]).toEqual({
+      type: "Initialized",
+      status: "True",
+      reason: "PodInitialized",
+      message: "Pod initialized",
+    });
+    expect(conditions[1]).toEqual({
+      type: "Ready",
+      status: "False",
+      reason: "ContainersNotReady",
+      message: "Containers not ready",
+    });
+  });
+
+  it("returns empty array when no Conditions section exists", () => {
+    const output = "Name: test\nNamespace: default\nStatus: Running\n";
+    expect(parseDescribeConditions(output)).toEqual([]);
+  });
+
+  it("handles conditions section followed by other sections", () => {
+    const output = [
+      "Conditions:",
+      "  Type              Status",
+      "  Ready             True",
+      "Volumes:",
+      "  default-token:",
+    ].join("\n");
+
+    const conditions = parseDescribeConditions(output);
+
+    expect(conditions).toHaveLength(1);
+    expect(conditions[0]).toEqual({ type: "Ready", status: "True" });
+  });
+});
+
+describe("parseDescribeEvents", () => {
+  it("parses events with standard columns", () => {
+    const output = [
+      "Name: test",
+      "Events:",
+      "  Type     Reason     Age   From               Message",
+      "  ----     ------     ---   ----               -------",
+      "  Normal   Scheduled  10m   default-scheduler  Successfully assigned default/nginx to node-1",
+      '  Normal   Pulled     10m   kubelet            Container image "nginx:latest" already present',
+      "  Warning  Unhealthy  5m    kubelet            Readiness probe failed",
+    ].join("\n");
+
+    const events = parseDescribeEvents(output);
+
+    expect(events).toHaveLength(3);
+    expect(events[0]).toEqual({
+      type: "Normal",
+      reason: "Scheduled",
+      age: "10m",
+      from: "default-scheduler",
+      message: "Successfully assigned default/nginx to node-1",
+    });
+    expect(events[1]).toEqual({
+      type: "Normal",
+      reason: "Pulled",
+      age: "10m",
+      from: "kubelet",
+      message: 'Container image "nginx:latest" already present',
+    });
+    expect(events[2]).toEqual({
+      type: "Warning",
+      reason: "Unhealthy",
+      age: "5m",
+      from: "kubelet",
+      message: "Readiness probe failed",
+    });
+  });
+
+  it("returns empty array when Events section has <none>", () => {
+    const output = "Events:\n  <none>\n";
+    expect(parseDescribeEvents(output)).toEqual([]);
+  });
+
+  it("returns empty array when no Events section exists", () => {
+    const output = "Name: test\nNamespace: default\n";
+    expect(parseDescribeEvents(output)).toEqual([]);
+  });
+
+  it("parses events without separator line", () => {
+    const output = [
+      "Events:",
+      "  Type     Reason    Age   From      Message",
+      "  Normal   Created   2m    kubelet   Created container nginx",
+    ].join("\n");
+
+    const events = parseDescribeEvents(output);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      type: "Normal",
+      reason: "Created",
+      age: "2m",
+      from: "kubelet",
+      message: "Created container nginx",
+    });
+  });
+});
+
 describe("parseDescribeOutput", () => {
   it("parses successful describe output", () => {
     const stdout = "Name:         nginx-abc\nNamespace:    default\nNode:         node-1\n";
@@ -191,12 +346,46 @@ describe("parseDescribeOutput", () => {
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
     expect(result.error).toContain("NotFound");
+    expect(result.conditions).toBeUndefined();
+    expect(result.events).toBeUndefined();
   });
 
   it("trims trailing whitespace from output", () => {
     const result = parseDescribeOutput("Name: test\n\n  \n", "", 0, "svc", "test");
 
     expect(result.output).toBe("Name: test");
+  });
+
+  it("extracts conditions and events from describe output", () => {
+    const stdout = [
+      "Name:         nginx-abc",
+      "Namespace:    default",
+      "Conditions:",
+      "  Type              Status",
+      "  Initialized       True",
+      "  Ready             True",
+      "Events:",
+      "  Type     Reason     Age   From               Message",
+      "  ----     ------     ---   ----               -------",
+      "  Normal   Scheduled  10m   default-scheduler  Successfully assigned",
+    ].join("\n");
+
+    const result = parseDescribeOutput(stdout, "", 0, "pod", "nginx-abc", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.conditions).toHaveLength(2);
+    expect(result.conditions![0].type).toBe("Initialized");
+    expect(result.events).toHaveLength(1);
+    expect(result.events![0].reason).toBe("Scheduled");
+  });
+
+  it("returns undefined conditions/events when sections are absent", () => {
+    const stdout = "Name: test\nNamespace: default\nStatus: Running\n";
+    const result = parseDescribeOutput(stdout, "", 0, "pod", "test", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.conditions).toBeUndefined();
+    expect(result.events).toBeUndefined();
   });
 });
 
@@ -239,15 +428,68 @@ describe("parseLogsOutput", () => {
   });
 });
 
+describe("parseApplyLine", () => {
+  it("parses a created resource", () => {
+    const result = parseApplyLine("deployment.apps/my-app created");
+    expect(result).toEqual({ kind: "deployment.apps", name: "my-app", operation: "created" });
+  });
+
+  it("parses a configured resource", () => {
+    const result = parseApplyLine("service/my-service configured");
+    expect(result).toEqual({ kind: "service", name: "my-service", operation: "configured" });
+  });
+
+  it("parses an unchanged resource", () => {
+    const result = parseApplyLine("configmap/my-config unchanged");
+    expect(result).toEqual({ kind: "configmap", name: "my-config", operation: "unchanged" });
+  });
+
+  it("parses a deleted resource", () => {
+    const result = parseApplyLine("pod/old-pod deleted");
+    expect(result).toEqual({ kind: "pod", name: "old-pod", operation: "deleted" });
+  });
+
+  it("parses a line with dry-run annotation", () => {
+    const result = parseApplyLine("namespace/my-ns created (server-side dry run)");
+    expect(result).toEqual({ kind: "namespace", name: "my-ns", operation: "created" });
+  });
+
+  it("returns null for non-resource lines", () => {
+    expect(parseApplyLine("Warning: some warning")).toBeNull();
+    expect(parseApplyLine("")).toBeNull();
+    expect(parseApplyLine("some random text")).toBeNull();
+  });
+});
+
 describe("parseApplyOutput", () => {
-  it("parses successful apply output", () => {
-    const stdout = '{"apiVersion":"v1","kind":"Service","metadata":{"name":"my-svc"}}';
+  it("parses successful apply output with resources", () => {
+    const stdout = [
+      "deployment.apps/my-app configured",
+      "service/my-service unchanged",
+      "configmap/my-config created",
+    ].join("\n");
 
     const result = parseApplyOutput(stdout, "", 0);
 
     expect(result.action).toBe("apply");
     expect(result.success).toBe(true);
-    expect(result.output).toContain("my-svc");
+    expect(result.resources).toHaveLength(3);
+    expect(result.resources![0]).toEqual({
+      kind: "deployment.apps",
+      name: "my-app",
+      operation: "configured",
+    });
+    expect(result.resources![1]).toEqual({
+      kind: "service",
+      name: "my-service",
+      operation: "unchanged",
+    });
+    expect(result.resources![2]).toEqual({
+      kind: "configmap",
+      name: "my-config",
+      operation: "created",
+    });
+    expect(result.output).toContain("my-app");
     expect(result.exitCode).toBe(0);
     expect(result.error).toBeUndefined();
   });
@@ -259,12 +501,36 @@ describe("parseApplyOutput", () => {
     expect(result.exitCode).toBe(1);
     expect(result.error).toContain("no objects passed to apply");
     expect(result.output).toContain("no objects passed to apply");
+    expect(result.resources).toBeUndefined();
   });
 
   it("trims trailing whitespace", () => {
     const result = parseApplyOutput("service/my-svc created\n\n", "", 0);
 
     expect(result.output).toBe("service/my-svc created");
+    expect(result.resources).toHaveLength(1);
+  });
+
+  it("handles output with non-resource lines mixed in", () => {
+    const stdout = [
+      "Warning: resource namespaces/default is missing",
+      "service/my-svc created",
+      "deployment.apps/my-app configured",
+    ].join("\n");
+
+    const result = parseApplyOutput(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.resources).toHaveLength(2);
+    expect(result.resources![0].name).toBe("my-svc");
+    expect(result.resources![1].name).toBe("my-app");
+  });
+
+  it("returns undefined resources when stdout has no parseable lines", () => {
+    const result = parseApplyOutput("some non-standard output", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.resources).toBeUndefined();
   });
 });
 

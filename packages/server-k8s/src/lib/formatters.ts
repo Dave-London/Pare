@@ -33,7 +33,15 @@ export function formatDescribe(data: KubectlDescribeResult): string {
   if (!data.success) {
     return `kubectl describe ${data.resource} ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
   }
-  return data.output ?? "";
+  const parts: string[] = [];
+  if (data.output) parts.push(data.output);
+  if (data.conditions && data.conditions.length > 0) {
+    parts.push(`\nConditions: ${data.conditions.length} parsed`);
+  }
+  if (data.events && data.events.length > 0) {
+    parts.push(`Events: ${data.events.length} parsed`);
+  }
+  return parts.join("\n") || "";
 }
 
 /** Formats a kubectl logs result into human-readable text. */
@@ -50,6 +58,13 @@ export function formatLogs(data: KubectlLogsResult): string {
 export function formatApply(data: KubectlApplyResult): string {
   if (!data.success) {
     return `kubectl apply: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
+  }
+  if (data.resources && data.resources.length > 0) {
+    const lines = [`kubectl apply: ${data.resources.length} resource(s)`];
+    for (const r of data.resources) {
+      lines.push(`  ${r.kind}/${r.name} ${r.operation}`);
+    }
+    return lines.join("\n");
   }
   return `kubectl apply: success${data.output ? `\n${data.output}` : ""}`;
 }
@@ -98,7 +113,7 @@ export function formatGetCompact(data: KubectlGetCompact): string {
   return `kubectl get ${data.resource}${ns}: ${data.total} item(s)`;
 }
 
-/** Compact describe: just success/failure, no full output. */
+/** Compact describe: success/failure with conditions & events (no full output text). */
 export interface KubectlDescribeCompact {
   [key: string]: unknown;
   action: "describe";
@@ -106,6 +121,8 @@ export interface KubectlDescribeCompact {
   resource: string;
   name: string;
   namespace?: string;
+  conditions?: KubectlDescribeResult["conditions"];
+  events?: KubectlDescribeResult["events"];
 }
 
 export function compactDescribeMap(data: KubectlDescribeResult): KubectlDescribeCompact {
@@ -115,12 +132,18 @@ export function compactDescribeMap(data: KubectlDescribeResult): KubectlDescribe
     resource: data.resource,
     name: data.name,
     namespace: data.namespace,
+    conditions: data.conditions,
+    events: data.events,
   };
 }
 
 export function formatDescribeCompact(data: KubectlDescribeCompact): string {
   if (!data.success) return `kubectl describe ${data.resource} ${data.name}: failed`;
-  return `kubectl describe ${data.resource} ${data.name}: success`;
+  const parts = [`kubectl describe ${data.resource} ${data.name}: success`];
+  if (data.conditions && data.conditions.length > 0)
+    parts.push(`${data.conditions.length} condition(s)`);
+  if (data.events && data.events.length > 0) parts.push(`${data.events.length} event(s)`);
+  return parts.join(", ");
 }
 
 /** Compact logs: line count, no full log content. */
@@ -148,11 +171,12 @@ export function formatLogsCompact(data: KubectlLogsCompact): string {
   return `kubectl logs ${data.pod}: ${data.lineCount} line(s)`;
 }
 
-/** Compact apply: just success/failure status. */
+/** Compact apply: success/failure status with resources (no raw output text). */
 export interface KubectlApplyCompact {
   [key: string]: unknown;
   action: "apply";
   success: boolean;
+  resources?: KubectlApplyResult["resources"];
   exitCode: number;
 }
 
@@ -160,12 +184,15 @@ export function compactApplyMap(data: KubectlApplyResult): KubectlApplyCompact {
   return {
     action: "apply",
     success: data.success,
+    resources: data.resources,
     exitCode: data.exitCode ?? 0,
   };
 }
 
 export function formatApplyCompact(data: KubectlApplyCompact): string {
   if (!data.success) return `kubectl apply: failed (exit ${data.exitCode})`;
+  if (data.resources && data.resources.length > 0)
+    return `kubectl apply: ${data.resources.length} resource(s)`;
   return "kubectl apply: success";
 }
 
