@@ -2,6 +2,16 @@ import { z } from "zod";
 
 // ── Shared resource item schema ─────────────────────────────────────
 
+/** Owner reference for a Kubernetes resource. */
+export const K8sOwnerReferenceSchema = z.object({
+  apiVersion: z.string(),
+  kind: z.string(),
+  name: z.string(),
+  uid: z.string(),
+});
+
+export type K8sOwnerReference = z.infer<typeof K8sOwnerReferenceSchema>;
+
 /** A single Kubernetes resource item from `kubectl get -o json`. */
 export const K8sResourceSchema = z.object({
   apiVersion: z.string().optional(),
@@ -12,6 +22,11 @@ export const K8sResourceSchema = z.object({
       namespace: z.string().optional(),
       creationTimestamp: z.string().optional(),
       labels: z.record(z.string(), z.string()).optional(),
+      annotations: z.record(z.string(), z.string()).optional(),
+      ownerReferences: z.array(K8sOwnerReferenceSchema).optional(),
+      finalizers: z.array(z.string()).optional(),
+      resourceVersion: z.string().optional(),
+      uid: z.string().optional(),
     })
     .optional(),
   status: z.record(z.string(), z.unknown()).optional(),
@@ -225,6 +240,48 @@ export const HelmRollbackResultSchema = z.object({
 
 export type HelmRollbackResult = z.infer<typeof HelmRollbackResultSchema>;
 
+// ── Helm history schema ─────────────────────────────────────────────
+
+/** A single Helm revision from `helm history -o json`. */
+export const HelmRevisionSchema = z.object({
+  revision: z.number(),
+  updated: z.string(),
+  status: z.string(),
+  chart: z.string(),
+  appVersion: z.string().optional(),
+  description: z.string().optional(),
+});
+
+export type HelmRevision = z.infer<typeof HelmRevisionSchema>;
+
+/** Helm history result. */
+export const HelmHistoryResultSchema = z.object({
+  action: z.literal("history"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  revisions: z.array(HelmRevisionSchema).optional(),
+  total: z.number(),
+  exitCode: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export type HelmHistoryResult = z.infer<typeof HelmHistoryResultSchema>;
+
+// ── Helm template schema ────────────────────────────────────────────
+
+/** Helm template result. */
+export const HelmTemplateResultSchema = z.object({
+  action: z.literal("template"),
+  success: z.boolean(),
+  manifests: z.string().optional(),
+  manifestCount: z.number(),
+  exitCode: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export type HelmTemplateResult = z.infer<typeof HelmTemplateResultSchema>;
+
 /** Union of all helm result types. */
 export const HelmResultSchema = z.discriminatedUnion("action", [
   HelmListResultSchema,
@@ -233,6 +290,8 @@ export const HelmResultSchema = z.discriminatedUnion("action", [
   HelmUpgradeResultSchema,
   HelmUninstallResultSchema,
   HelmRollbackResultSchema,
+  HelmHistoryResultSchema,
+  HelmTemplateResultSchema,
 ]);
 
 export type HelmResult = z.infer<typeof HelmResultSchema>;

@@ -10,6 +10,8 @@ import type {
   HelmUpgradeResult,
   HelmUninstallResult,
   HelmRollbackResult,
+  HelmHistoryResult,
+  HelmTemplateResult,
   HelmResult,
 } from "../schemas/index.js";
 
@@ -25,7 +27,21 @@ export function formatGet(data: KubectlGetResult): string {
   for (const item of data.items ?? []) {
     const name = item.metadata?.name ?? "unknown";
     const kind = item.kind ?? "";
-    lines.push(`  ${kind} ${name}`);
+    const uid = item.metadata?.uid ? ` (uid: ${item.metadata.uid})` : "";
+    const rv = item.metadata?.resourceVersion ? ` [rv: ${item.metadata.resourceVersion}]` : "";
+    lines.push(`  ${kind} ${name}${uid}${rv}`);
+    if (item.metadata?.annotations && Object.keys(item.metadata.annotations).length > 0) {
+      const count = Object.keys(item.metadata.annotations).length;
+      lines.push(`    annotations: ${count} key(s)`);
+    }
+    if (item.metadata?.ownerReferences && item.metadata.ownerReferences.length > 0) {
+      for (const ref of item.metadata.ownerReferences) {
+        lines.push(`    owner: ${ref.kind}/${ref.name}`);
+      }
+    }
+    if (item.metadata?.finalizers && item.metadata.finalizers.length > 0) {
+      lines.push(`    finalizers: ${item.metadata.finalizers.join(", ")}`);
+    }
   }
   return lines.join("\n");
 }
@@ -245,6 +261,31 @@ export function formatHelmUpgrade(data: HelmUpgradeResult): string {
   return parts.join(" ");
 }
 
+/** Formats a helm history result into human-readable text. */
+export function formatHelmHistory(data: HelmHistoryResult): string {
+  if (!data.success) {
+    return `helm history ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
+  }
+  const ns = data.namespace ? ` -n ${data.namespace}` : "";
+  const lines = [`helm history ${data.name}${ns}: ${data.total} revision(s)`];
+  for (const r of data.revisions ?? []) {
+    const ver = r.appVersion ? ` (v${r.appVersion})` : "";
+    const desc = r.description ? ` - ${r.description}` : "";
+    lines.push(`  ${r.revision}: ${r.chart}${ver} ${r.status}${desc}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats a helm template result into human-readable text. */
+export function formatHelmTemplate(data: HelmTemplateResult): string {
+  if (!data.success) {
+    return `helm template: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
+  }
+  const header = `helm template: ${data.manifestCount} manifest(s)`;
+  if (!data.manifests) return header;
+  return `${header}\n${data.manifests}`;
+}
+
 /** Dispatches formatting to the correct helm action formatter. */
 export function formatHelmResult(data: HelmResult): string {
   switch (data.action) {
@@ -260,6 +301,10 @@ export function formatHelmResult(data: HelmResult): string {
       return formatHelmUninstall(data);
     case "rollback":
       return formatHelmRollback(data);
+    case "history":
+      return formatHelmHistory(data);
+    case "template":
+      return formatHelmTemplate(data);
   }
 }
 
@@ -440,4 +485,55 @@ export function formatHelmRollbackCompact(data: HelmRollbackCompact): string {
   if (!data.success) return `helm rollback ${data.name}: failed`;
   const rev = data.revision ? ` to revision ${data.revision}` : "";
   return `helm rollback ${data.name}${rev}: ${data.status ?? "success"}`;
+}
+
+// ── Helm history compact formatters ─────────────────────────────────
+
+/** Compact history: name and total only, no revision details. */
+export interface HelmHistoryCompact {
+  [key: string]: unknown;
+  action: "history";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  total: number;
+}
+
+export function compactHelmHistoryMap(data: HelmHistoryResult): HelmHistoryCompact {
+  return {
+    action: "history",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    total: data.total,
+  };
+}
+
+export function formatHelmHistoryCompact(data: HelmHistoryCompact): string {
+  if (!data.success) return `helm history ${data.name}: failed`;
+  const ns = data.namespace ? ` -n ${data.namespace}` : "";
+  return `helm history ${data.name}${ns}: ${data.total} revision(s)`;
+}
+
+// ── Helm template compact formatters ────────────────────────────────
+
+/** Compact template: manifest count only, no rendered content. */
+export interface HelmTemplateCompact {
+  [key: string]: unknown;
+  action: "template";
+  success: boolean;
+  manifestCount: number;
+}
+
+export function compactHelmTemplateMap(data: HelmTemplateResult): HelmTemplateCompact {
+  return {
+    action: "template",
+    success: data.success,
+    manifestCount: data.manifestCount,
+  };
+}
+
+export function formatHelmTemplateCompact(data: HelmTemplateCompact): string {
+  if (!data.success) return "helm template: failed";
+  return `helm template: ${data.manifestCount} manifest(s)`;
 }

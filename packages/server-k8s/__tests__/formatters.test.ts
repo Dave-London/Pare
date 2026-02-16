@@ -6,6 +6,8 @@ import {
   formatApply,
   formatResult,
   formatHelmResult,
+  formatHelmHistory,
+  formatHelmTemplate,
   compactGetMap,
   formatGetCompact,
   compactDescribeMap,
@@ -26,6 +28,10 @@ import {
   formatHelmInstallCompact,
   compactHelmUpgradeMap,
   formatHelmUpgradeCompact,
+  compactHelmHistoryMap,
+  formatHelmHistoryCompact,
+  compactHelmTemplateMap,
+  formatHelmTemplateCompact,
 } from "../src/lib/formatters.js";
 import type {
   KubectlGetResult,
@@ -37,9 +43,10 @@ import type {
   HelmStatusResult,
   HelmInstallResult,
   HelmUpgradeResult,
+  HelmHistoryResult,
+  HelmTemplateResult,
   HelmResult,
 } from "../src/schemas/index.js";
-
 // ── Full formatters ──────────────────────────────────────────────────
 
 describe("formatGet", () => {
@@ -1137,5 +1144,290 @@ describe("formatHelmRollbackCompact", () => {
         name: "my-release",
       }),
     ).toBe("helm rollback my-release: failed");
+  });
+});
+
+// ── Gap #164: Expanded metadata in formatGet ────────────────────────
+
+describe("formatGet with expanded metadata", () => {
+  it("formats resource with uid and resourceVersion", () => {
+    const data: KubectlGetResult = {
+      action: "get",
+      success: true,
+      resource: "pods",
+      namespace: "default",
+      items: [
+        {
+          kind: "Pod",
+          metadata: {
+            name: "nginx-abc",
+            uid: "abc-123",
+            resourceVersion: "456",
+          },
+        },
+      ],
+      total: 1,
+      exitCode: 0,
+    };
+    const output = formatGet(data);
+    expect(output).toContain("Pod nginx-abc");
+    expect(output).toContain("uid: abc-123");
+    expect(output).toContain("rv: 456");
+  });
+
+  it("formats resource with annotations count", () => {
+    const data: KubectlGetResult = {
+      action: "get",
+      success: true,
+      resource: "pods",
+      items: [
+        {
+          kind: "Pod",
+          metadata: {
+            name: "annotated-pod",
+            annotations: { key1: "val1", key2: "val2" },
+          },
+        },
+      ],
+      total: 1,
+      exitCode: 0,
+    };
+    const output = formatGet(data);
+    expect(output).toContain("annotations: 2 key(s)");
+  });
+
+  it("formats resource with ownerReferences", () => {
+    const data: KubectlGetResult = {
+      action: "get",
+      success: true,
+      resource: "pods",
+      items: [
+        {
+          kind: "Pod",
+          metadata: {
+            name: "owned-pod",
+            ownerReferences: [
+              { apiVersion: "apps/v1", kind: "ReplicaSet", name: "web-rs", uid: "123" },
+            ],
+          },
+        },
+      ],
+      total: 1,
+      exitCode: 0,
+    };
+    const output = formatGet(data);
+    expect(output).toContain("owner: ReplicaSet/web-rs");
+  });
+
+  it("formats resource with finalizers", () => {
+    const data: KubectlGetResult = {
+      action: "get",
+      success: true,
+      resource: "namespaces",
+      items: [
+        {
+          kind: "Namespace",
+          metadata: {
+            name: "my-ns",
+            finalizers: ["kubernetes", "custom-finalizer"],
+          },
+        },
+      ],
+      total: 1,
+      exitCode: 0,
+    };
+    const output = formatGet(data);
+    expect(output).toContain("finalizers: kubernetes, custom-finalizer");
+  });
+});
+
+// ── Gap #165: Helm history formatters ───────────────────────────────
+
+describe("formatHelmHistory", () => {
+  it("formats successful history", () => {
+    const data: HelmHistoryResult = {
+      action: "history",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revisions: [
+        {
+          revision: 1,
+          updated: "2026-01-01T00:00:00Z",
+          status: "superseded",
+          chart: "nginx-1.0.0",
+          appVersion: "1.25.0",
+          description: "Install complete",
+        },
+        {
+          revision: 2,
+          updated: "2026-01-02T00:00:00Z",
+          status: "deployed",
+          chart: "nginx-1.1.0",
+          appVersion: "1.25.1",
+          description: "Upgrade complete",
+        },
+      ],
+      total: 2,
+      exitCode: 0,
+    };
+    const output = formatHelmHistory(data);
+    expect(output).toContain("helm history my-release -n default: 2 revision(s)");
+    expect(output).toContain("1: nginx-1.0.0 (v1.25.0) superseded - Install complete");
+    expect(output).toContain("2: nginx-1.1.0 (v1.25.1) deployed - Upgrade complete");
+  });
+
+  it("formats failed history", () => {
+    const data: HelmHistoryResult = {
+      action: "history",
+      success: false,
+      name: "missing",
+      total: 0,
+      exitCode: 1,
+      error: "release not found",
+    };
+    const output = formatHelmHistory(data);
+    expect(output).toContain("helm history missing: failed");
+    expect(output).toContain("release not found");
+  });
+});
+
+describe("compactHelmHistoryMap", () => {
+  it("maps history result to compact form", () => {
+    const data: HelmHistoryResult = {
+      action: "history",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revisions: [{ revision: 1, updated: "2026-01-01", status: "deployed", chart: "nginx-1.0.0" }],
+      total: 1,
+      exitCode: 0,
+    };
+    const compact = compactHelmHistoryMap(data);
+    expect(compact.action).toBe("history");
+    expect(compact.success).toBe(true);
+    expect(compact.name).toBe("my-release");
+    expect(compact.total).toBe(1);
+    expect(compact).not.toHaveProperty("revisions");
+  });
+});
+
+describe("formatHelmHistoryCompact", () => {
+  it("formats compact success", () => {
+    expect(
+      formatHelmHistoryCompact({
+        action: "history",
+        success: true,
+        name: "my-release",
+        namespace: "default",
+        total: 3,
+      }),
+    ).toBe("helm history my-release -n default: 3 revision(s)");
+  });
+
+  it("formats compact failure", () => {
+    expect(
+      formatHelmHistoryCompact({
+        action: "history",
+        success: false,
+        name: "missing",
+        total: 0,
+      }),
+    ).toBe("helm history missing: failed");
+  });
+});
+
+// ── Gap #166: Helm template formatters ──────────────────────────────
+
+describe("formatHelmTemplate", () => {
+  it("formats successful template with manifests", () => {
+    const data: HelmTemplateResult = {
+      action: "template",
+      success: true,
+      manifests: "---\napiVersion: v1\nkind: Service\n---\napiVersion: apps/v1\nkind: Deployment",
+      manifestCount: 2,
+      exitCode: 0,
+    };
+    const output = formatHelmTemplate(data);
+    expect(output).toContain("helm template: 2 manifest(s)");
+    expect(output).toContain("Service");
+    expect(output).toContain("Deployment");
+  });
+
+  it("formats failed template", () => {
+    const data: HelmTemplateResult = {
+      action: "template",
+      success: false,
+      manifestCount: 0,
+      exitCode: 1,
+      error: "chart not found",
+    };
+    const output = formatHelmTemplate(data);
+    expect(output).toContain("helm template: failed");
+    expect(output).toContain("chart not found");
+  });
+});
+
+describe("compactHelmTemplateMap", () => {
+  it("maps template result to compact form", () => {
+    const data: HelmTemplateResult = {
+      action: "template",
+      success: true,
+      manifests: "---\nkind: Service\n---\nkind: Deployment",
+      manifestCount: 2,
+      exitCode: 0,
+    };
+    const compact = compactHelmTemplateMap(data);
+    expect(compact.action).toBe("template");
+    expect(compact.success).toBe(true);
+    expect(compact.manifestCount).toBe(2);
+    expect(compact).not.toHaveProperty("manifests");
+  });
+});
+
+describe("formatHelmTemplateCompact", () => {
+  it("formats compact success", () => {
+    expect(
+      formatHelmTemplateCompact({
+        action: "template",
+        success: true,
+        manifestCount: 5,
+      }),
+    ).toBe("helm template: 5 manifest(s)");
+  });
+
+  it("formats compact failure", () => {
+    expect(
+      formatHelmTemplateCompact({
+        action: "template",
+        success: false,
+        manifestCount: 0,
+      }),
+    ).toBe("helm template: failed");
+  });
+});
+
+// ── Updated formatHelmResult dispatch ───────────────────────────────
+
+describe("formatHelmResult dispatches new actions", () => {
+  it("dispatches history action", () => {
+    const data: HelmResult = {
+      action: "history",
+      success: true,
+      name: "my-release",
+      revisions: [],
+      total: 0,
+    };
+    expect(formatHelmResult(data)).toContain("helm history my-release");
+  });
+
+  it("dispatches template action", () => {
+    const data: HelmResult = {
+      action: "template",
+      success: true,
+      manifests: "---\nkind: Pod",
+      manifestCount: 1,
+    };
+    expect(formatHelmResult(data)).toContain("helm template");
   });
 });

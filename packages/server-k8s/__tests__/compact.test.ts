@@ -539,3 +539,129 @@ describe("formatHelmUpgradeCompact", () => {
     expect(formatHelmUpgradeCompact(compact)).toContain("failed");
   });
 });
+
+// ── Gap #165 & #166: Helm history & template compact tests ──────────
+
+import {
+  compactHelmHistoryMap,
+  formatHelmHistoryCompact,
+  compactHelmTemplateMap,
+  formatHelmTemplateCompact,
+} from "../src/lib/formatters.js";
+import type { HelmHistoryResult, HelmTemplateResult } from "../src/schemas/index.js";
+
+describe("compactHelmHistoryMap", () => {
+  it("keeps action, success, name, namespace, total; drops revisions detail", () => {
+    const data: HelmHistoryResult = {
+      action: "history",
+      success: true,
+      name: "my-release",
+      namespace: "production",
+      revisions: [
+        {
+          revision: 1,
+          updated: "2026-01-01T00:00:00Z",
+          status: "superseded",
+          chart: "nginx-1.0.0",
+          appVersion: "1.25.0",
+          description: "Install complete",
+        },
+        {
+          revision: 2,
+          updated: "2026-01-02T00:00:00Z",
+          status: "deployed",
+          chart: "nginx-1.1.0",
+        },
+      ],
+      total: 2,
+      exitCode: 0,
+    };
+
+    const compact = compactHelmHistoryMap(data);
+
+    expect(compact.action).toBe("history");
+    expect(compact.success).toBe(true);
+    expect(compact.name).toBe("my-release");
+    expect(compact.namespace).toBe("production");
+    expect(compact.total).toBe(2);
+    // Verify dropped fields
+    expect(compact).not.toHaveProperty("revisions");
+    expect(compact).not.toHaveProperty("exitCode");
+  });
+});
+
+describe("formatHelmHistoryCompact", () => {
+  it("formats compact helm history output with namespace", () => {
+    const compact = {
+      action: "history" as const,
+      success: true,
+      name: "my-release",
+      namespace: "staging",
+      total: 4,
+    };
+    expect(formatHelmHistoryCompact(compact)).toBe(
+      "helm history my-release -n staging: 4 revision(s)",
+    );
+  });
+
+  it("formats compact helm history without namespace", () => {
+    const compact = {
+      action: "history" as const,
+      success: true,
+      name: "my-release",
+      total: 2,
+    };
+    expect(formatHelmHistoryCompact(compact)).toBe("helm history my-release: 2 revision(s)");
+  });
+
+  it("formats failed helm history", () => {
+    const compact = {
+      action: "history" as const,
+      success: false,
+      name: "missing",
+      total: 0,
+    };
+    expect(formatHelmHistoryCompact(compact)).toBe("helm history missing: failed");
+  });
+});
+
+describe("compactHelmTemplateMap", () => {
+  it("keeps action, success, manifestCount; drops manifests content", () => {
+    const data: HelmTemplateResult = {
+      action: "template",
+      success: true,
+      manifests: "---\napiVersion: v1\nkind: Service\n---\napiVersion: apps/v1\nkind: Deployment",
+      manifestCount: 2,
+      exitCode: 0,
+    };
+
+    const compact = compactHelmTemplateMap(data);
+
+    expect(compact.action).toBe("template");
+    expect(compact.success).toBe(true);
+    expect(compact.manifestCount).toBe(2);
+    // Verify dropped fields
+    expect(compact).not.toHaveProperty("manifests");
+    expect(compact).not.toHaveProperty("exitCode");
+  });
+});
+
+describe("formatHelmTemplateCompact", () => {
+  it("formats compact helm template output", () => {
+    const compact = {
+      action: "template" as const,
+      success: true,
+      manifestCount: 3,
+    };
+    expect(formatHelmTemplateCompact(compact)).toBe("helm template: 3 manifest(s)");
+  });
+
+  it("formats failed helm template", () => {
+    const compact = {
+      action: "template" as const,
+      success: false,
+      manifestCount: 0,
+    };
+    expect(formatHelmTemplateCompact(compact)).toBe("helm template: failed");
+  });
+});
