@@ -30,6 +30,94 @@ export function getRunCommand(
   }
 }
 
+/** Build the extra CLI args for the `run` tool. Exported for unit testing. */
+export function buildRunExtraArgs(
+  framework: Framework,
+  opts: {
+    filter?: string;
+    updateSnapshots?: boolean;
+    coverage?: boolean;
+    onlyChanged?: boolean;
+    exitFirst?: boolean;
+    passWithNoTests?: boolean;
+    args?: string[];
+  },
+): string[] {
+  const extraArgs = [...(opts.args || [])];
+
+  if (opts.filter) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push("-k", opts.filter);
+        break;
+      case "jest":
+        extraArgs.push("--testPathPattern", opts.filter);
+        break;
+      case "vitest":
+        extraArgs.push(opts.filter);
+        break;
+      case "mocha":
+        extraArgs.push("--grep", opts.filter);
+        break;
+    }
+  }
+
+  if (opts.updateSnapshots && (framework === "vitest" || framework === "jest")) {
+    extraArgs.push("-u");
+  }
+
+  if (opts.coverage) {
+    switch (framework) {
+      case "vitest":
+      case "jest":
+        extraArgs.push("--coverage");
+        break;
+      case "pytest":
+        extraArgs.push("--cov");
+        break;
+      case "mocha":
+        break;
+    }
+  }
+
+  if (opts.onlyChanged) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push("--lf");
+        break;
+      case "jest":
+        extraArgs.push("--onlyChanged");
+        break;
+      case "vitest":
+        extraArgs.push("--changed");
+        break;
+      case "mocha":
+        break;
+    }
+  }
+
+  if (opts.exitFirst) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push("-x");
+        break;
+      case "jest":
+      case "vitest":
+        extraArgs.push("--bail=1");
+        break;
+      case "mocha":
+        extraArgs.push("-b");
+        break;
+    }
+  }
+
+  if (opts.passWithNoTests && (framework === "jest" || framework === "vitest")) {
+    extraArgs.push("--passWithNoTests");
+  }
+
+  return extraArgs;
+}
+
 /** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
@@ -63,6 +151,24 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run with coverage (adds --coverage for vitest/jest, --cov for pytest)"),
+        onlyChanged: z
+          .boolean()
+          .optional()
+          .describe(
+            "Run only tests affected by recent changes (maps to --lf for pytest, --onlyChanged for jest, --changed for vitest)",
+          ),
+        exitFirst: z
+          .boolean()
+          .optional()
+          .describe(
+            "Stop on first test failure (maps to -x for pytest, --bail=1 for jest/vitest, -b for mocha)",
+          ),
+        passWithNoTests: z
+          .boolean()
+          .optional()
+          .describe(
+            "Exit successfully when no tests are found (maps to --passWithNoTests for jest/vitest)",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -79,53 +185,36 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: TestRunSchema,
     },
-    async ({ path, framework, filter, updateSnapshots, coverage, args, compact }) => {
+    async ({
+      path,
+      framework,
+      filter,
+      updateSnapshots,
+      coverage,
+      onlyChanged,
+      exitFirst,
+      passWithNoTests,
+      args,
+      compact,
+    }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
+      }
+      if (filter) {
+        assertNoFlagInjection(filter, "filter");
       }
 
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
-      const extraArgs = [...(args || [])];
-
-      if (filter) {
-        assertNoFlagInjection(filter, "filter");
-        switch (detected) {
-          case "pytest":
-            extraArgs.push("-k", filter);
-            break;
-          case "jest":
-            extraArgs.push("--testPathPattern", filter);
-            break;
-          case "vitest":
-            extraArgs.push(filter);
-            break;
-          case "mocha":
-            extraArgs.push("--grep", filter);
-            break;
-        }
-      }
-
-      // Snapshot update support (vitest/jest only)
-      if (updateSnapshots && (detected === "vitest" || detected === "jest")) {
-        extraArgs.push("-u");
-      }
-
-      // Coverage support
-      if (coverage) {
-        switch (detected) {
-          case "vitest":
-          case "jest":
-            extraArgs.push("--coverage");
-            break;
-          case "pytest":
-            extraArgs.push("--cov");
-            break;
-          case "mocha":
-            // mocha uses nyc wrapper; not supported via flag
-            break;
-        }
-      }
+      const extraArgs = buildRunExtraArgs(detected, {
+        filter,
+        updateSnapshots,
+        coverage,
+        onlyChanged,
+        exitFirst,
+        passWithNoTests,
+        args,
+      });
 
       // For vitest/jest, write JSON to a temp file instead of relying on
       // stdout capture. On Windows, npx.cmd can swallow or mangle stdout,
