@@ -114,6 +114,52 @@ describe("parseGetOutput", () => {
 
     expect(result.namespace).toBeUndefined();
   });
+
+  it("extracts resource with labels", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "labeled-pod",
+            namespace: "default",
+            labels: { app: "web", tier: "frontend" },
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.labels).toEqual({ app: "web", tier: "frontend" });
+  });
+
+  it("extracts resource without metadata, status, or spec", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [{ someField: "value" }],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "custom");
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(1);
+    expect(result.items[0].metadata).toBeUndefined();
+    expect(result.items[0].status).toBeUndefined();
+    expect(result.items[0].spec).toBeUndefined();
+  });
+
+  it("handles failure with empty stderr", () => {
+    const result = parseGetOutput("", "", 1, "pods");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
 });
 
 describe("parseDescribeOutput", () => {
@@ -288,6 +334,24 @@ describe("parseHelmListOutput", () => {
     const result = parseHelmListOutput("[]", "", 0);
     expect(result.namespace).toBeUndefined();
   });
+
+  it("handles release with null app_version", () => {
+    const stdout = JSON.stringify([
+      {
+        name: "my-release",
+        namespace: "default",
+        revision: "1",
+        status: "deployed",
+        chart: "nginx-1.0.0",
+        app_version: null,
+      },
+    ]);
+
+    const result = parseHelmListOutput(stdout, "", 0, "default");
+
+    expect(result.success).toBe(true);
+    expect(result.releases[0].app_version).toBeUndefined();
+  });
 });
 
 describe("parseHelmStatusOutput", () => {
@@ -412,5 +476,12 @@ describe("parseHelmUpgradeOutput", () => {
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
     expect(result.error).toContain("UPGRADE FAILED");
+  });
+
+  it("handles invalid JSON", () => {
+    const result = parseHelmUpgradeOutput("not json", "", 0, "test");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to parse helm JSON output");
   });
 });
