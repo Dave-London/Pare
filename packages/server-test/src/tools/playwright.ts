@@ -13,6 +13,68 @@ import {
 } from "../lib/formatters.js";
 import { PlaywrightResultSchema } from "../schemas/index.js";
 
+/** Build extra CLI args for the `playwright` tool. Exported for unit testing. */
+export function buildPlaywrightExtraArgs(opts: {
+  filter?: string;
+  project?: string;
+  headed?: boolean;
+  updateSnapshots?: boolean;
+  workers?: number;
+  retries?: number;
+  maxFailures?: number;
+  timeout?: number;
+  lastFailed?: boolean;
+  onlyChanged?: boolean;
+  forbidOnly?: boolean;
+  passWithNoTests?: boolean;
+  args?: string[];
+}): string[] {
+  const extraArgs: string[] = [...(opts.args || [])];
+
+  if (opts.filter) {
+    extraArgs.push(opts.filter);
+  }
+
+  if (opts.project) {
+    extraArgs.push("--project", opts.project);
+  }
+
+  if (opts.headed) {
+    extraArgs.push("--headed");
+  }
+
+  if (opts.updateSnapshots) {
+    extraArgs.push("--update-snapshots");
+  }
+
+  if (opts.workers !== undefined) {
+    extraArgs.push(`--workers=${opts.workers}`);
+  }
+  if (opts.retries !== undefined) {
+    extraArgs.push(`--retries=${opts.retries}`);
+  }
+  if (opts.maxFailures !== undefined) {
+    extraArgs.push(`--max-failures=${opts.maxFailures}`);
+  }
+  if (opts.timeout !== undefined) {
+    extraArgs.push(`--timeout=${opts.timeout}`);
+  }
+  if (opts.lastFailed) {
+    extraArgs.push("--last-failed");
+  }
+  if (opts.onlyChanged) {
+    extraArgs.push("--only-changed");
+  }
+  if (opts.forbidOnly) {
+    extraArgs.push("--forbid-only");
+  }
+  if (opts.passWithNoTests) {
+    extraArgs.push("--pass-with-no-tests");
+  }
+
+  return extraArgs;
+}
+
 /** Registers the `playwright` tool on the given MCP server. */
 export function registerPlaywrightTool(server: McpServer) {
   server.registerTool(
@@ -111,52 +173,29 @@ export function registerPlaywrightTool(server: McpServer) {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
-
-      const cwd = path || process.cwd();
-      const extraArgs: string[] = [...(args || [])];
-
       if (filter) {
         assertNoFlagInjection(filter, "filter");
-        extraArgs.push(filter);
       }
-
       if (project) {
         assertNoFlagInjection(project, "project");
-        extraArgs.push("--project", project);
       }
 
-      if (headed) {
-        extraArgs.push("--headed");
-      }
-
-      if (updateSnapshots) {
-        extraArgs.push("--update-snapshots");
-      }
-
-      if (workers !== undefined) {
-        extraArgs.push(`--workers=${workers}`);
-      }
-      if (retries !== undefined) {
-        extraArgs.push(`--retries=${retries}`);
-      }
-      if (maxFailures !== undefined) {
-        extraArgs.push(`--max-failures=${maxFailures}`);
-      }
-      if (timeout !== undefined) {
-        extraArgs.push(`--timeout=${timeout}`);
-      }
-      if (lastFailed) {
-        extraArgs.push("--last-failed");
-      }
-      if (onlyChanged) {
-        extraArgs.push("--only-changed");
-      }
-      if (forbidOnly) {
-        extraArgs.push("--forbid-only");
-      }
-      if (passWithNoTests) {
-        extraArgs.push("--pass-with-no-tests");
-      }
+      const cwd = path || process.cwd();
+      const extraArgs = buildPlaywrightExtraArgs({
+        filter,
+        project,
+        headed,
+        updateSnapshots,
+        workers,
+        retries,
+        maxFailures,
+        timeout,
+        lastFailed,
+        onlyChanged,
+        forbidOnly,
+        passWithNoTests,
+        args,
+      });
 
       // Write JSON output to a temp file to avoid stdout parsing issues on Windows
       const tempPath = join(tmpdir(), `pare-playwright-${randomUUID()}.json`);

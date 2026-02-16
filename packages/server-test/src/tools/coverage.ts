@@ -26,6 +26,36 @@ export function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs
   }
 }
 
+/** Build extra CLI args for the `coverage` tool. Exported for unit testing. */
+export function buildCoverageExtraArgs(
+  framework: Framework,
+  opts: { branch?: boolean; all?: boolean },
+): string[] {
+  const extra: string[] = [];
+
+  if (opts.branch && framework === "pytest") {
+    extra.push("--cov-branch");
+  }
+
+  if (opts.all) {
+    switch (framework) {
+      case "vitest":
+        extra.push("--coverage.all");
+        break;
+      case "mocha":
+        extra.push("--all");
+        break;
+      case "jest":
+        extra.push("--collectCoverageFrom=**/*.{js,jsx,ts,tsx}");
+        break;
+      case "pytest":
+        break;
+    }
+  }
+
+  return extra;
+}
+
 /** Registers the `coverage` tool on the given MCP server. */
 export function registerCoverageTool(server: McpServer) {
   server.registerTool(
@@ -69,25 +99,8 @@ export function registerCoverageTool(server: McpServer) {
       const detected = framework || (await detectFramework(cwd));
       const { cmd, cmdArgs } = getCoverageCommand(detected);
 
-      if (branch && detected === "pytest") {
-        cmdArgs.push("--cov-branch");
-      }
-      if (all) {
-        switch (detected) {
-          case "vitest":
-            cmdArgs.push("--coverage.all");
-            break;
-          case "mocha":
-            cmdArgs.push("--all");
-            break;
-          case "jest":
-            cmdArgs.push("--collectCoverageFrom=**/*.{js,jsx,ts,tsx}");
-            break;
-          case "pytest":
-            // pytest-cov doesn't have a direct --all flag
-            break;
-        }
-      }
+      const extraCovArgs = buildCoverageExtraArgs(detected, { branch, all });
+      cmdArgs.push(...extraCovArgs);
 
       const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
