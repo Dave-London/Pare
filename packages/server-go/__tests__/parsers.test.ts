@@ -883,3 +883,394 @@ describe("parseGolangciLintJson", () => {
     expect(result.total).toBe(0);
   });
 });
+
+// ─── Gap #151: fmt parse errors ─────────────────────────────────────
+import { parseGoFmtOutput } from "../src/lib/parsers.js";
+
+describe("parseGoFmtOutput — stderr parse errors (Gap #151)", () => {
+  it("captures parse errors from stderr", () => {
+    const stderr = [
+      "main.go:5:1: expected declaration, got '}'",
+      "util.go:10:3: expected ';', found 'IDENT'",
+    ].join("\n");
+    const result = parseGoFmtOutput("", stderr, 2, true);
+
+    expect(result.success).toBe(false);
+    expect(result.parseErrors).toBeDefined();
+    expect(result.parseErrors).toHaveLength(2);
+    expect(result.parseErrors![0]).toEqual({
+      file: "main.go",
+      line: 5,
+      column: 1,
+      message: "expected declaration, got '}'",
+    });
+    expect(result.parseErrors![1]).toEqual({
+      file: "util.go",
+      line: 10,
+      column: 3,
+      message: "expected ';', found 'IDENT'",
+    });
+  });
+
+  it("captures parse error without column", () => {
+    const stderr = "main.go:5: expected declaration, got '}'";
+    const result = parseGoFmtOutput("", stderr, 2, false);
+
+    expect(result.parseErrors).toBeDefined();
+    expect(result.parseErrors).toHaveLength(1);
+    expect(result.parseErrors![0].column).toBeUndefined();
+  });
+
+  it("returns no parseErrors when stderr is empty", () => {
+    const result = parseGoFmtOutput("main.go\n", "", 0, true);
+    expect(result.parseErrors).toBeUndefined();
+  });
+
+  it("returns both files and parseErrors when both exist", () => {
+    const stdout = "main.go\n";
+    const stderr = "broken.go:1:1: expected package, found 'EOF'";
+    const result = parseGoFmtOutput(stdout, stderr, 2, true);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.files).toEqual(["main.go"]);
+    expect(result.parseErrors).toHaveLength(1);
+    expect(result.parseErrors![0].file).toBe("broken.go");
+  });
+});
+
+// ─── Gap #152: generate directives ──────────────────────────────────
+import { parseGoGenerateOutput } from "../src/lib/parsers.js";
+
+describe("parseGoGenerateOutput — per-directive parsing (Gap #152)", () => {
+  it("parses -v verbose output with running directives", () => {
+    const stderr = ['main.go:3: running "stringer"', 'types.go:10: running "mockgen"'].join("\n");
+    const result = parseGoGenerateOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.directives).toBeDefined();
+    expect(result.directives).toHaveLength(2);
+    expect(result.directives![0]).toEqual({
+      file: "main.go",
+      line: 3,
+      command: "stringer",
+      status: "completed",
+    });
+    expect(result.directives![1]).toEqual({
+      file: "types.go",
+      line: 10,
+      command: "mockgen",
+      status: "completed",
+    });
+  });
+
+  it("parses -x output with file:line: command format", () => {
+    const stderr = ["main.go:3: stringer -type=Pill", "types.go:10: mockgen -source=svc.go"].join(
+      "\n",
+    );
+    const result = parseGoGenerateOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.directives).toBeDefined();
+    expect(result.directives).toHaveLength(2);
+    expect(result.directives![0].command).toBe("stringer -type=Pill");
+    expect(result.directives![1].command).toBe("mockgen -source=svc.go");
+  });
+
+  it("returns no directives when no -v/-x output", () => {
+    const result = parseGoGenerateOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.directives).toBeUndefined();
+  });
+
+  it("parses failed generate with directives", () => {
+    const stderr = 'main.go:3: running "stringer"';
+    const result = parseGoGenerateOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.directives).toBeDefined();
+    expect(result.directives).toHaveLength(1);
+    expect(result.directives![0].status).toBe("running");
+  });
+});
+
+// ─── Gap #153: go get per-package status ────────────────────────────
+
+describe("parseGoGetOutput — per-package status (Gap #153)", () => {
+  it("tracks per-package status for successful adds", () => {
+    const stderr = [
+      "go: added github.com/pkg/errors v0.9.1",
+      "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
+    ].join("\n");
+
+    const result = parseGoGetOutput("", stderr, 0, [
+      "github.com/pkg/errors@latest",
+      "golang.org/x/text@latest",
+    ]);
+
+    expect(result.packages).toBeDefined();
+    expect(result.packages).toHaveLength(2);
+
+    const pkgErrors = result.packages!.find((p) => p.path === "github.com/pkg/errors");
+    expect(pkgErrors).toBeDefined();
+    expect(pkgErrors!.version).toBe("v0.9.1");
+    expect(pkgErrors!.error).toBeUndefined();
+
+    const pkgText = result.packages!.find((p) => p.path === "golang.org/x/text");
+    expect(pkgText).toBeDefined();
+    expect(pkgText!.version).toBe("v0.14.0");
+  });
+
+  it("tracks per-package errors", () => {
+    const stderr = 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"';
+
+    const result = parseGoGetOutput("", stderr, 1, ["github.com/nonexistent/pkg@latest"]);
+
+    expect(result.success).toBe(false);
+    expect(result.packages).toBeDefined();
+    expect(result.packages!.length).toBeGreaterThanOrEqual(1);
+
+    const failedPkg = result.packages!.find((p) => p.path === "github.com/nonexistent/pkg");
+    expect(failedPkg).toBeDefined();
+    expect(failedPkg!.error).toContain("no matching versions");
+  });
+
+  it("returns no packages when no requestedPackages provided and no output", () => {
+    const result = parseGoGetOutput("", "", 0);
+
+    expect(result.packages).toBeUndefined();
+  });
+
+  it("marks requested packages as successful when exit 0 and no explicit output", () => {
+    const result = parseGoGetOutput("", "", 0, ["github.com/pkg/errors@v0.9.1"]);
+
+    expect(result.packages).toBeDefined();
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages![0].path).toBe("github.com/pkg/errors");
+    expect(result.packages![0].error).toBeUndefined();
+  });
+});
+
+// ─── Gap #154: golangci-lint Replacement data ───────────────────────
+
+describe("parseGolangciLintJson — Replacement/fix data (Gap #154)", () => {
+  it("captures Replacement with NewLines", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        {
+          FromLinter: "gofmt",
+          Text: "file is not gofmtted",
+          Pos: { Filename: "main.go", Line: 10, Column: 5 },
+          Replacement: {
+            NewLines: ["  fmt.Println(x)", "  return nil"],
+          },
+        },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics![0].fix).toBeDefined();
+    expect(result.diagnostics![0].fix!.text).toBe("  fmt.Println(x)\n  return nil");
+  });
+
+  it("captures Replacement with NeedOnlyDelete", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        {
+          FromLinter: "unused",
+          Text: "unused variable",
+          Pos: { Filename: "main.go", Line: 5, Column: 2 },
+          Replacement: {
+            NeedOnlyDelete: true,
+          },
+        },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics![0].fix).toBeDefined();
+    expect(result.diagnostics![0].fix!.text).toBe("");
+  });
+
+  it("captures Replacement with Inline range info", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        {
+          FromLinter: "gocritic",
+          Text: "use strings.ReplaceAll",
+          Pos: { Filename: "util.go", Line: 15, Column: 3 },
+          Replacement: {
+            NewLines: ['strings.ReplaceAll(s, "a", "b")'],
+            Inline: {
+              StartLine: 15,
+              StartCol: 3,
+              EndLine: 15,
+              EndCol: 35,
+            },
+          },
+        },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.diagnostics![0].fix).toBeDefined();
+    expect(result.diagnostics![0].fix!.text).toBe('strings.ReplaceAll(s, "a", "b")');
+    expect(result.diagnostics![0].fix!.range).toEqual({
+      start: { line: 15, column: 3 },
+      end: { line: 15, column: 35 },
+    });
+  });
+
+  it("does not include fix when no Replacement present", () => {
+    const stdout = JSON.stringify({
+      Issues: [
+        {
+          FromLinter: "govet",
+          Text: "unreachable code",
+          Pos: { Filename: "main.go", Line: 10 },
+        },
+      ],
+    });
+
+    const result = parseGolangciLintJson(stdout, 1);
+
+    expect(result.diagnostics![0].fix).toBeUndefined();
+  });
+});
+
+// ─── Gap #155: go list Error field ──────────────────────────────────
+
+describe("parseGoListOutput — Error field (Gap #155)", () => {
+  it("captures Error field per package", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+      Error: { Err: "build constraints exclude all Go files in /home/user/project" },
+    });
+
+    const result = parseGoListOutput(stdout, 1);
+
+    expect(result.total).toBe(1);
+    expect(result.packages![0].error).toBeDefined();
+    expect(result.packages![0].error!.err).toBe(
+      "build constraints exclude all Go files in /home/user/project",
+    );
+  });
+
+  it("does not include error when Error is absent", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+    });
+
+    const result = parseGoListOutput(stdout, 0);
+
+    expect(result.packages![0].error).toBeUndefined();
+  });
+
+  it("captures Error field across multiple packages", () => {
+    const pkg1 = JSON.stringify({
+      Dir: "/project/ok",
+      ImportPath: "github.com/user/project/ok",
+      Name: "ok",
+    });
+    const pkg2 = JSON.stringify({
+      Dir: "/project/broken",
+      ImportPath: "github.com/user/project/broken",
+      Name: "broken",
+      Error: { Err: "no Go files in /project/broken" },
+    });
+
+    const result = parseGoListOutput(pkg1 + "\n" + pkg2, 1);
+
+    expect(result.total).toBe(2);
+    expect(result.packages![0].error).toBeUndefined();
+    expect(result.packages![1].error).toBeDefined();
+    expect(result.packages![1].error!.err).toBe("no Go files in /project/broken");
+  });
+});
+
+// ─── Gap #156: mod-tidy madeChanges ─────────────────────────────────
+import { parseGoModTidyOutput } from "../src/lib/parsers.js";
+
+describe("parseGoModTidyOutput — madeChanges detection (Gap #156)", () => {
+  it("detects changes when go.mod hash differs", () => {
+    const result = parseGoModTidyOutput("", "", 0, "hash1", "hash2", "hash3", "hash3");
+
+    expect(result.success).toBe(true);
+    expect(result.madeChanges).toBe(true);
+  });
+
+  it("detects changes when go.sum hash differs", () => {
+    const result = parseGoModTidyOutput("", "", 0, "hash1", "hash1", "hash3", "hash4");
+
+    expect(result.success).toBe(true);
+    expect(result.madeChanges).toBe(true);
+  });
+
+  it("detects no changes when both hashes match", () => {
+    const result = parseGoModTidyOutput("", "", 0, "hash1", "hash1", "hash3", "hash3");
+
+    expect(result.success).toBe(true);
+    expect(result.madeChanges).toBe(false);
+  });
+
+  it("infers changes when output is present but no hashes", () => {
+    const result = parseGoModTidyOutput("", "go: downloading github.com/pkg/errors v0.9.1", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.madeChanges).toBe(true);
+  });
+
+  it("infers no changes when no output and no hashes", () => {
+    const result = parseGoModTidyOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.madeChanges).toBe(false);
+  });
+
+  it("does not set madeChanges on failure", () => {
+    const result = parseGoModTidyOutput("", "go.mod not found", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.madeChanges).toBeUndefined();
+  });
+});
+
+// ─── Gap #157: vet analyzer name ────────────────────────────────────
+// (Already tested in existing parseGoVetOutput tests above — they verify analyzer field.)
+// Adding additional explicit test for completeness.
+
+describe("parseGoVetOutput — analyzer name in diagnostics (Gap #157)", () => {
+  it("includes analyzer name from JSON output", () => {
+    const stdout = JSON.stringify({
+      "myapp/pkg": {
+        shadow: {
+          posn: "handler.go:15:4",
+          message: 'declaration of "err" shadows declaration',
+        },
+      },
+    });
+
+    const result = parseGoVetOutput(stdout, "", 2);
+
+    expect(result.diagnostics![0].analyzer).toBe("shadow");
+  });
+
+  it("analyzer is undefined in text fallback mode", () => {
+    const stderr = "main.go:10:5: unreachable code";
+
+    const result = parseGoVetOutput("", stderr, 2);
+
+    expect(result.diagnostics![0].analyzer).toBeUndefined();
+  });
+});

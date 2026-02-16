@@ -1,10 +1,23 @@
 import { z } from "zod";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoModTidyOutput } from "../lib/parsers.js";
 import { formatGoModTidy, compactModTidyMap, formatModTidyCompact } from "../lib/formatters.js";
 import { GoModTidyResultSchema } from "../schemas/index.js";
+
+/** Compute a quick hash of a file's contents, or return undefined if the file doesn't exist. */
+async function hashFile(filePath: string): Promise<string | undefined> {
+  try {
+    const content = await readFile(filePath);
+    return createHash("md5").update(content).digest("hex");
+  } catch {
+    return undefined;
+  }
+}
 
 /** Registers the `mod-tidy` tool on the given MCP server. */
 export function registerModTidyTool(server: McpServer) {
@@ -63,6 +76,15 @@ export function registerModTidyTool(server: McpServer) {
       const cwd = path || process.cwd();
       if (goVersion) assertNoFlagInjection(goVersion, "goVersion");
       if (compat) assertNoFlagInjection(compat, "compat");
+
+      // Hash go.mod and go.sum before tidy to detect changes (Gap #156)
+      const goModPath = join(cwd, "go.mod");
+      const goSumPath = join(cwd, "go.sum");
+      const [goModHashBefore, goSumHashBefore] = await Promise.all([
+        hashFile(goModPath),
+        hashFile(goSumPath),
+      ]);
+
       const args = ["mod", "tidy"];
       if (diff) args.push("-diff");
       if (verbose) args.push("-v");
@@ -70,7 +92,22 @@ export function registerModTidyTool(server: McpServer) {
       if (goVersion) args.push(`-go=${goVersion}`);
       if (compat) args.push(`-compat=${compat}`);
       const result = await goCmd(args, cwd);
-      const data = parseGoModTidyOutput(result.stdout, result.stderr, result.exitCode);
+
+      // Hash go.mod and go.sum after tidy
+      const [goModHashAfter, goSumHashAfter] = await Promise.all([
+        hashFile(goModPath),
+        hashFile(goSumPath),
+      ]);
+
+      const data = parseGoModTidyOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        goModHashBefore,
+        goModHashAfter,
+        goSumHashBefore,
+        goSumHashAfter,
+      );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

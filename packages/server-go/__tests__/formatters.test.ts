@@ -508,3 +508,150 @@ describe("formatGolangciLint", () => {
     expect(output).toContain("errcheck: 1");
   });
 });
+
+// ─── Gap #151: fmt parse errors formatting ──────────────────────────
+import { formatGoFmt, formatGoModTidy, formatGoGenerate } from "../src/lib/formatters.js";
+import type { GoFmtResult, GoModTidyResult, GoGenerateResult } from "../src/schemas/index.js";
+
+describe("formatGoFmt — parse errors (Gap #151)", () => {
+  it("formats parse errors in output", () => {
+    const data: GoFmtResult = {
+      success: false,
+      filesChanged: 0,
+      files: [],
+      parseErrors: [
+        { file: "main.go", line: 5, column: 1, message: "expected declaration, got '}'" },
+      ],
+    };
+    const output = formatGoFmt(data);
+    expect(output).toContain("1 parse errors");
+    expect(output).toContain("main.go:5:1: expected declaration, got '}'");
+  });
+
+  it("formats both files and parse errors", () => {
+    const data: GoFmtResult = {
+      success: false,
+      filesChanged: 1,
+      files: ["util.go"],
+      parseErrors: [{ file: "broken.go", line: 3, message: "syntax error" }],
+    };
+    const output = formatGoFmt(data);
+    expect(output).toContain("gofmt: 1 files");
+    expect(output).toContain("util.go");
+    expect(output).toContain("broken.go:3: syntax error");
+  });
+});
+
+// ─── Gap #152: generate directives formatting ───────────────────────
+
+describe("formatGoGenerate — directives (Gap #152)", () => {
+  it("formats directives when present", () => {
+    const data: GoGenerateResult = {
+      success: true,
+      output: 'main.go:3: running "stringer"',
+      directives: [{ file: "main.go", line: 3, command: "stringer", status: "completed" }],
+    };
+    const output = formatGoGenerate(data);
+    expect(output).toContain("go generate: success.");
+    expect(output).toContain("main.go:3: stringer [completed]");
+  });
+});
+
+// ─── Gap #155: list error field formatting ──────────────────────────
+
+describe("formatGoList — error field (Gap #155)", () => {
+  it("formats packages with error field", () => {
+    const data: GoListResult = {
+      success: false,
+      packages: [
+        {
+          dir: "/project/broken",
+          importPath: "github.com/user/broken",
+          name: "broken",
+          error: { err: "no Go files" },
+        },
+      ],
+      total: 1,
+    };
+    const output = formatGoList(data);
+    expect(output).toContain("github.com/user/broken (broken) ERROR: no Go files");
+  });
+});
+
+// ─── Gap #156: mod-tidy madeChanges formatting ──────────────────────
+
+describe("formatGoModTidy — madeChanges (Gap #156)", () => {
+  it("formats with changes made", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "go.mod and go.sum updated.",
+      madeChanges: true,
+    };
+    const output = formatGoModTidy(data);
+    expect(output).toContain("(changes made)");
+  });
+
+  it("formats with already tidy", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "go.mod and go.sum are already tidy.",
+      madeChanges: false,
+    };
+    const output = formatGoModTidy(data);
+    expect(output).toContain("(already tidy)");
+  });
+
+  it("formats without madeChanges info", () => {
+    const data: GoModTidyResult = {
+      success: true,
+      summary: "go.mod and go.sum are already tidy.",
+    };
+    const output = formatGoModTidy(data);
+    expect(output).not.toContain("(changes made)");
+    expect(output).not.toContain("(already tidy)");
+  });
+});
+
+// ─── Gap #154: golangci-lint fix formatting ─────────────────────────
+
+describe("formatGolangciLint — fix/replacement (Gap #154)", () => {
+  it("shows [fix available] when fix is present", () => {
+    const data: GolangciLintResult = {
+      diagnostics: [
+        {
+          file: "main.go",
+          line: 10,
+          column: 5,
+          linter: "gofmt",
+          severity: "warning",
+          message: "file is not gofmtted",
+          fix: { text: "fixed content" },
+        },
+      ],
+      total: 1,
+      errors: 0,
+      warnings: 1,
+    };
+    const output = formatGolangciLint(data);
+    expect(output).toContain("[fix available]");
+  });
+
+  it("does not show [fix available] when no fix", () => {
+    const data: GolangciLintResult = {
+      diagnostics: [
+        {
+          file: "main.go",
+          line: 10,
+          linter: "govet",
+          severity: "warning",
+          message: "unreachable code",
+        },
+      ],
+      total: 1,
+      errors: 0,
+      warnings: 1,
+    };
+    const output = formatGolangciLint(data);
+    expect(output).not.toContain("[fix available]");
+  });
+});

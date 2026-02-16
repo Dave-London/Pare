@@ -5,6 +5,7 @@ import { goCmd } from "../lib/go-runner.js";
 import { parseGoEnvOutput } from "../lib/parsers.js";
 import { formatGoEnv, compactEnvMap, formatEnvCompact } from "../lib/formatters.js";
 import { GoEnvResultSchema } from "../schemas/index.js";
+import type { GoEnvResult } from "../schemas/index.js";
 
 /** Registers the `env` tool on the given MCP server. */
 export function registerEnvTool(server: McpServer) {
@@ -51,13 +52,16 @@ export function registerEnvTool(server: McpServer) {
       if (changed) args.push("-changed");
       args.push(...(vars || []));
       const result = await goCmd(args, cwd);
-      const data = parseGoEnvOutput(result.stdout);
+      const data = parseGoEnvOutput(result.stdout, vars);
       const rawOutput = result.stdout.trim();
+
+      // Pass queriedVars to compactEnvMap so compact mode includes queried variables (Gap #150)
+      const queriedVars = vars;
       return compactDualOutput(
         data,
         rawOutput,
         formatGoEnv,
-        compactEnvMap,
+        (d: GoEnvResult) => compactEnvMap(d, queriedVars),
         formatEnvCompact,
         compact === false,
       );

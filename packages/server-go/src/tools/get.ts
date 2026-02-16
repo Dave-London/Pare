@@ -68,7 +68,8 @@ export function registerGetTool(server: McpServer) {
       if (downloadOnly) args.push("-d");
       args.push(...packages);
       const result = await goCmd(args, cwd);
-      const data = parseGoGetOutput(result.stdout, result.stderr, result.exitCode);
+      // Pass requestedPackages for per-package status tracking (Gap #153)
+      const data = parseGoGetOutput(result.stdout, result.stderr, result.exitCode, packages);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

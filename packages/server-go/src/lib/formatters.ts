@@ -97,27 +97,71 @@ export function formatGoRun(data: GoRunResult): string {
 
 /** Formats structured go mod tidy results into a human-readable summary. */
 export function formatGoModTidy(data: GoModTidyResult): string {
-  if (data.success) return `go mod tidy: ${data.summary}`;
+  if (data.success) {
+    const changesNote =
+      data.madeChanges === true
+        ? " (changes made)"
+        : data.madeChanges === false
+          ? " (already tidy)"
+          : "";
+    return `go mod tidy: ${data.summary}${changesNote}`;
+  }
   return `go mod tidy: FAIL\n  ${data.summary}`;
 }
 
 /** Formats structured gofmt results into a human-readable file listing. */
 export function formatGoFmt(data: GoFmtResult): string {
-  if (data.success && data.filesChanged === 0) return "gofmt: all files formatted.";
+  const lines: string[] = [];
 
-  const lines = [`gofmt: ${data.filesChanged} files`];
-  for (const f of data.files ?? []) {
-    lines.push(`  ${f}`);
+  if (data.success && data.filesChanged === 0 && !data.parseErrors?.length) {
+    return "gofmt: all files formatted.";
   }
+
+  if (data.filesChanged > 0) {
+    lines.push(`gofmt: ${data.filesChanged} files`);
+    for (const f of data.files ?? []) {
+      lines.push(`  ${f}`);
+    }
+  }
+
+  if (data.parseErrors && data.parseErrors.length > 0) {
+    if (lines.length === 0) {
+      lines.push(`gofmt: ${data.parseErrors.length} parse errors`);
+    }
+    for (const pe of data.parseErrors) {
+      const col = pe.column ? `:${pe.column}` : "";
+      lines.push(`  ${pe.file}:${pe.line}${col}: ${pe.message}`);
+    }
+  }
+
+  if (lines.length === 0) {
+    return "gofmt: all files formatted.";
+  }
+
   return lines.join("\n");
 }
 
 /** Formats structured go generate results into a human-readable summary. */
 export function formatGoGenerate(data: GoGenerateResult): string {
+  const lines: string[] = [];
+
   if (data.success) {
-    return data.output ? `go generate: success.\n${data.output}` : "go generate: success.";
+    lines.push("go generate: success.");
+  } else {
+    lines.push("go generate: FAIL");
   }
-  return `go generate: FAIL\n${data.output}`;
+
+  if (data.directives && data.directives.length > 0) {
+    for (const d of data.directives) {
+      const lineNum = d.line ? `:${d.line}` : "";
+      const status = d.status ? ` [${d.status}]` : "";
+      lines.push(`  ${d.file}${lineNum}: ${d.command}${status}`);
+    }
+  } else if (data.output) {
+    lines.push(data.output);
+  }
+
+  return lines.join("\n");
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────
@@ -193,23 +237,28 @@ export function formatVetCompact(data: GoVetCompact): string {
   return `go vet: ${data.total} issues`;
 }
 
-/** Compact fmt: success, file count. Drop individual file list. */
+/** Compact fmt: success, file count. Drop individual file list and parse errors. */
 export interface GoFmtCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
+  parseErrorCount?: number;
 }
 
 export function compactFmtMap(data: GoFmtResult): GoFmtCompact {
-  return {
+  const compact: GoFmtCompact = {
     success: data.success,
     filesChanged: data.filesChanged,
   };
+  if (data.parseErrors?.length) compact.parseErrorCount = data.parseErrors.length;
+  return compact;
 }
 
 export function formatFmtCompact(data: GoFmtCompact): string {
   if (data.success && data.filesChanged === 0) return "gofmt: all files formatted.";
-  return `gofmt: ${data.filesChanged} files`;
+  const parts = [`gofmt: ${data.filesChanged} files`];
+  if (data.parseErrorCount) parts.push(`${data.parseErrorCount} parse errors`);
+  return parts.join(", ");
 }
 
 /** Compact run: exitCode, success, truncation flags. Drop stdout/stderr. */
@@ -241,6 +290,7 @@ export interface GoGenerateCompact {
   [key: string]: unknown;
   success: boolean;
   output?: string;
+  directiveCount?: number;
 }
 
 export function compactGenerateMap(data: GoGenerateResult): GoGenerateCompact {
@@ -248,6 +298,7 @@ export function compactGenerateMap(data: GoGenerateResult): GoGenerateCompact {
     success: data.success,
   };
   if (data.output) compact.output = data.output;
+  if (data.directives?.length) compact.directiveCount = data.directives.length;
   return compact;
 }
 
@@ -261,6 +312,7 @@ export interface GoModTidyCompact {
   [key: string]: unknown;
   success: boolean;
   summary?: string;
+  madeChanges?: boolean;
 }
 
 export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
@@ -268,11 +320,16 @@ export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
     success: data.success,
   };
   if (data.summary) compact.summary = data.summary;
+  if (data.madeChanges !== undefined) compact.madeChanges = data.madeChanges;
   return compact;
 }
 
 export function formatModTidyCompact(data: GoModTidyCompact): string {
-  if (data.success) return "go mod tidy: success.";
+  if (data.success) {
+    if (data.madeChanges === true) return "go mod tidy: success (changes made).";
+    if (data.madeChanges === false) return "go mod tidy: success (already tidy).";
+    return "go mod tidy: success.";
+  }
   return "go mod tidy: FAIL";
 }
 
@@ -299,7 +356,7 @@ export function formatGoEnv(data: GoEnvResult): string {
   return lines.join("\n");
 }
 
-/** Compact env: key fields only. Drop full vars map. */
+/** Compact env: key fields only, plus any queried vars. Drop full vars map. */
 export interface GoEnvCompact {
   [key: string]: unknown;
   success: boolean;
@@ -310,8 +367,12 @@ export interface GoEnvCompact {
   goarch: string;
 }
 
-export function compactEnvMap(data: GoEnvResult): GoEnvCompact {
-  return {
+/**
+ * Compact env mapper. When queriedVars are specified, the compact output includes
+ * those queried variables in addition to the default key fields (Gap #150).
+ */
+export function compactEnvMap(data: GoEnvResult, queriedVars?: string[]): GoEnvCompact {
+  const compact: GoEnvCompact = {
     success: data.success,
     goroot: data.goroot,
     gopath: data.gopath,
@@ -319,6 +380,20 @@ export function compactEnvMap(data: GoEnvResult): GoEnvCompact {
     goos: data.goos,
     goarch: data.goarch,
   };
+
+  // Include queried variables in compact mode (Gap #150)
+  if (queriedVars && queriedVars.length > 0 && data.vars) {
+    for (const v of queriedVars) {
+      if (
+        data.vars[v] !== undefined &&
+        !["GOROOT", "GOPATH", "GOVERSION", "GOOS", "GOARCH"].includes(v)
+      ) {
+        compact[v] = data.vars[v];
+      }
+    }
+  }
+
+  return compact;
 }
 
 export function formatEnvCompact(data: GoEnvCompact): string {
@@ -351,7 +426,8 @@ export function formatGoList(data: GoListResult): string {
   for (const pkg of data.packages ?? []) {
     const importsCount = pkg.imports?.length ?? 0;
     const importsSuffix = importsCount > 0 ? ` [${importsCount} imports]` : "";
-    lines.push(`  ${pkg.importPath} (${pkg.name})${importsSuffix}`);
+    const errorSuffix = pkg.error ? ` ERROR: ${pkg.error.err}` : "";
+    lines.push(`  ${pkg.importPath} (${pkg.name})${importsSuffix}${errorSuffix}`);
   }
   return lines.join("\n");
 }
@@ -392,9 +468,29 @@ export function formatGoGet(data: GoGetResult): string {
     } else if (data.output) {
       lines.push(data.output);
     }
+    // Show per-package errors if any
+    if (data.packages) {
+      for (const pkg of data.packages) {
+        if (pkg.error) {
+          lines.push(`  ${pkg.path}: ${pkg.error}`);
+        }
+      }
+    }
     return lines.join("\n");
   }
-  return `go get: FAIL\n${data.output}`;
+
+  const lines = ["go get: FAIL"];
+  if (data.packages) {
+    for (const pkg of data.packages) {
+      if (pkg.error) {
+        lines.push(`  ${pkg.path}: ${pkg.error}`);
+      }
+    }
+  }
+  if (data.output && (!data.packages || data.packages.length === 0)) {
+    lines.push(data.output);
+  }
+  return lines.join("\n");
 }
 
 /** Compact get: success + resolved package count. Drop individual details. */
@@ -438,7 +534,8 @@ export function formatGolangciLint(data: GolangciLintResult): string {
 
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
-    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})`);
+    const fixNote = d.fix ? " [fix available]" : "";
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})${fixNote}`);
   }
 
   if (data.byLinter && data.byLinter.length > 0) {

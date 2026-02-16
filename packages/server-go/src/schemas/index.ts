@@ -85,23 +85,45 @@ export type GoRunResult = z.infer<typeof GoRunResultSchema>;
 export const GoModTidyResultSchema = z.object({
   success: z.boolean(),
   summary: z.string().optional(),
+  /** Whether go mod tidy actually changed go.mod/go.sum (true) or they were already tidy (false). */
+  madeChanges: z.boolean().optional(),
 });
 
 export type GoModTidyResult = z.infer<typeof GoModTidyResultSchema>;
+
+/** Zod schema for a gofmt parse error from stderr. */
+export const GoFmtParseErrorSchema = z.object({
+  file: z.string(),
+  line: z.number(),
+  column: z.number().optional(),
+  message: z.string(),
+});
 
 /** Zod schema for structured gofmt output with file list and count. */
 export const GoFmtResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
   files: z.array(z.string()).optional(),
+  /** Parse errors reported on stderr (e.g., syntax errors in Go files). */
+  parseErrors: z.array(GoFmtParseErrorSchema).optional(),
 });
 
 export type GoFmtResult = z.infer<typeof GoFmtResultSchema>;
+
+/** Zod schema for a single go generate directive. */
+export const GoGenerateDirectiveSchema = z.object({
+  file: z.string(),
+  line: z.number().optional(),
+  command: z.string(),
+  status: z.enum(["running", "completed", "failed"]).optional(),
+});
 
 /** Zod schema for structured go generate output with success status and output text. */
 export const GoGenerateResultSchema = z.object({
   success: z.boolean(),
   output: z.string().optional(),
+  /** Parsed per-directive status from -v or -x output. */
+  directives: z.array(GoGenerateDirectiveSchema).optional(),
 });
 
 export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
@@ -127,6 +149,8 @@ export const GoListPackageSchema = z.object({
   goFiles: z.array(z.string()).optional(),
   testGoFiles: z.array(z.string()).optional(),
   imports: z.array(z.string()).optional(),
+  /** Error information when the package has issues (e.g., missing imports, build errors). */
+  error: z.object({ err: z.string() }).optional(),
 });
 
 /** Zod schema for a single Go module from go list -m output. */
@@ -151,6 +175,16 @@ export const GoListResultSchema = z.object({
 
 export type GoListResult = z.infer<typeof GoListResultSchema>;
 
+/** Zod schema for a per-package status entry from go get output. */
+export const GoGetPackageStatusSchema = z.object({
+  /** The module/package path. */
+  path: z.string(),
+  /** The resolved version, if available. */
+  version: z.string().optional(),
+  /** Error message if this package failed. */
+  error: z.string().optional(),
+});
+
 /** Zod schema for a resolved package from go get output. */
 export const GoGetResolvedPackageSchema = z.object({
   /** The module/package path. */
@@ -167,9 +201,24 @@ export const GoGetResultSchema = z.object({
   output: z.string().optional(),
   /** Packages resolved/upgraded by go get with version information. */
   resolvedPackages: z.array(GoGetResolvedPackageSchema).optional(),
+  /** Per-package status showing success/failure for each requested package. */
+  packages: z.array(GoGetPackageStatusSchema).optional(),
 });
 
 export type GoGetResult = z.infer<typeof GoGetResultSchema>;
+
+/** Zod schema for a fix/replacement suggestion from golangci-lint. */
+export const GolangciLintFixSchema = z.object({
+  /** The replacement text. */
+  text: z.string(),
+  /** The range in the file to replace. */
+  range: z
+    .object({
+      start: z.object({ line: z.number(), column: z.number().optional() }),
+      end: z.object({ line: z.number(), column: z.number().optional() }),
+    })
+    .optional(),
+});
 
 /** Zod schema for a single golangci-lint diagnostic with file location, linter, severity, and message. */
 export const GolangciLintDiagnosticSchema = z.object({
@@ -180,6 +229,8 @@ export const GolangciLintDiagnosticSchema = z.object({
   severity: z.enum(["error", "warning", "info"]),
   message: z.string(),
   sourceLine: z.string().optional(),
+  /** Fix/replacement suggestion from the linter, if available. */
+  fix: GolangciLintFixSchema.optional(),
 });
 
 /** Zod schema for linter-level summary counts. */
