@@ -18,12 +18,21 @@ export function registerDescribeTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Resource type (e.g., pod, service, deployment)"),
-        name: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Resource name"),
+        name: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Resource name (omit to describe all resources of the type)"),
         namespace: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Kubernetes namespace (omit for default)"),
+        selector: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Label selector for describing resources by label (-l). E.g., 'app=nginx'"),
         allNamespaces: z
           .boolean()
           .optional()
@@ -34,6 +43,16 @@ export function registerDescribeTool(server: McpServer) {
           .describe(
             "Show events in describe output (default: true). Set false to hide events (--show-events=false)",
           ),
+        context: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Kubernetes context for multi-cluster operations (--context)"),
+        kubeconfig: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to kubeconfig file (--kubeconfig)"),
         compact: z
           .boolean()
           .optional()
@@ -44,20 +63,37 @@ export function registerDescribeTool(server: McpServer) {
       },
       outputSchema: KubectlDescribeResultSchema,
     },
-    async ({ resource, name, namespace, allNamespaces, showEvents, compact }) => {
+    async ({
+      resource,
+      name,
+      namespace,
+      selector,
+      allNamespaces,
+      showEvents,
+      context,
+      kubeconfig,
+      compact,
+    }) => {
       assertNoFlagInjection(resource, "resource");
-      assertNoFlagInjection(name, "name");
+      if (name) assertNoFlagInjection(name, "name");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
+      if (selector) assertNoFlagInjection(selector, "selector");
+      if (context) assertNoFlagInjection(context, "context");
+      if (kubeconfig) assertNoFlagInjection(kubeconfig, "kubeconfig");
 
-      const args = ["describe", resource, name];
+      const args = ["describe", resource];
+      if (name) args.push(name);
       if (allNamespaces) {
         args.push("-A");
       } else if (namespace) {
         args.push("-n", namespace);
       }
+      if (selector) args.push("-l", selector);
       if (showEvents === false) {
         args.push("--show-events=false");
       }
+      if (context) args.push("--context", context);
+      if (kubeconfig) args.push("--kubeconfig", kubeconfig);
 
       const result = await run("kubectl", args, { timeout: 60_000 });
       const data = parseDescribeOutput(
@@ -65,7 +101,7 @@ export function registerDescribeTool(server: McpServer) {
         result.stderr,
         result.exitCode,
         resource,
-        name,
+        name ?? "",
         namespace,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();

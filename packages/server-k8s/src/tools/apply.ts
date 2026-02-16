@@ -14,7 +14,12 @@ export function registerApplyTool(server: McpServer) {
       description:
         "Applies a Kubernetes manifest file. Use instead of running `kubectl apply` in the terminal.",
       inputSchema: {
-        file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("Path to the manifest file to apply"),
+        file: z
+          .union([
+            z.string().max(INPUT_LIMITS.PATH_MAX),
+            z.array(z.string().max(INPUT_LIMITS.PATH_MAX)),
+          ])
+          .describe("Path to the manifest file(s) to apply. Accepts a single path or an array."),
         namespace: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -25,6 +30,12 @@ export function registerApplyTool(server: McpServer) {
           .optional()
           .default("none")
           .describe("Dry run mode: none, client, or server"),
+        validate: z
+          .enum(["true", "false", "strict"])
+          .optional()
+          .describe(
+            "Validation mode: 'true' (default kubectl validation), 'false' (skip validation), 'strict' (fail on unknown fields)",
+          ),
         serverSide: z
           .boolean()
           .optional()
@@ -33,6 +44,13 @@ export function registerApplyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Wait until resources are ready after applying (--wait)"),
+        waitTimeout: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Timeout for --wait (--timeout). E.g., '30s', '5m', '1h'. Only effective when wait is true.",
+          ),
         recursive: z.boolean().optional().describe("Process directories recursively (-R)"),
         kustomize: z
           .boolean()
@@ -47,6 +65,29 @@ export function registerApplyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Force apply even with field ownership conflicts (--force-conflicts)"),
+        fieldManager: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Field manager name for server-side apply (--field-manager). Required for server-side apply.",
+          ),
+        context: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Kubernetes context for multi-cluster operations (--context)"),
+        selector: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Label selector to filter resources (-l)"),
+        cascade: z
+          .enum(["background", "orphan", "foreground"])
+          .optional()
+          .describe(
+            "Cascade mode for deletion of dependents: 'background' (default), 'orphan', or 'foreground'",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -61,29 +102,55 @@ export function registerApplyTool(server: McpServer) {
       file,
       namespace,
       dryRun,
+      validate,
       serverSide,
       wait,
+      waitTimeout,
       recursive,
       kustomize,
       prune,
       force,
       forceConflicts,
+      fieldManager,
+      context,
+      selector,
+      cascade,
       compact,
     }) => {
-      assertNoFlagInjection(file, "file");
-      const args = ["apply", kustomize ? "-k" : "-f", file];
+      // Normalize file to array
+      const files = Array.isArray(file) ? file : [file];
+      for (const f of files) {
+        assertNoFlagInjection(f, "file");
+      }
+      if (namespace) assertNoFlagInjection(namespace, "namespace");
+      if (fieldManager) assertNoFlagInjection(fieldManager, "fieldManager");
+      if (context) assertNoFlagInjection(context, "context");
+      if (selector) assertNoFlagInjection(selector, "selector");
+      if (waitTimeout) assertNoFlagInjection(waitTimeout, "waitTimeout");
+
+      const args = ["apply"];
+      // Add file arguments
+      const fileFlag = kustomize ? "-k" : "-f";
+      for (const f of files) {
+        args.push(fileFlag, f);
+      }
       if (namespace) {
-        assertNoFlagInjection(namespace, "namespace");
         args.push("-n", namespace);
       }
       if (dryRun && dryRun !== "none") {
         args.push("--dry-run", dryRun);
+      }
+      if (validate) {
+        args.push(`--validate=${validate}`);
       }
       if (serverSide) {
         args.push("--server-side");
       }
       if (wait) {
         args.push("--wait");
+      }
+      if (waitTimeout) {
+        args.push("--timeout", waitTimeout);
       }
       if (recursive) {
         args.push("-R");
@@ -96,6 +163,18 @@ export function registerApplyTool(server: McpServer) {
       }
       if (forceConflicts) {
         args.push("--force-conflicts");
+      }
+      if (fieldManager) {
+        args.push("--field-manager", fieldManager);
+      }
+      if (context) {
+        args.push("--context", context);
+      }
+      if (selector) {
+        args.push("-l", selector);
+      }
+      if (cascade) {
+        args.push("--cascade", cascade);
       }
       args.push("-o", "json");
 
