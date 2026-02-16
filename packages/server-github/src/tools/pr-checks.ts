@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrChecks } from "../lib/parsers.js";
 import { formatPrChecks, compactPrChecksMap, formatPrChecksCompact } from "../lib/formatters.js";
@@ -23,6 +23,7 @@ export function registerPrChecksTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
+        watch: z.boolean().optional().describe("Poll checks until they complete (-w/--watch)"),
         compact: z
           .boolean()
           .optional()
@@ -33,11 +34,14 @@ export function registerPrChecksTool(server: McpServer) {
       },
       outputSchema: PrChecksResultSchema,
     },
-    async ({ pr, repo, compact }) => {
+    async ({ pr, repo, watch, compact }) => {
+      if (repo) assertNoFlagInjection(repo, "repo");
+
       const args = ["pr", "checks", String(pr), "--json", PR_CHECKS_FIELDS];
       if (repo) {
         args.push("--repo", repo);
       }
+      if (watch) args.push("--watch");
       const result = await ghCmd(args);
 
       if (result.exitCode !== 0) {

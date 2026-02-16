@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseGistCreate } from "../lib/parsers.js";
 import { formatGistCreate } from "../lib/formatters.js";
@@ -40,6 +40,8 @@ export function registerGistCreateTool(server: McpServer) {
     },
     async ({ files, description, public: isPublic, path }) => {
       const cwd = path || process.cwd();
+
+      if (description) assertNoFlagInjection(description, "description");
 
       const args = ["gist", "create"];
       if (description) {

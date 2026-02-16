@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseApi } from "../lib/parsers.js";
 import { formatApi } from "../lib/formatters.js";
@@ -42,6 +42,16 @@ export function registerApiTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("jq filter expression to apply to the response"),
+        slurp: z
+          .boolean()
+          .optional()
+          .describe("Combine paginated JSON arrays into a single array (--slurp)"),
+        include: z
+          .boolean()
+          .optional()
+          .describe("Include response headers in output (-i/--include)"),
+        silent: z.boolean().optional().describe("Suppress response body output (--silent)"),
+        verbose: z.boolean().optional().describe("Show verbose debug output (--verbose)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -50,8 +60,23 @@ export function registerApiTool(server: McpServer) {
       },
       outputSchema: ApiResultSchema,
     },
-    async ({ endpoint, method, body, fields, paginate, jq, path }) => {
+    async ({
+      endpoint,
+      method,
+      body,
+      fields,
+      paginate,
+      jq,
+      slurp,
+      include,
+      silent,
+      verbose,
+      path,
+    }) => {
       const cwd = path || process.cwd();
+
+      assertNoFlagInjection(endpoint, "endpoint");
+      if (jq) assertNoFlagInjection(jq, "jq");
 
       const args = ["api", endpoint, "--method", method!];
 
@@ -62,6 +87,11 @@ export function registerApiTool(server: McpServer) {
       if (jq) {
         args.push("--jq", jq);
       }
+
+      if (slurp) args.push("--slurp");
+      if (include) args.push("--include");
+      if (silent) args.push("--silent");
+      if (verbose) args.push("--verbose");
 
       // Add --raw-field for each field entry
       if (fields) {

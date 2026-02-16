@@ -51,6 +51,16 @@ export function registerPrUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Assignees to remove"),
+        addProjects: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Projects to add (--add-project)"),
+        removeProjects: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Projects to remove (--remove-project)"),
       },
       outputSchema: EditResultSchema,
     },
@@ -63,6 +73,8 @@ export function registerPrUpdateTool(server: McpServer) {
       removeLabels,
       addAssignees,
       removeAssignees,
+      addProjects,
+      removeProjects,
     }) => {
       const cwd = path || process.cwd();
 
@@ -87,6 +99,16 @@ export function registerPrUpdateTool(server: McpServer) {
           assertNoFlagInjection(assignee, "removeAssignees");
         }
       }
+      if (addProjects) {
+        for (const project of addProjects) {
+          assertNoFlagInjection(project, "addProjects");
+        }
+      }
+      if (removeProjects) {
+        for (const project of removeProjects) {
+          assertNoFlagInjection(project, "removeProjects");
+        }
+      }
 
       const args = ["pr", "edit", String(number)];
       if (title) args.push("--title", title);
@@ -108,6 +130,16 @@ export function registerPrUpdateTool(server: McpServer) {
       if (removeAssignees && removeAssignees.length > 0) {
         for (const assignee of removeAssignees) {
           args.push("--remove-assignee", assignee);
+        }
+      }
+      if (addProjects && addProjects.length > 0) {
+        for (const project of addProjects) {
+          args.push("--add-project", project);
+        }
+      }
+      if (removeProjects && removeProjects.length > 0) {
+        for (const project of removeProjects) {
+          args.push("--remove-project", project);
         }
       }
       if (body) {

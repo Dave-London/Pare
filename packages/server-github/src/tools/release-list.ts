@@ -31,6 +31,14 @@ export function registerReleaseListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in owner/repo format (default: current repo)"),
+        excludeDrafts: z
+          .boolean()
+          .optional()
+          .describe("Exclude draft releases from the list (--exclude-drafts)"),
+        excludePreReleases: z
+          .boolean()
+          .optional()
+          .describe("Exclude pre-releases from the list (--exclude-pre-releases)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -46,13 +54,15 @@ export function registerReleaseListTool(server: McpServer) {
       },
       outputSchema: ReleaseListResultSchema,
     },
-    async ({ limit, repo, path, compact }) => {
+    async ({ limit, repo, excludeDrafts, excludePreReleases, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (repo) assertNoFlagInjection(repo, "repo");
 
       const args = ["release", "list", "--json", RELEASE_LIST_FIELDS, "--limit", String(limit)];
       if (repo) args.push("--repo", repo);
+      if (excludeDrafts) args.push("--exclude-drafts");
+      if (excludePreReleases) args.push("--exclude-pre-releases");
 
       const result = await ghCmd(args, cwd);
 

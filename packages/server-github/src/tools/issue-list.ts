@@ -28,6 +28,11 @@ export function registerIssueListTool(server: McpServer) {
           .default(30)
           .describe("Maximum number of issues to return (default: 30)"),
         label: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Filter by label"),
+        labels: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Filter by multiple labels (each maps to --label)"),
         assignee: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -48,15 +53,25 @@ export function registerIssueListTool(server: McpServer) {
       },
       outputSchema: IssueListResultSchema,
     },
-    async ({ state, limit, label, assignee, path, compact }) => {
+    async ({ state, limit, label, labels, assignee, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (label) assertNoFlagInjection(label, "label");
+      if (labels) {
+        for (const l of labels) {
+          assertNoFlagInjection(l, "labels");
+        }
+      }
       if (assignee) assertNoFlagInjection(assignee, "assignee");
 
       const args = ["issue", "list", "--json", ISSUE_LIST_FIELDS, "--limit", String(limit)];
       if (state) args.push("--state", state);
       if (label) args.push("--label", label);
+      if (labels && labels.length > 0) {
+        for (const l of labels) {
+          args.push("--label", l);
+        }
+      }
       if (assignee) args.push("--assignee", assignee);
 
       const result = await ghCmd(args, cwd);

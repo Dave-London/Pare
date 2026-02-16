@@ -31,6 +31,7 @@ export function registerRunListTool(server: McpServer) {
           .enum(["queued", "in_progress", "completed", "failure", "success"])
           .optional()
           .describe("Filter by run status"),
+        all: z.boolean().optional().describe("Include runs from disabled workflows (-a/--all)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -46,7 +47,7 @@ export function registerRunListTool(server: McpServer) {
       },
       outputSchema: RunListResultSchema,
     },
-    async ({ limit, branch, status, path, compact }) => {
+    async ({ limit, branch, status, all, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (branch) assertNoFlagInjection(branch, "branch");
@@ -54,6 +55,7 @@ export function registerRunListTool(server: McpServer) {
       const args = ["run", "list", "--json", RUN_LIST_FIELDS, "--limit", String(limit)];
       if (branch) args.push("--branch", branch);
       if (status) args.push("--status", status);
+      if (all) args.push("--all");
 
       const result = await ghCmd(args, cwd);
 
