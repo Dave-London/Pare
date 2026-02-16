@@ -57,6 +57,15 @@ export function registerSearchTool(server: McpServer) {
           .optional()
           .describe("Allow patterns to span multiple lines (--multiline)"),
         hidden: z.boolean().optional().describe("Search hidden files and directories (--hidden)"),
+        type: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by file type (e.g., 'ts', 'js', 'py', 'rust'). Maps to --type TYPE."),
+        sort: z
+          .enum(["path", "modified", "accessed", "created"])
+          .optional()
+          .describe("Sort results by the specified criterion (maps to --sort TYPE)"),
         maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
         followSymlinks: z.boolean().optional().describe("Follow symbolic links (--follow)"),
         noIgnore: z
@@ -85,6 +94,8 @@ export function registerSearchTool(server: McpServer) {
       invertMatch,
       multiline,
       hidden,
+      type,
+      sort,
       maxDepth,
       followSymlinks,
       noIgnore,
@@ -93,6 +104,7 @@ export function registerSearchTool(server: McpServer) {
       assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
+      if (type) assertNoFlagInjection(type, "type");
 
       const cwd = path || process.cwd();
       const args = ["--json"];
@@ -119,6 +131,14 @@ export function registerSearchTool(server: McpServer) {
 
       if (hidden) {
         args.push("--hidden");
+      }
+
+      if (type) {
+        args.push("--type", type);
+      }
+
+      if (sort) {
+        args.push("--sort", sort);
       }
 
       if (maxCount !== undefined) {

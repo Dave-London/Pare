@@ -59,6 +59,18 @@ export function registerJqTool(server: McpServer) {
           .describe(
             "Use jq exit status for boolean checks: exit 1 if last output is false/null (--exit-status)",
           ),
+        arg: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe(
+            "Named string variables for parameterized expressions (maps to repeated --arg NAME VALUE)",
+          ),
+        argjson: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe(
+            "Named JSON variables for parameterized expressions (maps to repeated --argjson NAME VALUE)",
+          ),
         indent: z.number().optional().describe("Number of spaces for indentation (--indent)"),
         joinOutput: z
           .boolean()
@@ -85,6 +97,8 @@ export function registerJqTool(server: McpServer) {
       compactOutput,
       rawInput,
       exitStatus,
+      arg,
+      argjson,
       indent,
       joinOutput,
       compact,
@@ -120,6 +134,20 @@ export function registerJqTool(server: McpServer) {
       if (exitStatus) args.push("--exit-status");
       if (indent !== undefined) args.push("--indent", String(indent));
       if (joinOutput) args.push("--join-output");
+
+      // Add named string variables
+      if (arg) {
+        for (const [name, value] of Object.entries(arg)) {
+          args.push("--arg", name, value);
+        }
+      }
+
+      // Add named JSON variables
+      if (argjson) {
+        for (const [name, value] of Object.entries(argjson)) {
+          args.push("--argjson", name, value);
+        }
+      }
 
       args.push(expression);
 
