@@ -69,6 +69,31 @@ describe("formatGoBuild", () => {
     expect(output).toContain("app.go:1: package declaration missing");
     expect(output).not.toContain("app.go:1::");
   });
+
+  it("formats failed build with rawErrors", () => {
+    const data: GoBuildResult = {
+      success: false,
+      errors: [],
+      rawErrors: ["package myapp/missing is not in GOROOT (/usr/local/go/src/myapp/missing)"],
+      total: 1,
+    };
+    const output = formatGoBuild(data);
+    expect(output).toContain("go build: 1 errors");
+    expect(output).toContain("package myapp/missing is not in GOROOT");
+  });
+
+  it("formats failed build with both file errors and rawErrors", () => {
+    const data: GoBuildResult = {
+      success: false,
+      errors: [{ file: "main.go", line: 5, column: 3, message: "undefined: x" }],
+      rawErrors: ["package myapp/missing is not in GOROOT (/usr/local/go/src/myapp/missing)"],
+      total: 2,
+    };
+    const output = formatGoBuild(data);
+    expect(output).toContain("go build: 2 errors");
+    expect(output).toContain("main.go:5:3: undefined: x");
+    expect(output).toContain("package myapp/missing is not in GOROOT");
+  });
 });
 
 describe("formatGoTest", () => {
@@ -121,6 +146,50 @@ describe("formatGoTest", () => {
     };
     const output = formatGoTest(data);
     expect(output).toContain("ok: 0 passed, 0 failed, 0 skipped");
+  });
+
+  it("formats failed test with output", () => {
+    const data: GoTestResult = {
+      success: false,
+      tests: [
+        {
+          package: "myapp",
+          name: "TestFail",
+          status: "fail",
+          elapsed: 0.01,
+          output: "    main_test.go:10: expected 42, got 0\n--- FAIL: TestFail (0.01s)",
+        },
+      ],
+      total: 1,
+      passed: 0,
+      failed: 1,
+      skipped: 0,
+    };
+    const output = formatGoTest(data);
+    expect(output).toContain("FAIL: 0 passed, 1 failed, 0 skipped");
+    expect(output).toContain("fail myapp/TestFail (0.01s)");
+    expect(output).toContain("expected 42, got 0");
+  });
+
+  it("formats package failures", () => {
+    const data: GoTestResult = {
+      success: false,
+      tests: [],
+      packageFailures: [
+        {
+          package: "myapp/broken",
+          output: "# myapp/broken\n./main.go:5:2: undefined: missingFunc",
+        },
+      ],
+      total: 0,
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+    };
+    const output = formatGoTest(data);
+    expect(output).toContain("Package failures:");
+    expect(output).toContain("FAIL myapp/broken");
+    expect(output).toContain("undefined: missingFunc");
   });
 });
 

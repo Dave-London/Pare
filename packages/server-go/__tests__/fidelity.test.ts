@@ -114,6 +114,72 @@ describe("fidelity: go build", () => {
     expect(result.errors[0].file).toBe("main.go");
     expect(result.errors[1].file).toBe("util.go");
   });
+
+  it("captures 'package not in GOROOT' errors as rawErrors", () => {
+    const stderr = [
+      "# myapp",
+      "package myapp/internal/missing is not in GOROOT (/usr/local/go/src/myapp/internal/missing)",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toEqual([]);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("package myapp/internal/missing is not in GOROOT");
+    expect(result.total).toBe(1);
+  });
+
+  it("captures 'no required module provides package' errors", () => {
+    const stderr = [
+      "# myapp",
+      "no required module provides package github.com/missing/pkg; to add it:",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("no required module provides package");
+  });
+
+  it("captures linker 'undefined reference' errors", () => {
+    const stderr = [
+      "# myapp",
+      "main.go:5:3: undefined: doStuff",
+      "/usr/bin/ld: /tmp/go-link/000000.o: undefined reference to `missing_symbol'",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toBe("undefined: doStuff");
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("undefined reference to");
+    expect(result.total).toBe(2);
+  });
+
+  it("captures cgo errors", () => {
+    const stderr =
+      'cgo: C compiler "gcc" not found: exec: "gcc": executable file not found in $PATH';
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("cgo:");
+  });
+
+  it("captures 'cannot find package' errors", () => {
+    const stderr = 'cannot find package "myapp/missing" in any of:';
+
+    const result = parseGoBuildOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("cannot find package");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -268,6 +334,125 @@ describe("fidelity: go test", () => {
     expect(result.total).toBe(1);
     expect(result.tests[0].status).toBe("pass");
     expect(result.tests[0].elapsed).toBe(0.02);
+  });
+
+  it("attaches output lines to failed tests", () => {
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestDiv" }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestDiv",
+        Output: "=== RUN   TestDiv\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestDiv",
+        Output: "    div_test.go:15: division by zero\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestDiv",
+        Output: "--- FAIL: TestDiv (0.00s)\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Test: "TestDiv", Elapsed: 0.001 }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Elapsed: 0.5 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.failed).toBe(1);
+    const failTest = result.tests.find((t) => t.name === "TestDiv");
+    expect(failTest).toBeDefined();
+    expect(failTest!.output).toBeDefined();
+    expect(failTest!.output).toContain("division by zero");
+    expect(failTest!.output).toContain("FAIL: TestDiv");
+  });
+
+  it("does not attach output to passing tests", () => {
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestOk" }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestOk",
+        Output: "--- PASS: TestOk (0.00s)\n",
+      }),
+      JSON.stringify({ Action: "pass", Package: "myapp", Test: "TestOk", Elapsed: 0.001 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 0);
+
+    expect(result.passed).toBe(1);
+    expect(result.tests[0].output).toBeUndefined();
+  });
+
+  it("surfaces package-level build failures", () => {
+    // Simulates a package that fails to compile (no individual tests run)
+    const stdout = [
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/broken",
+        Output: "# myapp/broken\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/broken",
+        Output: "./broken.go:3:2: undefined: nonExistent\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp/broken", Elapsed: 0 }),
+      // A working package alongside the broken one
+      JSON.stringify({ Action: "run", Package: "myapp/good", Test: "TestGood" }),
+      JSON.stringify({ Action: "pass", Package: "myapp/good", Test: "TestGood", Elapsed: 0.01 }),
+      JSON.stringify({ Action: "pass", Package: "myapp/good", Elapsed: 0.5 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.passed).toBe(1);
+    expect(result.packageFailures).toBeDefined();
+    expect(result.packageFailures).toHaveLength(1);
+    expect(result.packageFailures![0].package).toBe("myapp/broken");
+    expect(result.packageFailures![0].output).toContain("undefined: nonExistent");
+  });
+
+  it("surfaces multiple package build failures", () => {
+    const stdout = [
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/a",
+        Output: "# myapp/a\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/a",
+        Output: "./a.go:1:1: expected 'package'\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp/a", Elapsed: 0 }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/b",
+        Output: "# myapp/b\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/b",
+        Output: "./b.go:5:1: missing return\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp/b", Elapsed: 0 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.total).toBe(0);
+    expect(result.packageFailures).toHaveLength(2);
+    expect(result.packageFailures![0].package).toBe("myapp/a");
+    expect(result.packageFailures![0].output).toContain("expected 'package'");
+    expect(result.packageFailures![1].package).toBe("myapp/b");
+    expect(result.packageFailures![1].output).toContain("missing return");
   });
 });
 
@@ -528,6 +713,24 @@ describe("fidelity: gofmt", () => {
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(1);
     expect(result.files[0]).toBe("pkg/internal/middleware/auth/jwt/token_validator.go");
+  });
+
+  it("detects files changed in fix mode when -l -w is used", () => {
+    // When gofmt is run with -l -w, stdout lists the files that were reformatted
+    const stdout = "main.go\nutil.go\n";
+    const result = parseGoFmtOutput(stdout, "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(2);
+    expect(result.files).toEqual(["main.go", "util.go"]);
+  });
+
+  it("reports zero files changed in fix mode when all files already formatted", () => {
+    const result = parseGoFmtOutput("", "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toEqual([]);
   });
 });
 

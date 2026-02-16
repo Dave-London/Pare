@@ -12,6 +12,8 @@ export const GoBuildErrorSchema = z.object({
 export const GoBuildResultSchema = z.object({
   success: z.boolean(),
   errors: z.array(GoBuildErrorSchema).optional(),
+  /** Non-file errors (package-level, linker, build constraint) that don't match file:line:col format. */
+  rawErrors: z.array(z.string()).optional(),
   total: z.number(),
 });
 
@@ -26,10 +28,18 @@ export const GoTestCaseSchema = z.object({
   output: z.string().optional(),
 });
 
+/** Zod schema for a package-level test failure (build error, missing dependency, etc.). */
+export const GoTestPackageFailureSchema = z.object({
+  package: z.string(),
+  output: z.string().optional(),
+});
+
 /** Zod schema for structured go test output with test list and pass/fail/skip counts. */
 export const GoTestResultSchema = z.object({
   success: z.boolean(),
   tests: z.array(GoTestCaseSchema).optional(),
+  /** Package-level failures (build errors, missing dependencies) where no individual test ran. */
+  packageFailures: z.array(GoTestPackageFailureSchema).optional(),
   total: z.number(),
   passed: z.number(),
   failed: z.number(),

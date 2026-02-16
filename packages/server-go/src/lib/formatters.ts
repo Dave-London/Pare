@@ -21,6 +21,9 @@ export function formatGoBuild(data: GoBuildResult): string {
     const col = e.column ? `:${e.column}` : "";
     lines.push(`  ${e.file}:${e.line}${col}: ${e.message}`);
   }
+  for (const raw of data.rawErrors ?? []) {
+    lines.push(`  ${raw}`);
+  }
   return lines.join("\n");
 }
 
@@ -33,6 +36,23 @@ export function formatGoTest(data: GoTestResult): string {
   for (const t of data.tests ?? []) {
     const elapsed = t.elapsed !== undefined ? ` (${t.elapsed}s)` : "";
     lines.push(`  ${t.status.padEnd(4)} ${t.package}/${t.name}${elapsed}`);
+    if (t.output) {
+      for (const outputLine of t.output.split("\n")) {
+        lines.push(`       ${outputLine}`);
+      }
+    }
+  }
+  if (data.packageFailures && data.packageFailures.length > 0) {
+    lines.push("");
+    lines.push("Package failures:");
+    for (const pf of data.packageFailures) {
+      lines.push(`  FAIL ${pf.package}`);
+      if (pf.output) {
+        for (const outputLine of pf.output.split("\n")) {
+          lines.push(`       ${outputLine}`);
+        }
+      }
+    }
   }
   return lines.join("\n");
 }
@@ -94,6 +114,7 @@ export interface GoBuildCompact {
   [key: string]: unknown;
   success: boolean;
   errors?: GoBuildResult["errors"];
+  rawErrors?: string[];
   total: number;
 }
 
@@ -103,6 +124,7 @@ export function compactBuildMap(data: GoBuildResult): GoBuildCompact {
     total: data.total,
   };
   if (data.errors?.length) compact.errors = data.errors;
+  if (data.rawErrors?.length) compact.rawErrors = data.rawErrors;
   return compact;
 }
 
@@ -111,7 +133,7 @@ export function formatBuildCompact(data: GoBuildCompact): string {
   return `go build: ${data.total} errors`;
 }
 
-/** Compact test: total, passed, failed, skipped. Drop individual test details. */
+/** Compact test: total, passed, failed, skipped. Drop individual test details but keep package failures. */
 export interface GoTestCompact {
   [key: string]: unknown;
   success: boolean;
@@ -119,16 +141,19 @@ export interface GoTestCompact {
   passed: number;
   failed: number;
   skipped: number;
+  packageFailures?: GoTestResult["packageFailures"];
 }
 
 export function compactTestMap(data: GoTestResult): GoTestCompact {
-  return {
+  const compact: GoTestCompact = {
     success: data.success,
     total: data.total,
     passed: data.passed,
     failed: data.failed,
     skipped: data.skipped,
   };
+  if (data.packageFailures?.length) compact.packageFailures = data.packageFailures;
+  return compact;
 }
 
 export function formatTestCompact(data: GoTestCompact): string {

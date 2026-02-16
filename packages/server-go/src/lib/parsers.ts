@@ -15,6 +15,29 @@ import type {
 
 const GO_ERROR_RE = /^(.+?\.go):(\d+)(?::(\d+))?: (.+)$/;
 
+/**
+ * Regex to detect non-file build error lines. These are package-level or linker
+ * errors that don't match the standard file:line:col format.
+ * Matches: "package X is not in GOROOT", linker errors, build constraint errors, etc.
+ * Ignores: blank lines, "# package" headers (captured separately as context).
+ */
+const GO_NON_FILE_ERROR_PATTERNS = [
+  /^package .+ is not in (?:GOROOT|GOPATH|std)/,
+  /^can(?:not|'t) (?:find|load) package/,
+  /^no required module provides package/,
+  /^build constraints exclude all Go files/,
+  /^imports .+ is not in/,
+  // Linker errors
+  /^(?:\/[^\s]+\/)?ld[.:]/,
+  /^(?:#\s+command-line-arguments|link:)/,
+  /undefined reference to/,
+  /multiple definition of/,
+  // CGO errors
+  /^cgo: /,
+  // Module errors
+  /^go: /,
+];
+
 /** Parses `go build` stderr output into structured error data with file locations. */
 export function parseGoBuildOutput(
   stdout: string,
@@ -24,9 +47,13 @@ export function parseGoBuildOutput(
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const errors: { file: string; line: number; column?: number; message: string }[] = [];
+  const rawErrors: string[] = [];
 
   for (const line of lines) {
-    const match = line.match(GO_ERROR_RE);
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const match = trimmed.match(GO_ERROR_RE);
     if (match) {
       errors.push({
         file: match[1],
@@ -34,13 +61,25 @@ export function parseGoBuildOutput(
         column: match[3] ? parseInt(match[3], 10) : undefined,
         message: match[4],
       });
+      continue;
+    }
+
+    // Only capture non-file errors when the build actually failed
+    if (exitCode !== 0) {
+      const isNonFileError = GO_NON_FILE_ERROR_PATTERNS.some((re) => re.test(trimmed));
+      if (isNonFileError) {
+        rawErrors.push(trimmed);
+      }
     }
   }
+
+  const total = errors.length + rawErrors.length;
 
   return {
     success: exitCode === 0,
     errors,
-    total: errors.length,
+    rawErrors: rawErrors.length > 0 ? rawErrors : undefined,
+    total,
   };
 }
 
@@ -51,6 +90,12 @@ export function parseGoBuildOutput(
  */
 export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult {
   const lines = stdout.trim().split("\n").filter(Boolean);
+
+  // Collect output lines per test (keyed by package/test)
+  const testOutputMap = new Map<string, string[]>();
+  // Collect output lines per package (for package-level output)
+  const pkgOutputMap = new Map<string, string[]>();
+
   const testMap = new Map<
     string,
     {
@@ -62,6 +107,9 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
     }
   >();
 
+  // Track package-level failures (where event.Test is undefined)
+  const pkgFailures = new Map<string, { package: string; output?: string }>();
+
   for (const line of lines) {
     let event: GoTestEvent;
     try {
@@ -70,19 +118,69 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
       continue;
     }
 
-    if (!event.Test) continue;
+    if (event.Test) {
+      const key = `${event.Package}/${event.Test}`;
 
-    const key = `${event.Package}/${event.Test}`;
+      // Collect output lines for tests (#51)
+      if (event.Action === "output" && event.Output) {
+        if (!testOutputMap.has(key)) {
+          testOutputMap.set(key, []);
+        }
+        testOutputMap.get(key)!.push(event.Output);
+      }
 
-    if (event.Action === "pass" || event.Action === "fail" || event.Action === "skip") {
-      testMap.set(key, {
-        package: event.Package,
-        name: event.Test,
-        status: event.Action,
-        elapsed: event.Elapsed,
-      });
+      if (event.Action === "pass" || event.Action === "fail" || event.Action === "skip") {
+        testMap.set(key, {
+          package: event.Package,
+          name: event.Test,
+          status: event.Action,
+          elapsed: event.Elapsed,
+        });
+      }
+    } else {
+      // Package-level events (no Test field) (#52)
+      if (event.Action === "output" && event.Output) {
+        if (!pkgOutputMap.has(event.Package)) {
+          pkgOutputMap.set(event.Package, []);
+        }
+        pkgOutputMap.get(event.Package)!.push(event.Output);
+      }
+
+      if (event.Action === "fail") {
+        pkgFailures.set(event.Package, {
+          package: event.Package,
+        });
+      }
     }
   }
+
+  // Attach output to failed tests (#51)
+  for (const [key, entry] of testMap) {
+    if (entry.status === "fail") {
+      const outputLines = testOutputMap.get(key);
+      if (outputLines && outputLines.length > 0) {
+        entry.output = outputLines.join("").trimEnd();
+      }
+    }
+  }
+
+  // Attach package-level output to package failures (#52)
+  for (const [pkg, failure] of pkgFailures) {
+    const outputLines = pkgOutputMap.get(pkg);
+    if (outputLines && outputLines.length > 0) {
+      failure.output = outputLines.join("").trimEnd();
+    }
+  }
+
+  // Filter out package failures that have corresponding test-level results
+  // (a package "fail" event with tests means the package summary, not a build failure)
+  const pkgWithTests = new Set<string>();
+  for (const entry of testMap.values()) {
+    pkgWithTests.add(entry.package);
+  }
+  const packageFailures = Array.from(pkgFailures.values()).filter(
+    (f) => !pkgWithTests.has(f.package),
+  );
 
   const tests = Array.from(testMap.values());
   const passed = tests.filter((t) => t.status === "pass").length;
@@ -92,6 +190,7 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
   return {
     success: exitCode === 0,
     tests,
+    packageFailures: packageFailures.length > 0 ? packageFailures : undefined,
     total: tests.length,
     passed,
     failed,
@@ -160,18 +259,17 @@ export function parseGoModTidyOutput(
   };
 }
 
-/** Parses `gofmt -l` or `gofmt -w` output into structured result with file list. */
+/** Parses `gofmt -l` or `gofmt -l -w` output into structured result with file list. */
 export function parseGoFmtOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
   checkMode: boolean,
 ): GoFmtResult {
-  // In check mode (-l), stdout lists files that need formatting (one per line).
-  // In fix mode (-w), stdout is typically empty (files are rewritten in place).
+  // Both check mode (-l) and fix mode (-l -w) list changed files on stdout.
+  // The -l flag causes gofmt to print filenames, -w causes it to also rewrite them.
   // stderr may contain error messages.
-  const output = checkMode ? stdout : stdout;
-  const files = output
+  const files = stdout
     .split("\n")
     .map((f) => f.trim())
     .filter(Boolean);
