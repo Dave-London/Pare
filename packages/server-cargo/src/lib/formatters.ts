@@ -24,10 +24,11 @@ export interface CargoBuildCompact {
   total: number;
 }
 
-/** Compact test: summary counts only, no individual test entries. */
+/** Compact test: summary counts with failed test entries preserved for diagnostics. */
 export interface CargoTestCompact {
   [key: string]: unknown;
   success: boolean;
+  tests: CargoTestResult["tests"];
   total: number;
   passed: number;
   failed: number;
@@ -70,18 +71,20 @@ export interface CargoRemoveCompact {
   error?: string;
 }
 
-/** Compact fmt: success + file count only. */
+/** Compact fmt: success + needsFormatting + file count only. */
 export interface CargoFmtCompact {
   [key: string]: unknown;
   success: boolean;
+  needsFormatting: boolean;
   filesChanged: number;
 }
 
-/** Compact doc: success + warning count. */
+/** Compact doc: success + warning count + optional warning details. */
 export interface CargoDocCompact {
   [key: string]: unknown;
   success: boolean;
   warnings: number;
+  warningDetails?: CargoDocResult["warningDetails"];
 }
 
 /** Formats structured cargo build results into a human-readable diagnostic summary. */
@@ -105,6 +108,12 @@ export function formatCargoTest(data: CargoTestResult): string {
   ];
   for (const t of data.tests ?? []) {
     lines.push(`  ${t.status.padEnd(7)} ${t.name}`);
+    if (t.output) {
+      // Indent failure output under the test entry
+      for (const outputLine of t.output.split("\n")) {
+        lines.push(`           ${outputLine}`);
+      }
+    }
   }
   return lines.join("\n");
 }
@@ -169,7 +178,7 @@ export function formatCargoRemove(data: CargoRemoveResult): string {
 export function formatCargoFmt(data: CargoFmtResult): string {
   if (data.success && data.filesChanged === 0) return "cargo fmt: all files formatted.";
 
-  const status = data.success ? "success" : "needs formatting";
+  const status = data.needsFormatting ? "needs formatting" : data.success ? "success" : "failed";
   const lines = [`cargo fmt: ${status} (${data.filesChanged} file(s))`];
   for (const f of data.files ?? []) {
     lines.push(`  ${f}`);
@@ -184,7 +193,13 @@ export function formatCargoDoc(data: CargoDocResult): string {
   if (data.warnings > 0) parts.push(`(${data.warnings} warning(s))`);
   if (data.outputDir) parts.push(`-> ${data.outputDir}`);
   if (data.warnings === 0 && !data.outputDir) return `${parts[0]}.`;
-  return parts.join(" ");
+
+  const lines = [parts.join(" ")];
+  for (const w of data.warningDetails ?? []) {
+    const loc = w.file ? `${w.file}:${w.line}` : "";
+    lines.push(`  ${loc ? `${loc} ` : ""}warning: ${w.message}`);
+  }
+  return lines.join("\n");
 }
 
 // ── Compact mappers ──────────────────────────────────────────────────
@@ -201,9 +216,11 @@ export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
 }
 
 export function compactTestMap(data: CargoTestResult): CargoTestCompact {
+  // In compact mode, only keep failed tests (with their output) for diagnostics
+  const failedTests = (data.tests ?? []).filter((t) => t.status === "FAILED");
   return {
     success: data.success,
-    tests: [],
+    tests: failedTests.length > 0 ? failedTests : [],
     total: data.total,
     passed: data.passed,
     failed: data.failed,
@@ -253,15 +270,18 @@ export function compactRemoveMap(data: CargoRemoveResult): CargoRemoveCompact {
 export function compactFmtMap(data: CargoFmtResult): CargoFmtCompact {
   return {
     success: data.success,
+    needsFormatting: data.needsFormatting,
     filesChanged: data.filesChanged,
   };
 }
 
 export function compactDocMap(data: CargoDocResult): CargoDocCompact {
-  return {
+  const compact: CargoDocCompact = {
     success: data.success,
     warnings: data.warnings,
   };
+  if (data.warningDetails?.length) compact.warningDetails = data.warningDetails;
+  return compact;
 }
 
 // ── Compact formatters ───────────────────────────────────────────────
@@ -308,7 +328,7 @@ export function formatRemoveCompact(data: CargoRemoveCompact): string {
 
 export function formatFmtCompact(data: CargoFmtCompact): string {
   if (data.success && data.filesChanged === 0) return "cargo fmt: all files formatted.";
-  const status = data.success ? "success" : "needs formatting";
+  const status = data.needsFormatting ? "needs formatting" : data.success ? "success" : "failed";
   return `cargo fmt: ${status} (${data.filesChanged} file(s))`;
 }
 
@@ -323,25 +343,36 @@ export function formatDocCompact(data: CargoDocCompact): string {
 /** Formats structured cargo update output into a human-readable summary. */
 export function formatCargoUpdate(data: CargoUpdateResult): string {
   const status = data.success ? "success" : "failed";
-  if (!data.output) return `cargo update: ${status}.`;
-  return `cargo update: ${status}\n${data.output}`;
+  if (data.totalUpdated === 0 && !data.output) return `cargo update: ${status}.`;
+
+  const lines = [`cargo update: ${status} (${data.totalUpdated} package(s) updated)`];
+  for (const u of data.updated ?? []) {
+    lines.push(`  ${u.name} v${u.from} -> v${u.to}`);
+  }
+  return lines.join("\n");
 }
 
-/** Compact update: success flag only, no output text. */
+/** Compact update: success flag + updated packages, no raw output text. */
 export interface CargoUpdateCompact {
   [key: string]: unknown;
   success: boolean;
+  updated: CargoUpdateResult["updated"];
+  totalUpdated: number;
 }
 
 export function compactUpdateMap(data: CargoUpdateResult): CargoUpdateCompact {
   return {
     success: data.success,
+    updated: data.updated,
+    totalUpdated: data.totalUpdated,
   };
 }
 
 export function formatUpdateCompact(data: CargoUpdateCompact): string {
   const status = data.success ? "success" : "failed";
-  return `cargo update: ${status}`;
+  if (data.totalUpdated === 0) return `cargo update: ${status}`;
+  const names = (data.updated ?? []).map((u) => u.name).join(", ");
+  return `cargo update: ${status} (${data.totalUpdated} updated: ${names})`;
 }
 
 // ── Tree formatters ──────────────────────────────────────────────────
@@ -356,16 +387,18 @@ export function formatCargoTree(data: CargoTreeResult): string {
   return lines.join("\n");
 }
 
-/** Compact tree: success + package count only, no full tree text. */
+/** Compact tree: success + dependencies + package count, no full tree text. */
 export interface CargoTreeCompact {
   [key: string]: unknown;
   success: boolean;
+  dependencies: CargoTreeResult["dependencies"];
   packages: number;
 }
 
 export function compactTreeMap(data: CargoTreeResult): CargoTreeCompact {
   return {
     success: data.success,
+    dependencies: data.dependencies,
     packages: data.packages,
   };
 }

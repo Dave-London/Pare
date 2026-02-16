@@ -121,12 +121,12 @@ describe("formatCargoTest", () => {
     expect(output).toContain("ignored test_slow");
   });
 
-  it("formats failing test results", () => {
+  it("formats failing test results with captured output", () => {
     const data: CargoTestResult = {
       success: false,
       tests: [
         { name: "test_valid", status: "ok" },
-        { name: "test_broken", status: "FAILED" },
+        { name: "test_broken", status: "FAILED", output: "assertion failed: left != right" },
       ],
       total: 2,
       passed: 1,
@@ -137,6 +137,7 @@ describe("formatCargoTest", () => {
     expect(output).toContain("test result: FAILED. 1 passed; 1 failed; 0 ignored");
     expect(output).toContain("ok      test_valid");
     expect(output).toContain("FAILED  test_broken");
+    expect(output).toContain("assertion failed: left != right");
   });
 
   it("formats empty test suite", () => {
@@ -260,12 +261,12 @@ describe("compactBuildMap", () => {
 });
 
 describe("compactTestMap", () => {
-  it("strips individual tests and keeps summary counts", () => {
+  it("keeps only failed tests in compact mode for diagnostics", () => {
     const data: CargoTestResult = {
-      success: true,
+      success: false,
       tests: [
         { name: "test_a", status: "ok" },
-        { name: "test_b", status: "FAILED" },
+        { name: "test_b", status: "FAILED", output: "assertion failed" },
         { name: "test_c", status: "ignored" },
       ],
       total: 3,
@@ -274,24 +275,54 @@ describe("compactTestMap", () => {
       ignored: 1,
     };
     const compact = compactTestMap(data);
-    expect(compact).toEqual({
+    expect(compact.success).toBe(false);
+    expect(compact.total).toBe(3);
+    expect(compact.passed).toBe(1);
+    expect(compact.failed).toBe(1);
+    expect(compact.ignored).toBe(1);
+    // Only the failed test should be in compact tests
+    expect(compact.tests).toHaveLength(1);
+    expect(compact.tests![0].name).toBe("test_b");
+    expect(compact.tests![0].output).toBe("assertion failed");
+  });
+
+  it("returns empty tests array when all pass", () => {
+    const data: CargoTestResult = {
       success: true,
-      tests: [],
-      total: 3,
-      passed: 1,
-      failed: 1,
-      ignored: 1,
-    });
+      tests: [
+        { name: "test_a", status: "ok" },
+        { name: "test_b", status: "ok" },
+      ],
+      total: 2,
+      passed: 2,
+      failed: 0,
+      ignored: 0,
+    };
+    const compact = compactTestMap(data);
     expect(compact.tests).toEqual([]);
   });
 
   it("formats compact test output", () => {
-    expect(formatTestCompact({ success: true, total: 5, passed: 5, failed: 0, ignored: 0 })).toBe(
-      "test result: ok. 5 passed; 0 failed; 0 ignored",
-    );
-    expect(formatTestCompact({ success: false, total: 3, passed: 1, failed: 2, ignored: 0 })).toBe(
-      "test result: FAILED. 1 passed; 2 failed; 0 ignored",
-    );
+    expect(
+      formatTestCompact({
+        success: true,
+        tests: [],
+        total: 5,
+        passed: 5,
+        failed: 0,
+        ignored: 0,
+      }),
+    ).toBe("test result: ok. 5 passed; 0 failed; 0 ignored");
+    expect(
+      formatTestCompact({
+        success: false,
+        tests: [],
+        total: 3,
+        passed: 1,
+        failed: 2,
+        ignored: 0,
+      }),
+    ).toBe("test result: FAILED. 1 passed; 2 failed; 0 ignored");
   });
 });
 
@@ -417,35 +448,49 @@ describe("compactRemoveMap", () => {
 });
 
 describe("compactFmtMap", () => {
-  it("strips file list and keeps count", () => {
+  it("strips file list and keeps count and needsFormatting", () => {
     const data: CargoFmtResult = {
       success: false,
+      needsFormatting: true,
       filesChanged: 2,
       files: ["src/main.rs", "src/lib.rs"],
     };
     const compact = compactFmtMap(data);
-    expect(compact).toEqual({ success: false, filesChanged: 2 });
+    expect(compact).toEqual({ success: false, needsFormatting: true, filesChanged: 2 });
     expect(compact).not.toHaveProperty("files");
   });
 
   it("formats compact fmt output", () => {
-    expect(formatFmtCompact({ success: true, filesChanged: 0 })).toBe(
+    expect(formatFmtCompact({ success: true, needsFormatting: false, filesChanged: 0 })).toBe(
       "cargo fmt: all files formatted.",
     );
-    expect(formatFmtCompact({ success: false, filesChanged: 3 })).toBe(
+    expect(formatFmtCompact({ success: false, needsFormatting: true, filesChanged: 3 })).toBe(
       "cargo fmt: needs formatting (3 file(s))",
     );
-    expect(formatFmtCompact({ success: true, filesChanged: 1 })).toBe(
+    expect(formatFmtCompact({ success: true, needsFormatting: false, filesChanged: 1 })).toBe(
       "cargo fmt: success (1 file(s))",
     );
   });
 });
 
 describe("compactDocMap", () => {
-  it("keeps success and warnings", () => {
-    const data: CargoDocResult = { success: true, warnings: 5 };
+  it("keeps success, warnings, and warningDetails when non-empty", () => {
+    const data: CargoDocResult = {
+      success: true,
+      warnings: 1,
+      warningDetails: [{ file: "src/lib.rs", line: 10, message: "missing docs" }],
+    };
     const compact = compactDocMap(data);
-    expect(compact).toEqual({ success: true, warnings: 5 });
+    expect(compact.success).toBe(true);
+    expect(compact.warnings).toBe(1);
+    expect(compact.warningDetails).toHaveLength(1);
+  });
+
+  it("omits warningDetails when empty", () => {
+    const data: CargoDocResult = { success: true, warnings: 0 };
+    const compact = compactDocMap(data);
+    expect(compact).toEqual({ success: true, warnings: 0 });
+    expect(compact).not.toHaveProperty("warningDetails");
   });
 
   it("formats compact doc output", () => {

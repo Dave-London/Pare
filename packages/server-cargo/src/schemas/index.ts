@@ -21,11 +21,12 @@ export const CargoBuildResultSchema = z.object({
 
 export type CargoBuildResult = z.infer<typeof CargoBuildResultSchema>;
 
-/** Zod schema for a single cargo test case with name, status (ok/FAILED/ignored), and optional duration. */
+/** Zod schema for a single cargo test case with name, status (ok/FAILED/ignored), optional duration, and optional failure output. */
 export const CargoTestCaseSchema = z.object({
   name: z.string(),
   status: z.enum(["ok", "FAILED", "ignored"]),
   duration: z.string().optional(),
+  output: z.string().optional().describe("Captured stdout/stderr for failed tests"),
 });
 
 /** Zod schema for structured cargo test output with test list, pass/fail/ignored counts. */
@@ -91,36 +92,75 @@ export const CargoRemoveResultSchema = z.object({
 
 export type CargoRemoveResult = z.infer<typeof CargoRemoveResultSchema>;
 
-/** Zod schema for structured cargo fmt output with changed files list. */
+/** Zod schema for structured cargo fmt output with changed files list and formatting status. */
 export const CargoFmtResultSchema = z.object({
   success: z.boolean(),
+  needsFormatting: z
+    .boolean()
+    .describe(
+      "True when check mode detects unformatted files. Distinguishes 'needs formatting' from actual errors.",
+    ),
   filesChanged: z.number(),
   files: z.array(z.string()).optional(),
 });
 
 export type CargoFmtResult = z.infer<typeof CargoFmtResultSchema>;
 
-/** Zod schema for structured cargo doc output with success flag, warning count, and optional output path. */
+/** Zod schema for a structured doc warning with file location and message. */
+export const CargoDocWarningSchema = z.object({
+  file: z.string(),
+  line: z.number(),
+  message: z.string(),
+});
+
+/** Zod schema for structured cargo doc output with success flag, warning count, details, and optional output path. */
 export const CargoDocResultSchema = z.object({
   success: z.boolean(),
   warnings: z.number(),
+  warningDetails: z
+    .array(CargoDocWarningSchema)
+    .optional()
+    .describe("Structured warning details with file, line, and message"),
   outputDir: z.string().optional(),
 });
 
 export type CargoDocResult = z.infer<typeof CargoDocResultSchema>;
 
-/** Zod schema for structured cargo update output with success flag and output text. */
+/** Zod schema for a single updated dependency entry. */
+export const CargoUpdatedPackageSchema = z.object({
+  name: z.string().describe("Crate name"),
+  from: z.string().describe("Previous version"),
+  to: z.string().describe("Updated version"),
+});
+
+/** Zod schema for structured cargo update output with success flag, parsed updates, and raw output. */
 export const CargoUpdateResultSchema = z.object({
   success: z.boolean(),
-  output: z.string().optional(),
+  updated: z
+    .array(CargoUpdatedPackageSchema)
+    .optional()
+    .describe("Parsed list of updated dependencies"),
+  totalUpdated: z.number().describe("Count of updated packages"),
+  output: z.string().optional().describe("Raw combined output text"),
 });
 
 export type CargoUpdateResult = z.infer<typeof CargoUpdateResultSchema>;
 
-/** Zod schema for structured cargo tree output with tree text, unique package count, and success flag. */
+/** Zod schema for a single dependency node in the parsed tree. */
+export const CargoDependencyNodeSchema = z.object({
+  name: z.string().describe("Crate name"),
+  version: z.string().describe("Crate version"),
+  depth: z.number().describe("Nesting depth in the dependency tree (0 = root)"),
+});
+
+/** Zod schema for structured cargo tree output with parsed dependencies, tree text, unique package count, and success flag. */
 export const CargoTreeResultSchema = z.object({
   success: z.boolean(),
-  tree: z.string().optional(),
+  dependencies: z
+    .array(CargoDependencyNodeSchema)
+    .optional()
+    .describe("Flat list of dependencies with name, version, and depth"),
+  tree: z.string().optional().describe("Raw ASCII tree text"),
   packages: z.number(),
 });
 
