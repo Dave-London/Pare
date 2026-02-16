@@ -56,6 +56,19 @@ export function parsePrView(json: string): PrViewResult {
     additions: raw.additions ?? 0,
     deletions: raw.deletions ?? 0,
     changedFiles: raw.changedFiles ?? 0,
+    // S-gap fields
+    author: raw.author?.login ?? undefined,
+    labels: raw.labels ? (raw.labels as { name: string }[]).map((l) => l.name) : undefined,
+    isDraft: raw.isDraft ?? undefined,
+    assignees: raw.assignees
+      ? (raw.assignees as { login: string }[]).map((a) => a.login)
+      : undefined,
+    createdAt: raw.createdAt ?? undefined,
+    updatedAt: raw.updatedAt ?? undefined,
+    milestone: raw.milestone?.title ?? undefined,
+    projectItems: raw.projectItems
+      ? (raw.projectItems as { title: string }[]).map((p) => p.title)
+      : undefined,
   };
 }
 
@@ -73,7 +86,12 @@ export function parsePrList(json: string): PrListResult {
       title: string;
       url: string;
       headRefName: string;
+      baseRefName?: string;
       author: { login: string };
+      labels?: { name: string }[];
+      isDraft?: boolean;
+      reviewDecision?: string;
+      mergeable?: string;
     }) => ({
       number: pr.number,
       state: pr.state,
@@ -81,6 +99,12 @@ export function parsePrList(json: string): PrListResult {
       url: pr.url,
       headBranch: pr.headRefName,
       author: pr.author?.login ?? "",
+      // S-gap fields
+      labels: pr.labels ? pr.labels.map((l) => l.name) : undefined,
+      isDraft: pr.isDraft ?? undefined,
+      baseBranch: pr.baseRefName ?? undefined,
+      reviewDecision: pr.reviewDecision ?? undefined,
+      mergeable: pr.mergeable ?? undefined,
     }),
   );
 
@@ -112,29 +136,72 @@ export function parsePrUpdate(stdout: string, number: number): EditResult {
  * Parses `gh pr merge` output into structured data.
  * The gh CLI prints a confirmation message with the PR URL on success.
  */
-export function parsePrMerge(stdout: string, number: number, method: string): PrMergeResult {
+export function parsePrMerge(
+  stdout: string,
+  number: number,
+  method: string,
+  deleteBranch?: boolean,
+): PrMergeResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
-  return { number, merged: true, method, url };
+  // S-gap: detect if branch was deleted from output
+  const branchDeleted =
+    deleteBranch !== undefined
+      ? /deleted branch|branch.*deleted/i.test(stdout)
+        ? true
+        : deleteBranch
+      : undefined;
+  return { number, merged: true, method, url, branchDeleted };
 }
 
 /**
  * Parses `gh pr comment` / `gh issue comment` output into structured data.
  * The gh CLI prints the new comment URL to stdout.
+ * S-gap: Enhanced to include operation type, commentId, number, and body echo.
  */
-export function parseComment(stdout: string): CommentResult {
+export function parseComment(
+  stdout: string,
+  opts?: {
+    operation?: "create" | "edit" | "delete";
+    issueNumber?: number;
+    prNumber?: number;
+    body?: string;
+  },
+): CommentResult {
   const url = stdout.trim();
-  return { url };
+  // S-gap: extract commentId from URL (e.g., #issuecomment-123456)
+  const commentIdMatch = url.match(/#issuecomment-(\d+)/);
+  const commentId = commentIdMatch ? commentIdMatch[1] : undefined;
+
+  return {
+    url: url || undefined,
+    operation: opts?.operation,
+    commentId,
+    issueNumber: opts?.issueNumber,
+    prNumber: opts?.prNumber,
+    body: opts?.body,
+  };
 }
 
 /**
  * Parses `gh pr review` output into structured data.
  * The gh CLI prints a confirmation message with the PR URL on success.
+ * S-gap: Enhanced to include reviewId, reviewDecision, and body echo.
  */
-export function parsePrReview(stdout: string, number: number, event: string): PrReviewResult {
+export function parsePrReview(
+  stdout: string,
+  number: number,
+  event: string,
+  body?: string,
+): PrReviewResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
-  return { number, event, url };
+  return {
+    number,
+    event,
+    url,
+    body: body ?? undefined,
+  };
 }
 
 /**
@@ -156,6 +223,8 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
       link?: string;
       startedAt?: string;
       completedAt?: string;
+      isRequired?: boolean;
+      conclusion?: string;
     }) => ({
       name: c.name ?? "",
       state: c.state ?? "",
@@ -166,6 +235,9 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
       link: c.link ?? "",
       startedAt: c.startedAt ?? "",
       completedAt: c.completedAt ?? "",
+      // S-gap fields
+      required: c.isRequired ?? undefined,
+      conclusion: c.conclusion ?? undefined,
     }),
   );
 
@@ -196,6 +268,16 @@ export function parseIssueView(json: string): IssueViewResult {
     assignees: (raw.assignees ?? []).map((a: { login: string }) => a.login),
     url: raw.url,
     createdAt: raw.createdAt ?? "",
+    // S-gap fields
+    stateReason: raw.stateReason ?? undefined,
+    author: raw.author?.login ?? undefined,
+    milestone: raw.milestone?.title ?? undefined,
+    updatedAt: raw.updatedAt ?? undefined,
+    closedAt: raw.closedAt ?? undefined,
+    isPinned: raw.isPinned ?? undefined,
+    projectItems: raw.projectItems
+      ? (raw.projectItems as { title: string }[]).map((p) => p.title)
+      : undefined,
   };
 }
 
@@ -214,6 +296,9 @@ export function parseIssueList(json: string): IssueListResult {
       url: string;
       labels: { name: string }[];
       assignees: { login: string }[];
+      author?: { login: string };
+      createdAt?: string;
+      milestone?: { title: string } | null;
     }) => ({
       number: issue.number,
       state: issue.state,
@@ -221,6 +306,10 @@ export function parseIssueList(json: string): IssueListResult {
       url: issue.url,
       labels: (issue.labels ?? []).map((l) => l.name),
       assignees: (issue.assignees ?? []).map((a) => a.login),
+      // S-gap fields
+      author: issue.author?.login ?? undefined,
+      createdAt: issue.createdAt ?? undefined,
+      milestone: issue.milestone?.title ?? undefined,
     }),
   );
 
@@ -230,21 +319,40 @@ export function parseIssueList(json: string): IssueListResult {
 /**
  * Parses `gh issue create` output (URL on stdout) into structured data.
  * The gh CLI prints the new issue URL to stdout. We extract the number from it.
+ * S-gap: Enhanced to echo back applied labels.
  */
-export function parseIssueCreate(stdout: string): IssueCreateResult {
+export function parseIssueCreate(stdout: string, labels?: string[]): IssueCreateResult {
   const url = stdout.trim();
   const match = url.match(/\/issues\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
-  return { number, url };
+  return {
+    number,
+    url,
+    labelsApplied: labels && labels.length > 0 ? labels : undefined,
+  };
 }
 
 /**
  * Parses `gh issue close` output into structured data.
  * The gh CLI prints a confirmation URL to stdout. We extract the number from it.
+ * S-gap: Enhanced to include reason and commentUrl.
  */
-export function parseIssueClose(stdout: string, number: number): IssueCloseResult {
+export function parseIssueClose(
+  stdout: string,
+  number: number,
+  reason?: string,
+  comment?: string,
+): IssueCloseResult {
   const url = stdout.trim();
-  return { number, state: "closed", url };
+  // S-gap: Extract comment URL from output if a comment was added
+  const commentUrlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+#issuecomment-\d+)/);
+  return {
+    number,
+    state: "closed",
+    url,
+    reason: reason ?? undefined,
+    commentUrl: comment && commentUrlMatch ? commentUrlMatch[1] : undefined,
+  };
 }
 
 /**
@@ -260,15 +368,29 @@ export function parseIssueUpdate(stdout: string, number: number): EditResult {
 /**
  * Parses `gh run view --json ...` output into structured run view data.
  * Renames gh field names (e.g., databaseId → id).
+ * S-gap: Enhanced to include job steps.
  */
 export function parseRunView(json: string): RunViewResult {
   const raw = JSON.parse(json);
 
   const jobs = (raw.jobs ?? []).map(
-    (j: { name: string; status: string; conclusion: string | null }) => ({
+    (j: {
+      name: string;
+      status: string;
+      conclusion: string | null;
+      steps?: { name: string; status: string; conclusion: string | null }[];
+    }) => ({
       name: j.name,
       status: j.status,
       conclusion: j.conclusion ?? null,
+      // S-gap: Include steps array
+      steps: j.steps
+        ? j.steps.map((s) => ({
+            name: s.name,
+            status: s.status,
+            conclusion: s.conclusion ?? null,
+          }))
+        : undefined,
     }),
   );
 
@@ -322,12 +444,14 @@ export function parseRunList(json: string): RunListResult {
  * Parses `gh run rerun` output into structured data.
  * The gh CLI prints a confirmation message to stderr on success.
  * We construct the URL from the run ID and repo info.
+ * S-gap: Enhanced to include job field.
  */
 export function parseRunRerun(
   stdout: string,
   stderr: string,
   runId: number,
   failedOnly: boolean,
+  job?: string,
 ): RunRerunResult {
   // gh run rerun outputs confirmation to stderr, e.g.:
   // "✓ Requested rerun of run 12345"
@@ -341,25 +465,37 @@ export function parseRunRerun(
     status: "requested",
     failedOnly,
     url,
+    job: job ?? undefined,
   };
 }
 
 /**
  * Parses `gh release create` output (URL on stdout) into structured data.
  * The gh CLI prints the new release URL to stdout.
+ * S-gap: Enhanced to include title, assetsUploaded count.
  */
 export function parseReleaseCreate(
   stdout: string,
   tag: string,
   draft: boolean,
   prerelease: boolean,
+  title?: string,
+  assetsCount?: number,
 ): ReleaseCreateResult {
   const url = stdout.trim();
-  return { tag, url, draft, prerelease };
+  return {
+    tag,
+    url,
+    draft,
+    prerelease,
+    title: title ?? undefined,
+    assetsUploaded: assetsCount ?? undefined,
+  };
 }
 
 /**
  * Parses `gh release list --json ...` output into structured release list data.
+ * S-gap: Enhanced to include isLatest and createdAt.
  */
 export function parseReleaseList(json: string): ReleaseListResult {
   const raw = JSON.parse(json);
@@ -373,6 +509,8 @@ export function parseReleaseList(json: string): ReleaseListResult {
       isPrerelease: boolean;
       publishedAt: string;
       url: string;
+      isLatest?: boolean;
+      createdAt?: string;
     }) => ({
       tag: r.tagName ?? "",
       name: r.name ?? "",
@@ -380,6 +518,9 @@ export function parseReleaseList(json: string): ReleaseListResult {
       prerelease: r.isPrerelease ?? false,
       publishedAt: r.publishedAt ?? "",
       url: r.url ?? "",
+      // S-gap fields
+      isLatest: r.isLatest ?? undefined,
+      createdAt: r.createdAt ?? undefined,
     }),
   );
 
@@ -412,12 +553,25 @@ export function parseApi(
 /**
  * Parses `gh gist create` output (URL on stdout) into structured data.
  * The gh CLI prints the new gist URL to stdout. We extract the ID from it.
+ * S-gap: Enhanced to include files, description, fileCount.
  */
-export function parseGistCreate(stdout: string, isPublic: boolean): GistCreateResult {
+export function parseGistCreate(
+  stdout: string,
+  isPublic: boolean,
+  files?: string[],
+  description?: string,
+): GistCreateResult {
   const url = stdout.trim();
   const match = url.match(/\/([a-f0-9]+)$/);
   const id = match ? match[1] : "";
-  return { id, url, public: isPublic };
+  return {
+    id,
+    url,
+    public: isPublic,
+    files: files ?? undefined,
+    description: description ?? undefined,
+    fileCount: files ? files.length : undefined,
+  };
 }
 
 /**

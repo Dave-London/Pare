@@ -13,14 +13,23 @@ export function registerIssueCloseTool(server: McpServer) {
     {
       title: "Issue Close",
       description:
-        "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, and URL. Use instead of running `gh issue close` in the terminal.",
+        "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, URL, reason, and comment URL. Use instead of running `gh issue close` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Issue number"),
+        // S-gap P1: Accept number or URL via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Issue number or URL"),
         comment: z.string().max(INPUT_LIMITS.STRING_MAX).optional().describe("Closing comment"),
         reason: z
           .enum(["completed", "not planned"])
           .optional()
           .describe('Close reason: "completed" or "not planned"'),
+        // S-gap P1: Add repo for cross-repo close
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (default: current repo)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -29,19 +38,27 @@ export function registerIssueCloseTool(server: McpServer) {
       },
       outputSchema: IssueCloseResultSchema,
     },
-    async ({ number, comment, reason, path }) => {
+    async ({ number, comment, reason, repo, path }) => {
       const cwd = path || process.cwd();
 
       if (comment) {
         assertNoFlagInjection(comment, "comment");
       }
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
 
-      const args = ["issue", "close", String(number)];
+      const selector = String(number);
+      const issueNum = typeof number === "number" ? number : 0;
+
+      const args = ["issue", "close", selector];
       if (comment) {
         args.push("--comment", comment);
       }
       if (reason) {
         args.push("--reason", reason);
+      }
+      if (repo) {
+        args.push("--repo", repo);
       }
 
       const result = await ghCmd(args, cwd);
@@ -50,7 +67,8 @@ export function registerIssueCloseTool(server: McpServer) {
         throw new Error(`gh issue close failed: ${result.stderr}`);
       }
 
-      const data = parseIssueClose(result.stdout, number);
+      // S-gap: Pass reason and comment for echo in output
+      const data = parseIssueClose(result.stdout, issueNum, reason, comment);
       return dualOutput(data, formatIssueClose);
     },
   );

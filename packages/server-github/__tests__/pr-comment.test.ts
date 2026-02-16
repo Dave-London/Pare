@@ -17,12 +17,28 @@ describe("parseComment (pr-comment)", () => {
 
   it("handles empty output", () => {
     const result = parseComment("");
-    expect(result.url).toBe("");
+    expect(result.url).toBeUndefined();
   });
 
   it("trims whitespace from output", () => {
     const result = parseComment("  https://github.com/owner/repo/pull/10#issuecomment-999  \n");
     expect(result.url).toBe("https://github.com/owner/repo/pull/10#issuecomment-999");
+  });
+
+  it("extracts commentId from URL", () => {
+    const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123456\n");
+    expect(result.commentId).toBe("123456");
+  });
+
+  it("passes operation type and PR number", () => {
+    const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123456\n", {
+      operation: "create",
+      prNumber: 42,
+      body: "test comment",
+    });
+    expect(result.operation).toBe("create");
+    expect(result.prNumber).toBe(42);
+    expect(result.body).toBe("test comment");
   });
 });
 

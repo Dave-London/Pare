@@ -13,7 +13,7 @@ export function registerGistCreateTool(server: McpServer) {
     {
       title: "Gist Create",
       description:
-        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, and visibility. Use instead of running `gh gist create` in the terminal.",
+        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, visibility, file names, description, and file count. Use instead of running `gh gist create` in the terminal.",
       inputSchema: {
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -58,7 +58,8 @@ export function registerGistCreateTool(server: McpServer) {
         throw new Error(`gh gist create failed: ${result.stderr}`);
       }
 
-      const data = parseGistCreate(result.stdout, !!isPublic);
+      // S-gap: Pass files and description for echo in output
+      const data = parseGistCreate(result.stdout, !!isPublic, files, description);
       return dualOutput(data, formatGistCreate);
     },
   );

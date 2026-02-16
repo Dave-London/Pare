@@ -3,9 +3,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrDiffNumstat } from "../lib/parsers.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../lib/formatters.js";
-import { PrDiffResultSchema } from "../schemas/index.js";
+import { PrDiffResultSchema, type PrDiffResult } from "../schemas/index.js";
+
+/** Maximum diff output size before marking as truncated (256 KB). */
+const MAX_DIFF_SIZE = 256 * 1024;
 
 /** Registers the `pr-diff` tool on the given MCP server. */
 export function registerPrDiffTool(server: McpServer) {
@@ -16,7 +18,10 @@ export function registerPrDiffTool(server: McpServer) {
       description:
         "Returns file-level diff statistics for a pull request. Use full=true for patch content. Use instead of running `gh pr diff` in the terminal.",
       inputSchema: {
-        pr: z.number().describe("Pull request number"),
+        // S-gap P1: Accept PR by number, URL, or branch via union
+        pr: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Pull request number, URL, or branch name"),
         repo: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -42,13 +47,18 @@ export function registerPrDiffTool(server: McpServer) {
       if (repo) {
         assertNoFlagInjection(repo, "repo");
       }
+      if (typeof pr === "string") {
+        assertNoFlagInjection(pr, "pr");
+      }
+
+      const selector = String(pr);
 
       // Get numstat for structured file-level stats
-      const numstatArgs = ["pr", "diff", String(pr), "--patch=false"];
+      const numstatArgs = ["pr", "diff", selector, "--patch=false"];
       if (repo) numstatArgs.push("--repo", repo);
 
       // We use a two-pass approach: first get numstat, then optionally get full patch
-      const diffArgs = ["pr", "diff", String(pr)];
+      const diffArgs = ["pr", "diff", selector];
       if (repo) diffArgs.push("--repo", repo);
       if (nameOnly) diffArgs.push("--name-only");
 
@@ -58,8 +68,15 @@ export function registerPrDiffTool(server: McpServer) {
         throw new Error(`gh pr diff failed: ${result.stderr}`);
       }
 
+      // S-gap: Detect truncation
+      const truncated = result.stdout.length >= MAX_DIFF_SIZE;
+
       // Parse the unified diff output to extract numstat-like data
       const diff = parsePrDiffFromPatch(result.stdout);
+      // S-gap: Set truncation flag
+      if (truncated) {
+        diff.truncated = true;
+      }
 
       // If full patch requested, attach chunk data
       if (full && diff.files.length > 0) {
@@ -69,6 +86,12 @@ export function registerPrDiffTool(server: McpServer) {
           if (fileMatch) {
             const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
             if (matchedFile) {
+              // S-gap: Extract file mode if present
+              const modeMatch = patch.match(/(?:new|old|index|diff) (?:file )?mode (\d+)/);
+              if (modeMatch) {
+                matchedFile.mode = modeMatch[1];
+              }
+
               const chunks = patch.split(/^@@/m).slice(1);
               matchedFile.chunks = chunks.map((chunk) => {
                 const headerEnd = chunk.indexOf("\n");
@@ -98,7 +121,7 @@ export function registerPrDiffTool(server: McpServer) {
  * Parses unified diff output from `gh pr diff` into structured file stats.
  * Counts additions (+) and deletions (-) from diff hunks.
  */
-function parsePrDiffFromPatch(patchOutput: string): ReturnType<typeof parsePrDiffNumstat> {
+function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
   const filePatches = patchOutput.split(/^diff --git /m).filter(Boolean);
   const files = filePatches.map((patch) => {
     // Extract file path from "a/path b/path" header
@@ -110,6 +133,10 @@ function parsePrDiffFromPatch(patchOutput: string): ReturnType<typeof parsePrDif
     const isNew = /^new file mode/m.test(patch);
     const isDeleted = /^deleted file mode/m.test(patch);
     const isRenamed = /^rename from /m.test(patch) || /^similarity index/m.test(patch);
+
+    // S-gap: Extract file mode
+    const modeMatch = patch.match(/(?:new|old) file mode (\d+)/);
+    const mode = modeMatch ? modeMatch[1] : undefined;
 
     // Count additions and deletions from diff lines
     let additions = 0;
@@ -145,6 +172,7 @@ function parsePrDiffFromPatch(patchOutput: string): ReturnType<typeof parsePrDif
       additions,
       deletions,
       ...(isRenamed && oldFile !== newFile ? { oldFile } : {}),
+      ...(mode ? { mode } : {}),
     };
   });
 

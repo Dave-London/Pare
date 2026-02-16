@@ -13,9 +13,12 @@ export function registerIssueUpdateTool(server: McpServer) {
     {
       title: "Issue Update",
       description:
-        "Updates issue metadata (title, body, labels, assignees). Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
+        "Updates issue metadata (title, body, labels, assignees, milestone, projects). Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Issue number"),
+        // S-gap P1: Accept number or URL via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Issue number or URL"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -47,10 +50,33 @@ export function registerIssueUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Assignees to remove"),
+        // S-gap P0: Add milestone
+        milestone: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set milestone on the issue (--milestone)"),
         removeMilestone: z
           .boolean()
           .optional()
           .describe("Remove the milestone from the issue (--remove-milestone)"),
+        // S-gap P1: Add project management
+        addProjects: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Projects to add (--add-project)"),
+        removeProjects: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Projects to remove (--remove-project)"),
+        // S-gap P1: Add repo for cross-repo updates
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
       },
       outputSchema: EditResultSchema,
     },
@@ -63,11 +89,18 @@ export function registerIssueUpdateTool(server: McpServer) {
       removeLabels,
       addAssignees,
       removeAssignees,
+      milestone,
       removeMilestone,
+      addProjects,
+      removeProjects,
+      repo,
     }) => {
       const cwd = path || process.cwd();
 
       if (title) assertNoFlagInjection(title, "title");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
+      if (milestone) assertNoFlagInjection(milestone, "milestone");
+      if (repo) assertNoFlagInjection(repo, "repo");
       if (addLabels) {
         for (const label of addLabels) {
           assertNoFlagInjection(label, "addLabels");
@@ -88,8 +121,21 @@ export function registerIssueUpdateTool(server: McpServer) {
           assertNoFlagInjection(assignee, "removeAssignees");
         }
       }
+      if (addProjects) {
+        for (const project of addProjects) {
+          assertNoFlagInjection(project, "addProjects");
+        }
+      }
+      if (removeProjects) {
+        for (const project of removeProjects) {
+          assertNoFlagInjection(project, "removeProjects");
+        }
+      }
 
-      const args = ["issue", "edit", String(number)];
+      const selector = String(number);
+      const issueNum = typeof number === "number" ? number : 0;
+
+      const args = ["issue", "edit", selector];
       if (title) args.push("--title", title);
       if (addLabels && addLabels.length > 0) {
         for (const label of addLabels) {
@@ -111,7 +157,21 @@ export function registerIssueUpdateTool(server: McpServer) {
           args.push("--remove-assignee", assignee);
         }
       }
+      // S-gap P0: Map milestone
+      if (milestone) args.push("--milestone", milestone);
       if (removeMilestone) args.push("--remove-milestone");
+      // S-gap P1: Map projects
+      if (addProjects && addProjects.length > 0) {
+        for (const project of addProjects) {
+          args.push("--add-project", project);
+        }
+      }
+      if (removeProjects && removeProjects.length > 0) {
+        for (const project of removeProjects) {
+          args.push("--remove-project", project);
+        }
+      }
+      if (repo) args.push("--repo", repo);
       if (body) {
         args.push("--body-file", "-");
       }
@@ -122,7 +182,7 @@ export function registerIssueUpdateTool(server: McpServer) {
         throw new Error(`gh issue edit failed: ${result.stderr}`);
       }
 
-      const data = parseIssueUpdate(result.stdout, number);
+      const data = parseIssueUpdate(result.stdout, issueNum);
       return dualOutput(data, formatIssueUpdate);
     },
   );
