@@ -303,7 +303,7 @@ describe("parseComment", () => {
 
   it("handles empty output", () => {
     const result = parseComment("");
-    expect(result.url).toBe("");
+    expect(result.url).toBeUndefined();
   });
 });
 

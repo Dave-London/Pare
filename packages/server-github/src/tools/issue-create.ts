@@ -13,7 +13,7 @@ export function registerIssueCreateTool(server: McpServer) {
     {
       title: "Issue Create",
       description:
-        "Creates a new issue. Returns structured data with issue number and URL. Use instead of running `gh issue create` in the terminal.",
+        "Creates a new issue. Returns structured data with issue number, URL, and labels applied. Use instead of running `gh issue create` in the terminal.",
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Issue title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue body/description"),
@@ -22,6 +22,36 @@ export function registerIssueCreateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Labels to apply"),
+        // S-gap P0: Add assignees
+        assignees: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Assignee usernames (-a/--assignee)"),
+        // S-gap P0: Add milestone
+        milestone: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Milestone name or number (-m/--milestone)"),
+        // S-gap P1: Add project
+        project: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Project board name (-p/--project)"),
+        // S-gap P1: Add template
+        template: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Issue template file name (--template)"),
+        // S-gap P1: Add repo for cross-repo creation
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -30,7 +60,7 @@ export function registerIssueCreateTool(server: McpServer) {
       },
       outputSchema: IssueCreateResultSchema,
     },
-    async ({ title, body, labels, path }) => {
+    async ({ title, body, labels, assignees, milestone, project, template, repo, path }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(title, "title");
@@ -39,6 +69,15 @@ export function registerIssueCreateTool(server: McpServer) {
           assertNoFlagInjection(label, "labels");
         }
       }
+      if (assignees) {
+        for (const assignee of assignees) {
+          assertNoFlagInjection(assignee, "assignees");
+        }
+      }
+      if (milestone) assertNoFlagInjection(milestone, "milestone");
+      if (project) assertNoFlagInjection(project, "project");
+      if (template) assertNoFlagInjection(template, "template");
+      if (repo) assertNoFlagInjection(repo, "repo");
 
       const args = ["issue", "create", "--title", title, "--body", body];
       if (labels && labels.length > 0) {
@@ -46,6 +85,20 @@ export function registerIssueCreateTool(server: McpServer) {
           args.push("--label", label);
         }
       }
+      // S-gap P0: Map assignees to --assignee flags
+      if (assignees && assignees.length > 0) {
+        for (const assignee of assignees) {
+          args.push("--assignee", assignee);
+        }
+      }
+      // S-gap P0: Map milestone to --milestone
+      if (milestone) args.push("--milestone", milestone);
+      // S-gap P1: Map project to --project
+      if (project) args.push("--project", project);
+      // S-gap P1: Map template to --template
+      if (template) args.push("--template", template);
+      // S-gap P1: Map repo to --repo
+      if (repo) args.push("--repo", repo);
 
       const result = await ghCmd(args, cwd);
 
@@ -53,7 +106,8 @@ export function registerIssueCreateTool(server: McpServer) {
         throw new Error(`gh issue create failed: ${result.stderr}`);
       }
 
-      const data = parseIssueCreate(result.stdout);
+      // S-gap: Pass labels for echo in output
+      const data = parseIssueCreate(result.stdout, labels);
       return dualOutput(data, formatIssueCreate);
     },
   );

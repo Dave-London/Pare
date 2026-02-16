@@ -1,11 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunView } from "../lib/parsers.js";
 import { formatRunView, compactRunViewMap, formatRunViewCompact } from "../lib/formatters.js";
 import { RunViewResultSchema } from "../schemas/index.js";
 
+// S-gap: Request steps in jobs for step-level detail
 const RUN_VIEW_FIELDS =
   "databaseId,status,conclusion,name,workflowName,headBranch,jobs,url,createdAt";
 
@@ -16,7 +17,7 @@ export function registerRunViewTool(server: McpServer) {
     {
       title: "Run View",
       description:
-        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs, and workflow details. Use instead of running `gh run view` in the terminal.",
+        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs (with steps), and workflow details. Use instead of running `gh run view` in the terminal.",
       inputSchema: {
         id: z.number().describe("Workflow run ID"),
         logFailed: z
@@ -29,6 +30,18 @@ export function registerRunViewTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Exit with non-zero status if run failed (--exit-status)"),
+        // S-gap P0: Add job filter for focused single-job inspection
+        job: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("View a specific job by ID (-j/--job)"),
+        // S-gap P0: Add repo for cross-repo inspection
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -44,14 +57,19 @@ export function registerRunViewTool(server: McpServer) {
       },
       outputSchema: RunViewResultSchema,
     },
-    async ({ id, logFailed, log, attempt, exitStatus, path, compact }) => {
+    async ({ id, logFailed, log, attempt, exitStatus, job, repo, path, compact }) => {
       const cwd = path || process.cwd();
+
+      if (job) assertNoFlagInjection(job, "job");
+      if (repo) assertNoFlagInjection(repo, "repo");
 
       const args = ["run", "view", String(id), "--json", RUN_VIEW_FIELDS];
       if (logFailed) args.push("--log-failed");
       if (log) args.push("--log");
       if (attempt !== undefined) args.push("--attempt", String(attempt));
       if (exitStatus) args.push("--exit-status");
+      if (job) args.push("--job", job);
+      if (repo) args.push("--repo", repo);
       const result = await ghCmd(args, cwd);
 
       if (result.exitCode !== 0) {

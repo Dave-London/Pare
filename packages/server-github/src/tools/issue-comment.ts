@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseComment } from "../lib/parsers.js";
 import { formatComment } from "../lib/formatters.js";
@@ -13,9 +13,12 @@ export function registerIssueCommentTool(server: McpServer) {
     {
       title: "Issue Comment",
       description:
-        "Adds a comment to an issue. Returns structured data with the comment URL. Use instead of running `gh issue comment` in the terminal.",
+        "Adds, edits, or deletes a comment on an issue. Returns structured data with the comment URL, operation type, comment ID, issue number, and body echo. Use instead of running `gh issue comment` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Issue number"),
+        // S-gap P1: Accept number or URL via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Issue number or URL"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),
         editLast: z
           .boolean()
@@ -31,6 +34,12 @@ export function registerIssueCommentTool(server: McpServer) {
           .describe(
             "When used with editLast, create a new comment if no existing comment exists (--create-if-none)",
           ),
+        // S-gap P1: Add repo for cross-repo commenting
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (default: current repo)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -39,13 +48,20 @@ export function registerIssueCommentTool(server: McpServer) {
       },
       outputSchema: CommentResultSchema,
     },
-    async ({ number, body, editLast, deleteLast, createIfNone, path }) => {
+    async ({ number, body, editLast, deleteLast, createIfNone, repo, path }) => {
       const cwd = path || process.cwd();
 
-      const args = ["issue", "comment", String(number), "--body-file", "-"];
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
+
+      const selector = String(number);
+      const issueNum = typeof number === "number" ? number : 0;
+
+      const args = ["issue", "comment", selector, "--body-file", "-"];
       if (editLast) args.push("--edit-last");
       if (deleteLast) args.push("--delete-last");
       if (createIfNone) args.push("--create-if-none");
+      if (repo) args.push("--repo", repo);
 
       const result = await ghCmd(args, { cwd, stdin: body });
 
@@ -53,7 +69,13 @@ export function registerIssueCommentTool(server: McpServer) {
         throw new Error(`gh issue comment failed: ${result.stderr}`);
       }
 
-      const data = parseComment(result.stdout);
+      // S-gap: Determine operation type and pass context
+      const operation = deleteLast ? "delete" : editLast ? "edit" : "create";
+      const data = parseComment(result.stdout, {
+        operation: operation as "create" | "edit" | "delete",
+        issueNumber: issueNum,
+        body,
+      });
       return dualOutput(data, formatComment);
     },
   );

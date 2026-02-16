@@ -13,7 +13,7 @@ export function registerReleaseCreateTool(server: McpServer) {
     {
       title: "Release Create",
       description:
-        "Creates a new GitHub release. Returns structured data with tag, URL, draft, and prerelease status. Use instead of running `gh release create` in the terminal.",
+        "Creates a new GitHub release with optional asset uploads. Returns structured data with tag, URL, draft, prerelease status, and assets uploaded count. Use instead of running `gh release create` in the terminal.",
       inputSchema: {
         tag: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Tag name for the release"),
         title: z
@@ -54,6 +54,30 @@ export function registerReleaseCreateTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Fail if no commits since last release (--fail-on-no-commits)"),
+        // S-gap P0: Add assets for release asset uploads
+        assets: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("File paths to upload as release assets (positional args after tag)"),
+        // S-gap P1: Add notesFile for reading notes from file
+        notesFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Read release notes from file (--notes-file). Mutually exclusive with notes."),
+        // S-gap P1: Add notesStartTag
+        notesStartTag: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Scope auto-generated notes to commits since this tag (--notes-start-tag)"),
+        // S-gap P2: Add discussionCategory
+        discussionCategory: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Start a release discussion in this category (--discussion-category)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -75,6 +99,10 @@ export function registerReleaseCreateTool(server: McpServer) {
       notesFromTag,
       latest,
       failOnNoCommits,
+      assets,
+      notesFile,
+      notesStartTag,
+      discussionCategory,
       path,
     }) => {
       const cwd = path || process.cwd();
@@ -83,6 +111,14 @@ export function registerReleaseCreateTool(server: McpServer) {
       if (title) assertNoFlagInjection(title, "title");
       if (target) assertNoFlagInjection(target, "target");
       if (repo) assertNoFlagInjection(repo, "repo");
+      if (notesFile) assertNoFlagInjection(notesFile, "notesFile");
+      if (notesStartTag) assertNoFlagInjection(notesStartTag, "notesStartTag");
+      if (discussionCategory) assertNoFlagInjection(discussionCategory, "discussionCategory");
+      if (assets) {
+        for (const asset of assets) {
+          assertNoFlagInjection(asset, "assets");
+        }
+      }
 
       const args = ["release", "create", tag];
       if (title) args.push("--title", title);
@@ -96,6 +132,14 @@ export function registerReleaseCreateTool(server: McpServer) {
       if (notesFromTag) args.push("--notes-from-tag");
       if (latest !== undefined) args.push(`--latest=${String(latest)}`);
       if (failOnNoCommits) args.push("--fail-on-no-commits");
+      if (notesFile) args.push("--notes-file", notesFile);
+      if (notesStartTag) args.push("--notes-start-tag", notesStartTag);
+      if (discussionCategory) args.push("--discussion-category", discussionCategory);
+
+      // S-gap P0: Assets are positional args after the tag
+      if (assets && assets.length > 0) {
+        args.push(...assets);
+      }
 
       const result = await ghCmd(args, cwd);
 
@@ -103,7 +147,15 @@ export function registerReleaseCreateTool(server: McpServer) {
         throw new Error(`gh release create failed: ${result.stderr}`);
       }
 
-      const data = parseReleaseCreate(result.stdout, tag, !!draft, !!prerelease);
+      // S-gap: Pass title and assets count for echo in output
+      const data = parseReleaseCreate(
+        result.stdout,
+        tag,
+        !!draft,
+        !!prerelease,
+        title,
+        assets?.length,
+      );
       return dualOutput(data, formatReleaseCreate);
     },
   );

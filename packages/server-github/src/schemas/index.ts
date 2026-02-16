@@ -25,6 +25,15 @@ export const PrViewResultSchema = z.object({
   deletions: z.number(),
   changedFiles: z.number(),
   checksTotal: z.number().optional(),
+  // S-gap: Add author, labels, isDraft, assignees, createdAt, updatedAt, milestone, projectItems
+  author: z.string().optional(),
+  labels: z.array(z.string()).optional(),
+  isDraft: z.boolean().optional(),
+  assignees: z.array(z.string()).optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  milestone: z.string().nullable().optional(),
+  projectItems: z.array(z.string()).optional(),
 });
 
 export type PrViewResult = z.infer<typeof PrViewResultSchema>;
@@ -37,6 +46,12 @@ export const PrListItemSchema = z.object({
   url: z.string().optional(),
   headBranch: z.string().optional(),
   author: z.string().optional(),
+  // S-gap: Add labels, isDraft, baseBranch, reviewDecision, mergeable
+  labels: z.array(z.string()).optional(),
+  isDraft: z.boolean().optional(),
+  baseBranch: z.string().optional(),
+  reviewDecision: z.string().optional(),
+  mergeable: z.string().optional(),
 });
 
 /** Zod schema for structured pr-list output. */
@@ -61,6 +76,8 @@ export const PrMergeResultSchema = z.object({
   merged: z.boolean(),
   method: z.string(),
   url: z.string(),
+  // S-gap: Add branchDeleted field
+  branchDeleted: z.boolean().optional(),
 });
 
 export type PrMergeResult = z.infer<typeof PrMergeResultSchema>;
@@ -70,6 +87,10 @@ export const PrReviewResultSchema = z.object({
   number: z.number(),
   event: z.string(),
   url: z.string(),
+  // S-gap: Add reviewId, reviewDecision, body echo
+  reviewId: z.string().optional(),
+  reviewDecision: z.string().optional(),
+  body: z.string().optional(),
 });
 
 export type PrReviewResult = z.infer<typeof PrReviewResultSchema>;
@@ -89,14 +110,19 @@ export const PrDiffFileSchema = z.object({
       }),
     )
     .optional(),
+  // S-gap: Add mode/permissions field
+  mode: z.string().optional(),
 });
 
 /** Zod schema for structured pr-diff output. */
 export const PrDiffResultSchema = z.object({
   files: z.array(PrDiffFileSchema),
-  totalAdditions: z.number().optional(),
-  totalDeletions: z.number().optional(),
+  // S-gap: Make totalAdditions/totalDeletions required (no longer optional)
+  totalAdditions: z.number(),
+  totalDeletions: z.number(),
   totalFiles: z.number(),
+  // S-gap: Add truncation detection
+  truncated: z.boolean().optional(),
 });
 
 export type PrDiffResult = z.infer<typeof PrDiffResultSchema>;
@@ -113,6 +139,14 @@ export const IssueViewResultSchema = z.object({
   assignees: z.array(z.string()),
   url: z.string(),
   createdAt: z.string(),
+  // S-gap: Add stateReason, author, milestone, updatedAt, closedAt, isPinned, projectItems
+  stateReason: z.string().nullable().optional(),
+  author: z.string().optional(),
+  milestone: z.string().nullable().optional(),
+  updatedAt: z.string().optional(),
+  closedAt: z.string().nullable().optional(),
+  isPinned: z.boolean().optional(),
+  projectItems: z.array(z.string()).optional(),
 });
 
 export type IssueViewResult = z.infer<typeof IssueViewResultSchema>;
@@ -125,6 +159,10 @@ export const IssueListItemSchema = z.object({
   url: z.string().optional(),
   labels: z.array(z.string()).optional(),
   assignees: z.array(z.string()).optional(),
+  // S-gap: Add author, createdAt, milestone
+  author: z.string().optional(),
+  createdAt: z.string().optional(),
+  milestone: z.string().nullable().optional(),
 });
 
 /** Zod schema for structured issue-list output. */
@@ -139,6 +177,8 @@ export type IssueListResult = z.infer<typeof IssueListResultSchema>;
 export const IssueCreateResultSchema = z.object({
   number: z.number(),
   url: z.string(),
+  // S-gap: Add labelsApplied confirmation
+  labelsApplied: z.array(z.string()).optional(),
 });
 
 export type IssueCreateResult = z.infer<typeof IssueCreateResultSchema>;
@@ -148,6 +188,9 @@ export const IssueCloseResultSchema = z.object({
   number: z.number(),
   state: z.string(),
   url: z.string(),
+  // S-gap: Add reason echo, commentUrl
+  reason: z.string().optional(),
+  commentUrl: z.string().optional(),
 });
 
 export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
@@ -156,7 +199,14 @@ export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
 
 /** Zod schema for structured comment result output. */
 export const CommentResultSchema = z.object({
-  url: z.string(),
+  // S-gap: Make url optional (may not always be available)
+  url: z.string().optional(),
+  // S-gap: Add operation type, commentId, issueNumber/prNumber, body echo
+  operation: z.enum(["create", "edit", "delete"]).optional(),
+  commentId: z.string().optional(),
+  issueNumber: z.number().optional(),
+  prNumber: z.number().optional(),
+  body: z.string().optional(),
 });
 
 export type CommentResult = z.infer<typeof CommentResultSchema>;
@@ -182,6 +232,9 @@ export const PrChecksItemSchema = z.object({
   link: z.string(),
   startedAt: z.string(),
   completedAt: z.string(),
+  // S-gap: Add per-check required field and conclusion
+  required: z.boolean().optional(),
+  conclusion: z.string().optional(),
 });
 
 /** Zod schema for summary counts of PR checks. */
@@ -211,11 +264,20 @@ export type PrChecksResult = z.infer<typeof PrChecksResultSchema>;
 
 // ── Run schemas ──────────────────────────────────────────────────────
 
+/** Zod schema for a single step in a job. */
+export const RunStepSchema = z.object({
+  name: z.string(),
+  status: z.string(),
+  conclusion: z.string().nullable(),
+});
+
 /** Zod schema for a single job in a workflow run. */
 export const RunJobSchema = z.object({
   name: z.string(),
   status: z.string(),
   conclusion: z.string().nullable(),
+  // S-gap: Add steps array
+  steps: z.array(RunStepSchema).optional(),
 });
 
 /** Zod schema for structured run-view output. */
@@ -260,6 +322,8 @@ export const RunRerunResultSchema = z.object({
   status: z.string(),
   failedOnly: z.boolean(),
   url: z.string(),
+  // S-gap: Add job field when rerunning a specific job
+  job: z.string().optional(),
 });
 
 export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
@@ -272,6 +336,11 @@ export const ReleaseCreateResultSchema = z.object({
   url: z.string(),
   draft: z.boolean(),
   prerelease: z.boolean(),
+  // S-gap: Expanded output schema fields
+  id: z.string().optional(),
+  title: z.string().optional(),
+  isLatest: z.boolean().optional(),
+  assetsUploaded: z.number().optional(),
 });
 
 export type ReleaseCreateResult = z.infer<typeof ReleaseCreateResultSchema>;
@@ -283,9 +352,14 @@ export const GistCreateResultSchema = z.object({
   id: z.string(),
   url: z.string(),
   public: z.boolean(),
+  // S-gap: Add files, description, fileCount echoes
+  files: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  fileCount: z.number().optional(),
 });
 
 export type GistCreateResult = z.infer<typeof GistCreateResultSchema>;
+
 /** Zod schema for a single release in list output. */
 export const ReleaseListItemSchema = z.object({
   tag: z.string(),
@@ -294,6 +368,9 @@ export const ReleaseListItemSchema = z.object({
   prerelease: z.boolean(),
   publishedAt: z.string().optional(),
   url: z.string().optional(),
+  // S-gap: Add isLatest, createdAt
+  isLatest: z.boolean().optional(),
+  createdAt: z.string().optional(),
 });
 
 /** Zod schema for structured release-list output. */

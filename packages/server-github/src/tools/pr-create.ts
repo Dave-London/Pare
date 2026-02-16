@@ -45,6 +45,48 @@ export function registerPrCreateTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Disallow maintainer edits to the PR (--no-maintainer-edit)"),
+        // S-gap P0: Add reviewer
+        reviewer: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Request reviewers by username (-r/--reviewer)"),
+        // S-gap P0: Add label
+        label: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Add labels (-l/--label)"),
+        // S-gap P0: Add assignee
+        assignee: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Assign users (-a/--assignee)"),
+        // S-gap P1: Add milestone
+        milestone: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set milestone (-m/--milestone)"),
+        // S-gap P1: Add project
+        project: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Add to project (-p/--project)"),
+        // S-gap P1: Add repo for cross-repo PR creation
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
+        // S-gap P2: Add template
+        template: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Use PR template file (--template)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -64,6 +106,13 @@ export function registerPrCreateTool(server: McpServer) {
       fillVerbose,
       dryRun,
       noMaintainerEdit,
+      reviewer,
+      label,
+      assignee,
+      milestone,
+      project,
+      repo,
+      template,
       path,
     }) => {
       const cwd = path || process.cwd();
@@ -71,6 +120,25 @@ export function registerPrCreateTool(server: McpServer) {
       assertNoFlagInjection(title, "title");
       if (base) assertNoFlagInjection(base, "base");
       if (head) assertNoFlagInjection(head, "head");
+      if (milestone) assertNoFlagInjection(milestone, "milestone");
+      if (project) assertNoFlagInjection(project, "project");
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (template) assertNoFlagInjection(template, "template");
+      if (reviewer) {
+        for (const r of reviewer) {
+          assertNoFlagInjection(r, "reviewer");
+        }
+      }
+      if (label) {
+        for (const l of label) {
+          assertNoFlagInjection(l, "label");
+        }
+      }
+      if (assignee) {
+        for (const a of assignee) {
+          assertNoFlagInjection(a, "assignee");
+        }
+      }
 
       const args = ["pr", "create", "--title", title, "--body-file", "-"];
       if (base) args.push("--base", base);
@@ -81,6 +149,32 @@ export function registerPrCreateTool(server: McpServer) {
       if (fillVerbose) args.push("--fill-verbose");
       if (dryRun) args.push("--dry-run");
       if (noMaintainerEdit) args.push("--no-maintainer-edit");
+      // S-gap P0: Map reviewers
+      if (reviewer && reviewer.length > 0) {
+        for (const r of reviewer) {
+          args.push("--reviewer", r);
+        }
+      }
+      // S-gap P0: Map labels
+      if (label && label.length > 0) {
+        for (const l of label) {
+          args.push("--label", l);
+        }
+      }
+      // S-gap P0: Map assignees
+      if (assignee && assignee.length > 0) {
+        for (const a of assignee) {
+          args.push("--assignee", a);
+        }
+      }
+      // S-gap P1: Map milestone
+      if (milestone) args.push("--milestone", milestone);
+      // S-gap P1: Map project
+      if (project) args.push("--project", project);
+      // S-gap P1: Map repo
+      if (repo) args.push("--repo", repo);
+      // S-gap P2: Map template
+      if (template) args.push("--template", template);
 
       const result = await ghCmd(args, { cwd, stdin: body });
 

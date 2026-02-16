@@ -13,9 +13,12 @@ export function registerPrMergeTool(server: McpServer) {
     {
       title: "PR Merge",
       description:
-        "Merges a pull request by number. Returns structured data with merge status, method, and URL. Use instead of running `gh pr merge` in the terminal.",
+        "Merges a pull request by number, URL, or branch. Returns structured data with merge status, method, URL, and branch deletion status. Use instead of running `gh pr merge` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Pull request number"),
+        // S-gap P1: Accept PR by number, URL, or branch via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Pull request number, URL, or branch name"),
         method: z
           .enum(["squash", "merge", "rebase"])
           .optional()
@@ -50,6 +53,20 @@ export function registerPrMergeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Author email for merge commit (--author-email)"),
+        // S-gap P0: Add matchHeadCommit for safety check
+        matchHeadCommit: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Safety check: only merge if HEAD SHA matches this value (--match-head-commit)",
+          ),
+        // S-gap P1: Add repo for cross-repo merging
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -75,14 +92,22 @@ export function registerPrMergeTool(server: McpServer) {
       subject,
       commitBody,
       authorEmail,
+      matchHeadCommit,
+      repo,
       path,
     }) => {
       const cwd = path || process.cwd();
 
       if (subject) assertNoFlagInjection(subject, "subject");
       if (authorEmail) assertNoFlagInjection(authorEmail, "authorEmail");
+      if (matchHeadCommit) assertNoFlagInjection(matchHeadCommit, "matchHeadCommit");
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
 
-      const args = ["pr", "merge", String(number), `--${method}`];
+      const selector = String(number);
+      const prNum = typeof number === "number" ? number : 0;
+
+      const args = ["pr", "merge", selector, `--${method}`];
       if (deleteBranch) args.push("--delete-branch");
       if (admin) args.push("--admin");
       if (auto) args.push("--auto");
@@ -90,6 +115,8 @@ export function registerPrMergeTool(server: McpServer) {
       if (subject) args.push("--subject", subject);
       if (commitBody) args.push("--body", commitBody);
       if (authorEmail) args.push("--author-email", authorEmail);
+      if (matchHeadCommit) args.push("--match-head-commit", matchHeadCommit);
+      if (repo) args.push("--repo", repo);
 
       const result = await ghCmd(args, cwd);
 
@@ -97,7 +124,7 @@ export function registerPrMergeTool(server: McpServer) {
         throw new Error(`gh pr merge failed: ${result.stderr}`);
       }
 
-      const data = parsePrMerge(result.stdout, number, method);
+      const data = parsePrMerge(result.stdout, prNum, method!, !!deleteBranch);
       return dualOutput(data, formatPrMerge);
     },
   );

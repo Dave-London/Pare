@@ -13,9 +13,12 @@ export function registerPrUpdateTool(server: McpServer) {
     {
       title: "PR Update",
       description:
-        "Updates pull request metadata (title, body, labels, assignees). Returns structured data with PR number and URL. Use instead of running `gh pr edit` in the terminal.",
+        "Updates pull request metadata (title, body, labels, assignees, reviewers, milestone, base branch, projects). Returns structured data with PR number and URL. Use instead of running `gh pr edit` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Pull request number"),
+        // S-gap P1: Accept PR by number, URL, or branch via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Pull request number, URL, or branch name"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -61,6 +64,36 @@ export function registerPrUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Projects to remove (--remove-project)"),
+        // S-gap P0: Add reviewer management
+        addReviewers: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Add reviewers (--add-reviewer)"),
+        removeReviewers: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Remove reviewers (--remove-reviewer)"),
+        // S-gap P0: Add base branch change
+        base: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Change base branch (-B/--base)"),
+        // S-gap P1: Add milestone management
+        milestone: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set milestone (--milestone)"),
+        removeMilestone: z.boolean().optional().describe("Remove milestone (--remove-milestone)"),
+        // S-gap P1: Add repo for cross-repo updates
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
       },
       outputSchema: EditResultSchema,
     },
@@ -75,10 +108,20 @@ export function registerPrUpdateTool(server: McpServer) {
       removeAssignees,
       addProjects,
       removeProjects,
+      addReviewers,
+      removeReviewers,
+      base,
+      milestone,
+      removeMilestone,
+      repo,
     }) => {
       const cwd = path || process.cwd();
 
       if (title) assertNoFlagInjection(title, "title");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
+      if (base) assertNoFlagInjection(base, "base");
+      if (milestone) assertNoFlagInjection(milestone, "milestone");
+      if (repo) assertNoFlagInjection(repo, "repo");
       if (addLabels) {
         for (const label of addLabels) {
           assertNoFlagInjection(label, "addLabels");
@@ -109,8 +152,21 @@ export function registerPrUpdateTool(server: McpServer) {
           assertNoFlagInjection(project, "removeProjects");
         }
       }
+      if (addReviewers) {
+        for (const reviewer of addReviewers) {
+          assertNoFlagInjection(reviewer, "addReviewers");
+        }
+      }
+      if (removeReviewers) {
+        for (const reviewer of removeReviewers) {
+          assertNoFlagInjection(reviewer, "removeReviewers");
+        }
+      }
 
-      const args = ["pr", "edit", String(number)];
+      const selector = String(number);
+      const prNum = typeof number === "number" ? number : 0;
+
+      const args = ["pr", "edit", selector];
       if (title) args.push("--title", title);
       if (addLabels && addLabels.length > 0) {
         for (const label of addLabels) {
@@ -142,6 +198,24 @@ export function registerPrUpdateTool(server: McpServer) {
           args.push("--remove-project", project);
         }
       }
+      // S-gap P0: Map reviewers
+      if (addReviewers && addReviewers.length > 0) {
+        for (const reviewer of addReviewers) {
+          args.push("--add-reviewer", reviewer);
+        }
+      }
+      if (removeReviewers && removeReviewers.length > 0) {
+        for (const reviewer of removeReviewers) {
+          args.push("--remove-reviewer", reviewer);
+        }
+      }
+      // S-gap P0: Map base branch
+      if (base) args.push("--base", base);
+      // S-gap P1: Map milestone
+      if (milestone) args.push("--milestone", milestone);
+      if (removeMilestone) args.push("--remove-milestone");
+      // S-gap P1: Map repo
+      if (repo) args.push("--repo", repo);
       if (body) {
         args.push("--body-file", "-");
       }
@@ -152,7 +226,7 @@ export function registerPrUpdateTool(server: McpServer) {
         throw new Error(`gh pr edit failed: ${result.stderr}`);
       }
 
-      const data = parsePrUpdate(result.stdout, number);
+      const data = parsePrUpdate(result.stdout, prNum);
       return dualOutput(data, formatPrUpdate);
     },
   );

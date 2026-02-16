@@ -10,7 +10,8 @@ import {
 } from "../lib/formatters.js";
 import { ReleaseListResultSchema } from "../schemas/index.js";
 
-const RELEASE_LIST_FIELDS = "tagName,name,isDraft,isPrerelease,publishedAt,url";
+// S-gap: Add isLatest and createdAt to JSON fields
+const RELEASE_LIST_FIELDS = "tagName,name,isDraft,isPrerelease,publishedAt,url,isLatest,createdAt";
 
 /** Registers the `release-list` tool on the given MCP server. */
 export function registerReleaseListTool(server: McpServer) {
@@ -19,13 +20,14 @@ export function registerReleaseListTool(server: McpServer) {
     {
       title: "Release List",
       description:
-        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease status, publish date, and URL. Use instead of running `gh release list` in the terminal.",
+        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, creation date, and URL. Use instead of running `gh release list` in the terminal.",
       inputSchema: {
+        // S-gap P1: Align default limit to CLI default (30)
         limit: z
           .number()
           .optional()
-          .default(10)
-          .describe("Maximum number of releases to return (default: 10)"),
+          .default(30)
+          .describe("Maximum number of releases to return (default: 30)"),
         repo: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -39,6 +41,8 @@ export function registerReleaseListTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Exclude pre-releases from the list (--exclude-pre-releases)"),
+        // S-gap P1: Add order param
+        order: z.enum(["asc", "desc"]).optional().describe("Sort order (--order). Default: desc."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -54,7 +58,7 @@ export function registerReleaseListTool(server: McpServer) {
       },
       outputSchema: ReleaseListResultSchema,
     },
-    async ({ limit, repo, excludeDrafts, excludePreReleases, path, compact }) => {
+    async ({ limit, repo, excludeDrafts, excludePreReleases, order, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (repo) assertNoFlagInjection(repo, "repo");
@@ -63,6 +67,7 @@ export function registerReleaseListTool(server: McpServer) {
       if (repo) args.push("--repo", repo);
       if (excludeDrafts) args.push("--exclude-drafts");
       if (excludePreReleases) args.push("--exclude-pre-releases");
+      if (order) args.push("--order", order);
 
       const result = await ghCmd(args, cwd);
 

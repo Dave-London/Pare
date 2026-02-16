@@ -32,6 +32,15 @@ export function formatPrView(data: PrViewResult): string {
     `  +${data.additions} -${data.deletions} (${data.changedFiles} files)`,
     `  ${data.url}`,
   ];
+  // S-gap: Show author, labels, isDraft, assignees
+  if (data.author) lines.push(`  author: @${data.author}`);
+  if (data.isDraft !== undefined) lines.push(`  draft: ${data.isDraft}`);
+  if (data.labels && data.labels.length > 0) lines.push(`  labels: ${data.labels.join(", ")}`);
+  if (data.assignees && data.assignees.length > 0)
+    lines.push(`  assignees: ${data.assignees.join(", ")}`);
+  if (data.milestone) lines.push(`  milestone: ${data.milestone}`);
+  if (data.createdAt) lines.push(`  created: ${data.createdAt}`);
+  if (data.updatedAt) lines.push(`  updated: ${data.updatedAt}`);
   if ((data.checks ?? []).length > 0) {
     lines.push(`  checks:`);
     for (const c of data.checks ?? []) {
@@ -52,7 +61,9 @@ export function formatPrList(data: PrListResult): string {
   for (const pr of data.prs) {
     const branch = pr.headBranch ? ` [${pr.headBranch}]` : "";
     const author = pr.author ? ` @${pr.author}` : "";
-    lines.push(`  #${pr.number} ${pr.title} (${pr.state})${branch}${author}`);
+    const labels = pr.labels && pr.labels.length > 0 ? ` {${pr.labels.join(", ")}}` : "";
+    const draft = pr.isDraft ? " (draft)" : "";
+    lines.push(`  #${pr.number} ${pr.title} (${pr.state})${branch}${author}${labels}${draft}`);
   }
   return lines.join("\n");
 }
@@ -64,12 +75,20 @@ export function formatPrCreate(data: PrCreateResult): string {
 
 /** Formats structured PR merge data into human-readable text. */
 export function formatPrMerge(data: PrMergeResult): string {
-  return `Merged PR #${data.number} via ${data.method}: ${data.url}`;
+  const branchInfo =
+    data.branchDeleted !== undefined
+      ? data.branchDeleted
+        ? " (branch deleted)"
+        : " (branch kept)"
+      : "";
+  return `Merged PR #${data.number} via ${data.method}: ${data.url}${branchInfo}`;
 }
 
 /** Formats structured comment result into human-readable text. */
 export function formatComment(data: CommentResult): string {
-  return `Comment added: ${data.url}`;
+  const op = data.operation ? `${data.operation}d` : "added";
+  const idPart = data.commentId ? ` (id: ${data.commentId})` : "";
+  return `Comment ${op}${idPart}: ${data.url ?? ""}`;
 }
 
 /** Formats structured PR review data into human-readable text. */
@@ -97,7 +116,8 @@ export function formatPrChecks(data: PrChecksResult): string {
   ];
   for (const c of data.checks ?? []) {
     const workflow = c.workflow ? ` [${c.workflow}]` : "";
-    lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
+    const required = c.required ? " *required*" : "";
+    lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}${required}`);
   }
   return lines.join("\n");
 }
@@ -137,7 +157,8 @@ export function formatPrChecksCompact(data: PrChecksCompact): string {
 /** Formats structured PR diff data into a human-readable file change summary. */
 export function formatPrDiff(diff: PrDiffResult): string {
   const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${diff.totalFiles} files changed, +${diff.totalAdditions ?? 0} -${diff.totalDeletions ?? 0}\n${files}`;
+  const truncatedNote = diff.truncated ? " (truncated)" : "";
+  return `${diff.totalFiles} files changed, +${diff.totalAdditions} -${diff.totalDeletions}${truncatedNote}\n${files}`;
 }
 
 /** Formats structured issue view data into human-readable text. */
@@ -147,6 +168,13 @@ export function formatIssueView(data: IssueViewResult): string {
     `  created: ${data.createdAt}`,
     `  ${data.url}`,
   ];
+  // S-gap: Show new fields
+  if (data.author) lines.push(`  author: @${data.author}`);
+  if (data.stateReason) lines.push(`  reason: ${data.stateReason}`);
+  if (data.milestone) lines.push(`  milestone: ${data.milestone}`);
+  if (data.updatedAt) lines.push(`  updated: ${data.updatedAt}`);
+  if (data.closedAt) lines.push(`  closed: ${data.closedAt}`);
+  if (data.isPinned) lines.push(`  pinned: true`);
   if (data.labels.length > 0) {
     lines.push(`  labels: ${data.labels.join(", ")}`);
   }
@@ -166,19 +194,25 @@ export function formatIssueList(data: IssueListResult): string {
   const lines = [`${data.total} issues:`];
   for (const issue of data.issues) {
     const labels = (issue.labels ?? []).length > 0 ? ` [${(issue.labels ?? []).join(", ")}]` : "";
-    lines.push(`  #${issue.number} ${issue.title} (${issue.state})${labels}`);
+    const author = issue.author ? ` @${issue.author}` : "";
+    lines.push(`  #${issue.number} ${issue.title} (${issue.state})${labels}${author}`);
   }
   return lines.join("\n");
 }
 
 /** Formats structured issue create data into human-readable text. */
 export function formatIssueCreate(data: IssueCreateResult): string {
-  return `Created issue #${data.number}: ${data.url}`;
+  const labelsPart =
+    data.labelsApplied && data.labelsApplied.length > 0
+      ? ` [${data.labelsApplied.join(", ")}]`
+      : "";
+  return `Created issue #${data.number}: ${data.url}${labelsPart}`;
 }
 
 /** Formats structured issue close data into human-readable text. */
 export function formatIssueClose(data: IssueCloseResult): string {
-  return `Closed issue #${data.number}: ${data.url}`;
+  const reasonPart = data.reason ? ` (${data.reason})` : "";
+  return `Closed issue #${data.number}${reasonPart}: ${data.url}`;
 }
 
 /** Formats structured issue update data into human-readable text. */
@@ -199,6 +233,12 @@ export function formatRunView(data: RunViewResult): string {
     lines.push(`  jobs:`);
     for (const j of data.jobs ?? []) {
       lines.push(`    ${j.name}: ${j.status} (${j.conclusion ?? "pending"})`);
+      // S-gap: Show steps if present
+      if (j.steps && j.steps.length > 0) {
+        for (const s of j.steps) {
+          lines.push(`      ${s.name}: ${s.status} (${s.conclusion ?? "pending"})`);
+        }
+      }
     }
   }
   return lines.join("\n");
@@ -430,7 +470,7 @@ export function formatRunListCompact(data: RunListCompact): string {
 
 /** Formats structured run rerun data into human-readable text. */
 export function formatRunRerun(data: RunRerunResult): string {
-  const mode = data.failedOnly ? "failed jobs only" : "all jobs";
+  const mode = data.failedOnly ? "failed jobs only" : data.job ? `job ${data.job}` : "all jobs";
   const urlPart = data.url ? `: ${data.url}` : "";
   return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
 }
@@ -440,7 +480,9 @@ export function formatRunRerun(data: RunRerunResult): string {
 /** Formats structured gist create data into human-readable text. */
 export function formatGistCreate(data: GistCreateResult): string {
   const visibility = data.public ? "public" : "secret";
-  return `Created ${visibility} gist ${data.id}: ${data.url}`;
+  const filesPart = data.files && data.files.length > 0 ? ` (${data.files.join(", ")})` : "";
+  const descPart = data.description ? ` — ${data.description}` : "";
+  return `Created ${visibility} gist ${data.id}: ${data.url}${filesPart}${descPart}`;
 }
 
 // ── Release ─────────────────────────────────────────────────────────
@@ -451,7 +493,9 @@ export function formatReleaseCreate(data: ReleaseCreateResult): string {
     .filter(Boolean)
     .join(", ");
   const suffix = flags ? ` (${flags})` : "";
-  return `Created release ${data.tag}${suffix}: ${data.url}`;
+  const assetsPart =
+    data.assetsUploaded !== undefined ? `, ${data.assetsUploaded} assets uploaded` : "";
+  return `Created release ${data.tag}${suffix}: ${data.url}${assetsPart}`;
 }
 
 /** Formats structured release list data into human-readable text. */
@@ -460,7 +504,11 @@ export function formatReleaseList(data: ReleaseListResult): string {
 
   const lines = [`${data.total} releases:`];
   for (const r of data.releases) {
-    const flags = [r.draft ? "draft" : "", r.prerelease ? "prerelease" : ""]
+    const flags = [
+      r.draft ? "draft" : "",
+      r.prerelease ? "prerelease" : "",
+      r.isLatest ? "latest" : "",
+    ]
       .filter(Boolean)
       .join(", ");
     const suffix = flags ? ` (${flags})` : "";

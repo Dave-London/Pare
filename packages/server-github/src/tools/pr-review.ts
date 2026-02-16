@@ -13,9 +13,12 @@ export function registerPrReviewTool(server: McpServer) {
     {
       title: "PR Review",
       description:
-        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event and URL. Use instead of running `gh pr review` in the terminal.",
+        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event, URL, and body echo. Use instead of running `gh pr review` in the terminal.",
       inputSchema: {
-        number: z.number().describe("Pull request number"),
+        // S-gap P0: Accept PR by number, URL, or branch via union
+        number: z
+          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .describe("Pull request number, URL, or branch name"),
         event: z
           .enum(["approve", "request-changes", "comment"])
           .describe("Review type: approve, request-changes, or comment"),
@@ -24,6 +27,18 @@ export function registerPrReviewTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Review body (required for request-changes and comment)"),
+        // S-gap P0: Add repo for cross-repo review
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
+        // S-gap P2: Add bodyFile for reading review body from file
+        bodyFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Read review body from file (--body-file). Mutually exclusive with body."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -32,25 +47,35 @@ export function registerPrReviewTool(server: McpServer) {
       },
       outputSchema: PrReviewResultSchema,
     },
-    async ({ number, event, body, path }) => {
+    async ({ number, event, body, repo, bodyFile, path }) => {
       const cwd = path || process.cwd();
 
       if (body) {
         assertNoFlagInjection(body, "body");
       }
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (bodyFile) assertNoFlagInjection(bodyFile, "bodyFile");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       // request-changes and comment require a body
-      if ((event === "request-changes" || event === "comment") && !body) {
+      if ((event === "request-changes" || event === "comment") && !body && !bodyFile) {
         throw new Error(`Review body is required for "${event}" reviews.`);
       }
 
-      const args = ["pr", "review", String(number), `--${event}`];
+      const selector = String(number);
+      const prNum = typeof number === "number" ? number : 0;
+
+      const args = ["pr", "review", selector, `--${event}`];
+      if (repo) args.push("--repo", repo);
 
       // Pass body via stdin (--body-file -) to avoid shell escaping issues
       let stdin: string | undefined;
       if (body) {
         args.push("--body-file", "-");
         stdin = body;
+      } else if (bodyFile) {
+        // S-gap P2: Read body from file
+        args.push("--body-file", bodyFile);
       }
 
       const result = await ghCmd(args, { cwd, stdin });
@@ -59,7 +84,8 @@ export function registerPrReviewTool(server: McpServer) {
         throw new Error(`gh pr review failed: ${result.stderr}`);
       }
 
-      const data = parsePrReview(result.stdout, number, event);
+      // S-gap: Pass body for echo in output
+      const data = parsePrReview(result.stdout, prNum, event, body);
       return dualOutput(data, formatPrReview);
     },
   );
