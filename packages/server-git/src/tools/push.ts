@@ -33,10 +33,33 @@ export function registerPushTool(server: McpServer) {
           .describe("Branch to push (default: current branch)"),
         force: z.boolean().optional().default(false).describe("Force push (--force)"),
         setUpstream: z.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
+        dryRun: z.boolean().optional().describe("Preview push without executing (--dry-run)"),
+        forceWithLease: z.boolean().optional().describe("Safe force push (--force-with-lease)"),
+        tags: z.boolean().optional().describe("Push all tags (--tags)"),
+        followTags: z
+          .boolean()
+          .optional()
+          .describe("Push annotated tags with commits (--follow-tags)"),
+        delete: z.boolean().optional().describe("Delete remote branch/tag (--delete)"),
+        noVerify: z.boolean().optional().describe("Bypass pre-push hook (--no-verify)"),
+        atomic: z.boolean().optional().describe("Atomic push (--atomic)"),
       },
       outputSchema: GitPushSchema,
     },
-    async ({ path, remote, branch, force, setUpstream }) => {
+    async ({
+      path,
+      remote,
+      branch,
+      force,
+      setUpstream,
+      dryRun,
+      forceWithLease,
+      tags,
+      followTags,
+      delete: deleteBranch,
+      noVerify,
+      atomic,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(remote, "remote");
@@ -46,7 +69,14 @@ export function registerPushTool(server: McpServer) {
 
       const args = ["push"];
       if (force) args.push("--force");
+      if (forceWithLease) args.push("--force-with-lease");
       if (setUpstream) args.push("-u");
+      if (dryRun) args.push("--dry-run");
+      if (tags) args.push("--tags");
+      if (followTags) args.push("--follow-tags");
+      if (deleteBranch) args.push("--delete");
+      if (noVerify) args.push("--no-verify");
+      if (atomic) args.push("--atomic");
       args.push(remote);
 
       if (branch) {

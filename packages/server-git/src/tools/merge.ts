@@ -28,10 +28,33 @@ export function registerMergeTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Custom merge commit message"),
+        ffOnly: z.boolean().optional().describe("Only fast-forward merges (--ff-only)"),
+        squash: z.boolean().optional().describe("Squash merge (--squash)"),
+        noCommit: z.boolean().optional().describe("Merge without auto-committing (--no-commit)"),
+        allowUnrelatedHistories: z
+          .boolean()
+          .optional()
+          .describe("Allow merging unrelated histories (--allow-unrelated-histories)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
+        autostash: z.boolean().optional().describe("Stash/unstash around merge (--autostash)"),
+        noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
       },
       outputSchema: GitMergeSchema,
     },
-    async ({ path, branch, noFf, abort, message }) => {
+    async ({
+      path,
+      branch,
+      noFf,
+      abort,
+      message,
+      ffOnly,
+      squash,
+      noCommit,
+      allowUnrelatedHistories,
+      signoff,
+      autostash,
+      noVerify,
+    }) => {
       const cwd = path || process.cwd();
 
       // Handle --abort
@@ -52,6 +75,13 @@ export function registerMergeTool(server: McpServer) {
       // Build merge args
       const args = ["merge"];
       if (noFf) args.push("--no-ff");
+      if (ffOnly) args.push("--ff-only");
+      if (squash) args.push("--squash");
+      if (noCommit) args.push("--no-commit");
+      if (allowUnrelatedHistories) args.push("--allow-unrelated-histories");
+      if (signoff) args.push("--signoff");
+      if (autostash) args.push("--autostash");
+      if (noVerify) args.push("--no-verify");
       if (message) args.push("-m", message);
       args.push(branch);
 

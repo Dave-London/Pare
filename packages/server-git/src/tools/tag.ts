@@ -20,6 +20,14 @@ export function registerTagTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
+        force: z.boolean().optional().describe("Force tag creation (-f)"),
+        sign: z.boolean().optional().describe("Sign tag with GPG (-s)"),
+        verify: z.boolean().optional().describe("Verify tag signature (-v)"),
+        merged: z.boolean().optional().describe("Filter to tags merged into HEAD (--merged)"),
+        noMerged: z
+          .boolean()
+          .optional()
+          .describe("Filter to tags not merged into HEAD (--no-merged)"),
         compact: z
           .boolean()
           .optional()
@@ -30,7 +38,7 @@ export function registerTagTool(server: McpServer) {
       },
       outputSchema: GitTagSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, force, sign, verify, merged, noMerged, compact }) => {
       const cwd = path || process.cwd();
       const args = [
         "tag",
@@ -38,6 +46,8 @@ export function registerTagTool(server: McpServer) {
         "--sort=-creatordate",
         "--format=%(refname:short)\t%(creatordate:iso-strict)\t%(subject)",
       ];
+      if (merged) args.push("--merged");
+      if (noMerged) args.push("--no-merged");
 
       const result = await git(args, cwd);
 

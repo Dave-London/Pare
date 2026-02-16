@@ -33,6 +33,9 @@ export function registerReflogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Which ref to show (default: HEAD)"),
+        skip: z.number().optional().describe("Skip N entries for pagination (--skip)"),
+        all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
+        reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
         compact: z
           .boolean()
           .optional()
@@ -43,9 +46,13 @@ export function registerReflogTool(server: McpServer) {
       },
       outputSchema: GitReflogSchema,
     },
-    async ({ path, maxCount, ref, compact }) => {
+    async ({ path, maxCount, ref, skip, all, reverse, compact }) => {
       const cwd = path || process.cwd();
       const args = ["reflog", "show", `--format=${REFLOG_FORMAT}`, `--max-count=${maxCount ?? 20}`];
+
+      if (skip !== undefined) args.push(`--skip=${skip}`);
+      if (all) args.push("--all");
+      if (reverse) args.push("--reverse");
 
       if (ref) {
         assertNoFlagInjection(ref, "ref");

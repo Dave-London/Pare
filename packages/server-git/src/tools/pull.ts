@@ -36,10 +36,27 @@ export function registerPullTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Use rebase instead of merge (--rebase)"),
+        ffOnly: z.boolean().optional().describe("Only fast-forward pulls (--ff-only)"),
+        autostash: z.boolean().optional().describe("Stash/unstash around pull (--autostash)"),
+        noCommit: z.boolean().optional().describe("Pull without auto-committing (--no-commit)"),
+        depth: z.number().optional().describe("Shallow fetch depth (--depth)"),
+        noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
+        squash: z.boolean().optional().describe("Squash pull (--squash)"),
       },
       outputSchema: GitPullSchema,
     },
-    async ({ path, remote, branch, rebase }) => {
+    async ({
+      path,
+      remote,
+      branch,
+      rebase,
+      ffOnly,
+      autostash,
+      noCommit,
+      depth,
+      noVerify,
+      squash,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(remote, "remote");
@@ -49,6 +66,12 @@ export function registerPullTool(server: McpServer) {
 
       const args = ["pull"];
       args.push(rebase ? "--rebase" : "--no-rebase");
+      if (ffOnly) args.push("--ff-only");
+      if (autostash) args.push("--autostash");
+      if (noCommit) args.push("--no-commit");
+      if (depth !== undefined) args.push(`--depth=${depth}`);
+      if (noVerify) args.push("--no-verify");
+      if (squash) args.push("--squash");
       args.push(remote);
       if (branch) args.push(branch);
 
