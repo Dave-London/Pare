@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseCargoFmtOutput } from "../src/lib/parsers.js";
-import { formatCargoFmt } from "../src/lib/formatters.js";
+import { formatCargoFmt, compactFmtMap, formatFmtCompact } from "../src/lib/formatters.js";
 
 describe("parseCargoFmtOutput", () => {
   describe("check mode", () => {
@@ -17,6 +17,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput(stdout, "", 1, true);
 
       expect(result.success).toBe(false);
+      expect(result.needsFormatting).toBe(true);
       expect(result.filesChanged).toBe(2);
       expect(result.files).toContain("src/main.rs");
       expect(result.files).toContain("src/lib.rs");
@@ -26,6 +27,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput("", "", 0, true);
 
       expect(result.success).toBe(true);
+      expect(result.needsFormatting).toBe(false);
       expect(result.filesChanged).toBe(0);
       expect(result.files).toEqual([]);
     });
@@ -41,6 +43,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput(stdout, "", 1, true);
 
       expect(result.filesChanged).toBe(1);
+      expect(result.needsFormatting).toBe(true);
       expect(result.files).toEqual(["src/main.rs"]);
     });
 
@@ -50,6 +53,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput(stdout, "", 1, true);
 
       expect(result.filesChanged).toBe(2);
+      expect(result.needsFormatting).toBe(true);
       expect(result.files).toContain("src/main.rs");
       expect(result.files).toContain("src/lib.rs");
     });
@@ -74,6 +78,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput("", "", 0, false);
 
       expect(result.success).toBe(true);
+      expect(result.needsFormatting).toBe(false);
       expect(result.filesChanged).toBe(0);
       expect(result.files).toEqual([]);
     });
@@ -82,6 +87,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput("", "", 0, false);
 
       expect(result.success).toBe(true);
+      expect(result.needsFormatting).toBe(false);
     });
 
     it("reports reformatted files in fix mode via -l flag output", () => {
@@ -89,6 +95,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput(stdout, "", 0, false);
 
       expect(result.success).toBe(true);
+      expect(result.needsFormatting).toBe(false);
       expect(result.filesChanged).toBe(2);
       expect(result.files).toContain("src/main.rs");
       expect(result.files).toContain("src/lib.rs");
@@ -99,6 +106,7 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput(stdout, "", 0, false);
 
       expect(result.success).toBe(true);
+      expect(result.needsFormatting).toBe(false);
       expect(result.filesChanged).toBe(1);
       expect(result.files).toEqual(["src/utils.rs"]);
     });
@@ -108,6 +116,7 @@ describe("parseCargoFmtOutput", () => {
     const result = parseCargoFmtOutput("", "error: rustfmt not found", 1, true);
 
     expect(result.success).toBe(false);
+    expect(result.needsFormatting).toBe(true);
   });
 });
 
@@ -115,6 +124,7 @@ describe("formatCargoFmt", () => {
   it("formats all files formatted", () => {
     const output = formatCargoFmt({
       success: true,
+      needsFormatting: false,
       filesChanged: 0,
       files: [],
     });
@@ -122,9 +132,10 @@ describe("formatCargoFmt", () => {
     expect(output).toBe("cargo fmt: all files formatted.");
   });
 
-  it("formats files needing changes", () => {
+  it("formats files needing changes (check mode)", () => {
     const output = formatCargoFmt({
       success: false,
+      needsFormatting: true,
       filesChanged: 2,
       files: ["src/main.rs", "src/lib.rs"],
     });
@@ -137,10 +148,44 @@ describe("formatCargoFmt", () => {
   it("formats successful fix with files changed", () => {
     const output = formatCargoFmt({
       success: true,
+      needsFormatting: false,
       filesChanged: 3,
       files: ["src/main.rs", "src/lib.rs", "src/utils.rs"],
     });
 
     expect(output).toContain("cargo fmt: success (3 file(s))");
+  });
+
+  it("formats actual error (not needsFormatting) as failed", () => {
+    const output = formatCargoFmt({
+      success: false,
+      needsFormatting: false,
+      filesChanged: 0,
+      files: [],
+    });
+
+    expect(output).toContain("cargo fmt: failed");
+  });
+});
+
+describe("compactFmtMap preserves needsFormatting", () => {
+  it("maps needsFormatting from full result", () => {
+    const compact = compactFmtMap({
+      success: false,
+      needsFormatting: true,
+      filesChanged: 2,
+      files: ["src/main.rs", "src/lib.rs"],
+    });
+    expect(compact.needsFormatting).toBe(true);
+    expect(compact.filesChanged).toBe(2);
+  });
+
+  it("formats compact with needsFormatting", () => {
+    expect(formatFmtCompact({ success: false, needsFormatting: true, filesChanged: 2 })).toBe(
+      "cargo fmt: needs formatting (2 file(s))",
+    );
+    expect(formatFmtCompact({ success: false, needsFormatting: false, filesChanged: 0 })).toBe(
+      "cargo fmt: failed (0 file(s))",
+    );
   });
 });

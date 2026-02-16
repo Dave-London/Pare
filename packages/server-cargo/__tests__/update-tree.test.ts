@@ -13,7 +13,7 @@ import type { CargoUpdateResult, CargoTreeResult } from "../src/schemas/index.js
 // ── parseCargoUpdateOutput ───────────────────────────────────────────
 
 describe("parseCargoUpdateOutput", () => {
-  it("parses successful update with output", () => {
+  it("parses successful update with structured data", () => {
     const stderr = [
       "    Updating crates.io index",
       "    Updating serde v1.0.200 -> v1.0.217",
@@ -23,6 +23,11 @@ describe("parseCargoUpdateOutput", () => {
     const result = parseCargoUpdateOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
+    expect(result.totalUpdated).toBe(2);
+    expect(result.updated).toEqual([
+      { name: "serde", from: "1.0.200", to: "1.0.217" },
+      { name: "tokio", from: "1.40.0", to: "1.41.1" },
+    ]);
     expect(result.output).toContain("Updating serde v1.0.200 -> v1.0.217");
     expect(result.output).toContain("Updating tokio v1.40.0 -> v1.41.1");
   });
@@ -31,6 +36,8 @@ describe("parseCargoUpdateOutput", () => {
     const result = parseCargoUpdateOutput("", "", 0);
 
     expect(result.success).toBe(true);
+    expect(result.totalUpdated).toBe(0);
+    expect(result.updated).toEqual([]);
     expect(result.output).toBe("");
   });
 
@@ -39,6 +46,7 @@ describe("parseCargoUpdateOutput", () => {
     const result = parseCargoUpdateOutput("", stderr, 101);
 
     expect(result.success).toBe(false);
+    expect(result.totalUpdated).toBe(0);
     expect(result.output).toContain("no package `nonexistent` found");
   });
 
@@ -48,12 +56,47 @@ describe("parseCargoUpdateOutput", () => {
     expect(result.output).toContain("stdout line");
     expect(result.output).toContain("stderr line");
   });
+
+  it("parses Locking lines from newer cargo versions", () => {
+    const stderr = [
+      "    Locking serde v1.0.200 -> v1.0.217",
+      "    Locking tokio v1.40.0 -> v1.41.1",
+    ].join("\n");
+
+    const result = parseCargoUpdateOutput("", stderr, 0);
+
+    expect(result.totalUpdated).toBe(2);
+    expect(result.updated![0]).toEqual({ name: "serde", from: "1.0.200", to: "1.0.217" });
+  });
+
+  it("parses Downgrading lines", () => {
+    const stderr = "    Downgrading foo v2.0.0 -> v1.5.0";
+
+    const result = parseCargoUpdateOutput("", stderr, 0);
+
+    expect(result.totalUpdated).toBe(1);
+    expect(result.updated![0]).toEqual({ name: "foo", from: "2.0.0", to: "1.5.0" });
+  });
+
+  it("ignores non-update lines like Adding and Removing", () => {
+    const stderr = [
+      "    Updating crates.io index",
+      "      Adding new-crate v1.0.0",
+      "    Removing old-crate v0.5.0",
+      "    Updating serde v1.0.200 -> v1.0.217",
+    ].join("\n");
+
+    const result = parseCargoUpdateOutput("", stderr, 0);
+
+    expect(result.totalUpdated).toBe(1);
+    expect(result.updated![0].name).toBe("serde");
+  });
 });
 
 // ── parseCargoTreeOutput ─────────────────────────────────────────────
 
 describe("parseCargoTreeOutput", () => {
-  it("parses tree output and counts unique packages", () => {
+  it("parses tree output into structured dependencies", () => {
     const stdout = [
       "my-app v0.1.0 (/home/user/project)",
       "├── serde v1.0.217",
@@ -69,8 +112,28 @@ describe("parseCargoTreeOutput", () => {
 
     expect(result.tree).toContain("my-app v0.1.0");
     expect(result.tree).toContain("serde v1.0.217");
-    // my-app, serde, serde_derive, tokio, bytes, mio, pin-project-lite, anyhow = 8
     expect(result.packages).toBe(8);
+
+    // Verify structured dependencies
+    expect(result.dependencies).toBeDefined();
+    expect(result.dependencies!.length).toBe(8);
+
+    // Root package at depth 0
+    expect(result.dependencies![0]).toEqual({
+      name: "my-app",
+      version: "0.1.0",
+      depth: 0,
+    });
+
+    // Direct dependency at depth 1
+    const serde = result.dependencies!.find((d) => d.name === "serde");
+    expect(serde).toBeDefined();
+    expect(serde!.depth).toBe(1);
+
+    // Transitive dependency at depth 2
+    const serdeDerive = result.dependencies!.find((d) => d.name === "serde_derive");
+    expect(serdeDerive).toBeDefined();
+    expect(serdeDerive!.depth).toBe(2);
   });
 
   it("counts unique package names (no duplicates)", () => {
@@ -85,6 +148,8 @@ describe("parseCargoTreeOutput", () => {
 
     // "serde" appears twice but is counted once, plus "my-app" and "serde_derive"
     expect(result.packages).toBe(3);
+    // dependencies list includes all entries (including duplicate serde)
+    expect(result.dependencies!.length).toBe(4);
   });
 
   it("handles empty tree output", () => {
@@ -92,6 +157,7 @@ describe("parseCargoTreeOutput", () => {
 
     expect(result.tree).toBe("");
     expect(result.packages).toBe(0);
+    expect(result.dependencies).toEqual([]);
   });
 
   it("handles single root package", () => {
@@ -100,6 +166,7 @@ describe("parseCargoTreeOutput", () => {
 
     expect(result.tree).toBe("my-app v0.1.0 (/home/user/project)");
     expect(result.packages).toBe(1);
+    expect(result.dependencies).toEqual([{ name: "my-app", version: "0.1.0", depth: 0 }]);
   });
 
   it("handles packages with underscores and hyphens", () => {
@@ -113,48 +180,77 @@ describe("parseCargoTreeOutput", () => {
     const result = parseCargoTreeOutput(stdout, "", 0);
 
     expect(result.packages).toBe(4);
+    expect(result.dependencies!.length).toBe(4);
+    const pinProject = result.dependencies!.find((d) => d.name === "pin-project-lite");
+    expect(pinProject).toBeDefined();
+    expect(pinProject!.version).toBe("0.2.13");
+    expect(pinProject!.depth).toBe(1);
+  });
+
+  it("handles error exit code", () => {
+    const result = parseCargoTreeOutput("", "error: no Cargo.toml found", 101);
+
+    expect(result.success).toBe(false);
+    expect(result.packages).toBe(0);
+    expect(result.dependencies).toBeUndefined();
   });
 });
 
 // ── formatCargoUpdate ────────────────────────────────────────────────
 
 describe("formatCargoUpdate", () => {
-  it("formats successful update with output", () => {
+  it("formats successful update with structured packages", () => {
     const data: CargoUpdateResult = {
       success: true,
-      output: "Updating serde v1.0.200 -> v1.0.217",
+      updated: [
+        { name: "serde", from: "1.0.200", to: "1.0.217" },
+        { name: "tokio", from: "1.40.0", to: "1.41.1" },
+      ],
+      totalUpdated: 2,
+      output: "Updating serde v1.0.200 -> v1.0.217\nUpdating tokio v1.40.0 -> v1.41.1",
     };
     const output = formatCargoUpdate(data);
-    expect(output).toContain("cargo update: success");
-    expect(output).toContain("Updating serde v1.0.200 -> v1.0.217");
+    expect(output).toContain("cargo update: success (2 package(s) updated)");
+    expect(output).toContain("serde v1.0.200 -> v1.0.217");
+    expect(output).toContain("tokio v1.40.0 -> v1.41.1");
   });
 
-  it("formats successful update with no output", () => {
-    const data: CargoUpdateResult = { success: true, output: "" };
+  it("formats successful update with no changes", () => {
+    const data: CargoUpdateResult = {
+      success: true,
+      updated: [],
+      totalUpdated: 0,
+      output: "",
+    };
     expect(formatCargoUpdate(data)).toBe("cargo update: success.");
   });
 
   it("formats failed update", () => {
     const data: CargoUpdateResult = {
       success: false,
+      updated: [],
+      totalUpdated: 0,
       output: "error: no package found",
     };
     const output = formatCargoUpdate(data);
     expect(output).toContain("cargo update: failed");
-    expect(output).toContain("error: no package found");
   });
 });
 
 // ── compactUpdateMap ─────────────────────────────────────────────────
 
 describe("compactUpdateMap", () => {
-  it("strips output text and keeps success flag", () => {
+  it("keeps updated packages and strips raw output", () => {
     const data: CargoUpdateResult = {
       success: true,
+      updated: [{ name: "serde", from: "1.0.200", to: "1.0.217" }],
+      totalUpdated: 1,
       output: "Updating serde v1.0.200 -> v1.0.217\nUpdating tokio v1.40.0 -> v1.41.1",
     };
     const compact = compactUpdateMap(data);
-    expect(compact).toEqual({ success: true });
+    expect(compact.success).toBe(true);
+    expect(compact.totalUpdated).toBe(1);
+    expect(compact.updated).toEqual([{ name: "serde", from: "1.0.200", to: "1.0.217" }]);
     expect(compact).not.toHaveProperty("output");
   });
 });
@@ -162,12 +258,26 @@ describe("compactUpdateMap", () => {
 // ── formatUpdateCompact ──────────────────────────────────────────────
 
 describe("formatUpdateCompact", () => {
-  it("formats compact update success", () => {
-    expect(formatUpdateCompact({ success: true })).toBe("cargo update: success");
+  it("formats compact update with no updates", () => {
+    expect(formatUpdateCompact({ success: true, updated: [], totalUpdated: 0 })).toBe(
+      "cargo update: success",
+    );
+  });
+
+  it("formats compact update with updates", () => {
+    expect(
+      formatUpdateCompact({
+        success: true,
+        updated: [{ name: "serde", from: "1.0.200", to: "1.0.217" }],
+        totalUpdated: 1,
+      }),
+    ).toBe("cargo update: success (1 updated: serde)");
   });
 
   it("formats compact update failure", () => {
-    expect(formatUpdateCompact({ success: false })).toBe("cargo update: failed");
+    expect(formatUpdateCompact({ success: false, updated: [], totalUpdated: 0 })).toBe(
+      "cargo update: failed",
+    );
   });
 });
 
@@ -177,6 +287,10 @@ describe("formatCargoTree", () => {
   it("formats tree with package count", () => {
     const data: CargoTreeResult = {
       success: true,
+      dependencies: [
+        { name: "my-app", version: "0.1.0", depth: 0 },
+        { name: "serde", version: "1.0.217", depth: 1 },
+      ],
       tree: "my-app v0.1.0\n├── serde v1.0.217",
       packages: 2,
     };
@@ -187,7 +301,7 @@ describe("formatCargoTree", () => {
   });
 
   it("formats tree with empty tree text", () => {
-    const data: CargoTreeResult = { success: true, tree: "", packages: 0 };
+    const data: CargoTreeResult = { success: true, dependencies: [], tree: "", packages: 0 };
     expect(formatCargoTree(data)).toBe("cargo tree: 0 unique packages");
   });
 });
@@ -195,14 +309,21 @@ describe("formatCargoTree", () => {
 // ── compactTreeMap ───────────────────────────────────────────────────
 
 describe("compactTreeMap", () => {
-  it("strips tree text and keeps package count", () => {
+  it("strips tree text but keeps dependencies and package count", () => {
     const data: CargoTreeResult = {
       success: true,
+      dependencies: [
+        { name: "my-app", version: "0.1.0", depth: 0 },
+        { name: "serde", version: "1.0.217", depth: 1 },
+        { name: "tokio", version: "1.41.1", depth: 1 },
+      ],
       tree: "my-app v0.1.0\n├── serde v1.0.217\n└── tokio v1.41.1",
       packages: 3,
     };
     const compact = compactTreeMap(data);
-    expect(compact).toEqual({ success: true, packages: 3 });
+    expect(compact.success).toBe(true);
+    expect(compact.packages).toBe(3);
+    expect(compact.dependencies).toHaveLength(3);
     expect(compact).not.toHaveProperty("tree");
   });
 });
@@ -211,10 +332,14 @@ describe("compactTreeMap", () => {
 
 describe("formatTreeCompact", () => {
   it("formats compact tree output", () => {
-    expect(formatTreeCompact({ success: true, packages: 5 })).toBe("cargo tree: 5 unique packages");
+    expect(formatTreeCompact({ success: true, dependencies: [], packages: 5 })).toBe(
+      "cargo tree: 5 unique packages",
+    );
   });
 
   it("formats compact tree with zero packages", () => {
-    expect(formatTreeCompact({ success: true, packages: 0 })).toBe("cargo tree: 0 unique packages");
+    expect(formatTreeCompact({ success: true, dependencies: [], packages: 0 })).toBe(
+      "cargo tree: 0 unique packages",
+    );
   });
 });

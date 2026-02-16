@@ -121,6 +121,80 @@ describe("parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(stdout, 0);
     expect(result.ignored).toBe(1);
   });
+
+  it("captures stdout/stderr for failed tests", () => {
+    const stdout = [
+      "running 2 tests",
+      "test tests::test_pass ... ok",
+      "test tests::test_div ... FAILED",
+      "",
+      "failures:",
+      "",
+      "---- tests::test_div stdout ----",
+      "thread 'tests::test_div' panicked at 'assertion failed: `(left == right)`",
+      "  left: `0`,",
+      " right: `1`', src/lib.rs:10:5",
+      "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+      "",
+      "",
+      "failures:",
+      "    tests::test_div",
+      "",
+      "test result: FAILED. 1 passed; 1 failed; 0 ignored",
+    ].join("\n");
+
+    const result = parseCargoTestOutput(stdout, 101);
+
+    expect(result.failed).toBe(1);
+    expect(result.tests[1].name).toBe("tests::test_div");
+    expect(result.tests[1].output).toContain("panicked at");
+    expect(result.tests[1].output).toContain("assertion failed");
+    // Passing test should not have output
+    expect(result.tests[0].output).toBeUndefined();
+  });
+
+  it("captures output for multiple failed tests", () => {
+    const stdout = [
+      "running 3 tests",
+      "test tests::test_a ... FAILED",
+      "test tests::test_b ... FAILED",
+      "test tests::test_c ... ok",
+      "",
+      "failures:",
+      "",
+      "---- tests::test_a stdout ----",
+      "thread 'tests::test_a' panicked at 'error A'",
+      "",
+      "---- tests::test_b stdout ----",
+      "thread 'tests::test_b' panicked at 'error B'",
+      "",
+      "",
+      "failures:",
+      "    tests::test_a",
+      "    tests::test_b",
+      "",
+      "test result: FAILED. 1 passed; 2 failed; 0 ignored",
+    ].join("\n");
+
+    const result = parseCargoTestOutput(stdout, 101);
+
+    expect(result.failed).toBe(2);
+    expect(result.tests[0].output).toContain("error A");
+    expect(result.tests[1].output).toContain("error B");
+  });
+
+  it("does not attach output to passing tests even with failures section", () => {
+    const stdout = [
+      "running 1 tests",
+      "test tests::test_pass ... ok",
+      "",
+      "test result: ok. 1 passed; 0 failed; 0 ignored",
+    ].join("\n");
+
+    const result = parseCargoTestOutput(stdout, 0);
+
+    expect(result.tests[0].output).toBeUndefined();
+  });
 });
 
 describe("parseCargoClippyJson", () => {
@@ -332,6 +406,7 @@ describe("parseCargoFmtOutput edge cases", () => {
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 
     expect(result.filesChanged).toBe(2);
+    expect(result.needsFormatting).toBe(true);
     expect(result.files).toContain("src/main.rs");
     expect(result.files).toContain("src/lib.rs");
     expect(result.files).not.toContain("src/config.toml");
@@ -344,6 +419,7 @@ describe("parseCargoFmtOutput edge cases", () => {
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 
     expect(result.filesChanged).toBe(1);
+    expect(result.needsFormatting).toBe(true);
     expect(result.files).toContain("src/main.rs");
     expect(result.files).not.toContain("src/gen/file.rs.bak");
   });
@@ -356,7 +432,40 @@ describe("parseCargoFmtOutput edge cases", () => {
     const result = parseCargoFmtOutput(stdout, "", 1, true);
 
     expect(result.filesChanged).toBe(1);
+    expect(result.needsFormatting).toBe(true);
     expect(result.files).toContain("src/gen/deeply/nested/file.rs");
+  });
+});
+
+describe("parseCargoFmtOutput needsFormatting semantics", () => {
+  it("sets needsFormatting=true in check mode with unformatted files", () => {
+    const stdout = "Diff in src/main.rs at line 5:\n+    let x = 1;";
+    const result = parseCargoFmtOutput(stdout, "", 1, true);
+
+    expect(result.success).toBe(false);
+    expect(result.needsFormatting).toBe(true);
+  });
+
+  it("sets needsFormatting=false in check mode when all files formatted", () => {
+    const result = parseCargoFmtOutput("", "", 0, true);
+
+    expect(result.success).toBe(true);
+    expect(result.needsFormatting).toBe(false);
+  });
+
+  it("sets needsFormatting=false in fix mode even when files were reformatted", () => {
+    const stdout = "src/main.rs\nsrc/lib.rs";
+    const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.needsFormatting).toBe(false);
+  });
+
+  it("sets needsFormatting=false in fix mode with no changes", () => {
+    const result = parseCargoFmtOutput("", "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.needsFormatting).toBe(false);
   });
 });
 
@@ -779,6 +888,7 @@ describe("parseCargoFmtOutput non-check mode", () => {
     const result = parseCargoFmtOutput(stdout, "", 0, false);
 
     expect(result.success).toBe(true);
+    expect(result.needsFormatting).toBe(false);
     expect(result.filesChanged).toBe(3);
     expect(result.files).toContain("src/main.rs");
     expect(result.files).toContain("src/lib.rs");
@@ -789,6 +899,7 @@ describe("parseCargoFmtOutput non-check mode", () => {
     const result = parseCargoFmtOutput("", "", 0, false);
 
     expect(result.success).toBe(true);
+    expect(result.needsFormatting).toBe(false);
     expect(result.filesChanged).toBe(0);
     expect(result.files).toEqual([]);
   });
@@ -800,6 +911,7 @@ describe("parseCargoFmtOutput non-check mode", () => {
     const result = parseCargoFmtOutput(stdout, stderr, 0, false);
 
     expect(result.filesChanged).toBe(1);
+    expect(result.needsFormatting).toBe(false);
     expect(result.files).toContain("src/main.rs");
     expect(result.files).not.toContain("warning: some rustfmt warning");
     expect(result.files).not.toContain("error: some rustfmt error");
@@ -811,6 +923,7 @@ describe("parseCargoFmtOutput non-check mode", () => {
     const result = parseCargoFmtOutput(stdout, "", 0, false);
 
     expect(result.filesChanged).toBe(1);
+    expect(result.needsFormatting).toBe(false);
     expect(result.files).toEqual(["src/main.rs"]);
   });
 
@@ -820,6 +933,7 @@ describe("parseCargoFmtOutput non-check mode", () => {
     const result = parseCargoFmtOutput(stdout, "", 0, false);
 
     expect(result.filesChanged).toBe(2);
+    expect(result.needsFormatting).toBe(false);
     expect(result.files).toContain("src/main.rs");
     expect(result.files).toContain("src/lib.rs");
     expect(result.files).not.toContain("src/config.toml");

@@ -45,10 +45,18 @@ export function parseCargoBuildJson(stdout: string, exitCode: number): CargoBuil
  * Parses `cargo test` output.
  * Format: "test name ... ok/FAILED/ignored"
  * Summary: "test result: ok/FAILED. X passed; Y failed; Z ignored"
+ *
+ * For failed tests, captures stdout/stderr output between the "failures:" section
+ * and the "failures:" name list or "test result:" line.
  */
 export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTestResult {
   const lines = stdout.split("\n");
-  const tests: { name: string; status: "ok" | "FAILED" | "ignored"; duration?: string }[] = [];
+  const tests: {
+    name: string;
+    status: "ok" | "FAILED" | "ignored";
+    duration?: string;
+    output?: string;
+  }[] = [];
 
   for (const line of lines) {
     const match = line.match(/^test (.+?) \.\.\. (ok|FAILED|ignored)$/);
@@ -57,6 +65,27 @@ export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTes
         name: match[1],
         status: match[2] as "ok" | "FAILED" | "ignored",
       });
+    }
+  }
+
+  // Parse failure output sections.
+  // Cargo test output has a "failures:" section containing stdout/stderr for each failed test:
+  //   failures:
+  //
+  //   ---- tests::test_div stdout ----
+  //   thread 'tests::test_div' panicked at 'assertion failed: ...'
+  //   ...
+  //
+  //   failures:
+  //       tests::test_div
+  //
+  // We parse output blocks between "---- <name> stdout ----" markers.
+  const failureOutputMap = parseFailureOutputSections(stdout);
+
+  // Attach captured output to failed tests
+  for (const test of tests) {
+    if (test.status === "FAILED" && failureOutputMap.has(test.name)) {
+      test.output = failureOutputMap.get(test.name);
     }
   }
 
@@ -72,6 +101,62 @@ export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTes
     failed,
     ignored,
   };
+}
+
+/**
+ * Extracts failure output sections from cargo test output.
+ * Looks for blocks starting with "---- <name> stdout ----" and ending at
+ * the next "---- " marker or "failures:" or "test result:" line.
+ * Returns a map of test name -> captured output.
+ */
+function parseFailureOutputSections(stdout: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const lines = stdout.split("\n");
+  let currentName: string | null = null;
+  let currentOutput: string[] = [];
+
+  for (const line of lines) {
+    // Match "---- tests::test_name stdout ----"
+    const headerMatch = line.match(/^---- (.+?) stdout ----$/);
+    if (headerMatch) {
+      // Save previous block if any
+      if (currentName !== null && currentOutput.length > 0) {
+        map.set(currentName, currentOutput.join("\n").trim());
+      }
+      currentName = headerMatch[1];
+      currentOutput = [];
+      continue;
+    }
+
+    // End markers: next section, failures list, or test result
+    if (currentName !== null) {
+      if (
+        line.match(/^failures:/) ||
+        line.match(/^test result:/) ||
+        line.match(/^---- .+ stdout ----$/)
+      ) {
+        if (currentOutput.length > 0) {
+          map.set(currentName, currentOutput.join("\n").trim());
+        }
+        currentName = null;
+        currentOutput = [];
+        // Check if this line starts a new output section
+        const newHeader = line.match(/^---- (.+?) stdout ----$/);
+        if (newHeader) {
+          currentName = newHeader[1];
+        }
+        continue;
+      }
+      currentOutput.push(line);
+    }
+  }
+
+  // Save final block if any
+  if (currentName !== null && currentOutput.length > 0) {
+    map.set(currentName, currentOutput.join("\n").trim());
+  }
+
+  return map;
 }
 
 /**
@@ -275,8 +360,14 @@ export function parseCargoFmtOutput(
     }
   }
 
+  // In check mode, exit code 1 with files means "needs formatting" (not a hard error).
+  // needsFormatting is true when check mode finds files that need formatting.
+  // In fix mode, needsFormatting is always false (files were already reformatted).
+  const needsFormatting = checkMode && (exitCode !== 0 || files.length > 0);
+
   return {
     success: exitCode === 0,
+    needsFormatting,
     filesChanged: files.length,
     files,
   };
@@ -286,6 +377,7 @@ export function parseCargoFmtOutput(
  * Parses `cargo doc` output.
  * Counts "warning:" or "warning[" lines from stderr,
  * excluding the summary line "warning: N warnings emitted".
+ * Parses structured warning details with file location and message.
  * Optionally extracts the output directory path.
  */
 export function parseCargoDocOutput(
@@ -295,10 +387,30 @@ export function parseCargoDocOutput(
 ): CargoDocResult {
   const lines = stderr.split("\n");
   let warnings = 0;
+  const warningDetails: { file: string; line: number; message: string }[] = [];
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (line.match(/\bwarning\b(\[|:)/) && !line.match(/\d+ warnings? emitted/)) {
       warnings++;
+
+      // Extract the warning message from the line.
+      // Format: "warning: <message>" or "warning[E0599]: <message>"
+      const msgMatch = line.match(/\bwarning(?:\[[^\]]+\])?\s*:\s*(.+)/);
+      const message = msgMatch ? msgMatch[1].trim() : line.trim();
+
+      // Look ahead for a file location line like "  --> src/lib.rs:10:1"
+      let file = "";
+      let lineNum = 0;
+      if (i + 1 < lines.length) {
+        const locMatch = lines[i + 1].match(/\s*-->\s+([^:]+):(\d+)/);
+        if (locMatch) {
+          file = locMatch[1];
+          lineNum = parseInt(locMatch[2], 10);
+        }
+      }
+
+      warningDetails.push({ file, line: lineNum, message });
     }
   }
 
@@ -306,6 +418,10 @@ export function parseCargoDocOutput(
     success: exitCode === 0,
     warnings,
   };
+
+  if (warningDetails.length > 0) {
+    result.warningDetails = warningDetails;
+  }
 
   // Report the doc output directory if available
   if (cwd) {
@@ -317,7 +433,15 @@ export function parseCargoDocOutput(
 
 /**
  * Parses `cargo update` output.
- * Returns success flag and combined output text.
+ * Returns success flag, parsed updated packages, and combined output text.
+ *
+ * Cargo update outputs lines like:
+ *   "    Updating serde v1.0.200 -> v1.0.217"
+ *   "    Updating crates.io index"
+ *   "      Adding new-crate v1.0.0"
+ *   "    Removing old-crate v0.5.0"
+ *   "    Downgrading foo v2.0.0 -> v1.5.0"
+ *   "    Locking serde v1.0.200 -> v1.0.217"  (newer cargo versions)
  */
 export function parseCargoUpdateOutput(
   stdout: string,
@@ -325,15 +449,37 @@ export function parseCargoUpdateOutput(
   exitCode: number,
 ): CargoUpdateResult {
   const output = (stdout + "\n" + stderr).trim();
+  const combined = stdout + "\n" + stderr;
+  const lines = combined.split("\n");
+  const updated: { name: string; from: string; to: string }[] = [];
+
+  for (const line of lines) {
+    // Match "Updating <name> v<from> -> v<to>" or "Locking <name> v<from> -> v<to>"
+    // or "Downgrading <name> v<from> -> v<to>"
+    const match = line.match(/(?:Updating|Locking|Downgrading)\s+(\S+)\s+v(\S+)\s+->\s+v(\S+)/);
+    if (match) {
+      updated.push({ name: match[1], from: match[2], to: match[3] });
+    }
+  }
+
   return {
     success: exitCode === 0,
+    updated,
+    totalUpdated: updated.length,
     output,
   };
 }
 
 /**
- * Parses `cargo tree` output.
- * Returns the full tree text, counts unique package names, and success flag.
+ * Parses `cargo tree` output into structured dependency data.
+ * Returns the full tree text, a flat list of dependencies with depth,
+ * counts unique package names, and success flag.
+ *
+ * Tree lines use ASCII art prefixes to indicate depth:
+ *   "my-app v0.1.0 (/path/to/project)"       -> depth 0
+ *   "├── serde v1.0.217"                      -> depth 1
+ *   "│   └── serde_derive v1.0.217"           -> depth 2
+ *   "└── anyhow v1.0.89"                      -> depth 1
  */
 export function parseCargoTreeOutput(
   stdout: string,
@@ -351,19 +497,37 @@ export function parseCargoTreeOutput(
   const tree = stdout.trim();
   const lines = tree.split("\n").filter(Boolean);
 
-  // Extract unique package names from tree lines
-  // Typical line: "my-app v0.1.0 (/path/to/project)" or "├── serde v1.0.217"
+  // Extract unique package names and structured dependency list
   const packageNames = new Set<string>();
+  const dependencies: { name: string; version: string; depth: number }[] = [];
+
   for (const line of lines) {
     // Match package name + version pattern like "name v1.2.3"
-    const match = line.match(/([a-zA-Z0-9_-]+)\s+v\d+/);
+    const match = line.match(/([a-zA-Z0-9_-]+)\s+v(\d+[^\s]*)/);
     if (match) {
       packageNames.add(match[1]);
+
+      // Calculate depth from the tree indentation.
+      // Each level of depth is represented by 4 chars of tree drawing:
+      //   depth 0: "name v1.0.0"
+      //   depth 1: "├── name v1.0.0" or "└── name v1.0.0"
+      //   depth 2: "│   ├── name v1.0.0" or "│   └── name v1.0.0"
+      // We find the position of the package name in the line.
+      const nameIndex = line.indexOf(match[1]);
+      // The prefix before the name contains tree-drawing characters.
+      // Each depth level is 4 characters wide (e.g., "├── " or "│   ")
+      // For depth 0, nameIndex is 0.
+      // For depth 1, nameIndex is 4 (after "├── ").
+      // For depth 2, nameIndex is 8 (after "│   ├── ").
+      const depth = nameIndex > 0 ? Math.round(nameIndex / 4) : 0;
+
+      dependencies.push({ name: match[1], version: match[2], depth });
     }
   }
 
   return {
     success: true,
+    dependencies,
     tree,
     packages: packageNames.size,
   };
