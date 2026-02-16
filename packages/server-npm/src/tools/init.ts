@@ -144,7 +144,13 @@ export function registerInitTool(server: McpServer) {
         }
       }
 
-      const data = parseInitOutput(success, packageName, pkgVersion, packageJsonPath);
+      const data = parseInitOutput(
+        success,
+        packageName,
+        pkgVersion,
+        packageJsonPath,
+        result.stderr,
+      );
       return dualOutput({ ...data, packageManager: pm }, formatInit);
     },
   );

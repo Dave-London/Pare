@@ -105,7 +105,9 @@ export function formatTest(data: NpmTest): string {
 /** Formats structured npm init output into a human-readable initialization summary. */
 export function formatInit(data: NpmInit): string {
   if (!data.success) {
-    return `Failed to initialize package.json at ${data.path}`;
+    const lines = [`Failed to initialize package.json at ${data.path}`];
+    if (data.stderr) lines.push("", "stderr:", data.stderr);
+    return lines.join("\n");
   }
   return `Created ${data.packageName}@${data.version} at ${data.path}`;
 }

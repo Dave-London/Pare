@@ -136,6 +136,10 @@ export const NpmInitSchema = z.object({
   packageName: z.string().describe("The name field from the generated package.json"),
   version: z.string().describe("The version field from the generated package.json"),
   path: z.string().describe("Path to the generated package.json"),
+  stderr: z
+    .string()
+    .optional()
+    .describe("Standard error output — present on failure to explain why"),
 });
 
 export type NpmInit = z.infer<typeof NpmInitSchema>;

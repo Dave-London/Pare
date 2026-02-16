@@ -3,6 +3,7 @@ import {
   parseRunOutput,
   parseJustList,
   parseMakeTargets,
+  enrichMakeTargetDescriptions,
   buildListResult,
 } from "../src/lib/parsers.js";
 
@@ -206,6 +207,133 @@ describe("parseMakeTargets", () => {
 
     expect(result.total).toBe(1);
     expect(result.targets[0].name).toBe("build");
+  });
+});
+
+describe("enrichMakeTargetDescriptions", () => {
+  it("parses ## descriptions from Makefile source", () => {
+    const makefileSource = [
+      ".PHONY: build test clean",
+      "",
+      "build: ## Build the project",
+      "\tgo build ./...",
+      "",
+      "test: build ## Run all tests",
+      "\tgo test ./...",
+      "",
+      "clean: ## Remove build artifacts",
+      "\trm -rf dist/",
+    ].join("\n");
+
+    const targets = [{ name: "build" }, { name: "test" }, { name: "clean" }];
+
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched).toHaveLength(3);
+    expect(enriched[0]).toEqual({ name: "build", description: "Build the project" });
+    expect(enriched[1]).toEqual({ name: "test", description: "Run all tests" });
+    expect(enriched[2]).toEqual({ name: "clean", description: "Remove build artifacts" });
+  });
+
+  it("leaves targets without ## comments unchanged", () => {
+    const makefileSource = [
+      "build: deps",
+      "\tgcc -o main main.c",
+      "",
+      "test: ## Run tests",
+      "\t./run-tests.sh",
+      "",
+      "clean:",
+      "\trm -rf *.o",
+    ].join("\n");
+
+    const targets = [{ name: "build" }, { name: "test" }, { name: "clean" }];
+
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched[0].description).toBeUndefined();
+    expect(enriched[1].description).toBe("Run tests");
+    expect(enriched[2].description).toBeUndefined();
+  });
+
+  it("handles empty Makefile source", () => {
+    const targets = [{ name: "build" }, { name: "test" }];
+
+    const enriched = enrichMakeTargetDescriptions(targets, "");
+
+    expect(enriched[0].description).toBeUndefined();
+    expect(enriched[1].description).toBeUndefined();
+  });
+
+  it("handles empty targets array", () => {
+    const makefileSource = "build: ## Build it\n\techo build";
+
+    const enriched = enrichMakeTargetDescriptions([], makefileSource);
+
+    expect(enriched).toEqual([]);
+  });
+
+  it("handles ## with extra spaces around description", () => {
+    const makefileSource = "build:  ##   Build the project   \n\techo build";
+
+    const targets = [{ name: "build" }];
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched[0].description).toBe("Build the project");
+  });
+
+  it("does not confuse single # comments with ## descriptions", () => {
+    const makefileSource = [
+      "# This is a regular comment",
+      "build: # This is a regular inline comment, not ##",
+      "\techo build",
+    ].join("\n");
+
+    const targets = [{ name: "build" }];
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched[0].description).toBeUndefined();
+  });
+
+  it("handles targets with dependencies before ##", () => {
+    const makefileSource = ["deploy: build test ## Deploy to production", "\t./deploy.sh"].join(
+      "\n",
+    );
+
+    const targets = [{ name: "deploy" }];
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched[0].description).toBe("Deploy to production");
+  });
+
+  it("only enriches targets that exist in the targets array", () => {
+    const makefileSource = [
+      "build: ## Build it",
+      "test: ## Test it",
+      "secret: ## Secret target",
+    ].join("\n");
+
+    const targets = [{ name: "build" }, { name: "test" }];
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched).toHaveLength(2);
+    expect(enriched[0].description).toBe("Build it");
+    expect(enriched[1].description).toBe("Test it");
+  });
+
+  it("handles targets with dots, hyphens, and slashes in names", () => {
+    const makefileSource = [
+      "build-all: ## Build everything",
+      "test.unit: ## Run unit tests",
+      "deploy/prod: ## Deploy to prod",
+    ].join("\n");
+
+    const targets = [{ name: "build-all" }, { name: "test.unit" }, { name: "deploy/prod" }];
+    const enriched = enrichMakeTargetDescriptions(targets, makefileSource);
+
+    expect(enriched[0].description).toBe("Build everything");
+    expect(enriched[1].description).toBe("Run unit tests");
+    expect(enriched[2].description).toBe("Deploy to prod");
   });
 });
 
