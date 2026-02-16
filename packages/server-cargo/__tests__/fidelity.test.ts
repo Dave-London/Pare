@@ -398,7 +398,7 @@ describe("fidelity: parseCargoTestOutput", () => {
 
 describe("fidelity: parseCargoClippyJson", () => {
   it("clippy warnings with codes: all codes preserved", () => {
-    const result = parseCargoClippyJson(CLIPPY_WARNINGS_WITH_CODES);
+    const result = parseCargoClippyJson(CLIPPY_WARNINGS_WITH_CODES, 0);
 
     expect(result.total).toBe(2);
     expect(result.warnings).toBe(2);
@@ -417,7 +417,7 @@ describe("fidelity: parseCargoClippyJson", () => {
   });
 
   it("mix of errors and warnings: counts are correct", () => {
-    const result = parseCargoClippyJson(CLIPPY_MIXED);
+    const result = parseCargoClippyJson(CLIPPY_MIXED, 0);
 
     expect(result.total).toBe(3);
     expect(result.errors).toBe(1);
@@ -434,7 +434,7 @@ describe("fidelity: parseCargoClippyJson", () => {
   });
 
   it("clean clippy output: zero diagnostics", () => {
-    const result = parseCargoClippyJson(CLIPPY_CLEAN);
+    const result = parseCargoClippyJson(CLIPPY_CLEAN, 0);
 
     expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
@@ -443,7 +443,7 @@ describe("fidelity: parseCargoClippyJson", () => {
   });
 
   it("multiple diagnostics in same file: all captured with distinct locations", () => {
-    const result = parseCargoClippyJson(CLIPPY_SAME_FILE);
+    const result = parseCargoClippyJson(CLIPPY_SAME_FILE, 0);
 
     expect(result.total).toBe(4);
     expect(result.diagnostics).toHaveLength(4);
@@ -470,7 +470,7 @@ describe("fidelity: parseCargoClippyJson", () => {
   });
 
   it("warning without code: code field is undefined", () => {
-    const result = parseCargoClippyJson(CLIPPY_MIXED);
+    const result = parseCargoClippyJson(CLIPPY_MIXED, 0);
 
     // The third diagnostic ("unused variable `x`") has no code
     const noCodeDiag = result.diagnostics.find((d) => d.message === "unused variable `x`");
@@ -485,7 +485,7 @@ describe("fidelity: parseCargoClippyJson", () => {
       "{malformed json: true",
     ].join("\n");
 
-    const result = parseCargoClippyJson(stdout);
+    const result = parseCargoClippyJson(stdout, 0);
 
     expect(result.total).toBe(1);
     expect(result.diagnostics[0].message).toBe("unused variable");

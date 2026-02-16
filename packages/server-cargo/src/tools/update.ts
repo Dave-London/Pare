@@ -43,6 +43,34 @@ export function registerUpdateTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Update all packages in the workspace (--workspace)"),
+        precise: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Update to exactly this version (--precise <VERSION>). " +
+              "Requires a package to be specified.",
+          ),
+        locked: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock is up to date (--locked)"),
+        frozen: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock and cache are up to date (--frozen)"),
+        offline: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run without accessing the network (--offline)"),
+        manifestPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Cargo.toml (--manifest-path <PATH>)"),
         compact: z
           .boolean()
           .optional()
@@ -53,20 +81,35 @@ export function registerUpdateTool(server: McpServer) {
       },
       outputSchema: CargoUpdateResultSchema,
     },
-    async ({ path, package: pkg, dryRun, aggressive, workspace, compact }) => {
+    async ({
+      path,
+      package: pkg,
+      dryRun,
+      aggressive,
+      workspace,
+      precise,
+      locked,
+      frozen,
+      offline,
+      manifestPath,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
-      if (pkg) {
-        assertNoFlagInjection(pkg, "package");
-      }
+      if (pkg) assertNoFlagInjection(pkg, "package");
+      if (precise) assertNoFlagInjection(precise, "precise");
+      if (manifestPath) assertNoFlagInjection(manifestPath, "manifestPath");
 
       const args = ["update"];
-      if (pkg) {
-        args.push("-p", pkg);
-      }
+      if (pkg) args.push("-p", pkg);
       if (dryRun) args.push("--dry-run");
       if (aggressive) args.push("--aggressive");
       if (workspace) args.push("--workspace");
+      if (precise) args.push("--precise", precise);
+      if (locked) args.push("--locked");
+      if (frozen) args.push("--frozen");
+      if (offline) args.push("--offline");
+      if (manifestPath) args.push("--manifest-path", manifestPath);
 
       const result = await cargo(args, cwd);
       const data = parseCargoUpdateOutput(result.stdout, result.stderr, result.exitCode);

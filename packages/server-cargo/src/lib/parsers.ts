@@ -76,14 +76,15 @@ export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTes
 
 /**
  * Parses `cargo clippy --message-format=json` output.
- * Same JSON format as cargo build.
+ * Same JSON format as cargo build. Now includes success field.
  */
-export function parseCargoClippyJson(stdout: string): CargoClippyResult {
+export function parseCargoClippyJson(stdout: string, exitCode: number): CargoClippyResult {
   const diagnostics = parseCompilerMessages(stdout);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
   return {
+    success: exitCode === 0,
     diagnostics,
     total: diagnostics.length,
     errors,
@@ -112,6 +113,7 @@ export function parseCargoRunOutput(
  * Parses `cargo add` output.
  * Lines like: "      Adding serde v1.0.217 to dependencies"
  * Also handles: "      Adding serde v1.0.217 to dev-dependencies"
+ * On failure, captures the error message.
  */
 export function parseCargoAddOutput(
   stdout: string,
@@ -129,16 +131,30 @@ export function parseCargoAddOutput(
     }
   }
 
-  return {
+  const result: CargoAddResult = {
     success: exitCode === 0,
     added,
     total: added.length,
   };
+
+  if (exitCode !== 0) {
+    // Extract error message from stderr
+    const errorLines = stderr
+      .split("\n")
+      .map((l) => l.replace(/^\s*error\s*:\s*/i, "").trim())
+      .filter(Boolean);
+    if (errorLines.length > 0) {
+      result.error = errorLines.join("; ");
+    }
+  }
+
+  return result;
 }
 
 /**
  * Parses `cargo remove` output.
  * Lines like: "      Removing serde from dependencies"
+ * On failure, captures the error message.
  */
 export function parseCargoRemoveOutput(
   stdout: string,
@@ -156,11 +172,23 @@ export function parseCargoRemoveOutput(
     }
   }
 
-  return {
+  const result: CargoRemoveResult = {
     success: exitCode === 0,
     removed,
     total: removed.length,
   };
+
+  if (exitCode !== 0) {
+    const errorLines = stderr
+      .split("\n")
+      .map((l) => l.replace(/^\s*error\s*:\s*/i, "").trim())
+      .filter(Boolean);
+    if (errorLines.length > 0) {
+      result.error = errorLines.join("; ");
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -220,8 +248,13 @@ export function parseCargoFmtOutput(
  * Parses `cargo doc` output.
  * Counts "warning:" or "warning[" lines from stderr,
  * excluding the summary line "warning: N warnings emitted".
+ * Optionally extracts the output directory path.
  */
-export function parseCargoDocOutput(stderr: string, exitCode: number): CargoDocResult {
+export function parseCargoDocOutput(
+  stderr: string,
+  exitCode: number,
+  cwd?: string,
+): CargoDocResult {
   const lines = stderr.split("\n");
   let warnings = 0;
 
@@ -231,10 +264,17 @@ export function parseCargoDocOutput(stderr: string, exitCode: number): CargoDocR
     }
   }
 
-  return {
+  const result: CargoDocResult = {
     success: exitCode === 0,
     warnings,
   };
+
+  // Report the doc output directory if available
+  if (cwd) {
+    result.outputDir = `${cwd}/target/doc`;
+  }
+
+  return result;
 }
 
 /**
@@ -255,9 +295,21 @@ export function parseCargoUpdateOutput(
 
 /**
  * Parses `cargo tree` output.
- * Returns the full tree text and counts unique package names.
+ * Returns the full tree text, counts unique package names, and success flag.
  */
-export function parseCargoTreeOutput(stdout: string): CargoTreeResult {
+export function parseCargoTreeOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): CargoTreeResult {
+  if (exitCode !== 0) {
+    return {
+      success: false,
+      tree: stderr.trim() || undefined,
+      packages: 0,
+    };
+  }
+
   const tree = stdout.trim();
   const lines = tree.split("\n").filter(Boolean);
 
@@ -273,6 +325,7 @@ export function parseCargoTreeOutput(stdout: string): CargoTreeResult {
   }
 
   return {
+    success: true,
     tree,
     packages: packageNames.size,
   };
@@ -309,20 +362,39 @@ function cvssToSeverity(
 
 /**
  * Parses `cargo audit --json` output.
- * Returns structured vulnerability data with severity summary.
+ * Returns structured vulnerability data with severity summary and success flag.
  */
-export function parseCargoAuditJson(jsonStr: string): CargoAuditResult {
-  const data = JSON.parse(jsonStr);
+export function parseCargoAuditJson(jsonStr: string, exitCode: number): CargoAuditResult {
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(jsonStr);
+  } catch {
+    return {
+      success: false,
+      vulnerabilities: [],
+      summary: {
+        total: 0,
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        informational: 0,
+        unknown: 0,
+      },
+    };
+  }
 
   type Severity = "critical" | "high" | "medium" | "low" | "informational" | "unknown";
 
-  const vulnList = data.vulnerabilities?.list ?? [];
+  const vulnData = data.vulnerabilities as { list?: Array<Record<string, unknown>> } | undefined;
+  const vulnList = vulnData?.list ?? [];
   const vulnerabilities = vulnList.map(
     (v: {
       advisory?: {
         id?: string;
         title?: string;
         url?: string;
+        date?: string;
         cvss?: string | null;
       };
       package?: { name?: string; version?: string };
@@ -339,6 +411,7 @@ export function parseCargoAuditJson(jsonStr: string): CargoAuditResult {
         severity: cvssToSeverity(advisory.cvss) as Severity,
         title: advisory.title ?? "Unknown vulnerability",
         url: advisory.url || undefined,
+        date: advisory.date || undefined,
         patched: versions.patched ?? [],
         unaffected: versions.unaffected ?? [],
       };
@@ -362,7 +435,11 @@ export function parseCargoAuditJson(jsonStr: string): CargoAuditResult {
     }
   }
 
-  return { vulnerabilities, summary };
+  return {
+    success: exitCode === 0 || vulnerabilities.length === 0,
+    vulnerabilities,
+    summary,
+  };
 }
 
 function parseCompilerMessages(stdout: string) {

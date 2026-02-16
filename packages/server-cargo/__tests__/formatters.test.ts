@@ -156,6 +156,7 @@ describe("formatCargoTest", () => {
 describe("formatCargoClippy", () => {
   it("formats clean clippy result", () => {
     const data: CargoClippyResult = {
+      success: true,
       diagnostics: [],
       total: 0,
       errors: 0,
@@ -166,6 +167,7 @@ describe("formatCargoClippy", () => {
 
   it("formats clippy result with warnings", () => {
     const data: CargoClippyResult = {
+      success: false,
       diagnostics: [
         {
           file: "src/main.rs",
@@ -296,6 +298,7 @@ describe("compactTestMap", () => {
 describe("compactClippyMap", () => {
   it("preserves diagnostics when non-empty", () => {
     const data: CargoClippyResult = {
+      success: false,
       diagnostics: [
         {
           file: "src/main.rs",
@@ -319,6 +322,7 @@ describe("compactClippyMap", () => {
 
   it("omits diagnostics when empty", () => {
     const data: CargoClippyResult = {
+      success: true,
       diagnostics: [],
       total: 0,
       errors: 0,
@@ -329,8 +333,10 @@ describe("compactClippyMap", () => {
   });
 
   it("formats compact clippy output", () => {
-    expect(formatClippyCompact({ errors: 0, warnings: 0, total: 0 })).toBe("clippy: no warnings.");
-    expect(formatClippyCompact({ errors: 1, warnings: 3, total: 4 })).toBe(
+    expect(formatClippyCompact({ success: true, errors: 0, warnings: 0, total: 0 })).toBe(
+      "clippy: no warnings.",
+    );
+    expect(formatClippyCompact({ success: false, errors: 1, warnings: 3, total: 4 })).toBe(
       "clippy: 1 errors, 3 warnings",
     );
   });
@@ -455,6 +461,7 @@ describe("compactDocMap", () => {
 describe("formatCargoAudit", () => {
   it("formats no vulnerabilities", () => {
     const data: CargoAuditResult = {
+      success: true,
       vulnerabilities: [],
       summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0, informational: 0, unknown: 0 },
     };
@@ -463,6 +470,7 @@ describe("formatCargoAudit", () => {
 
   it("formats vulnerabilities with patched versions", () => {
     const data: CargoAuditResult = {
+      success: false,
       vulnerabilities: [
         {
           id: "RUSTSEC-2022-0090",
@@ -499,6 +507,7 @@ describe("formatCargoAudit", () => {
 describe("compactAuditMap", () => {
   it("strips vulnerability details and keeps summary counts", () => {
     const data: CargoAuditResult = {
+      success: false,
       vulnerabilities: [
         {
           id: "RUSTSEC-2022-0090",
@@ -513,12 +522,15 @@ describe("compactAuditMap", () => {
     };
     const compact = compactAuditMap(data);
     expect(compact).toEqual({
+      success: false,
       vulnerabilities: [],
       total: 1,
       critical: 1,
       high: 0,
       medium: 0,
       low: 0,
+      informational: 0,
+      unknown: 0,
     });
   });
 
