@@ -42,6 +42,9 @@ export function buildRunExtraArgs(
     onlyChanged?: boolean;
     exitFirst?: boolean;
     passWithNoTests?: boolean;
+    bail?: number | boolean;
+    testNamePattern?: string;
+    workers?: number;
     args?: string[];
   },
 ): string[] {
@@ -149,6 +152,61 @@ export function buildRunExtraArgs(
     extraArgs.push("--passWithNoTests");
   }
 
+  // Bail: fail-fast with optional count
+  if (opts.bail !== undefined && opts.bail !== false) {
+    const n = opts.bail === true ? 1 : opts.bail;
+    switch (framework) {
+      case "pytest":
+        extraArgs.push(`--maxfail=${n}`);
+        break;
+      case "jest":
+        extraArgs.push(`--bail=${n}`);
+        break;
+      case "vitest":
+        extraArgs.push(`--bail=${n}`);
+        break;
+      case "mocha":
+        extraArgs.push("--bail");
+        break;
+    }
+  }
+
+  // Test name pattern: filter tests by name
+  if (opts.testNamePattern) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push("-k", opts.testNamePattern);
+        break;
+      case "jest":
+        extraArgs.push(`--testNamePattern=${opts.testNamePattern}`);
+        break;
+      case "vitest":
+        extraArgs.push(`--grep=${opts.testNamePattern}`);
+        break;
+      case "mocha":
+        extraArgs.push("--grep", opts.testNamePattern);
+        break;
+    }
+  }
+
+  // Workers: parallel execution
+  if (opts.workers !== undefined) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push("-n", String(opts.workers));
+        break;
+      case "jest":
+        extraArgs.push(`--maxWorkers=${opts.workers}`);
+        break;
+      case "vitest":
+        extraArgs.push(`--pool.threads.maxThreads=${opts.workers}`);
+        break;
+      case "mocha":
+        extraArgs.push("--jobs", String(opts.workers));
+        break;
+    }
+  }
+
   return extraArgs;
 }
 
@@ -215,6 +273,27 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Exit successfully when no tests are found (maps to --passWithNoTests for jest/vitest)",
           ),
+        bail: z
+          .union([z.number().int().min(1), z.boolean()])
+          .optional()
+          .describe(
+            "Fail fast after N failures (maps to --maxfail=N for pytest, --bail=N for jest/vitest, --bail for mocha). Pass true for 1.",
+          ),
+        testNamePattern: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Filter tests by name pattern (maps to -k for pytest, --testNamePattern for jest, --grep for vitest/mocha)",
+          ),
+        workers: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe(
+            "Number of parallel workers (maps to -n for pytest-xdist, --maxWorkers for jest, --pool.threads.maxThreads for vitest, --jobs for mocha)",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -242,6 +321,9 @@ export function registerRunTool(server: McpServer) {
       onlyChanged,
       exitFirst,
       passWithNoTests,
+      bail,
+      testNamePattern,
+      workers,
       args,
       compact,
     }) => {
@@ -257,6 +339,9 @@ export function registerRunTool(server: McpServer) {
       if (config) {
         assertNoFlagInjection(config, "config");
       }
+      if (testNamePattern) {
+        assertNoFlagInjection(testNamePattern, "testNamePattern");
+      }
 
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
@@ -269,6 +354,9 @@ export function registerRunTool(server: McpServer) {
         onlyChanged,
         exitFirst,
         passWithNoTests,
+        bail,
+        testNamePattern,
+        workers,
         args,
       });
 
