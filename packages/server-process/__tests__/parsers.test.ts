@@ -71,3 +71,38 @@ describe("parseRunOutput", () => {
     expect(result.signal).toBeUndefined();
   });
 });
+
+describe("parseRunOutput — maxOutputLines truncation", () => {
+  it("truncates stdout to maxOutputLines", () => {
+    const stdout = "line1\nline2\nline3\nline4\nline5\n";
+    const result = parseRunOutput("cmd", stdout, "", 0, 100, false, undefined, 3);
+
+    expect(result.stdout).toBe("line1\nline2\nline3");
+    expect(result.stdoutTruncatedLines).toBe(2);
+    expect(result.stderrTruncatedLines).toBeUndefined();
+  });
+
+  it("truncates stderr to maxOutputLines", () => {
+    const stderr = "err1\nerr2\nerr3\nerr4\n";
+    const result = parseRunOutput("cmd", "", stderr, 1, 100, false, undefined, 2);
+
+    expect(result.stderr).toBe("err1\nerr2");
+    expect(result.stderrTruncatedLines).toBe(2);
+  });
+
+  it("does not truncate when output is within limit", () => {
+    const stdout = "line1\nline2\n";
+    const result = parseRunOutput("cmd", stdout, "", 0, 100, false, undefined, 10);
+
+    expect(result.stdout).toBe("line1\nline2");
+    expect(result.stdoutTruncatedLines).toBeUndefined();
+  });
+
+  it("does not truncate when maxOutputLines is not set", () => {
+    const stdout = "line1\nline2\nline3\nline4\nline5\n";
+    const result = parseRunOutput("cmd", stdout, "", 0, 100, false);
+
+    expect(result.stdout).toBe("line1\nline2\nline3\nline4\nline5");
+    expect(result.stdoutTruncatedLines).toBeUndefined();
+  });
+});

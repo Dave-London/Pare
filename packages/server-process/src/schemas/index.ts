@@ -10,6 +10,8 @@ export const ProcessRunResultSchema = z.object({
   duration: z.number(),
   timedOut: z.boolean(),
   signal: z.string().optional(),
+  stdoutTruncatedLines: z.number().optional(),
+  stderrTruncatedLines: z.number().optional(),
 });
 
 export type ProcessRunResult = z.infer<typeof ProcessRunResultSchema>;

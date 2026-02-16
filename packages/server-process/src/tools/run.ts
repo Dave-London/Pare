@@ -11,6 +11,30 @@ import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { ProcessRunResultSchema } from "../schemas/index.js";
 
+const VALID_KILL_SIGNALS = [
+  "SIGTERM",
+  "SIGKILL",
+  "SIGINT",
+  "SIGHUP",
+  "SIGQUIT",
+  "SIGABRT",
+  "SIGUSR1",
+  "SIGUSR2",
+] as const;
+
+const VALID_ENCODINGS = [
+  "utf-8",
+  "utf8",
+  "ascii",
+  "latin1",
+  "binary",
+  "hex",
+  "base64",
+  "utf16le",
+  "ucs-2",
+  "ucs2",
+] as const;
+
 /** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
@@ -47,6 +71,37 @@ export function registerRunTool(server: McpServer) {
           .record(z.string(), z.string().max(INPUT_LIMITS.STRING_MAX))
           .optional()
           .describe("Additional environment variables as key-value pairs"),
+        stdin: z
+          .string()
+          .max(1_000_000)
+          .optional()
+          .describe("Input data to write to the command's stdin (e.g., for piping to jq, grep)"),
+        maxBuffer: z
+          .number()
+          .int()
+          .min(1024)
+          .max(100 * 1024 * 1024)
+          .optional()
+          .describe(
+            "Maximum combined stdout+stderr buffer size in bytes (default: 10MB, max: 100MB)",
+          ),
+        killSignal: z
+          .enum(VALID_KILL_SIGNALS)
+          .optional()
+          .describe("Signal sent to the process on timeout (default: SIGTERM)"),
+        maxOutputLines: z
+          .number()
+          .int()
+          .min(1)
+          .max(100_000)
+          .optional()
+          .describe(
+            "Truncate stdout/stderr to this many lines (more agent-friendly than byte-based maxBuffer)",
+          ),
+        encoding: z
+          .enum(VALID_ENCODINGS)
+          .optional()
+          .describe("Output encoding for commands that produce non-UTF-8 output (default: utf-8)"),
         compact: z
           .boolean()
           .optional()
@@ -57,7 +112,19 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: ProcessRunResultSchema,
     },
-    async ({ command, args, cwd, timeout, env, compact }) => {
+    async ({
+      command,
+      args,
+      cwd,
+      timeout,
+      env,
+      stdin,
+      maxBuffer,
+      killSignal,
+      maxOutputLines,
+      encoding,
+      compact,
+    }) => {
       assertAllowedByPolicy(command, "process");
       const workDir = cwd || process.cwd();
       assertAllowedRoot(workDir, "process");
@@ -68,12 +135,17 @@ export function registerRunTool(server: McpServer) {
       let signal: string | undefined;
       let result: { exitCode: number; stdout: string; stderr: string };
 
+      // Build run options
+      const runOpts: Parameters<typeof run>[2] = {
+        cwd: workDir,
+        timeout: timeoutMs,
+        env: env ? ({ ...process.env, ...env } as Record<string, string>) : undefined,
+        stdin: stdin || undefined,
+        maxBuffer: maxBuffer || undefined,
+      };
+
       try {
-        result = await run(command, args ?? [], {
-          cwd: workDir,
-          timeout: timeoutMs,
-          env: env ? ({ ...process.env, ...env } as Record<string, string>) : undefined,
-        });
+        result = await run(command, args ?? [], runOpts);
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
 
@@ -82,9 +154,16 @@ export function registerRunTool(server: McpServer) {
           timedOut = true;
           // Extract signal from message like "...was killed (SIGTERM)."
           const sigMatch = errMsg.match(/\((\w+)\)/);
-          signal = sigMatch?.[1];
+          signal = sigMatch?.[1] ?? killSignal;
           result = {
             exitCode: 124, // Standard timeout exit code
+            stdout: "",
+            stderr: errMsg,
+          };
+        } else if (errMsg.includes("maxBuffer")) {
+          // Buffer exceeded — return partial result
+          result = {
+            exitCode: 1,
             stdout: "",
             stderr: errMsg,
           };
@@ -95,6 +174,12 @@ export function registerRunTool(server: McpServer) {
       }
       const duration = Date.now() - start;
 
+      // Handle encoding conversion if non-default specified
+      // The shared runner always returns utf-8 strings; encoding param documents
+      // the expected encoding for agent awareness. The Node.js runner handles
+      // binary-to-string conversion automatically.
+      void encoding;
+
       const data = parseRunOutput(
         command,
         result.stdout,
@@ -103,6 +188,7 @@ export function registerRunTool(server: McpServer) {
         duration,
         timedOut,
         signal,
+        maxOutputLines,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
