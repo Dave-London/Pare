@@ -91,6 +91,23 @@ describe("run", () => {
   });
 });
 
+describe("run – env and edge cases", () => {
+  it("passes custom env vars to the child process", async () => {
+    const result = await run("node", ["-e", "console.log(process.env.PARE_TEST_VAR)"], {
+      env: { PARE_TEST_VAR: "hello_from_test" },
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe("hello_from_test");
+  });
+
+  it("rejects with permission denied on EACCES", async () => {
+    // Try to execute a directory — triggers EACCES on Unix
+    if (process.platform !== "win32") {
+      await expect(run("/tmp", [])).rejects.toThrow(/[Pp]ermission denied|EACCES/);
+    }
+  });
+});
+
 describe("run – timeout and process cleanup", () => {
   const FIXTURE_PATH = resolve(__dirname, "fixtures/parent-with-children.cjs");
 
