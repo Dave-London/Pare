@@ -64,7 +64,8 @@ export function formatGoVet(data: GoVetResult): string {
   const lines = [`go vet: ${data.total} issues`];
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
-    lines.push(`  ${d.file}:${d.line}${col}: ${d.message}`);
+    const analyzer = d.analyzer ? ` (${d.analyzer})` : "";
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message}${analyzer}`);
   }
   return lines.join("\n");
 }
@@ -77,8 +78,20 @@ export function formatGoRun(data: GoRunResult): string {
   } else {
     lines.push(`go run: exit code ${data.exitCode}.`);
   }
-  if (data.stdout) lines.push(data.stdout);
-  if (data.stderr) lines.push(data.stderr);
+  if (data.stdout) {
+    if (data.stdoutTruncated) {
+      lines.push(data.stdout + "\n[stdout truncated]");
+    } else {
+      lines.push(data.stdout);
+    }
+  }
+  if (data.stderr) {
+    if (data.stderrTruncated) {
+      lines.push(data.stderr + "\n[stderr truncated]");
+    } else {
+      lines.push(data.stderr);
+    }
+  }
   return lines.join("\n");
 }
 
@@ -199,18 +212,23 @@ export function formatFmtCompact(data: GoFmtCompact): string {
   return `gofmt: ${data.filesChanged} files`;
 }
 
-/** Compact run: exitCode, success. Drop stdout/stderr. */
+/** Compact run: exitCode, success, truncation flags. Drop stdout/stderr. */
 export interface GoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
+  stdoutTruncated?: boolean;
+  stderrTruncated?: boolean;
 }
 
 export function compactRunMap(data: GoRunResult): GoRunCompact {
-  return {
+  const compact: GoRunCompact = {
     exitCode: data.exitCode,
     success: data.success,
   };
+  if (data.stdoutTruncated) compact.stdoutTruncated = true;
+  if (data.stderrTruncated) compact.stderrTruncated = true;
+  return compact;
 }
 
 export function formatRunCompact(data: GoRunCompact): string {
@@ -310,8 +328,23 @@ export function formatEnvCompact(data: GoEnvCompact): string {
 
 // ── list ─────────────────────────────────────────────────────────────
 
-/** Formats structured go list results into a human-readable package listing. */
+/** Formats structured go list results into a human-readable listing. */
 export function formatGoList(data: GoListResult): string {
+  // Module mode
+  if (data.modules && data.modules.length > 0) {
+    const lines = [`go list: ${data.total} modules`];
+    for (const mod of data.modules) {
+      const version = mod.version ? `@${mod.version}` : "";
+      const flags: string[] = [];
+      if (mod.main) flags.push("main");
+      if (mod.indirect) flags.push("indirect");
+      const suffix = flags.length > 0 ? ` [${flags.join(", ")}]` : "";
+      lines.push(`  ${mod.path}${version}${suffix}`);
+    }
+    return lines.join("\n");
+  }
+
+  // Package mode
   if (data.total === 0) return "go list: no packages found.";
 
   const lines = [`go list: ${data.total} packages`];
@@ -323,7 +356,7 @@ export function formatGoList(data: GoListResult): string {
   return lines.join("\n");
 }
 
-/** Compact list: success + total count only. Drop individual package details. */
+/** Compact list: success + total count only. Drop individual package/module details. */
 export interface GoListCompact {
   [key: string]: unknown;
   success: boolean;
@@ -347,28 +380,45 @@ export function formatListCompact(data: GoListCompact): string {
 /** Formats structured go get results into a human-readable summary. */
 export function formatGoGet(data: GoGetResult): string {
   if (data.success) {
-    return data.output ? `go get: success.\n${data.output}` : "go get: success.";
+    const lines = ["go get: success."];
+    if (data.resolvedPackages && data.resolvedPackages.length > 0) {
+      for (const rp of data.resolvedPackages) {
+        if (rp.previousVersion) {
+          lines.push(`  ${rp.package} ${rp.previousVersion} => ${rp.newVersion}`);
+        } else {
+          lines.push(`  ${rp.package} ${rp.newVersion} (added)`);
+        }
+      }
+    } else if (data.output) {
+      lines.push(data.output);
+    }
+    return lines.join("\n");
   }
   return `go get: FAIL\n${data.output}`;
 }
 
-/** Compact get: success. Output included when non-empty. */
+/** Compact get: success + resolved package count. Drop individual details. */
 export interface GoGetCompact {
   [key: string]: unknown;
   success: boolean;
+  resolvedCount: number;
   output?: string;
 }
 
 export function compactGetMap(data: GoGetResult): GoGetCompact {
   const compact: GoGetCompact = {
     success: data.success,
+    resolvedCount: data.resolvedPackages?.length ?? 0,
   };
-  if (data.output) compact.output = data.output;
+  if (!data.resolvedPackages?.length && data.output) compact.output = data.output;
   return compact;
 }
 
 export function formatGetCompact(data: GoGetCompact): string {
-  if (data.success) return "go get: success.";
+  if (data.success) {
+    if (data.resolvedCount > 0) return `go get: success, ${data.resolvedCount} packages resolved.`;
+    return "go get: success.";
+  }
   return "go get: FAIL";
 }
 

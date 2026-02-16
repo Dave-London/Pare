@@ -13,7 +13,7 @@ export function registerVetTool(server: McpServer) {
     {
       title: "Go Vet",
       description:
-        "Runs go vet and returns structured static analysis diagnostics. Use instead of running `go vet` in the terminal.",
+        "Runs go vet and returns structured static analysis diagnostics with analyzer names. Uses -json flag for native JSON output with automatic text fallback. Use instead of running `go vet` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -67,7 +67,7 @@ export function registerVetTool(server: McpServer) {
       }
       if (vettool) assertNoFlagInjection(vettool, "vettool");
 
-      const args = ["vet"];
+      const args = ["vet", "-json"];
       if (tags && tags.length > 0) {
         for (const t of tags) {
           assertNoFlagInjection(t, "tags");

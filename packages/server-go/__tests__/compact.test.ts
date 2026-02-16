@@ -495,6 +495,7 @@ describe("compactGetMap", () => {
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(true);
+    expect(compact.resolvedCount).toBe(0);
     expect(compact.output).toBe("go: downloading github.com/pkg/errors v0.9.1");
   });
 
@@ -507,6 +508,7 @@ describe("compactGetMap", () => {
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(true);
+    expect(compact.resolvedCount).toBe(0);
     expect(compact).not.toHaveProperty("output");
   });
 
@@ -519,18 +521,41 @@ describe("compactGetMap", () => {
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(false);
+    expect(compact.resolvedCount).toBe(0);
     expect(compact.output).toBe(
       'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
     );
+  });
+
+  it("includes resolvedCount when packages are resolved", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
+      resolvedPackages: [
+        { package: "golang.org/x/text", previousVersion: "v0.3.7", newVersion: "v0.14.0" },
+      ],
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.resolvedCount).toBe(1);
+    expect(compact).not.toHaveProperty("output");
   });
 });
 
 describe("formatGetCompact", () => {
   it("formats successful get", () => {
-    expect(formatGetCompact({ success: true })).toBe("go get: success.");
+    expect(formatGetCompact({ success: true, resolvedCount: 0 })).toBe("go get: success.");
   });
 
   it("formats failed get", () => {
-    expect(formatGetCompact({ success: false })).toBe("go get: FAIL");
+    expect(formatGetCompact({ success: false, resolvedCount: 0 })).toBe("go get: FAIL");
+  });
+
+  it("formats successful get with resolved packages", () => {
+    expect(formatGetCompact({ success: true, resolvedCount: 3 })).toBe(
+      "go get: success, 3 packages resolved.",
+    );
   });
 });
