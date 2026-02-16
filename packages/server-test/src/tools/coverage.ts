@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage } from "../lib/parsers/pytest.js";
 import { parseJestCoverage } from "../lib/parsers/jest.js";
@@ -10,28 +10,44 @@ import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../li
 import { CoverageSchema } from "../schemas/index.js";
 
 /** Exported for unit testing. */
-export function getCoverageCommand(framework: Framework): { cmd: string; cmdArgs: string[] } {
+export function getCoverageCommand(
+  framework: Framework,
+  extraArgs: string[],
+): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
       return {
         cmd: "python",
-        cmdArgs: ["-m", "pytest", "--cov", "--cov-report=term-missing", "-q"],
+        cmdArgs: ["-m", "pytest", "--cov", "--cov-report=term-missing", "-q", ...extraArgs],
       };
     case "jest":
-      return { cmd: "npx", cmdArgs: ["jest", "--coverage", "--coverageReporters=text"] };
+      return {
+        cmd: "npx",
+        cmdArgs: ["jest", "--coverage", "--coverageReporters=text", ...extraArgs],
+      };
     case "vitest":
-      return { cmd: "npx", cmdArgs: ["vitest", "run", "--coverage", "--reporter=default"] };
+      return {
+        cmd: "npx",
+        cmdArgs: ["vitest", "run", "--coverage", "--reporter=default", ...extraArgs],
+      };
     case "mocha":
-      return { cmd: "npx", cmdArgs: ["nyc", "--reporter=text", "mocha"] };
+      return { cmd: "npx", cmdArgs: ["nyc", "--reporter=text", ...extraArgs, "mocha"] };
   }
 }
 
 /** Build extra CLI args for the `coverage` tool. Exported for unit testing. */
 export function buildCoverageExtraArgs(
   framework: Framework,
-  opts: { branch?: boolean; all?: boolean },
+  opts: {
+    branch?: boolean;
+    all?: boolean;
+    filter?: string;
+    source?: string[];
+    exclude?: string[];
+    args?: string[];
+  },
 ): string[] {
-  const extra: string[] = [];
+  const extra: string[] = [...(opts.args || [])];
 
   if (opts.branch && framework === "pytest") {
     extra.push("--cov-branch");
@@ -49,6 +65,60 @@ export function buildCoverageExtraArgs(
         extra.push("--collectCoverageFrom=**/*.{js,jsx,ts,tsx}");
         break;
       case "pytest":
+        break;
+    }
+  }
+
+  // Apply filter
+  if (opts.filter) {
+    switch (framework) {
+      case "pytest":
+        extra.push("-k", opts.filter);
+        break;
+      case "jest":
+        extra.push("--testPathPattern", opts.filter);
+        break;
+      case "vitest":
+        extra.push(opts.filter);
+        break;
+      case "mocha":
+        extra.push("--grep", opts.filter);
+        break;
+    }
+  }
+
+  // Apply source scoping
+  for (const s of opts.source ?? []) {
+    switch (framework) {
+      case "pytest":
+        extra.push(`--cov=${s}`);
+        break;
+      case "jest":
+        extra.push(`--collectCoverageFrom=${s}`);
+        break;
+      case "vitest":
+        extra.push(`--coverage.include=${s}`);
+        break;
+      case "mocha":
+        extra.push("--include", s);
+        break;
+    }
+  }
+
+  // Apply exclude patterns
+  for (const e of opts.exclude ?? []) {
+    switch (framework) {
+      case "pytest":
+        extra.push(`--cov-config=.coveragerc`); // pytest uses config for exclude
+        break;
+      case "jest":
+        extra.push(`--coveragePathIgnorePatterns=${e}`);
+        break;
+      case "vitest":
+        extra.push(`--coverage.exclude=${e}`);
+        break;
+      case "mocha":
+        extra.push("--exclude", e);
         break;
     }
   }
@@ -84,6 +154,31 @@ export function registerCoverageTool(server: McpServer) {
           .describe(
             "Include all source files in coverage, even untested ones (maps to --coverage.all for vitest, --all for nyc)",
           ),
+        filter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Test filter pattern to run coverage on a subset of tests"),
+        source: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe(
+            "Source paths to scope coverage (maps to --cov=PATH for pytest, --collectCoverageFrom for jest, --coverage.include for vitest, --include for nyc)",
+          ),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("File patterns to exclude from coverage"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Additional arguments to pass to the coverage runner"),
         compact: z
           .boolean()
           .optional()
@@ -94,13 +189,30 @@ export function registerCoverageTool(server: McpServer) {
       },
       outputSchema: CoverageSchema,
     },
-    async ({ path, framework, branch, all, compact }) => {
+    async ({ path, framework, branch, all, filter, source, exclude, args, compact }) => {
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
+      for (const s of source ?? []) {
+        assertNoFlagInjection(s, "source");
+      }
+      for (const e of exclude ?? []) {
+        assertNoFlagInjection(e, "exclude");
+      }
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
-      const { cmd, cmdArgs } = getCoverageCommand(detected);
+      const extraArgs = buildCoverageExtraArgs(detected, {
+        branch,
+        all,
+        filter,
+        source,
+        exclude,
+        args,
+      });
 
-      const extraCovArgs = buildCoverageExtraArgs(detected, { branch, all });
-      cmdArgs.push(...extraCovArgs);
+      const { cmd, cmdArgs } = getCoverageCommand(detected, extraArgs);
 
       const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
 
