@@ -121,13 +121,15 @@ export function registerRunTool(server: McpServer) {
       const result = await goCmd(cmdArgs, cwd, timeout);
       const data = parseGoRunOutput(result.stdout, result.stderr, result.exitCode);
 
-      // Apply maxOutput truncation
+      // Apply maxOutput truncation with truncation flag tracking
       if (maxOutput) {
         if (data.stdout && data.stdout.length > maxOutput) {
           data.stdout = data.stdout.slice(0, maxOutput) + "\n... (truncated)";
+          data.stdoutTruncated = true;
         }
         if (data.stderr && data.stderr.length > maxOutput) {
           data.stderr = data.stderr.slice(0, maxOutput) + "\n... (truncated)";
+          data.stderrTruncated = true;
         }
       }
 

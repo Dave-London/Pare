@@ -48,12 +48,14 @@ export const GoTestResultSchema = z.object({
 
 export type GoTestResult = z.infer<typeof GoTestResultSchema>;
 
-/** Zod schema for a single go vet diagnostic with file location and message. */
+/** Zod schema for a single go vet diagnostic with file location, message, and analyzer name. */
 export const GoVetDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
   column: z.number().optional(),
   message: z.string(),
+  /** The analyzer that produced this diagnostic (e.g., "printf", "shadow", "unusedresult"). */
+  analyzer: z.string().optional(),
 });
 
 /** Zod schema for structured go vet output with diagnostic list, total count, and success status. */
@@ -70,6 +72,10 @@ export const GoRunResultSchema = z.object({
   exitCode: z.number(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
+  /** Whether stdout was truncated due to maxOutput limit. */
+  stdoutTruncated: z.boolean().optional(),
+  /** Whether stderr was truncated due to maxOutput limit. */
+  stderrTruncated: z.boolean().optional(),
   success: z.boolean(),
 });
 
@@ -123,19 +129,44 @@ export const GoListPackageSchema = z.object({
   imports: z.array(z.string()).optional(),
 });
 
-/** Zod schema for structured go list output with package list and total count. */
+/** Zod schema for a single Go module from go list -m output. */
+export const GoListModuleSchema = z.object({
+  path: z.string(),
+  version: z.string().optional(),
+  dir: z.string().optional(),
+  goMod: z.string().optional(),
+  goVersion: z.string().optional(),
+  main: z.boolean().optional(),
+  indirect: z.boolean().optional(),
+});
+
+/** Zod schema for structured go list output with package/module list and total count. */
 export const GoListResultSchema = z.object({
   success: z.boolean(),
   packages: z.array(GoListPackageSchema).optional(),
+  /** Module list (populated when modules mode is used). */
+  modules: z.array(GoListModuleSchema).optional(),
   total: z.number(),
 });
 
 export type GoListResult = z.infer<typeof GoListResultSchema>;
 
-/** Zod schema for structured go get output with success status and output text. */
+/** Zod schema for a resolved package from go get output. */
+export const GoGetResolvedPackageSchema = z.object({
+  /** The module/package path. */
+  package: z.string(),
+  /** The version the package was at before this operation, if upgraded. */
+  previousVersion: z.string().optional(),
+  /** The newly resolved version. */
+  newVersion: z.string(),
+});
+
+/** Zod schema for structured go get output with success status, output text, and resolved packages. */
 export const GoGetResultSchema = z.object({
   success: z.boolean(),
   output: z.string().optional(),
+  /** Packages resolved/upgraded by go get with version information. */
+  resolvedPackages: z.array(GoGetResolvedPackageSchema).optional(),
 });
 
 export type GoGetResult = z.infer<typeof GoGetResultSchema>;

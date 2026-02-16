@@ -7,6 +7,7 @@ import {
   formatGoList,
   formatGoGet,
   formatGolangciLint,
+  formatGoRun,
 } from "../src/lib/formatters.js";
 import type {
   GoBuildResult,
@@ -15,6 +16,7 @@ import type {
   GoEnvResult,
   GoListResult,
   GoGetResult,
+  GoRunResult,
   GolangciLintResult,
 } from "../src/schemas/index.js";
 
@@ -226,6 +228,86 @@ describe("formatGoVet", () => {
     expect(output).toContain("main.go:15:2: unreachable code");
     expect(output).toContain("handler.go:30: possible misuse of unsafe.Pointer");
   });
+
+  it("formats vet result with analyzer names", () => {
+    const data: GoVetResult = {
+      success: false,
+      diagnostics: [
+        {
+          file: "main.go",
+          line: 15,
+          column: 2,
+          message: "unreachable code",
+          analyzer: "unreachable",
+        },
+        {
+          file: "handler.go",
+          line: 30,
+          message: "Sprintf format %d reads arg #1, but call has 0 args",
+          analyzer: "printf",
+        },
+      ],
+      total: 2,
+    };
+    const output = formatGoVet(data);
+    expect(output).toContain("go vet: 2 issues");
+    expect(output).toContain("main.go:15:2: unreachable code (unreachable)");
+    expect(output).toContain(
+      "handler.go:30: Sprintf format %d reads arg #1, but call has 0 args (printf)",
+    );
+  });
+});
+
+describe("formatGoRun", () => {
+  it("formats successful run with output", () => {
+    const data: GoRunResult = {
+      success: true,
+      exitCode: 0,
+      stdout: "Hello, World!",
+      stderr: "",
+    };
+    const output = formatGoRun(data);
+    expect(output).toContain("go run: success.");
+    expect(output).toContain("Hello, World!");
+  });
+
+  it("formats failed run", () => {
+    const data: GoRunResult = {
+      success: false,
+      exitCode: 2,
+      stdout: "",
+      stderr: "main.go:5:2: undefined: foo",
+    };
+    const output = formatGoRun(data);
+    expect(output).toContain("go run: exit code 2.");
+    expect(output).toContain("main.go:5:2: undefined: foo");
+  });
+
+  it("formats run with truncated stdout", () => {
+    const data: GoRunResult = {
+      success: true,
+      exitCode: 0,
+      stdout: "lots of output here...\n... (truncated)",
+      stderr: "",
+      stdoutTruncated: true,
+    };
+    const output = formatGoRun(data);
+    expect(output).toContain("go run: success.");
+    expect(output).toContain("[stdout truncated]");
+  });
+
+  it("formats run with truncated stderr", () => {
+    const data: GoRunResult = {
+      success: false,
+      exitCode: 1,
+      stdout: "",
+      stderr: "lots of errors here...\n... (truncated)",
+      stderrTruncated: true,
+    };
+    const output = formatGoRun(data);
+    expect(output).toContain("go run: exit code 1.");
+    expect(output).toContain("[stderr truncated]");
+  });
 });
 
 describe("formatGoEnv", () => {
@@ -297,6 +379,34 @@ describe("formatGoList", () => {
     expect(output).toContain("github.com/user/project (main)");
     expect(output).toContain("github.com/user/project/pkg/util (util)");
   });
+
+  it("formats module list", () => {
+    const data: GoListResult = {
+      success: true,
+      modules: [
+        {
+          path: "github.com/user/project",
+          main: true,
+          dir: "/home/user/project",
+        },
+        {
+          path: "github.com/pkg/errors",
+          version: "v0.9.1",
+        },
+        {
+          path: "golang.org/x/text",
+          version: "v0.14.0",
+          indirect: true,
+        },
+      ],
+      total: 3,
+    };
+    const output = formatGoList(data);
+    expect(output).toContain("go list: 3 modules");
+    expect(output).toContain("github.com/user/project [main]");
+    expect(output).toContain("github.com/pkg/errors@v0.9.1");
+    expect(output).toContain("golang.org/x/text@v0.14.0 [indirect]");
+  });
 });
 
 describe("formatGoGet", () => {
@@ -323,6 +433,30 @@ describe("formatGoGet", () => {
     const output = formatGoGet(data);
     expect(output).toContain("go get: FAIL");
     expect(output).toContain("no matching versions");
+  });
+
+  it("formats go get with resolved packages (upgrades)", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
+      resolvedPackages: [
+        { package: "golang.org/x/text", previousVersion: "v0.3.7", newVersion: "v0.14.0" },
+      ],
+    };
+    const output = formatGoGet(data);
+    expect(output).toContain("go get: success.");
+    expect(output).toContain("golang.org/x/text v0.3.7 => v0.14.0");
+  });
+
+  it("formats go get with added packages", () => {
+    const data: GoGetResult = {
+      success: true,
+      output: "go: added github.com/pkg/errors v0.9.1",
+      resolvedPackages: [{ package: "github.com/pkg/errors", newVersion: "v0.9.1" }],
+    };
+    const output = formatGoGet(data);
+    expect(output).toContain("go get: success.");
+    expect(output).toContain("github.com/pkg/errors v0.9.1 (added)");
   });
 });
 

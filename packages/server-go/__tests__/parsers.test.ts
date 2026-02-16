@@ -5,6 +5,7 @@ import {
   parseGoVetOutput,
   parseGoEnvOutput,
   parseGoListOutput,
+  parseGoListModulesOutput,
   parseGoGetOutput,
   parseGolangciLintJson,
 } from "../src/lib/parsers.js";
@@ -305,7 +306,7 @@ describe("parseGoTestJson", () => {
 });
 
 describe("parseGoVetOutput", () => {
-  it("parses vet diagnostics", () => {
+  it("parses vet diagnostics from text output (fallback)", () => {
     const stderr = [
       "main.go:10:5: printf call has arguments but no formatting directives",
       "utils.go:20: unreachable code",
@@ -314,7 +315,7 @@ describe("parseGoVetOutput", () => {
     const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(2);
-    expect(result.diagnostics[0]).toEqual({
+    expect(result.diagnostics![0]).toEqual({
       file: "main.go",
       line: 10,
       column: 5,
@@ -324,6 +325,124 @@ describe("parseGoVetOutput", () => {
 
   it("parses clean vet", () => {
     const result = parseGoVetOutput("", "", 0);
+    expect(result.total).toBe(0);
+  });
+
+  it("parses go vet -json output with analyzer names", () => {
+    const stdout = JSON.stringify({
+      "myapp/pkg": {
+        printf: {
+          posn: "main.go:10:5",
+          message: "Sprintf format %d reads arg #1, but call has 0 args",
+        },
+        unusedresult: {
+          posn: "util.go:20:3",
+          message: "result of fmt.Sprintf call not used",
+        },
+      },
+    });
+
+    const result = parseGoVetOutput(stdout, "", 2);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(2);
+    expect(result.diagnostics![0]).toEqual({
+      file: "main.go",
+      line: 10,
+      column: 5,
+      message: "Sprintf format %d reads arg #1, but call has 0 args",
+      analyzer: "printf",
+    });
+    expect(result.diagnostics![1]).toEqual({
+      file: "util.go",
+      line: 20,
+      column: 3,
+      message: "result of fmt.Sprintf call not used",
+      analyzer: "unusedresult",
+    });
+  });
+
+  it("parses go vet -json output with multiple packages", () => {
+    const pkg1 = JSON.stringify({
+      "myapp/api": {
+        shadow: {
+          posn: "handler.go:15:4",
+          message: 'declaration of "err" shadows declaration',
+        },
+      },
+    });
+    const pkg2 = JSON.stringify({
+      "myapp/util": {
+        printf: {
+          posn: "format.go:30:2",
+          message: "Sprintf format %s reads arg #1, but call has 0 args",
+        },
+      },
+    });
+
+    const result = parseGoVetOutput(pkg1 + "\n" + pkg2, "", 2);
+
+    expect(result.total).toBe(2);
+    expect(result.diagnostics![0].analyzer).toBe("shadow");
+    expect(result.diagnostics![0].file).toBe("handler.go");
+    expect(result.diagnostics![1].analyzer).toBe("printf");
+    expect(result.diagnostics![1].file).toBe("format.go");
+  });
+
+  it("parses go vet -json with array of diagnostics per analyzer", () => {
+    const stdout = JSON.stringify({
+      "myapp/pkg": {
+        printf: [
+          { posn: "main.go:10:5", message: "first printf issue" },
+          { posn: "main.go:20:3", message: "second printf issue" },
+        ],
+      },
+    });
+
+    const result = parseGoVetOutput(stdout, "", 2);
+
+    expect(result.total).toBe(2);
+    expect(result.diagnostics![0].analyzer).toBe("printf");
+    expect(result.diagnostics![0].message).toBe("first printf issue");
+    expect(result.diagnostics![1].analyzer).toBe("printf");
+    expect(result.diagnostics![1].message).toBe("second printf issue");
+  });
+
+  it("falls back to text parsing when JSON parsing fails", () => {
+    // Non-JSON vet output (older Go or -json not supported)
+    const stderr = "main.go:10:5: unreachable code\nutils.go:20: bad format string";
+
+    const result = parseGoVetOutput("", stderr, 2);
+
+    expect(result.total).toBe(2);
+    expect(result.diagnostics![0].file).toBe("main.go");
+    expect(result.diagnostics![0].line).toBe(10);
+    // No analyzer in text fallback
+    expect(result.diagnostics![0].analyzer).toBeUndefined();
+  });
+
+  it("parses go vet -json with posn without column", () => {
+    const stdout = JSON.stringify({
+      "myapp/pkg": {
+        unreachable: {
+          posn: "main.go:42",
+          message: "unreachable code",
+        },
+      },
+    });
+
+    const result = parseGoVetOutput(stdout, "", 2);
+
+    expect(result.total).toBe(1);
+    expect(result.diagnostics![0].file).toBe("main.go");
+    expect(result.diagnostics![0].line).toBe(42);
+    expect(result.diagnostics![0].column).toBeUndefined();
+    expect(result.diagnostics![0].analyzer).toBe("unreachable");
+  });
+
+  it("parses go vet -json clean output (exit 0, no JSON)", () => {
+    const result = parseGoVetOutput("", "", 0);
+    expect(result.success).toBe(true);
     expect(result.total).toBe(0);
   });
 });
@@ -387,7 +506,7 @@ describe("parseGoListOutput", () => {
     const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
-    expect(result.packages[0]).toEqual({
+    expect(result.packages![0]).toEqual({
       dir: "/home/user/project",
       importPath: "github.com/user/project",
       name: "main",
@@ -413,9 +532,9 @@ describe("parseGoListOutput", () => {
     const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(2);
-    expect(result.packages[0].importPath).toBe("github.com/user/project");
-    expect(result.packages[1].importPath).toBe("github.com/user/project/pkg/util");
-    expect(result.packages[1].name).toBe("util");
+    expect(result.packages![0].importPath).toBe("github.com/user/project");
+    expect(result.packages![1].importPath).toBe("github.com/user/project/pkg/util");
+    expect(result.packages![1].name).toBe("util");
   });
 
   it("handles empty output", () => {
@@ -435,7 +554,7 @@ describe("parseGoListOutput", () => {
     const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
-    expect(result.packages[0].goFiles).toBeUndefined();
+    expect(result.packages![0].goFiles).toBeUndefined();
   });
 
   it("captures Imports field from go list -json output", () => {
@@ -450,7 +569,7 @@ describe("parseGoListOutput", () => {
     const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
-    expect(result.packages[0].imports).toEqual(["fmt", "os", "github.com/user/project/pkg/util"]);
+    expect(result.packages![0].imports).toEqual(["fmt", "os", "github.com/user/project/pkg/util"]);
   });
 
   it("handles package without Imports field", () => {
@@ -464,7 +583,84 @@ describe("parseGoListOutput", () => {
     const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
-    expect(result.packages[0].imports).toBeUndefined();
+    expect(result.packages![0].imports).toBeUndefined();
+  });
+});
+
+describe("parseGoListModulesOutput", () => {
+  it("parses single module", () => {
+    const stdout = JSON.stringify({
+      Path: "github.com/user/project",
+      Main: true,
+      Dir: "/home/user/project",
+      GoMod: "/home/user/project/go.mod",
+      GoVersion: "1.22",
+    });
+
+    const result = parseGoListModulesOutput(stdout, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(1);
+    expect(result.modules![0]).toEqual({
+      path: "github.com/user/project",
+      main: true,
+      dir: "/home/user/project",
+      goMod: "/home/user/project/go.mod",
+      goVersion: "1.22",
+    });
+  });
+
+  it("parses multiple modules (JSONL)", () => {
+    const mod1 = JSON.stringify({
+      Path: "github.com/user/project",
+      Main: true,
+      Dir: "/home/user/project",
+      GoMod: "/home/user/project/go.mod",
+      GoVersion: "1.22",
+    });
+    const mod2 = JSON.stringify({
+      Path: "github.com/pkg/errors",
+      Version: "v0.9.1",
+      Dir: "/home/user/go/pkg/mod/github.com/pkg/errors@v0.9.1",
+      GoMod: "/home/user/go/pkg/mod/cache/download/github.com/pkg/errors/@v/v0.9.1.mod",
+      GoVersion: "1.12",
+    });
+    const mod3 = JSON.stringify({
+      Path: "golang.org/x/text",
+      Version: "v0.14.0",
+      Indirect: true,
+    });
+
+    const result = parseGoListModulesOutput([mod1, mod2, mod3].join("\n"), 0);
+
+    expect(result.total).toBe(3);
+    expect(result.modules![0].path).toBe("github.com/user/project");
+    expect(result.modules![0].main).toBe(true);
+    expect(result.modules![1].path).toBe("github.com/pkg/errors");
+    expect(result.modules![1].version).toBe("v0.9.1");
+    expect(result.modules![2].path).toBe("golang.org/x/text");
+    expect(result.modules![2].indirect).toBe(true);
+  });
+
+  it("handles empty output", () => {
+    const result = parseGoListModulesOutput("", 0);
+
+    expect(result.total).toBe(0);
+    expect(result.modules).toEqual([]);
+  });
+
+  it("handles module without version (main module)", () => {
+    const stdout = JSON.stringify({
+      Path: "github.com/user/project",
+      Main: true,
+      Dir: "/home/user/project",
+    });
+
+    const result = parseGoListModulesOutput(stdout, 0);
+
+    expect(result.total).toBe(1);
+    expect(result.modules![0].version).toBeUndefined();
+    expect(result.modules![0].main).toBe(true);
   });
 });
 
@@ -491,6 +687,82 @@ describe("parseGoGetOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.output).toBeUndefined();
+  });
+
+  it("parses upgraded packages with version resolution", () => {
+    const stderr = [
+      "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
+      "go: upgraded golang.org/x/net v0.8.0 => v0.10.0",
+    ].join("\n");
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.resolvedPackages).toBeDefined();
+    expect(result.resolvedPackages).toHaveLength(2);
+    expect(result.resolvedPackages![0]).toEqual({
+      package: "golang.org/x/text",
+      previousVersion: "v0.3.7",
+      newVersion: "v0.14.0",
+    });
+    expect(result.resolvedPackages![1]).toEqual({
+      package: "golang.org/x/net",
+      previousVersion: "v0.8.0",
+      newVersion: "v0.10.0",
+    });
+  });
+
+  it("parses added packages (no previous version)", () => {
+    const stderr = "go: added github.com/pkg/errors v0.9.1\n";
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.resolvedPackages).toBeDefined();
+    expect(result.resolvedPackages).toHaveLength(1);
+    expect(result.resolvedPackages![0]).toEqual({
+      package: "github.com/pkg/errors",
+      newVersion: "v0.9.1",
+    });
+    expect(result.resolvedPackages![0].previousVersion).toBeUndefined();
+  });
+
+  it("parses downgraded packages", () => {
+    const stderr = "go: downgraded golang.org/x/net v0.10.0 => v0.8.0\n";
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.resolvedPackages).toHaveLength(1);
+    expect(result.resolvedPackages![0]).toEqual({
+      package: "golang.org/x/net",
+      previousVersion: "v0.10.0",
+      newVersion: "v0.8.0",
+    });
+  });
+
+  it("parses mixed added and upgraded packages", () => {
+    const stderr = [
+      "go: downloading github.com/pkg/errors v0.9.1",
+      "go: added github.com/pkg/errors v0.9.1",
+      "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
+    ].join("\n");
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.resolvedPackages).toHaveLength(2);
+    expect(result.resolvedPackages![0].package).toBe("github.com/pkg/errors");
+    expect(result.resolvedPackages![0].previousVersion).toBeUndefined();
+    expect(result.resolvedPackages![1].package).toBe("golang.org/x/text");
+    expect(result.resolvedPackages![1].previousVersion).toBe("v0.3.7");
+  });
+
+  it("returns no resolvedPackages when output has no version lines", () => {
+    const stderr = "go: downloading github.com/pkg/errors v0.9.1\n";
+
+    const result = parseGoGetOutput("", stderr, 0);
+
+    expect(result.resolvedPackages).toBeUndefined();
   });
 });
 

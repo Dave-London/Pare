@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
-import { parseGoListOutput } from "../lib/parsers.js";
+import { parseGoListOutput, parseGoListModulesOutput } from "../lib/parsers.js";
 import { formatGoList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { GoListResultSchema } from "../schemas/index.js";
 
@@ -13,7 +13,7 @@ export function registerListTool(server: McpServer) {
     {
       title: "Go List",
       description:
-        "Lists Go packages and returns structured package information (dir, importPath, name, goFiles, testGoFiles). Use instead of running `go list` in the terminal.",
+        "Lists Go packages or modules and returns structured information. When `modules` is true, lists modules (with path, version, dir); otherwise lists packages (with dir, importPath, name, goFiles, testGoFiles). Use instead of running `go list` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -26,6 +26,14 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Package patterns to list (default: ['./...'])"),
+        modules: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "List modules instead of packages (-m). When true, output uses the modules field " +
+              "with path, version, dir, goMod, goVersion, main, indirect.",
+          ),
         updates: z
           .boolean()
           .optional()
@@ -76,7 +84,18 @@ export function registerListTool(server: McpServer) {
       },
       outputSchema: GoListResultSchema,
     },
-    async ({ path, packages, updates, deps, tolerateErrors, versions, find, tags, compact }) => {
+    async ({
+      path,
+      packages,
+      modules,
+      updates,
+      deps,
+      tolerateErrors,
+      versions,
+      find,
+      tags,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -88,8 +107,11 @@ export function registerListTool(server: McpServer) {
         }
         args.push("-tags", tags.join(","));
       }
-      // -u and -versions require -m (module mode); auto-enable it
-      if (updates || versions) {
+
+      // Determine if module mode should be enabled
+      const useModuleMode = modules || updates || versions;
+
+      if (useModuleMode) {
         args.push("-m");
         if (updates) args.push("-u");
         if (versions) args.push("-versions");
@@ -99,7 +121,12 @@ export function registerListTool(server: McpServer) {
       if (find) args.push("-find");
       args.push(...(packages || ["./..."]));
       const result = await goCmd(args, cwd);
-      const data = parseGoListOutput(result.stdout, result.exitCode);
+
+      // Parse based on mode
+      const data = useModuleMode
+        ? parseGoListModulesOutput(result.stdout, result.exitCode)
+        : parseGoListOutput(result.stdout, result.exitCode);
+
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

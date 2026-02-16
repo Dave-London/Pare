@@ -207,8 +207,129 @@ interface GoTestEvent {
   Output?: string;
 }
 
-/** Parses `go vet` output into structured diagnostics with file locations, messages, and success status. */
+/**
+ * Parses `go vet -json` output into structured diagnostics.
+ *
+ * The `-json` flag produces output grouped by package. Each package entry is a JSON
+ * object keyed by package import path, containing analyzer results:
+ * ```json
+ * {
+ *   "<package>": {
+ *     "<analyzer>": {
+ *       "posn": "file.go:10:5",
+ *       "message": "..."
+ *     }
+ *     // or an array of diagnostics per analyzer
+ *   }
+ * }
+ * ```
+ *
+ * Falls back to text parsing if JSON parsing fails (e.g., older Go versions).
+ */
 export function parseGoVetOutput(stdout: string, stderr: string, exitCode: number): GoVetResult {
+  // Try JSON parsing first (go vet -json)
+  const jsonResult = tryParseGoVetJson(stdout, stderr);
+  if (jsonResult) {
+    return { ...jsonResult, success: exitCode === 0 };
+  }
+
+  // Fallback: text parsing
+  return parseGoVetText(stdout, stderr, exitCode);
+}
+
+/**
+ * Attempt to parse `go vet -json` structured output.
+ * Returns null if the output doesn't look like JSON.
+ *
+ * go vet -json emits one JSON object per package on stdout/stderr.
+ * The structure is: { "<package-path>": { "<analyzer>": <diagnostic-or-array> } }
+ * Each diagnostic has: { posn: "file:line:col", message: "..." }
+ */
+function tryParseGoVetJson(
+  stdout: string,
+  stderr: string,
+): { diagnostics: GoVetResult["diagnostics"]; total: number } | null {
+  // go vet -json writes JSON to stdout; stderr may have non-JSON messages
+  const combined = (stdout + "\n" + stderr).trim();
+  if (!combined || !combined.includes("{")) return null;
+
+  const diagnostics: {
+    file: string;
+    line: number;
+    column?: number;
+    message: string;
+    analyzer?: string;
+  }[] = [];
+
+  // go vet -json outputs concatenated JSON objects (one per package)
+  const chunks = splitJsonObjects(combined);
+  if (chunks.length === 0) return null;
+
+  let parsedAny = false;
+
+  for (const chunk of chunks) {
+    let pkgObj: Record<string, Record<string, unknown>>;
+    try {
+      pkgObj = JSON.parse(chunk);
+    } catch {
+      continue;
+    }
+
+    // Each top-level key is a package path
+    for (const [, analyzerMap] of Object.entries(pkgObj)) {
+      if (typeof analyzerMap !== "object" || analyzerMap === null) continue;
+
+      // Each key in the analyzerMap is an analyzer name
+      for (const [analyzerName, diagData] of Object.entries(
+        analyzerMap as Record<string, unknown>,
+      )) {
+        const diagItems = Array.isArray(diagData) ? diagData : [diagData];
+        for (const item of diagItems) {
+          if (typeof item !== "object" || item === null) continue;
+          const diag = item as { posn?: string; message?: string };
+          if (!diag.posn || !diag.message) continue;
+
+          parsedAny = true;
+          const parsed = parseVetPosn(diag.posn);
+          diagnostics.push({
+            file: parsed.file,
+            line: parsed.line,
+            column: parsed.column,
+            message: diag.message,
+            analyzer: analyzerName,
+          });
+        }
+      }
+    }
+  }
+
+  if (!parsedAny) return null;
+
+  return { diagnostics, total: diagnostics.length };
+}
+
+/** Parse a posn string like "file.go:10:5" or "file.go:10" into components. */
+function parseVetPosn(posn: string): { file: string; line: number; column?: number } {
+  // posn format: "file.go:line:col" or "file.go:line"
+  const parts = posn.split(":");
+  if (parts.length >= 3) {
+    return {
+      file: parts.slice(0, -2).join(":"),
+      line: parseInt(parts[parts.length - 2], 10) || 0,
+      column: parseInt(parts[parts.length - 1], 10) || undefined,
+    };
+  }
+  if (parts.length === 2) {
+    return {
+      file: parts[0],
+      line: parseInt(parts[1], 10) || 0,
+    };
+  }
+  return { file: posn, line: 0 };
+}
+
+/** Fallback text parser for go vet output (non-JSON mode). */
+function parseGoVetText(stdout: string, stderr: string, exitCode: number): GoVetResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const diagnostics: { file: string; line: number; column?: number; message: string }[] = [];
@@ -364,6 +485,47 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
   return { success: exitCode === 0, packages, total: packages.length };
 }
 
+/**
+ * Parses `go list -json -m` output into structured result with module list and total count.
+ * go list -json -m emits concatenated JSON objects, one per module.
+ */
+export function parseGoListModulesOutput(stdout: string, exitCode: number): GoListResult {
+  const modules: {
+    path: string;
+    version?: string;
+    dir?: string;
+    goMod?: string;
+    goVersion?: string;
+    main?: boolean;
+    indirect?: boolean;
+  }[] = [];
+
+  if (!stdout.trim()) {
+    return { success: exitCode === 0, modules, total: 0 };
+  }
+
+  const chunks = splitJsonObjects(stdout);
+
+  for (const chunk of chunks) {
+    try {
+      const mod = JSON.parse(chunk);
+      modules.push({
+        path: mod.Path ?? "",
+        version: mod.Version || undefined,
+        dir: mod.Dir || undefined,
+        goMod: mod.GoMod || undefined,
+        goVersion: mod.GoVersion || undefined,
+        main: mod.Main || undefined,
+        indirect: mod.Indirect || undefined,
+      });
+    } catch {
+      // skip malformed JSON chunks
+    }
+  }
+
+  return { success: exitCode === 0, modules, total: modules.length };
+}
+
 /** Splits concatenated JSON objects from go list -json output. */
 function splitJsonObjects(text: string): string[] {
   const results: string[] = [];
@@ -463,11 +625,54 @@ interface GolangciLintJsonOutput {
   }>;
 }
 
-/** Parses `go get` output into structured result with success status and output text. */
+/**
+ * Regex patterns for go get output lines that indicate version resolution.
+ * Matches lines like:
+ *   go: upgraded golang.org/x/text v0.3.7 => v0.14.0
+ *   go: added github.com/pkg/errors v0.9.1
+ *   go: downgraded golang.org/x/net v0.10.0 => v0.8.0
+ */
+const GO_GET_UPGRADED_RE = /^go: (?:upgraded|downgraded)\s+(\S+)\s+(\S+)\s+=>\s+(\S+)$/;
+const GO_GET_ADDED_RE = /^go: added\s+(\S+)\s+(\S+)$/;
+
+/** Parses `go get` output into structured result with success status, output text, and resolved packages. */
 export function parseGoGetOutput(stdout: string, stderr: string, exitCode: number): GoGetResult {
   const combined = (stdout + "\n" + stderr).trim();
+  const resolvedPackages: {
+    package: string;
+    previousVersion?: string;
+    newVersion: string;
+  }[] = [];
+
+  const lines = combined.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Match "go: upgraded <pkg> <old> => <new>" or "go: downgraded <pkg> <old> => <new>"
+    const upgradeMatch = trimmed.match(GO_GET_UPGRADED_RE);
+    if (upgradeMatch) {
+      resolvedPackages.push({
+        package: upgradeMatch[1],
+        previousVersion: upgradeMatch[2],
+        newVersion: upgradeMatch[3],
+      });
+      continue;
+    }
+
+    // Match "go: added <pkg> <version>"
+    const addedMatch = trimmed.match(GO_GET_ADDED_RE);
+    if (addedMatch) {
+      resolvedPackages.push({
+        package: addedMatch[1],
+        newVersion: addedMatch[2],
+      });
+      continue;
+    }
+  }
+
   return {
     success: exitCode === 0,
     output: combined || undefined,
+    resolvedPackages: resolvedPackages.length > 0 ? resolvedPackages : undefined,
   };
 }
