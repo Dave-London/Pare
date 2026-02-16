@@ -41,13 +41,32 @@ describe("parseGoFmtOutput", () => {
     });
   });
 
-  describe("fix mode (-w)", () => {
-    it("parses successful fix with no output", () => {
+  describe("fix mode (-l -w)", () => {
+    it("parses successful fix with no output (already formatted)", () => {
       const result = parseGoFmtOutput("", "", 0, false);
 
       expect(result.success).toBe(true);
       expect(result.filesChanged).toBe(0);
       expect(result.files).toEqual([]);
+    });
+
+    it("reports files that were reformatted", () => {
+      // When -l -w is used, stdout lists files that gofmt rewrote
+      const stdout = "main.go\nutil.go\nhandler.go\n";
+      const result = parseGoFmtOutput(stdout, "", 0, false);
+
+      expect(result.success).toBe(true);
+      expect(result.filesChanged).toBe(3);
+      expect(result.files).toEqual(["main.go", "util.go", "handler.go"]);
+    });
+
+    it("reports single file reformatted", () => {
+      const stdout = "main.go\n";
+      const result = parseGoFmtOutput(stdout, "", 0, false);
+
+      expect(result.success).toBe(true);
+      expect(result.filesChanged).toBe(1);
+      expect(result.files).toEqual(["main.go"]);
     });
 
     it("handles error exit code", () => {

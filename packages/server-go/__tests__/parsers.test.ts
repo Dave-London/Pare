@@ -34,6 +34,84 @@ describe("parseGoBuildOutput", () => {
     expect(result.success).toBe(true);
     expect(result.total).toBe(0);
   });
+
+  it("captures package-level errors not matching file:line:col format", () => {
+    const stderr = [
+      "# myapp",
+      "package myapp/internal/foo is not in GOROOT (/usr/local/go/src/myapp/internal/foo)",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toBeDefined();
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("is not in GOROOT");
+    expect(result.total).toBe(1);
+  });
+
+  it("captures linker errors", () => {
+    const stderr = [
+      "# myapp",
+      "/usr/bin/ld: cannot find -lmylib",
+      "main.go:10:5: undefined: foo",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.rawErrors).toBeDefined();
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("cannot find -lmylib");
+    expect(result.total).toBe(2);
+  });
+
+  it("captures build constraint errors", () => {
+    const stderr = "build constraints exclude all Go files in /home/user/project/pkg";
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("build constraints exclude all Go files");
+    expect(result.total).toBe(1);
+  });
+
+  it("captures module errors starting with go:", () => {
+    const stderr = "go: cannot find main module, but found .git/config in /home/user/project";
+
+    const result = parseGoBuildOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.rawErrors![0]).toContain("cannot find main module");
+    expect(result.total).toBe(1);
+  });
+
+  it("does not capture non-file errors on successful build", () => {
+    // Some lines like "go: downloading..." appear on success too; they should not be errors
+    const stderr = "go: downloading github.com/pkg/errors v0.9.1";
+
+    const result = parseGoBuildOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.rawErrors).toBeUndefined();
+    expect(result.total).toBe(0);
+  });
+
+  it("counts both file errors and raw errors in total", () => {
+    const stderr = [
+      "main.go:10:5: undefined: foo",
+      "package myapp/missing is not in GOROOT (/usr/local/go/src/myapp/missing)",
+    ].join("\n");
+
+    const result = parseGoBuildOutput("", stderr, 2);
+
+    expect(result.errors).toHaveLength(1);
+    expect(result.rawErrors).toHaveLength(1);
+    expect(result.total).toBe(2);
+  });
 });
 
 describe("parseGoTestJson", () => {
@@ -126,7 +204,7 @@ describe("parseGoTestJson", () => {
     expect(result.total).toBe(0);
   });
 
-  it("ignores package-level events without Test field", () => {
+  it("ignores package-level pass events without Test field", () => {
     const stdout = [
       JSON.stringify({ Action: "output", Package: "myapp", Output: "ok  \tmyapp\t0.005s\n" }),
       JSON.stringify({ Action: "pass", Package: "myapp", Elapsed: 0.005 }),
@@ -134,6 +212,95 @@ describe("parseGoTestJson", () => {
 
     const result = parseGoTestJson(stdout, 0);
     expect(result.total).toBe(0);
+    expect(result.packageFailures).toBeUndefined();
+  });
+
+  it("captures output for failed tests (#51)", () => {
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestFail" }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestFail",
+        Output: "    main_test.go:10: expected 42, got 0\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestFail",
+        Output: "--- FAIL: TestFail (0.00s)\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Test: "TestFail", Elapsed: 0.001 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.failed).toBe(1);
+    const failedTest = result.tests.find((t) => t.name === "TestFail");
+    expect(failedTest).toBeDefined();
+    expect(failedTest!.output).toBeDefined();
+    expect(failedTest!.output).toContain("expected 42, got 0");
+    expect(failedTest!.output).toContain("FAIL: TestFail");
+  });
+
+  it("does not populate output for passing tests (#51)", () => {
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestPass" }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp",
+        Test: "TestPass",
+        Output: "--- PASS: TestPass (0.00s)\n",
+      }),
+      JSON.stringify({ Action: "pass", Package: "myapp", Test: "TestPass", Elapsed: 0.001 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 0);
+
+    const passingTest = result.tests.find((t) => t.name === "TestPass");
+    expect(passingTest).toBeDefined();
+    expect(passingTest!.output).toBeUndefined();
+  });
+
+  it("captures package-level failures without test events (#52)", () => {
+    const stdout = [
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/broken",
+        Output: "# myapp/broken\n",
+      }),
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/broken",
+        Output: "./main.go:5:2: undefined: missingFunc\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp/broken", Elapsed: 0.1 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(0);
+    expect(result.packageFailures).toBeDefined();
+    expect(result.packageFailures).toHaveLength(1);
+    expect(result.packageFailures![0].package).toBe("myapp/broken");
+    expect(result.packageFailures![0].output).toContain("undefined: missingFunc");
+  });
+
+  it("does not include package failures when package has tests (#52)", () => {
+    // A package that has both test results and a package-level "fail" event
+    // is just the test runner summary, not a build failure
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestSomething" }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Test: "TestSomething", Elapsed: 0.01 }),
+      JSON.stringify({ Action: "output", Package: "myapp", Output: "FAIL\tmyapp\t0.01s\n" }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Elapsed: 0.01 }),
+    ].join("\n");
+
+    const result = parseGoTestJson(stdout, 1);
+
+    expect(result.failed).toBe(1);
+    expect(result.packageFailures).toBeUndefined();
   });
 });
 
