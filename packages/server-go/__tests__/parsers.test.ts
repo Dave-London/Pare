@@ -144,7 +144,7 @@ describe("parseGoVetOutput", () => {
       "utils.go:20: unreachable code",
     ].join("\n");
 
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(2);
     expect(result.diagnostics[0]).toEqual({
@@ -156,7 +156,7 @@ describe("parseGoVetOutput", () => {
   });
 
   it("parses clean vet", () => {
-    const result = parseGoVetOutput("", "");
+    const result = parseGoVetOutput("", "", 0);
     expect(result.total).toBe(0);
   });
 });
@@ -174,13 +174,14 @@ describe("parseGoEnvOutput", () => {
 
     const result = parseGoEnvOutput(stdout);
 
+    expect(result.success).toBe(true);
     expect(result.goroot).toBe("/usr/local/go");
     expect(result.gopath).toBe("/home/user/go");
     expect(result.goversion).toBe("go1.22.0");
     expect(result.goos).toBe("linux");
     expect(result.goarch).toBe("amd64");
-    expect(result.vars.CGO_ENABLED).toBe("1");
-    expect(result.vars.GOROOT).toBe("/usr/local/go");
+    expect(result.vars!.CGO_ENABLED).toBe("1");
+    expect(result.vars!.GOROOT).toBe("/usr/local/go");
   });
 
   it("handles empty output", () => {
@@ -216,7 +217,7 @@ describe("parseGoListOutput", () => {
       GoFiles: ["main.go", "util.go"],
     });
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
     expect(result.packages[0]).toEqual({
@@ -242,7 +243,7 @@ describe("parseGoListOutput", () => {
     });
     const stdout = pkg1 + "\n" + pkg2;
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(2);
     expect(result.packages[0].importPath).toBe("github.com/user/project");
@@ -251,7 +252,7 @@ describe("parseGoListOutput", () => {
   });
 
   it("handles empty output", () => {
-    const result = parseGoListOutput("");
+    const result = parseGoListOutput("", 0);
 
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
@@ -264,7 +265,7 @@ describe("parseGoListOutput", () => {
       Name: "main",
     });
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
     expect(result.packages[0].goFiles).toBeUndefined();

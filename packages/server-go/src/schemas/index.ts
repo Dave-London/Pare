@@ -46,8 +46,9 @@ export const GoVetDiagnosticSchema = z.object({
   message: z.string(),
 });
 
-/** Zod schema for structured go vet output with diagnostic list and total count. */
+/** Zod schema for structured go vet output with diagnostic list, total count, and success status. */
 export const GoVetResultSchema = z.object({
+  success: z.boolean(),
   diagnostics: z.array(GoVetDiagnosticSchema).optional(),
   total: z.number(),
 });
@@ -91,6 +92,7 @@ export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
 
 /** Zod schema for structured go env output with environment variables and key fields. */
 export const GoEnvResultSchema = z.object({
+  success: z.boolean(),
   vars: z.record(z.string(), z.string()).optional(),
   goroot: z.string(),
   gopath: z.string(),
@@ -107,10 +109,12 @@ export const GoListPackageSchema = z.object({
   importPath: z.string(),
   name: z.string(),
   goFiles: z.array(z.string()).optional(),
+  testGoFiles: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured go list output with package list and total count. */
 export const GoListResultSchema = z.object({
+  success: z.boolean(),
   packages: z.array(GoListPackageSchema).optional(),
   total: z.number(),
 });
@@ -148,6 +152,7 @@ export const GolangciLintResultSchema = z.object({
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
+  resultsTruncated: z.boolean().optional(),
   byLinter: z.array(GolangciLintLinterSummarySchema).optional(),
 });
 

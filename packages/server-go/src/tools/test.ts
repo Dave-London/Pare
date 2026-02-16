@@ -50,6 +50,54 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Enable data race detection during tests (-race)"),
+        timeout: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Test execution timeout (-timeout <d>). Examples: '30s', '5m', '1h'. Default: 10m.",
+          ),
+        count: z
+          .number()
+          .int()
+          .min(1)
+          .max(1000)
+          .optional()
+          .describe(
+            "Run each test and benchmark N times (-count <n>). Useful for verifying flaky test fixes.",
+          ),
+        cover: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable test coverage analysis (-cover)"),
+        coverprofile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe(
+            "Write a coverage profile to the named file (-coverprofile <file>). Implies -cover.",
+          ),
+        tags: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Build tags required to run tests correctly (-tags)"),
+        parallel: z
+          .number()
+          .int()
+          .min(1)
+          .max(1000)
+          .optional()
+          .describe(
+            "Maximum number of tests to run in parallel (-parallel <n>). Default: GOMAXPROCS.",
+          ),
+        shuffle: z
+          .enum(["on", "off"])
+          .optional()
+          .describe(
+            "Randomize test execution order (-shuffle). 'on' uses a random seed, 'off' is the default.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -60,17 +108,49 @@ export function registerTestTool(server: McpServer) {
       },
       outputSchema: GoTestResultSchema,
     },
-    async ({ path, packages, run: runFilter, failfast, short, race, compact }) => {
+    async ({
+      path,
+      packages,
+      run: runFilter,
+      failfast,
+      short,
+      race,
+      timeout,
+      count,
+      cover,
+      coverprofile,
+      tags,
+      parallel,
+      shuffle,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
       if (runFilter) assertNoFlagInjection(runFilter, "run");
+      if (timeout) assertNoFlagInjection(timeout, "timeout");
+      if (coverprofile) assertNoFlagInjection(coverprofile, "coverprofile");
 
       const args = ["test", "-json"];
       if (failfast) args.push("-failfast");
       if (short) args.push("-short");
       if (race) args.push("-race");
+      if (timeout) args.push("-timeout", timeout);
+      if (count !== undefined) args.push("-count", String(count));
+      if (coverprofile) {
+        args.push("-coverprofile", coverprofile);
+      } else if (cover) {
+        args.push("-cover");
+      }
+      if (tags && tags.length > 0) {
+        for (const t of tags) {
+          assertNoFlagInjection(t, "tags");
+        }
+        args.push("-tags", tags.join(","));
+      }
+      if (parallel !== undefined) args.push("-parallel", String(parallel));
+      if (shuffle === "on") args.push("-shuffle=on");
       args.push(...(packages || ["./..."]));
       if (runFilter) args.push("-run", runFilter);
 

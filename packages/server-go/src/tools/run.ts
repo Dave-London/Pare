@@ -37,8 +37,45 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Build flags to pass to go run (e.g., -tags)"),
+          .describe(
+            "Build flags to pass to go run (e.g., '-tags=integration'). " +
+              "Note: flags like -race and -tags have dedicated params for discoverability, " +
+              "but can also be passed here. Flag injection checks are not applied to buildArgs " +
+              "since they are intentionally build flags.",
+          ),
         race: z.boolean().optional().default(false).describe("Enable data race detection (-race)"),
+        tags: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Build tags for conditional compilation (-tags)"),
+        timeout: z
+          .number()
+          .int()
+          .min(1000)
+          .max(600000)
+          .optional()
+          .describe(
+            "Program execution timeout in milliseconds. Overrides the default 300s build timeout. " +
+              "Min: 1000 (1s), Max: 600000 (10m).",
+          ),
+        exec: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe(
+            "Custom execution wrapper (-exec). The built binary is passed to this command instead of being run directly.",
+          ),
+        maxOutput: z
+          .number()
+          .int()
+          .min(1024)
+          .max(1048576)
+          .optional()
+          .describe(
+            "Maximum length in characters for stdout/stderr output. Output exceeding this limit will be truncated. " +
+              "Default: no limit. Max: 1048576 (1MB).",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -49,22 +86,51 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: GoRunResultSchema,
     },
-    async ({ path, file, args, buildArgs, race, compact }) => {
+    async ({
+      path,
+      file,
+      args,
+      buildArgs,
+      race,
+      tags,
+      timeout,
+      exec: execWrapper,
+      maxOutput,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       const target = file || ".";
       assertNoFlagInjection(target, "file");
-      for (const a of buildArgs ?? []) {
-        assertNoFlagInjection(a, "buildArgs");
-      }
+      if (execWrapper) assertNoFlagInjection(execWrapper, "exec");
+      // buildArgs are intentionally build flags (e.g., -race, -tags, -ldflags)
+      // so assertNoFlagInjection is not applied to them.
       const cmdArgs = ["run"];
       if (race) cmdArgs.push("-race");
+      if (tags && tags.length > 0) {
+        for (const t of tags) {
+          assertNoFlagInjection(t, "tags");
+        }
+        cmdArgs.push("-tags", tags.join(","));
+      }
+      if (execWrapper) cmdArgs.push(`-exec=${execWrapper}`);
       cmdArgs.push(...(buildArgs || []), target);
       const programArgs = args || [];
       if (programArgs.length > 0) {
         cmdArgs.push("--", ...programArgs);
       }
-      const result = await goCmd(cmdArgs, cwd);
+      const result = await goCmd(cmdArgs, cwd, timeout);
       const data = parseGoRunOutput(result.stdout, result.stderr, result.exitCode);
+
+      // Apply maxOutput truncation
+      if (maxOutput) {
+        if (data.stdout && data.stdout.length > maxOutput) {
+          data.stdout = data.stdout.slice(0, maxOutput) + "\n... (truncated)";
+        }
+        if (data.stderr && data.stderr.length > maxOutput) {
+          data.stderr = data.stderr.slice(0, maxOutput) + "\n... (truncated)";
+        }
+      }
+
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

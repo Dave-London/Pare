@@ -136,14 +136,16 @@ export function formatTestCompact(data: GoTestCompact): string {
   return `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`;
 }
 
-/** Compact vet: diagnostic count only. Drop individual file/line/message entries. */
+/** Compact vet: success + diagnostic count only. Drop individual file/line/message entries. */
 export interface GoVetCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
 }
 
 export function compactVetMap(data: GoVetResult): GoVetCompact {
   return {
+    success: data.success,
     total: data.total,
   };
 }
@@ -235,6 +237,8 @@ export function formatModTidyCompact(data: GoModTidyCompact): string {
 
 /** Formats structured go env results into a human-readable environment listing. */
 export function formatGoEnv(data: GoEnvResult): string {
+  if (!data.success) return "go env: FAIL — could not parse environment output.";
+
   const lines = [
     `GOROOT=${data.goroot}`,
     `GOPATH=${data.gopath}`,
@@ -255,6 +259,7 @@ export function formatGoEnv(data: GoEnvResult): string {
 /** Compact env: key fields only. Drop full vars map. */
 export interface GoEnvCompact {
   [key: string]: unknown;
+  success: boolean;
   goroot: string;
   gopath: string;
   goversion: string;
@@ -264,6 +269,7 @@ export interface GoEnvCompact {
 
 export function compactEnvMap(data: GoEnvResult): GoEnvCompact {
   return {
+    success: data.success,
     goroot: data.goroot,
     gopath: data.gopath,
     goversion: data.goversion,
@@ -273,6 +279,7 @@ export function compactEnvMap(data: GoEnvResult): GoEnvCompact {
 }
 
 export function formatEnvCompact(data: GoEnvCompact): string {
+  if (!data.success) return "go env: FAIL";
   return `go env: ${data.goversion} ${data.goos}/${data.goarch}`;
 }
 
@@ -289,14 +296,16 @@ export function formatGoList(data: GoListResult): string {
   return lines.join("\n");
 }
 
-/** Compact list: total count only. Drop individual package details. */
+/** Compact list: success + total count only. Drop individual package details. */
 export interface GoListCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
 }
 
 export function compactListMap(data: GoListResult): GoListCompact {
   return {
+    success: data.success,
     total: data.total,
   };
 }
@@ -346,6 +355,10 @@ export function formatGolangciLint(data: GolangciLintResult): string {
     `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)`,
   ];
 
+  if (data.resultsTruncated) {
+    lines.push("  (results truncated by linter limits)");
+  }
+
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
     lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})`);
@@ -368,17 +381,21 @@ export interface GolangciLintCompact {
   total: number;
   errors: number;
   warnings: number;
+  resultsTruncated?: boolean;
 }
 
 export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCompact {
-  return {
+  const compact: GolangciLintCompact = {
     total: data.total,
     errors: data.errors,
     warnings: data.warnings,
   };
+  if (data.resultsTruncated) compact.resultsTruncated = true;
+  return compact;
 }
 
 export function formatGolangciLintCompact(data: GolangciLintCompact): string {
   if (data.total === 0) return "golangci-lint: no issues found.";
-  return `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)`;
+  const truncated = data.resultsTruncated ? " (truncated)" : "";
+  return `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)${truncated}`;
 }

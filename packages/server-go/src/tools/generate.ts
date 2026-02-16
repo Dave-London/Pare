@@ -33,6 +33,20 @@ export function registerGenerateTool(server: McpServer) {
           .describe(
             "Print the commands that would be executed but do not run them (-n). Essential for safe previewing.",
           ),
+        run: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Run only generators whose directive matches this regexp (-run <regexp>). Reduces execution scope and risk.",
+          ),
+        skip: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Skip generators whose directive matches this regexp (-skip <regexp>). Useful to exclude known-slow or broken generators.",
+          ),
         verbose: z
           .boolean()
           .optional()
@@ -43,6 +57,11 @@ export function registerGenerateTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Print commands as they are executed (-x)"),
+        tags: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Build tags for conditional compilation (-tags)"),
         compact: z
           .boolean()
           .optional()
@@ -53,15 +72,25 @@ export function registerGenerateTool(server: McpServer) {
       },
       outputSchema: GoGenerateResultSchema,
     },
-    async ({ path, patterns, dryRun, verbose, commands, compact }) => {
+    async ({ path, patterns, dryRun, run: runFilter, skip, verbose, commands, tags, compact }) => {
       for (const p of patterns || []) {
         assertNoFlagInjection(p, "patterns");
       }
+      if (runFilter) assertNoFlagInjection(runFilter, "run");
+      if (skip) assertNoFlagInjection(skip, "skip");
       const cwd = path || process.cwd();
       const args = ["generate"];
       if (dryRun) args.push("-n");
+      if (runFilter) args.push("-run", runFilter);
+      if (skip) args.push("-skip", skip);
       if (verbose) args.push("-v");
       if (commands) args.push("-x");
+      if (tags && tags.length > 0) {
+        for (const t of tags) {
+          assertNoFlagInjection(t, "tags");
+        }
+        args.push("-tags", tags.join(","));
+      }
       args.push(...(patterns || ["./..."]));
       const result = await goCmd(args, cwd);
       const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode);

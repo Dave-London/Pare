@@ -108,8 +108,8 @@ interface GoTestEvent {
   Output?: string;
 }
 
-/** Parses `go vet` output into structured diagnostics with file locations and messages. */
-export function parseGoVetOutput(stdout: string, stderr: string): GoVetResult {
+/** Parses `go vet` output into structured diagnostics with file locations, messages, and success status. */
+export function parseGoVetOutput(stdout: string, stderr: string, exitCode: number): GoVetResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const diagnostics: { file: string; line: number; column?: number; message: string }[] = [];
@@ -126,7 +126,7 @@ export function parseGoVetOutput(stdout: string, stderr: string): GoVetResult {
     }
   }
 
-  return { diagnostics, total: diagnostics.length };
+  return { success: exitCode === 0, diagnostics, total: diagnostics.length };
 }
 
 /** Parses `go run` output into structured result with stdout, stderr, and exit code. */
@@ -200,8 +200,22 @@ export function parseGoGenerateOutput(
 
 /** Parses `go env -json` output into structured result with environment variables and key fields. */
 export function parseGoEnvOutput(stdout: string): GoEnvResult {
-  const vars: Record<string, string> = JSON.parse(stdout || "{}");
+  let vars: Record<string, string>;
+  try {
+    vars = JSON.parse(stdout || "{}");
+  } catch {
+    return {
+      success: false,
+      vars: undefined,
+      goroot: "",
+      gopath: "",
+      goversion: "",
+      goos: "",
+      goarch: "",
+    };
+  }
   return {
+    success: true,
     vars,
     goroot: vars.GOROOT ?? "",
     gopath: vars.GOPATH ?? "",
@@ -215,11 +229,17 @@ export function parseGoEnvOutput(stdout: string): GoEnvResult {
  * Parses `go list -json` output into structured result with package list and total count.
  * go list -json emits concatenated JSON objects (JSONL), one per package.
  */
-export function parseGoListOutput(stdout: string): GoListResult {
-  const packages: { dir: string; importPath: string; name: string; goFiles?: string[] }[] = [];
+export function parseGoListOutput(stdout: string, exitCode: number): GoListResult {
+  const packages: {
+    dir: string;
+    importPath: string;
+    name: string;
+    goFiles?: string[];
+    testGoFiles?: string[];
+  }[] = [];
 
   if (!stdout.trim()) {
-    return { packages, total: 0 };
+    return { success: exitCode === 0, packages, total: 0 };
   }
 
   // go list -json outputs concatenated JSON objects separated by newlines.
@@ -234,13 +254,14 @@ export function parseGoListOutput(stdout: string): GoListResult {
         importPath: pkg.ImportPath ?? "",
         name: pkg.Name ?? "",
         goFiles: pkg.GoFiles,
+        testGoFiles: pkg.TestGoFiles,
       });
     } catch {
       // skip malformed JSON chunks
     }
   }
 
-  return { packages, total: packages.length };
+  return { success: exitCode === 0, packages, total: packages.length };
 }
 
 /** Splits concatenated JSON objects from go list -json output. */

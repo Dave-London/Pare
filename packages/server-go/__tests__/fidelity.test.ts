@@ -277,7 +277,7 @@ describe("fidelity: go test", () => {
 describe("fidelity: go vet", () => {
   it("parses a single diagnostic with column", () => {
     const stderr = "main.go:15:2: printf: Sprintf format has extra verb";
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(1);
     expect(result.diagnostics).toEqual([
@@ -297,7 +297,7 @@ describe("fidelity: go vet", () => {
       "handler.go:8:5: composite literal uses unkeyed fields",
     ].join("\n");
 
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(3);
     expect(result.diagnostics[0].file).toBe("main.go");
@@ -315,7 +315,7 @@ describe("fidelity: go vet", () => {
   });
 
   it("returns empty diagnostics for clean vet output", () => {
-    const result = parseGoVetOutput("", "");
+    const result = parseGoVetOutput("", "", 0);
 
     expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
@@ -323,7 +323,7 @@ describe("fidelity: go vet", () => {
 
   it("parses diagnostic without column number", () => {
     const stderr = "main.go:20: unused variable x";
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(1);
     expect(result.diagnostics[0]).toEqual({
@@ -342,7 +342,7 @@ describe("fidelity: go vet", () => {
       "util.go:30:10: unreachable code",
     ].join("\n");
 
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(2);
     expect(result.diagnostics[0].file).toBe("main.go");
@@ -352,7 +352,7 @@ describe("fidelity: go vet", () => {
   it("finds diagnostics in stdout when stderr is empty", () => {
     // The parser concatenates stdout + stderr
     const stdout = "main.go:5:1: missing return at end of function";
-    const result = parseGoVetOutput(stdout, "");
+    const result = parseGoVetOutput(stdout, "", 0);
 
     expect(result.total).toBe(1);
     expect(result.diagnostics[0]).toEqual({
@@ -659,7 +659,7 @@ describe("fidelity: go list", () => {
       GoFiles: ["main.go", "app.go", "config.go"],
     });
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
     expect(result.packages[0].dir).toBe("/home/user/project");
@@ -689,7 +689,7 @@ describe("fidelity: go list", () => {
     });
 
     const stdout = pkg1 + "\n" + pkg2 + "\n" + pkg3;
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(3);
     expect(result.packages[0].importPath).toBe("github.com/user/project");
@@ -699,7 +699,7 @@ describe("fidelity: go list", () => {
   });
 
   it("handles empty output for projects with no packages", () => {
-    const result = parseGoListOutput("");
+    const result = parseGoListOutput("", 0);
 
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
@@ -712,7 +712,7 @@ describe("fidelity: go list", () => {
       Name: "cmd",
     });
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.total).toBe(1);
     expect(result.packages[0].goFiles).toBeUndefined();
@@ -726,7 +726,7 @@ describe("fidelity: go list", () => {
       GoFiles: ["main.go"],
     });
 
-    const result = parseGoListOutput(stdout);
+    const result = parseGoListOutput(stdout, 0);
 
     expect(result.packages[0].dir).toBe("C:\\Users\\user\\project");
   });
