@@ -17,7 +17,8 @@ export function registerTestTool(server: McpServer) {
       description:
         "Runs `npm test`, `pnpm test`, or `yarn test` and returns structured output with exit code, stdout, stderr, and duration. " +
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
-        "Shorthand for running the test script defined in package.json.",
+        "Shorthand for running the test script defined in package.json. " +
+        "Automatically parses test framework output (jest, vitest, mocha, tap) to extract pass/fail/skip counts.",
       inputSchema: {
         path: z
           .string()

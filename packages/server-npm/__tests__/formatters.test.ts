@@ -349,7 +349,7 @@ describe("formatNvm", () => {
   it("formats nvm with current, default, and installed versions", () => {
     const data: NvmResult = {
       current: "v20.11.0",
-      versions: ["v18.19.0", "v20.11.0", "v22.0.0"],
+      versions: [{ version: "v18.19.0" }, { version: "v20.11.0" }, { version: "v22.0.0" }],
       default: "v20.11.0",
     };
     const output = formatNvm(data);

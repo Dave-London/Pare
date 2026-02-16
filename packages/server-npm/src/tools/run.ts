@@ -140,10 +140,37 @@ export function registerRunTool(server: McpServer) {
       }
 
       const start = Date.now();
-      const result = await runPm(pm, pmArgs, cwd);
+      let timedOut = false;
+      let result: { exitCode: number; stdout: string; stderr: string };
+
+      try {
+        result = await runPm(pm, pmArgs, cwd);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+
+        // Gap #181: detect timeout from the shared runner
+        if (errMsg.includes("timed out")) {
+          timedOut = true;
+          result = {
+            exitCode: 124, // Standard timeout exit code
+            stdout: "",
+            stderr: errMsg,
+          };
+        } else {
+          throw err;
+        }
+      }
+
       const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
 
-      const data = parseRunOutput(script, result.exitCode, result.stdout, result.stderr, duration);
+      const data = parseRunOutput(
+        script,
+        result.exitCode,
+        result.stdout,
+        result.stderr,
+        duration,
+        timedOut,
+      );
       return dualOutput({ ...data, packageManager: pm }, formatRun);
     },
   );

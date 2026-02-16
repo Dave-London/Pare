@@ -2,9 +2,9 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run } from "@paretools/shared";
-import { parseNvmOutput } from "../lib/parsers.js";
-import { formatNvm } from "../lib/formatters.js";
+import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { parseNvmOutput, parseNvmLsRemoteOutput, parseNvmExecOutput } from "../lib/parsers.js";
+import { formatNvm, formatNvmLsRemote, formatNvmExec } from "../lib/formatters.js";
 import { NvmResultSchema } from "../schemas/index.js";
 
 /** Registers the `nvm` tool on the given MCP server. */
@@ -14,24 +14,62 @@ export function registerNvmTool(server: McpServer) {
     {
       title: "Node Version Manager",
       description:
-        "Lists installed Node.js versions and shows the current version via nvm. " +
+        "Manages Node.js versions via nvm. " +
+        "Supports listing installed versions, showing the current version, listing remote versions, " +
+        "and executing commands with a specific Node.js version. " +
         "Supports both Unix nvm and nvm-windows. " +
-        "Use instead of running `nvm list` or `nvm current` in the terminal.",
+        "Use instead of running `nvm` commands in the terminal.",
       inputSchema: {
         action: z
-          .enum(["list", "current"])
+          .enum(["list", "current", "ls-remote", "exec"])
           .describe(
-            "Action to perform: 'list' shows all installed versions, 'current' shows the active version",
+            "Action: 'list' shows installed versions, 'current' shows active version, " +
+              "'ls-remote' lists available remote versions, 'exec' runs a command with a specific Node version",
           ),
         path: z
           .string()
           .optional()
           .describe("Working directory for .nvmrc detection (default: cwd)"),
+        version: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Node.js version for 'exec' action (e.g., '20', '20.11.1', 'lts/iron')"),
+        command: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Command to run for 'exec' action (e.g., 'node', 'npm')"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Arguments for the command in 'exec' action"),
+        majorVersions: z
+          .number()
+          .int()
+          .min(1)
+          .max(20)
+          .optional()
+          .default(4)
+          .describe(
+            "For 'ls-remote': limit to last N major Node.js versions (default: 4). " +
+              "Reduces output size significantly.",
+          ),
       },
+      // Output schema varies by action — we use the union's largest schema for registration
+      // and return the appropriate one per action
       outputSchema: NvmResultSchema,
     },
-    async ({ action, path }) => {
+    async ({ action, path, version, command, args, majorVersions }) => {
       const cwd = path || process.cwd();
+
+      // Validate inputs for exec action
+      if (version) assertNoFlagInjection(version, "version");
+      if (command) assertNoFlagInjection(command, "command");
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       // Helper: read .nvmrc from the working directory
       async function readNvmrc(): Promise<string | undefined> {
@@ -45,6 +83,35 @@ export function registerNvmTool(server: McpServer) {
         }
       }
 
+      // ── action: exec ──────────────────────────────────────────────────
+      if (action === "exec") {
+        if (!version) {
+          throw new Error("'version' is required for 'exec' action");
+        }
+        if (!command) {
+          throw new Error("'command' is required for 'exec' action");
+        }
+
+        // nvm exec <version> <command> [args...]
+        const nvmArgs = ["exec", version, command, ...(args ?? [])];
+        const result = await run("nvm", nvmArgs, { timeout: 300_000, cwd });
+
+        const data = parseNvmExecOutput(version, result.exitCode, result.stdout, result.stderr);
+        return dualOutput(data, formatNvmExec);
+      }
+
+      // ── action: ls-remote ─────────────────────────────────────────────
+      if (action === "ls-remote") {
+        const lsRemoteResult = await run("nvm", ["ls-remote"], { timeout: 30_000 });
+        if (lsRemoteResult.exitCode !== 0 && !lsRemoteResult.stdout) {
+          throw new Error(`nvm ls-remote failed: ${lsRemoteResult.stderr}`);
+        }
+
+        const data = parseNvmLsRemoteOutput(lsRemoteResult.stdout, majorVersions ?? 4);
+        return dualOutput(data, formatNvmLsRemote);
+      }
+
+      // ── action: current ───────────────────────────────────────────────
       if (action === "current") {
         const result = await run("nvm", ["current"], { timeout: 15_000 });
         if (result.exitCode !== 0 && !result.stdout) {
@@ -90,7 +157,7 @@ export function registerNvmTool(server: McpServer) {
         );
       }
 
-      // action === "list"
+      // ── action: list ──────────────────────────────────────────────────
       const listResult = await run("nvm", ["list"], { timeout: 15_000 });
       if (listResult.exitCode !== 0 && !listResult.stdout) {
         throw new Error(`nvm list failed: ${listResult.stderr}`);
