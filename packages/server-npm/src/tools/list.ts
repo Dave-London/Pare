@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
-import { parseListJson, parseYarnListJson } from "../lib/parsers.js";
+import { parseListJson, parsePnpmListJson, parseYarnListJson } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { NpmListSchema } from "../schemas/index.js";
 import { packageManagerInput, filterInput } from "../lib/pm-input.js";
@@ -128,23 +128,18 @@ export function registerListTool(server: McpServer) {
         throw new Error(`${pm} list failed: ${result.stderr}`);
       }
 
-      // pnpm list --json returns an array (one entry per matched project in a workspace)
-      // while npm ls --json returns a single object. Normalize pnpm's array to a single object.
-      let jsonStr = result.stdout;
+      // Gap #176: pnpm list --json returns an array of workspace projects.
+      // Use parsePnpmListJson which properly handles all array elements
+      // instead of discarding everything except the first.
+      let list;
       if (pm === "pnpm") {
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (Array.isArray(parsed)) {
-            jsonStr = JSON.stringify(
-              parsed[0] ?? { name: "unknown", version: "0.0.0", dependencies: {} },
-            );
-          }
-        } catch {
-          // fall through, let parseListJson handle the error
-        }
+        list = parsePnpmListJson(result.stdout);
+      } else if (pm === "yarn") {
+        list = parseYarnListJson(result.stdout);
+      } else {
+        list = parseListJson(result.stdout);
       }
 
-      const list = pm === "yarn" ? parseYarnListJson(jsonStr) : parseListJson(jsonStr);
       const listWithPm = { ...list, packageManager: pm };
       return compactDualOutput(
         listWithPm,

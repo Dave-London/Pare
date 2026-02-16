@@ -6,6 +6,13 @@ const packageManagerField = z
   .optional()
   .describe("Package manager that was used (npm, pnpm, or yarn)");
 
+/** Schema for a specific package affected by install. */
+export const NpmInstallPackageSchema = z.object({
+  name: z.string().describe("Package name"),
+  version: z.string().describe("Installed version"),
+  action: z.enum(["added", "removed", "updated"]).describe("What happened to this package"),
+});
+
 /** Zod schema for structured npm install output including package counts, vulnerabilities, and duration. */
 export const NpmInstallSchema = z.object({
   packageManager: packageManagerField,
@@ -14,6 +21,10 @@ export const NpmInstallSchema = z.object({
   changed: z.number(),
   duration: z.number(),
   packages: z.number().describe("Total packages after install"),
+  packageDetails: z
+    .array(NpmInstallPackageSchema)
+    .optional()
+    .describe("Specific packages that were added, removed, or updated (best-effort parsing)"),
   vulnerabilities: z
     .object({
       total: z.number(),
@@ -76,15 +87,23 @@ export const NpmOutdatedSchema = z.object({
 
 export type NpmOutdated = z.infer<typeof NpmOutdatedSchema>;
 
+/** Dependency type enum for list output. */
+export const DependencyTypeEnum = z
+  .enum(["dependency", "devDependency", "optionalDependency"])
+  .optional()
+  .describe("Dependency type: production, dev, or optional");
+
 /** A single dependency entry in the npm dependency list (recursive for nested deps). */
 export interface NpmListDep {
   version: string;
+  type?: "dependency" | "devDependency" | "optionalDependency";
   dependencies?: Record<string, NpmListDep>;
 }
 
 /** Zod schema for a single dependency entry in an npm list with version and nested dependencies. */
 export const NpmListDepSchema: z.ZodType<NpmListDep> = z.object({
   version: z.string(),
+  type: DependencyTypeEnum,
   dependencies: z
     .record(
       z.string(),
@@ -113,9 +132,18 @@ export const NpmRunSchema = z.object({
   stderr: z.string().describe("Standard error from the script"),
   success: z.boolean().describe("Whether the script exited with code 0"),
   duration: z.number().describe("Execution duration in seconds"),
+  timedOut: z.boolean().describe("Whether the script was killed due to timeout"),
 });
 
 export type NpmRun = z.infer<typeof NpmRunSchema>;
+
+/** Zod schema for test results parsed from test framework output (best-effort). */
+export const TestResultsSchema = z.object({
+  passed: z.number().describe("Number of passing tests"),
+  failed: z.number().describe("Number of failing tests"),
+  skipped: z.number().describe("Number of skipped tests"),
+  total: z.number().describe("Total number of tests"),
+});
 
 /** Zod schema for structured npm test output with exit code and captured output. */
 export const NpmTestSchema = z.object({
@@ -125,6 +153,9 @@ export const NpmTestSchema = z.object({
   stderr: z.string().describe("Standard error from the test run"),
   success: z.boolean().describe("Whether tests passed (exit code 0)"),
   duration: z.number().describe("Execution duration in seconds"),
+  testResults: TestResultsSchema.optional().describe(
+    "Parsed test counts from known frameworks (jest, vitest, mocha) — best-effort",
+  ),
 });
 
 export type NpmTest = z.infer<typeof NpmTestSchema>;
@@ -214,10 +245,21 @@ export const NpmSearchSchema = z.object({
 
 export type NpmSearch = z.infer<typeof NpmSearchSchema>;
 
+/** Schema for a single nvm version entry with optional LTS info. */
+export const NvmVersionEntrySchema = z.object({
+  version: z.string().describe("Node.js version (e.g., 'v20.11.1')"),
+  lts: z
+    .string()
+    .optional()
+    .describe("LTS release name if this is an LTS version (e.g., 'hydrogen', 'iron')"),
+});
+
 /** Zod schema for structured nvm output with current version and installed versions list. */
 export const NvmResultSchema = z.object({
   current: z.string().describe("Currently active Node.js version"),
-  versions: z.array(z.string()).describe("List of installed Node.js versions"),
+  versions: z
+    .array(NvmVersionEntrySchema)
+    .describe("List of installed Node.js versions with optional LTS tags"),
   default: z.string().optional().describe("Default Node.js version (alias default)"),
   which: z.string().optional().describe("Filesystem path to the active Node.js binary"),
   arch: z.string().optional().describe("Architecture of the active Node.js (e.g., x64, arm64)"),
@@ -228,3 +270,33 @@ export const NvmResultSchema = z.object({
 });
 
 export type NvmResult = z.infer<typeof NvmResultSchema>;
+
+/** Schema for a single remote Node.js version from nvm ls-remote. */
+export const NvmRemoteVersionSchema = z.object({
+  version: z.string().describe("Node.js version (e.g., 'v20.11.1')"),
+  lts: z
+    .string()
+    .optional()
+    .describe("LTS release name if this is an LTS version (e.g., 'hydrogen', 'iron')"),
+});
+
+/** Zod schema for nvm ls-remote output. */
+export const NvmLsRemoteSchema = z.object({
+  versions: z
+    .array(NvmRemoteVersionSchema)
+    .describe("Available remote Node.js versions (filtered to recent major releases)"),
+  total: z.number().describe("Total number of versions returned"),
+});
+
+export type NvmLsRemote = z.infer<typeof NvmLsRemoteSchema>;
+
+/** Zod schema for nvm exec output. */
+export const NvmExecSchema = z.object({
+  version: z.string().describe("Node.js version used for execution"),
+  exitCode: z.number().describe("Process exit code (0 = success)"),
+  stdout: z.string().describe("Standard output from the command"),
+  stderr: z.string().describe("Standard error from the command"),
+  success: z.boolean().describe("Whether the command exited with code 0"),
+});
+
+export type NvmExec = z.infer<typeof NvmExecSchema>;

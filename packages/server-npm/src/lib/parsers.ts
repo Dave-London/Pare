@@ -10,6 +10,8 @@ import type {
   NpmInfo,
   NpmSearch,
   NvmResult,
+  NvmLsRemote,
+  NvmExec,
 } from "../schemas/index.js";
 
 import type { PackageManager } from "./detect-pm.js";
@@ -53,6 +55,8 @@ interface NpmOutdatedEntry {
 interface NpmListRawDep {
   version?: string;
   dependencies?: Record<string, NpmListRawDep>;
+  devDependencies?: Record<string, NpmListRawDep>;
+  optionalDependencies?: Record<string, NpmListRawDep>;
 }
 
 /** Shape of a yarn tree node from `yarn list --json`. */
@@ -72,6 +76,80 @@ interface NpmSearchEntry {
   score?: { final?: number; detail?: unknown };
   links?: { npm?: string; homepage?: string; repository?: string };
   scope?: string;
+}
+
+/**
+ * Parses install package details from npm/pnpm/yarn install output (best-effort).
+ *
+ * npm output patterns:
+ *   - "added: pkg@version"
+ *   - Lines like "+ pkg@version" (yarn/pnpm)
+ *   - pnpm: "packages/foo 1.0.0" or "+package@version" in verbose output
+ */
+export function parseInstallPackageDetails(stdout: string): NpmInstall["packageDetails"] {
+  const details: NonNullable<NpmInstall["packageDetails"]> = [];
+
+  // npm verbose: "add pkg 1.2.3" lines (from npm install --loglevel verbose/silly)
+  // npm dry-run: "add pkg 1.2.3" lines
+  const npmAddPattern = /^add\s+(\S+)\s+(\S+)/gm;
+  let match: RegExpExecArray | null;
+  match = npmAddPattern.exec(stdout);
+  while (match !== null) {
+    details.push({ name: match[1], version: match[2], action: "added" });
+    match = npmAddPattern.exec(stdout);
+  }
+
+  // npm verbose: "remove pkg 1.2.3"
+  const npmRemovePattern = /^remove\s+(\S+)\s+(\S+)/gm;
+  match = npmRemovePattern.exec(stdout);
+  while (match !== null) {
+    details.push({ name: match[1], version: match[2], action: "removed" });
+    match = npmRemovePattern.exec(stdout);
+  }
+
+  // npm verbose: "change pkg 1.2.3"
+  const npmChangePattern = /^change\s+(\S+)\s+(\S+)/gm;
+  match = npmChangePattern.exec(stdout);
+  while (match !== null) {
+    details.push({ name: match[1], version: match[2], action: "updated" });
+    match = npmChangePattern.exec(stdout);
+  }
+
+  // pnpm: "+ pkg 1.2.3" or "- pkg 1.2.3" lines in verbose/reporter output
+  const pnpmAddPattern = /^\+\s+(\S+)\s+(\S+)/gm;
+  match = pnpmAddPattern.exec(stdout);
+  while (match !== null) {
+    // Avoid duplicates from npm add patterns
+    if (!details.some((d) => d.name === match![1] && d.version === match![2])) {
+      details.push({ name: match[1], version: match[2], action: "added" });
+    }
+    match = pnpmAddPattern.exec(stdout);
+  }
+
+  const pnpmRemovePattern = /^-\s+(\S+)\s+(\S+)/gm;
+  match = pnpmRemovePattern.exec(stdout);
+  while (match !== null) {
+    if (!details.some((d) => d.name === match![1] && d.version === match![2])) {
+      details.push({ name: match[1], version: match[2], action: "removed" });
+    }
+    match = pnpmRemovePattern.exec(stdout);
+  }
+
+  // yarn: "info ... - pkg@version" or "info ... + pkg@version"
+  const yarnPattern = /(?:Added|Removed|Updated)\s+"?([^@"\s]+)@([^"\s]+)"?/gm;
+  match = yarnPattern.exec(stdout);
+  while (match !== null) {
+    const line = match[0];
+    let action: "added" | "removed" | "updated" = "added";
+    if (line.startsWith("Removed")) action = "removed";
+    else if (line.startsWith("Updated")) action = "updated";
+    if (!details.some((d) => d.name === match![1] && d.version === match![2])) {
+      details.push({ name: match[1], version: match[2], action });
+    }
+    match = yarnPattern.exec(stdout);
+  }
+
+  return details.length > 0 ? details : undefined;
 }
 
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
@@ -104,12 +182,16 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
 
   const fundingMatch = stdout.match(/(\d+) packages? are looking for funding/);
 
+  // Best-effort: parse specific package details
+  const packageDetails = parseInstallPackageDetails(stdout);
+
   return {
     added: parseInt(added ?? "0", 10),
     removed: parseInt(removed ?? "0", 10),
     changed: parseInt(changed ?? "0", 10),
     duration,
     packages: parseInt(packages ?? "0", 10),
+    ...(packageDetails ? { packageDetails } : {}),
     ...(vulnerabilities ? { vulnerabilities } : {}),
     ...(fundingMatch ? { funding: parseInt(fundingMatch[1], 10) } : {}),
   };
@@ -265,17 +347,26 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
   return { packages, total: packages.length };
 }
 
-/** Parses `npm list --json` output into a structured dependency list with versions. */
+/**
+ * Parses `npm list --json` output into a structured dependency list with versions and types.
+ * Gap #177: adds `type` field to distinguish dependency, devDependency, optionalDependency.
+ */
 export function parseListJson(jsonStr: string): NpmList {
   const data = JSON.parse(jsonStr);
 
-  function parseDeps(raw: Record<string, unknown> | undefined): Record<string, NpmListDep> {
+  function parseDeps(
+    raw: Record<string, unknown> | undefined,
+    depType?: "dependency" | "devDependency" | "optionalDependency",
+  ): Record<string, NpmListDep> {
     const deps: Record<string, NpmListDep> = {};
     for (const [name, v] of Object.entries(raw ?? {})) {
       const dep = v as NpmListRawDep;
       const entry: NpmListDep = {
         version: dep.version ?? "unknown",
       };
+      if (depType) {
+        entry.type = depType;
+      }
       if (dep.dependencies && Object.keys(dep.dependencies).length > 0) {
         entry.dependencies = parseDeps(dep.dependencies as Record<string, unknown>);
       }
@@ -284,7 +375,37 @@ export function parseListJson(jsonStr: string): NpmList {
     return deps;
   }
 
-  const deps = parseDeps(data.dependencies);
+  // npm list --json puts all deps under "dependencies" at depth=0
+  // but when using --long or looking at the package.json structure, we can
+  // distinguish types by checking devDependencies and optionalDependencies
+  const allDeps: Record<string, NpmListDep> = {};
+
+  // If the JSON has separate devDependencies/optionalDependencies keys (some formats do),
+  // parse them with type annotations
+  if (data.devDependencies && typeof data.devDependencies === "object") {
+    const devDeps = parseDeps(data.devDependencies as Record<string, unknown>, "devDependency");
+    Object.assign(allDeps, devDeps);
+  }
+
+  if (data.optionalDependencies && typeof data.optionalDependencies === "object") {
+    const optDeps = parseDeps(
+      data.optionalDependencies as Record<string, unknown>,
+      "optionalDependency",
+    );
+    Object.assign(allDeps, optDeps);
+  }
+
+  // Parse main dependencies (these are production dependencies if devDependencies
+  // is separately listed, otherwise we can't distinguish)
+  if (data.dependencies) {
+    const hasSeparateTypes = !!data.devDependencies || !!data.optionalDependencies;
+    const mainDeps = parseDeps(
+      data.dependencies as Record<string, unknown>,
+      hasSeparateTypes ? "dependency" : undefined,
+    );
+    // Main deps override: if a dep already appeared in devDeps, keep the main classification
+    Object.assign(allDeps, mainDeps);
+  }
 
   // Count all deps including nested
   function countDeps(d: Record<string, NpmListDep>): number {
@@ -301,9 +422,73 @@ export function parseListJson(jsonStr: string): NpmList {
   return {
     name: data.name ?? "unknown",
     version: data.version ?? "0.0.0",
-    dependencies: deps,
-    total: countDeps(deps),
+    dependencies: allDeps,
+    total: countDeps(allDeps),
   };
+}
+
+/**
+ * Parses pnpm workspace list output.
+ * Gap #176: pnpm `list --json` returns an array of workspace projects.
+ * Previously we only used parsed[0], discarding other workspace projects.
+ * Now we merge dependencies from all workspace projects.
+ */
+export function parsePnpmListJson(jsonStr: string): NpmList {
+  const parsed = JSON.parse(jsonStr);
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    return parseListJson(
+      JSON.stringify(parsed ?? { name: "unknown", version: "0.0.0", dependencies: {} }),
+    );
+  }
+
+  if (parsed.length === 1) {
+    return parseListJson(JSON.stringify(parsed[0]));
+  }
+
+  // Multiple workspace projects: merge them all
+  // Use the first project's name/version as the root, aggregate deps from all
+  const root = parsed[0];
+  const mergedDeps: Record<string, unknown> = {};
+  const mergedDevDeps: Record<string, unknown> = {};
+  const mergedOptDeps: Record<string, unknown> = {};
+
+  for (const project of parsed) {
+    if (project.dependencies) {
+      for (const [name, dep] of Object.entries(project.dependencies as Record<string, unknown>)) {
+        if (!mergedDeps[name]) {
+          mergedDeps[name] = dep;
+        }
+      }
+    }
+    if (project.devDependencies) {
+      for (const [name, dep] of Object.entries(
+        project.devDependencies as Record<string, unknown>,
+      )) {
+        if (!mergedDevDeps[name]) {
+          mergedDevDeps[name] = dep;
+        }
+      }
+    }
+    if (project.optionalDependencies) {
+      for (const [name, dep] of Object.entries(
+        project.optionalDependencies as Record<string, unknown>,
+      )) {
+        if (!mergedOptDeps[name]) {
+          mergedOptDeps[name] = dep;
+        }
+      }
+    }
+  }
+
+  const merged = {
+    name: root.name ?? "workspace",
+    version: root.version ?? "0.0.0",
+    dependencies: mergedDeps,
+    ...(Object.keys(mergedDevDeps).length > 0 ? { devDependencies: mergedDevDeps } : {}),
+    ...(Object.keys(mergedOptDeps).length > 0 ? { optionalDependencies: mergedOptDeps } : {}),
+  };
+
+  return parseListJson(JSON.stringify(merged));
 }
 
 /** Parses `npm run <script>` output into structured data with exit code, stdout/stderr, and duration. */
@@ -313,15 +498,77 @@ export function parseRunOutput(
   stdout: string,
   stderr: string,
   duration: number,
+  timedOut: boolean = false,
 ): NpmRun {
   return {
     script,
     exitCode,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
-    success: exitCode === 0,
+    success: exitCode === 0 && !timedOut,
     duration,
+    timedOut,
   };
+}
+
+/**
+ * Parses test framework output to extract test counts (best-effort).
+ * Gap #182: Supports jest, vitest, mocha, and tap output patterns.
+ */
+export function parseTestResults(stdout: string, stderr: string): NpmTest["testResults"] {
+  const combined = stdout + "\n" + stderr;
+
+  // Jest/Vitest pattern: "Tests:  3 failed, 42 passed, 2 skipped, 47 total"
+  // Also matches: "Tests:  42 passed, 42 total"
+  const jestMatch = combined.match(
+    /Tests:\s+(?:(\d+)\s+failed,?\s*)?(?:(\d+)\s+passed,?\s*)?(?:(\d+)\s+(?:skipped|pending|todo),?\s*)?(\d+)\s+total/,
+  );
+  if (jestMatch) {
+    const failed = parseInt(jestMatch[1] ?? "0", 10);
+    const passed = parseInt(jestMatch[2] ?? "0", 10);
+    const skipped = parseInt(jestMatch[3] ?? "0", 10);
+    const total = parseInt(jestMatch[4], 10);
+    return { passed, failed, skipped, total };
+  }
+
+  // Vitest v2 pattern: "✓ 42 passed" / "× 3 failed" / "↓ 2 skipped" with summary
+  // Or: "Test Files  1 passed (1)" and "Tests  42 passed | 3 failed (45)"
+  const vitestTestsMatch = combined.match(
+    /Tests\s+(?:(\d+)\s+passed)?\s*(?:\|\s*(\d+)\s+failed)?\s*(?:\|\s*(\d+)\s+skipped)?\s*\((\d+)\)/,
+  );
+  if (vitestTestsMatch) {
+    const passed = parseInt(vitestTestsMatch[1] ?? "0", 10);
+    const failed = parseInt(vitestTestsMatch[2] ?? "0", 10);
+    const skipped = parseInt(vitestTestsMatch[3] ?? "0", 10);
+    const total = parseInt(vitestTestsMatch[4], 10);
+    return { passed, failed, skipped, total };
+  }
+
+  // Mocha pattern: "42 passing" / "3 failing" / "2 pending"
+  const mochaPassingMatch = combined.match(/(\d+)\s+passing/);
+  const mochaFailingMatch = combined.match(/(\d+)\s+failing/);
+  const mochaPendingMatch = combined.match(/(\d+)\s+pending/);
+  if (mochaPassingMatch || mochaFailingMatch) {
+    const passed = parseInt(mochaPassingMatch?.[1] ?? "0", 10);
+    const failed = parseInt(mochaFailingMatch?.[1] ?? "0", 10);
+    const skipped = parseInt(mochaPendingMatch?.[1] ?? "0", 10);
+    return { passed, failed, skipped, total: passed + failed + skipped };
+  }
+
+  // TAP pattern: "# tests 47" / "# pass 42" / "# fail 3" / "# skip 2"
+  const tapTestsMatch = combined.match(/#\s+tests\s+(\d+)/);
+  const tapPassMatch = combined.match(/#\s+pass\s+(\d+)/);
+  const tapFailMatch = combined.match(/#\s+fail\s+(\d+)/);
+  const tapSkipMatch = combined.match(/#\s+skip\s+(\d+)/);
+  if (tapTestsMatch) {
+    const total = parseInt(tapTestsMatch[1], 10);
+    const passed = parseInt(tapPassMatch?.[1] ?? "0", 10);
+    const failed = parseInt(tapFailMatch?.[1] ?? "0", 10);
+    const skipped = parseInt(tapSkipMatch?.[1] ?? "0", 10);
+    return { passed, failed, skipped, total };
+  }
+
+  return undefined;
 }
 
 /** Parses `npm test` output into structured data with exit code, stdout/stderr, and duration. */
@@ -331,12 +578,15 @@ export function parseTestOutput(
   stderr: string,
   duration: number,
 ): NpmTest {
+  const testResults = parseTestResults(stdout, stderr);
+
   return {
     exitCode,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
     success: exitCode === 0,
     duration,
+    ...(testResults ? { testResults } : {}),
   };
 }
 
@@ -657,6 +907,7 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
 
 /**
  * Parses `nvm list` output into structured data.
+ * Gap #179: Now includes LTS tags per version.
  *
  * nvm-windows output looks like:
  *   * 20.11.1 (Currently using 64-bit executable)
@@ -668,14 +919,30 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
  *          v18.19.0
  *          v16.20.2
  *   default -> 20.11.1 (-> v20.11.1)
+ *   lts/* -> lts/iron (-> v20.11.1)
+ *   lts/hydrogen -> v18.19.0
+ *   lts/iron -> v20.11.1
  *
  * @param listOutput - stdout from `nvm list`
  * @param currentOutput - stdout from `nvm current` (used as fallback for current version)
  */
 export function parseNvmOutput(listOutput: string, currentOutput: string): NvmResult {
-  const versions: string[] = [];
+  const versions: NvmResult["versions"] = [];
   let current = "";
   let defaultVersion: string | undefined;
+
+  // First pass: collect LTS mappings from alias lines
+  const ltsMap = new Map<string, string>(); // version -> lts name
+  for (const line of listOutput.split("\n")) {
+    const trimmed = line.trim();
+    // Match "lts/hydrogen -> v18.19.0" or "lts/iron -> v20.11.1 (-> v20.11.1)"
+    const ltsMatch = trimmed.match(/^lts\/(\w+)\s+->\s+v?([\d.]+)/);
+    if (ltsMatch) {
+      const ltsName = ltsMatch[1];
+      const ver = normalizeVersion(ltsMatch[2]);
+      ltsMap.set(ver, ltsName);
+    }
+  }
 
   for (const line of listOutput.split("\n")) {
     const trimmed = line.trim();
@@ -686,7 +953,8 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
     if (winCurrentMatch) {
       const ver = normalizeVersion(winCurrentMatch[1]);
       current = ver;
-      versions.push(ver);
+      const lts = ltsMap.get(ver);
+      versions.push({ version: ver, ...(lts ? { lts } : {}) });
       continue;
     }
 
@@ -695,7 +963,8 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
     if (unixCurrentMatch) {
       const ver = normalizeVersion(unixCurrentMatch[1]);
       current = ver;
-      versions.push(ver);
+      const lts = ltsMap.get(ver);
+      versions.push({ version: ver, ...(lts ? { lts } : {}) });
       continue;
     }
 
@@ -712,7 +981,9 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
     // Plain version line: "  18.19.0" or "  v18.19.0" or "system"
     const versionMatch = trimmed.match(/^v?([\d.]+)$/);
     if (versionMatch) {
-      versions.push(normalizeVersion(versionMatch[1]));
+      const ver = normalizeVersion(versionMatch[1]);
+      const lts = ltsMap.get(ver);
+      versions.push({ version: ver, ...(lts ? { lts } : {}) });
     }
   }
 
@@ -728,6 +999,81 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
     current: current || "none",
     versions,
     ...(defaultVersion ? { default: defaultVersion } : {}),
+  };
+}
+
+/**
+ * Parses `nvm ls-remote` output into structured data.
+ * Gap #178: New parser for listing available remote Node.js versions.
+ *
+ * Unix nvm ls-remote output looks like:
+ *   v18.0.0
+ *   v18.1.0
+ *   ...
+ *   v18.19.0   (LTS: Hydrogen)
+ *   v20.0.0
+ *   v20.11.1   (Latest LTS: Iron)
+ *
+ * We limit to the last N major versions by default.
+ */
+export function parseNvmLsRemoteOutput(
+  stdout: string,
+  majorVersionsLimit: number = 4,
+): NvmLsRemote {
+  const allVersions: NvmLsRemote["versions"] = [];
+
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Match version with optional LTS tag: "v20.11.1   (LTS: Iron)" or "v20.11.1   (Latest LTS: Iron)"
+    const match = trimmed.match(/^v?([\d.]+)\s*(?:\((?:Latest )?LTS:\s*(\w+)\))?/);
+    if (match) {
+      const version = normalizeVersion(match[1]);
+      const lts = match[2]?.toLowerCase();
+      allVersions.push({ version, ...(lts ? { lts } : {}) });
+    }
+  }
+
+  // Filter to last N major versions
+  if (majorVersionsLimit > 0 && allVersions.length > 0) {
+    const majors = new Set<number>();
+    for (const v of allVersions) {
+      const majorMatch = v.version.match(/^v?(\d+)\./);
+      if (majorMatch) {
+        majors.add(parseInt(majorMatch[1], 10));
+      }
+    }
+    const sortedMajors = [...majors].sort((a, b) => b - a);
+    const allowedMajors = new Set(sortedMajors.slice(0, majorVersionsLimit));
+
+    const filtered = allVersions.filter((v) => {
+      const majorMatch = v.version.match(/^v?(\d+)\./);
+      return majorMatch ? allowedMajors.has(parseInt(majorMatch[1], 10)) : false;
+    });
+
+    return { versions: filtered, total: filtered.length };
+  }
+
+  return { versions: allVersions, total: allVersions.length };
+}
+
+/**
+ * Parses `nvm exec` output into structured data.
+ * Gap #180: New parser for running commands with a specific Node.js version.
+ */
+export function parseNvmExecOutput(
+  version: string,
+  exitCode: number,
+  stdout: string,
+  stderr: string,
+): NvmExec {
+  return {
+    version: normalizeVersion(version.replace(/^v/, "")),
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+    success: exitCode === 0,
   };
 }
 

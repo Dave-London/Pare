@@ -10,6 +10,8 @@ import type {
   NpmInfo,
   NpmSearch,
   NvmResult,
+  NvmLsRemote,
+  NvmExec,
 } from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
@@ -23,6 +25,19 @@ export function formatInstall(data: NpmInstall): string {
     : `up to date (${data.packages} packages)`;
 
   const lines = [line];
+
+  // Show specific package details if available
+  if (data.packageDetails && data.packageDetails.length > 0) {
+    const maxShow = 10; // Limit display to avoid huge output
+    const shown = data.packageDetails.slice(0, maxShow);
+    for (const pkg of shown) {
+      lines.push(`  ${pkg.action}: ${pkg.name}@${pkg.version}`);
+    }
+    if (data.packageDetails.length > maxShow) {
+      lines.push(`  ... and ${data.packageDetails.length - maxShow} more`);
+    }
+  }
+
   if (data.vulnerabilities && data.vulnerabilities.total > 0) {
     lines.push(
       `${data.vulnerabilities.total} vulnerabilities (${data.vulnerabilities.critical} critical, ${data.vulnerabilities.high} high)`,
@@ -66,7 +81,8 @@ export function formatList(data: NpmList): string {
   const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
   function formatDeps(deps: Record<string, NpmListDep>, indent: string) {
     for (const [name, dep] of Object.entries(deps)) {
-      lines.push(`${indent}${name}@${dep.version}`);
+      const typeTag = dep.type ? ` [${dep.type}]` : "";
+      lines.push(`${indent}${name}@${dep.version}${typeTag}`);
       if (dep.dependencies) {
         formatDeps(dep.dependencies, indent + "  ");
       }
@@ -78,7 +94,14 @@ export function formatList(data: NpmList): string {
 
 /** Formats structured npm run output into a human-readable script execution summary. */
 export function formatRun(data: NpmRun): string {
-  const status = data.success ? "completed successfully" : `failed (exit code ${data.exitCode})`;
+  let status: string;
+  if (data.timedOut) {
+    status = `timed out after ${data.duration}s`;
+  } else if (data.success) {
+    status = `completed successfully`;
+  } else {
+    status = `failed (exit code ${data.exitCode})`;
+  }
   const lines = [`Script "${data.script}" ${status} in ${data.duration}s`];
   if (data.stdout) {
     lines.push("", "stdout:", data.stdout);
@@ -93,6 +116,15 @@ export function formatRun(data: NpmRun): string {
 export function formatTest(data: NpmTest): string {
   const status = data.success ? "passed" : `failed (exit code ${data.exitCode})`;
   const lines = [`Tests ${status} in ${data.duration}s`];
+
+  // Show parsed test results if available
+  if (data.testResults) {
+    const r = data.testResults;
+    lines.push(
+      `Results: ${r.passed} passed, ${r.failed} failed, ${r.skipped} skipped (${r.total} total)`,
+    );
+  }
+
   if (data.stdout) {
     lines.push("", "stdout:", data.stdout);
   }
@@ -271,11 +303,37 @@ export function formatNvm(data: NvmResult): string {
   if (data.versions.length > 0) {
     lines.push(`Installed (${data.versions.length}):`);
     for (const v of data.versions) {
-      const marker = v === data.current ? " (current)" : "";
-      lines.push(`  ${v}${marker}`);
+      const marker = v.version === data.current ? " (current)" : "";
+      const ltsTag = v.lts ? ` [LTS: ${v.lts}]` : "";
+      lines.push(`  ${v.version}${ltsTag}${marker}`);
     }
   } else {
     lines.push("No versions installed.");
+  }
+  return lines.join("\n");
+}
+
+/** Formats nvm ls-remote output into a human-readable version list. */
+export function formatNvmLsRemote(data: NvmLsRemote): string {
+  if (data.total === 0) return "No remote versions found.";
+
+  const lines = [`${data.total} available versions:`];
+  for (const v of data.versions) {
+    const ltsTag = v.lts ? ` (LTS: ${v.lts})` : "";
+    lines.push(`  ${v.version}${ltsTag}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats nvm exec output into a human-readable execution summary. */
+export function formatNvmExec(data: NvmExec): string {
+  const status = data.success ? "completed successfully" : `failed (exit code ${data.exitCode})`;
+  const lines = [`Command ${status} using Node.js ${data.version}`];
+  if (data.stdout) {
+    lines.push("", "stdout:", data.stdout);
+  }
+  if (data.stderr) {
+    lines.push("", "stderr:", data.stderr);
   }
   return lines.join("\n");
 }
