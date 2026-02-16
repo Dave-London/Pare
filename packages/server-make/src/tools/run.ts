@@ -139,8 +139,27 @@ export function registerRunTool(server: McpServer) {
       const cmdArgs = [...flags, target, ...(args || []), ...envArgs];
 
       const start = Date.now();
-      const result =
-        resolved === "just" ? await justCmd(cmdArgs, cwd) : await makeCmd(cmdArgs, cwd);
+      let timedOut = false;
+      let result: { exitCode: number; stdout: string; stderr: string };
+
+      try {
+        result = resolved === "just" ? await justCmd(cmdArgs, cwd) : await makeCmd(cmdArgs, cwd);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+
+        // Gap #174: Detect timeout errors from the shared runner
+        if (errMsg.includes("timed out")) {
+          timedOut = true;
+          result = {
+            exitCode: 124, // Standard timeout exit code
+            stdout: "",
+            stderr: errMsg,
+          };
+        } else {
+          // Re-throw non-timeout errors
+          throw err;
+        }
+      }
       const duration = Date.now() - start;
 
       const data = parseRunOutput(
@@ -150,6 +169,7 @@ export function registerRunTool(server: McpServer) {
         result.exitCode,
         duration,
         resolved,
+        timedOut,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

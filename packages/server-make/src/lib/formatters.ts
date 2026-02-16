@@ -5,7 +5,11 @@ import type { MakeRunResult, MakeListResult } from "../schemas/index.js";
 /** Formats structured run results into a human-readable output summary. */
 export function formatRun(data: MakeRunResult): string {
   const lines: string[] = [];
-  if (data.success) {
+  if (data.timedOut) {
+    lines.push(
+      `${data.tool} ${data.target}: TIMED OUT after ${data.duration}ms (exit code ${data.exitCode}).`,
+    );
+  } else if (data.success) {
     lines.push(`${data.tool} ${data.target}: success (${data.duration}ms).`);
   } else {
     lines.push(`${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms).`);
@@ -21,15 +25,20 @@ export function formatList(data: MakeListResult): string {
 
   const lines = [`${data.tool}: ${data.total} targets`];
   for (const t of data.targets ?? []) {
-    const desc = t.description ? ` # ${t.description}` : "";
-    lines.push(`  ${t.name}${desc}`);
+    const parts: string[] = [`  ${t.name}`];
+    if (t.isPhony) parts.push("[phony]");
+    if (t.dependencies && t.dependencies.length > 0) {
+      parts.push(`-> ${t.dependencies.join(", ")}`);
+    }
+    if (t.description) parts.push(`# ${t.description}`);
+    lines.push(parts.join(" "));
   }
   return lines.join("\n");
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact run: target, exitCode, success, duration. Drop stdout/stderr. */
+/** Compact run: target, exitCode, success, duration, timedOut. Drop stdout/stderr. */
 export interface MakeRunCompact {
   [key: string]: unknown;
   target: string;
@@ -37,6 +46,7 @@ export interface MakeRunCompact {
   exitCode: number;
   duration: number;
   tool: "make" | "just";
+  timedOut: boolean;
 }
 
 export function compactRunMap(data: MakeRunResult): MakeRunCompact {
@@ -46,10 +56,13 @@ export function compactRunMap(data: MakeRunResult): MakeRunCompact {
     exitCode: data.exitCode,
     duration: data.duration,
     tool: data.tool,
+    timedOut: data.timedOut,
   };
 }
 
 export function formatRunCompact(data: MakeRunCompact): string {
+  if (data.timedOut)
+    return `${data.tool} ${data.target}: TIMED OUT after ${data.duration}ms (exit code ${data.exitCode}).`;
   if (data.success) return `${data.tool} ${data.target}: success (${data.duration}ms).`;
   return `${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms).`;
 }
