@@ -42,7 +42,12 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Process Run",
       description:
-        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status). Use instead of running commands directly in the terminal.",
+        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status). Use instead of running commands directly in the terminal.\n\n" +
+        "**Security note**: The `shell` parameter enables shell-mode execution. " +
+        "When shell=true, the command string is passed through the system shell " +
+        "(e.g., /bin/sh or cmd.exe), enabling features like glob expansion, piping, " +
+        "and variable substitution — but also exposing the command to shell injection risks. " +
+        "Only use shell=true when you trust the input and need shell features.",
       inputSchema: {
         command: z
           .string()
@@ -109,6 +114,22 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
+        shell: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Run the command through the system shell (enables glob expansion, piping, variable substitution). " +
+              "WARNING: shell=true exposes the command to shell injection risks. Only use when you trust the input.",
+          ),
+        stripEnv: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Run with a minimal environment (only PATH + explicit env vars). " +
+              "Prevents leaking sensitive parent environment variables to the child process.",
+          ),
       },
       outputSchema: ProcessRunResultSchema,
     },
@@ -124,6 +145,8 @@ export function registerRunTool(server: McpServer) {
       maxOutputLines,
       encoding,
       compact,
+      shell,
+      stripEnv,
     }) => {
       assertAllowedByPolicy(command, "process");
       const workDir = cwd || process.cwd();
@@ -132,16 +155,34 @@ export function registerRunTool(server: McpServer) {
 
       const start = Date.now();
       let timedOut = false;
+      let truncated = false;
       let signal: string | undefined;
       let result: { exitCode: number; stdout: string; stderr: string };
+
+      // Build the environment for the child process
+      let childEnv: Record<string, string> | undefined;
+      if (stripEnv) {
+        // Minimal environment: only PATH + user-provided env vars
+        const minimalEnv: Record<string, string> = {};
+        if (process.env.PATH) {
+          minimalEnv.PATH = process.env.PATH;
+        }
+        if (env) {
+          Object.assign(minimalEnv, env);
+        }
+        childEnv = minimalEnv;
+      } else if (env) {
+        childEnv = { ...process.env, ...env } as Record<string, string>;
+      }
 
       // Build run options
       const runOpts: Parameters<typeof run>[2] = {
         cwd: workDir,
         timeout: timeoutMs,
-        env: env ? ({ ...process.env, ...env } as Record<string, string>) : undefined,
+        env: childEnv,
         stdin: stdin || undefined,
         maxBuffer: maxBuffer || undefined,
+        shell: shell || undefined,
       };
 
       try {
@@ -161,7 +202,8 @@ export function registerRunTool(server: McpServer) {
             stderr: errMsg,
           };
         } else if (errMsg.includes("maxBuffer")) {
-          // Buffer exceeded — return partial result
+          // Buffer exceeded — return partial result with truncated flag
+          truncated = true;
           result = {
             exitCode: 1,
             stdout: "",
@@ -189,6 +231,7 @@ export function registerRunTool(server: McpServer) {
         timedOut,
         signal,
         maxOutputLines,
+        truncated,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

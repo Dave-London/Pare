@@ -9,6 +9,7 @@ export const ProcessRunResultSchema = z.object({
   stderr: z.string().optional(),
   duration: z.number(),
   timedOut: z.boolean(),
+  truncated: z.boolean().optional(),
   signal: z.string().optional(),
   stdoutTruncatedLines: z.number().optional(),
   stderrTruncatedLines: z.number().optional(),

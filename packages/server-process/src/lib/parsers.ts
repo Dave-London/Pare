@@ -25,6 +25,7 @@ export function parseRunOutput(
   timedOut: boolean,
   signal?: string,
   maxOutputLines?: number,
+  truncated?: boolean,
 ): ProcessRunResult {
   let finalStdout = stdout.trimEnd() || undefined;
   let finalStderr = stderr.trimEnd() || undefined;
@@ -52,6 +53,7 @@ export function parseRunOutput(
     stderr: finalStderr,
     duration,
     timedOut,
+    truncated: truncated || undefined,
     signal: signal || undefined,
     stdoutTruncatedLines,
     stderrTruncatedLines,

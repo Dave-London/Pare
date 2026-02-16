@@ -69,6 +69,23 @@ describe("compactRunMap", () => {
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
+
+  it("preserves truncated flag when true", () => {
+    const data: ProcessRunResult = {
+      command: "cat",
+      exitCode: 1,
+      success: false,
+      stdout: "",
+      stderr: "maxBuffer exceeded",
+      duration: 300,
+      timedOut: false,
+      truncated: true,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.truncated).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -119,5 +136,19 @@ describe("formatRunCompact", () => {
       timedOut: true,
     };
     expect(formatRunCompact(compact)).toBe("sleep: timed out after 60000ms.");
+  });
+
+  it("formats truncated compact run", () => {
+    const compact = {
+      command: "cat",
+      success: false,
+      exitCode: 1,
+      duration: 300,
+      timedOut: false,
+      truncated: true,
+    };
+    const output = formatRunCompact(compact);
+    expect(output).toContain("cat: exit code 1 (300ms).");
+    expect(output).toContain("[output truncated: maxBuffer exceeded]");
   });
 });

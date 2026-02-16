@@ -16,6 +16,10 @@ export function formatRun(data: ProcessRunResult): string {
     lines.push(`${data.command}: exit code ${data.exitCode} (${data.duration}ms).`);
   }
 
+  if (data.truncated) {
+    lines.push("  [output truncated: maxBuffer exceeded]");
+  }
+
   if (data.stdout) lines.push(data.stdout);
   if (data.stdoutTruncatedLines) {
     lines.push(`  ... ${data.stdoutTruncatedLines} stdout lines truncated`);
@@ -29,7 +33,7 @@ export function formatRun(data: ProcessRunResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact run: command, exitCode, success, duration, timedOut, signal. Drop stdout/stderr. */
+/** Compact run: command, exitCode, success, duration, timedOut, signal, truncated. Drop stdout/stderr. */
 export interface ProcessRunCompact {
   [key: string]: unknown;
   command: string;
@@ -37,6 +41,7 @@ export interface ProcessRunCompact {
   exitCode: number;
   duration: number;
   timedOut: boolean;
+  truncated?: boolean;
   signal?: string;
   stdoutTruncatedLines?: number;
   stderrTruncatedLines?: number;
@@ -49,6 +54,7 @@ export function compactRunMap(data: ProcessRunResult): ProcessRunCompact {
     exitCode: data.exitCode,
     duration: data.duration,
     timedOut: data.timedOut,
+    truncated: data.truncated,
     signal: data.signal,
     stdoutTruncatedLines: data.stdoutTruncatedLines,
     stderrTruncatedLines: data.stderrTruncatedLines,
@@ -56,9 +62,21 @@ export function compactRunMap(data: ProcessRunResult): ProcessRunCompact {
 }
 
 export function formatRunCompact(data: ProcessRunCompact): string {
+  const parts: string[] = [];
+
   if (data.timedOut) {
-    return `${data.command}: timed out after ${data.duration}ms${data.signal ? ` (${data.signal})` : ""}.`;
+    parts.push(
+      `${data.command}: timed out after ${data.duration}ms${data.signal ? ` (${data.signal})` : ""}.`,
+    );
+  } else if (data.success) {
+    parts.push(`${data.command}: success (${data.duration}ms).`);
+  } else {
+    parts.push(`${data.command}: exit code ${data.exitCode} (${data.duration}ms).`);
   }
-  if (data.success) return `${data.command}: success (${data.duration}ms).`;
-  return `${data.command}: exit code ${data.exitCode} (${data.duration}ms).`;
+
+  if (data.truncated) {
+    parts.push("  [output truncated: maxBuffer exceeded]");
+  }
+
+  return parts.join("\n");
 }

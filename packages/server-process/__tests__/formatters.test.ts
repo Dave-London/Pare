@@ -70,6 +70,35 @@ describe("formatRun", () => {
     const output = formatRun(data);
     expect(output).toBe("true: success (10ms).");
   });
+
+  it("formats truncated run", () => {
+    const data: ProcessRunResult = {
+      command: "cat",
+      success: false,
+      exitCode: 1,
+      stderr: "output exceeded maxBuffer",
+      duration: 300,
+      timedOut: false,
+      truncated: true,
+    };
+    const output = formatRun(data);
+    expect(output).toContain("cat: exit code 1 (300ms).");
+    expect(output).toContain("[output truncated: maxBuffer exceeded]");
+    expect(output).toContain("output exceeded maxBuffer");
+  });
+
+  it("does not show truncation notice when not truncated", () => {
+    const data: ProcessRunResult = {
+      command: "echo",
+      success: true,
+      exitCode: 0,
+      stdout: "hello",
+      duration: 50,
+      timedOut: false,
+    };
+    const output = formatRun(data);
+    expect(output).not.toContain("truncated: maxBuffer");
+  });
 });
 
 // ── Compact mappers and formatters ───────────────────────────────────
@@ -128,6 +157,36 @@ describe("compactRunMap", () => {
     expect(compact.exitCode).toBe(2);
     expect(compact.success).toBe(false);
   });
+
+  it("preserves truncated flag", () => {
+    const data: ProcessRunResult = {
+      command: "cat",
+      success: false,
+      exitCode: 1,
+      stderr: "maxBuffer exceeded",
+      duration: 300,
+      timedOut: false,
+      truncated: true,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.truncated).toBe(true);
+  });
+
+  it("does not include truncated when undefined", () => {
+    const data: ProcessRunResult = {
+      command: "echo",
+      success: true,
+      exitCode: 0,
+      duration: 50,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.truncated).toBeUndefined();
+  });
 });
 
 describe("formatRunCompact", () => {
@@ -178,5 +237,18 @@ describe("formatRunCompact", () => {
         timedOut: true,
       }),
     ).toBe("sleep: timed out after 60000ms.");
+  });
+
+  it("formats truncated run", () => {
+    const output = formatRunCompact({
+      command: "cat",
+      exitCode: 1,
+      success: false,
+      duration: 300,
+      timedOut: false,
+      truncated: true,
+    });
+    expect(output).toContain("cat: exit code 1 (300ms).");
+    expect(output).toContain("[output truncated: maxBuffer exceeded]");
   });
 });
