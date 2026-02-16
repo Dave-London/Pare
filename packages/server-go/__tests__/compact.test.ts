@@ -38,7 +38,7 @@ import type {
 // build
 // ---------------------------------------------------------------------------
 describe("compactBuildMap", () => {
-  it("keeps only success and total, drops error details", () => {
+  it("preserves errors array when non-empty", () => {
     const data: GoBuildResult = {
       success: false,
       errors: [
@@ -52,16 +52,17 @@ describe("compactBuildMap", () => {
 
     expect(compact.success).toBe(false);
     expect(compact.total).toBe(2);
-    expect(compact).not.toHaveProperty("errors");
+    expect(compact.errors).toEqual(data.errors);
   });
 
-  it("preserves success state for clean build", () => {
+  it("omits errors when empty (clean build)", () => {
     const data: GoBuildResult = { success: true, errors: [], total: 0 };
 
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(true);
     expect(compact.total).toBe(0);
+    expect(compact).not.toHaveProperty("errors");
   });
 });
 

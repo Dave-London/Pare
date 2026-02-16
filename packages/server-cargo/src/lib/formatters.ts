@@ -14,10 +14,11 @@ import type {
 
 // ── Compact types ────────────────────────────────────────────────────
 
-/** Compact build/check: success + counts only, no diagnostic details. */
+/** Compact build/check: success + counts, with diagnostics preserved when non-empty. */
 export interface CargoBuildCompact {
   [key: string]: unknown;
   success: boolean;
+  diagnostics?: CargoBuildResult["diagnostics"];
   errors: number;
   warnings: number;
   total: number;
@@ -33,9 +34,10 @@ export interface CargoTestCompact {
   ignored: number;
 }
 
-/** Compact clippy: counts per severity only, no individual diagnostics. */
+/** Compact clippy: counts per severity, with diagnostics preserved when non-empty. */
 export interface CargoClippyCompact {
   [key: string]: unknown;
+  diagnostics?: CargoClippyResult["diagnostics"];
   errors: number;
   warnings: number;
   total: number;
@@ -172,13 +174,14 @@ export function formatCargoDoc(data: CargoDocResult): string {
 // ── Compact mappers ──────────────────────────────────────────────────
 
 export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
-  return {
+  const compact: CargoBuildCompact = {
     success: data.success,
-    diagnostics: [],
     errors: data.errors,
     warnings: data.warnings,
     total: data.total,
   };
+  if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
+  return compact;
 }
 
 export function compactTestMap(data: CargoTestResult): CargoTestCompact {
@@ -193,12 +196,13 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
 }
 
 export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
-  return {
-    diagnostics: [],
+  const compact: CargoClippyCompact = {
     errors: data.errors,
     warnings: data.warnings,
     total: data.total,
   };
+  if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
+  return compact;
 }
 
 export function compactRunMap(data: CargoRunResult): CargoRunCompact {

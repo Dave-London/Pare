@@ -125,12 +125,29 @@ error: aborting due to 2 previous errors
 <td><em>n/a</em></td>
 <td>
 
-~25 tokens
+~100 tokens
 
 ```json
 {
   "success": false,
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "file": "src/main.rs",
+      "line": 8,
+      "column": 20,
+      "severity": "error",
+      "code": "E0382",
+      "message": "borrow of moved value: `s`"
+    },
+    {
+      "file": "src/lib.rs",
+      "line": 15,
+      "column": 12,
+      "severity": "error",
+      "code": "E0308",
+      "message": "mismatched types"
+    }
+  ],
   "errors": 2,
   "warnings": 0,
   "total": 2
@@ -146,7 +163,7 @@ error: aborting due to 2 previous errors
 | Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------- | ---------- | --------- | ------------ | ------- |
 | Clean check   | ~80        | ~30       | ~30          | 63%     |
-| 2 type errors | ~350       | ~100      | ~25          | 71-93%  |
+| 2 type errors | ~350       | ~100      | ~100         | 71%     |
 
 ## Notes
 
@@ -154,4 +171,4 @@ error: aborting due to 2 previous errors
 - Shares the same output schema (`CargoBuildResultSchema`) and parser as `build`
 - The `package` parameter uses `-p` to check a specific package in a workspace
 - Faster than `cargo build` because it skips code generation -- useful for quick error checking
-- Compact mode drops individual diagnostic details, keeping only success status and counts
+- In compact mode, empty `diagnostics` arrays are omitted; non-empty arrays are preserved along with counts

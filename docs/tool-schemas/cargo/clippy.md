@@ -123,11 +123,28 @@ warning: `my-app` (bin "my-app") generated 2 warnings
 <td><em>n/a</em></td>
 <td>
 
-~20 tokens
+~100 tokens
 
 ```json
 {
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "file": "src/main.rs",
+      "line": 12,
+      "column": 14,
+      "severity": "warning",
+      "code": "clippy::redundant_clone",
+      "message": "redundant clone"
+    },
+    {
+      "file": "src/lib.rs",
+      "line": 8,
+      "column": 10,
+      "severity": "warning",
+      "code": "clippy::needless_borrow",
+      "message": "this expression creates a reference which is immediately dereferenced by the compiler"
+    }
+  ],
   "errors": 0,
   "warnings": 2,
   "total": 2
@@ -143,12 +160,12 @@ warning: `my-app` (bin "my-app") generated 2 warnings
 | Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
 | --------------- | ---------- | --------- | ------------ | ------- |
 | No warnings     | ~80        | ~20       | ~20          | 75%     |
-| 2 lint warnings | ~400       | ~100      | ~20          | 75-95%  |
+| 2 lint warnings | ~400       | ~100      | ~100         | 75%     |
 
 ## Notes
 
 - Uses `--message-format=json` to parse clippy diagnostics as structured JSON lines
 - Shares the same diagnostic parsing logic as the `build` and `check` tools
 - The `code` field contains the full clippy lint name (e.g., `clippy::redundant_clone`)
-- Compact mode drops all individual diagnostic details, keeping only error/warning counts
+- In compact mode, empty `diagnostics` arrays are omitted; non-empty arrays are preserved along with counts
 - Does not include a `success` field -- use error/warning counts to determine status

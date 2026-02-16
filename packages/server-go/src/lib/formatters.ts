@@ -89,18 +89,21 @@ export function formatGoGenerate(data: GoGenerateResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact build: success, error/warning count. Drop full error details. */
+/** Compact build: success + count, with errors preserved when non-empty. */
 export interface GoBuildCompact {
   [key: string]: unknown;
   success: boolean;
+  errors?: GoBuildResult["errors"];
   total: number;
 }
 
 export function compactBuildMap(data: GoBuildResult): GoBuildCompact {
-  return {
+  const compact: GoBuildCompact = {
     success: data.success,
     total: data.total,
   };
+  if (data.errors?.length) compact.errors = data.errors;
+  return compact;
 }
 
 export function formatBuildCompact(data: GoBuildCompact): string {

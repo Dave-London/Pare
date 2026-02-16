@@ -202,7 +202,7 @@ describe("formatCargoClippy", () => {
 // ── Compact mapper tests ─────────────────────────────────────────────
 
 describe("compactBuildMap", () => {
-  it("strips diagnostics array and keeps counts", () => {
+  it("preserves diagnostics array when non-empty", () => {
     const data: CargoBuildResult = {
       success: false,
       diagnostics: [
@@ -227,8 +227,24 @@ describe("compactBuildMap", () => {
       warnings: 1,
     };
     const compact = compactBuildMap(data);
-    expect(compact).toEqual({ success: false, diagnostics: [], errors: 1, warnings: 1, total: 2 });
-    expect(compact.diagnostics).toEqual([]);
+    expect(compact.success).toBe(false);
+    expect(compact.errors).toBe(1);
+    expect(compact.warnings).toBe(1);
+    expect(compact.total).toBe(2);
+    expect(compact.diagnostics).toEqual(data.diagnostics);
+  });
+
+  it("omits diagnostics when empty", () => {
+    const data: CargoBuildResult = {
+      success: true,
+      diagnostics: [],
+      total: 0,
+      errors: 0,
+      warnings: 0,
+    };
+    const compact = compactBuildMap(data);
+    expect(compact.success).toBe(true);
+    expect(compact).not.toHaveProperty("diagnostics");
   });
 
   it("formats compact build output", () => {
@@ -278,7 +294,7 @@ describe("compactTestMap", () => {
 });
 
 describe("compactClippyMap", () => {
-  it("strips diagnostics and keeps counts", () => {
+  it("preserves diagnostics when non-empty", () => {
     const data: CargoClippyResult = {
       diagnostics: [
         {
@@ -295,8 +311,21 @@ describe("compactClippyMap", () => {
       warnings: 1,
     };
     const compact = compactClippyMap(data);
-    expect(compact).toEqual({ diagnostics: [], errors: 0, warnings: 1, total: 1 });
-    expect(compact.diagnostics).toEqual([]);
+    expect(compact.errors).toBe(0);
+    expect(compact.warnings).toBe(1);
+    expect(compact.total).toBe(1);
+    expect(compact.diagnostics).toEqual(data.diagnostics);
+  });
+
+  it("omits diagnostics when empty", () => {
+    const data: CargoClippyResult = {
+      diagnostics: [],
+      total: 0,
+      errors: 0,
+      warnings: 0,
+    };
+    const compact = compactClippyMap(data);
+    expect(compact).not.toHaveProperty("diagnostics");
   });
 
   it("formats compact clippy output", () => {
