@@ -437,6 +437,35 @@ describe("parseGoListOutput", () => {
     expect(result.total).toBe(1);
     expect(result.packages[0].goFiles).toBeUndefined();
   });
+
+  it("captures Imports field from go list -json output", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+      Imports: ["fmt", "os", "github.com/user/project/pkg/util"],
+    });
+
+    const result = parseGoListOutput(stdout, 0);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0].imports).toEqual(["fmt", "os", "github.com/user/project/pkg/util"]);
+  });
+
+  it("handles package without Imports field", () => {
+    const stdout = JSON.stringify({
+      Dir: "/home/user/project",
+      ImportPath: "github.com/user/project",
+      Name: "main",
+      GoFiles: ["main.go"],
+    });
+
+    const result = parseGoListOutput(stdout, 0);
+
+    expect(result.total).toBe(1);
+    expect(result.packages[0].imports).toBeUndefined();
+  });
 });
 
 describe("parseGoGetOutput", () => {

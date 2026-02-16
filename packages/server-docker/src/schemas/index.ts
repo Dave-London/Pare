@@ -113,11 +113,12 @@ export const DockerComposeDownSchema = z.object({
 
 export type DockerComposeDown = z.infer<typeof DockerComposeDownSchema>;
 
-/** Zod schema for structured docker pull output with image, tag, digest, and success flag. */
+/** Zod schema for structured docker pull output with image, tag, digest, status, and success flag. */
 export const DockerPullSchema = z.object({
   image: z.string(),
   tag: z.string(),
   digest: z.string().optional(),
+  status: z.enum(["pulled", "up-to-date", "error"]),
   success: z.boolean(),
 });
 
@@ -180,6 +181,13 @@ export const DockerVolumeLsSchema = z.object({
 
 export type DockerVolumeLs = z.infer<typeof DockerVolumeLsSchema>;
 
+/** Zod schema for a single Docker Compose service port entry parsed from the Publishers array. */
+export const ComposeServicePortSchema = z.object({
+  host: z.number().optional(),
+  container: z.number(),
+  protocol: z.enum(["tcp", "udp"]),
+});
+
 /** Zod schema for a single Docker Compose service entry. */
 export const ComposeServiceSchema = z.object({
   name: z.string(),
@@ -188,7 +196,7 @@ export const ComposeServiceSchema = z.object({
     .enum(["running", "exited", "paused", "restarting", "dead", "created", "removing"])
     .catch("created"),
   status: z.string().optional(),
-  ports: z.string().optional(),
+  ports: z.array(ComposeServicePortSchema).optional(),
 });
 
 /** Zod schema for structured docker compose ps output. */

@@ -495,10 +495,11 @@ describe("formatPipShowCompact", () => {
 // ── Ruff Format compact ──────────────────────────────────────────────
 
 describe("compactRuffFormatMap", () => {
-  it("keeps success and filesChanged, drops file list", () => {
+  it("keeps success, filesChanged, filesUnchanged; drops file list", () => {
     const data: RuffFormatResult = {
       success: true,
       filesChanged: 3,
+      filesUnchanged: 7,
       files: ["a.py", "b.py", "c.py"],
     };
 
@@ -506,23 +507,38 @@ describe("compactRuffFormatMap", () => {
 
     expect(compact.success).toBe(true);
     expect(compact.filesChanged).toBe(3);
+    expect(compact.filesUnchanged).toBe(7);
     expect(compact).not.toHaveProperty("files");
   });
 });
 
 describe("formatRuffFormatCompact", () => {
-  it("formats all clean", () => {
-    const compact = { success: true, filesChanged: 0 };
+  it("formats all clean with unchanged count", () => {
+    const compact = { success: true, filesChanged: 0, filesUnchanged: 10 };
+    expect(formatRuffFormatCompact(compact)).toBe(
+      "ruff format: all files already formatted. (10 unchanged)",
+    );
+  });
+
+  it("formats all clean without unchanged count", () => {
+    const compact = { success: true, filesChanged: 0, filesUnchanged: 0 };
     expect(formatRuffFormatCompact(compact)).toBe("ruff format: all files already formatted.");
   });
 
-  it("formats with reformatted files", () => {
-    const compact = { success: true, filesChanged: 3 };
+  it("formats with reformatted files and unchanged", () => {
+    const compact = { success: true, filesChanged: 3, filesUnchanged: 7 };
+    expect(formatRuffFormatCompact(compact)).toBe("ruff format: 3 files reformatted, 7 unchanged");
+  });
+
+  it("formats with reformatted files and no unchanged", () => {
+    const compact = { success: true, filesChanged: 3, filesUnchanged: 0 };
     expect(formatRuffFormatCompact(compact)).toBe("ruff format: 3 files reformatted");
   });
 
   it("formats check mode with files needing formatting", () => {
-    const compact = { success: false, filesChanged: 2, checkMode: true };
-    expect(formatRuffFormatCompact(compact)).toBe("ruff format: 2 files would be reformatted");
+    const compact = { success: false, filesChanged: 2, filesUnchanged: 5, checkMode: true };
+    expect(formatRuffFormatCompact(compact)).toBe(
+      "ruff format: 2 files would be reformatted, 5 unchanged",
+    );
   });
 });

@@ -101,6 +101,7 @@ export function formatComposeDown(data: DockerComposeDown): string {
 export function formatPull(data: DockerPull): string {
   if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
+  if (data.status === "up-to-date") return `${data.image}:${data.tag} is up to date${digest}`;
   return `Pulled ${data.image}:${data.tag}${digest}`;
 }
 
@@ -224,12 +225,13 @@ export function formatLogsCompact(data: DockerLogsCompact): string {
   return parts.join("\n");
 }
 
-/** Compact pull: preserve digest since it is small and highly actionable. */
+/** Compact pull: preserve digest and status since they are small and highly actionable. */
 export interface DockerPullCompact {
   [key: string]: unknown;
   image: string;
   tag: string;
   digest?: string;
+  status: "pulled" | "up-to-date" | "error";
   success: boolean;
 }
 
@@ -238,6 +240,7 @@ export function compactPullMap(data: DockerPull): DockerPullCompact {
     image: data.image,
     tag: data.tag,
     ...(data.digest ? { digest: data.digest } : {}),
+    status: data.status,
     success: data.success,
   };
 }
@@ -245,6 +248,7 @@ export function compactPullMap(data: DockerPull): DockerPullCompact {
 export function formatPullCompact(data: DockerPullCompact): string {
   if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
+  if (data.status === "up-to-date") return `${data.image}:${data.tag} is up to date${digest}`;
   return `Pulled ${data.image}:${data.tag}${digest}`;
 }
 
@@ -571,7 +575,10 @@ export function formatComposePs(data: DockerComposePs): string {
 
   const lines = [`${data.total} services:`];
   for (const s of data.services) {
-    const ports = s.ports ? ` [${s.ports}]` : "";
+    const portsArr = s.ports ?? [];
+    const ports = portsArr.length
+      ? ` [${portsArr.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
+      : "";
     lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}`);
   }
   return lines.join("\n");
