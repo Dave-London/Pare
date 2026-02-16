@@ -47,6 +47,7 @@ describe("compactPytestMap", () => {
       failed: 2,
       errors: 1,
       skipped: 1,
+      warnings: 0,
       total: 12,
       duration: 3.5,
       failures: [
@@ -62,6 +63,7 @@ describe("compactPytestMap", () => {
     expect(compact.failed).toBe(2);
     expect(compact.errors).toBe(1);
     expect(compact.skipped).toBe(1);
+    expect(compact.warnings).toBe(0);
     expect(compact.total).toBe(12);
     expect(compact.duration).toBe(3.5);
     expect(compact.failedTests).toEqual(["test_auth_login", "test_auth_logout"]);
@@ -76,6 +78,7 @@ describe("compactPytestMap", () => {
       failed: 0,
       errors: 0,
       skipped: 0,
+      warnings: 0,
       total: 10,
       duration: 1.2,
       failures: [],
@@ -94,6 +97,7 @@ describe("formatPytestCompact", () => {
       failed: 2,
       errors: 0,
       skipped: 1,
+      warnings: 0,
       total: 11,
       duration: 3.5,
       failedTests: ["test_auth_login", "test_auth_logout"],
@@ -112,6 +116,7 @@ describe("formatPytestCompact", () => {
       failed: 0,
       errors: 0,
       skipped: 0,
+      warnings: 0,
       total: 0,
       duration: 0,
       failedTests: [],
@@ -144,7 +149,8 @@ describe("compactMypyMap", () => {
       ],
       total: 2,
       errors: 1,
-      warnings: 1,
+      warnings: 0,
+      notes: 1,
     };
 
     const compact = compactMypyMap(data);
@@ -152,20 +158,21 @@ describe("compactMypyMap", () => {
     expect(compact.success).toBe(false);
     expect(compact.total).toBe(2);
     expect(compact.errors).toBe(1);
-    expect(compact.warnings).toBe(1);
+    expect(compact.warnings).toBe(0);
+    expect(compact.notes).toBe(1);
     expect(compact).not.toHaveProperty("diagnostics");
   });
 });
 
 describe("formatMypyCompact", () => {
   it("formats clean result", () => {
-    const compact = { success: true, total: 0, errors: 0, warnings: 0 };
+    const compact = { success: true, total: 0, errors: 0, warnings: 0, notes: 0 };
     expect(formatMypyCompact(compact)).toBe("mypy: no errors found.");
   });
 
   it("formats result with counts", () => {
-    const compact = { success: false, total: 5, errors: 3, warnings: 2 };
-    expect(formatMypyCompact(compact)).toBe("mypy: 3 errors, 2 warnings/notes (5 total)");
+    const compact = { success: false, total: 5, errors: 3, warnings: 2, notes: 0 };
+    expect(formatMypyCompact(compact)).toBe("mypy: 3 errors, 2 warnings, 0 notes (5 total)");
   });
 });
 

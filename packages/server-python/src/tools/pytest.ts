@@ -1,3 +1,8 @@
+// NOTE (Gap #190): Investigated JSON output for pytest. The --json-report flag requires
+// the external pytest-json-report plugin which cannot be assumed installed. The built-in
+// --junit-xml produces XML, not JSON. Current text parsing with warnings count is reliable
+// enough. If pytest-json-report becomes standard, switch to JSON parsing here.
+
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";

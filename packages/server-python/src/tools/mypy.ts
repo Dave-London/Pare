@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { mypy } from "../lib/python-runner.js";
-import { parseMypyOutput } from "../lib/parsers.js";
+import { parseMypyJsonOutput } from "../lib/parsers.js";
 import { formatMypy, compactMypyMap, formatMypyCompact } from "../lib/formatters.js";
 import { MypyResultSchema } from "../schemas/index.js";
 
@@ -111,7 +111,8 @@ export function registerMypyTool(server: McpServer) {
       if (mod) assertNoFlagInjection(mod, "module");
       if (pkg) assertNoFlagInjection(pkg, "package");
 
-      const args: string[] = ["--show-error-codes", "--show-column-numbers"];
+      // Use --output json for structured output; falls back to text parsing on older mypy
+      const args: string[] = ["--output", "json"];
 
       // Config and version options
       if (configFile) args.push("--config-file", configFile);
@@ -133,7 +134,7 @@ export function registerMypyTool(server: McpServer) {
       }
 
       const result = await mypy(args, cwd);
-      const data = parseMypyOutput(result.stdout, result.exitCode);
+      const data = parseMypyJsonOutput(result.stdout, result.exitCode);
       return compactDualOutput(
         data,
         result.stdout,

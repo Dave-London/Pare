@@ -296,8 +296,9 @@ describe("fidelity: mypy", () => {
     expect(result.success).toBe(false);
     expect(result.total).toBe(3);
     expect(result.errors).toBe(1);
-    // warnings count includes both "warning" and "note" severity
-    expect(result.warnings).toBe(2);
+    // warnings and notes are now separate counts
+    expect(result.warnings).toBe(1);
+    expect(result.notes).toBe(1);
 
     const warning = result.diagnostics.find((d) => d.severity === "warning")!;
     expect(warning.file).toBe("src/main.py");

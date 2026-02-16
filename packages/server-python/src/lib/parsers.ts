@@ -73,8 +73,56 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
 
 const MYPY_RE = /^(.+?):(\d+)(?::(\d+))?: (error|warning|note): (.+?)(?:\s+\[([^\]]+)\])?$/;
 
-/** Parses mypy type-checker output into structured diagnostics with file locations and error codes. */
-export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
+/** Mypy JSON output entry (from `--output json`). */
+interface MypyJsonEntry {
+  file: string;
+  line: number;
+  column: number;
+  message: string;
+  hint: string | null;
+  code: string | null;
+  severity: "error" | "warning" | "note";
+}
+
+/** Parses mypy JSON output (from `--output json`) into structured diagnostics. */
+export function parseMypyJsonOutput(stdout: string, exitCode: number): MypyResult {
+  let entries: MypyJsonEntry[];
+  try {
+    entries = JSON.parse(stdout);
+  } catch {
+    // Fall back to text parsing if JSON parsing fails (older mypy without --output json)
+    return parseMypyTextOutput(stdout, exitCode);
+  }
+
+  if (!Array.isArray(entries)) {
+    return parseMypyTextOutput(stdout, exitCode);
+  }
+
+  const diagnostics: MypyDiagnostic[] = entries.map((e) => ({
+    file: e.file,
+    line: e.line,
+    column: e.column > 0 ? e.column : undefined,
+    severity: e.severity,
+    message: e.message,
+    code: e.code || undefined,
+  }));
+
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+  const notes = diagnostics.filter((d) => d.severity === "note").length;
+
+  return {
+    success: exitCode === 0,
+    diagnostics,
+    total: diagnostics.length,
+    errors,
+    warnings,
+    notes,
+  };
+}
+
+/** Parses mypy text output into structured diagnostics (fallback for older mypy without JSON). */
+export function parseMypyTextOutput(stdout: string, exitCode: number): MypyResult {
   const lines = stdout.split("\n");
   const diagnostics: MypyDiagnostic[] = [];
 
@@ -93,9 +141,8 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter(
-    (d) => d.severity === "warning" || d.severity === "note",
-  ).length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+  const notes = diagnostics.filter((d) => d.severity === "note").length;
 
   return {
     success: exitCode === 0,
@@ -103,7 +150,14 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
     total: diagnostics.length,
     errors,
     warnings,
+    notes,
   };
+}
+
+/** Parses mypy output: tries JSON first, falls back to text parsing.
+ *  @deprecated Use parseMypyJsonOutput (which auto-falls back) instead. Kept for backward compat. */
+export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
+  return parseMypyTextOutput(stdout, exitCode);
 }
 
 /** Parses `ruff check --output-format json` output into structured lint diagnostics with fixability info. */
@@ -124,6 +178,7 @@ export function parseRuffJson(stdout: string, exitCode: number): RuffResult {
     code: e.code,
     message: e.message,
     fixable: !!e.fix,
+    fixApplicability: extractFixApplicability(e.fix),
     url: e.url || undefined,
   }));
 
@@ -132,13 +187,33 @@ export function parseRuffJson(stdout: string, exitCode: number): RuffResult {
   return { success: exitCode === 0, diagnostics, total: diagnostics.length, fixable };
 }
 
+/** Extracts fix applicability from a ruff fix object. */
+function extractFixApplicability(
+  fix: RuffFixObject | null | undefined,
+): "safe" | "unsafe" | "display" | undefined {
+  if (!fix) return undefined;
+  if (typeof fix === "object" && "applicability" in fix && typeof fix.applicability === "string") {
+    const val = fix.applicability.toLowerCase();
+    if (val === "safe" || val === "unsafe" || val === "display") {
+      return val;
+    }
+  }
+  return undefined;
+}
+
+interface RuffFixObject {
+  applicability?: string;
+  message?: string;
+  edits?: unknown[];
+}
+
 interface RuffJsonEntry {
   code: string;
   message: string;
   filename: string;
   location: { row: number; column: number };
   end_location?: { row: number; column: number };
-  fix?: unknown;
+  fix?: RuffFixObject | null;
   url?: string;
 }
 
@@ -158,6 +233,10 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
       id: v.id,
       description: v.description ?? "",
       fixVersions: v.fix_versions ?? [],
+      aliases: v.aliases && v.aliases.length > 0 ? v.aliases : undefined,
+      url: v.url || undefined,
+      severity: v.severity || undefined,
+      cvssScore: v.cvss_score != null ? v.cvss_score : undefined,
     })),
   );
 
@@ -172,6 +251,10 @@ interface PipAuditJson {
       id: string;
       description?: string;
       fix_versions?: string[];
+      aliases?: string[];
+      url?: string;
+      severity?: string;
+      cvss_score?: number;
     }[];
   }[];
 }
@@ -183,7 +266,7 @@ function extractCount(line: string, label: RegExp): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
-/** Parses pytest output into structured test results with pass/fail/error/skip counts and failure details. */
+/** Parses pytest output into structured test results with pass/fail/error/skip/warning counts and failure details. */
 export function parsePytestOutput(stdout: string, stderr: string, exitCode: number): PytestResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
@@ -193,15 +276,17 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
   let failed = 0;
   let errors = 0;
   let skipped = 0;
+  let warnings = 0;
   let duration = 0;
 
   for (const line of lines) {
     // Match lines containing pytest summary markers (== ... in Xs ==) or standalone counts
-    if (/\d+ (?:passed|failed|error|skipped)/.test(line) || /in [\d.]+s/.test(line)) {
+    if (/\d+ (?:passed|failed|error|skipped|warning)/.test(line) || /in [\d.]+s/.test(line)) {
       passed = Math.max(passed, extractCount(line, /(\d+) passed/));
       failed = Math.max(failed, extractCount(line, /(\d+) failed/));
       errors = Math.max(errors, extractCount(line, /(\d+) errors?/));
       skipped = Math.max(skipped, extractCount(line, /(\d+) skipped/));
+      warnings = Math.max(warnings, extractCount(line, /(\d+) warnings?/));
 
       const durationMatch = line.match(PYTEST_DURATION_RE);
       if (durationMatch) {
@@ -219,6 +304,7 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
       failed: 0,
       errors: 0,
       skipped: 0,
+      warnings,
       total: 0,
       duration,
       failures: [],
@@ -266,6 +352,7 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     failed,
     errors,
     skipped,
+    warnings,
     total,
     duration,
     failures,
@@ -437,17 +524,34 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
 }
 
 /** Parses `pip list --format json` output into structured package list.
- *  When outdated=true, also parses latestVersion and latestFiletype fields. */
+ *  When outdated=true, also parses latestVersion and latestFiletype fields.
+ *  On JSON parse failure, surfaces error with raw output for debugging. */
 export function parsePipListJson(stdout: string, exitCode: number, outdated?: boolean): PipList {
   let entries: PipListJsonEntry[];
   try {
     entries = JSON.parse(stdout);
-  } catch {
-    return { success: exitCode === 0, packages: [], total: 0 };
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to parse pip list JSON output";
+    // Truncate raw output to 500 chars to avoid bloating the response
+    const rawOutput = stdout.length > 500 ? stdout.slice(0, 500) + "..." : stdout;
+    return {
+      success: false,
+      packages: [],
+      total: 0,
+      error: errorMessage,
+      rawOutput: rawOutput || undefined,
+    };
   }
 
   if (!Array.isArray(entries)) {
-    return { success: exitCode === 0, packages: [], total: 0 };
+    return {
+      success: false,
+      packages: [],
+      total: 0,
+      error: "pip list output is not a JSON array",
+      rawOutput: stdout.length > 500 ? stdout.slice(0, 500) + "..." : stdout,
+    };
   }
 
   const packages = entries.map((e) => ({
@@ -471,10 +575,22 @@ interface PipListJsonEntry {
   latest_filetype?: string;
 }
 
-/** Parses `pip show <package>` key-value output into structured package metadata.
- *  Splits on the first occurrence of ": " to handle values containing ": ". */
-export function parsePipShowOutput(stdout: string, exitCode: number): PipShow {
-  const lines = stdout.split("\n");
+/** Parses a single block of `pip show` key-value output into a package info object. */
+function parseSinglePipShowBlock(block: string): {
+  name: string;
+  version: string;
+  summary: string;
+  homepage?: string;
+  author?: string;
+  authorEmail?: string;
+  license?: string;
+  location?: string;
+  requires?: string[];
+  requiredBy?: string[];
+  metadataVersion?: string;
+  classifiers?: string[];
+} {
+  const lines = block.split("\n");
   const data: Record<string, string> = {};
 
   for (const line of lines) {
@@ -501,10 +617,7 @@ export function parsePipShowOutput(stdout: string, exitCode: number): PipShow {
       ? data["Classifier"].split(",").map((c) => c.trim())
       : [];
 
-  const hasName = Boolean(data["Name"]);
-
   return {
-    success: exitCode === 0 && hasName,
     name: data["Name"] || "",
     version: data["Version"] || "",
     summary: data["Summary"] || "",
@@ -520,12 +633,55 @@ export function parsePipShowOutput(stdout: string, exitCode: number): PipShow {
   };
 }
 
+/** Parses `pip show <package>` key-value output into structured package metadata.
+ *  Supports multiple packages separated by `---` delimiter. */
+export function parsePipShowOutput(stdout: string, exitCode: number): PipShow {
+  // Split on `---` separator for multi-package output
+  const blocks = stdout
+    .split(/^---$/m)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const packages = blocks.map(parseSinglePipShowBlock);
+
+  // Use first package for backward-compatible top-level fields
+  const first =
+    packages.length > 0
+      ? packages[0]
+      : {
+          name: "",
+          version: "",
+          summary: "",
+          requires: [] as string[],
+        };
+
+  const hasName = Boolean(first.name);
+
+  return {
+    success: exitCode === 0 && hasName,
+    packages,
+    // Backward-compat top-level fields from first package
+    name: first.name,
+    version: first.version,
+    summary: first.summary,
+    homepage: first.homepage,
+    author: first.author,
+    authorEmail: first.authorEmail,
+    license: first.license,
+    location: first.location,
+    requires: first.requires,
+    requiredBy: first.requiredBy,
+    metadataVersion: first.metadataVersion,
+    classifiers: first.classifiers,
+  };
+}
+
 /** Parses `pyenv` command output into structured version management data. */
 export function parsePyenvOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  action: "versions" | "version" | "install" | "installList" | "local" | "global",
+  action: "versions" | "version" | "install" | "installList" | "local" | "global" | "uninstall",
 ): PyenvResult {
   const output = stdout + "\n" + stderr;
 
@@ -583,6 +739,21 @@ export function parsePyenvOutput(
         action,
         success: true,
         installed: installed || undefined,
+      };
+    }
+    case "uninstall": {
+      // pyenv uninstall -f <version>
+      // On success, output may contain "pyenv: remove <version>" or similar
+      const version =
+        output.match(/remove\s+(\S+)/)?.[1] ||
+        output.match(/uninstall(?:ed)?\s+(\S+)/i)?.[1] ||
+        // If no match, try extracting from stderr which often has the version
+        stderr.match(/(\d+\.\d+\.\d+\S*)/)?.[1] ||
+        stdout.match(/(\d+\.\d+\.\d+\S*)/)?.[1];
+      return {
+        action,
+        success: true,
+        uninstalled: version || undefined,
       };
     }
     case "local": {
@@ -749,8 +920,11 @@ export function parseCondaEnvListJson(stdout: string, activePrefix?: string): Co
 }
 // ─── poetry parsers ──────────────────────────────────────────────────────────
 
-/** Regex matching `poetry show --no-ansi` lines: "package-name  version  description" */
-const POETRY_SHOW_RE = /^(\S+)\s+(\S+)(?:\s+(.+))?/;
+/** Strict regex matching `poetry show --no-ansi` lines: "package-name  version  description"
+ *  Anchored to start, requires package name to start with a letter/digit, and version
+ *  to look like a version string (digit-prefixed). This avoids matching status lines,
+ *  blank lines, or other non-package output. */
+const POETRY_SHOW_RE = /^([a-zA-Z0-9][a-zA-Z0-9._-]*)\s+(\d[a-zA-Z0-9._-]*)(?:\s+(.+))?$/;
 
 /** Regex matching `poetry build` artifact lines: " - Built package-1.0.0.tar.gz" or "  Built package-1.0.0-py3-none-any.whl" */
 const POETRY_BUILT_RE = /Built\s+(\S+)/;
@@ -771,7 +945,10 @@ export function parsePoetryOutput(
   if (action === "show") {
     const packages: { name: string; version: string; description?: string }[] = [];
     for (const line of lines) {
-      const match = line.match(POETRY_SHOW_RE);
+      const trimmed = line.trim();
+      // Skip empty lines and lines that don't look like package entries
+      if (!trimmed) continue;
+      const match = trimmed.match(POETRY_SHOW_RE);
       if (match) {
         packages.push({
           name: match[1],

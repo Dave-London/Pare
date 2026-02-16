@@ -14,9 +14,19 @@ export function registerPipShowTool(server: McpServer) {
       title: "pip Show",
       description:
         "Runs pip show and returns structured package metadata (name, version, summary, dependencies). " +
+        "Supports multiple packages in a single call. " +
         "Use instead of running `pip show` in the terminal.",
       inputSchema: {
-        package: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Package name to show"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Single package name to show (for backward compatibility)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Package names to show (supports multiple packages)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -38,16 +48,41 @@ export function registerPipShowTool(server: McpServer) {
       outputSchema: PipShowSchema,
     },
     async (input) => {
-      const pkg = input["package"];
+      const singlePkg = input["package"] as string | undefined;
+      const multiPkgs = input["packages"] as string[] | undefined;
       const path = input["path"] as string | undefined;
       const files = input["files"] as boolean | undefined;
       const compact = input["compact"] as boolean | undefined;
       const cwd = path || process.cwd();
-      assertNoFlagInjection(pkg as string, "package");
+
+      // Merge single package and packages array
+      const pkgList: string[] = [];
+      if (singlePkg) {
+        assertNoFlagInjection(singlePkg, "package");
+        pkgList.push(singlePkg);
+      }
+      for (const p of multiPkgs ?? []) {
+        assertNoFlagInjection(p, "packages");
+        if (!pkgList.includes(p)) {
+          pkgList.push(p);
+        }
+      }
+
+      if (pkgList.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: at least one package name is required (use 'package' or 'packages')",
+            },
+          ],
+          isError: true,
+        };
+      }
 
       const args = ["show"];
       if (files) args.push("--files");
-      args.push(pkg as string);
+      args.push(...pkgList);
       const result = await pip(args, cwd);
       const data = parsePipShowOutput(result.stdout, result.exitCode);
       return compactDualOutput(
