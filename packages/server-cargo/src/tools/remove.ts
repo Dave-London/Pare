@@ -25,6 +25,16 @@ export function registerRemoveTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Package names to remove"),
         dev: z.boolean().optional().default(false).describe("Remove from dev dependencies (--dev)"),
+        build: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Remove from build dependencies (--build)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Preview what would be removed without modifying Cargo.toml (--dry-run)"),
         compact: z
           .boolean()
           .optional()
@@ -35,7 +45,7 @@ export function registerRemoveTool(server: McpServer) {
       },
       outputSchema: CargoRemoveResultSchema,
     },
-    async ({ path, packages, dev, compact }) => {
+    async ({ path, packages, dev, build, dryRun, compact }) => {
       const cwd = path || process.cwd();
 
       for (const pkg of packages) {
@@ -44,6 +54,8 @@ export function registerRemoveTool(server: McpServer) {
 
       const args = ["remove", ...packages];
       if (dev) args.push("--dev");
+      if (build) args.push("--build");
+      if (dryRun) args.push("--dry-run");
 
       const result = await cargo(args, cwd);
       const data = parseCargoRemoveOutput(result.stdout, result.stderr, result.exitCode);

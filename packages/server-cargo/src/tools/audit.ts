@@ -20,6 +20,13 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        noFetch: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Skip fetching the advisory database, use local cache only (--no-fetch). Useful for offline or air-gapped environments.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -30,9 +37,11 @@ export function registerAuditTool(server: McpServer) {
       },
       outputSchema: CargoAuditResultSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, noFetch, compact }) => {
       const cwd = path || process.cwd();
-      const result = await cargo(["audit", "--json"], cwd);
+      const args = ["audit", "--json"];
+      if (noFetch) args.push("--no-fetch");
+      const result = await cargo(args, cwd);
 
       // cargo audit returns exit code 1 when vulnerabilities are found, which is expected
       const output = result.stdout || result.stderr;

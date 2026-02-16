@@ -38,6 +38,17 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be added without modifying Cargo.toml (--dry-run)"),
+        build: z.boolean().optional().default(false).describe("Add as build dependency (--build)"),
+        optional: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Add as optional dependency (--optional)"),
+        noDefaultFeatures: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disable default features of the dependency (--no-default-features)"),
         compact: z
           .boolean()
           .optional()
@@ -48,7 +59,17 @@ export function registerAddTool(server: McpServer) {
       },
       outputSchema: CargoAddResultSchema,
     },
-    async ({ path, packages, dev, features, dryRun, compact }) => {
+    async ({
+      path,
+      packages,
+      dev,
+      features,
+      dryRun,
+      build,
+      optional,
+      noDefaultFeatures,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
       for (const pkg of packages) {
@@ -64,6 +85,9 @@ export function registerAddTool(server: McpServer) {
         args.push("--features", features.join(","));
       }
       if (dryRun) args.push("--dry-run");
+      if (build) args.push("--build");
+      if (optional) args.push("--optional");
+      if (noDefaultFeatures) args.push("--no-default-features");
 
       const result = await cargo(args, cwd);
       const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode);

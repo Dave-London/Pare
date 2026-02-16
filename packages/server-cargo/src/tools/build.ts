@@ -21,6 +21,13 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .describe("Project root path (default: cwd)"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),
+        keepGoing: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Continue as much as possible after encountering errors (--keep-going). Collects maximum diagnostics in a single run.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -31,10 +38,11 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: CargoBuildResultSchema,
     },
-    async ({ path, release, compact }) => {
+    async ({ path, release, keepGoing, compact }) => {
       const cwd = path || process.cwd();
       const args = ["build", "--message-format=json"];
       if (release) args.push("--release");
+      if (keepGoing) args.push("--keep-going");
 
       const result = await cargo(args, cwd);
       const data = parseCargoBuildJson(result.stdout, result.exitCode);

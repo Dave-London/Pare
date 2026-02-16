@@ -25,6 +25,28 @@ export function registerCheckTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Package to check in a workspace"),
+        keepGoing: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Continue as much as possible after encountering errors (--keep-going). Collects maximum diagnostics in a single run.",
+          ),
+        allTargets: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Check all targets (lib, bins, tests, benches, examples) (--all-targets)"),
+        release: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Check in release mode with optimizations (--release)"),
+        workspace: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Check all packages in the workspace (--workspace)"),
         compact: z
           .boolean()
           .optional()
@@ -35,12 +57,16 @@ export function registerCheckTool(server: McpServer) {
       },
       outputSchema: CargoBuildResultSchema,
     },
-    async ({ path, package: pkg, compact }) => {
+    async ({ path, package: pkg, keepGoing, allTargets, release, workspace, compact }) => {
       const cwd = path || process.cwd();
       if (pkg) assertNoFlagInjection(pkg, "package");
 
       const args = ["check", "--message-format=json"];
       if (pkg) args.push("-p", pkg);
+      if (keepGoing) args.push("--keep-going");
+      if (allTargets) args.push("--all-targets");
+      if (release) args.push("--release");
+      if (workspace) args.push("--workspace");
 
       const result = await cargo(args, cwd);
       const data = parseCargoBuildJson(result.stdout, result.exitCode);

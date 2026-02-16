@@ -27,6 +27,26 @@ export function registerTreeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Focus on a specific package in the tree"),
+        duplicates: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Show only packages that appear more than once in the tree (--duplicates). Useful for detecting version conflicts.",
+          ),
+        charset: z
+          .enum(["utf8", "ascii"])
+          .optional()
+          .describe(
+            "Character set for tree display (--charset). Use 'ascii' for consistent output regardless of terminal.",
+          ),
+        prune: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Prune the given package from the tree display (--prune <SPEC>). Simplifies output by hiding a specific dependency subtree.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -37,11 +57,14 @@ export function registerTreeTool(server: McpServer) {
       },
       outputSchema: CargoTreeResultSchema,
     },
-    async ({ path, depth, package: pkg, compact }) => {
+    async ({ path, depth, package: pkg, duplicates, charset, prune, compact }) => {
       const cwd = path || process.cwd();
 
       if (pkg) {
         assertNoFlagInjection(pkg, "package");
+      }
+      if (prune) {
+        assertNoFlagInjection(prune, "prune");
       }
 
       const args = ["tree"];
@@ -50,6 +73,15 @@ export function registerTreeTool(server: McpServer) {
       }
       if (pkg) {
         args.push("-p", pkg);
+      }
+      if (duplicates) {
+        args.push("--duplicates");
+      }
+      if (charset) {
+        args.push("--charset", charset);
+      }
+      if (prune) {
+        args.push("--prune", prune);
       }
 
       const result = await cargo(args, cwd);
