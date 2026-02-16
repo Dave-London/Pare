@@ -1,8 +1,17 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+} from "@paretools/shared";
 import { shellcheckCmd } from "../lib/lint-runner.js";
-import { parseShellcheckJson } from "../lib/parsers.js";
+import {
+  parseShellcheckJson,
+  resolveShellcheckPatterns,
+  validateShellcheckPatterns,
+} from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
 import { LintResultSchema } from "../schemas/index.js";
 
@@ -25,7 +34,10 @@ export function registerShellcheckTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
-          .describe("File patterns to check (default: ['.'])"),
+          .describe(
+            "File paths or glob patterns to check (default: ['.']). " +
+              "Directories are automatically expanded to include *.sh, *.bash, *.zsh, *.ksh, *.dash files.",
+          ),
         severity: z
           .enum(["error", "warning", "info", "style"])
           .optional()
@@ -104,6 +116,28 @@ export function registerShellcheckTool(server: McpServer) {
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
+
+      const inputPatterns = patterns || ["."];
+
+      // Resolve patterns: expand directories to shell script files
+      const resolvedFiles = await resolveShellcheckPatterns(inputPatterns, cwd);
+
+      // If no files were found after expansion, return a helpful empty result
+      if (resolvedFiles.length === 0) {
+        const validationError = validateShellcheckPatterns(inputPatterns);
+        const emptyResult = {
+          diagnostics: [],
+          total: 0,
+          errors: 0,
+          warnings: 0,
+          filesChecked: 0,
+        };
+        const message = validationError
+          ? validationError
+          : `No shell script files found matching patterns: ${inputPatterns.join(", ")}`;
+        return dualOutput(emptyResult, () => message);
+      }
+
       const args = ["--format=json"];
       if (severity) args.push(`--severity=${severity}`);
       if (shell) args.push(`--shell=${shell}`);
@@ -136,7 +170,7 @@ export function registerShellcheckTool(server: McpServer) {
         assertNoFlagInjection(sourcePath, "sourcePath");
         args.push(`--source-path=${sourcePath}`);
       }
-      args.push(...(patterns || ["."]));
+      args.push(...resolvedFiles);
 
       const result = await shellcheckCmd(args, cwd);
       const data = parseShellcheckJson(result.stdout);

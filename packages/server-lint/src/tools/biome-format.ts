@@ -87,7 +87,7 @@ export function registerBiomeFormatTool(server: McpServer) {
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["format", "--write"];
+      const args = ["format", "--write", "--reporter=json"];
       if (changed) args.push("--changed");
       if (staged) args.push("--staged");
       if (since) {

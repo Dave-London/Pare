@@ -2,7 +2,75 @@ import { describe, it, expect } from "vitest";
 import { parseBiomeJson } from "../src/lib/parsers.js";
 
 describe("parseBiomeJson", () => {
-  it("parses Biome JSON diagnostics with errors and warnings", () => {
+  it("parses Biome v2+ JSON with start/end line/column format", () => {
+    const json = JSON.stringify({
+      summary: { changed: 0, unchanged: 1, errors: 2, warnings: 1 },
+      diagnostics: [
+        {
+          severity: "warning",
+          message: "This let declares a variable that is only assigned once.",
+          category: "lint/style/useConst",
+          location: {
+            path: "/tmp/test.ts",
+            start: { line: 1, column: 1 },
+            end: { line: 1, column: 4 },
+          },
+          advices: [],
+        },
+        {
+          severity: "error",
+          message: "Using == may be unsafe if you are relying on type coercion.",
+          category: "lint/suspicious/noDoubleEquals",
+          location: {
+            path: "/tmp/test.ts",
+            start: { line: 1, column: 18 },
+            end: { line: 1, column: 20 },
+          },
+          advices: [],
+        },
+        {
+          severity: "error",
+          message: "Formatter would have printed the following content:",
+          category: "format",
+          location: {
+            path: "/tmp/test.ts",
+            start: { line: 0, column: 0 },
+            end: { line: 0, column: 0 },
+          },
+          advices: [],
+        },
+      ],
+      command: "check",
+    });
+
+    const result = parseBiomeJson(json);
+
+    expect(result.total).toBe(3);
+    expect(result.errors).toBe(2);
+    expect(result.warnings).toBe(1);
+    expect(result.filesChecked).toBe(1);
+
+    // Verify new format line/column extraction
+    expect(result.diagnostics[0]).toEqual({
+      file: "/tmp/test.ts",
+      line: 1,
+      column: 1,
+      severity: "warning",
+      rule: "lint/style/useConst",
+      message: "This let declares a variable that is only assigned once.",
+    });
+
+    expect(result.diagnostics[1]).toEqual({
+      file: "/tmp/test.ts",
+      line: 1,
+      column: 18,
+      severity: "error",
+      rule: "lint/suspicious/noDoubleEquals",
+      message: "Using == may be unsafe if you are relying on type coercion.",
+    });
+  });
+
+  it("parses old-format Biome JSON with sourceCode lineNumber/columnNumber", () => {
     const json = JSON.stringify({
       diagnostics: [
         {
@@ -213,5 +281,93 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
     expect(result.diagnostics[0].message).toBe("Fallback message text");
+  });
+
+  it("extracts line numbers from new format with start/end objects", () => {
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          category: "lint/style/useConst",
+          severity: "warning",
+          message: "Use const instead of let.",
+          location: {
+            path: "src/main.ts",
+            start: { line: 42, column: 5 },
+            end: { line: 42, column: 8 },
+          },
+        },
+      ],
+    });
+
+    const result = parseBiomeJson(json);
+    expect(result.diagnostics[0].line).toBe(42);
+    expect(result.diagnostics[0].column).toBe(5);
+    expect(result.diagnostics[0].file).toBe("src/main.ts");
+  });
+
+  it("handles new format path as string (not object)", () => {
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          category: "lint/suspicious/noDoubleEquals",
+          severity: "error",
+          message: "Use ===.",
+          location: {
+            path: "/absolute/path/to/file.ts",
+            start: { line: 10, column: 3 },
+            end: { line: 10, column: 5 },
+          },
+        },
+      ],
+    });
+
+    const result = parseBiomeJson(json);
+    expect(result.diagnostics[0].file).toBe("/absolute/path/to/file.ts");
+    expect(result.diagnostics[0].line).toBe(10);
+    expect(result.diagnostics[0].column).toBe(3);
+  });
+
+  it("prefers new format start.line over old format sourceCode.lineNumber", () => {
+    // Edge case: if both formats are present, new format should win
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          category: "lint/style/useConst",
+          severity: "warning",
+          message: "Use const.",
+          location: {
+            path: "file.ts",
+            start: { line: 99, column: 7 },
+            end: { line: 99, column: 10 },
+            sourceCode: { lineNumber: 1, columnNumber: 1 },
+          },
+        },
+      ],
+    });
+
+    const result = parseBiomeJson(json);
+    expect(result.diagnostics[0].line).toBe(99);
+    expect(result.diagnostics[0].column).toBe(7);
+  });
+
+  it("handles diagnostics with location but no start/end and no sourceCode", () => {
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          category: "format",
+          severity: "error",
+          message: "File not formatted.",
+          location: {
+            path: "src/index.ts",
+            span: { start: 0, end: 100 },
+          },
+        },
+      ],
+    });
+
+    const result = parseBiomeJson(json);
+    expect(result.diagnostics[0].file).toBe("src/index.ts");
+    expect(result.diagnostics[0].line).toBe(0);
+    expect(result.diagnostics[0].column).toBeUndefined();
   });
 });
