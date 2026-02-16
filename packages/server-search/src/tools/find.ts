@@ -39,6 +39,25 @@ export function registerFindTool(server: McpServer) {
           .optional()
           .default(1000)
           .describe("Maximum number of results to return (default: 1000)"),
+        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        hidden: z.boolean().optional().describe("Include hidden files and directories (--hidden)"),
+        absolutePath: z
+          .boolean()
+          .optional()
+          .describe("Return absolute paths instead of relative (--absolute-path)"),
+        fullPath: z
+          .boolean()
+          .optional()
+          .describe("Match pattern against full path, not just filename (--full-path)"),
+        glob: z
+          .boolean()
+          .optional()
+          .describe("Use glob pattern matching instead of regex (--glob)"),
+        noIgnore: z
+          .boolean()
+          .optional()
+          .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
+        follow: z.boolean().optional().describe("Follow symbolic links (--follow)"),
         compact: z
           .boolean()
           .optional()
@@ -49,7 +68,21 @@ export function registerFindTool(server: McpServer) {
       },
       outputSchema: FindResultSchema,
     },
-    async ({ pattern, path, type, extension, maxResults, compact }) => {
+    async ({
+      pattern,
+      path,
+      type,
+      extension,
+      maxResults,
+      maxDepth,
+      hidden,
+      absolutePath,
+      fullPath,
+      glob,
+      noIgnore,
+      follow,
+      compact,
+    }) => {
       if (pattern) assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (extension) assertNoFlagInjection(extension, "extension");
@@ -68,6 +101,34 @@ export function registerFindTool(server: McpServer) {
 
       if (maxResults) {
         args.push("--max-results", String(maxResults));
+      }
+
+      if (maxDepth !== undefined) {
+        args.push("--max-depth", String(maxDepth));
+      }
+
+      if (hidden) {
+        args.push("--hidden");
+      }
+
+      if (absolutePath) {
+        args.push("--absolute-path");
+      }
+
+      if (fullPath) {
+        args.push("--full-path");
+      }
+
+      if (glob) {
+        args.push("--glob");
+      }
+
+      if (noIgnore) {
+        args.push("--no-ignore");
+      }
+
+      if (follow) {
+        args.push("--follow");
       }
 
       if (pattern) {
