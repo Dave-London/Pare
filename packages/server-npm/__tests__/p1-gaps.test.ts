@@ -16,11 +16,9 @@ import {
   formatList,
   formatRun,
   formatTest,
-  formatNvm,
-  formatNvmLsRemote,
   formatNvmExec,
 } from "../src/lib/formatters.js";
-import type { NpmInstall, NpmRun, NpmTest, NvmResult } from "../src/schemas/index.js";
+import type { NpmInstall, NpmRun, NpmTest } from "../src/schemas/index.js";
 import {
   NpmInstallSchema,
   NpmListSchema,

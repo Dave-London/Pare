@@ -5,7 +5,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { parseNvmOutput, parseNvmLsRemoteOutput, parseNvmExecOutput } from "../lib/parsers.js";
 import { formatNvm, formatNvmLsRemote, formatNvmExec } from "../lib/formatters.js";
-import { NvmResultSchema, NvmLsRemoteSchema, NvmExecSchema } from "../schemas/index.js";
+import { NvmResultSchema } from "../schemas/index.js";
 
 /** Registers the `nvm` tool on the given MCP server. */
 export function registerNvmTool(server: McpServer) {
