@@ -126,12 +126,29 @@ warning: `my-app` (bin "my-app") generated 2 warnings
 <td><em>n/a</em></td>
 <td>
 
-~25 tokens
+~100 tokens
 
 ```json
 {
   "success": true,
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "file": "src/main.rs",
+      "line": 5,
+      "column": 9,
+      "severity": "warning",
+      "code": "unused_variables",
+      "message": "unused variable: `x`"
+    },
+    {
+      "file": "src/main.rs",
+      "line": 2,
+      "column": 5,
+      "severity": "warning",
+      "code": "unused_imports",
+      "message": "unused import: `std::io`"
+    }
+  ],
   "errors": 0,
   "warnings": 2,
   "total": 2
@@ -198,13 +215,13 @@ error: aborting due to 1 previous error
 | Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
 | --------------------- | ---------- | --------- | ------------ | ------- |
 | Clean build           | ~120       | ~30       | ~30          | 75%     |
-| Build with 2 warnings | ~350       | ~100      | ~25          | 71-93%  |
-| Compilation error     | ~250       | ~65       | ~25          | 74-90%  |
+| Build with 2 warnings | ~350       | ~100      | ~100         | 71%     |
+| Compilation error     | ~250       | ~65       | ~65          | 74%     |
 
 ## Notes
 
 - Uses `--message-format=json` to parse compiler messages as structured JSON lines
 - The `release` flag adds `--release` to build with optimizations
 - Shares the same output schema (`CargoBuildResultSchema`) as the `check` tool
-- Compact mode drops individual diagnostic details, keeping only success status and counts
+- In compact mode, empty `diagnostics` arrays are omitted; non-empty arrays are preserved along with counts
 - The `code` field on diagnostics contains the Rust error code (e.g., `E0308`) or clippy lint name

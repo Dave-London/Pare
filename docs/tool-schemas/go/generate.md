@@ -91,11 +91,12 @@ main.go:3: running "mockgen": exec: "mockgen": executable file not found in $PAT
 <td><em>n/a</em></td>
 <td>
 
-~5 tokens
+~20 tokens
 
 ```json
 {
-  "success": false
+  "success": false,
+  "output": "main.go:3: running \"mockgen\": exec: \"mockgen\": executable file not found in $PATH"
 }
 ```
 
@@ -108,11 +109,11 @@ main.go:3: running "mockgen": exec: "mockgen": executable file not found in $PAT
 | Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ----------------- | ---------- | --------- | ------------ | ------- |
 | Generate succeeds | ~20        | ~20       | ~5           | 0-75%   |
-| Generate fails    | ~40        | ~20       | ~5           | 50-88%  |
+| Generate fails    | ~40        | ~20       | ~20          | 50%     |
 
 ## Notes
 
 - WARNING: `go generate` executes arbitrary commands embedded in `//go:generate` directives in source files; only use on trusted, reviewed code
 - The `output` field contains the combined stdout and stderr from the generate run
 - When there are no `//go:generate` directives, the output will be empty and success will be `true`
-- Compact mode drops the output text, keeping only the success boolean
+- Compact mode preserves the `output` field when non-empty, ensuring error details remain visible

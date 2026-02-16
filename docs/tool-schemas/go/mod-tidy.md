@@ -91,11 +91,12 @@ go: myapp imports
 <td><em>n/a</em></td>
 <td>
 
-~5 tokens
+~25 tokens
 
 ```json
 {
-  "success": false
+  "success": false,
+  "summary": "go: myapp imports\n\tgithub.com/example/missing: cannot find module providing package github.com/example/missing"
 }
 ```
 
@@ -108,11 +109,11 @@ go: myapp imports
 | Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------ | ---------- | --------- | ------------ | ------- |
 | Already tidy | ~5         | ~15       | ~5           | 0%      |
-| Tidy fails   | ~40        | ~30       | ~5           | 25-88%  |
+| Tidy fails   | ~40        | ~30       | ~25          | 25-38%  |
 
 ## Notes
 
 - `go mod tidy` adds missing module requirements and removes unused ones from `go.mod` and `go.sum`
 - When modules are already tidy, the tool produces no CLI output; the Pare response adds an explicit success message
 - The `summary` field contains the combined stdout/stderr output for diagnostic purposes
-- Compact mode drops the summary text, keeping only the success boolean
+- Compact mode preserves the `summary` field when non-empty, ensuring error details remain visible

@@ -123,12 +123,13 @@ Error: Could not resolve import
 <td><em>n/a</em></td>
 <td>
 
-~12 tokens
+~18 tokens
 
 ```json
 {
   "success": false,
-  "duration": 1.2
+  "duration": 1.2,
+  "errors": ["error during build:"]
 }
 ```
 
@@ -141,12 +142,12 @@ Error: Could not resolve import
 | Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
 | -------------- | ---------- | --------- | ------------ | ------- |
 | 4 output files | ~140       | ~60       | ~12          | 57-91%  |
-| Build failure  | ~100       | ~30       | ~12          | 70-88%  |
+| Build failure  | ~100       | ~30       | ~18          | 70-82%  |
 
 ## Notes
 
 - Output files and sizes are parsed from Vite's tabular output format (`file  size | gzip: size`)
 - The `mode` parameter defaults to `"production"`; custom modes (e.g., `"staging"`) are passed via `--mode`
-- In compact mode, `outputs`, `errors`, and `warnings` arrays are all omitted, returning only `success` and `duration`
+- In compact mode, the `outputs` array is omitted; non-empty `errors` and `warnings` arrays are preserved
 - Error and warning lines are detected by scanning for `error` and `warn` keywords in the combined output
 - Duration is measured by the tool wrapper, not parsed from Vite's "built in Xs" line

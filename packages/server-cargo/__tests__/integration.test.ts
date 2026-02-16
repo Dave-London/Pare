@@ -80,7 +80,10 @@ describe("@paretools/cargo integration", () => {
         expect(sc.total).toEqual(expect.any(Number));
         expect(sc.errors).toEqual(expect.any(Number));
         expect(sc.warnings).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.diagnostics)).toBe(true);
+        // diagnostics is conditionally included (only when non-empty)
+        if (sc.diagnostics !== undefined) {
+          expect(Array.isArray(sc.diagnostics)).toBe(true);
+        }
       }
     });
   });
@@ -102,7 +105,10 @@ describe("@paretools/cargo integration", () => {
         expect(sc.total).toEqual(expect.any(Number));
         expect(sc.errors).toEqual(expect.any(Number));
         expect(sc.warnings).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.diagnostics)).toBe(true);
+        // diagnostics is conditionally included (only when non-empty)
+        if (sc.diagnostics !== undefined) {
+          expect(Array.isArray(sc.diagnostics)).toBe(true);
+        }
       }
     });
   });
@@ -145,7 +151,10 @@ describe("@paretools/cargo integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(sc.total).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.diagnostics)).toBe(true);
+        // diagnostics is conditionally included (only when non-empty)
+        if (sc.diagnostics !== undefined) {
+          expect(Array.isArray(sc.diagnostics)).toBe(true);
+        }
       }
     });
   });

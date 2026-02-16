@@ -243,6 +243,18 @@ describe("formatGetCompact", () => {
     ).toBe("kubectl get pods -n default: 3 item(s)");
   });
 
+  it("formats successful compact get without namespace", () => {
+    expect(
+      formatGetCompact({
+        action: "get",
+        success: true,
+        resource: "nodes",
+        total: 2,
+        names: [],
+      }),
+    ).toBe("kubectl get nodes: 2 item(s)");
+  });
+
   it("formats failed compact get", () => {
     expect(
       formatGetCompact({ action: "get", success: false, resource: "foos", total: 0, names: [] }),
@@ -387,6 +399,27 @@ describe("formatHelmList", () => {
     expect(output).toContain("redis (redis-17.0.0) - deployed");
   });
 
+  it("formats successful list without namespace", () => {
+    const data: HelmListResult = {
+      action: "list",
+      success: true,
+      releases: [
+        {
+          name: "nginx",
+          namespace: "default",
+          revision: "1",
+          status: "deployed",
+          chart: "nginx-1.0.0",
+        },
+      ],
+      total: 1,
+      exitCode: 0,
+    };
+    const output = formatHelmList(data);
+    expect(output).toContain("helm list: 1 release(s)");
+    expect(output).not.toContain("-n");
+  });
+
   it("formats failed list", () => {
     const data: HelmListResult = {
       action: "list",
@@ -418,6 +451,20 @@ describe("formatHelmStatus", () => {
     expect(output).toContain("helm status my-release: deployed");
     expect(output).toContain("revision: 2");
     expect(output).toContain("description: Upgrade complete");
+  });
+
+  it("formats status without optional fields", () => {
+    const data: HelmStatusResult = {
+      action: "status",
+      success: true,
+      name: "my-release",
+      exitCode: 0,
+    };
+    const output = formatHelmStatus(data);
+    expect(output).toContain("helm status my-release: unknown");
+    expect(output).not.toContain("revision:");
+    expect(output).not.toContain("description:");
+    expect(output).not.toContain("notes:");
   });
 
   it("formats failed status", () => {
@@ -495,6 +542,20 @@ describe("formatHelmUpgrade", () => {
 // ── Helm compact mappers and formatters ─────────────────────────────
 
 describe("compactHelmListMap", () => {
+  it("handles undefined releases with fallback", () => {
+    const data: HelmListResult = {
+      action: "list",
+      success: true,
+      total: 0,
+      exitCode: 0,
+    } as HelmListResult;
+
+    const compact = compactHelmListMap(data);
+
+    expect(compact.names).toEqual([]);
+    expect(compact.total).toBe(0);
+  });
+
   it("keeps names, drops full release details", () => {
     const data: HelmListResult = {
       action: "list",
@@ -543,6 +604,17 @@ describe("formatHelmListCompact", () => {
     ).toBe("helm list -n prod: 5 release(s)");
   });
 
+  it("formats successful compact list without namespace", () => {
+    expect(
+      formatHelmListCompact({
+        action: "list",
+        success: true,
+        total: 3,
+        names: [],
+      }),
+    ).toBe("helm list: 3 release(s)");
+  });
+
   it("formats failed compact list", () => {
     expect(formatHelmListCompact({ action: "list", success: false, total: 0, names: [] })).toBe(
       "helm list: failed",
@@ -586,6 +658,16 @@ describe("formatHelmStatusCompact", () => {
     ).toBe("helm status nginx: deployed");
   });
 
+  it("formats success without status field", () => {
+    expect(
+      formatHelmStatusCompact({
+        action: "status",
+        success: true,
+        name: "nginx",
+      }),
+    ).toBe("helm status nginx: unknown");
+  });
+
   it("formats failure", () => {
     expect(formatHelmStatusCompact({ action: "status", success: false, name: "missing" })).toBe(
       "helm status missing: failed",
@@ -626,6 +708,16 @@ describe("formatHelmInstallCompact", () => {
     ).toBe("helm install nginx: deployed");
   });
 
+  it("formats success without status field", () => {
+    expect(
+      formatHelmInstallCompact({
+        action: "install",
+        success: true,
+        name: "nginx",
+      }),
+    ).toBe("helm install nginx: success");
+  });
+
   it("formats failure", () => {
     expect(formatHelmInstallCompact({ action: "install", success: false, name: "nginx" })).toBe(
       "helm install nginx: failed",
@@ -664,6 +756,16 @@ describe("formatHelmUpgradeCompact", () => {
         status: "deployed",
       }),
     ).toBe("helm upgrade nginx: deployed");
+  });
+
+  it("formats success without status field", () => {
+    expect(
+      formatHelmUpgradeCompact({
+        action: "upgrade",
+        success: true,
+        name: "nginx",
+      }),
+    ).toBe("helm upgrade nginx: success");
   });
 
   it("formats failure", () => {

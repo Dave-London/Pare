@@ -138,13 +138,17 @@ $ npx webpack --json --mode production
 <td><em>n/a</em></td>
 <td>
 
-~18 tokens
+~35 tokens
 
 ```json
 {
   "success": false,
   "duration": 1.8,
-  "modules": 12
+  "modules": 12,
+  "errors": [
+    "Module not found: Error: Can't resolve './missing' in '/app/src'",
+    "Module build failed: SyntaxError: Unexpected token (10:5)"
+  ]
 }
 ```
 
@@ -157,7 +161,7 @@ $ npx webpack --json --mode production
 | Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------ | ---------- | --------- | ------------ | ------- |
 | 3 assets, OK | ~250       | ~55       | ~18          | 78-93%  |
-| 2 errors     | ~200       | ~45       | ~18          | 78-91%  |
+| 2 errors     | ~200       | ~45       | ~35          | 78-83%  |
 
 ## Notes
 
@@ -165,5 +169,5 @@ $ npx webpack --json --mode production
 - When JSON parsing succeeds, assets, errors, warnings, and module count are extracted from the stats object
 - When JSON parsing fails (e.g., non-JSON output), the parser falls back to text-based error/warning detection
 - Error objects from webpack's JSON stats are flattened to their `message` string
-- In compact mode, `assets`, `errors`, and `warnings` arrays are omitted; `modules` count is preserved
+- In compact mode, the `assets` array is omitted; non-empty `errors` and `warnings` arrays are preserved, along with `modules` count
 - Asset `size` values are in bytes (as returned by webpack's stats JSON)
