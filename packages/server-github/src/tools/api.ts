@@ -105,7 +105,7 @@ export function registerApiTool(server: McpServer) {
       paginate,
       jq,
       slurp,
-      include,
+      include: _include,
       silent,
       verbose,
       headers,
