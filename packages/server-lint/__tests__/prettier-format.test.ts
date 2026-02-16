@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { parsePrettierWrite } from "../src/lib/parsers.js";
+import {
+  parsePrettierWrite,
+  parsePrettierListDifferent,
+  buildPrettierWriteResult,
+} from "../src/lib/parsers.js";
 import { formatFormatWrite } from "../src/lib/formatters.js";
 import type { FormatWriteResult } from "../src/schemas/index.js";
 
@@ -62,6 +66,105 @@ describe("parsePrettierWrite", () => {
       "docs/readme.md",
     ]);
   });
+
+  it("strips trailing timing info from file paths", () => {
+    const stdout = ["src/index.ts 24ms", "src/utils.ts 12ms"].join("\n");
+
+    const result = parsePrettierWrite(stdout, "", 0);
+
+    expect(result.files).toEqual(["src/index.ts", "src/utils.ts"]);
+    expect(result.filesChanged).toBe(2);
+  });
+});
+
+describe("parsePrettierListDifferent", () => {
+  it("parses file paths from --list-different output", () => {
+    const stdout = ["src/index.ts", "src/utils.ts"].join("\n");
+
+    const files = parsePrettierListDifferent(stdout);
+
+    expect(files).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+
+  it("returns empty array for empty output (all files formatted)", () => {
+    const files = parsePrettierListDifferent("");
+
+    expect(files).toEqual([]);
+  });
+
+  it("handles single file", () => {
+    const files = parsePrettierListDifferent("src/index.ts\n");
+
+    expect(files).toEqual(["src/index.ts"]);
+  });
+
+  it("filters out lines without file extensions", () => {
+    const stdout = ["src/index.ts", "some random text", "src/utils.ts"].join("\n");
+
+    const files = parsePrettierListDifferent(stdout);
+
+    expect(files).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+
+  it("handles various file extensions", () => {
+    const stdout = ["src/app.tsx", "styles/main.css", "config.json", "README.md"].join("\n");
+
+    const files = parsePrettierListDifferent(stdout);
+
+    expect(files).toEqual(["src/app.tsx", "styles/main.css", "config.json", "README.md"]);
+  });
+
+  it("trims whitespace from lines", () => {
+    const stdout = ["  src/index.ts  ", "  src/utils.ts  "].join("\n");
+
+    const files = parsePrettierListDifferent(stdout);
+
+    expect(files).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+});
+
+describe("buildPrettierWriteResult", () => {
+  it("builds result with changed files and total count", () => {
+    const result = buildPrettierWriteResult(["src/index.ts", "src/utils.ts"], 0, 10);
+
+    expect(result.filesChanged).toBe(2);
+    expect(result.filesUnchanged).toBe(8);
+    expect(result.files).toEqual(["src/index.ts", "src/utils.ts"]);
+    expect(result.success).toBe(true);
+  });
+
+  it("builds result with no changed files", () => {
+    const result = buildPrettierWriteResult([], 0, 5);
+
+    expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBe(5);
+    expect(result.files).toEqual([]);
+    expect(result.success).toBe(true);
+  });
+
+  it("builds result without total count", () => {
+    const result = buildPrettierWriteResult(["src/index.ts"], 0);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.filesUnchanged).toBeUndefined();
+    expect(result.files).toEqual(["src/index.ts"]);
+    expect(result.success).toBe(true);
+  });
+
+  it("builds result with failed exit code", () => {
+    const result = buildPrettierWriteResult(["src/index.ts"], 2, 5);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.success).toBe(false);
+  });
+
+  it("handles totalFilesProcessed of 0", () => {
+    const result = buildPrettierWriteResult([], 0, 0);
+
+    expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBeUndefined();
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("formatFormatWrite", () => {
@@ -96,5 +199,17 @@ describe("formatFormatWrite", () => {
     };
 
     expect(formatFormatWrite(data)).toBe("Format failed.");
+  });
+
+  it("formats result with filesUnchanged", () => {
+    const data: FormatWriteResult = {
+      filesChanged: 3,
+      filesUnchanged: 7,
+      files: ["a.ts", "b.ts", "c.ts"],
+      success: true,
+    };
+
+    const output = formatFormatWrite(data);
+    expect(output).toContain("Formatted 3 files (7 already formatted):");
   });
 });

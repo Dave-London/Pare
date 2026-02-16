@@ -37,6 +37,7 @@ export type FormatCheckResult = z.infer<typeof FormatCheckResultSchema>;
 /** Zod schema for structured format-write output (Prettier --write, Biome format --write). */
 export const FormatWriteResultSchema = z.object({
   filesChanged: z.number(),
+  filesUnchanged: z.number().optional(),
   files: z.array(z.string()).optional(),
   success: z.boolean(),
 });

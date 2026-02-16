@@ -106,9 +106,9 @@ export function parsePrettierCheck(
 /**
  * Parses Prettier `--write` output.
  *
- * Prettier --write outputs one file path per line for each file it rewrites.
- * If all files are already formatted, output may be empty or just the file names
- * with no changes. We detect changed files from the output lines.
+ * Prettier --write outputs one file path per line for each file it processes.
+ * It lists ALL files it touched, not just changed ones. To get accurate change
+ * counts, use parsePrettierListDifferent() with `--list-different` before writing.
  */
 export function parsePrettierWrite(
   stdout: string,
@@ -121,16 +121,18 @@ export function parsePrettierWrite(
   const files: string[] = [];
   for (const line of lines) {
     const trimmed = line.trim();
-    // Prettier --write outputs file paths for files it processes.
+    // Prettier --write outputs file paths for files it processes, sometimes
+    // with trailing timing info like " 24ms". Strip timing before checking.
+    const cleaned = trimmed.replace(/\s+\d+m?s$/, "");
     // Skip lines that don't look like file paths.
     if (
-      trimmed &&
-      !trimmed.startsWith("[") &&
-      !trimmed.startsWith("Checking") &&
-      !trimmed.startsWith("All ") &&
-      /\.\w+$/.test(trimmed)
+      cleaned &&
+      !cleaned.startsWith("[") &&
+      !cleaned.startsWith("Checking") &&
+      !cleaned.startsWith("All ") &&
+      /\.\w+$/.test(cleaned)
     ) {
-      files.push(trimmed);
+      files.push(cleaned);
     }
   }
 
@@ -142,10 +144,57 @@ export function parsePrettierWrite(
 }
 
 /**
+ * Parses Prettier `--list-different` output to identify files needing formatting.
+ *
+ * `prettier --list-different` outputs one file path per line for files that
+ * would be changed by formatting. Already-formatted files are not listed.
+ * Exit code 0 means all files are formatted; exit code 1 means some need formatting.
+ */
+export function parsePrettierListDifferent(stdout: string): string[] {
+  return stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && /\.\w+$/.test(l));
+}
+
+/**
+ * Builds a FormatWriteResult by combining --list-different results with --write results.
+ *
+ * @param listDiffFiles - Files that needed formatting (from --list-different)
+ * @param writeExitCode - Exit code from --write pass
+ * @param totalFilesProcessed - Total files processed by --write (optional, for filesUnchanged)
+ */
+export function buildPrettierWriteResult(
+  listDiffFiles: string[],
+  writeExitCode: number,
+  totalFilesProcessed?: number,
+): FormatWriteResult {
+  const result: FormatWriteResult = {
+    filesChanged: listDiffFiles.length,
+    files: listDiffFiles,
+    success: writeExitCode === 0,
+  };
+  if (totalFilesProcessed !== undefined && totalFilesProcessed > 0) {
+    result.filesUnchanged = totalFilesProcessed - listDiffFiles.length;
+  }
+  return result;
+}
+
+/**
  * Parses Biome `check --reporter=json` output.
  *
- * Biome JSON reporter outputs an object with a `diagnostics` array:
- * { diagnostics: [{ category, severity, description, location: { path: { file }, span }, advices }] }
+ * Biome JSON reporter (v2+) outputs an object with diagnostics:
+ * {
+ *   summary: { changed, unchanged, errors, warnings, ... },
+ *   diagnostics: [{
+ *     severity, message, category,
+ *     location: { path: string, start: { line, column }, end: { line, column } },
+ *     advices: [...]
+ *   }]
+ * }
+ *
+ * Also supports the older format where location uses:
+ *   { path: { file }, span: { start, end }, sourceCode: { lineNumber, columnNumber } }
  */
 export function parseBiomeJson(stdout: string): LintResult {
   let biomeOutput: BiomeJsonOutput;
@@ -161,7 +210,9 @@ export function parseBiomeJson(stdout: string): LintResult {
   const rawDiags = biomeOutput.diagnostics ?? [];
 
   for (const diag of rawDiags) {
-    const file = diag.location?.path?.file ?? "unknown";
+    // Extract file path: new format uses location.path as string,
+    // old format uses location.path.file
+    const file = extractBiomeFilePath(diag.location) ?? "unknown";
     filesSet.add(file);
 
     const severity = mapBiomeSeverity(diag.severity);
@@ -171,9 +222,10 @@ export function parseBiomeJson(stdout: string): LintResult {
         ? diag.description
         : (diag.message ?? "unknown diagnostic");
 
-    // Biome spans are byte offsets, not line/column. We extract from sourceCode if available,
-    // but default to 0 if line info is not in the JSON output.
-    const line = diag.location?.sourceCode?.lineNumber ?? 0;
+    // Extract line number: try new format (location.start.line) first,
+    // then fall back to old format (location.sourceCode.lineNumber),
+    // then default to 0
+    const line = extractBiomeLineNumber(diag.location);
 
     const diagnostic: LintDiagnostic = {
       file,
@@ -183,8 +235,9 @@ export function parseBiomeJson(stdout: string): LintResult {
       message,
     };
 
-    const col = diag.location?.sourceCode?.columnNumber;
-    if (col !== undefined && col !== null) {
+    // Extract column: try new format first, then old format
+    const col = extractBiomeColumnNumber(diag.location);
+    if (col !== undefined) {
       diagnostic.column = col;
     }
 
@@ -203,6 +256,71 @@ export function parseBiomeJson(stdout: string): LintResult {
   };
 }
 
+/**
+ * Extracts file path from Biome diagnostic location.
+ * Supports both new format (path is string) and old format (path.file is string).
+ */
+function extractBiomeFilePath(
+  location: BiomeDiagnostic["location"] | undefined,
+): string | undefined {
+  if (!location) return undefined;
+
+  // New format (Biome v2+): location.path is a string
+  if (typeof location.path === "string") {
+    return location.path;
+  }
+
+  // Old format: location.path is { file: string }
+  if (location.path && typeof location.path === "object" && "file" in location.path) {
+    return (location.path as { file?: string }).file;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts line number from Biome diagnostic location.
+ * Tries new format (start.line) first, then old format (sourceCode.lineNumber).
+ */
+function extractBiomeLineNumber(location: BiomeDiagnostic["location"] | undefined): number {
+  if (!location) return 0;
+
+  // New format (Biome v2+): location.start.line
+  if (location.start && typeof location.start.line === "number") {
+    return location.start.line;
+  }
+
+  // Old format: location.sourceCode.lineNumber
+  if (location.sourceCode && typeof location.sourceCode.lineNumber === "number") {
+    return location.sourceCode.lineNumber;
+  }
+
+  return 0;
+}
+
+/**
+ * Extracts column number from Biome diagnostic location.
+ * Tries new format (start.column) first, then old format (sourceCode.columnNumber).
+ */
+function extractBiomeColumnNumber(
+  location: BiomeDiagnostic["location"] | undefined,
+): number | undefined {
+  if (!location) return undefined;
+
+  // New format (Biome v2+): location.start.column
+  if (location.start && typeof location.start.column === "number") {
+    return location.start.column;
+  }
+
+  // Old format: location.sourceCode.columnNumber
+  const col = location.sourceCode?.columnNumber;
+  if (col !== undefined && col !== null) {
+    return col;
+  }
+
+  return undefined;
+}
+
 function mapBiomeSeverity(severity: string | undefined): "error" | "warning" | "info" {
   switch (severity) {
     case "error":
@@ -219,7 +337,14 @@ function mapBiomeSeverity(severity: string | undefined): "error" | "warning" | "
 }
 
 interface BiomeJsonOutput {
+  summary?: {
+    changed?: number;
+    unchanged?: number;
+    errors?: number;
+    warnings?: number;
+  };
   diagnostics?: BiomeDiagnostic[];
+  command?: string;
 }
 
 interface BiomeDiagnostic {
@@ -228,7 +353,11 @@ interface BiomeDiagnostic {
   description?: string;
   message?: string;
   location?: {
-    path?: { file?: string };
+    // New format (Biome v2+): path is a string, start/end have line/column
+    path?: string | { file?: string };
+    start?: { line?: number; column?: number };
+    end?: { line?: number; column?: number };
+    // Old format: span has byte offsets, sourceCode has line/column
     span?: { start?: number; end?: number };
     sourceCode?: { lineNumber?: number; columnNumber?: number };
   };
@@ -531,38 +660,190 @@ interface HadolintJsonEntry {
 }
 
 /**
- * Parses Biome `format --write` output.
+ * Parses Biome `format --write --reporter=json` output.
  *
- * Biome format --write outputs lines like:
- * "Formatted 3 files in 50ms. Fixed 2 files."
- * It also outputs individual file paths that were formatted.
+ * With JSON reporter, Biome outputs:
+ * { summary: { changed, unchanged, ... }, diagnostics: [...] }
+ *
+ * Without JSON reporter (text output), it outputs:
+ * "Formatted N files in Xms. Fixed M files."
+ * and individual file paths that were formatted.
+ *
+ * We try JSON first, then fall back to text parsing.
  */
 export function parseBiomeFormat(
   stdout: string,
   stderr: string,
   exitCode: number,
 ): FormatWriteResult {
-  const output = stdout + "\n" + stderr;
-  const lines = output.split("\n").filter(Boolean);
+  // Try JSON parse first (when --reporter=json is used)
+  const jsonResult = parseBiomeFormatJson(stdout);
+  if (jsonResult) return { ...jsonResult, success: exitCode === 0 };
 
+  // Fall back to text-based parsing
+  return parseBiomeFormatText(stdout, stderr, exitCode);
+}
+
+/**
+ * Parses Biome format JSON output.
+ * Returns null if the output is not valid Biome JSON.
+ */
+function parseBiomeFormatJson(stdout: string): Omit<FormatWriteResult, "success"> | null {
+  let parsed: BiomeJsonOutput;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+
+  // Validate it's a Biome JSON response (has summary or diagnostics)
+  if (!parsed.summary && !parsed.diagnostics) return null;
+
+  const summary = parsed.summary;
+  const changed = summary?.changed ?? 0;
+  const unchanged = summary?.unchanged ?? 0;
+
+  // Extract file paths from diagnostics that indicate formatting changes
   const files: string[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    // Skip summary lines and empty lines. File paths end with an extension.
-    if (
-      trimmed &&
-      !trimmed.startsWith("Formatted ") &&
-      !trimmed.startsWith("Fixed ") &&
-      !trimmed.startsWith("Checked ") &&
-      /\.\w+$/.test(trimmed)
-    ) {
-      files.push(trimmed);
+  for (const diag of parsed.diagnostics ?? []) {
+    if (diag.category === "format" && diag.location) {
+      const filePath = extractBiomeFilePath(diag.location);
+      if (filePath) files.push(filePath);
     }
   }
 
   return {
-    filesChanged: files.length,
+    filesChanged: changed,
+    filesUnchanged: unchanged > 0 ? unchanged : undefined,
+    files,
+  };
+}
+
+/**
+ * Parses Biome format text output (fallback when JSON reporter is not used).
+ */
+function parseBiomeFormatText(stdout: string, stderr: string, exitCode: number): FormatWriteResult {
+  const output = stdout + "\n" + stderr;
+  const lines = output.split("\n").filter(Boolean);
+
+  const files: string[] = [];
+  let summaryChanged: number | undefined;
+  let summaryTotal: number | undefined;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Extract counts from summary line: "Formatted N files in Xms. Fixed M files."
+    const formattedMatch = trimmed.match(/^Formatted\s+(\d+)\s+files?\b/);
+    if (formattedMatch) {
+      summaryTotal = parseInt(formattedMatch[1], 10);
+      const fixedMatch = trimmed.match(/Fixed\s+(\d+)\s+files?\b/);
+      if (fixedMatch) {
+        summaryChanged = parseInt(fixedMatch[1], 10);
+      }
+      continue;
+    }
+
+    // Skip other summary lines
+    if (
+      trimmed.startsWith("Fixed ") ||
+      trimmed.startsWith("Checked ") ||
+      // Skip the "The --json option is unstable" warning
+      trimmed.startsWith("The --json")
+    ) {
+      continue;
+    }
+
+    // File paths end with an extension
+    if (trimmed && /\.\w+$/.test(trimmed)) {
+      files.push(trimmed);
+    }
+  }
+
+  // Use summary counts if available, otherwise fall back to file count
+  const filesChanged = summaryChanged ?? files.length;
+  const result: FormatWriteResult = {
+    filesChanged,
     files,
     success: exitCode === 0,
   };
+
+  // Compute filesUnchanged from summary if we have both counts
+  if (summaryTotal !== undefined && summaryChanged !== undefined) {
+    const unchanged = summaryTotal - summaryChanged;
+    if (unchanged > 0) {
+      result.filesUnchanged = unchanged;
+    }
+  }
+
+  return result;
+}
+
+/** Shell script file extensions for directory expansion. */
+const SHELL_EXTENSIONS = new Set(["sh", "bash", "zsh", "ksh", "dash"]);
+
+/**
+ * Resolves shellcheck patterns, expanding directories to shell script file paths.
+ *
+ * ShellCheck requires individual file paths, not directories. If a pattern
+ * is a directory, we recursively find shell script files within it.
+ *
+ * @param patterns - Array of file patterns or directories
+ * @param cwd - Working directory for resolving paths
+ * @returns Array of resolved file paths
+ */
+export async function resolveShellcheckPatterns(
+  patterns: string[],
+  cwd: string,
+): Promise<string[]> {
+  const { stat, readdir } = await import("node:fs/promises");
+  const { join, extname } = await import("node:path");
+
+  const resolvedFiles: string[] = [];
+
+  for (const pattern of patterns) {
+    const fullPath = pattern.startsWith("/") ? pattern : join(cwd, pattern);
+
+    try {
+      const stats = await stat(fullPath);
+      if (stats.isDirectory()) {
+        // Recursively find shell script files in the directory
+        const entries = await readdir(fullPath, { recursive: true });
+        for (const entry of entries) {
+          const ext = extname(String(entry)).slice(1); // remove leading dot
+          if (SHELL_EXTENSIONS.has(ext)) {
+            resolvedFiles.push(join(fullPath, String(entry)));
+          }
+        }
+      } else if (stats.isFile()) {
+        resolvedFiles.push(fullPath);
+      }
+    } catch {
+      // Pattern might be a glob or doesn't exist — pass through as-is
+      // and let shellcheck handle the error
+      resolvedFiles.push(pattern);
+    }
+  }
+
+  return resolvedFiles;
+}
+
+/**
+ * Validates that shellcheck patterns contain actual file paths rather than
+ * bare directories. Returns an error message if validation fails, or null if ok.
+ */
+export function validateShellcheckPatterns(patterns: string[]): string | null {
+  const bareDirectories = patterns.filter(
+    (p) => p === "." || p === ".." || (p.endsWith("/") && !p.includes("*")),
+  );
+
+  if (bareDirectories.length > 0) {
+    return (
+      `ShellCheck requires file paths, not directories. ` +
+      `The following patterns look like directories: ${bareDirectories.join(", ")}. ` +
+      `Use glob patterns like "src/**/*.sh" or specific file paths instead.`
+    );
+  }
+
+  return null;
 }

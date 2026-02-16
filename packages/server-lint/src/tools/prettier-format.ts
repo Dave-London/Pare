@@ -2,7 +2,11 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
-import { parsePrettierWrite } from "../lib/parsers.js";
+import {
+  parsePrettierListDifferent,
+  parsePrettierWrite,
+  buildPrettierWriteResult,
+} from "../lib/parsers.js";
 import {
   formatFormatWrite,
   compactFormatWriteMap,
@@ -80,23 +84,52 @@ export function registerPrettierFormatTool(server: McpServer) {
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["--write"];
-      if (ignoreUnknown) args.push("--ignore-unknown");
-      if (cache) args.push("--cache");
-      if (noConfig) args.push("--no-config");
-      if (logLevel) args.push(`--log-level=${logLevel}`);
-      if (endOfLine) args.push(`--end-of-line=${endOfLine}`);
+
+      // Build shared args (excluding --write and --list-different)
+      const sharedArgs: string[] = [];
+      if (ignoreUnknown) sharedArgs.push("--ignore-unknown");
+      if (cache) sharedArgs.push("--cache");
+      if (noConfig) sharedArgs.push("--no-config");
+      if (logLevel) sharedArgs.push(`--log-level=${logLevel}`);
+      if (endOfLine) sharedArgs.push(`--end-of-line=${endOfLine}`);
       if (config) {
         assertNoFlagInjection(config, "config");
-        args.push(`--config=${config}`);
+        sharedArgs.push(`--config=${config}`);
       }
-      args.push(...(patterns || ["."]));
+      const filePatterns = patterns || ["."];
 
-      const result = await prettier(args, cwd);
-      const data = parsePrettierWrite(result.stdout, result.stderr, result.exitCode);
+      // Step 1: Run --list-different to find files that need formatting
+      let listDiffFiles: string[] = [];
+      try {
+        const listDiffResult = await prettier(
+          ["--list-different", ...sharedArgs, ...filePatterns],
+          cwd,
+        );
+        listDiffFiles = parsePrettierListDifferent(listDiffResult.stdout);
+      } catch {
+        // --list-different may fail if prettier is not installed or patterns are invalid.
+        // Fall back to --write only mode below.
+      }
+
+      // Step 2: Run --write to actually format the files
+      const writeArgs = ["--write", ...sharedArgs, ...filePatterns];
+      const writeResult = await prettier(writeArgs, cwd);
+
+      // Step 3: Build accurate result
+      let data;
+      if (listDiffFiles.length > 0 || writeResult.exitCode === 0) {
+        // Count total files processed from --write output for filesUnchanged calculation
+        const writeData = parsePrettierWrite(writeResult.stdout, writeResult.stderr, 0);
+        const totalProcessed = writeData.files?.length ?? 0;
+        data = buildPrettierWriteResult(listDiffFiles, writeResult.exitCode, totalProcessed);
+      } else {
+        // Fall back to simple --write parsing if --list-different produced no results
+        data = parsePrettierWrite(writeResult.stdout, writeResult.stderr, writeResult.exitCode);
+      }
+
       return compactDualOutput(
         data,
-        result.stdout,
+        writeResult.stdout,
         formatFormatWrite,
         compactFormatWriteMap,
         formatFormatWriteCompact,

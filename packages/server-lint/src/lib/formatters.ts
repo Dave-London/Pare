@@ -30,9 +30,17 @@ export function formatFormatCheck(data: FormatCheckResult): string {
 /** Formats structured format-write results into a human-readable summary. */
 export function formatFormatWrite(data: FormatWriteResult): string {
   if (!data.success) return "Format failed.";
-  if (data.filesChanged === 0) return "All files already formatted.";
+  if (data.filesChanged === 0) {
+    if (data.filesUnchanged !== undefined && data.filesUnchanged > 0) {
+      return `All ${data.filesUnchanged} files already formatted.`;
+    }
+    return "All files already formatted.";
+  }
 
   const lines = [`Formatted ${data.filesChanged} files:`];
+  if (data.filesUnchanged !== undefined && data.filesUnchanged > 0) {
+    lines[0] = `Formatted ${data.filesChanged} files (${data.filesUnchanged} already formatted):`;
+  }
   for (const f of data.files ?? []) {
     lines.push(`  ${f}`);
   }
@@ -88,17 +96,25 @@ export interface FormatWriteResultCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
+  filesUnchanged?: number;
 }
 
 export function compactFormatWriteMap(data: FormatWriteResult): FormatWriteResultCompact {
-  return {
+  const result: FormatWriteResultCompact = {
     success: data.success,
     filesChanged: data.filesChanged,
   };
+  if (data.filesUnchanged !== undefined) {
+    result.filesUnchanged = data.filesUnchanged;
+  }
+  return result;
 }
 
 export function formatFormatWriteCompact(data: FormatWriteResultCompact): string {
   if (!data.success) return "Format failed.";
   if (data.filesChanged === 0) return "All files already formatted.";
+  if (data.filesUnchanged !== undefined && data.filesUnchanged > 0) {
+    return `Formatted ${data.filesChanged} files (${data.filesUnchanged} already formatted).`;
+  }
   return `Formatted ${data.filesChanged} files.`;
 }
