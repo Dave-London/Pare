@@ -851,6 +851,7 @@ describe("fidelity: git checkout (write tool)", () => {
 
     const result = parseCheckout("", stderr, "feature/test", currentBranch, true);
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("feature/test");
     expect(result.previousRef).toBe(currentBranch);
     expect(result.created).toBe(true);
@@ -877,6 +878,7 @@ describe("fidelity: git checkout (write tool)", () => {
 
     const result = parseCheckout("", stderr, "dev", previousBranch, false);
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("dev");
     expect(result.previousRef).toBe(previousBranch);
     expect(result.created).toBe(false);
@@ -1081,7 +1083,7 @@ describe("fidelity: git log-graph (fixture-based)", () => {
 });
 
 describe("fidelity: git reflog (fixture-based)", () => {
-  it("parseReflogOutput preserves all fields from tab-delimited output", () => {
+  it("parseReflogOutput preserves all fields and normalizes actions", () => {
     const raw = [
       "abc123def456full\tabc1234\tHEAD@{0}\tcheckout: moving from main to feature\t2024-01-15 10:30:00 +0000",
       "def456abc789full\tdef5678\tHEAD@{1}\tcommit: fix the parser bug\t2024-01-14 09:00:00 +0000",
@@ -1093,23 +1095,26 @@ describe("fidelity: git reflog (fixture-based)", () => {
     expect(result.total).toBe(3);
     expect(result.entries).toHaveLength(3);
 
-    // First entry
+    // First entry — normalized action
     expect(result.entries[0].hash).toBe("abc123def456full");
     expect(result.entries[0].shortHash).toBe("abc1234");
     expect(result.entries[0].selector).toBe("HEAD@{0}");
     expect(result.entries[0].action).toBe("checkout");
+    expect(result.entries[0].rawAction).toBe("checkout");
     expect(result.entries[0].description).toBe("moving from main to feature");
     expect(result.entries[0].date).toBe("2024-01-15 10:30:00 +0000");
 
-    // Second entry
+    // Second entry — normalized action
     expect(result.entries[1].hash).toBe("def456abc789full");
     expect(result.entries[1].shortHash).toBe("def5678");
     expect(result.entries[1].selector).toBe("HEAD@{1}");
     expect(result.entries[1].action).toBe("commit");
+    expect(result.entries[1].rawAction).toBe("commit");
     expect(result.entries[1].description).toBe("fix the parser bug");
 
-    // Third entry
+    // Third entry — normalized action
     expect(result.entries[2].action).toBe("pull");
+    expect(result.entries[2].rawAction).toBe("pull");
     expect(result.entries[2].description).toBe("Fast-forward");
   });
 
@@ -1126,6 +1131,7 @@ describe("fidelity: git reflog (fixture-based)", () => {
 
     expect(result.entries).toHaveLength(1);
     expect(result.entries[0].action).toBe("reset");
+    expect(result.entries[0].rawAction).toBe("reset");
     expect(result.entries[0].description).toBe("");
   });
 

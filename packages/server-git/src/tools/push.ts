@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parsePush } from "../lib/parsers.js";
+import { parsePush, parsePushError } from "../lib/parsers.js";
 import { formatPush } from "../lib/formatters.js";
 import { GitPushSchema } from "../schemas/index.js";
 
@@ -119,7 +119,8 @@ export function registerPushTool(server: McpServer) {
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`git push failed: ${result.stderr}`);
+        const pushResult = parsePushError(result.stdout, result.stderr, remote, branch || "");
+        return dualOutput(pushResult, formatPush);
       }
 
       const pushResult = parsePush(result.stdout, result.stderr, remote, branch || "");

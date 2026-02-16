@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parseCheckout } from "../lib/parsers.js";
+import { parseCheckout, parseCheckoutError } from "../lib/parsers.js";
 import { formatCheckout } from "../lib/formatters.js";
 import { GitCheckoutSchema } from "../schemas/index.js";
 
@@ -59,7 +59,13 @@ export function registerCheckoutTool(server: McpServer) {
         if (force) args.push("--force");
         const result = await git(args, cwd);
         if (result.exitCode !== 0) {
-          throw new Error(`git checkout --orphan failed: ${result.stderr}`);
+          const checkoutResult = parseCheckoutError(
+            result.stdout,
+            result.stderr,
+            orphan,
+            previousRef,
+          );
+          return dualOutput(checkoutResult, formatCheckout);
         }
         const checkoutResult = parseCheckout(
           result.stdout,
@@ -87,7 +93,8 @@ export function registerCheckoutTool(server: McpServer) {
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`git checkout failed: ${result.stderr}`);
+        const checkoutResult = parseCheckoutError(result.stdout, result.stderr, ref, previousRef);
+        return dualOutput(checkoutResult, formatCheckout);
       }
 
       const checkoutResult = parseCheckout(result.stdout, result.stderr, ref, previousRef, create);

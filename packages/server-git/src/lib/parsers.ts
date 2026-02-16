@@ -24,6 +24,7 @@ import type {
   GitBisect,
   GitWorktreeListFull,
   GitWorktree,
+  ReflogAction,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -258,6 +259,49 @@ export function parseCommit(stdout: string): GitCommit {
   };
 }
 
+/** Classifies a push failure error type from the combined output. */
+function classifyPushError(combined: string): Pick<GitPush, "errorType" | "rejectedRef" | "hint"> {
+  // Non-fast-forward / rejected
+  if (/\[rejected\]/.test(combined) || /non-fast-forward/.test(combined)) {
+    const refMatch = combined.match(/!\s+\[rejected\]\s+(\S+)/);
+    const hintMatch = combined.match(/hint:\s*(.+)/);
+    return {
+      errorType: "rejected",
+      ...(refMatch ? { rejectedRef: refMatch[1] } : {}),
+      ...(hintMatch ? { hint: hintMatch[1].trim() } : {}),
+    };
+  }
+
+  // No upstream configured
+  if (
+    /no upstream branch/i.test(combined) ||
+    /--set-upstream/i.test(combined) ||
+    /has no upstream/i.test(combined)
+  ) {
+    return { errorType: "no-upstream" };
+  }
+
+  // Permission denied
+  if (/permission.*denied/i.test(combined) || /could not read.*credentials/i.test(combined)) {
+    return { errorType: "permission-denied" };
+  }
+
+  // Repository not found
+  if (
+    /repository not found/i.test(combined) ||
+    /does not appear to be a git repository/i.test(combined)
+  ) {
+    return { errorType: "repository-not-found" };
+  }
+
+  // pre-receive hook declined
+  if (/hook declined/i.test(combined) || /pre-receive hook/i.test(combined)) {
+    return { errorType: "hook-declined" };
+  }
+
+  return { errorType: "unknown" };
+}
+
 /** Parses `git push` output into structured push result data. */
 export function parsePush(stdout: string, stderr: string, remote: string, branch: string): GitPush {
   // Git push output goes to stderr typically
@@ -278,6 +322,27 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
     branch: resolvedBranch,
     summary: combined || "Push completed successfully",
     ...(created ? { created } : {}),
+  };
+}
+
+/** Parses a failed `git push` into structured push error data. */
+export function parsePushError(
+  stdout: string,
+  stderr: string,
+  remote: string,
+  branch: string,
+): GitPush {
+  const combined = `${stdout}\n${stderr}`.trim();
+  const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
+  const resolvedBranch = branch || branchMatch?.[1] || "unknown";
+  const errorInfo = classifyPushError(combined);
+
+  return {
+    success: false,
+    remote,
+    branch: resolvedBranch,
+    summary: combined || "Push failed",
+    ...errorInfo,
   };
 }
 
@@ -341,10 +406,75 @@ export function parseCheckout(
     /HEAD.*detached/.test(combined);
 
   return {
+    success: true,
     ref,
     previousRef,
     created,
     ...(detached ? { detached: true } : {}),
+  };
+}
+
+/** Parses a failed `git checkout` into structured checkout error data. */
+export function parseCheckoutError(
+  stdout: string,
+  stderr: string,
+  ref: string,
+  previousRef: string,
+): GitCheckout {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Classify the error
+  let errorType: GitCheckout["errorType"] = "unknown";
+  const conflictFiles: string[] = [];
+
+  // Dirty working tree: "error: Your local changes to the following files would be overwritten"
+  if (
+    /local changes.*would be overwritten/i.test(combined) ||
+    /Please commit your changes or stash them/i.test(combined)
+  ) {
+    errorType = "dirty-tree";
+    // Extract file names from "error: Your local changes to the following files would be overwritten by checkout:\n\tfile1.ts\n\tfile2.ts"
+    const fileSection = combined.match(
+      /would be overwritten by (?:checkout|merge):\n([\s\S]*?)(?:Please|Aborting)/,
+    );
+    if (fileSection) {
+      const files = fileSection[1]
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      conflictFiles.push(...files);
+    }
+  }
+  // Merge conflicts
+  else if (/CONFLICT/i.test(combined) || /merge conflict/i.test(combined)) {
+    errorType = "conflict";
+    const conflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+    let match;
+    while ((match = conflictPattern.exec(combined)) !== null) {
+      conflictFiles.push(match[1].trim());
+    }
+  }
+  // Invalid ref
+  else if (
+    /pathspec.*did not match/i.test(combined) ||
+    /not a commit/i.test(combined) ||
+    /invalid reference/i.test(combined)
+  ) {
+    errorType = "invalid-ref";
+  }
+  // Branch already exists
+  else if (/already exists/i.test(combined)) {
+    errorType = "already-exists";
+  }
+
+  return {
+    success: false,
+    ref,
+    previousRef,
+    created: false,
+    errorType,
+    ...(conflictFiles.length > 0 ? { conflictFiles } : {}),
+    errorMessage: combined,
   };
 }
 
@@ -407,6 +537,77 @@ export function parseStashOutput(
     success: true,
     message: combined || `Stash ${action} completed successfully`,
     ...(stashRef ? { stashRef } : {}),
+  };
+}
+
+/** Parses a failed `git stash` into structured stash error data. */
+export function parseStashError(
+  stdout: string,
+  stderr: string,
+  action: "push" | "pop" | "apply" | "drop" | "clear",
+): GitStash {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Nothing to stash
+  if (/No local changes to save/i.test(combined)) {
+    return {
+      action,
+      success: false,
+      message: combined,
+      reason: "no-local-changes",
+    };
+  }
+
+  // Stash pop/apply conflicts
+  if (/CONFLICT/i.test(combined) || /conflict/i.test(combined)) {
+    const conflictFiles: string[] = [];
+    // Pattern: "CONFLICT (content): Merge conflict in <file>"
+    const conflictPattern = /CONFLICT \(.*?\): (?:Merge conflict in )?(.+)/g;
+    let match;
+    while ((match = conflictPattern.exec(combined)) !== null) {
+      conflictFiles.push(match[1].trim());
+    }
+
+    // Extract stash ref if available
+    const refMatch = combined.match(/stash@\{\d+\}/);
+    const stashRef = refMatch ? refMatch[0] : undefined;
+
+    return {
+      action,
+      success: false,
+      message: combined,
+      reason: "conflict",
+      ...(conflictFiles.length > 0 ? { conflictFiles } : {}),
+      ...(stashRef ? { stashRef } : {}),
+    };
+  }
+
+  // No stash entries
+  if (/No stash entries found/i.test(combined) || /does not exist/i.test(combined)) {
+    return {
+      action,
+      success: false,
+      message: combined,
+      reason: "no-stash-entries",
+    };
+  }
+
+  // Dirty index (can't pop due to staged changes)
+  if (/saved state.*could not be applied/i.test(combined) || /dirty.*index/i.test(combined)) {
+    return {
+      action,
+      success: false,
+      message: combined,
+      reason: "dirty-index",
+    };
+  }
+
+  // Generic failure
+  return {
+    action,
+    success: false,
+    message: combined || `Stash ${action} failed`,
+    reason: "unknown",
   };
 }
 
@@ -794,6 +995,69 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
   return { commits, total };
 }
 
+/**
+ * Normalizes raw git reflog action strings into consistent enum values.
+ * Different git versions produce different action strings:
+ * - "commit (initial)" vs "commit: initial" -> "commit-initial"
+ * - "commit (amend)" vs "commit: amend" -> "commit-amend"
+ * - "checkout: moving from X to Y" -> "checkout"
+ * - "rebase (finish)" / "rebase finished" -> "rebase-finish"
+ * - "rebase (pick)" -> "rebase-pick"
+ * - "rebase (reword)" -> "rebase-reword"
+ * - "rebase (edit)" -> "rebase-edit"
+ * - "rebase (squash)" -> "rebase-squash"
+ * - "rebase (fixup)" -> "rebase-fixup"
+ * - "rebase -i (pick)" -> "rebase-pick"
+ * - "rebase (abort)" -> "rebase-abort"
+ * - "merge <branch>" -> "merge"
+ */
+export function normalizeReflogAction(rawAction: string): ReflogAction {
+  const lower = rawAction.toLowerCase().trim();
+
+  // commit variants
+  if (/^commit\s*\(initial\)$/.test(lower) || lower === "commit: initial") return "commit-initial";
+  if (/^commit\s*\(amend\)$/.test(lower) || lower === "commit: amend") return "commit-amend";
+  if (/^commit$/.test(lower)) return "commit";
+
+  // checkout
+  if (/^checkout/.test(lower)) return "checkout";
+
+  // rebase variants
+  if (/^rebase\s*(?:-i\s*)?\(finish\)$/.test(lower) || /^rebase finish/.test(lower))
+    return "rebase-finish";
+  if (/^rebase\s*(?:-i\s*)?\(abort\)$/.test(lower) || /^rebase abort/.test(lower))
+    return "rebase-abort";
+  if (/^rebase\s*(?:-i\s*)?\(pick\)$/.test(lower)) return "rebase-pick";
+  if (/^rebase\s*(?:-i\s*)?\(reword\)$/.test(lower)) return "rebase-reword";
+  if (/^rebase\s*(?:-i\s*)?\(edit\)$/.test(lower)) return "rebase-edit";
+  if (/^rebase\s*(?:-i\s*)?\(squash\)$/.test(lower)) return "rebase-squash";
+  if (/^rebase\s*(?:-i\s*)?\(fixup\)$/.test(lower)) return "rebase-fixup";
+  if (/^rebase/.test(lower)) return "rebase";
+
+  // merge (may include branch name: "merge feature")
+  if (/^merge/.test(lower)) return "merge";
+
+  // pull
+  if (/^pull/.test(lower)) return "pull";
+
+  // reset
+  if (/^reset/.test(lower)) return "reset";
+
+  // branch
+  if (/^branch/.test(lower)) return "branch";
+
+  // clone
+  if (/^clone/.test(lower)) return "clone";
+
+  // cherry-pick
+  if (/^cherry-pick/.test(lower)) return "cherry-pick";
+
+  // stash
+  if (/^stash/.test(lower)) return "stash";
+
+  return "other";
+}
+
 /** Parses custom-formatted `git reflog` output (tab-delimited: %H\t%h\t%gd\t%gs\t%ci) into structured reflog entries. */
 export function parseReflogOutput(stdout: string): GitReflogFull {
   const lines = stdout.trim().split("\n").filter(Boolean);
@@ -801,14 +1065,16 @@ export function parseReflogOutput(stdout: string): GitReflogFull {
     const [hash, shortHash, selector, subject, date] = line.split("\t");
     // Split subject into action and description: "checkout: moving from main to feature"
     const colonIdx = (subject || "").indexOf(": ");
-    const action = colonIdx >= 0 ? (subject || "").slice(0, colonIdx) : subject || "";
+    const rawAction = colonIdx >= 0 ? (subject || "").slice(0, colonIdx) : subject || "";
     const description = colonIdx >= 0 ? (subject || "").slice(colonIdx + 2) : "";
+    const action = normalizeReflogAction(rawAction);
 
     return {
       hash: hash || "",
       shortHash: shortHash || "",
       selector: selector || "",
       action,
+      rawAction,
       description,
       date: date || "",
     };
