@@ -471,7 +471,7 @@ describe("compactPipShowMap", () => {
     expect(compact).not.toHaveProperty("author");
     expect(compact).not.toHaveProperty("license");
     expect(compact).not.toHaveProperty("location");
-    expect(compact).not.toHaveProperty("requires");
+    expect(Array.isArray(compact.requires)).toBe(true);
   });
 });
 
