@@ -15,10 +15,7 @@ export function registerIssueCloseTool(server: McpServer) {
       description:
         "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, URL, reason, and comment URL. Use instead of running `gh issue close` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept number or URL via union
-        number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
-          .describe("Issue number or URL"),
+        number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comment: z.string().max(INPUT_LIMITS.STRING_MAX).optional().describe("Closing comment"),
         reason: z
           .enum(["completed", "not planned"])

@@ -15,9 +15,9 @@ export function registerPrMergeTool(server: McpServer) {
       description:
         "Merges a pull request by number, URL, or branch. Returns structured data with merge status, method, URL, and branch deletion status. Use instead of running `gh pr merge` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept PR by number, URL, or branch via union
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         method: z
           .enum(["squash", "merge", "rebase"])

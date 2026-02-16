@@ -15,10 +15,7 @@ export function registerIssueCommentTool(server: McpServer) {
       description:
         "Adds, edits, or deletes a comment on an issue. Returns structured data with the comment URL, operation type, comment ID, issue number, and body echo. Use instead of running `gh issue comment` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept number or URL via union
-        number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
-          .describe("Issue number or URL"),
+        number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),
         editLast: z
           .boolean()

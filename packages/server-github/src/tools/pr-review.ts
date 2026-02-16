@@ -15,9 +15,9 @@ export function registerPrReviewTool(server: McpServer) {
       description:
         "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event, URL, and body echo. Use instead of running `gh pr review` in the terminal.",
       inputSchema: {
-        // S-gap P0: Accept PR by number, URL, or branch via union
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         event: z
           .enum(["approve", "request-changes", "comment"])
