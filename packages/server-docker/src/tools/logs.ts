@@ -33,6 +33,16 @@ export function registerLogsTool(server: McpServer) {
           .describe(
             "Max lines in structured output (default: 100). Lines beyond this are truncated with isTruncated flag.",
           ),
+        timestamps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show timestamps for each log line (default: false)"),
+        details: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show extra details provided to logs (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -43,12 +53,14 @@ export function registerLogsTool(server: McpServer) {
       },
       outputSchema: DockerLogsSchema,
     },
-    async ({ container, tail, since, limit, compact }) => {
+    async ({ container, tail, since, limit, timestamps, details, compact }) => {
       assertNoFlagInjection(container, "container");
       if (since) assertNoFlagInjection(since, "since");
 
       const args = ["logs", container, "--tail", String(tail ?? 100)];
       if (since) args.push("--since", since);
+      if (timestamps) args.push("--timestamps");
+      if (details) args.push("--details");
 
       const result = await docker(args);
       const output = result.stdout || result.stderr;

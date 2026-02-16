@@ -20,6 +20,16 @@ export function registerComposePsTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Directory containing docker-compose.yml (default: cwd)"),
+        all: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show stopped containers from docker compose run (default: false)"),
+        noTrunc: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not truncate output (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -30,8 +40,10 @@ export function registerComposePsTool(server: McpServer) {
       },
       outputSchema: DockerComposePsSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, all, noTrunc, compact }) => {
       const args = ["compose", "ps", "--format", "json"];
+      if (all) args.push("--all");
+      if (noTrunc) args.push("--no-trunc");
       const result = await docker(args, path);
       const data = parseComposePsJson(result.stdout);
       return compactDualOutput(

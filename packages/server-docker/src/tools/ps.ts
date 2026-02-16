@@ -20,6 +20,12 @@ export function registerPsTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Show all containers (default: true, includes stopped)"),
+        last: z.number().optional().describe("Show only the N most recently created containers"),
+        size: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Display total file sizes per container (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -30,9 +36,11 @@ export function registerPsTool(server: McpServer) {
       },
       outputSchema: DockerPsSchema,
     },
-    async ({ all, compact }) => {
+    async ({ all, last, size, compact }) => {
       const args = ["ps", "--format", "json", "--no-trunc"];
       if (all) args.push("-a");
+      if (last != null) args.push("--last", String(last));
+      if (size) args.push("-s");
       const result = await docker(args);
       const data = parsePsJson(result.stdout);
       return compactDualOutput(

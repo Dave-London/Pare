@@ -30,6 +30,16 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Dockerfile path (default: Dockerfile)"),
+        noCache: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not use cache when building the image (default: false)"),
+        pull: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Always attempt to pull a newer version of the base image (default: false)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -46,7 +56,7 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: DockerBuildSchema,
     },
-    async ({ path, tag, file, args, compact }) => {
+    async ({ path, tag, file, noCache, pull, args, compact }) => {
       if (tag) assertNoFlagInjection(tag, "tag");
       if (file) assertNoFlagInjection(file, "file");
       for (const a of args ?? []) {
@@ -57,6 +67,8 @@ export function registerBuildTool(server: McpServer) {
       const dockerArgs = ["build", "."];
       if (tag) dockerArgs.push("-t", tag);
       if (file) dockerArgs.push("-f", file);
+      if (noCache) dockerArgs.push("--no-cache");
+      if (pull) dockerArgs.push("--pull");
       if (args) dockerArgs.push(...args);
 
       const start = Date.now();

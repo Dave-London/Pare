@@ -38,6 +38,15 @@ export function registerComposeDownTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        timeout: z
+          .number()
+          .optional()
+          .describe("Timeout in seconds for graceful shutdown of services"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run in dry-run mode without actually stopping services (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -48,7 +57,7 @@ export function registerComposeDownTool(server: McpServer) {
       },
       outputSchema: DockerComposeDownSchema,
     },
-    async ({ path, volumes, removeOrphans, file, compact }) => {
+    async ({ path, volumes, removeOrphans, file, timeout, dryRun, compact }) => {
       if (file) assertNoFlagInjection(file, "file");
 
       const args = ["compose"];
@@ -56,6 +65,8 @@ export function registerComposeDownTool(server: McpServer) {
       args.push("down");
       if (volumes) args.push("--volumes");
       if (removeOrphans) args.push("--remove-orphans");
+      if (timeout != null) args.push("--timeout", String(timeout));
+      if (dryRun) args.push("--dry-run");
 
       const result = await docker(args, path);
       const data = parseComposeDownOutput(result.stdout, result.stderr, result.exitCode);
