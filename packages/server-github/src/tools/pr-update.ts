@@ -15,9 +15,9 @@ export function registerPrUpdateTool(server: McpServer) {
       description:
         "Updates pull request metadata (title, body, labels, assignees, reviewers, milestone, base branch, projects). Returns structured data with PR number and URL. Use instead of running `gh pr edit` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept PR by number, URL, or branch via union
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         path: z
           .string()

@@ -19,10 +19,7 @@ export function registerIssueViewTool(server: McpServer) {
       description:
         "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body. Use instead of running `gh issue view` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept number or URL via union
-        number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
-          .describe("Issue number or URL"),
+        number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comments: z
           .boolean()
           .optional()

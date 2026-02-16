@@ -15,9 +15,9 @@ export function registerPrCommentTool(server: McpServer) {
       description:
         "Adds, edits, or deletes a comment on a pull request. Returns structured data with the comment URL, operation type, comment ID, and body echo. Use instead of running `gh pr comment` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept PR by number, URL, or branch via union
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),
         editLast: z

@@ -19,9 +19,9 @@ export function registerPrChecksTool(server: McpServer) {
       description:
         "Lists check/status results for a pull request. Returns structured data with check names, states, conclusions, required status, URLs, and summary counts (passed, failed, pending). Use instead of running `gh pr checks` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept PR by number, URL, or branch via union
         pr: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         repo: z
           .string()

@@ -22,7 +22,8 @@ export function registerIssueUpdateTool(server: McpServer) {
         // ── Target ──────────────────────────────────────────────────
         /** Issue number (integer) or full GitHub issue URL. */
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Issue number or full GitHub issue URL to update"),
         /** Repository path on disk. Defaults to cwd. */
         path: z

@@ -20,9 +20,9 @@ export function registerPrViewTool(server: McpServer) {
       description:
         "Views a pull request by number, URL, or branch. Returns structured data with state, checks, review decision, diff stats, author, labels, draft status, assignees, milestone, and timestamps. Use instead of running `gh pr view` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept PR by number, URL, branch, or current branch via union
         number: z
-          .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
         comments: z.boolean().optional().describe("Include PR comments in output (-c/--comments)"),
         // S-gap P1: Add repo for cross-repo inspection
