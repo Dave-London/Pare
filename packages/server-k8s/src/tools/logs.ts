@@ -36,6 +36,13 @@ export function registerLogsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Only return logs newer than duration (e.g., 1h, 5m, 30s)"),
+        sinceTime: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Only return logs after a specific RFC3339 timestamp (--since-time). E.g., '2024-01-15T10:00:00Z'",
+          ),
         previous: z
           .boolean()
           .optional()
@@ -57,6 +64,25 @@ export function registerLogsTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Prefix each log line with pod and container name (--prefix)"),
+        selector: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Label selector for multi-pod log aggregation (-l). E.g., 'app=nginx'. When used, pod name is not required.",
+          ),
+        context: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Kubernetes context for multi-cluster operations (--context)"),
+        podRunningTimeout: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Timeout for waiting for pod to be running (--pod-running-timeout). E.g., '20s'",
+          ),
         ignoreErrors: z
           .boolean()
           .optional()
@@ -77,11 +103,15 @@ export function registerLogsTool(server: McpServer) {
       container,
       tail,
       since,
+      sinceTime,
       previous,
       timestamps,
       allContainers,
       limitBytes,
       prefix,
+      selector,
+      context,
+      podRunningTimeout,
       ignoreErrors,
       compact,
     }) => {
@@ -89,17 +119,25 @@ export function registerLogsTool(server: McpServer) {
       if (namespace) assertNoFlagInjection(namespace, "namespace");
       if (container) assertNoFlagInjection(container, "container");
       if (since) assertNoFlagInjection(since, "since");
+      if (sinceTime) assertNoFlagInjection(sinceTime, "sinceTime");
+      if (selector) assertNoFlagInjection(selector, "selector");
+      if (context) assertNoFlagInjection(context, "context");
+      if (podRunningTimeout) assertNoFlagInjection(podRunningTimeout, "podRunningTimeout");
 
       const args = ["logs", pod];
       if (namespace) args.push("-n", namespace);
       if (container) args.push("-c", container);
       if (tail !== undefined) args.push("--tail", String(tail));
       if (since) args.push("--since", since);
+      if (sinceTime) args.push("--since-time", sinceTime);
       if (previous) args.push("--previous");
       if (timestamps) args.push("--timestamps");
       if (allContainers) args.push("--all-containers");
       if (limitBytes !== undefined) args.push("--limit-bytes", String(limitBytes));
       if (prefix) args.push("--prefix");
+      if (selector) args.push("-l", selector);
+      if (context) args.push("--context", context);
+      if (podRunningTimeout) args.push("--pod-running-timeout", podRunningTimeout);
       if (ignoreErrors) args.push("--ignore-errors");
 
       const result = await run("kubectl", args, { timeout: 60_000 });

@@ -58,10 +58,21 @@ export function registerHelmTool(server: McpServer) {
           .optional()
           .describe("Values to set via --set (e.g., ['key1=val1', 'key2=val2'])"),
         values: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
+          .union([
+            z.string().max(INPUT_LIMITS.PATH_MAX),
+            z.array(z.string().max(INPUT_LIMITS.PATH_MAX)),
+          ])
           .optional()
-          .describe("Path to a values YAML file (--values)"),
+          .describe(
+            "Path(s) to values YAML file(s) (--values). Accepts a single path or an array of paths.",
+          ),
+        version: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Chart version to install/upgrade (--version). For reproducible pinned versions.",
+          ),
         dryRun: z
           .boolean()
           .optional()
@@ -70,6 +81,13 @@ export function registerHelmTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Wait until resources are ready after install/upgrade (--wait)"),
+        waitTimeout: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Timeout for --wait (--timeout). E.g., '5m0s'. Only effective when wait is true.",
+          ),
         atomic: z
           .boolean()
           .optional()
@@ -90,10 +108,33 @@ export function registerHelmTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("List releases across all namespaces (-A, list action only)"),
+        filter: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Regex filter for release names in list action (--filter)"),
         showResources: z
           .boolean()
           .optional()
           .describe("Show resources in status output (--show-resources, status action only)"),
+        statusRevision: z
+          .number()
+          .optional()
+          .describe(
+            "Show status for a specific historical revision (--revision, status action only)",
+          ),
+        repo: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Chart repository URL (--repo). For installing from a specific repo."),
+        description: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Custom description for the release (--description). Added to the release metadata.",
+          ),
         noHooks: z.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
         skipCrds: z.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
         compact: z
@@ -118,14 +159,20 @@ export function registerHelmTool(server: McpServer) {
       namespace,
       setValues,
       values,
+      version,
       dryRun,
       wait,
+      waitTimeout,
       atomic,
       createNamespace,
       installOnUpgrade,
       reuseValues,
       allNamespaces,
+      filter,
       showResources,
+      statusRevision,
+      repo,
+      description,
       noHooks,
       skipCrds,
       compact,
@@ -133,7 +180,17 @@ export function registerHelmTool(server: McpServer) {
       if (release) assertNoFlagInjection(release, "release");
       if (chart) assertNoFlagInjection(chart, "chart");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
-      if (values) assertNoFlagInjection(values, "values");
+      if (version) assertNoFlagInjection(version, "version");
+      if (filter) assertNoFlagInjection(filter, "filter");
+      if (repo) assertNoFlagInjection(repo, "repo");
+      if (description) assertNoFlagInjection(description, "description");
+      if (waitTimeout) assertNoFlagInjection(waitTimeout, "waitTimeout");
+
+      // Normalize values to array
+      const valuesFiles = values ? (Array.isArray(values) ? values : [values]) : [];
+      for (const v of valuesFiles) {
+        assertNoFlagInjection(v, "values");
+      }
 
       switch (action) {
         case "list": {
@@ -143,6 +200,7 @@ export function registerHelmTool(server: McpServer) {
           } else if (namespace) {
             args.push("-n", namespace);
           }
+          if (filter) args.push("--filter", filter);
 
           const result = await run("helm", args, { timeout: 60_000 });
           const data = parseHelmListOutput(
@@ -169,6 +227,7 @@ export function registerHelmTool(server: McpServer) {
           const args = ["status", release, "-o", "json"];
           if (namespace) args.push("-n", namespace);
           if (showResources) args.push("--show-resources");
+          if (statusRevision !== undefined) args.push("--revision", String(statusRevision));
 
           const result = await run("helm", args, { timeout: 60_000 });
           const data = parseHelmStatusOutput(
@@ -196,7 +255,10 @@ export function registerHelmTool(server: McpServer) {
 
           const args = ["install", release, chart, "-o", "json"];
           if (namespace) args.push("-n", namespace);
-          if (values) args.push("--values", values);
+          if (version) args.push("--version", version);
+          for (const v of valuesFiles) {
+            args.push("--values", v);
+          }
           if (setValues) {
             for (const sv of setValues) {
               assertNoFlagInjection(sv, "setValues");
@@ -205,8 +267,11 @@ export function registerHelmTool(server: McpServer) {
           }
           if (dryRun) args.push("--dry-run");
           if (wait) args.push("--wait");
+          if (waitTimeout) args.push("--timeout", waitTimeout);
           if (atomic) args.push("--atomic");
           if (createNamespace) args.push("--create-namespace");
+          if (repo) args.push("--repo", repo);
+          if (description) args.push("--description", description);
           if (noHooks) args.push("--no-hooks");
           if (skipCrds) args.push("--skip-crds");
 
@@ -236,7 +301,10 @@ export function registerHelmTool(server: McpServer) {
 
           const args = ["upgrade", release, chart, "-o", "json"];
           if (namespace) args.push("-n", namespace);
-          if (values) args.push("--values", values);
+          if (version) args.push("--version", version);
+          for (const v of valuesFiles) {
+            args.push("--values", v);
+          }
           if (setValues) {
             for (const sv of setValues) {
               assertNoFlagInjection(sv, "setValues");
@@ -245,10 +313,13 @@ export function registerHelmTool(server: McpServer) {
           }
           if (dryRun) args.push("--dry-run");
           if (wait) args.push("--wait");
+          if (waitTimeout) args.push("--timeout", waitTimeout);
           if (atomic) args.push("--atomic");
           if (createNamespace) args.push("--create-namespace");
           if (installOnUpgrade) args.push("--install");
           if (reuseValues) args.push("--reuse-values");
+          if (repo) args.push("--repo", repo);
+          if (description) args.push("--description", description);
           if (noHooks) args.push("--no-hooks");
           if (skipCrds) args.push("--skip-crds");
 
