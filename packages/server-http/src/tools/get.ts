@@ -44,6 +44,20 @@ export function registerGetTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Follow HTTP redirects (default: true)"),
+        insecure: z
+          .boolean()
+          .optional()
+          .describe("Allow insecure TLS connections, e.g. self-signed certificates (-k)"),
+        retry: z
+          .number()
+          .min(0)
+          .max(10)
+          .optional()
+          .describe("Number of retries on transient failures (--retry)"),
+        compressed: z
+          .boolean()
+          .optional()
+          .describe("Request compressed response and decompress automatically (--compressed)"),
         compact: z
           .boolean()
           .optional()
@@ -59,7 +73,17 @@ export function registerGetTool(server: McpServer) {
       },
       outputSchema: HttpResponseSchema,
     },
-    async ({ url, headers, timeout, followRedirects, compact, path }) => {
+    async ({
+      url,
+      headers,
+      timeout,
+      followRedirects,
+      insecure,
+      retry,
+      compressed,
+      compact,
+      path,
+    }) => {
       assertSafeUrl(url);
 
       const args = buildCurlArgs({
@@ -68,6 +92,9 @@ export function registerGetTool(server: McpServer) {
         headers,
         timeout: timeout ?? 30,
         followRedirects: followRedirects ?? true,
+        insecure,
+        retry,
+        compressed,
       });
 
       const cwd = path || process.cwd();
