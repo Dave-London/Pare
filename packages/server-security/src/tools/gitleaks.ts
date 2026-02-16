@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS, assertAllowedRoot } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  INPUT_LIMITS,
+  assertAllowedRoot,
+  assertNoFlagInjection,
+} from "@paretools/shared";
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
   formatGitleaksScan,
@@ -35,6 +41,25 @@ export function registerGitleaksTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Enable verbose output from gitleaks"),
+        followSymlinks: z
+          .boolean()
+          .optional()
+          .describe("Follow symbolic links during scan (--follow-symlinks)"),
+        maxTargetMegabytes: z
+          .number()
+          .optional()
+          .describe("Skip files larger than this size in MB (--max-target-megabytes)"),
+        logLevel: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Log level for gitleaks output (--log-level, e.g. 'debug', 'info', 'warn', 'error')",
+          ),
+        exitCode: z
+          .number()
+          .optional()
+          .describe("Exit code when findings are detected (--exit-code)"),
         compact: z
           .boolean()
           .optional()
@@ -45,7 +70,17 @@ export function registerGitleaksTool(server: McpServer) {
       },
       outputSchema: GitleaksScanResultSchema,
     },
-    async ({ path, noGit, verbose, compact }) => {
+    async ({
+      path,
+      noGit,
+      verbose,
+      followSymlinks,
+      maxTargetMegabytes,
+      logLevel,
+      exitCode,
+      compact,
+    }) => {
+      if (logLevel) assertNoFlagInjection(logLevel, "logLevel");
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
@@ -57,6 +92,22 @@ export function registerGitleaksTool(server: McpServer) {
 
       if (verbose) {
         args.push("--verbose");
+      }
+
+      if (followSymlinks) {
+        args.push("--follow-symlinks");
+      }
+
+      if (maxTargetMegabytes !== undefined) {
+        args.push("--max-target-megabytes", String(maxTargetMegabytes));
+      }
+
+      if (logLevel) {
+        args.push("--log-level", logLevel);
+      }
+
+      if (exitCode !== undefined) {
+        args.push("--exit-code", String(exitCode));
       }
 
       args.push("--source", cwd);
