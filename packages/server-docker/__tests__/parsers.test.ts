@@ -266,7 +266,7 @@ describe("parseBuildOutput", () => {
     expect(result.imageId).toBe("a1b2c3d4e5f6");
     expect(result.duration).toBe(12.5);
     expect(result.steps).toBe(6);
-    expect(result.errors).toEqual([]);
+    expect(result.errors).toBeUndefined();
   });
 
   it("parses failed build", () => {

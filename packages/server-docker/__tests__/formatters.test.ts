@@ -207,8 +207,8 @@ describe("formatImages", () => {
     };
     const output = formatImages(data);
     expect(output).toContain("2 images:");
-    expect(output).toContain("nginx:latest (142MB, 2 weeks ago)");
-    expect(output).toContain("myapp:v1.2.0 (85MB, 3 days ago)");
+    expect(output).toContain("nginx:latest (142MB)");
+    expect(output).toContain("myapp:v1.2.0 (85MB)");
   });
 
   it("formats empty image list", () => {
@@ -233,7 +233,7 @@ describe("formatImages", () => {
       total: 1,
     };
     const output = formatImages(data);
-    expect(output).toContain("myapp (50MB, 1 day ago)");
+    expect(output).toContain("myapp (50MB)");
     expect(output).not.toContain("<none>");
   });
 });

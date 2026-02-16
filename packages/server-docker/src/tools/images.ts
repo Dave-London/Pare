@@ -20,11 +20,15 @@ export function registerImagesTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show all images including intermediates"),
-        filter: z
+        /** #109: Renamed from 'filter' to 'reference' to avoid confusion with Docker's --filter flag. */
+        reference: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
+          .describe(
+            "Filter by image reference (positional arg, e.g., 'myapp', 'nginx:*'). " +
+              "This is a positional reference filter, not Docker's --filter flag.",
+          ),
         filterExpr: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -52,8 +56,8 @@ export function registerImagesTool(server: McpServer) {
       },
       outputSchema: DockerImagesSchema,
     },
-    async ({ all, filter, filterExpr, digests, noTrunc, compact }) => {
-      if (filter) assertNoFlagInjection(filter, "filter");
+    async ({ all, reference, filterExpr, digests, noTrunc, compact }) => {
+      if (reference) assertNoFlagInjection(reference, "reference");
       if (filterExpr) assertNoFlagInjection(filterExpr, "filterExpr");
 
       const args = ["images", "--format", "json"];
@@ -61,7 +65,8 @@ export function registerImagesTool(server: McpServer) {
       if (filterExpr) args.push("--filter", filterExpr);
       if (digests) args.push("--digests");
       if (noTrunc) args.push("--no-trunc");
-      if (filter) args.push(filter);
+      // #109: 'reference' is the positional argument (was 'filter')
+      if (reference) args.push(reference);
 
       const result = await docker(args);
       const data = parseImagesJson(result.stdout);

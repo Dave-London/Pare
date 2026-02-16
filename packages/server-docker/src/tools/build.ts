@@ -20,11 +20,16 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Build context path (default: cwd)"),
+        /** #98: Support multiple tags — accepts string or string[] for multiple -t flags. */
         tag: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
           .optional()
-          .describe("Image tag (e.g., myapp:latest)"),
+          .describe(
+            'Image tag(s). String for a single tag or string[] for multiple tags (e.g., ["myapp:latest", "myapp:v1.2"])',
+          ),
         file: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -123,7 +128,11 @@ export function registerBuildTool(server: McpServer) {
       args,
       compact,
     }) => {
-      if (tag) assertNoFlagInjection(tag, "tag");
+      // #98: Normalize tag to array
+      const tags = tag ? (Array.isArray(tag) ? tag : [tag]) : [];
+      for (const t of tags) {
+        assertNoFlagInjection(t, "tag");
+      }
       if (file) assertNoFlagInjection(file, "file");
       if (target) assertNoFlagInjection(target, "target");
       if (platform) assertNoFlagInjection(platform, "platform");
@@ -151,7 +160,10 @@ export function registerBuildTool(server: McpServer) {
 
       const cwd = path || process.cwd();
       const dockerArgs = ["build", "."];
-      if (tag) dockerArgs.push("-t", tag);
+      // #98: Support multiple tags
+      for (const t of tags) {
+        dockerArgs.push("-t", t);
+      }
       if (file) dockerArgs.push("-f", file);
       if (noCache) dockerArgs.push("--no-cache");
       if (pull) dockerArgs.push("--pull");

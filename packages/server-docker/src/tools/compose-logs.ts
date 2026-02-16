@@ -56,6 +56,15 @@ export function registerComposeLogsTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Include timestamps in output (default: true)"),
+        /** #102: Add follow param for bounded log streaming with -f flag. */
+        follow: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Follow log output (-f). Must be used with 'tail' to provide bounded streaming. " +
+              "WARNING: Without tail, this may produce unbounded output (default: false)",
+          ),
         index: z
           .number()
           .optional()
@@ -83,6 +92,7 @@ export function registerComposeLogsTool(server: McpServer) {
       since,
       until,
       timestamps,
+      follow,
       index,
       noLogPrefix,
       compact,
@@ -103,6 +113,8 @@ export function registerComposeLogsTool(server: McpServer) {
       if (tail != null) args.push("--tail", String(tail));
       if (since) args.push("--since", since);
       if (until) args.push("--until", until);
+      // #102: Add follow flag for bounded streaming
+      if (follow) args.push("-f");
       if (index != null) args.push("--index", String(index));
       if (noLogPrefix) args.push("--no-log-prefix");
       if (services && services.length > 0) {
