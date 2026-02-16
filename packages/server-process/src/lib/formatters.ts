@@ -17,7 +17,13 @@ export function formatRun(data: ProcessRunResult): string {
   }
 
   if (data.stdout) lines.push(data.stdout);
+  if (data.stdoutTruncatedLines) {
+    lines.push(`  ... ${data.stdoutTruncatedLines} stdout lines truncated`);
+  }
   if (data.stderr) lines.push(data.stderr);
+  if (data.stderrTruncatedLines) {
+    lines.push(`  ... ${data.stderrTruncatedLines} stderr lines truncated`);
+  }
   return lines.join("\n");
 }
 
@@ -32,6 +38,8 @@ export interface ProcessRunCompact {
   duration: number;
   timedOut: boolean;
   signal?: string;
+  stdoutTruncatedLines?: number;
+  stderrTruncatedLines?: number;
 }
 
 export function compactRunMap(data: ProcessRunResult): ProcessRunCompact {
@@ -42,6 +50,8 @@ export function compactRunMap(data: ProcessRunResult): ProcessRunCompact {
     duration: data.duration,
     timedOut: data.timedOut,
     signal: data.signal,
+    stdoutTruncatedLines: data.stdoutTruncatedLines,
+    stderrTruncatedLines: data.stderrTruncatedLines,
   };
 }
 
