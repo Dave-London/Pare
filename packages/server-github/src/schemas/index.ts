@@ -9,6 +9,14 @@ export const PrCheckSchema = z.object({
   conclusion: z.string().nullable(),
 });
 
+/** Zod schema for a single review on a PR (P1-gap #147). */
+export const PrReviewItemSchema = z.object({
+  author: z.string(),
+  state: z.string(),
+  body: z.string().optional(),
+  submittedAt: z.string().optional(),
+});
+
 /** Zod schema for structured pr-view output. */
 export const PrViewResultSchema = z.object({
   number: z.number(),
@@ -34,6 +42,8 @@ export const PrViewResultSchema = z.object({
   updatedAt: z.string().optional(),
   milestone: z.string().nullable().optional(),
   projectItems: z.array(z.string()).optional(),
+  // P1-gap #147: Add multi-reviewer visibility
+  reviews: z.array(PrReviewItemSchema).optional(),
 });
 
 export type PrViewResult = z.infer<typeof PrViewResultSchema>;
@@ -95,6 +105,10 @@ export const PrReviewResultSchema = z.object({
   reviewId: z.string().optional(),
   reviewDecision: z.string().optional(),
   body: z.string().optional(),
+  // P1-gap #146: Structured error classification for review failures
+  errorType: z
+    .enum(["not-found", "permission-denied", "already-reviewed", "draft-pr", "unknown"])
+    .optional(),
 });
 
 export type PrReviewResult = z.infer<typeof PrReviewResultSchema>;
@@ -197,6 +211,8 @@ export const IssueCloseResultSchema = z.object({
   // S-gap: Add reason echo, commentUrl
   reason: z.string().optional(),
   commentUrl: z.string().optional(),
+  // P1-gap #144: Detect already-closed issues
+  alreadyClosed: z.boolean().optional(),
 });
 
 export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
@@ -320,6 +336,11 @@ export const RunListItemSchema = z.object({
   headBranch: z.string().optional(),
   url: z.string().optional(),
   createdAt: z.string().optional(),
+  // P1-gap #148: Expand run-list with additional fields
+  headSha: z.string().optional(),
+  event: z.string().optional(),
+  startedAt: z.string().optional(),
+  attempt: z.number().optional(),
 });
 
 /** Zod schema for structured run-list output. */
@@ -338,6 +359,9 @@ export const RunRerunResultSchema = z.object({
   url: z.string(),
   // S-gap: Add job field when rerunning a specific job
   job: z.string().optional(),
+  // P1-gap #149: Track rerun attempt number and new run URL
+  attempt: z.number().optional(),
+  newRunUrl: z.string().optional(),
 });
 
 export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
@@ -405,6 +429,8 @@ export const ApiResultSchema = z.object({
   body: z.unknown(),
   endpoint: z.string(),
   method: z.string(),
+  // P1-gap #141: Preserve API error body for debugging
+  errorBody: z.unknown().optional(),
 });
 
 export type ApiResult = z.infer<typeof ApiResultSchema>;

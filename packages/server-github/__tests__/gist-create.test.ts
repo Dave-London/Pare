@@ -70,3 +70,45 @@ describe("formatGistCreate", () => {
     );
   });
 });
+
+// ── P1-gap #143: Content-based gist creation ────────────────────────
+
+describe("parseGistCreate — content-based (P1 #143)", () => {
+  it("includes content filenames in output", () => {
+    const stdout = "https://gist.github.com/abc123def456\n";
+
+    const result = parseGistCreate(stdout, false, ["script.py", "helper.js"], "My scripts");
+
+    expect(result.files).toEqual(["script.py", "helper.js"]);
+    expect(result.fileCount).toBe(2);
+    expect(result.description).toBe("My scripts");
+  });
+
+  it("handles single content file", () => {
+    const stdout = "https://gist.github.com/deadbeef0123\n";
+
+    const result = parseGistCreate(stdout, true, ["README.md"]);
+
+    expect(result.files).toEqual(["README.md"]);
+    expect(result.fileCount).toBe(1);
+    expect(result.public).toBe(true);
+  });
+});
+
+describe("formatGistCreate — with files and description (P1 #143)", () => {
+  it("formats gist with files and description", () => {
+    const data: GistCreateResult = {
+      id: "abc123",
+      url: "https://gist.github.com/abc123",
+      public: false,
+      files: ["script.py", "helper.js"],
+      description: "My scripts",
+      fileCount: 2,
+    };
+    const output = formatGistCreate(data);
+
+    expect(output).toContain("script.py, helper.js");
+    expect(output).toContain("My scripts");
+    expect(output).toContain("secret");
+  });
+});

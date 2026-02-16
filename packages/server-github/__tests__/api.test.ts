@@ -168,3 +168,79 @@ describe("formatApi", () => {
     expect(output).toContain("POST repos/o/r/issues → 201");
   });
 });
+
+// ── P1-gap #141: Error body preservation ─────────────────────────────
+
+describe("parseApi — error body preservation (P1 #141)", () => {
+  it("preserves JSON error body from stderr", () => {
+    const result = parseApi(
+      "",
+      1,
+      "/repos/o/r/issues",
+      "POST",
+      '{"message":"Validation Failed","errors":[{"code":"missing_field"}]}',
+    );
+
+    expect(result.status).toBe(422);
+    expect(result.errorBody).toEqual({
+      message: "Validation Failed",
+      errors: [{ code: "missing_field" }],
+    });
+  });
+
+  it("preserves plain text error from stderr", () => {
+    const result = parseApi("", 1, "/user", "GET", "gh: Not Found (HTTP 404)");
+
+    expect(result.errorBody).toBe("gh: Not Found (HTTP 404)");
+  });
+
+  it("does not include errorBody on success", () => {
+    const json = JSON.stringify({ login: "octocat" });
+    const result = parseApi(json, 0, "/user", "GET");
+
+    expect(result.errorBody).toBeUndefined();
+  });
+
+  it("preserves embedded JSON from stderr with prefix message", () => {
+    const stderr = 'gh: HTTP 422: {"message":"Resource not accessible by integration"}';
+    const result = parseApi("", 1, "/repos/o/r/pulls", "POST", stderr);
+
+    expect(result.errorBody).toEqual({ message: "Resource not accessible by integration" });
+  });
+
+  it("handles empty stderr gracefully", () => {
+    const result = parseApi("", 1, "/user", "GET", "");
+
+    expect(result.errorBody).toBeUndefined();
+  });
+});
+
+describe("formatApi — error body display (P1 #141)", () => {
+  it("includes error body in formatted output", () => {
+    const data: ApiResult = {
+      status: 422,
+      statusCode: 422,
+      body: "",
+      endpoint: "/repos/o/r/issues",
+      method: "POST",
+      errorBody: { message: "Validation Failed" },
+    };
+    const output = formatApi(data);
+
+    expect(output).toContain("Error:");
+    expect(output).toContain("Validation Failed");
+  });
+
+  it("does not include error line when no error body", () => {
+    const data: ApiResult = {
+      status: 200,
+      statusCode: 200,
+      body: { id: 1 },
+      endpoint: "/user",
+      method: "GET",
+    };
+    const output = formatApi(data);
+
+    expect(output).not.toContain("Error:");
+  });
+});

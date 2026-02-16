@@ -88,6 +88,18 @@ export function registerApiTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Read request body from file (--input). Mutually exclusive with body."),
+        // P1-gap #142: GraphQL support
+        query: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "GraphQL query string. When provided, makes a GraphQL request via `gh api graphql`.",
+          ),
+        variables: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe("GraphQL variables as key-value pairs. Only used with `query` parameter."),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -113,6 +125,8 @@ export function registerApiTool(server: McpServer) {
       cache,
       preview,
       inputFile,
+      query,
+      variables,
       path,
     }) => {
       const cwd = path || process.cwd();
@@ -123,6 +137,43 @@ export function registerApiTool(server: McpServer) {
       if (cache) assertNoFlagInjection(cache, "cache");
       if (preview) assertNoFlagInjection(preview, "preview");
       if (inputFile) assertNoFlagInjection(inputFile, "inputFile");
+
+      // P1-gap #142: Handle GraphQL queries
+      if (query) {
+        const gqlArgs = ["api", "graphql", "-f", `query=${query}`];
+        if (variables) {
+          for (const [key, value] of Object.entries(variables)) {
+            gqlArgs.push(
+              "-f",
+              `${key}=${typeof value === "string" ? value : JSON.stringify(value)}`,
+            );
+          }
+        }
+        if (hostname) gqlArgs.push("--hostname", hostname);
+        if (headers) {
+          for (const [key, value] of Object.entries(headers)) {
+            gqlArgs.push("-H", `${key}:${value}`);
+          }
+        }
+        if (jq) gqlArgs.push("--jq", jq);
+        if (paginate) gqlArgs.push("--paginate");
+        if (slurp) gqlArgs.push("--slurp");
+        gqlArgs.push("--include");
+
+        const gqlResult = await ghCmd(gqlArgs, { cwd });
+        if (gqlResult.exitCode !== 0 && !gqlResult.stdout && gqlResult.stderr) {
+          const data = parseApi("", gqlResult.exitCode, "graphql", "POST", gqlResult.stderr);
+          return dualOutput(data, formatApi);
+        }
+        const data = parseApi(
+          gqlResult.stdout,
+          gqlResult.exitCode,
+          "graphql",
+          "POST",
+          gqlResult.stderr,
+        );
+        return dualOutput(data, formatApi);
+      }
 
       const args = ["api", endpoint, "--method", method!];
 
@@ -177,11 +228,15 @@ export function registerApiTool(server: McpServer) {
 
       const result = await ghCmd(args, { cwd, stdin });
 
-      if (result.exitCode !== 0 && result.stderr) {
-        throw new Error(`gh api failed: ${result.stderr}`);
+      // P1-gap #141: Pass stderr to parser for error body preservation
+      // Only throw if there's no stdout at all (completely failed)
+      if (result.exitCode !== 0 && !result.stdout && result.stderr) {
+        // Still try to parse — pass stderr for error body
+        const data = parseApi("", result.exitCode, endpoint, method!, result.stderr);
+        return dualOutput(data, formatApi);
       }
 
-      const data = parseApi(result.stdout, result.exitCode, endpoint, method!);
+      const data = parseApi(result.stdout, result.exitCode, endpoint, method!, result.stderr);
       return dualOutput(data, formatApi);
     },
   );

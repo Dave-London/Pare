@@ -47,6 +47,16 @@ export function formatPrView(data: PrViewResult): string {
       lines.push(`    ${c.name}: ${c.status} (${c.conclusion ?? "pending"})`);
     }
   }
+  // P1-gap #147: Show reviews
+  if (data.reviews && data.reviews.length > 0) {
+    lines.push(`  reviews:`);
+    for (const r of data.reviews) {
+      const bodySnippet = r.body
+        ? ` — ${r.body.slice(0, 80)}${r.body.length > 80 ? "..." : ""}`
+        : "";
+      lines.push(`    @${r.author}: ${r.state}${bodySnippet}`);
+    }
+  }
   if (data.body) {
     lines.push(`  body: ${data.body.slice(0, 200)}${data.body.length > 200 ? "..." : ""}`);
   }
@@ -101,7 +111,8 @@ export function formatComment(data: CommentResult): string {
 
 /** Formats structured PR review data into human-readable text. */
 export function formatPrReview(data: PrReviewResult): string {
-  return `Reviewed PR #${data.number} (${data.event}): ${data.url}`;
+  const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
+  return `Reviewed PR #${data.number} (${data.event}): ${data.url}${errorPart}`;
 }
 
 /** Formats structured PR update data into human-readable text. */
@@ -225,7 +236,8 @@ export function formatIssueCreate(data: IssueCreateResult): string {
 /** Formats structured issue close data into human-readable text. */
 export function formatIssueClose(data: IssueCloseResult): string {
   const reasonPart = data.reason ? ` (${data.reason})` : "";
-  return `Closed issue #${data.number}${reasonPart}: ${data.url}`;
+  const alreadyPart = data.alreadyClosed ? " [already closed]" : "";
+  return `Closed issue #${data.number}${reasonPart}: ${data.url}${alreadyPart}`;
 }
 
 /** Formats structured issue update data into human-readable text. */
@@ -268,8 +280,10 @@ export function formatRunList(data: RunListResult): string {
   const lines = [`${data.total} workflow runs:`];
   for (const r of data.runs) {
     const conclusion = r.conclusion ? ` → ${r.conclusion}` : "";
+    const sha = r.headSha ? ` ${r.headSha.slice(0, 7)}` : "";
+    const evt = r.event ? ` (${r.event})` : "";
     lines.push(
-      `  #${r.id} ${r.workflowName} / ${r.name} (${r.status}${conclusion}) [${r.headBranch}]`,
+      `  #${r.id} ${r.workflowName} / ${r.name} (${r.status}${conclusion}) [${r.headBranch}]${sha}${evt}`,
     );
   }
   return lines.join("\n");
@@ -489,7 +503,9 @@ export function formatRunListCompact(data: RunListCompact): string {
 export function formatRunRerun(data: RunRerunResult): string {
   const mode = data.failedOnly ? "failed jobs only" : data.job ? `job ${data.job}` : "all jobs";
   const urlPart = data.url ? `: ${data.url}` : "";
-  return `Rerun requested for run #${data.runId} (${mode})${urlPart}`;
+  const attemptPart = data.attempt !== undefined ? `, attempt #${data.attempt}` : "";
+  const newUrlPart = data.newRunUrl ? ` → ${data.newRunUrl}` : "";
+  return `Rerun requested for run #${data.runId} (${mode})${attemptPart}${urlPart}${newUrlPart}`;
 }
 
 // ── Gist ────────────────────────────────────────────────────────────
@@ -572,5 +588,9 @@ export function formatReleaseListCompact(data: ReleaseListCompact): string {
 export function formatApi(data: ApiResult): string {
   const bodyStr = typeof data.body === "string" ? data.body : JSON.stringify(data.body, null, 2);
   const preview = bodyStr.length > 500 ? bodyStr.slice(0, 500) + "..." : bodyStr;
-  return `${data.method} ${data.endpoint} → ${data.statusCode}\n${preview}`;
+  // P1-gap #141: Include error body in formatted output
+  const errorPart = data.errorBody
+    ? `\nError: ${typeof data.errorBody === "string" ? data.errorBody : JSON.stringify(data.errorBody)}`
+    : "";
+  return `${data.method} ${data.endpoint} → ${data.statusCode}\n${preview}${errorPart}`;
 }
