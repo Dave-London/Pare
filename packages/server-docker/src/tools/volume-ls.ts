@@ -20,6 +20,11 @@ export function registerVolumeLsTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        cluster: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Display cluster volumes from Docker Swarm (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -30,8 +35,9 @@ export function registerVolumeLsTool(server: McpServer) {
       },
       outputSchema: DockerVolumeLsSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, cluster, compact }) => {
       const args = ["volume", "ls", "--format", "json"];
+      if (cluster) args.push("--cluster");
       const result = await docker(args, path);
       const data = parseVolumeLsJson(result.stdout);
       return compactDualOutput(

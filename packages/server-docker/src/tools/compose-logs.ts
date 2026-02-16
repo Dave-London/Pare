@@ -44,6 +44,15 @@ export function registerComposeLogsTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Include timestamps in output (default: true)"),
+        index: z
+          .number()
+          .optional()
+          .describe("Target a specific replica index of a scaled service"),
+        noLogPrefix: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not prefix log lines with service name (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -54,7 +63,7 @@ export function registerComposeLogsTool(server: McpServer) {
       },
       outputSchema: DockerComposeLogsSchema,
     },
-    async ({ path, services, tail, since, timestamps, compact }) => {
+    async ({ path, services, tail, since, timestamps, index, noLogPrefix, compact }) => {
       if (since) assertNoFlagInjection(since, "since");
       if (services) {
         for (const s of services) {
@@ -66,6 +75,8 @@ export function registerComposeLogsTool(server: McpServer) {
       if (timestamps) args.push("--timestamps");
       if (tail != null) args.push("--tail", String(tail));
       if (since) args.push("--since", since);
+      if (index != null) args.push("--index", String(index));
+      if (noLogPrefix) args.push("--no-log-prefix");
       if (services && services.length > 0) {
         args.push(...services);
       }

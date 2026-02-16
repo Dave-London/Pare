@@ -24,6 +24,16 @@ export function registerPullTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe('Target platform (e.g., "linux/amd64", "linux/arm64")'),
+        allTags: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Pull all tagged images in the repository (default: false)"),
+        quiet: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Suppress verbose output (default: false)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -39,12 +49,14 @@ export function registerPullTool(server: McpServer) {
       },
       outputSchema: DockerPullSchema,
     },
-    async ({ image, platform, path, compact }) => {
+    async ({ image, platform, allTags, quiet, path, compact }) => {
       assertNoFlagInjection(image, "image");
       if (platform) assertNoFlagInjection(platform, "platform");
 
       const args = ["pull"];
       if (platform) args.push("--platform", platform);
+      if (allTags) args.push("--all-tags");
+      if (quiet) args.push("--quiet");
       args.push(image);
 
       const result = await docker(args, path);
