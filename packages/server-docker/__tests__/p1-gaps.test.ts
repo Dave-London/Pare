@@ -24,22 +24,15 @@ import {
   parseSizeToBytes,
 } from "../src/lib/parsers.js";
 import {
-  formatBuild,
   formatLogs,
-  formatImages,
-  formatRun,
   formatExec,
   formatComposeUp,
   formatComposeDown,
-  formatPull,
   formatInspect,
   formatNetworkLs,
   formatVolumeLs,
   formatComposePs,
-  formatComposeLogs,
   formatComposeBuild,
-  formatStats,
-  formatPs,
 } from "../src/lib/formatters.js";
 
 // ── #97: Build error parsing with line numbers ───────────────────────

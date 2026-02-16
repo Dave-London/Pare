@@ -648,9 +648,7 @@ function parseContainerInspect(obj: Record<string, unknown>): DockerInspect {
 }
 
 /** #111: Parses NetworkSettings from Docker inspect JSON. */
-function parseNetworkSettings(
-  ns: Record<string, unknown> | undefined,
-):
+function parseNetworkSettings(ns: Record<string, unknown> | undefined):
   | {
       ipAddress: string;
       ports?: Record<string, Array<{ hostIp?: string; hostPort?: string }> | null>;
@@ -1063,7 +1061,7 @@ export function parseComposeBuildOutput(
   // If we have timing info, distribute based on build order;
   // otherwise, divide total duration proportionally
   const serviceCount = serviceMap.size;
-  const services = [...serviceMap.entries()].map(([service, status], index) => {
+  const services = [...serviceMap.entries()].map(([service, status], _index) => {
     // #99: Estimate per-service duration
     let serviceDuration: number | undefined;
     if (serviceCount > 0 && duration > 0) {
