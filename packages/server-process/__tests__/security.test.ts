@@ -87,4 +87,48 @@ describe("Zod .max() constraints — Process tool schemas", () => {
       expect(schema.safeParse(oversized).success).toBe(false);
     });
   });
+
+  describe("shell parameter (boolean)", () => {
+    const schema = z.boolean().optional().default(false);
+
+    it("accepts true", () => {
+      expect(schema.safeParse(true).success).toBe(true);
+    });
+
+    it("accepts false", () => {
+      expect(schema.safeParse(false).success).toBe(true);
+    });
+
+    it("defaults to false when undefined", () => {
+      const result = schema.safeParse(undefined);
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(false);
+    });
+
+    it("rejects non-boolean", () => {
+      expect(schema.safeParse("true").success).toBe(false);
+    });
+  });
+
+  describe("stripEnv parameter (boolean)", () => {
+    const schema = z.boolean().optional().default(false);
+
+    it("accepts true", () => {
+      expect(schema.safeParse(true).success).toBe(true);
+    });
+
+    it("accepts false", () => {
+      expect(schema.safeParse(false).success).toBe(true);
+    });
+
+    it("defaults to false when undefined", () => {
+      const result = schema.safeParse(undefined);
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(false);
+    });
+
+    it("rejects non-boolean", () => {
+      expect(schema.safeParse(42).success).toBe(false);
+    });
+  });
 });

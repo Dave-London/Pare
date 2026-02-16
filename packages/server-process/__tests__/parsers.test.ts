@@ -13,6 +13,7 @@ describe("parseRunOutput", () => {
     expect(result.duration).toBe(50);
     expect(result.timedOut).toBe(false);
     expect(result.signal).toBeUndefined();
+    expect(result.truncated).toBeUndefined();
   });
 
   it("parses failed run", () => {
@@ -104,5 +105,36 @@ describe("parseRunOutput — maxOutputLines truncation", () => {
 
     expect(result.stdout).toBe("line1\nline2\nline3\nline4\nline5");
     expect(result.stdoutTruncatedLines).toBeUndefined();
+  });
+});
+
+describe("parseRunOutput — truncated (maxBuffer)", () => {
+  it("sets truncated to true when passed", () => {
+    const result = parseRunOutput(
+      "cmd",
+      "",
+      "output exceeded maxBuffer",
+      1,
+      500,
+      false,
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(result.truncated).toBe(true);
+    expect(result.success).toBe(false);
+  });
+
+  it("does not set truncated when false", () => {
+    const result = parseRunOutput("cmd", "hello", "", 0, 100, false, undefined, undefined, false);
+
+    expect(result.truncated).toBeUndefined();
+  });
+
+  it("does not set truncated when not provided", () => {
+    const result = parseRunOutput("cmd", "hello", "", 0, 100, false);
+
+    expect(result.truncated).toBeUndefined();
   });
 });

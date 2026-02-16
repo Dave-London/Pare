@@ -17,6 +17,9 @@ export interface RunOptions {
   shell?: boolean;
   /** Maximum combined stdout+stderr buffer size in bytes. Defaults to 10 MB. */
   maxBuffer?: number;
+  /** When true, pass `env` directly without merging with process.env.
+   *  Useful for sandboxed execution where the parent environment should be excluded. */
+  replaceEnv?: boolean;
 }
 
 /**
@@ -137,7 +140,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
 
     const child = spawn(cmd, safeArgs, {
       cwd: opts?.cwd,
-      env: opts?.env ? { ...process.env, ...opts.env } : undefined,
+      env: opts?.env ? (opts.replaceEnv ? opts.env : { ...process.env, ...opts.env }) : undefined,
       shell: useShell,
       // Unix: creates a new process group via setsid(2) so we can kill the
       // entire group on timeout (prevents orphaned grandchild processes).

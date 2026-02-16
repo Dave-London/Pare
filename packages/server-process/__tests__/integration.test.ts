@@ -133,5 +133,100 @@ describe("@paretools/process integration", () => {
       expect(sc).toBeDefined();
       expect(sc.stdout).toContain("hello-env");
     });
+
+    it("executes with shell=true for shell features", async () => {
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "echo",
+            args: ["hello && echo world"],
+            shell: true,
+            compact: false,
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.success).toBe(true);
+      // With shell=true, the && should be interpreted by the shell
+      expect(sc.stdout).toContain("hello");
+      expect(sc.stdout).toContain("world");
+    });
+
+    it("isolates environment with stripEnv=true", async () => {
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "node",
+            args: ["-e", "console.log(JSON.stringify(Object.keys(process.env)))"],
+            stripEnv: true,
+            compact: false,
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      // With stripEnv, only PATH should be present (plus any Node.js auto-added vars)
+      const envKeys = JSON.parse(sc.stdout as string) as string[];
+      // Should have very few env vars compared to normal execution
+      expect(envKeys).toContain("PATH");
+      // Should NOT contain typical parent env vars like HOME, USER, SHELL, etc.
+      // (Node.js may auto-set a few, but most parent vars should be stripped)
+      expect(envKeys.length).toBeLessThan(20);
+    });
+
+    it("stripEnv=true with explicit env vars passes them through", async () => {
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "node",
+            args: ["-e", "console.log(process.env.MY_VAR)"],
+            stripEnv: true,
+            env: { MY_VAR: "custom-value" },
+            compact: false,
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.stdout).toContain("custom-value");
+    });
+
+    it("sets truncated when maxBuffer is exceeded", async () => {
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            command: "node",
+            args: ["-e", "process.stdout.write('x'.repeat(100000))"],
+            maxBuffer: 1024,
+            compact: false,
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.truncated).toBe(true);
+      expect(sc.success).toBe(false);
+    });
   });
 });
