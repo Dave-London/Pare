@@ -160,7 +160,7 @@ describe("error paths: non-ASCII characters", () => {
 
   it("parseGoVetOutput handles non-ASCII file paths", () => {
     const stderr = "caf\u00e9.go:10:2: printf: extra arg";
-    const result = parseGoVetOutput("", stderr);
+    const result = parseGoVetOutput("", stderr, 2);
 
     expect(result.total).toBe(1);
     expect(result.diagnostics[0].file).toBe("caf\u00e9.go");

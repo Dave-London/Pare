@@ -24,6 +24,12 @@ export function registerGetTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        update: z
+          .enum(["all", "patch"])
+          .optional()
+          .describe(
+            "Update modules: 'all' maps to -u (update to latest), 'patch' maps to -u=patch (patch-level updates only)",
+          ),
         testDeps: z
           .boolean()
           .optional()
@@ -49,12 +55,14 @@ export function registerGetTool(server: McpServer) {
       },
       outputSchema: GoGetResultSchema,
     },
-    async ({ packages, path, testDeps, verbose, downloadOnly, compact }) => {
+    async ({ packages, path, update, testDeps, verbose, downloadOnly, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages) {
         assertNoFlagInjection(p, "packages");
       }
       const args = ["get"];
+      if (update === "all") args.push("-u");
+      else if (update === "patch") args.push("-u=patch");
       if (testDeps) args.push("-t");
       if (verbose) args.push("-v");
       if (downloadOnly) args.push("-d");

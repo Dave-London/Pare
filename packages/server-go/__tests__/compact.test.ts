@@ -143,6 +143,7 @@ describe("formatTestCompact", () => {
 describe("compactVetMap", () => {
   it("keeps only total count, drops diagnostic details", () => {
     const data: GoVetResult = {
+      success: false,
       diagnostics: [
         { file: "main.go", line: 15, column: 2, message: "unreachable code" },
         { file: "handler.go", line: 30, message: "possible misuse of unsafe.Pointer" },
@@ -152,26 +153,28 @@ describe("compactVetMap", () => {
 
     const compact = compactVetMap(data);
 
+    expect(compact.success).toBe(false);
     expect(compact.total).toBe(2);
     expect(compact).not.toHaveProperty("diagnostics");
   });
 
   it("preserves zero total for clean vet", () => {
-    const data: GoVetResult = { diagnostics: [], total: 0 };
+    const data: GoVetResult = { success: true, diagnostics: [], total: 0 };
 
     const compact = compactVetMap(data);
 
+    expect(compact.success).toBe(true);
     expect(compact.total).toBe(0);
   });
 });
 
 describe("formatVetCompact", () => {
   it("formats clean vet", () => {
-    expect(formatVetCompact({ total: 0 })).toBe("go vet: no issues found.");
+    expect(formatVetCompact({ success: true, total: 0 })).toBe("go vet: no issues found.");
   });
 
   it("formats vet with issues", () => {
-    expect(formatVetCompact({ total: 3 })).toBe("go vet: 3 issues");
+    expect(formatVetCompact({ success: false, total: 3 })).toBe("go vet: 3 issues");
   });
 });
 
@@ -372,6 +375,7 @@ describe("formatModTidyCompact", () => {
 describe("compactEnvMap", () => {
   it("keeps key fields, drops full vars map", () => {
     const data: GoEnvResult = {
+      success: true,
       vars: {
         GOROOT: "/usr/local/go",
         GOPATH: "/home/user/go",
@@ -390,6 +394,7 @@ describe("compactEnvMap", () => {
 
     const compact = compactEnvMap(data);
 
+    expect(compact.success).toBe(true);
     expect(compact.goroot).toBe("/usr/local/go");
     expect(compact.gopath).toBe("/home/user/go");
     expect(compact.goversion).toBe("go1.22.0");
@@ -400,6 +405,7 @@ describe("compactEnvMap", () => {
 
   it("preserves empty fields", () => {
     const data: GoEnvResult = {
+      success: true,
       vars: {},
       goroot: "",
       gopath: "",
@@ -419,6 +425,7 @@ describe("formatEnvCompact", () => {
   it("formats env summary", () => {
     expect(
       formatEnvCompact({
+        success: true,
         goroot: "/usr/local/go",
         gopath: "/home/user/go",
         goversion: "go1.22.0",
@@ -435,6 +442,7 @@ describe("formatEnvCompact", () => {
 describe("compactListMap", () => {
   it("keeps only total count, drops package details", () => {
     const data: GoListResult = {
+      success: true,
       packages: [
         {
           dir: "/project",
@@ -449,26 +457,28 @@ describe("compactListMap", () => {
 
     const compact = compactListMap(data);
 
+    expect(compact.success).toBe(true);
     expect(compact.total).toBe(2);
     expect(compact).not.toHaveProperty("packages");
   });
 
   it("preserves zero total for empty list", () => {
-    const data: GoListResult = { packages: [], total: 0 };
+    const data: GoListResult = { success: true, packages: [], total: 0 };
 
     const compact = compactListMap(data);
 
+    expect(compact.success).toBe(true);
     expect(compact.total).toBe(0);
   });
 });
 
 describe("formatListCompact", () => {
   it("formats empty list", () => {
-    expect(formatListCompact({ total: 0 })).toBe("go list: no packages found.");
+    expect(formatListCompact({ success: true, total: 0 })).toBe("go list: no packages found.");
   });
 
   it("formats list with count", () => {
-    expect(formatListCompact({ total: 5 })).toBe("go list: 5 packages");
+    expect(formatListCompact({ success: true, total: 5 })).toBe("go list: 5 packages");
   });
 });
 

@@ -13,7 +13,7 @@ export function registerListTool(server: McpServer) {
     {
       title: "Go List",
       description:
-        "Lists Go packages and returns structured package information (dir, importPath, name, goFiles). Use instead of running `go list` in the terminal.",
+        "Lists Go packages and returns structured package information (dir, importPath, name, goFiles, testGoFiles). Use instead of running `go list` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -61,6 +61,11 @@ export function registerListTool(server: McpServer) {
           .describe(
             "Find packages matching the patterns without resolving dependencies (-find). Faster for simple listing.",
           ),
+        tags: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Build tags that may affect which packages are listed (-tags)"),
         compact: z
           .boolean()
           .optional()
@@ -71,12 +76,18 @@ export function registerListTool(server: McpServer) {
       },
       outputSchema: GoListResultSchema,
     },
-    async ({ path, packages, updates, deps, tolerateErrors, versions, find, compact }) => {
+    async ({ path, packages, updates, deps, tolerateErrors, versions, find, tags, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
       const args = ["list", "-json"];
+      if (tags && tags.length > 0) {
+        for (const t of tags) {
+          assertNoFlagInjection(t, "tags");
+        }
+        args.push("-tags", tags.join(","));
+      }
       // -u and -versions require -m (module mode); auto-enable it
       if (updates || versions) {
         args.push("-m");
@@ -88,7 +99,7 @@ export function registerListTool(server: McpServer) {
       if (find) args.push("-find");
       args.push(...(packages || ["./..."]));
       const result = await goCmd(args, cwd);
-      const data = parseGoListOutput(result.stdout);
+      const data = parseGoListOutput(result.stdout, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

@@ -127,6 +127,7 @@ describe("formatGoTest", () => {
 describe("formatGoVet", () => {
   it("formats clean vet result", () => {
     const data: GoVetResult = {
+      success: true,
       diagnostics: [],
       total: 0,
     };
@@ -135,6 +136,7 @@ describe("formatGoVet", () => {
 
   it("formats vet result with issues", () => {
     const data: GoVetResult = {
+      success: false,
       diagnostics: [
         {
           file: "main.go",
@@ -160,6 +162,7 @@ describe("formatGoVet", () => {
 describe("formatGoEnv", () => {
   it("formats env with key fields", () => {
     const data: GoEnvResult = {
+      success: true,
       vars: {
         GOROOT: "/usr/local/go",
         GOPATH: "/home/user/go",
@@ -185,6 +188,7 @@ describe("formatGoEnv", () => {
 
   it("formats env with only key fields", () => {
     const data: GoEnvResult = {
+      success: true,
       vars: {
         GOROOT: "/usr/local/go",
         GOPATH: "/home/user/go",
@@ -206,12 +210,13 @@ describe("formatGoEnv", () => {
 
 describe("formatGoList", () => {
   it("formats empty package list", () => {
-    const data: GoListResult = { packages: [], total: 0 };
+    const data: GoListResult = { success: true, packages: [], total: 0 };
     expect(formatGoList(data)).toBe("go list: no packages found.");
   });
 
   it("formats package list with entries", () => {
     const data: GoListResult = {
+      success: true,
       packages: [
         { dir: "/project", importPath: "github.com/user/project", name: "main" },
         { dir: "/project/pkg/util", importPath: "github.com/user/project/pkg/util", name: "util" },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoModTidyOutput } from "../lib/parsers.js";
 import { formatGoModTidy, compactModTidyMap, formatModTidyCompact } from "../lib/formatters.js";
@@ -37,6 +37,18 @@ export function registerModTidyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Attempt to proceed despite errors encountered while loading packages (-e)"),
+        goVersion: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set the expected Go language version (-go=<version>). Example: '1.21'"),
+        compat: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Preserve backward compatibility with the specified Go version (-compat=<version>). Example: '1.20'",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -47,12 +59,16 @@ export function registerModTidyTool(server: McpServer) {
       },
       outputSchema: GoModTidyResultSchema,
     },
-    async ({ path, diff, verbose, continueOnError, compact }) => {
+    async ({ path, diff, verbose, continueOnError, goVersion, compat, compact }) => {
       const cwd = path || process.cwd();
+      if (goVersion) assertNoFlagInjection(goVersion, "goVersion");
+      if (compat) assertNoFlagInjection(compat, "compat");
       const args = ["mod", "tidy"];
       if (diff) args.push("-diff");
       if (verbose) args.push("-v");
       if (continueOnError) args.push("-e");
+      if (goVersion) args.push(`-go=${goVersion}`);
+      if (compat) args.push(`-compat=${compat}`);
       const result = await goCmd(args, cwd);
       const data = parseGoModTidyOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
