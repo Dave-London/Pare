@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
-const CALL_TIMEOUT = 120_000;
+const CALL_TIMEOUT = 180_000;
 
 describe("@paretools/docker integration", () => {
   let client: Client;

@@ -146,7 +146,7 @@ export function registerGetTool(server: McpServer) {
       if (subresource) args.push("--subresource", subresource);
       args.push("-o", "json");
 
-      const result = await run("kubectl", args, { timeout: 60_000 });
+      const result = await run("kubectl", args, { timeout: 180_000 });
       const data = parseGetOutput(
         result.stdout,
         result.stderr,

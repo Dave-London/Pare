@@ -124,7 +124,7 @@ describe("npm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "npm",
         ["audit", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -134,7 +134,7 @@ describe("npm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "npm",
         ["outdated", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -144,7 +144,7 @@ describe("npm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "npm",
         ["ls", "--json", "--depth=0"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -154,7 +154,7 @@ describe("npm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "npm",
         ["init", "-y"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
   });

@@ -202,7 +202,7 @@ export function registerHelmTool(server: McpServer) {
           }
           if (filter) args.push("--filter", filter);
 
-          const result = await run("helm", args, { timeout: 60_000 });
+          const result = await run("helm", args, { timeout: 180_000 });
           const data = parseHelmListOutput(
             result.stdout,
             result.stderr,
@@ -229,7 +229,7 @@ export function registerHelmTool(server: McpServer) {
           if (showResources) args.push("--show-resources");
           if (statusRevision !== undefined) args.push("--revision", String(statusRevision));
 
-          const result = await run("helm", args, { timeout: 60_000 });
+          const result = await run("helm", args, { timeout: 180_000 });
           const data = parseHelmStatusOutput(
             result.stdout,
             result.stderr,
@@ -275,7 +275,7 @@ export function registerHelmTool(server: McpServer) {
           if (noHooks) args.push("--no-hooks");
           if (skipCrds) args.push("--skip-crds");
 
-          const result = await run("helm", args, { timeout: 120_000 });
+          const result = await run("helm", args, { timeout: 180_000 });
           const data = parseHelmInstallOutput(
             result.stdout,
             result.stderr,
@@ -323,7 +323,7 @@ export function registerHelmTool(server: McpServer) {
           if (noHooks) args.push("--no-hooks");
           if (skipCrds) args.push("--skip-crds");
 
-          const result = await run("helm", args, { timeout: 120_000 });
+          const result = await run("helm", args, { timeout: 180_000 });
           const data = parseHelmUpgradeOutput(
             result.stdout,
             result.stderr,
