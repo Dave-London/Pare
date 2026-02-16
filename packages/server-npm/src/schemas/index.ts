@@ -221,6 +221,10 @@ export const NvmResultSchema = z.object({
   default: z.string().optional().describe("Default Node.js version (alias default)"),
   which: z.string().optional().describe("Filesystem path to the active Node.js binary"),
   arch: z.string().optional().describe("Architecture of the active Node.js (e.g., x64, arm64)"),
+  required: z
+    .string()
+    .optional()
+    .describe("Node.js version required by .nvmrc file in the project directory"),
 });
 
 export type NvmResult = z.infer<typeof NvmResultSchema>;

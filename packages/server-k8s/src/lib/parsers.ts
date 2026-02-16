@@ -11,6 +11,8 @@ import type {
   HelmStatusResult,
   HelmInstallResult,
   HelmUpgradeResult,
+  HelmUninstallResult,
+  HelmRollbackResult,
   HelmRelease,
 } from "../schemas/index.js";
 
@@ -582,4 +584,85 @@ export function parseHelmUpgradeOutput(
       error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
     };
   }
+}
+
+// ── Helm uninstall/rollback parsers ─────────────────────────────────
+
+/**
+ * Parses `helm uninstall` output into a structured uninstall result.
+ * Output is plain text like: 'release "my-release" uninstalled'
+ */
+export function parseHelmUninstallOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  namespace?: string,
+): HelmUninstallResult {
+  if (exitCode !== 0) {
+    return {
+      action: "uninstall",
+      success: false,
+      name: release,
+      namespace,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  const output = (stdout + "\n" + stderr).trim();
+  let status = "uninstalled";
+  if (output.includes("uninstalled")) {
+    status = "uninstalled";
+  }
+
+  return {
+    action: "uninstall",
+    success: true,
+    name: release,
+    namespace,
+    status,
+    exitCode,
+  };
+}
+
+/**
+ * Parses `helm rollback` output into a structured rollback result.
+ * Output is plain text like: 'Rollback was a success! Happy Helming!'
+ */
+export function parseHelmRollbackOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  revision?: number,
+  namespace?: string,
+): HelmRollbackResult {
+  if (exitCode !== 0) {
+    return {
+      action: "rollback",
+      success: false,
+      name: release,
+      namespace,
+      revision: revision !== undefined ? String(revision) : undefined,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  const output = (stdout + "\n" + stderr).trim();
+  let status = "rolled back";
+  if (output.toLowerCase().includes("success")) {
+    status = "success";
+  }
+
+  return {
+    action: "rollback",
+    success: true,
+    name: release,
+    namespace,
+    revision: revision !== undefined ? String(revision) : undefined,
+    status,
+    exitCode,
+  };
 }

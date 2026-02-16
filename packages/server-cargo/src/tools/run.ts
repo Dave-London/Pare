@@ -91,6 +91,16 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
+        maxOutputSize: z
+          .number()
+          .int()
+          .min(1024)
+          .max(10485760)
+          .optional()
+          .default(1048576)
+          .describe(
+            "Maximum size in bytes for stdout/stderr before truncation. Default: 1048576 (1MB). Min: 1024, Max: 10485760 (10MB).",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -117,6 +127,7 @@ export function registerRunTool(server: McpServer) {
       locked,
       frozen,
       offline,
+      maxOutputSize,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -154,7 +165,12 @@ export function registerRunTool(server: McpServer) {
       }
 
       const result = await cargo(cargoArgs, cwd, timeout);
-      const data = parseCargoRunOutput(result.stdout, result.stderr, result.exitCode);
+      const data = parseCargoRunOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        maxOutputSize,
+      );
       return compactDualOutput(
         data,
         result.stdout + result.stderr,

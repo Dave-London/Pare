@@ -92,3 +92,59 @@ describe("formatCargoRun", () => {
     expect(output).not.toContain("stderr:");
   });
 });
+
+describe("parseCargoRunOutput with truncation", () => {
+  it("truncates stdout when it exceeds maxOutputSize", () => {
+    const longOutput = "x".repeat(2000);
+    const result = parseCargoRunOutput(longOutput, "", 0, 1024);
+
+    expect(result.stdout).toHaveLength(1024);
+    expect(result.stdoutTruncated).toBe(true);
+    expect(result.stderrTruncated).toBeUndefined();
+  });
+
+  it("truncates stderr when it exceeds maxOutputSize", () => {
+    const longError = "e".repeat(2000);
+    const result = parseCargoRunOutput("", longError, 1, 1024);
+
+    expect(result.stderr).toHaveLength(1024);
+    expect(result.stderrTruncated).toBe(true);
+    expect(result.stdoutTruncated).toBeUndefined();
+  });
+
+  it("truncates both stdout and stderr independently", () => {
+    const longOutput = "o".repeat(2000);
+    const longError = "e".repeat(3000);
+    const result = parseCargoRunOutput(longOutput, longError, 0, 1500);
+
+    expect(result.stdout).toHaveLength(1500);
+    expect(result.stderr).toHaveLength(1500);
+    expect(result.stdoutTruncated).toBe(true);
+    expect(result.stderrTruncated).toBe(true);
+  });
+
+  it("does not truncate when output is within limit", () => {
+    const result = parseCargoRunOutput("short", "brief", 0, 1024);
+
+    expect(result.stdout).toBe("short");
+    expect(result.stderr).toBe("brief");
+    expect(result.stdoutTruncated).toBeUndefined();
+    expect(result.stderrTruncated).toBeUndefined();
+  });
+
+  it("does not truncate when maxOutputSize is 0 (disabled)", () => {
+    const longOutput = "x".repeat(2000);
+    const result = parseCargoRunOutput(longOutput, "", 0, 0);
+
+    expect(result.stdout).toHaveLength(2000);
+    expect(result.stdoutTruncated).toBeUndefined();
+  });
+
+  it("does not truncate when maxOutputSize is not provided", () => {
+    const longOutput = "x".repeat(2000);
+    const result = parseCargoRunOutput(longOutput, "", 0);
+
+    expect(result.stdout).toHaveLength(2000);
+    expect(result.stdoutTruncated).toBeUndefined();
+  });
+});

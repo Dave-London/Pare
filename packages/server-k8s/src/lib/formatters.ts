@@ -8,6 +8,8 @@ import type {
   HelmStatusResult,
   HelmInstallResult,
   HelmUpgradeResult,
+  HelmUninstallResult,
+  HelmRollbackResult,
   HelmResult,
 } from "../schemas/index.js";
 
@@ -254,6 +256,10 @@ export function formatHelmResult(data: HelmResult): string {
       return formatHelmInstall(data);
     case "upgrade":
       return formatHelmUpgrade(data);
+    case "uninstall":
+      return formatHelmUninstall(data);
+    case "rollback":
+      return formatHelmRollback(data);
   }
 }
 
@@ -360,4 +366,78 @@ export function compactHelmUpgradeMap(data: HelmUpgradeResult): HelmUpgradeCompa
 export function formatHelmUpgradeCompact(data: HelmUpgradeCompact): string {
   if (!data.success) return `helm upgrade ${data.name}: failed`;
   return `helm upgrade ${data.name}: ${data.status ?? "success"}`;
+}
+
+// ── Helm uninstall formatters ───────────────────────────────────────
+
+/** Formats a helm uninstall result into human-readable text. */
+export function formatHelmUninstall(data: HelmUninstallResult): string {
+  if (!data.success) {
+    return `helm uninstall ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
+  }
+  return `helm uninstall ${data.name}: ${data.status ?? "uninstalled"}`;
+}
+
+/** Compact uninstall: success/failure only. */
+export interface HelmUninstallCompact {
+  [key: string]: unknown;
+  action: "uninstall";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  status?: string;
+}
+
+export function compactHelmUninstallMap(data: HelmUninstallResult): HelmUninstallCompact {
+  return {
+    action: "uninstall",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    status: data.status,
+  };
+}
+
+export function formatHelmUninstallCompact(data: HelmUninstallCompact): string {
+  if (!data.success) return `helm uninstall ${data.name}: failed`;
+  return `helm uninstall ${data.name}: ${data.status ?? "uninstalled"}`;
+}
+
+// ── Helm rollback formatters ────────────────────────────────────────
+
+/** Formats a helm rollback result into human-readable text. */
+export function formatHelmRollback(data: HelmRollbackResult): string {
+  if (!data.success) {
+    return `helm rollback ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
+  }
+  const rev = data.revision ? ` to revision ${data.revision}` : "";
+  return `helm rollback ${data.name}${rev}: ${data.status ?? "success"}`;
+}
+
+/** Compact rollback: success/failure only. */
+export interface HelmRollbackCompact {
+  [key: string]: unknown;
+  action: "rollback";
+  success: boolean;
+  name: string;
+  namespace?: string;
+  revision?: string;
+  status?: string;
+}
+
+export function compactHelmRollbackMap(data: HelmRollbackResult): HelmRollbackCompact {
+  return {
+    action: "rollback",
+    success: data.success,
+    name: data.name,
+    namespace: data.namespace,
+    revision: data.revision,
+    status: data.status,
+  };
+}
+
+export function formatHelmRollbackCompact(data: HelmRollbackCompact): string {
+  if (!data.success) return `helm rollback ${data.name}: failed`;
+  const rev = data.revision ? ` to revision ${data.revision}` : "";
+  return `helm rollback ${data.name}${rev}: ${data.status ?? "success"}`;
 }

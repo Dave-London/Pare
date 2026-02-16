@@ -6,7 +6,7 @@ import { parsePyenvOutput } from "../lib/parsers.js";
 import { formatPyenv, compactPyenvMap, formatPyenvCompact } from "../lib/formatters.js";
 import { PyenvResultSchema } from "../schemas/index.js";
 
-const ACTIONS = ["versions", "version", "install", "local", "global"] as const;
+const ACTIONS = ["versions", "version", "install", "installList", "local", "global"] as const;
 
 /** Registers the `pyenv` tool on the given MCP server. */
 export function registerPyenvTool(server: McpServer) {
@@ -17,7 +17,8 @@ export function registerPyenvTool(server: McpServer) {
       description:
         "Manages Python versions via pyenv. " +
         "Actions: `versions` (list installed), `version` (show current), " +
-        "`install` (install a version), `local` (set local version), `global` (set global version). " +
+        "`install` (install a version), `installList` (list available versions), " +
+        "`local` (set local version), `global` (set global version). " +
         "Use instead of running `pyenv` in the terminal.",
       inputSchema: {
         action: z.enum(ACTIONS).describe("The pyenv action to perform"),
@@ -83,6 +84,9 @@ export function registerPyenvTool(server: McpServer) {
           if (skipExisting) args.push("--skip-existing");
           if (force) args.push("--force");
           args.push(version);
+          break;
+        case "installList":
+          args.push("install", "--list");
           break;
         case "local":
           if (unset) {

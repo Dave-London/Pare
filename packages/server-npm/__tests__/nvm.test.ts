@@ -115,3 +115,26 @@ describe("formatNvm", () => {
     expect(output).toContain("No versions installed.");
   });
 });
+
+describe("formatNvm with required", () => {
+  it("formats nvm result with required .nvmrc version", () => {
+    const data: NvmResult = {
+      current: "v20.11.1",
+      versions: ["v20.11.1"],
+      required: "20",
+    };
+    const output = formatNvm(data);
+    expect(output).toContain("Current: v20.11.1");
+    expect(output).toContain("Required (.nvmrc): 20");
+  });
+
+  it("formats nvm result without required when no .nvmrc", () => {
+    const data: NvmResult = {
+      current: "v20.11.1",
+      versions: ["v20.11.1"],
+    };
+    const output = formatNvm(data);
+    expect(output).toContain("Current: v20.11.1");
+    expect(output).not.toContain("Required");
+  });
+});

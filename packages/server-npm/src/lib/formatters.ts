@@ -256,6 +256,9 @@ export function formatSearchCompact(data: NpmSearchCompact): string {
 /** Formats structured nvm data into a human-readable version summary. */
 export function formatNvm(data: NvmResult): string {
   const lines = [`Current: ${data.current}`];
+  if (data.required) {
+    lines.push(`Required (.nvmrc): ${data.required}`);
+  }
   if (data.default) {
     lines.push(`Default: ${data.default}`);
   }

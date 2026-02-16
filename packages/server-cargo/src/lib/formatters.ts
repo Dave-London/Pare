@@ -134,8 +134,14 @@ export function formatCargoClippy(data: CargoClippyResult): string {
 export function formatCargoRun(data: CargoRunResult): string {
   const status = data.success ? "success" : "failed";
   const lines = [`cargo run: ${status} (exit code ${data.exitCode})`];
-  if (data.stdout) lines.push(`stdout:\n${data.stdout}`);
-  if (data.stderr) lines.push(`stderr:\n${data.stderr}`);
+  if (data.stdout) {
+    const truncNote = data.stdoutTruncated ? " [truncated]" : "";
+    lines.push(`stdout${truncNote}:\n${data.stdout}`);
+  }
+  if (data.stderr) {
+    const truncNote = data.stderrTruncated ? " [truncated]" : "";
+    lines.push(`stderr${truncNote}:\n${data.stderr}`);
+  }
   return lines.join("\n");
 }
 

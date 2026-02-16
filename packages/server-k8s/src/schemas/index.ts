@@ -200,12 +200,39 @@ export const HelmUpgradeResultSchema = z.object({
 
 export type HelmUpgradeResult = z.infer<typeof HelmUpgradeResultSchema>;
 
+export const HelmUninstallResultSchema = z.object({
+  action: z.literal("uninstall"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  status: z.string().optional(),
+  exitCode: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export type HelmUninstallResult = z.infer<typeof HelmUninstallResultSchema>;
+
+export const HelmRollbackResultSchema = z.object({
+  action: z.literal("rollback"),
+  success: z.boolean(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  revision: z.string().optional(),
+  status: z.string().optional(),
+  exitCode: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export type HelmRollbackResult = z.infer<typeof HelmRollbackResultSchema>;
+
 /** Union of all helm result types. */
 export const HelmResultSchema = z.discriminatedUnion("action", [
   HelmListResultSchema,
   HelmStatusResultSchema,
   HelmInstallResultSchema,
   HelmUpgradeResultSchema,
+  HelmUninstallResultSchema,
+  HelmRollbackResultSchema,
 ]);
 
 export type HelmResult = z.infer<typeof HelmResultSchema>;
