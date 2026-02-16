@@ -127,7 +127,7 @@ describe("formatGetCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactDescribeMap", () => {
-  it("keeps action, success, resource, name, namespace; drops output", () => {
+  it("keeps action, success, resource, name, namespace, conditions, events; drops output", () => {
     const data: KubectlDescribeResult = {
       action: "describe",
       success: true,
@@ -135,6 +135,13 @@ describe("compactDescribeMap", () => {
       name: "web-abc123",
       namespace: "default",
       output: "Name: web-abc123\nNamespace: default\nStatus: Running\n...",
+      conditions: [
+        { type: "Ready", status: "True" },
+        { type: "Initialized", status: "True" },
+      ],
+      events: [
+        { type: "Normal", reason: "Scheduled", age: "5m", from: "scheduler", message: "Assigned" },
+      ],
       exitCode: 0,
     };
 
@@ -145,6 +152,8 @@ describe("compactDescribeMap", () => {
     expect(compact.resource).toBe("pod");
     expect(compact.name).toBe("web-abc123");
     expect(compact.namespace).toBe("default");
+    expect(compact.conditions).toHaveLength(2);
+    expect(compact.events).toHaveLength(1);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("output");
     expect(compact).not.toHaveProperty("exitCode");
@@ -162,6 +171,28 @@ describe("formatDescribeCompact", () => {
       namespace: "default",
     };
     expect(formatDescribeCompact(compact)).toContain("kubectl describe pod web-abc123: success");
+  });
+
+  it("formats compact describe with conditions and events", () => {
+    const compact = {
+      action: "describe" as const,
+      success: true,
+      resource: "pod",
+      name: "web-abc123",
+      conditions: [
+        { type: "Ready", status: "True" },
+        { type: "Initialized", status: "True" },
+        { type: "PodScheduled", status: "True" },
+        { type: "ContainersReady", status: "True" },
+      ],
+      events: [
+        { type: "Normal", reason: "Scheduled", age: "5m", from: "scheduler", message: "Assigned" },
+        { type: "Normal", reason: "Pulled", age: "4m", from: "kubelet", message: "Pulled" },
+        { type: "Normal", reason: "Created", age: "4m", from: "kubelet", message: "Created" },
+      ],
+    };
+    expect(formatDescribeCompact(compact)).toContain("4 condition(s)");
+    expect(formatDescribeCompact(compact)).toContain("3 event(s)");
   });
 
   it("formats failed describe", () => {
@@ -233,10 +264,14 @@ describe("formatLogsCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactApplyMap", () => {
-  it("keeps action, success, exitCode; drops output and error", () => {
+  it("keeps action, success, exitCode, resources; drops output and error", () => {
     const data: KubectlApplyResult = {
       action: "apply",
       success: true,
+      resources: [
+        { kind: "deployment.apps", name: "nginx", operation: "configured" },
+        { kind: "service", name: "nginx", operation: "unchanged" },
+      ],
       output: "deployment.apps/nginx configured\nservice/nginx unchanged",
       exitCode: 0,
     };
@@ -246,6 +281,7 @@ describe("compactApplyMap", () => {
     expect(compact.action).toBe("apply");
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
+    expect(compact.resources).toHaveLength(2);
     // Verify dropped fields
     expect(compact).not.toHaveProperty("output");
     expect(compact).not.toHaveProperty("error");
@@ -253,7 +289,21 @@ describe("compactApplyMap", () => {
 });
 
 describe("formatApplyCompact", () => {
-  it("formats compact apply success", () => {
+  it("formats compact apply success with resources", () => {
+    const compact = {
+      action: "apply" as const,
+      success: true,
+      exitCode: 0,
+      resources: [
+        { kind: "svc", name: "a", operation: "created" as const },
+        { kind: "deploy", name: "b", operation: "configured" as const },
+        { kind: "cm", name: "c", operation: "unchanged" as const },
+      ],
+    };
+    expect(formatApplyCompact(compact)).toBe("kubectl apply: 3 resource(s)");
+  });
+
+  it("formats compact apply success without resources", () => {
     const compact = { action: "apply" as const, success: true, exitCode: 0 };
     expect(formatApplyCompact(compact)).toBe("kubectl apply: success");
   });

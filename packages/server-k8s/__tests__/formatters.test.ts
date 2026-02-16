@@ -106,6 +106,26 @@ describe("formatDescribe", () => {
     expect(formatDescribe(data)).toBe("Name: nginx-abc\nNamespace: default");
   });
 
+  it("includes conditions and events counts when present", () => {
+    const data: KubectlDescribeResult = {
+      action: "describe",
+      success: true,
+      resource: "pod",
+      name: "nginx-abc",
+      namespace: "default",
+      output: "Name: nginx-abc",
+      conditions: [
+        { type: "Ready", status: "True" },
+        { type: "Initialized", status: "True" },
+      ],
+      events: [{ type: "Normal", reason: "Pulled", age: "5m", from: "kubelet", message: "Pulled" }],
+      exitCode: 0,
+    };
+    const output = formatDescribe(data);
+    expect(output).toContain("Conditions: 2 parsed");
+    expect(output).toContain("Events: 1 parsed");
+  });
+
   it("formats failure", () => {
     const data: KubectlDescribeResult = {
       action: "describe",
@@ -166,16 +186,33 @@ describe("formatLogs", () => {
 });
 
 describe("formatApply", () => {
-  it("formats successful apply", () => {
+  it("formats successful apply with resources", () => {
     const data: KubectlApplyResult = {
       action: "apply",
       success: true,
-      output: "service/my-svc created",
+      resources: [
+        { kind: "service", name: "my-svc", operation: "created" },
+        { kind: "deployment.apps", name: "my-app", operation: "configured" },
+      ],
+      output: "service/my-svc created\ndeployment.apps/my-app configured",
+      exitCode: 0,
+    };
+    const output = formatApply(data);
+    expect(output).toContain("kubectl apply: 2 resource(s)");
+    expect(output).toContain("service/my-svc created");
+    expect(output).toContain("deployment.apps/my-app configured");
+  });
+
+  it("formats successful apply without resources", () => {
+    const data: KubectlApplyResult = {
+      action: "apply",
+      success: true,
+      output: "some output",
       exitCode: 0,
     };
     const output = formatApply(data);
     expect(output).toContain("kubectl apply: success");
-    expect(output).toContain("service/my-svc created");
+    expect(output).toContain("some output");
   });
 
   it("formats failed apply", () => {
@@ -263,7 +300,7 @@ describe("formatGetCompact", () => {
 });
 
 describe("compactDescribeMap", () => {
-  it("keeps resource and name, drops output", () => {
+  it("keeps resource, name, conditions, events; drops output", () => {
     const data: KubectlDescribeResult = {
       action: "describe",
       success: true,
@@ -271,6 +308,10 @@ describe("compactDescribeMap", () => {
       name: "nginx-abc",
       namespace: "default",
       output: "very long describe output...",
+      conditions: [{ type: "Ready", status: "True" }],
+      events: [
+        { type: "Normal", reason: "Scheduled", age: "5m", from: "scheduler", message: "Assigned" },
+      ],
       exitCode: 0,
     };
 
@@ -278,15 +319,63 @@ describe("compactDescribeMap", () => {
 
     expect(compact.resource).toBe("pod");
     expect(compact.name).toBe("nginx-abc");
+    expect(compact.conditions).toHaveLength(1);
+    expect(compact.events).toHaveLength(1);
     expect(compact).not.toHaveProperty("output");
+  });
+
+  it("returns undefined conditions/events when absent", () => {
+    const data: KubectlDescribeResult = {
+      action: "describe",
+      success: true,
+      resource: "pod",
+      name: "test",
+      output: "Name: test",
+      exitCode: 0,
+    };
+
+    const compact = compactDescribeMap(data);
+    expect(compact.conditions).toBeUndefined();
+    expect(compact.events).toBeUndefined();
   });
 });
 
 describe("formatDescribeCompact", () => {
   it("formats success", () => {
     expect(
-      formatDescribeCompact({ action: "describe", success: true, resource: "pod", name: "nginx" }),
+      formatDescribeCompact({
+        action: "describe",
+        success: true,
+        resource: "pod",
+        name: "nginx",
+      }),
     ).toBe("kubectl describe pod nginx: success");
+  });
+
+  it("formats success with conditions and events", () => {
+    expect(
+      formatDescribeCompact({
+        action: "describe",
+        success: true,
+        resource: "pod",
+        name: "nginx",
+        conditions: [
+          { type: "Ready", status: "True" },
+          { type: "Initialized", status: "True" },
+          { type: "PodScheduled", status: "True" },
+        ],
+        events: [
+          {
+            type: "Normal",
+            reason: "Scheduled",
+            age: "5m",
+            from: "scheduler",
+            message: "Assigned",
+          },
+          { type: "Normal", reason: "Pulled", age: "4m", from: "kubelet", message: "Pulled" },
+        ],
+      }),
+    ).toBe("kubectl describe pod nginx: success, 3 condition(s), 2 event(s)");
   });
 
   it("formats failure", () => {
@@ -336,11 +425,15 @@ describe("formatLogsCompact", () => {
 });
 
 describe("compactApplyMap", () => {
-  it("keeps success and exit code, drops output", () => {
+  it("keeps success, exit code, and resources; drops output", () => {
     const data: KubectlApplyResult = {
       action: "apply",
       success: true,
-      output: "service/my-svc created",
+      resources: [
+        { kind: "service", name: "my-svc", operation: "created" },
+        { kind: "deployment.apps", name: "my-app", operation: "configured" },
+      ],
+      output: "service/my-svc created\ndeployment.apps/my-app configured",
       exitCode: 0,
     };
 
@@ -348,12 +441,40 @@ describe("compactApplyMap", () => {
 
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
+    expect(compact.resources).toHaveLength(2);
     expect(compact).not.toHaveProperty("output");
+  });
+
+  it("returns undefined resources when no resources parsed", () => {
+    const data: KubectlApplyResult = {
+      action: "apply",
+      success: true,
+      output: "some output",
+      exitCode: 0,
+    };
+
+    const compact = compactApplyMap(data);
+    expect(compact.resources).toBeUndefined();
   });
 });
 
 describe("formatApplyCompact", () => {
-  it("formats success", () => {
+  it("formats success with resources", () => {
+    expect(
+      formatApplyCompact({
+        action: "apply",
+        success: true,
+        exitCode: 0,
+        resources: [
+          { kind: "svc", name: "a", operation: "created" },
+          { kind: "deploy", name: "b", operation: "configured" },
+          { kind: "cm", name: "c", operation: "unchanged" },
+        ],
+      }),
+    ).toBe("kubectl apply: 3 resource(s)");
+  });
+
+  it("formats success without resources", () => {
     expect(formatApplyCompact({ action: "apply", success: true, exitCode: 0 })).toBe(
       "kubectl apply: success",
     );

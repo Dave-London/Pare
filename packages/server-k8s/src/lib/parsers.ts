@@ -4,6 +4,9 @@ import type {
   KubectlLogsResult,
   KubectlApplyResult,
   K8sResource,
+  K8sAppliedResource,
+  K8sCondition,
+  K8sEvent,
   HelmListResult,
   HelmStatusResult,
   HelmInstallResult,
@@ -98,6 +101,181 @@ function extractResource(raw: Record<string, unknown>): K8sResource {
 }
 
 /**
+ * Extracts an indented section from kubectl describe output.
+ * Sections start with a non-indented label (e.g., "Conditions:") and contain
+ * subsequent indented lines until the next non-indented line or end of string.
+ */
+function extractSection(output: string, sectionName: string): string | null {
+  const lines = output.split("\n");
+  let capturing = false;
+  const sectionLines: string[] = [];
+
+  for (const line of lines) {
+    if (!capturing) {
+      // Look for section header at start of line (no leading whitespace)
+      if (line.match(new RegExp(`^${sectionName}:\\s*$`))) {
+        capturing = true;
+      }
+    } else {
+      // Stop capturing when we hit a non-indented, non-empty line (new section)
+      if (line.length > 0 && !line.startsWith(" ") && !line.startsWith("\t")) {
+        break;
+      }
+      sectionLines.push(line);
+    }
+  }
+
+  return sectionLines.length > 0 ? sectionLines.join("\n") : null;
+}
+
+/**
+ * Parses the Conditions section from `kubectl describe` output.
+ *
+ * Handles tabular format (with or without Reason/Message columns):
+ *   Type              Status
+ *   Initialized       True
+ */
+export function parseDescribeConditions(output: string): K8sCondition[] {
+  const conditions: K8sCondition[] = [];
+
+  const section = extractSection(output, "Conditions");
+  if (!section) return conditions;
+
+  const lines = section.split("\n");
+
+  // Find the header line (contains "Type" and "Status")
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes("Type") && lines[i].includes("Status")) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx < 0) return conditions;
+
+  const headerLine = lines[headerIdx];
+
+  // Tabular format — parse column positions from the header
+  const typeIdx = headerLine.indexOf("Type");
+  const statusIdx = headerLine.indexOf("Status");
+
+  // Look for optional Reason and Message columns
+  const reasonIdx = headerLine.indexOf("Reason");
+  const messageIdx = headerLine.indexOf("Message");
+  // Also check for "LastTransitionTime" or similar columns between Status and Reason
+  const lastTransIdx = headerLine.indexOf("LastTransitionTime");
+
+  // Skip the separator line (----) if present
+  let dataStart = headerIdx + 1;
+  if (lines[dataStart] && lines[dataStart].trim().startsWith("----")) {
+    dataStart++;
+  }
+
+  for (let i = dataStart; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+
+    // Extract fields based on column positions
+    const type = line.substring(typeIdx, statusIdx).trim();
+    if (!type) continue;
+
+    let status: string;
+    if (lastTransIdx >= 0) {
+      status = line.substring(statusIdx, lastTransIdx).trim();
+    } else if (reasonIdx >= 0) {
+      status = line.substring(statusIdx, reasonIdx).trim();
+    } else if (messageIdx >= 0) {
+      status = line.substring(statusIdx, messageIdx).trim();
+    } else {
+      status = line.substring(statusIdx).trim();
+    }
+
+    const condition: K8sCondition = { type, status };
+
+    if (reasonIdx >= 0) {
+      const endOfReason = messageIdx >= 0 ? messageIdx : line.length;
+      const reason = line.substring(reasonIdx, endOfReason).trim();
+      if (reason) condition.reason = reason;
+    }
+
+    if (messageIdx >= 0) {
+      const message = line.substring(messageIdx).trim();
+      if (message) condition.message = message;
+    }
+
+    conditions.push(condition);
+  }
+
+  return conditions;
+}
+
+/**
+ * Parses the Events section from `kubectl describe` output.
+ *
+ * Expects tabular format:
+ *   Type     Reason     Age   From               Message
+ *   ----     ------     ---   ----               -------
+ *   Normal   Scheduled  10m   default-scheduler  Successfully assigned...
+ */
+export function parseDescribeEvents(output: string): K8sEvent[] {
+  const events: K8sEvent[] = [];
+
+  const section = extractSection(output, "Events");
+  if (!section) return events;
+
+  // Check for "<none>" events
+  if (section.trim() === "<none>") return events;
+
+  const lines = section.split("\n");
+
+  // Find the header line (contains "Type", "Reason", etc.)
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes("Type") && lines[i].includes("Reason") && lines[i].includes("Message")) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx < 0) return events;
+
+  const headerLine = lines[headerIdx];
+
+  // Parse column positions from header
+  const typeIdx = headerLine.indexOf("Type");
+  const reasonIdx = headerLine.indexOf("Reason");
+  const ageIdx = headerLine.indexOf("Age");
+  const fromIdx = headerLine.indexOf("From");
+  const messageIdx = headerLine.indexOf("Message");
+
+  if (typeIdx < 0 || reasonIdx < 0 || ageIdx < 0 || fromIdx < 0 || messageIdx < 0) {
+    return events;
+  }
+
+  // Skip the separator line (----) if present
+  let dataStart = headerIdx + 1;
+  if (lines[dataStart] && lines[dataStart].trim().startsWith("----")) {
+    dataStart++;
+  }
+
+  for (let i = dataStart; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+
+    const type = line.substring(typeIdx, reasonIdx).trim();
+    const reason = line.substring(reasonIdx, ageIdx).trim();
+    const age = line.substring(ageIdx, fromIdx).trim();
+    const from = line.substring(fromIdx, messageIdx).trim();
+    const message = line.substring(messageIdx).trim();
+
+    if (!type || !reason) continue;
+
+    events.push({ type, reason, age, from, message });
+  }
+
+  return events;
+}
+
+/**
  * Parses `kubectl describe` output into a structured describe result.
  */
 export function parseDescribeOutput(
@@ -108,13 +286,19 @@ export function parseDescribeOutput(
   name: string,
   namespace?: string,
 ): KubectlDescribeResult {
+  const output = stdout.trimEnd();
+  const conditions = exitCode === 0 ? parseDescribeConditions(output) : [];
+  const events = exitCode === 0 ? parseDescribeEvents(output) : [];
+
   return {
     action: "describe",
     success: exitCode === 0,
     resource,
     name,
     namespace,
-    output: stdout.trimEnd(),
+    output,
+    conditions: conditions.length > 0 ? conditions : undefined,
+    events: events.length > 0 ? events : undefined,
     exitCode,
     error: exitCode !== 0 ? stderr.trim() || undefined : undefined,
   };
@@ -148,6 +332,31 @@ export function parseLogsOutput(
 }
 
 /**
+ * Parses a single line of `kubectl apply` text output into a resource.
+ *
+ * Lines look like:
+ *   deployment.apps/my-app configured
+ *   service/my-service unchanged
+ *   configmap/my-config created
+ *   namespace/my-ns created (server-side dry run)
+ */
+export function parseApplyLine(line: string): K8sAppliedResource | null {
+  // Match: <kind>/<name> <operation> (optionally followed by dry-run annotation)
+  // Also handle namespaced resources: <kind>/<name> <operation>
+  // kubectl may also print warnings or other lines; skip those
+  const match = line.match(
+    /^(\S+?)\/(\S+)\s+(created|configured|unchanged|deleted|pruned)(?:\s|$)/,
+  );
+  if (!match) return null;
+
+  const kindRaw = match[1]; // e.g., "deployment.apps" or "service"
+  const name = match[2];
+  const operation = match[3] as K8sAppliedResource["operation"];
+
+  return { kind: kindRaw, name, operation };
+}
+
+/**
  * Parses `kubectl apply` output into a structured apply result.
  */
 export function parseApplyOutput(
@@ -155,10 +364,26 @@ export function parseApplyOutput(
   stderr: string,
   exitCode: number,
 ): KubectlApplyResult {
+  const rawOutput = (exitCode === 0 ? stdout : stderr).trimEnd();
+
+  // Parse resource lines from stdout (text mode output)
+  const resources: K8sAppliedResource[] = [];
+  if (exitCode === 0 && stdout.trim()) {
+    for (const line of stdout.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const resource = parseApplyLine(trimmed);
+      if (resource) {
+        resources.push(resource);
+      }
+    }
+  }
+
   return {
     action: "apply",
     success: exitCode === 0,
-    output: (exitCode === 0 ? stdout : stderr).trimEnd(),
+    resources: resources.length > 0 ? resources : undefined,
+    output: rawOutput,
     exitCode,
     error: exitCode !== 0 ? stderr.trim() || undefined : undefined,
   };

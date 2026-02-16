@@ -39,6 +39,27 @@ export type KubectlGetResult = z.infer<typeof KubectlGetResultSchema>;
 
 // ── Describe result ─────────────────────────────────────────────────
 
+/** A single Kubernetes condition from `kubectl describe`. */
+export const K8sConditionSchema = z.object({
+  type: z.string(),
+  status: z.string(),
+  reason: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export type K8sCondition = z.infer<typeof K8sConditionSchema>;
+
+/** A single Kubernetes event from `kubectl describe`. */
+export const K8sEventSchema = z.object({
+  type: z.string(),
+  reason: z.string(),
+  age: z.string(),
+  from: z.string(),
+  message: z.string(),
+});
+
+export type K8sEvent = z.infer<typeof K8sEventSchema>;
+
 /** Zod schema for structured `kubectl describe` output. */
 export const KubectlDescribeResultSchema = z.object({
   action: z.literal("describe"),
@@ -47,6 +68,8 @@ export const KubectlDescribeResultSchema = z.object({
   name: z.string(),
   namespace: z.string().optional(),
   output: z.string().optional(),
+  conditions: z.array(K8sConditionSchema).optional(),
+  events: z.array(K8sEventSchema).optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
@@ -72,10 +95,21 @@ export type KubectlLogsResult = z.infer<typeof KubectlLogsResultSchema>;
 
 // ── Apply result ────────────────────────────────────────────────────
 
+/** A single resource affected by `kubectl apply`. */
+export const K8sAppliedResourceSchema = z.object({
+  kind: z.string(),
+  name: z.string(),
+  namespace: z.string().optional(),
+  operation: z.enum(["created", "configured", "unchanged", "deleted", "pruned", "unknown"]),
+});
+
+export type K8sAppliedResource = z.infer<typeof K8sAppliedResourceSchema>;
+
 /** Zod schema for structured `kubectl apply` output. */
 export const KubectlApplyResultSchema = z.object({
   action: z.literal("apply"),
   success: z.boolean(),
+  resources: z.array(K8sAppliedResourceSchema).optional(),
   output: z.string().optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),

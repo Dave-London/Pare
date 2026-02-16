@@ -176,7 +176,6 @@ export function registerApplyTool(server: McpServer) {
       if (cascade) {
         args.push("--cascade", cascade);
       }
-      args.push("-o", "json");
 
       const result = await run("kubectl", args, { timeout: 180_000 });
       const data = parseApplyOutput(result.stdout, result.stderr, result.exitCode);
