@@ -262,6 +262,11 @@ export function registerCoverageTool(server: McpServer) {
           break;
       }
 
+      // Add meetsThreshold when failUnder is specified
+      if (failUnder !== undefined) {
+        coverage.meetsThreshold = coverage.summary.lines >= failUnder;
+      }
+
       return compactDualOutput(
         coverage,
         result.stdout,

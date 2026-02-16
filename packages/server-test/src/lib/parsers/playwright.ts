@@ -154,6 +154,9 @@ export function parsePlaywrightJson(jsonStr: string): PlaywrightResult {
   const durationMs = data.stats?.duration ?? totalDuration;
   const durationSec = Math.round((durationMs / 1000) * 100) / 100;
 
+  // Extract flaky count from stats (Playwright tracks tests that failed then passed on retry)
+  const flaky = data.stats?.flaky ?? 0;
+
   return {
     summary: {
       total,
@@ -162,6 +165,7 @@ export function parsePlaywrightJson(jsonStr: string): PlaywrightResult {
       skipped,
       timedOut,
       interrupted,
+      flaky,
       duration: durationSec,
     },
     suites,

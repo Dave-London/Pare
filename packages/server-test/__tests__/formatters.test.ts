@@ -238,6 +238,41 @@ describe("formatCoverage", () => {
     expect(output).toContain("index.ts: 85.5% lines");
     expect(output.split("\n")).toHaveLength(2);
   });
+
+  it("formats coverage with meetsThreshold=true", () => {
+    const cov: Coverage = {
+      framework: "vitest",
+      summary: { lines: 90 },
+      files: [],
+      meetsThreshold: true,
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("Threshold: PASS");
+  });
+
+  it("formats coverage with meetsThreshold=false", () => {
+    const cov: Coverage = {
+      framework: "pytest",
+      summary: { lines: 60 },
+      files: [],
+      meetsThreshold: false,
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).toContain("Threshold: FAIL");
+  });
+
+  it("does not show threshold status when meetsThreshold is undefined", () => {
+    const cov: Coverage = {
+      framework: "jest",
+      summary: { lines: 80 },
+      files: [],
+    };
+    const output = formatCoverage(cov);
+
+    expect(output).not.toContain("Threshold");
+  });
 });
 
 describe("compactTestRunMap", () => {
@@ -406,6 +441,44 @@ describe("compactCoverageMap", () => {
     expect(compact.summary.functions).toBeUndefined();
     expect(compact.totalFiles).toBe(1);
   });
+
+  it("includes meetsThreshold when present", () => {
+    const cov: Coverage = {
+      framework: "vitest",
+      summary: { lines: 90 },
+      files: [],
+      meetsThreshold: true,
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact.meetsThreshold).toBe(true);
+  });
+
+  it("includes meetsThreshold=false when present", () => {
+    const cov: Coverage = {
+      framework: "pytest",
+      summary: { lines: 60 },
+      files: [],
+      meetsThreshold: false,
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact.meetsThreshold).toBe(false);
+  });
+
+  it("omits meetsThreshold when not present", () => {
+    const cov: Coverage = {
+      framework: "jest",
+      summary: { lines: 80 },
+      files: [],
+    };
+
+    const compact = compactCoverageMap(cov);
+
+    expect(compact).not.toHaveProperty("meetsThreshold");
+  });
 });
 
 describe("formatCoverageCompact", () => {
@@ -454,6 +527,45 @@ describe("formatCoverageCompact", () => {
     expect(output).toContain("0% lines");
     expect(output).toContain("0 file(s) analyzed");
   });
+
+  it("formats compact coverage with meetsThreshold=true", () => {
+    const compact = {
+      framework: "vitest",
+      summary: { lines: 90 },
+      totalFiles: 5,
+      meetsThreshold: true,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).toContain("Threshold: PASS");
+    expect(output).toContain("5 file(s) analyzed");
+  });
+
+  it("formats compact coverage with meetsThreshold=false", () => {
+    const compact = {
+      framework: "pytest",
+      summary: { lines: 60 },
+      totalFiles: 3,
+      meetsThreshold: false,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).toContain("Threshold: FAIL");
+  });
+
+  it("does not show threshold when meetsThreshold is undefined", () => {
+    const compact = {
+      framework: "jest",
+      summary: { lines: 80 },
+      totalFiles: 2,
+    };
+
+    const output = formatCoverageCompact(compact);
+
+    expect(output).not.toContain("Threshold");
+  });
 });
 
 // ── Playwright formatters ─────────────────────────────────────────────
@@ -468,6 +580,7 @@ describe("formatPlaywrightResult", () => {
         skipped: 0,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 2.5,
       },
       suites: [],
@@ -481,6 +594,7 @@ describe("formatPlaywrightResult", () => {
     expect(output).toContain("5 passed");
     expect(output).toContain("0 failed");
     expect(output).toContain("2.5s");
+    expect(output).not.toContain("flaky");
   });
 
   it("formats failing run with failure details", () => {
@@ -492,6 +606,7 @@ describe("formatPlaywrightResult", () => {
         skipped: 0,
         timedOut: 1,
         interrupted: 0,
+        flaky: 0,
         duration: 35.2,
       },
       suites: [],
@@ -521,6 +636,7 @@ describe("formatPlaywrightResult", () => {
         skipped: 0,
         timedOut: 1,
         interrupted: 0,
+        flaky: 0,
         duration: 30,
       },
       suites: [],
@@ -540,6 +656,7 @@ describe("formatPlaywrightResult", () => {
         skipped: 0,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 0.1,
       },
       suites: [],
@@ -549,6 +666,47 @@ describe("formatPlaywrightResult", () => {
 
     expect(output).toContain("FAIL broken test");
     expect(output).not.toContain("undefined");
+  });
+
+  it("shows flaky count when > 0", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 10,
+        passed: 8,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        flaky: 2,
+        duration: 5.0,
+      },
+      suites: [],
+      failures: [],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).toContain("2 flaky");
+    expect(output).toContain("PASS");
+  });
+
+  it("does not show flaky when 0", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 5,
+        passed: 5,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        flaky: 0,
+        duration: 2.0,
+      },
+      suites: [],
+      failures: [],
+    };
+    const output = formatPlaywrightResult(result);
+
+    expect(output).not.toContain("flaky");
   });
 });
 
@@ -562,6 +720,7 @@ describe("compactPlaywrightResultMap", () => {
         skipped: 1,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 5.0,
       },
       suites: [
@@ -599,6 +758,7 @@ describe("compactPlaywrightResultMap", () => {
       skipped: 1,
       timedOut: 0,
       interrupted: 0,
+      flaky: 0,
       duration: 5.0,
     });
     expect(compact.failures).toEqual([{ title: "test 2", error: "Error msg" }]);
@@ -614,6 +774,7 @@ describe("compactPlaywrightResultMap", () => {
         skipped: 0,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 0.1,
       },
       suites: [],
@@ -624,6 +785,27 @@ describe("compactPlaywrightResultMap", () => {
 
     expect(compact.failures).toEqual([{ title: "broken" }]);
     expect(compact.failures[0]).not.toHaveProperty("error");
+  });
+
+  it("preserves flaky count in summary", () => {
+    const result: PlaywrightResult = {
+      summary: {
+        total: 5,
+        passed: 4,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        flaky: 1,
+        duration: 3.0,
+      },
+      suites: [],
+      failures: [],
+    };
+
+    const compact = compactPlaywrightResultMap(result);
+
+    expect(compact.summary.flaky).toBe(1);
   });
 });
 
@@ -637,6 +819,7 @@ describe("formatPlaywrightResultCompact", () => {
         skipped: 1,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 3.0,
       },
       failures: [{ title: "should work", error: "Expected true" }],
@@ -659,6 +842,7 @@ describe("formatPlaywrightResultCompact", () => {
         skipped: 0,
         timedOut: 0,
         interrupted: 0,
+        flaky: 0,
         duration: 1.5,
       },
       failures: [] as Array<{ title: string; error?: string }>,
@@ -668,5 +852,45 @@ describe("formatPlaywrightResultCompact", () => {
 
     expect(output).toContain("PASS");
     expect(output.split("\n")).toHaveLength(1);
+  });
+
+  it("shows flaky count in compact output when > 0", () => {
+    const compact = {
+      summary: {
+        total: 10,
+        passed: 9,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        flaky: 3,
+        duration: 8.0,
+      },
+      failures: [] as Array<{ title: string; error?: string }>,
+    };
+
+    const output = formatPlaywrightResultCompact(compact);
+
+    expect(output).toContain("3 flaky");
+  });
+
+  it("does not show flaky in compact output when 0", () => {
+    const compact = {
+      summary: {
+        total: 5,
+        passed: 5,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+        flaky: 0,
+        duration: 2.0,
+      },
+      failures: [] as Array<{ title: string; error?: string }>,
+    };
+
+    const output = formatPlaywrightResultCompact(compact);
+
+    expect(output).not.toContain("flaky");
   });
 });

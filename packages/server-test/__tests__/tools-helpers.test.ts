@@ -422,6 +422,39 @@ describe("buildRunExtraArgs", () => {
     });
   });
 
+  // --- timeout ---
+  describe("timeout", () => {
+    it("adds --timeout for pytest", () => {
+      const result = buildRunExtraArgs("pytest", { timeout: 5000 });
+      expect(result).toEqual(["--timeout=5000"]);
+    });
+
+    it("adds --testTimeout for jest", () => {
+      const result = buildRunExtraArgs("jest", { timeout: 10000 });
+      expect(result).toEqual(["--testTimeout=10000"]);
+    });
+
+    it("adds --testTimeout for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { timeout: 15000 });
+      expect(result).toEqual(["--testTimeout=15000"]);
+    });
+
+    it("adds --timeout for mocha", () => {
+      const result = buildRunExtraArgs("mocha", { timeout: 30000 });
+      expect(result).toEqual(["--timeout", "30000"]);
+    });
+
+    it("does not add flag when undefined", () => {
+      const result = buildRunExtraArgs("vitest", { timeout: undefined });
+      expect(result).toEqual([]);
+    });
+
+    it("handles timeout of 0 (disable timeout)", () => {
+      const result = buildRunExtraArgs("pytest", { timeout: 0 });
+      expect(result).toEqual(["--timeout=0"]);
+    });
+  });
+
   // --- combined options ---
   it("combines multiple options correctly", () => {
     const result = buildRunExtraArgs("vitest", {
@@ -442,6 +475,18 @@ describe("buildRunExtraArgs", () => {
     expect(result).toContain("--bail=3");
     expect(result).toContain("--grep=should work");
     expect(result).toContain("--pool.threads.maxThreads=4");
+  });
+
+  it("combines timeout with other options", () => {
+    const result = buildRunExtraArgs("jest", {
+      filter: "auth",
+      timeout: 60000,
+      workers: 2,
+    });
+    expect(result).toContain("--testPathPattern");
+    expect(result).toContain("auth");
+    expect(result).toContain("--testTimeout=60000");
+    expect(result).toContain("--maxWorkers=2");
   });
 });
 

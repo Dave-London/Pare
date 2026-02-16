@@ -22,6 +22,10 @@ export function formatCoverage(c: Coverage): string {
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
+  if (c.meetsThreshold !== undefined) {
+    parts.push(c.meetsThreshold ? "Threshold: PASS" : "Threshold: FAIL");
+  }
+
   for (const f of c.files ?? []) {
     parts.push(`  ${f.file}: ${f.lines}% lines`);
   }
@@ -79,6 +83,7 @@ export interface CoverageCompact {
     functions?: number;
   };
   totalFiles: number;
+  meetsThreshold?: boolean;
 }
 
 export function compactCoverageMap(c: Coverage): CoverageCompact {
@@ -86,6 +91,7 @@ export function compactCoverageMap(c: Coverage): CoverageCompact {
     framework: c.framework,
     summary: { ...c.summary },
     totalFiles: (c.files ?? []).length,
+    ...(c.meetsThreshold !== undefined ? { meetsThreshold: c.meetsThreshold } : {}),
   };
 }
 
@@ -94,6 +100,10 @@ export function formatCoverageCompact(c: CoverageCompact): string {
 
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
+
+  if (c.meetsThreshold !== undefined) {
+    parts.push(c.meetsThreshold ? "Threshold: PASS" : "Threshold: FAIL");
+  }
 
   parts.push(`${c.totalFiles} file(s) analyzed`);
 
@@ -105,9 +115,12 @@ export function formatCoverageCompact(c: CoverageCompact): string {
 /** Formats Playwright results into a human-readable summary with failure details. */
 export function formatPlaywrightResult(r: PlaywrightResult): string {
   const status = r.summary.failed > 0 || r.summary.timedOut > 0 ? "FAIL" : "PASS";
-  const parts = [
-    `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out [${r.summary.duration}s]`,
-  ];
+  let line = `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out`;
+  if (r.summary.flaky > 0) {
+    line += `, ${r.summary.flaky} flaky`;
+  }
+  line += ` [${r.summary.duration}s]`;
+  const parts = [line];
 
   for (const f of r.failures) {
     const loc = f.file ? `${f.file}${f.line ? `:${f.line}` : ""}` : "";
@@ -127,6 +140,7 @@ export interface PlaywrightResultCompact {
     skipped: number;
     timedOut: number;
     interrupted: number;
+    flaky: number;
     duration: number;
   };
   failures: Array<{ title: string; error?: string }>;
@@ -144,9 +158,12 @@ export function compactPlaywrightResultMap(r: PlaywrightResult): PlaywrightResul
 
 export function formatPlaywrightResultCompact(r: PlaywrightResultCompact): string {
   const status = r.summary.failed > 0 || r.summary.timedOut > 0 ? "FAIL" : "PASS";
-  const parts = [
-    `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out [${r.summary.duration}s]`,
-  ];
+  let line = `${status} (playwright) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped, ${r.summary.timedOut} timed out`;
+  if (r.summary.flaky > 0) {
+    line += `, ${r.summary.flaky} flaky`;
+  }
+  line += ` [${r.summary.duration}s]`;
+  const parts = [line];
 
   for (const f of r.failures) {
     parts.push(`  FAIL ${f.title}${f.error ? `: ${f.error}` : ""}`);

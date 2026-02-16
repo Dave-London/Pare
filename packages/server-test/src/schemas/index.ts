@@ -47,6 +47,7 @@ export const CoverageSchema = z.object({
   }),
   files: z.array(CoverageFileSchema).optional(),
   totalFiles: z.number().optional(),
+  meetsThreshold: z.boolean().optional(),
 });
 
 export type Coverage = z.infer<typeof CoverageSchema>;
@@ -78,6 +79,7 @@ export const PlaywrightResultSchema = z.object({
     skipped: z.number(),
     timedOut: z.number(),
     interrupted: z.number(),
+    flaky: z.number(),
     duration: z.number(),
   }),
   suites: z.array(PlaywrightSuiteSchema).optional(),
