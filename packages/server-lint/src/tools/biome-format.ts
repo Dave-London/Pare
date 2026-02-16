@@ -30,6 +30,25 @@ export function registerBiomeFormatTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to format (default: ['.'])"),
+        changed: z
+          .boolean()
+          .optional()
+          .describe("Only format VCS-changed files (maps to --changed)"),
+        staged: z.boolean().optional().describe("Only format staged files (maps to --staged)"),
+        indentStyle: z
+          .enum(["tab", "space"])
+          .optional()
+          .describe("Indent style override (tab or space)"),
+        lineWidth: z.number().optional().describe("Line width override"),
+        quoteStyle: z
+          .enum(["single", "double"])
+          .optional()
+          .describe("Quote style override (single or double)"),
+        semicolons: z
+          .enum(["always", "asNeeded"])
+          .optional()
+          .describe("Semicolon style (always or asNeeded)"),
+        lineEnding: z.enum(["lf", "crlf", "cr"]).optional().describe("Line ending style"),
         compact: z
           .boolean()
           .optional()
@@ -40,12 +59,31 @@ export function registerBiomeFormatTool(server: McpServer) {
       },
       outputSchema: FormatWriteResultSchema,
     },
-    async ({ path, patterns, compact }) => {
+    async ({
+      path,
+      patterns,
+      changed,
+      staged,
+      indentStyle,
+      lineWidth,
+      quoteStyle,
+      semicolons,
+      lineEnding,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["format", "--write", ...(patterns || ["."])];
+      const args = ["format", "--write"];
+      if (changed) args.push("--changed");
+      if (staged) args.push("--staged");
+      if (indentStyle) args.push(`--indent-style=${indentStyle}`);
+      if (lineWidth !== undefined) args.push(`--line-width=${lineWidth}`);
+      if (quoteStyle) args.push(`--quote-style=${quoteStyle}`);
+      if (semicolons) args.push(`--semicolons=${semicolons}`);
+      if (lineEnding) args.push(`--line-ending=${lineEnding}`);
+      args.push(...(patterns || ["."]));
 
       const result = await biome(args, cwd);
       const data = parseBiomeFormat(result.stdout, result.stderr, result.exitCode);

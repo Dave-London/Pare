@@ -27,6 +27,30 @@ export function registerStylelintTool(server: McpServer) {
           .default(["."])
           .describe("File patterns to lint (default: ['.'])"),
         fix: z.boolean().optional().default(false).describe("Auto-fix problems"),
+        quiet: z
+          .boolean()
+          .optional()
+          .describe("Report errors only, suppress warnings (maps to --quiet)"),
+        allowEmptyInput: z
+          .boolean()
+          .optional()
+          .describe("Prevent errors when no files match the pattern (maps to --allow-empty-input)"),
+        cache: z
+          .boolean()
+          .optional()
+          .describe("Cache lint results for faster subsequent runs (maps to --cache)"),
+        reportNeedlessDisables: z
+          .boolean()
+          .optional()
+          .describe(
+            "Report unnecessary stylelint-disable comments (maps to --report-needless-disables)",
+          ),
+        ignoreDisables: z
+          .boolean()
+          .optional()
+          .describe(
+            "Ignore stylelint-disable comments and enforce all rules (maps to --ignore-disables)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -37,13 +61,28 @@ export function registerStylelintTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, fix, compact }) => {
+    async ({
+      path,
+      patterns,
+      fix,
+      quiet,
+      allowEmptyInput,
+      cache,
+      reportNeedlessDisables,
+      ignoreDisables,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
       const args = ["--formatter", "json", ...(patterns || ["."])];
       if (fix) args.push("--fix");
+      if (quiet) args.push("--quiet");
+      if (allowEmptyInput) args.push("--allow-empty-input");
+      if (cache) args.push("--cache");
+      if (reportNeedlessDisables) args.push("--report-needless-disables");
+      if (ignoreDisables) args.push("--ignore-disables");
 
       const result = await stylelintCmd(args, cwd);
       const data = parseStylelintJson(result.stdout);

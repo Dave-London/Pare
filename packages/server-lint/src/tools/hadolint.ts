@@ -36,6 +36,19 @@ export function registerHadolintTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Rule codes to ignore (e.g., ['DL3008', 'DL3013'])"),
+        failureThreshold: z
+          .enum(["error", "warning", "info", "style", "ignore", "none"])
+          .optional()
+          .describe("Minimum severity to cause a non-zero exit code (maps to --failure-threshold)"),
+        noFail: z
+          .boolean()
+          .optional()
+          .describe("Always exit with 0 for informational-only runs (maps to --no-fail)"),
+        strictLabels: z
+          .boolean()
+          .optional()
+          .describe("Enforce strict label schema (maps to --strict-labels)"),
+        verbose: z.boolean().optional().describe("Enable verbose output (maps to --verbose)"),
         compact: z
           .boolean()
           .optional()
@@ -46,7 +59,17 @@ export function registerHadolintTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, trustedRegistries, ignoreRules, compact }) => {
+    async ({
+      path,
+      patterns,
+      trustedRegistries,
+      ignoreRules,
+      failureThreshold,
+      noFail,
+      strictLabels,
+      verbose,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -66,6 +89,11 @@ export function registerHadolintTool(server: McpServer) {
           args.push(`--ignore=${rule}`);
         }
       }
+
+      if (failureThreshold) args.push(`--failure-threshold=${failureThreshold}`);
+      if (noFail) args.push("--no-fail");
+      if (strictLabels) args.push("--strict-labels");
+      if (verbose) args.push("--verbose");
 
       args.push(...(patterns || ["Dockerfile"]));
 

@@ -30,6 +30,26 @@ export function registerPrettierFormatTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to format (default: ['.'])"),
+        ignoreUnknown: z
+          .boolean()
+          .optional()
+          .describe("Ignore files that cannot be parsed (maps to --ignore-unknown)"),
+        cache: z
+          .boolean()
+          .optional()
+          .describe("Cache formatted files for faster subsequent runs (maps to --cache)"),
+        noConfig: z
+          .boolean()
+          .optional()
+          .describe("Do not look for a configuration file (maps to --no-config)"),
+        logLevel: z
+          .enum(["silent", "error", "warn", "log", "debug"])
+          .optional()
+          .describe("Log level to control output verbosity"),
+        endOfLine: z
+          .enum(["lf", "crlf", "cr", "auto"])
+          .optional()
+          .describe("Line ending style override"),
         compact: z
           .boolean()
           .optional()
@@ -40,12 +60,18 @@ export function registerPrettierFormatTool(server: McpServer) {
       },
       outputSchema: FormatWriteResultSchema,
     },
-    async ({ path, patterns, compact }) => {
+    async ({ path, patterns, ignoreUnknown, cache, noConfig, logLevel, endOfLine, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["--write", ...(patterns || ["."])];
+      const args = ["--write"];
+      if (ignoreUnknown) args.push("--ignore-unknown");
+      if (cache) args.push("--cache");
+      if (noConfig) args.push("--no-config");
+      if (logLevel) args.push(`--log-level=${logLevel}`);
+      if (endOfLine) args.push(`--end-of-line=${endOfLine}`);
+      args.push(...(patterns || ["."]));
 
       const result = await prettier(args, cwd);
       const data = parsePrettierWrite(result.stdout, result.stderr, result.exitCode);
