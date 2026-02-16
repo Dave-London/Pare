@@ -334,7 +334,10 @@ export function parseIssueCreate(stdout: string, labels?: string[]): IssueCreate
 
 /**
  * Parses `gh issue close` output into structured data.
- * The gh CLI prints a confirmation URL to stdout. We extract the number from it.
+ * The gh CLI may print a confirmation message plus URL to stdout.
+ * We robustly extract the issue URL using a regex rather than assuming
+ * the entire stdout is just a URL (handles extra text, whitespace, and
+ * different output formats).
  * S-gap: Enhanced to include reason and commentUrl.
  */
 export function parseIssueClose(
@@ -343,7 +346,9 @@ export function parseIssueClose(
   reason?: string,
   comment?: string,
 ): IssueCloseResult {
-  const url = stdout.trim();
+  // Robust URL extraction: find the GitHub issue URL anywhere in the output
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/issues\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : stdout.trim();
   // S-gap: Extract comment URL from output if a comment was added
   const commentUrlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+#issuecomment-\d+)/);
   return {

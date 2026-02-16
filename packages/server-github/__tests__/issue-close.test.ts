@@ -39,6 +39,70 @@ describe("parseIssueClose", () => {
 
     expect(result.url).toBe("https://github.com/owner/repo/issues/10");
   });
+
+  // ── Robust URL extraction tests (#37) ────────────────────────────
+
+  it("extracts URL from multi-line output with prefix message", () => {
+    const stdout = "✓ Closed issue #42\nhttps://github.com/owner/repo/issues/42\n";
+    const result = parseIssueClose(stdout, 42);
+
+    expect(result.url).toBe("https://github.com/owner/repo/issues/42");
+  });
+
+  it("extracts URL when embedded in confirmation text", () => {
+    const stdout =
+      "Closing issue owner/repo#7 (some title) as completed\nhttps://github.com/owner/repo/issues/7\n";
+    const result = parseIssueClose(stdout, 7);
+
+    expect(result.url).toBe("https://github.com/owner/repo/issues/7");
+  });
+
+  it("extracts URL with extra whitespace and surrounding text", () => {
+    const stdout = "  Done!  https://github.com/owner/repo/issues/99  some trailing text\n";
+    const result = parseIssueClose(stdout, 99);
+
+    expect(result.url).toBe("https://github.com/owner/repo/issues/99");
+  });
+
+  it("falls back to trimmed stdout when no URL pattern matches", () => {
+    const stdout = "operation completed\n";
+    const result = parseIssueClose(stdout, 5);
+
+    expect(result.url).toBe("operation completed");
+    expect(result.number).toBe(5);
+    expect(result.state).toBe("closed");
+  });
+
+  it("handles enterprise GitHub URLs", () => {
+    const stdout = "✓ Closed\nhttps://github.com/my-org/my-repo/issues/123\n";
+    const result = parseIssueClose(stdout, 123);
+
+    expect(result.url).toBe("https://github.com/my-org/my-repo/issues/123");
+  });
+
+  it("extracts URL from output with both issue URL and comment URL", () => {
+    const stdout =
+      "✓ Closed issue #10\nhttps://github.com/owner/repo/issues/10\nhttps://github.com/owner/repo/issues/10#issuecomment-456789\n";
+    const result = parseIssueClose(stdout, 10, undefined, "closing comment");
+
+    expect(result.url).toBe("https://github.com/owner/repo/issues/10");
+    expect(result.commentUrl).toBe("https://github.com/owner/repo/issues/10#issuecomment-456789");
+  });
+
+  it("includes reason in result when provided", () => {
+    const stdout = "https://github.com/owner/repo/issues/3\n";
+    const result = parseIssueClose(stdout, 3, "not planned");
+
+    expect(result.reason).toBe("not planned");
+  });
+
+  it("includes commentUrl only when comment was provided and URL found", () => {
+    // No comment URL in output, but comment was passed
+    const stdout = "https://github.com/owner/repo/issues/3\n";
+    const result = parseIssueClose(stdout, 3, undefined, "a comment");
+
+    expect(result.commentUrl).toBeUndefined();
+  });
 });
 
 // ── Formatter tests ─────────────────────────────────────────────────
