@@ -50,6 +50,10 @@ export function registerResetTool(server: McpServer) {
 
       assertNoFlagInjection(ref, "ref");
 
+      // Capture HEAD before reset for previousRef
+      const headBefore = await git(["rev-parse", "HEAD"], cwd);
+      const previousRef = headBefore.exitCode === 0 ? headBefore.stdout.trim() : undefined;
+
       // Build args: git reset [--mode] <ref> -- [files...]
       const args = ["reset"];
       if (mode) args.push(`--${mode}`);
@@ -72,7 +76,11 @@ export function registerResetTool(server: McpServer) {
         throw new Error(`git reset failed: ${result.stderr}`);
       }
 
-      const resetResult = parseReset(result.stdout, result.stderr, ref, mode);
+      // Capture HEAD after reset for newRef
+      const headAfter = await git(["rev-parse", "HEAD"], cwd);
+      const newRef = headAfter.exitCode === 0 ? headAfter.stdout.trim() : undefined;
+
+      const resetResult = parseReset(result.stdout, result.stderr, ref, mode, previousRef, newRef);
       return dualOutput(resetResult, formatReset);
     },
   );

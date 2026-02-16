@@ -149,8 +149,8 @@ export function registerBranchTool(server: McpServer) {
         }
       }
 
-      // List branches
-      const args = ["branch"];
+      // List branches — always use -vv to get upstream tracking info
+      const args = ["branch", "-vv"];
       if (all) args.push("-a");
       if (remotes) args.push("-r");
       if (merged) args.push("--merged");

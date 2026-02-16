@@ -715,8 +715,8 @@ describe("fidelity: git add (write tool)", () => {
     const result = parseAdd(statusOut);
 
     expect(result.staged).toBe(2);
-    expect(result.files).toContain("a.ts");
-    expect(result.files).toContain("b.ts");
+    expect(result.files.map((f) => f.file)).toContain("a.ts");
+    expect(result.files.map((f) => f.file)).toContain("b.ts");
   });
 
   it("parseAdd captures staged deletions", () => {
@@ -726,7 +726,8 @@ describe("fidelity: git add (write tool)", () => {
     const result = parseAdd(statusOut);
 
     expect(result.staged).toBe(1);
-    expect(result.files).toContain("initial.txt");
+    expect(result.files.map((f) => f.file)).toContain("initial.txt");
+    expect(result.files[0].status).toBe("deleted");
   });
 
   it("parseAdd captures staged modifications", () => {
@@ -737,7 +738,8 @@ describe("fidelity: git add (write tool)", () => {
     const result = parseAdd(statusOut);
 
     expect(result.staged).toBe(1);
-    expect(result.files).toContain("initial.txt");
+    expect(result.files.map((f) => f.file)).toContain("initial.txt");
+    expect(result.files[0].status).toBe("modified");
   });
 
   it("parseAdd ignores unstaged and untracked files", () => {
@@ -763,9 +765,9 @@ describe("fidelity: git add (write tool)", () => {
     const result = parseAdd(statusOut);
 
     expect(result.staged).toBe(3);
-    expect(result.files).toContain("new1.ts");
-    expect(result.files).toContain("new2.ts");
-    expect(result.files).toContain("initial.txt");
+    expect(result.files.map((f) => f.file)).toContain("new1.ts");
+    expect(result.files.map((f) => f.file)).toContain("new2.ts");
+    expect(result.files.map((f) => f.file)).toContain("initial.txt");
   });
 });
 
