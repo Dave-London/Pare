@@ -6,13 +6,19 @@ import {
   parseBranch,
   parseShow,
   parseAdd,
+  parseCommit,
+  parsePull,
   parseTagOutput,
   parseStashListOutput,
   parseStashOutput,
+  parseStashShowOutput,
   parseStashError,
   parseRemoteOutput,
+  parseRemoteShow,
+  parseRemotePrune,
   parseBlameOutput,
   parseReset,
+  validateResetArgs,
   parseRestore,
   parseCherryPick,
   parseMerge,
@@ -554,7 +560,7 @@ describe("parseBlameOutput", () => {
     expect(result.totalLines).toBe(3);
     expect(result.commits).toHaveLength(1);
     expect(result.commits[0]).toEqual({
-      hash: "abc12345",
+      hash: "abc123456789012345678901234567890123abcd",
       author: "John Doe",
       email: "john@example.com",
       date: new Date(1700000000 * 1000).toISOString(),
@@ -598,10 +604,10 @@ describe("parseBlameOutput", () => {
 
     expect(result.totalLines).toBe(2);
     expect(result.commits).toHaveLength(2);
-    expect(result.commits[0].hash).toBe("aaaa1111");
+    expect(result.commits[0].hash).toBe("aaaa111122223333444455556666777788889999");
     expect(result.commits[0].author).toBe("Alice");
     expect(result.commits[0].lines).toEqual([{ lineNumber: 1, content: "line one" }]);
-    expect(result.commits[1].hash).toBe("bbbb1111");
+    expect(result.commits[1].hash).toBe("bbbb111122223333444455556666777788889999");
     expect(result.commits[1].author).toBe("Bob");
     expect(result.commits[1].lines).toEqual([{ lineNumber: 2, content: "line two" }]);
   });
@@ -642,12 +648,12 @@ describe("parseBlameOutput", () => {
     expect(result.totalLines).toBe(3);
     // Only 2 commit groups despite 3 lines
     expect(result.commits).toHaveLength(2);
-    expect(result.commits[0].hash).toBe("aaaa1111");
+    expect(result.commits[0].hash).toBe("aaaa111122223333444455556666777788889999");
     expect(result.commits[0].lines).toEqual([
       { lineNumber: 1, content: "line one" },
       { lineNumber: 3, content: "line three" },
     ]);
-    expect(result.commits[1].hash).toBe("bbbb1111");
+    expect(result.commits[1].hash).toBe("bbbb111122223333444455556666777788889999");
     expect(result.commits[1].lines).toEqual([{ lineNumber: 2, content: "line two" }]);
   });
 
@@ -775,6 +781,7 @@ describe("parseLogGraph", () => {
       hashShort: "abc1234",
       message: "Latest commit",
       refs: "HEAD -> main",
+      parsedRefs: ["HEAD -> main"],
     });
     expect(result.commits[1]).toEqual({
       graph: "*",
@@ -805,6 +812,7 @@ describe("parseLogGraph", () => {
     expect(result.commits).toHaveLength(6);
     expect(result.commits[0].hashShort).toBe("abc1234");
     expect(result.commits[0].refs).toBe("HEAD -> main");
+    expect(result.commits[0].parsedRefs).toEqual(["HEAD -> main"]);
     // graph-only line
     expect(result.commits[1].hashShort).toBe("");
     expect(result.commits[1].graph).toBe("|\\");
@@ -812,6 +820,7 @@ describe("parseLogGraph", () => {
     expect(result.commits[2].hashShort).toBe("def5678");
     expect(result.commits[2].graph).toBe("| *");
     expect(result.commits[2].refs).toBe("feature");
+    expect(result.commits[2].parsedRefs).toEqual(["feature"]);
   });
 
   it("handles empty output", () => {
@@ -835,6 +844,7 @@ describe("parseLogGraph", () => {
 
     expect(result.total).toBe(1);
     expect(result.commits[0].refs).toBe("HEAD -> main, origin/main, tag: v1.0");
+    expect(result.commits[0].parsedRefs).toEqual(["HEAD -> main", "origin/main", "tag: v1.0"]);
     expect(result.commits[0].message).toBe("Release 1.0");
   });
 });
@@ -1502,5 +1512,409 @@ describe("parseWorktreeList — locked/prunable fields", () => {
     expect(result.worktrees[0].locked).toBe(true);
     expect(result.worktrees[0].lockReason).toBe("some reason");
     expect(result.worktrees[0].prunable).toBe(true);
+  });
+});
+
+// ── P1 gap tests ──────────────────────────────────────────────────────
+
+describe("parseAdd — newlyStaged (Gap #126)", () => {
+  it("counts newly staged files when previousStagedFiles is provided", () => {
+    const statusStdout = "M  src/index.ts\nA  src/new.ts\n";
+    const previousStagedFiles = new Set(["src/index.ts"]); // was already staged
+
+    const result = parseAdd(statusStdout, previousStagedFiles);
+
+    expect(result.staged).toBe(2);
+    expect(result.newlyStaged).toBe(1); // only src/new.ts is newly staged
+  });
+
+  it("all files are newly staged when none were previously staged", () => {
+    const statusStdout = "M  a.ts\nA  b.ts\n";
+    const previousStagedFiles = new Set<string>();
+
+    const result = parseAdd(statusStdout, previousStagedFiles);
+
+    expect(result.staged).toBe(2);
+    expect(result.newlyStaged).toBe(2);
+  });
+
+  it("no files are newly staged when all were previously staged", () => {
+    const statusStdout = "M  a.ts\nA  b.ts\n";
+    const previousStagedFiles = new Set(["a.ts", "b.ts"]);
+
+    const result = parseAdd(statusStdout, previousStagedFiles);
+
+    expect(result.staged).toBe(2);
+    expect(result.newlyStaged).toBe(0);
+  });
+
+  it("omits newlyStaged when previousStagedFiles is not provided", () => {
+    const statusStdout = "M  a.ts\n";
+    const result = parseAdd(statusStdout);
+
+    expect(result.staged).toBe(1);
+    expect(result.newlyStaged).toBeUndefined();
+  });
+});
+
+describe("parseBlameOutput — full 40-char hashes (Gap #127)", () => {
+  it("returns full 40-char hashes for collision safety", () => {
+    const fullHash = "abc123456789012345678901234567890123abcd";
+    const stdout = [
+      `${fullHash} 1 1 1`,
+      "author Dev",
+      "author-mail <dev@example.com>",
+      "author-time 1700000000",
+      "author-tz +0000",
+      "committer Dev",
+      "committer-mail <dev@example.com>",
+      "committer-time 1700000000",
+      "committer-tz +0000",
+      "summary Test",
+      "filename test.ts",
+      "\tconst x = 1;",
+    ].join("\n");
+
+    const result = parseBlameOutput(stdout, "test.ts");
+
+    expect(result.commits[0].hash).toBe(fullHash);
+    expect(result.commits[0].hash.length).toBe(40);
+  });
+});
+
+describe("parseCommit — robust branch name regex (Gap #128)", () => {
+  it("parses commit with @ in branch name", () => {
+    const stdout = `[feature/@scope/name abc1234] Add scoped feature\n 1 file changed, 2 insertions(+)`;
+    const result = parseCommit(stdout);
+    expect(result.hash).toBe("abc1234");
+    expect(result.message).toBe("Add scoped feature");
+  });
+
+  it("parses commit with + in branch name", () => {
+    const stdout = `[fix+hotfix def5678] Emergency fix\n 3 files changed, 10 insertions(+), 5 deletions(-)`;
+    const result = parseCommit(stdout);
+    expect(result.hash).toBe("def5678");
+    expect(result.message).toBe("Emergency fix");
+    expect(result.filesChanged).toBe(3);
+    expect(result.insertions).toBe(10);
+    expect(result.deletions).toBe(5);
+  });
+
+  it("parses commit with multiple special characters in branch name", () => {
+    const stdout = `[deps/update@2.0+build.1 aaa1111] Bump version\n 1 file changed, 1 insertion(+)`;
+    const result = parseCommit(stdout);
+    expect(result.hash).toBe("aaa1111");
+    expect(result.message).toBe("Bump version");
+  });
+
+  it("parses root commit with special branch", () => {
+    const stdout = `[user/@me/init (root-commit) bbb2222] Initial commit\n 1 file changed, 1 insertion(+)`;
+    const result = parseCommit(stdout);
+    expect(result.hash).toBe("bbb2222");
+    expect(result.message).toBe("Initial commit");
+  });
+});
+
+describe("parseLog — fullMessage (Gap #129)", () => {
+  it("includes fullMessage when body is present (NUL format)", () => {
+    const NUL = "\x00";
+    const SOH = "\x01";
+    const stdout = `abc123${NUL}abc1234${NUL}Jane <j@e.com>${NUL}2h ago${NUL}${NUL}Fix bug${NUL}Detailed description of the fix.\nIncludes multiple lines.\n${SOH}`;
+
+    const result = parseLog(stdout);
+
+    expect(result.commits[0].message).toBe("Fix bug");
+    expect(result.commits[0].fullMessage).toBe(
+      "Fix bug\n\nDetailed description of the fix.\nIncludes multiple lines.",
+    );
+  });
+
+  it("omits fullMessage when body is empty (NUL format)", () => {
+    const NUL = "\x00";
+    const SOH = "\x01";
+    const stdout = `abc123${NUL}abc1234${NUL}Jane <j@e.com>${NUL}2h ago${NUL}${NUL}Simple commit${NUL}${SOH}`;
+
+    const result = parseLog(stdout);
+
+    expect(result.commits[0].message).toBe("Simple commit");
+    expect(result.commits[0].fullMessage).toBeUndefined();
+  });
+
+  it("parses multiple commits with bodies (NUL format)", () => {
+    const NUL = "\x00";
+    const SOH = "\x01";
+    const stdout = [
+      `abc123${NUL}abc1234${NUL}Jane <j@e.com>${NUL}2h ago${NUL}${NUL}First commit${NUL}First body.\n${SOH}`,
+      `def456${NUL}def4567${NUL}John <j@e.com>${NUL}1h ago${NUL}main${NUL}Second commit${NUL}${SOH}`,
+    ].join("\n");
+
+    const result = parseLog(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.commits[0].fullMessage).toBe("First commit\n\nFirst body.");
+    expect(result.commits[1].fullMessage).toBeUndefined();
+    expect(result.commits[1].refs).toBe("main");
+  });
+
+  it("still works with legacy @@ format (no fullMessage)", () => {
+    const DELIM = "@@";
+    const stdout = `abc123${DELIM}abc1234${DELIM}Jane <j@e.com>${DELIM}2h ago${DELIM}${DELIM}Fix bug`;
+
+    const result = parseLog(stdout);
+
+    expect(result.commits[0].message).toBe("Fix bug");
+    expect(result.commits[0].fullMessage).toBeUndefined();
+  });
+});
+
+describe("parseLogGraph — parsedRefs (Gap #130)", () => {
+  it("parses refs into array", () => {
+    const stdout = "* abc1234 (HEAD -> main, origin/main, tag: v1.0) Release";
+    const result = parseLogGraph(stdout);
+
+    expect(result.commits[0].parsedRefs).toEqual(["HEAD -> main", "origin/main", "tag: v1.0"]);
+  });
+
+  it("parsedRefs is undefined when no refs", () => {
+    const stdout = "* abc1234 Just a commit";
+    const result = parseLogGraph(stdout);
+
+    expect(result.commits[0].parsedRefs).toBeUndefined();
+  });
+
+  it("handles single ref", () => {
+    const stdout = "* abc1234 (feature) Feature commit";
+    const result = parseLogGraph(stdout);
+
+    expect(result.commits[0].parsedRefs).toEqual(["feature"]);
+  });
+});
+
+describe("parsePull — conflict and changed files (Gaps #131, #132)", () => {
+  it("includes conflictFiles when conflicts are detected", () => {
+    const stdout = `Auto-merging src/index.ts
+CONFLICT (content): Merge conflict in src/index.ts
+CONFLICT (content): Merge conflict in src/utils.ts`;
+
+    const result = parsePull(stdout, "");
+
+    expect(result.conflictFiles).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+
+  it("omits conflictFiles when no conflicts", () => {
+    const stdout = "Already up to date.";
+    const result = parsePull(stdout, "");
+    expect(result.conflictFiles).toBeUndefined();
+  });
+
+  it("parses changed files from diffstat", () => {
+    const stdout = `Updating abc1234..def5678
+Fast-forward
+ src/index.ts | 10 +++++++---
+ src/utils.ts |  5 ++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)`;
+
+    const result = parsePull(stdout, "");
+
+    expect(result.changedFiles).toHaveLength(2);
+    expect(result.changedFiles![0].file).toBe("src/index.ts");
+    expect(result.changedFiles![1].file).toBe("src/utils.ts");
+  });
+
+  it("omits changedFiles when no diffstat is present", () => {
+    const stdout = "Already up to date.";
+    const result = parsePull(stdout, "");
+    expect(result.changedFiles).toBeUndefined();
+  });
+});
+
+describe("parseRemoteShow (Gap #136)", () => {
+  it("parses remote show output", () => {
+    const stdout = `* remote origin
+  Fetch URL: git@github.com:user/repo.git
+  Push  URL: git@github.com:user/repo.git
+  HEAD branch: main
+  Remote branches:
+    main   tracked
+    develop tracked
+  Local branches configured for 'git pull':
+    main merges with remote main
+`;
+
+    const result = parseRemoteShow(stdout);
+
+    expect(result.fetchUrl).toBe("git@github.com:user/repo.git");
+    expect(result.pushUrl).toBe("git@github.com:user/repo.git");
+    expect(result.headBranch).toBe("main");
+    expect(result.remoteBranches).toEqual(["main", "develop"]);
+    expect(result.localBranches).toEqual(["main"]);
+  });
+
+  it("handles minimal remote show output", () => {
+    const stdout = `* remote upstream
+  Fetch URL: https://github.com/org/repo.git
+  Push  URL: https://github.com/org/repo.git
+  HEAD branch: main
+`;
+
+    const result = parseRemoteShow(stdout);
+
+    expect(result.fetchUrl).toBe("https://github.com/org/repo.git");
+    expect(result.headBranch).toBe("main");
+    expect(result.remoteBranches).toBeUndefined();
+  });
+});
+
+describe("parseRemotePrune (Gap #135)", () => {
+  it("parses pruned branches from output", () => {
+    const stdout = `Pruning origin
+URL: git@github.com:user/repo.git
+ * [pruned] origin/feature-old
+ * [pruned] origin/fix-stale
+`;
+
+    const result = parseRemotePrune(stdout, "");
+
+    expect(result).toEqual(["origin/feature-old", "origin/fix-stale"]);
+  });
+
+  it("returns empty array when nothing to prune", () => {
+    const result = parseRemotePrune("", "");
+    expect(result).toEqual([]);
+  });
+});
+
+describe("validateResetArgs (Gap #137)", () => {
+  it("rejects --hard with specific files", () => {
+    const error = validateResetArgs("hard", ["file.ts"]);
+    expect(error).toBeDefined();
+    expect(error).toContain("Cannot use --hard with specific files");
+  });
+
+  it("rejects --soft with specific files", () => {
+    const error = validateResetArgs("soft", ["file.ts"]);
+    expect(error).toBeDefined();
+    expect(error).toContain("Cannot use --soft with specific files");
+  });
+
+  it("rejects --keep with specific files", () => {
+    const error = validateResetArgs("keep", ["file.ts"]);
+    expect(error).toBeDefined();
+  });
+
+  it("rejects --merge with specific files", () => {
+    const error = validateResetArgs("merge", ["file.ts"]);
+    expect(error).toBeDefined();
+  });
+
+  it("allows --mixed with specific files", () => {
+    const error = validateResetArgs("mixed", ["file.ts"]);
+    expect(error).toBeUndefined();
+  });
+
+  it("allows no mode with specific files", () => {
+    const error = validateResetArgs(undefined, ["file.ts"]);
+    expect(error).toBeUndefined();
+  });
+
+  it("allows --hard without files", () => {
+    const error = validateResetArgs("hard", undefined);
+    expect(error).toBeUndefined();
+  });
+
+  it("allows --hard with empty files array", () => {
+    const error = validateResetArgs("hard", []);
+    expect(error).toBeUndefined();
+  });
+});
+
+describe("parseShow — NUL delimiter safety (Gap #138)", () => {
+  it("parses NUL-delimited show output correctly", () => {
+    const NUL = "\x00";
+    const commitInfo = `abc123${NUL}Jane Doe <jane@example.com>${NUL}2 hours ago${NUL}Fix @@ handling in parser`;
+    const diffStat = "5\t2\tsrc/parser.ts";
+
+    const result = parseShow(commitInfo, diffStat);
+
+    expect(result.hash).toBe("abc123");
+    expect(result.author).toBe("Jane Doe <jane@example.com>");
+    expect(result.message).toBe("Fix @@ handling in parser");
+  });
+
+  it("handles commit messages with @@ in NUL format", () => {
+    const NUL = "\x00";
+    const commitInfo = `abc123${NUL}Dev <d@e.com>${NUL}now${NUL}Fix diff hunk @@ -1,3 +1,5 @@ in output`;
+    const result = parseShow(commitInfo, "");
+
+    expect(result.message).toBe("Fix diff hunk @@ -1,3 +1,5 @@ in output");
+  });
+
+  it("still handles legacy @@ format for backward compatibility", () => {
+    const DELIM = "@@";
+    const commitInfo = `abc123${DELIM}Jane <j@e.com>${DELIM}2h ago${DELIM}Simple message`;
+    const result = parseShow(commitInfo, "");
+
+    expect(result.hash).toBe("abc123");
+    expect(result.message).toBe("Simple message");
+  });
+});
+
+describe("parseStashShowOutput (Gap #139)", () => {
+  it("parses stash show --stat output", () => {
+    const stdout = ` src/index.ts | 10 +++++++---
+ src/utils.ts |  5 ++---
+ 2 files changed, 7 insertions(+), 5 deletions(-)`;
+
+    const result = parseStashShowOutput(stdout, "");
+
+    expect(result.action).toBe("show");
+    expect(result.success).toBe(true);
+    expect(result.diffStat).toBeDefined();
+    expect(result.diffStat!.filesChanged).toBe(2);
+    expect(result.diffStat!.insertions).toBe(7);
+    expect(result.diffStat!.deletions).toBe(5);
+    expect(result.diffStat!.files).toHaveLength(2);
+    expect(result.diffStat!.files![0].file).toBe("src/index.ts");
+  });
+
+  it("parses stash show with patch", () => {
+    const stdout = ` src/index.ts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/index.ts b/src/index.ts
+index abc1234..def5678 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,3 +1,3 @@
+ const x = 1;
+-const y = 2;
++const y = 3;
+ const z = 3;`;
+
+    const result = parseStashShowOutput(stdout, "");
+
+    expect(result.diffStat!.filesChanged).toBe(1);
+    expect(result.patch).toContain("diff --git");
+  });
+
+  it("handles empty stash show output", () => {
+    const result = parseStashShowOutput("", "");
+
+    expect(result.action).toBe("show");
+    expect(result.success).toBe(true);
+    expect(result.diffStat!.filesChanged).toBe(0);
+  });
+});
+
+describe("parseStashOutput — show action (Gap #139)", () => {
+  it("delegates to parseStashShowOutput for show action", () => {
+    const stdout = ` src/index.ts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)`;
+
+    const result = parseStashOutput(stdout, "", "show");
+
+    expect(result.action).toBe("show");
+    expect(result.diffStat).toBeDefined();
+    expect(result.diffStat!.filesChanged).toBe(1);
   });
 });

@@ -13,7 +13,7 @@ export function registerStashTool(server: McpServer) {
     {
       title: "Git Stash",
       description:
-        "Pushes, pops, applies, drops, or clears stash entries. Returns structured result with action, success, message, and stash reference. Use instead of running `git stash` in the terminal.",
+        "Pushes, pops, applies, drops, shows, or clears stash entries. Returns structured result with action, success, message, and stash reference. Use instead of running `git stash` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -21,7 +21,7 @@ export function registerStashTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["push", "pop", "apply", "drop", "clear"])
+          .enum(["push", "pop", "apply", "drop", "clear", "show"])
           .describe("Stash action to perform"),
         message: z
           .string()
@@ -31,7 +31,7 @@ export function registerStashTool(server: McpServer) {
         index: z
           .number()
           .optional()
-          .describe("Stash index for pop/apply/drop (e.g., 0 for stash@{0})"),
+          .describe("Stash index for pop/apply/drop/show (e.g., 0 for stash@{0})"),
         includeUntracked: z
           .boolean()
           .optional()
@@ -48,6 +48,10 @@ export function registerStashTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Reinstate staged changes on apply (--index)"),
+        patch: z
+          .boolean()
+          .optional()
+          .describe("Include full diff patch in show output (-p/--patch)"),
       },
       outputSchema: GitStashSchema,
     },
@@ -62,6 +66,7 @@ export function registerStashTool(server: McpServer) {
       pathspec,
       all,
       reinstateIndex,
+      patch,
     }) => {
       const cwd = path || process.cwd();
       const args = ["stash"];
@@ -74,6 +79,23 @@ export function registerStashTool(server: McpServer) {
           return dualOutput(stashResult, formatStash);
         }
         const stashResult = parseStashOutput(result.stdout, result.stderr, "clear");
+        return dualOutput(stashResult, formatStash);
+      }
+
+      // Gap #139: stash show
+      if (action === "show") {
+        const showArgs = ["stash", "show", "--stat"];
+        if (patch) showArgs.push("--patch");
+        if (index !== undefined) {
+          showArgs.push(`stash@{${index}}`);
+        }
+
+        const result = await git(showArgs, cwd);
+        if (result.exitCode !== 0) {
+          const stashResult = parseStashError(result.stdout, result.stderr, "show");
+          return dualOutput(stashResult, formatStash);
+        }
+        const stashResult = parseStashOutput(result.stdout, result.stderr, "show");
         return dualOutput(stashResult, formatStash);
       }
 

@@ -7,8 +7,11 @@ import { parseShow } from "../lib/parsers.js";
 import { formatShow, compactShowMap, formatShowCompact } from "../lib/formatters.js";
 import { GitShowSchema } from "../schemas/index.js";
 
-const DELIMITER = "@@";
-const SHOW_FORMAT = `%H${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%B`;
+// Use NUL byte as field delimiter to prevent corruption when commit messages
+// or diffs contain "@@" (e.g. diff hunk headers). NUL bytes cannot appear in
+// commit messages or file content, making them a safe delimiter. (Gap #138)
+const NUL = "%x00";
+const SHOW_FORMAT = `%H${NUL}%an <%ae>${NUL}%ar${NUL}%B`;
 
 /** Registers the `show` tool on the given MCP server. */
 export function registerShowTool(server: McpServer) {
@@ -77,9 +80,7 @@ export function registerShowTool(server: McpServer) {
       if (diffFilter) assertNoFlagInjection(diffFilter, "diffFilter");
 
       // Build format string — use --date if dateFormat specified
-      const showFormat = dateFormat
-        ? `%H${DELIMITER}%an <%ae>${DELIMITER}%ad${DELIMITER}%B`
-        : SHOW_FORMAT;
+      const showFormat = dateFormat ? `%H${NUL}%an <%ae>${NUL}%ad${NUL}%B` : SHOW_FORMAT;
 
       // Get commit info
       const infoArgs = ["show", "--no-patch", `--format=${showFormat}`];
