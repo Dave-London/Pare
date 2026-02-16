@@ -165,11 +165,16 @@ export function registerRunTool(server: McpServer) {
       }
 
       const result = await cargo(cargoArgs, cwd, timeout);
+
+      // Gap #94: Detect timeout from the runner result
+      const timedOut = result.exitCode !== 0 && result.stderr?.includes("timed out");
+
       const data = parseCargoRunOutput(
         result.stdout,
         result.stderr,
         result.exitCode,
         maxOutputSize,
+        timedOut,
       );
       return compactDualOutput(
         data,

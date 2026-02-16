@@ -101,8 +101,11 @@ export function registerRemoveTool(server: McpServer) {
       if (offline) args.push("--offline");
       if (manifestPath) args.push("--manifest-path", manifestPath);
 
+      // Gap #93: Determine dependency type from flags
+      const depType: "normal" | "dev" | "build" = dev ? "dev" : build ? "build" : "normal";
+
       const result = await cargo(args, cwd);
-      const data = parseCargoRemoveOutput(result.stdout, result.stderr, result.exitCode);
+      const data = parseCargoRemoveOutput(result.stdout, result.stderr, result.exitCode, depType);
       return compactDualOutput(
         data,
         result.stdout + result.stderr,

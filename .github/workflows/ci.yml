@@ -10,7 +10,7 @@ jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20, 22]
@@ -46,7 +46,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm test -- --coverage
+      - run: pnpm test --continue -- --coverage
 
   lint:
     runs-on: ubuntu-latest

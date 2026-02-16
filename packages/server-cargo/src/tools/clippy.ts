@@ -63,6 +63,37 @@ export function registerClippyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not activate the default feature (--no-default-features)"),
+        warn: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Lint names to set to warn level (-- -W <lint>). " +
+              'Example: ["clippy::unwrap_used", "clippy::expect_used"]',
+          ),
+        allow: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Lint names to allow/suppress (-- -A <lint>). " +
+              'Example: ["clippy::needless_return"]',
+          ),
+        deny: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Lint names to set to deny level (-- -D <lint>). " + 'Example: ["clippy::unwrap_used"]',
+          ),
+        forbid: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Lint names to forbid (-- -F <lint>). Cannot be overridden. " +
+              'Example: ["unsafe_code"]',
+          ),
         locked: z
           .boolean()
           .optional()
@@ -98,6 +129,10 @@ export function registerClippyTool(server: McpServer) {
       features,
       allFeatures,
       noDefaultFeatures,
+      warn,
+      allow,
+      deny,
+      forbid,
       locked,
       frozen,
       offline,
@@ -123,6 +158,36 @@ export function registerClippyTool(server: McpServer) {
       if (locked) args.push("--locked");
       if (frozen) args.push("--frozen");
       if (offline) args.push("--offline");
+
+      // Gap #91: Add lint level configuration flags after "--"
+      const lintArgs: string[] = [];
+      if (warn && warn.length > 0) {
+        for (const lint of warn) {
+          assertNoFlagInjection(lint, "warn");
+          lintArgs.push("-W", lint);
+        }
+      }
+      if (allow && allow.length > 0) {
+        for (const lint of allow) {
+          assertNoFlagInjection(lint, "allow");
+          lintArgs.push("-A", lint);
+        }
+      }
+      if (deny && deny.length > 0) {
+        for (const lint of deny) {
+          assertNoFlagInjection(lint, "deny");
+          lintArgs.push("-D", lint);
+        }
+      }
+      if (forbid && forbid.length > 0) {
+        for (const lint of forbid) {
+          assertNoFlagInjection(lint, "forbid");
+          lintArgs.push("-F", lint);
+        }
+      }
+      if (lintArgs.length > 0) {
+        args.push("--", ...lintArgs);
+      }
 
       const result = await cargo(args, cwd);
       const data = parseCargoClippyJson(result.stdout, result.exitCode);
