@@ -5,6 +5,7 @@ import {
   parseDiffStat,
   parseBranch,
   parseShow,
+  parseAdd,
   parseTagOutput,
   parseStashListOutput,
   parseStashOutput,
@@ -12,6 +13,11 @@ import {
   parseRemoteOutput,
   parseBlameOutput,
   parseReset,
+  parseRestore,
+  parseCherryPick,
+  parseMerge,
+  parseMergeAbort,
+  parseRebase,
   parseLogGraph,
   parseReflogOutput,
   normalizeReflogAction,
@@ -162,12 +168,20 @@ describe("parseDiffStat", () => {
     expect(result.files[2].status).toBe("added");
   });
 
-  it("handles binary files (- - markers)", () => {
+  it("handles binary files (- - markers) and sets binary flag", () => {
     const stdout = "-\t-\timage.png";
     const result = parseDiffStat(stdout);
 
     expect(result.files[0].additions).toBe(0);
     expect(result.files[0].deletions).toBe(0);
+    expect(result.files[0].binary).toBe(true);
+  });
+
+  it("does not set binary flag for non-binary files", () => {
+    const stdout = "10\t2\tsrc/index.ts";
+    const result = parseDiffStat(stdout);
+
+    expect(result.files[0].binary).toBeUndefined();
   });
 
   it("handles empty diff", () => {
@@ -194,6 +208,21 @@ describe("parseBranch", () => {
     const result = parseBranch("* main");
     expect(result.current).toBe("main");
     expect(result.branches).toHaveLength(1);
+  });
+
+  it("parses upstream tracking info from -vv output", () => {
+    const stdout = [
+      "  dev          abc1234 [origin/dev] Fix bug",
+      "* main         def5678 [origin/main: ahead 2] Latest",
+      "  feature/auth 1234567 Work in progress",
+    ].join("\n");
+
+    const result = parseBranch(stdout);
+
+    expect(result.current).toBe("main");
+    expect(result.branches[0]).toEqual({ name: "dev", current: false, upstream: "origin/dev" });
+    expect(result.branches[1]).toEqual({ name: "main", current: true, upstream: "origin/main" });
+    expect(result.branches[2]).toEqual({ name: "feature/auth", current: false });
   });
 });
 
@@ -1209,5 +1238,269 @@ The stash entry is kept in case you need it again.`;
     expect(result.success).toBe(false);
     expect(result.action).toBe("apply");
     expect(result.reason).toBe("unknown");
+  });
+});
+
+describe("parseAdd — per-file status", () => {
+  it("parses added files with status", () => {
+    const stdout = "A  src/new.ts\nM  src/index.ts\nD  old-file.ts";
+    const result = parseAdd(stdout);
+
+    expect(result.staged).toBe(3);
+    expect(result.files).toEqual([
+      { file: "src/new.ts", status: "added" },
+      { file: "src/index.ts", status: "modified" },
+      { file: "old-file.ts", status: "deleted" },
+    ]);
+  });
+
+  it("handles empty status output", () => {
+    const result = parseAdd("");
+    expect(result.staged).toBe(0);
+    expect(result.files).toEqual([]);
+  });
+
+  it("ignores untracked files", () => {
+    const stdout = "A  src/new.ts\n?? temp.log";
+    const result = parseAdd(stdout);
+
+    expect(result.staged).toBe(1);
+    expect(result.files).toEqual([{ file: "src/new.ts", status: "added" }]);
+  });
+});
+
+describe("parseCherryPick — state field", () => {
+  it("returns completed state on success", () => {
+    const result = parseCherryPick("[main abc1234] Cherry-pick commit", "", 0, ["abc1234"]);
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
+    expect(result.applied).toEqual(["abc1234"]);
+  });
+
+  it("returns conflict state on conflict", () => {
+    const result = parseCherryPick("", "CONFLICT (content): Merge conflict in src/index.ts", 1, [
+      "abc1234",
+    ]);
+
+    expect(result.success).toBe(false);
+    expect(result.state).toBe("conflict");
+    expect(result.conflicts).toEqual(["src/index.ts"]);
+  });
+
+  it("returns in-progress state on non-conflict failure", () => {
+    const result = parseCherryPick("", "error: could not apply abc1234", 1, ["abc1234"]);
+
+    expect(result.success).toBe(false);
+    expect(result.state).toBe("in-progress");
+  });
+
+  it("returns completed state on abort", () => {
+    const result = parseCherryPick("cherry-pick abort completed", "", 0, []);
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
+  });
+});
+
+describe("parseMerge — state field", () => {
+  it("returns completed state on normal merge", () => {
+    const result = parseMerge(
+      "Merge made by the 'ort' strategy.\n abc1234..def5678",
+      "",
+      "feature",
+    );
+
+    expect(result.merged).toBe(true);
+    expect(result.state).toBe("completed");
+  });
+
+  it("returns fast-forward state", () => {
+    const result = parseMerge("Updating abc1234..def5678\nFast-forward", "", "feature");
+
+    expect(result.merged).toBe(true);
+    expect(result.state).toBe("fast-forward");
+    expect(result.fastForward).toBe(true);
+  });
+
+  it("returns conflict state", () => {
+    const result = parseMerge("", "CONFLICT (content): Merge conflict in src/index.ts", "feature");
+
+    expect(result.merged).toBe(false);
+    expect(result.state).toBe("conflict");
+  });
+
+  it("returns already-up-to-date state", () => {
+    const result = parseMerge("Already up to date.", "", "feature");
+
+    expect(result.merged).toBe(true);
+    expect(result.state).toBe("already-up-to-date");
+  });
+
+  it("parseMergeAbort returns completed state", () => {
+    const result = parseMergeAbort("", "");
+
+    expect(result.merged).toBe(false);
+    expect(result.state).toBe("completed");
+  });
+});
+
+describe("parseRebase — state field", () => {
+  it("returns completed state on success", () => {
+    const result = parseRebase(
+      "Successfully rebased and updated refs/heads/feature.",
+      "",
+      "main",
+      "feature",
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
+  });
+
+  it("returns conflict state on conflict", () => {
+    const result = parseRebase(
+      "",
+      "CONFLICT (content): Merge conflict in src/index.ts",
+      "main",
+      "feature",
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.state).toBe("conflict");
+  });
+
+  it("returns completed state on abort (empty branch)", () => {
+    const result = parseRebase("", "", "", "feature");
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
+  });
+});
+
+describe("parseReset — previousRef/newRef fields", () => {
+  it("includes previousRef and newRef when provided", () => {
+    const result = parseReset(
+      "Unstaged changes after reset:\nM\tsrc/index.ts",
+      "",
+      "HEAD~1",
+      "mixed",
+      "abc1234567890",
+      "def5678901234",
+    );
+
+    expect(result.ref).toBe("HEAD~1");
+    expect(result.previousRef).toBe("abc1234567890");
+    expect(result.newRef).toBe("def5678901234");
+    expect(result.filesAffected).toEqual(["src/index.ts"]);
+  });
+
+  it("omits previousRef/newRef when not provided", () => {
+    const result = parseReset("", "", "HEAD");
+
+    expect(result.previousRef).toBeUndefined();
+    expect(result.newRef).toBeUndefined();
+  });
+});
+
+describe("parseRestore — verification fields", () => {
+  it("includes verification data when provided", () => {
+    const verifiedFiles = [
+      { file: "src/index.ts", restored: true },
+      { file: "src/app.ts", restored: false },
+    ];
+    const result = parseRestore(["src/index.ts", "src/app.ts"], "HEAD", false, verifiedFiles);
+
+    expect(result.verified).toBe(false);
+    expect(result.verifiedFiles).toEqual(verifiedFiles);
+  });
+
+  it("verified is true when all files restored", () => {
+    const verifiedFiles = [
+      { file: "src/index.ts", restored: true },
+      { file: "src/app.ts", restored: true },
+    ];
+    const result = parseRestore(["src/index.ts", "src/app.ts"], "HEAD", false, verifiedFiles);
+
+    expect(result.verified).toBe(true);
+  });
+
+  it("omits verification fields when not provided", () => {
+    const result = parseRestore(["src/index.ts"], "HEAD", false);
+
+    expect(result.verified).toBeUndefined();
+    expect(result.verifiedFiles).toBeUndefined();
+  });
+});
+
+describe("parseWorktreeList — locked/prunable fields", () => {
+  it("parses locked worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/main",
+      "",
+      "worktree /home/user/repo-locked",
+      "HEAD def5678901234567890abcdef1234567890abcdef",
+      "branch refs/heads/feature",
+      "locked",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(2);
+    expect(result.worktrees[0].locked).toBeUndefined();
+    expect(result.worktrees[1].locked).toBe(true);
+    expect(result.worktrees[1].lockReason).toBeUndefined();
+  });
+
+  it("parses locked worktree with reason", () => {
+    const stdout = [
+      "worktree /home/user/repo-locked",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/feature",
+      "locked maintenance in progress",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].locked).toBe(true);
+    expect(result.worktrees[0].lockReason).toBe("maintenance in progress");
+  });
+
+  it("parses prunable worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo-stale",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/old-branch",
+      "prunable",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].prunable).toBe(true);
+  });
+
+  it("parses locked and prunable worktree", () => {
+    const stdout = [
+      "worktree /home/user/repo-both",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/test",
+      "locked some reason",
+      "prunable",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+
+    expect(result.total).toBe(1);
+    expect(result.worktrees[0].locked).toBe(true);
+    expect(result.worktrees[0].lockReason).toBe("some reason");
+    expect(result.worktrees[0].prunable).toBe(true);
   });
 });

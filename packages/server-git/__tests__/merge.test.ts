@@ -13,6 +13,7 @@ describe("parseMerge", () => {
     const result = parseMerge(stdout, "", "feature");
 
     expect(result.merged).toBe(true);
+    expect(result.state).toBe("fast-forward");
     expect(result.fastForward).toBe(true);
     expect(result.branch).toBe("feature");
     expect(result.conflicts).toEqual([]);
@@ -26,6 +27,7 @@ describe("parseMerge", () => {
     const result = parseMerge(stdout, stderr, "feature/auth");
 
     expect(result.merged).toBe(true);
+    expect(result.state).toBe("completed");
     expect(result.fastForward).toBe(false);
     expect(result.branch).toBe("feature/auth");
     expect(result.conflicts).toEqual([]);
@@ -37,6 +39,7 @@ describe("parseMerge", () => {
     const result = parseMerge(stdout, "", "feature/breaking");
 
     expect(result.merged).toBe(false);
+    expect(result.state).toBe("conflict");
     expect(result.fastForward).toBe(false);
     expect(result.branch).toBe("feature/breaking");
     expect(result.conflicts).toEqual(["src/index.ts", "README.md"]);
@@ -66,6 +69,7 @@ describe("parseMerge", () => {
     const result = parseMerge(stdout, "", "main");
 
     expect(result.merged).toBe(true);
+    expect(result.state).toBe("already-up-to-date");
     expect(result.fastForward).toBe(false);
     expect(result.branch).toBe("main");
     expect(result.conflicts).toEqual([]);
@@ -106,6 +110,7 @@ describe("formatMerge", () => {
   it("formats fast-forward merge", () => {
     const data: GitMerge = {
       merged: true,
+      state: "fast-forward",
       fastForward: true,
       branch: "feature",
       conflicts: [],
@@ -117,6 +122,7 @@ describe("formatMerge", () => {
   it("formats non-fast-forward merge", () => {
     const data: GitMerge = {
       merged: true,
+      state: "completed",
       fastForward: false,
       branch: "feature/auth",
       conflicts: [],
@@ -128,6 +134,7 @@ describe("formatMerge", () => {
   it("formats merge without commit hash", () => {
     const data: GitMerge = {
       merged: true,
+      state: "completed",
       fastForward: false,
       branch: "main",
       conflicts: [],
@@ -138,33 +145,49 @@ describe("formatMerge", () => {
   it("formats merge with conflicts", () => {
     const data: GitMerge = {
       merged: false,
+      state: "conflict",
       fastForward: false,
       branch: "feature/breaking",
       conflicts: ["src/index.ts", "README.md"],
     };
     expect(formatMerge(data)).toBe(
-      "Merge of 'feature/breaking' failed with 2 conflict(s): src/index.ts, README.md",
+      "Merge of 'feature/breaking' failed with 2 conflict(s) [conflict]: src/index.ts, README.md",
     );
   });
 
   it("formats single conflict", () => {
     const data: GitMerge = {
       merged: false,
+      state: "conflict",
       fastForward: false,
       branch: "hotfix",
       conflicts: ["app.ts"],
     };
-    expect(formatMerge(data)).toBe("Merge of 'hotfix' failed with 1 conflict(s): app.ts");
+    expect(formatMerge(data)).toBe(
+      "Merge of 'hotfix' failed with 1 conflict(s) [conflict]: app.ts",
+    );
   });
 
   it("formats merge abort", () => {
     const data: GitMerge = {
       merged: false,
+      state: "completed",
       fastForward: false,
       branch: "",
       conflicts: [],
     };
     expect(formatMerge(data)).toBe("Merge aborted");
+  });
+
+  it("formats already-up-to-date merge", () => {
+    const data: GitMerge = {
+      merged: true,
+      state: "already-up-to-date",
+      fastForward: false,
+      branch: "main",
+      conflicts: [],
+    };
+    expect(formatMerge(data)).toBe("Already up to date with 'main'");
   });
 });
 

@@ -155,6 +155,8 @@ export function parseDiffStat(stdout: string): GitDiff {
     const renameMatch =
       filePath.match(/(.+)\{(.+) => (.+)\}(.*)/) || filePath.match(/(.+) => (.+)/);
     const isRename = !!renameMatch;
+    // Binary files show "-" for both additions and deletions in --numstat
+    const isBinary = add === "-" && del === "-";
     const additions = add === "-" ? 0 : parseInt(add, 10);
     const deletions = del === "-" ? 0 : parseInt(del, 10);
 
@@ -169,6 +171,7 @@ export function parseDiffStat(stdout: string): GitDiff {
             : "modified") as GitDiff["files"][number]["status"],
       additions,
       deletions,
+      ...(isBinary ? { binary: true } : {}),
       ...(isRename && renameMatch ? { oldFile: renameMatch[1] ?? renameMatch[0] } : {}),
     };
   });
@@ -181,17 +184,25 @@ export function parseDiffStat(stdout: string): GitDiff {
   };
 }
 
-/** Parses `git branch` output into a structured list of branches with the current branch marked. */
+/** Parses `git branch -vv` or `git branch` output into a structured list of branches with the current branch marked and upstream tracking info. */
 export function parseBranch(stdout: string): GitBranchFull {
   const lines = stdout.trim().split("\n").filter(Boolean);
   let current = "";
   const branches = lines.map((line) => {
     const isCurrent = line.startsWith("* ");
-    const name = line.replace(/^\*?\s+/, "").split(/\s+/)[0];
+    const stripped = line.replace(/^\*?\s+/, "");
+    const name = stripped.split(/\s+/)[0];
     if (isCurrent) current = name;
+
+    // Parse upstream from -vv output: "branch hash [upstream/branch] message"
+    // or "branch hash [upstream/branch: ahead N, behind M] message"
+    const upstreamMatch = stripped.match(/\s+[a-f0-9]+\s+\[([^\]:]+?)(?:[:\]])/);
+    const upstream = upstreamMatch ? upstreamMatch[1] : undefined;
+
     return {
       name,
       current: isCurrent,
+      ...(upstream ? { upstream } : {}),
     };
   });
 
@@ -216,10 +227,16 @@ export function parseShow(stdout: string, diffStdout: string): GitShow {
   };
 }
 
-/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files. */
+const ADD_STATUS_MAP: Record<string, "added" | "modified" | "deleted"> = {
+  A: "added",
+  M: "modified",
+  D: "deleted",
+};
+
+/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files with per-file status. */
 export function parseAdd(statusStdout: string): GitAdd {
   const lines = statusStdout.split("\n").filter(Boolean);
-  const files: string[] = [];
+  const files: Array<{ file: string; status: "added" | "modified" | "deleted" }> = [];
 
   for (const line of lines) {
     const index = line[0];
@@ -228,7 +245,8 @@ export function parseAdd(statusStdout: string): GitAdd {
       const file = line.slice(3).trim();
       // Handle renames: "old -> new"
       const parts = file.split(" -> ");
-      files.push(parts[parts.length - 1]);
+      const status = ADD_STATUS_MAP[index] ?? "modified";
+      files.push({ file: parts[parts.length - 1], status });
     }
   }
 
@@ -761,17 +779,36 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
 }
 
 /** Parses `git restore` result into structured restore data.
- *  Since `git restore` produces no stdout on success, we return the file list that was passed in. */
-export function parseRestore(files: string[], source: string, staged: boolean): GitRestore {
+ *  Since `git restore` produces no stdout on success, we return the file list that was passed in.
+ *  If verification data is provided, includes per-file verification status. */
+export function parseRestore(
+  files: string[],
+  source: string,
+  staged: boolean,
+  verifiedFiles?: Array<{ file: string; restored: boolean }>,
+): GitRestore {
   return {
     restored: files,
     source,
     staged,
+    ...(verifiedFiles
+      ? {
+          verified: verifiedFiles.every((f) => f.restored),
+          verifiedFiles,
+        }
+      : {}),
   };
 }
 
 /** Parses `git reset` output into structured reset data with the ref, mode, and list of affected files. */
-export function parseReset(stdout: string, stderr: string, ref: string, mode?: string): GitReset {
+export function parseReset(
+  stdout: string,
+  stderr: string,
+  ref: string,
+  mode?: string,
+  previousRef?: string,
+  newRef?: string,
+): GitReset {
   const combined = `${stdout}\n${stderr}`.trim();
   const filesAffected: string[] = [];
 
@@ -785,6 +822,8 @@ export function parseReset(stdout: string, stderr: string, ref: string, mode?: s
   return {
     ref,
     ...(mode ? { mode: mode as GitReset["mode"] } : {}),
+    ...(previousRef ? { previousRef } : {}),
+    ...(newRef ? { newRef } : {}),
     filesAffected,
   };
 }
@@ -812,6 +851,7 @@ export function parseCherryPick(
   if (exitCode !== 0 && conflicts.length > 0) {
     return {
       success: false,
+      state: "conflict",
       applied: [],
       conflicts,
     };
@@ -821,6 +861,7 @@ export function parseCherryPick(
     if (exitCode === 0) {
       return {
         success: true,
+        state: "completed",
         applied: [],
         conflicts: [],
       };
@@ -830,14 +871,17 @@ export function parseCherryPick(
   if (exitCode === 0) {
     return {
       success: true,
+      state: "completed",
       applied: commits,
       conflicts: [],
       ...(newCommitHash ? { newCommitHash } : {}),
     };
   }
 
+  // Non-zero exit with no conflicts detected — likely in-progress or other error
   return {
     success: false,
+    state: conflicts.length > 0 ? "conflict" : "in-progress",
     applied: [],
     conflicts,
   };
@@ -846,6 +890,9 @@ export function parseCherryPick(
 /** Parses `git merge` output into structured merge result data with conflict detection. */
 export function parseMerge(stdout: string, stderr: string, branch: string): GitMerge {
   const combined = `${stdout}\n${stderr}`.trim();
+
+  // Check for "Already up to date"
+  const alreadyUpToDate = /Already up to date/i.test(combined);
 
   // Check for conflicts
   const mergeConflicts: string[] = [];
@@ -858,9 +905,20 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
   if (mergeConflicts.length > 0) {
     return {
       merged: false,
+      state: "conflict",
       fastForward: false,
       branch,
       conflicts: mergeConflicts,
+    };
+  }
+
+  if (alreadyUpToDate) {
+    return {
+      merged: true,
+      state: "already-up-to-date",
+      fastForward: false,
+      branch,
+      conflicts: [],
     };
   }
 
@@ -873,6 +931,7 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
 
   return {
     merged: true,
+    state: fastForward ? "fast-forward" : "completed",
     fastForward,
     branch,
     conflicts: [],
@@ -884,6 +943,7 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
 export function parseMergeAbort(_stdout: string, _stderr: string): GitMerge {
   return {
     merged: false,
+    state: "completed",
     fastForward: false,
     branch: "",
     conflicts: [],
@@ -915,9 +975,22 @@ export function parseRebase(
     rebasedCommits = 0;
   }
 
+  // Determine state
+  const deriveState = (
+    hasConflicts: boolean,
+    isAbort: boolean,
+  ): "completed" | "conflict" | "in-progress" => {
+    if (hasConflicts) return "conflict";
+    if (isAbort) return "completed";
+    if (/Successfully rebased/.test(combined)) return "completed";
+    if (/could not apply/.test(combined)) return "in-progress";
+    return "completed";
+  };
+
   if (!branch && conflicts.length === 0) {
     return {
       success: true,
+      state: deriveState(false, true),
       branch: "",
       current,
       conflicts: [],
@@ -927,6 +1000,7 @@ export function parseRebase(
   if (/Successfully rebased/.test(combined) && conflicts.length === 0) {
     return {
       success: true,
+      state: "completed",
       branch,
       current,
       conflicts: [],
@@ -936,6 +1010,7 @@ export function parseRebase(
 
   return {
     success: conflicts.length === 0,
+    state: deriveState(conflicts.length > 0, false),
     branch,
     current,
     conflicts,
@@ -1141,8 +1216,11 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
   //   worktree /path/to/other
   //   HEAD def5678...
   //   branch refs/heads/feature
+  //   locked
   //
   // Bare repos show "bare" instead of "branch ..."
+  // Locked worktrees show "locked" or "locked <reason>"
+  // Prunable worktrees show "prunable"
   const blocks = stdout.trim().split(/\n\n+/).filter(Boolean);
   const worktrees = blocks.map((block) => {
     const lines = block.split("\n");
@@ -1150,6 +1228,9 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
     let head = "";
     let branch = "";
     let bare = false;
+    let locked: boolean | undefined;
+    let lockReason: string | undefined;
+    let prunable: boolean | undefined;
 
     for (const line of lines) {
       if (line.startsWith("worktree ")) {
@@ -1163,10 +1244,24 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
         bare = true;
       } else if (line === "detached") {
         branch = "(detached)";
+      } else if (line === "locked" || line.startsWith("locked ")) {
+        locked = true;
+        const reason = line.slice("locked".length).trim();
+        if (reason) lockReason = reason;
+      } else if (line === "prunable" || line.startsWith("prunable ")) {
+        prunable = true;
       }
     }
 
-    return { path, head, branch, bare };
+    return {
+      path,
+      head,
+      branch,
+      bare,
+      ...(locked ? { locked } : {}),
+      ...(lockReason ? { lockReason } : {}),
+      ...(prunable ? { prunable } : {}),
+    };
   });
 
   return { worktrees, total: worktrees.length };

@@ -110,8 +110,40 @@ export function registerRestoreTool(server: McpServer) {
         throw new Error(`git restore failed: ${result.stderr}`);
       }
 
+      // Post-restore verification: check file status to verify restoration
+      const statusResult = await git(["status", "--porcelain=v1"], cwd);
+      let verifiedFiles: Array<{ file: string; restored: boolean }> | undefined;
+      if (statusResult.exitCode === 0) {
+        const statusLines = statusResult.stdout.split("\n").filter(Boolean);
+        // Build a set of files that still appear as modified/deleted in the status
+        const stillDirty = new Set<string>();
+        for (const line of statusLines) {
+          const worktreeStatus = line[1];
+          const statusFile = line.slice(3).trim();
+          const parts = statusFile.split(" -> ");
+          const resolvedName = parts[parts.length - 1];
+          if (staged) {
+            // For staged restores, check if the file is still in the index
+            const indexStatus = line[0];
+            if (indexStatus && indexStatus !== " " && indexStatus !== "?") {
+              stillDirty.add(resolvedName);
+            }
+          } else {
+            // For working tree restores, check if the file still has worktree changes
+            if (worktreeStatus === "M" || worktreeStatus === "D") {
+              stillDirty.add(resolvedName);
+            }
+          }
+        }
+
+        verifiedFiles = files.map((f) => ({
+          file: f,
+          restored: !stillDirty.has(f),
+        }));
+      }
+
       const resolvedSource = source || "HEAD";
-      const restoreResult = parseRestore(files, resolvedSource, staged);
+      const restoreResult = parseRestore(files, resolvedSource, staged, verifiedFiles);
       return dualOutput(restoreResult, formatRestore);
     },
   );

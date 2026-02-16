@@ -178,14 +178,19 @@ export function registerDiffTool(server: McpServer) {
             if (fileMatch) {
               const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
               if (matchedFile) {
-                const chunks = patch.split(/^@@/m).slice(1);
-                matchedFile.chunks = chunks.map((chunk) => {
-                  const headerEnd = chunk.indexOf("\n");
-                  return {
-                    header: `@@${chunk.slice(0, headerEnd)}`,
-                    lines: chunk.slice(headerEnd + 1),
-                  };
-                });
+                // Detect binary files from full patch output
+                if (/Binary files .* differ/.test(patch)) {
+                  matchedFile.binary = true;
+                } else {
+                  const chunks = patch.split(/^@@/m).slice(1);
+                  matchedFile.chunks = chunks.map((chunk) => {
+                    const headerEnd = chunk.indexOf("\n");
+                    return {
+                      header: `@@${chunk.slice(0, headerEnd)}`,
+                      lines: chunk.slice(headerEnd + 1),
+                    };
+                  });
+                }
               }
             }
           }

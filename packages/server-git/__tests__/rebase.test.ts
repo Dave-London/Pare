@@ -9,6 +9,7 @@ describe("parseRebase", () => {
     const result = parseRebase(stdout, "", "main", "feature");
 
     expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
     expect(result.branch).toBe("main");
     expect(result.current).toBe("feature");
     expect(result.conflicts).toEqual([]);
@@ -26,6 +27,7 @@ hint: "git add/rm <conflicted_files>", then run "git rebase --continue".`;
     const result = parseRebase("", stderr, "main", "feature");
 
     expect(result.success).toBe(false);
+    expect(result.state).toBe("conflict");
     expect(result.branch).toBe("main");
     expect(result.current).toBe("feature");
     expect(result.conflicts).toEqual(["src/index.ts", "src/utils.ts"]);
@@ -57,6 +59,7 @@ error: could not apply abc1234... Update readme`;
     const result = parseRebase(stdout, stderr, "", "feature");
 
     expect(result.success).toBe(true);
+    expect(result.state).toBe("completed");
     expect(result.branch).toBe("");
     expect(result.current).toBe("feature");
     expect(result.conflicts).toEqual([]);
@@ -98,6 +101,7 @@ describe("formatRebase", () => {
   it("formats successful rebase", () => {
     const data: GitRebase = {
       success: true,
+      state: "completed",
       branch: "main",
       current: "feature",
       conflicts: [],
@@ -106,25 +110,28 @@ describe("formatRebase", () => {
     const output = formatRebase(data);
 
     expect(output).toContain("Rebased 'feature' onto 'main'");
+    expect(output).toContain("[completed]");
     expect(output).toContain("3 commit(s) rebased");
   });
 
   it("formats rebase with conflicts", () => {
     const data: GitRebase = {
       success: false,
+      state: "conflict",
       branch: "main",
       current: "feature",
       conflicts: ["src/index.ts", "src/utils.ts"],
     };
     const output = formatRebase(data);
 
-    expect(output).toContain("paused with conflicts");
+    expect(output).toContain("paused with conflicts [conflict]");
     expect(output).toContain("Conflicts: src/index.ts, src/utils.ts");
   });
 
   it("formats rebase abort", () => {
     const data: GitRebase = {
       success: true,
+      state: "completed",
       branch: "",
       current: "feature",
       conflicts: [],
@@ -137,18 +144,20 @@ describe("formatRebase", () => {
   it("formats successful rebase without commit count", () => {
     const data: GitRebase = {
       success: true,
+      state: "completed",
       branch: "main",
       current: "feature",
       conflicts: [],
     };
     const output = formatRebase(data);
 
-    expect(output).toBe("Rebased 'feature' onto 'main'");
+    expect(output).toContain("Rebased 'feature' onto 'main' [completed]");
   });
 
   it("formats rebase with conflicts but no conflict file list", () => {
     const data: GitRebase = {
       success: false,
+      state: "conflict",
       branch: "main",
       current: "feature",
       conflicts: [],

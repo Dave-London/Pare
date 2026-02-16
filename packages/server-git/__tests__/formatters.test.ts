@@ -11,10 +11,15 @@ import {
   formatRemote,
   formatBlame,
   formatReset,
+  formatRestore,
+  formatCherryPick,
+  formatMerge,
+  formatRebase,
   formatLogGraph,
   formatReflog,
   formatWorktreeList,
   formatWorktree,
+  formatAdd,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -22,12 +27,17 @@ import type {
   GitDiff,
   GitBranchFull,
   GitShow,
+  GitAdd,
   GitTagFull,
   GitStashListFull,
   GitStash,
   GitRemoteFull,
   GitBlameFull,
   GitReset,
+  GitRestore,
+  GitCherryPick,
+  GitMerge,
+  GitRebase,
   GitLogGraphFull,
   GitReflogFull,
   GitWorktreeListFull,
@@ -130,6 +140,21 @@ describe("formatBranch", () => {
 
     expect(output).toContain("  dev");
     expect(output).toContain("* main");
+  });
+
+  it("shows upstream tracking info", () => {
+    const branches: GitBranchFull = {
+      branches: [
+        { name: "main", current: true, upstream: "origin/main" },
+        { name: "dev", current: false },
+      ],
+      current: "main",
+    };
+    const output = formatBranch(branches);
+
+    expect(output).toContain("* main -> origin/main");
+    expect(output).toContain("  dev");
+    expect(output).not.toContain("dev ->");
   });
 });
 
@@ -896,5 +921,291 @@ describe("formatWorktree", () => {
     const output = formatWorktree(data);
 
     expect(output).toBe("Worktree at '/tmp/wt'");
+  });
+});
+
+describe("formatAdd — per-file status", () => {
+  it("formats staged files with status prefix", () => {
+    const data: GitAdd = {
+      staged: 3,
+      files: [
+        { file: "src/new.ts", status: "added" },
+        { file: "src/index.ts", status: "modified" },
+        { file: "old-file.ts", status: "deleted" },
+      ],
+    };
+    const output = formatAdd(data);
+
+    expect(output).toBe("Staged 3 file(s): a:src/new.ts, m:src/index.ts, d:old-file.ts");
+  });
+
+  it("formats no files staged", () => {
+    const data: GitAdd = { staged: 0, files: [] };
+    expect(formatAdd(data)).toBe("No files staged");
+  });
+});
+
+describe("formatCherryPick — state in output", () => {
+  it("formats conflict state", () => {
+    const data: GitCherryPick = {
+      success: false,
+      state: "conflict",
+      applied: [],
+      conflicts: ["src/index.ts"],
+    };
+    const output = formatCherryPick(data);
+
+    expect(output).toContain("[conflict]");
+    expect(output).toContain("CONFLICT: src/index.ts");
+  });
+
+  it("formats completed state", () => {
+    const data: GitCherryPick = {
+      success: true,
+      state: "completed",
+      applied: ["abc1234"],
+      conflicts: [],
+    };
+    const output = formatCherryPick(data);
+
+    expect(output).toContain("[completed]");
+    expect(output).toContain("abc1234");
+  });
+});
+
+describe("formatMerge — state in output", () => {
+  it("formats conflict state", () => {
+    const data: GitMerge = {
+      merged: false,
+      state: "conflict",
+      fastForward: false,
+      branch: "feature",
+      conflicts: ["src/index.ts"],
+    };
+    const output = formatMerge(data);
+
+    expect(output).toContain("[conflict]");
+    expect(output).toContain("1 conflict(s)");
+  });
+
+  it("formats fast-forward state", () => {
+    const data: GitMerge = {
+      merged: true,
+      state: "fast-forward",
+      fastForward: true,
+      branch: "feature",
+      conflicts: [],
+    };
+    const output = formatMerge(data);
+
+    expect(output).toContain("Fast-forward merge");
+  });
+
+  it("formats already-up-to-date state", () => {
+    const data: GitMerge = {
+      merged: true,
+      state: "already-up-to-date",
+      fastForward: false,
+      branch: "feature",
+      conflicts: [],
+    };
+    const output = formatMerge(data);
+
+    expect(output).toContain("Already up to date");
+  });
+});
+
+describe("formatRebase — state in output", () => {
+  it("formats conflict state", () => {
+    const data: GitRebase = {
+      success: false,
+      state: "conflict",
+      branch: "main",
+      current: "feature",
+      conflicts: ["src/index.ts"],
+    };
+    const output = formatRebase(data);
+
+    expect(output).toContain("[conflict]");
+    expect(output).toContain("paused with conflicts");
+  });
+
+  it("formats completed state", () => {
+    const data: GitRebase = {
+      success: true,
+      state: "completed",
+      branch: "main",
+      current: "feature",
+      conflicts: [],
+      rebasedCommits: 3,
+    };
+    const output = formatRebase(data);
+
+    expect(output).toContain("[completed]");
+    expect(output).toContain("3 commit(s) rebased");
+  });
+});
+
+describe("formatReset — previousRef/newRef in output", () => {
+  it("includes ref range when previousRef and newRef provided", () => {
+    const data: GitReset = {
+      ref: "HEAD~1",
+      mode: "mixed",
+      previousRef: "abc1234567890",
+      newRef: "def5678901234",
+      filesAffected: ["src/index.ts"],
+    };
+    const output = formatReset(data);
+
+    expect(output).toContain("[abc1234..def5678]");
+    expect(output).toContain("Reset to HEAD~1 (mixed)");
+  });
+
+  it("omits ref range when not provided", () => {
+    const data: GitReset = { ref: "HEAD", filesAffected: [] };
+    const output = formatReset(data);
+
+    expect(output).not.toContain("[");
+    expect(output).toBe("Reset to HEAD — no files affected");
+  });
+});
+
+describe("formatRestore — verification in output", () => {
+  it("shows verified when all files restored", () => {
+    const data: GitRestore = {
+      restored: ["src/index.ts"],
+      source: "HEAD",
+      staged: false,
+      verified: true,
+      verifiedFiles: [{ file: "src/index.ts", restored: true }],
+    };
+    const output = formatRestore(data);
+
+    expect(output).toContain("[verified]");
+  });
+
+  it("shows verification failed when not all restored", () => {
+    const data: GitRestore = {
+      restored: ["src/index.ts"],
+      source: "HEAD",
+      staged: false,
+      verified: false,
+      verifiedFiles: [{ file: "src/index.ts", restored: false }],
+    };
+    const output = formatRestore(data);
+
+    expect(output).toContain("[verification failed]");
+  });
+
+  it("omits verification when not provided", () => {
+    const data: GitRestore = {
+      restored: ["src/index.ts"],
+      source: "HEAD",
+      staged: false,
+    };
+    const output = formatRestore(data);
+
+    expect(output).not.toContain("verified");
+  });
+});
+
+describe("formatWorktreeList — locked/prunable in output", () => {
+  it("shows locked annotation", () => {
+    const data: GitWorktreeListFull = {
+      worktrees: [
+        {
+          path: "/home/user/repo",
+          head: "abc1234567890abcdef",
+          branch: "main",
+          bare: false,
+          locked: true,
+        },
+      ],
+      total: 1,
+    };
+    const output = formatWorktreeList(data);
+
+    expect(output).toContain("[locked]");
+  });
+
+  it("shows locked with reason", () => {
+    const data: GitWorktreeListFull = {
+      worktrees: [
+        {
+          path: "/home/user/repo",
+          head: "abc1234567890abcdef",
+          branch: "main",
+          bare: false,
+          locked: true,
+          lockReason: "maintenance",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatWorktreeList(data);
+
+    expect(output).toContain("[locked: maintenance]");
+  });
+
+  it("shows prunable annotation", () => {
+    const data: GitWorktreeListFull = {
+      worktrees: [
+        {
+          path: "/home/user/repo",
+          head: "abc1234567890abcdef",
+          branch: "main",
+          bare: false,
+          prunable: true,
+        },
+      ],
+      total: 1,
+    };
+    const output = formatWorktreeList(data);
+
+    expect(output).toContain("[prunable]");
+  });
+});
+
+describe("formatReflog — totalAvailable", () => {
+  it("shows entry count when totalAvailable > total", () => {
+    const reflog: GitReflogFull = {
+      entries: [
+        {
+          hash: "abc123full",
+          shortHash: "abc1234",
+          selector: "HEAD@{0}",
+          action: "commit",
+          rawAction: "commit",
+          description: "fix bug",
+          date: "2024-01-15 10:30:00 +0000",
+        },
+      ],
+      total: 1,
+      totalAvailable: 50,
+    };
+    const output = formatReflog(reflog);
+
+    expect(output).toContain("(showing 1 of 50 entries)");
+  });
+
+  it("does not show count when totalAvailable equals total", () => {
+    const reflog: GitReflogFull = {
+      entries: [
+        {
+          hash: "abc123full",
+          shortHash: "abc1234",
+          selector: "HEAD@{0}",
+          action: "commit",
+          rawAction: "commit",
+          description: "fix bug",
+          date: "2024-01-15 10:30:00 +0000",
+        },
+      ],
+      total: 1,
+      totalAvailable: 1,
+    };
+    const output = formatReflog(reflog);
+
+    expect(output).not.toContain("showing");
   });
 });

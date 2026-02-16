@@ -84,34 +84,41 @@ describe("formatCherryPick", () => {
   it("formats successful single-commit cherry-pick", () => {
     const data: GitCherryPick = {
       success: true,
+      state: "completed",
       applied: ["abc1234"],
       conflicts: [],
     };
     const output = formatCherryPick(data);
 
-    expect(output).toBe("Cherry-pick applied 1 commit(s): abc1234");
+    expect(output).toContain("Cherry-pick applied 1 commit(s)");
+    expect(output).toContain("[completed]");
+    expect(output).toContain("abc1234");
   });
 
   it("formats successful multi-commit cherry-pick", () => {
     const data: GitCherryPick = {
       success: true,
+      state: "completed",
       applied: ["abc1234", "def5678"],
       conflicts: [],
     };
     const output = formatCherryPick(data);
 
-    expect(output).toBe("Cherry-pick applied 2 commit(s): abc1234, def5678");
+    expect(output).toContain("Cherry-pick applied 2 commit(s)");
+    expect(output).toContain("abc1234, def5678");
   });
 
   it("formats cherry-pick with conflicts", () => {
     const data: GitCherryPick = {
       success: false,
+      state: "conflict",
       applied: [],
       conflicts: ["src/index.ts", "src/utils.ts"],
     };
     const output = formatCherryPick(data);
 
-    expect(output).toContain("Cherry-pick paused due to conflicts:");
+    expect(output).toContain("Cherry-pick paused due to conflicts");
+    expect(output).toContain("[conflict]");
     expect(output).toContain("CONFLICT: src/index.ts");
     expect(output).toContain("CONFLICT: src/utils.ts");
   });
@@ -119,23 +126,27 @@ describe("formatCherryPick", () => {
   it("formats failed cherry-pick without conflicts", () => {
     const data: GitCherryPick = {
       success: false,
+      state: "in-progress",
       applied: [],
       conflicts: [],
     };
     const output = formatCherryPick(data);
 
-    expect(output).toBe("Cherry-pick failed");
+    expect(output).toContain("Cherry-pick failed");
+    expect(output).toContain("[in-progress]");
   });
 
   it("formats abort (no commits applied)", () => {
     const data: GitCherryPick = {
       success: true,
+      state: "completed",
       applied: [],
       conflicts: [],
     };
     const output = formatCherryPick(data);
 
-    expect(output).toBe("Cherry-pick completed (no commits applied)");
+    expect(output).toContain("Cherry-pick completed");
+    expect(output).toContain("[completed]");
   });
 });
 

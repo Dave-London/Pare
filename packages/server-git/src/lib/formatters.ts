@@ -60,7 +60,13 @@ export function formatDiff(diff: GitDiff): string {
 
 /** Formats structured git branch data into a human-readable branch listing. */
 export function formatBranch(b: GitBranchFull): string {
-  return b.branches.map((br) => `${br.current ? "* " : "  "}${br.name}`).join("\n");
+  return b.branches
+    .map((br) => {
+      const prefix = br.current ? "* " : "  ";
+      const upstream = br.upstream ? ` -> ${br.upstream}` : "";
+      return `${prefix}${br.name}${upstream}`;
+    })
+    .join("\n");
 }
 
 /** Formats structured git show data into a human-readable commit detail view with diff summary. */
@@ -73,7 +79,7 @@ export function formatShow(s: GitShow): string {
 /** Formats structured git add data into a human-readable summary of staged files. */
 export function formatAdd(a: GitAdd): string {
   if (a.staged === 0) return "No files staged";
-  return `Staged ${a.staged} file(s): ${a.files.join(", ")}`;
+  return `Staged ${a.staged} file(s): ${a.files.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`;
 }
 
 /** Formats structured git commit data into a human-readable commit summary. */
@@ -140,14 +146,19 @@ export function formatRestore(r: GitRestore): string {
   if (r.restored.length === 0) return "No files restored";
   const mode = r.staged ? "staged" : "working tree";
   const src = r.source !== "HEAD" ? ` from ${r.source}` : "";
-  return `Restored ${r.restored.length} file(s) (${mode})${src}: ${r.restored.join(", ")}`;
+  const verified =
+    r.verified !== undefined ? (r.verified ? " [verified]" : " [verification failed]") : "";
+  return `Restored ${r.restored.length} file(s) (${mode})${src}${verified}: ${r.restored.join(", ")}`;
 }
 
 /** Formats structured git reset data into a human-readable reset summary. */
 export function formatReset(r: GitReset): string {
   const modeStr = r.mode ? ` (${r.mode})` : "";
-  if (r.filesAffected.length === 0) return `Reset to ${r.ref}${modeStr} — no files affected`;
-  return `Reset to ${r.ref}${modeStr}: ${r.filesAffected.length} file(s) affected: ${r.filesAffected.join(", ")}`;
+  const refInfo =
+    r.previousRef && r.newRef ? ` [${r.previousRef.slice(0, 7)}..${r.newRef.slice(0, 7)}]` : "";
+  if (r.filesAffected.length === 0)
+    return `Reset to ${r.ref}${modeStr}${refInfo} — no files affected`;
+  return `Reset to ${r.ref}${modeStr}${refInfo}: ${r.filesAffected.length} file(s) affected: ${r.filesAffected.join(", ")}`;
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────
@@ -435,25 +446,27 @@ export function formatBlameCompact(b: GitBlameCompact): string {
 
 /** Formats structured git cherry-pick data into a human-readable summary. */
 export function formatCherryPick(cp: GitCherryPick): string {
-  if (!cp.success && cp.conflicts.length > 0) {
-    return `Cherry-pick paused due to conflicts:\n${cp.conflicts.map((f) => `  CONFLICT: ${f}`).join("\n")}`;
+  if (cp.state === "conflict") {
+    return `Cherry-pick paused due to conflicts [${cp.state}]:\n${cp.conflicts.map((f) => `  CONFLICT: ${f}`).join("\n")}`;
   }
   if (!cp.success) {
-    return "Cherry-pick failed";
+    return `Cherry-pick failed [${cp.state}]`;
   }
   if (cp.applied.length === 0) {
-    return "Cherry-pick completed (no commits applied)";
+    return `Cherry-pick completed [${cp.state}] (no commits applied)`;
   }
   const hashPart = cp.newCommitHash ? ` -> ${cp.newCommitHash}` : "";
-  return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}${hashPart}`;
+  return `Cherry-pick applied ${cp.applied.length} commit(s) [${cp.state}]: ${cp.applied.join(", ")}${hashPart}`;
 }
 
 // ── Rebase formatters ─────────────────────────────────────────────────
 
 /** Formats structured git rebase data into a human-readable rebase summary. */
 export function formatRebase(r: GitRebase): string {
-  if (!r.success) {
-    const parts = [`Rebase of '${r.current}' onto '${r.branch}' paused with conflicts`];
+  if (r.state === "conflict") {
+    const parts = [
+      `Rebase of '${r.current}' onto '${r.branch}' paused with conflicts [${r.state}]`,
+    ];
     if (r.conflicts.length > 0) {
       parts.push(`Conflicts: ${r.conflicts.join(", ")}`);
     }
@@ -464,7 +477,7 @@ export function formatRebase(r: GitRebase): string {
     return `Rebase aborted on '${r.current}'`;
   }
 
-  const parts = [`Rebased '${r.current}' onto '${r.branch}'`];
+  const parts = [`Rebased '${r.current}' onto '${r.branch}' [${r.state}]`];
   if (r.rebasedCommits !== undefined) {
     parts.push(`${r.rebasedCommits} commit(s) rebased`);
   }
@@ -475,16 +488,20 @@ export function formatRebase(r: GitRebase): string {
 
 /** Formats structured git merge data into a human-readable merge summary. */
 export function formatMerge(m: GitMerge): string {
-  if (!m.merged && m.conflicts.length > 0) {
-    return `Merge of '${m.branch}' failed with ${m.conflicts.length} conflict(s): ${m.conflicts.join(", ")}`;
+  if (m.state === "conflict") {
+    return `Merge of '${m.branch}' failed with ${m.conflicts.length} conflict(s) [${m.state}]: ${m.conflicts.join(", ")}`;
   }
 
   if (!m.merged && m.branch === "") {
     return "Merge aborted";
   }
 
+  if (m.state === "already-up-to-date") {
+    return `Already up to date with '${m.branch}'`;
+  }
+
   const parts: string[] = [];
-  if (m.fastForward) {
+  if (m.state === "fast-forward") {
     parts.push(`Fast-forward merge of '${m.branch}'`);
   } else {
     parts.push(`Merged '${m.branch}'`);
@@ -541,12 +558,17 @@ export function formatLogGraphCompact(lg: GitLogGraphCompact): string {
 /** Formats structured git reflog data into a human-readable reflog listing. */
 export function formatReflog(r: GitReflogFull): string {
   if (r.entries.length === 0) return "No reflog entries found";
-  return r.entries
+  const lines = r.entries
     .map((e) => {
       const desc = e.description ? `: ${e.description}` : "";
       return `${e.shortHash} ${e.selector} ${e.action}${desc} (${e.date})`;
     })
     .join("\n");
+  const available =
+    r.totalAvailable !== undefined && r.totalAvailable > r.total
+      ? `\n(showing ${r.total} of ${r.totalAvailable} entries)`
+      : "";
+  return `${lines}${available}`;
 }
 
 /** Compact reflog: selector + action + description as string array + total. */
@@ -554,6 +576,7 @@ export interface GitReflogCompact {
   [key: string]: unknown;
   entries: string[];
   total: number;
+  totalAvailable?: number;
 }
 
 export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
@@ -563,6 +586,7 @@ export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
       return `${e.shortHash} ${e.selector} ${e.action}${desc}`;
     }),
     total: r.total,
+    ...(r.totalAvailable !== undefined ? { totalAvailable: r.totalAvailable } : {}),
   };
 }
 
@@ -597,7 +621,9 @@ export function formatWorktreeList(w: GitWorktreeListFull): string {
     .map((wt) => {
       const bare = wt.bare ? " [bare]" : "";
       const branch = wt.branch ? ` (${wt.branch})` : "";
-      return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}`;
+      const locked = wt.locked ? (wt.lockReason ? ` [locked: ${wt.lockReason}]` : " [locked]") : "";
+      const prunable = wt.prunable ? " [prunable]" : "";
+      return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}${locked}${prunable}`;
     })
     .join("\n");
 }

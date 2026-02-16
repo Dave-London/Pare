@@ -46,6 +46,7 @@ export const GitDiffFileSchema = z.object({
   status: z.enum(["added", "modified", "deleted", "renamed", "copied"]),
   additions: z.number(),
   deletions: z.number(),
+  binary: z.boolean().optional(),
   oldFile: z.string().optional(),
   chunks: z
     .array(
@@ -108,10 +109,16 @@ export const GitShowSchema = z.object({
 
 export type GitShow = z.infer<typeof GitShowSchema>;
 
-/** Zod schema for structured git add output with count and list of staged files. */
+/** Zod schema for a single staged file entry with file path and status. */
+export const GitAddFileSchema = z.object({
+  file: z.string(),
+  status: z.enum(["added", "modified", "deleted"]),
+});
+
+/** Zod schema for structured git add output with count and list of staged files with per-file status. */
 export const GitAddSchema = z.object({
   staged: z.number(),
-  files: z.array(z.string()),
+  files: z.array(GitAddFileSchema),
 });
 
 export type GitAdd = z.infer<typeof GitAddSchema>;
@@ -302,6 +309,15 @@ export const GitRestoreSchema = z.object({
   restored: z.array(z.string()),
   source: z.string(),
   staged: z.boolean(),
+  verified: z.boolean().optional(),
+  verifiedFiles: z
+    .array(
+      z.object({
+        file: z.string(),
+        restored: z.boolean(),
+      }),
+    )
+    .optional(),
 });
 
 export type GitRestore = z.infer<typeof GitRestoreSchema>;
@@ -310,6 +326,8 @@ export type GitRestore = z.infer<typeof GitRestoreSchema>;
 export const GitResetSchema = z.object({
   ref: z.string(),
   mode: z.enum(["soft", "mixed", "hard", "merge", "keep"]).optional(),
+  previousRef: z.string().optional(),
+  newRef: z.string().optional(),
   filesAffected: z.array(z.string()),
 });
 
@@ -318,6 +336,7 @@ export type GitReset = z.infer<typeof GitResetSchema>;
 /** Zod schema for structured git cherry-pick output with applied commits and conflict list. */
 export const GitCherryPickSchema = z.object({
   success: z.boolean(),
+  state: z.enum(["completed", "conflict", "in-progress"]),
   applied: z.array(z.string()),
   conflicts: z.array(z.string()),
   newCommitHash: z.string().optional(),
@@ -328,6 +347,7 @@ export type GitCherryPick = z.infer<typeof GitCherryPickSchema>;
 /** Zod schema for structured git merge output with merge status, conflicts, and optional commit hash. */
 export const GitMergeSchema = z.object({
   merged: z.boolean(),
+  state: z.enum(["completed", "conflict", "already-up-to-date", "fast-forward"]),
   fastForward: z.boolean(),
   branch: z.string(),
   conflicts: z.array(z.string()),
@@ -339,6 +359,7 @@ export type GitMerge = z.infer<typeof GitMergeSchema>;
 /** Zod schema for structured git rebase output with success status, branch info, conflicts, and rebased commit count. */
 export const GitRebaseSchema = z.object({
   success: z.boolean(),
+  state: z.enum(["completed", "conflict", "in-progress"]),
   branch: z.string(),
   current: z.string(),
   conflicts: z.array(z.string()),
@@ -425,6 +446,7 @@ export const GitReflogEntrySchema = z.object({
 export const GitReflogSchema = z.object({
   entries: z.union([z.array(GitReflogEntrySchema), z.array(z.string())]),
   total: z.number(),
+  totalAvailable: z.number().optional(),
 });
 
 /** Full reflog data (always returned by parser, before compact projection). */
@@ -439,6 +461,7 @@ export type GitReflogFull = {
     date: string;
   }>;
   total: number;
+  totalAvailable?: number;
 };
 
 export type GitReflog = z.infer<typeof GitReflogSchema>;
@@ -467,6 +490,9 @@ export const GitWorktreeEntrySchema = z.object({
   head: z.string(),
   branch: z.string(),
   bare: z.boolean(),
+  locked: z.boolean().optional(),
+  lockReason: z.string().optional(),
+  prunable: z.boolean().optional(),
 });
 
 /** Zod schema for structured git worktree list output. */
@@ -477,7 +503,15 @@ export const GitWorktreeListSchema = z.object({
 
 /** Full worktree list data (always returned by parser, before compact projection). */
 export type GitWorktreeListFull = {
-  worktrees: Array<{ path: string; head: string; branch: string; bare: boolean }>;
+  worktrees: Array<{
+    path: string;
+    head: string;
+    branch: string;
+    bare: boolean;
+    locked?: boolean;
+    lockReason?: string;
+    prunable?: boolean;
+  }>;
   total: number;
 };
 
