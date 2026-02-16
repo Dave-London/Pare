@@ -356,6 +356,104 @@ describe("security: buildCurlArgs safety", () => {
     expect(secondIdx).toBeGreaterThan(-1);
     expect(args[secondIdx + 1]).toBe("city=New York");
   });
+
+  // ── Expanded -w format string tests ────────────────────────────────
+
+  it("includes expanded timing variables in -w format string", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+    });
+
+    const wIdx = args.indexOf("-w");
+    expect(wIdx).toBeGreaterThan(-1);
+    const writeOut = args[wIdx + 1];
+
+    expect(writeOut).toContain("%{time_total}");
+    expect(writeOut).toContain("%{size_download}");
+    expect(writeOut).toContain("%{time_namelookup}");
+    expect(writeOut).toContain("%{time_connect}");
+    expect(writeOut).toContain("%{time_appconnect}");
+    expect(writeOut).toContain("%{time_pretransfer}");
+    expect(writeOut).toContain("%{time_starttransfer}");
+  });
+
+  // ── Form parameter tests ──────────────────────────────────────────
+
+  it("includes -F flags for form data", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com/upload",
+      method: "POST",
+      timeout: 30,
+      followRedirects: true,
+      form: {
+        name: "test",
+        file: "@/path/to/file.txt",
+      },
+    });
+
+    const firstFIdx = args.indexOf("-F");
+    expect(firstFIdx).toBeGreaterThan(-1);
+
+    // Collect all -F values
+    const formValues: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === "-F") {
+        formValues.push(args[i + 1]);
+      }
+    }
+
+    expect(formValues).toContain("name=test");
+    expect(formValues).toContain("file=@/path/to/file.txt");
+  });
+
+  it("does not include --data-raw when form is provided", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com/upload",
+      method: "POST",
+      body: '{"should":"be ignored"}',
+      timeout: 30,
+      followRedirects: true,
+      form: {
+        name: "test",
+      },
+    });
+
+    expect(args).not.toContain("--data-raw");
+    expect(args).toContain("-F");
+  });
+
+  it("does not include --data-urlencode when form is provided", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com/upload",
+      method: "POST",
+      timeout: 30,
+      followRedirects: true,
+      dataUrlencode: ["name=John"],
+      form: {
+        field: "value",
+      },
+    });
+
+    expect(args).not.toContain("--data-urlencode");
+    expect(args).toContain("-F");
+  });
+
+  it("uses --data-raw when form is empty object", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "POST",
+      body: '{"key":"value"}',
+      timeout: 30,
+      followRedirects: true,
+      form: {},
+    });
+
+    expect(args).toContain("--data-raw");
+    expect(args).not.toContain("-F");
+  });
 });
 
 // ---------------------------------------------------------------------------

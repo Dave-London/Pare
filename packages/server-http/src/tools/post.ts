@@ -27,7 +27,11 @@ export function registerPostTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("The URL to request (http:// or https:// only)"),
-        body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Request body"),
+        body: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Request body. Ignored when `form` is provided."),
         headers: z
           .record(
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -40,7 +44,9 @@ export function registerPostTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .default("application/json")
-          .describe("Content-Type header (default: application/json)"),
+          .describe(
+            "Content-Type header (default: application/json). Ignored when `form` is provided.",
+          ),
         timeout: z
           .number()
           .min(1)
@@ -96,6 +102,15 @@ export function registerPostTool(server: McpServer) {
           .describe(
             "URL-encoded form data items (--data-urlencode). Each item is 'key=value'. Use instead of manual URL encoding.",
           ),
+        form: z
+          .record(
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.string().max(INPUT_LIMITS.STRING_MAX),
+          )
+          .optional()
+          .describe(
+            "Multipart form data as key-value pairs (-F). Each pair maps to `-F key=value`. For file uploads use `@filepath` as the value. When provided, `body` and `contentType` are ignored.",
+          ),
         httpVersion: z
           .enum(HTTP_VERSIONS)
           .optional()
@@ -130,6 +145,7 @@ export function registerPostTool(server: McpServer) {
       basicAuth,
       proxy,
       dataUrlencode,
+      form,
       httpVersion,
       compact,
       path,
@@ -143,12 +159,19 @@ export function registerPostTool(server: McpServer) {
           assertNoFlagInjection(item, "dataUrlencode");
         }
       }
+      if (form) {
+        for (const value of Object.values(form)) {
+          assertNoFlagInjection(value, "form value");
+        }
+      }
 
-      // Merge content-type header with user-supplied headers
-      const mergedHeaders: Record<string, string> = {
-        "Content-Type": contentType ?? "application/json",
-        ...headers,
-      };
+      // When form is provided, don't set Content-Type (curl sets multipart/form-data automatically)
+      const mergedHeaders: Record<string, string> = form
+        ? { ...headers }
+        : {
+            "Content-Type": contentType ?? "application/json",
+            ...headers,
+          };
 
       if (accept) {
         mergedHeaders["Accept"] = accept;
@@ -158,7 +181,7 @@ export function registerPostTool(server: McpServer) {
         url,
         method: "POST",
         headers: mergedHeaders,
-        body,
+        body: form ? undefined : body,
         timeout: timeout ?? 30,
         connectTimeout,
         followRedirects: followRedirects ?? true,
@@ -168,7 +191,8 @@ export function registerPostTool(server: McpServer) {
         proxy,
         httpVersion,
         preserveMethodOnRedirect,
-        dataUrlencode,
+        dataUrlencode: form ? undefined : dataUrlencode,
+        form,
       });
 
       const cwd = path || process.cwd();

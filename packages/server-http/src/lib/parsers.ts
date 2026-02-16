@@ -1,4 +1,4 @@
-import type { HttpResponse, HttpHeadResponse } from "../schemas/index.js";
+import type { HttpResponse, HttpHeadResponse, TimingDetails } from "../schemas/index.js";
 
 /** Sentinel appended via curl -w to separate body from metadata. */
 export const PARE_META_SEPARATOR = "---PARE_HTTP_META---";
@@ -9,6 +9,11 @@ export const PARE_META_SEPARATOR = "---PARE_HTTP_META---";
 interface CurlMeta {
   time_total: number;
   size_download: number;
+  time_namelookup: number;
+  time_connect: number;
+  time_appconnect: number;
+  time_pretransfer: number;
+  time_starttransfer: number;
 }
 
 /**
@@ -21,7 +26,7 @@ interface CurlMeta {
  *   \r\n
  *   <body>
  *   \n---PARE_HTTP_META---\n
- *   <time_total> <size_download>
+ *   <time_total> <size_download> <time_namelookup> <time_connect> <time_appconnect> <time_pretransfer> <time_starttransfer>
  *
  * When following redirects, multiple status+header blocks may appear.
  * We parse the LAST one (the final response).
@@ -48,12 +53,17 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
 
   const contentType = headers["content-type"];
 
+  const timingDetails = buildTimingDetails(meta);
+
   return {
     status,
     statusText,
     headers,
     body: body || undefined,
-    timing: { total: meta.time_total },
+    timing: {
+      total: meta.time_total,
+      ...(timingDetails ? { details: timingDetails } : {}),
+    },
     size: meta.size_download,
     contentType,
   };
@@ -172,13 +182,55 @@ export function parseHttpBlock(block: string): {
 }
 
 /**
+ * Builds a TimingDetails object from the parsed meta section.
+ * Returns undefined if all timing values are zero (no real timing data available).
+ */
+function buildTimingDetails(meta: CurlMeta): TimingDetails | undefined {
+  // If namelookup and connect are both 0, we likely have no timing data
+  // (e.g. old format or no metadata)
+  if (meta.time_namelookup === 0 && meta.time_connect === 0 && meta.time_starttransfer === 0) {
+    return undefined;
+  }
+
+  const details: TimingDetails = {
+    namelookup: meta.time_namelookup,
+    connect: meta.time_connect,
+  };
+
+  // Only include appconnect when it has a meaningful value (> 0 means TLS was used)
+  if (meta.time_appconnect > 0) {
+    details.appconnect = meta.time_appconnect;
+  }
+
+  // Only include pretransfer when available
+  if (meta.time_pretransfer > 0) {
+    details.pretransfer = meta.time_pretransfer;
+  }
+
+  // Only include starttransfer when available
+  if (meta.time_starttransfer > 0) {
+    details.starttransfer = meta.time_starttransfer;
+  }
+
+  return details;
+}
+
+/**
  * Parses the metadata section appended by curl's -w format string.
- * Format: "<time_total> <size_download>"
+ * Format: "<time_total> <size_download> <time_namelookup> <time_connect> <time_appconnect> <time_pretransfer> <time_starttransfer>"
+ *
+ * For backward compatibility, also handles the old 2-field format:
+ * "<time_total> <size_download>"
  */
 function parseMetaSection(meta: string): CurlMeta {
   const parts = meta.trim().split(/\s+/);
   return {
     time_total: parts[0] ? parseFloat(parts[0]) : 0,
     size_download: parts[1] ? parseFloat(parts[1]) : 0,
+    time_namelookup: parts[2] ? parseFloat(parts[2]) : 0,
+    time_connect: parts[3] ? parseFloat(parts[3]) : 0,
+    time_appconnect: parts[4] ? parseFloat(parts[4]) : 0,
+    time_pretransfer: parts[5] ? parseFloat(parts[5]) : 0,
+    time_starttransfer: parts[6] ? parseFloat(parts[6]) : 0,
   };
 }

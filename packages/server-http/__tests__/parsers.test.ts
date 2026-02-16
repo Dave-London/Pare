@@ -163,7 +163,7 @@ describe("parseCurlOutput", () => {
       "\r\n",
       '{"ok":true}',
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.250 13",
+      "0.250 13 0.010 0.050 0.100 0.110 0.200",
     ].join("");
 
     const result = parseCurlOutput(stdout, "", 0);
@@ -204,7 +204,7 @@ describe("parseCurlOutput", () => {
       "\r\n",
       "<html>success</html>",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.500 21",
+      "0.500 21 0.005 0.020 0.080 0.085 0.300",
     ].join("");
 
     const result = parseCurlOutput(stdout, "", 0);
@@ -220,7 +220,7 @@ describe("parseCurlOutput", () => {
       "HTTP/1.1 204 No Content\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.100 0",
+      "0.100 0 0.005 0.020 0.060 0.065 0.090",
     ].join("");
 
     const result = parseCurlOutput(stdout, "", 0);
@@ -229,6 +229,78 @@ describe("parseCurlOutput", () => {
     expect(result.statusText).toBe("No Content");
     expect(result.body).toBeUndefined();
     expect(result.size).toBe(0);
+  });
+
+  // ── Expanded timing tests ──────────────────────────────────────────
+
+  it("extracts expanded timing details from metadata", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Type: text/plain\r\n",
+      "\r\n",
+      "hello",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.500 5 0.010 0.050 0.120 0.125 0.400",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.timing.total).toBeCloseTo(0.5);
+    expect(result.timing.details).toBeDefined();
+    expect(result.timing.details!.namelookup).toBeCloseTo(0.01);
+    expect(result.timing.details!.connect).toBeCloseTo(0.05);
+    expect(result.timing.details!.appconnect).toBeCloseTo(0.12);
+    expect(result.timing.details!.pretransfer).toBeCloseTo(0.125);
+    expect(result.timing.details!.starttransfer).toBeCloseTo(0.4);
+  });
+
+  it("omits appconnect when zero (HTTP, no TLS)", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "\r\n",
+      "ok",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.300 2 0.005 0.030 0.000 0.035 0.200",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.timing.details).toBeDefined();
+    expect(result.timing.details!.namelookup).toBeCloseTo(0.005);
+    expect(result.timing.details!.connect).toBeCloseTo(0.03);
+    expect(result.timing.details!.appconnect).toBeUndefined();
+    expect(result.timing.details!.pretransfer).toBeCloseTo(0.035);
+    expect(result.timing.details!.starttransfer).toBeCloseTo(0.2);
+  });
+
+  it("returns undefined timing details when all timing values are zero (no metadata)", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "\r\n",
+      "ok",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.100 2 0.000 0.000 0.000 0.000 0.000",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.timing.details).toBeUndefined();
+  });
+
+  it("returns undefined timing details for old 2-field meta format", () => {
+    // Backward compatibility: old format only had time_total and size_download
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "\r\n",
+      "ok",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.100 2",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.timing.total).toBeCloseTo(0.1);
+    expect(result.timing.details).toBeUndefined();
   });
 });
 
@@ -240,7 +312,7 @@ describe("parseCurlHeadOutput", () => {
       "Content-Length: 5000\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.150 0",
+      "0.150 0 0.005 0.025 0.080 0.085 0.140",
     ].join("");
 
     const result = parseCurlHeadOutput(stdout, "", 0);
@@ -262,7 +334,7 @@ describe("parseCurlHeadOutput", () => {
       "Content-Length: 12345\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.100 0",
+      "0.100 0 0.005 0.020 0.060 0.065 0.090",
     ].join("");
 
     const result = parseCurlHeadOutput(stdout, "", 0);
@@ -276,7 +348,7 @@ describe("parseCurlHeadOutput", () => {
       "Content-Type: text/html\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.100 0",
+      "0.100 0 0.005 0.020 0.060 0.065 0.090",
     ].join("");
 
     const result = parseCurlHeadOutput(stdout, "", 0);
@@ -290,7 +362,7 @@ describe("parseCurlHeadOutput", () => {
       "Content-Length: invalid\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.100 0",
+      "0.100 0 0.005 0.020 0.060 0.065 0.090",
     ].join("");
 
     const result = parseCurlHeadOutput(stdout, "", 0);
@@ -304,11 +376,28 @@ describe("parseCurlHeadOutput", () => {
       "Content-Length: 0\r\n",
       "\r\n",
       `\n${PARE_META_SEPARATOR}\n`,
-      "0.050 0",
+      "0.050 0 0.003 0.015 0.040 0.042 0.048",
     ].join("");
 
     const result = parseCurlHeadOutput(stdout, "", 0);
 
     expect(result.contentLength).toBe(0);
+  });
+
+  it("includes expanded timing details for HEAD responses", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Type: text/html\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.200 0 0.008 0.040 0.110 0.115 0.190",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.timing.details).toBeDefined();
+    expect(result.timing.details!.namelookup).toBeCloseTo(0.008);
+    expect(result.timing.details!.connect).toBeCloseTo(0.04);
+    expect(result.timing.details!.appconnect).toBeCloseTo(0.11);
   });
 });
