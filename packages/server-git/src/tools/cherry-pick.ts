@@ -82,9 +82,6 @@ export function registerCherryPickTool(server: McpServer) {
       const quit = input.quit;
       const noCommit = input.noCommit;
 
-      // Set GIT_EDITOR=true to prevent editor launch in non-interactive mode
-      const env = { ...process.env, GIT_EDITOR: "true" };
-
       // Handle abort
       if (abort) {
         const result = await git(["cherry-pick", "--abort"], cwd);

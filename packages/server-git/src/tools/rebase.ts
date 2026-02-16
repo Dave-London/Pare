@@ -88,9 +88,6 @@ export function registerRebaseTool(server: McpServer) {
       const skip = params.skip;
       const quit = params.quit;
 
-      // Set GIT_EDITOR=true to prevent editor launch in non-interactive mode
-      const env = { GIT_EDITOR: "true" };
-
       // Get current branch before rebase
       const currentResult = await git(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
       const current = currentResult.exitCode === 0 ? currentResult.stdout.trim() : "unknown";

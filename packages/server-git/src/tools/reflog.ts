@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseReflogOutput } from "../lib/parsers.js";
