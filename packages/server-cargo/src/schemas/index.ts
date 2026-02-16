@@ -72,6 +72,10 @@ export const CargoAddResultSchema = z.object({
   success: z.boolean(),
   added: z.array(CargoAddedPackageSchema).optional(),
   total: z.number(),
+  dryRun: z
+    .boolean()
+    .optional()
+    .describe("True when --dry-run was used; Cargo.toml was not modified"),
   error: z.string().optional(),
 });
 

@@ -70,7 +70,7 @@ describe("parseCargoFmtOutput", () => {
   });
 
   describe("fix mode", () => {
-    it("returns empty files list in fix mode", () => {
+    it("returns empty files list when no files needed reformatting", () => {
       const result = parseCargoFmtOutput("", "", 0, false);
 
       expect(result.success).toBe(true);
@@ -82,6 +82,25 @@ describe("parseCargoFmtOutput", () => {
       const result = parseCargoFmtOutput("", "", 0, false);
 
       expect(result.success).toBe(true);
+    });
+
+    it("reports reformatted files in fix mode via -l flag output", () => {
+      const stdout = ["src/main.rs", "src/lib.rs"].join("\n");
+      const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+      expect(result.success).toBe(true);
+      expect(result.filesChanged).toBe(2);
+      expect(result.files).toContain("src/main.rs");
+      expect(result.files).toContain("src/lib.rs");
+    });
+
+    it("handles single reformatted file in fix mode", () => {
+      const stdout = "src/utils.rs";
+      const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+      expect(result.success).toBe(true);
+      expect(result.filesChanged).toBe(1);
+      expect(result.files).toEqual(["src/utils.rs"]);
     });
   });
 
