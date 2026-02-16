@@ -6,9 +6,6 @@ import {
   parseCargoFmtOutput,
   parseCargoAddOutput,
   parseCargoAuditJson,
-  extractCvssScore,
-  detectRunFailureType,
-  parseCargoRemoveOutput,
   cvssToSeverity,
 } from "../src/lib/parsers.js";
 
