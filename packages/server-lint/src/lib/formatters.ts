@@ -5,8 +5,13 @@ export function formatLint(data: LintResult): string {
   if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
 
   const lines = [`Lint: ${data.errors} errors, ${data.warnings} warnings`];
+  if (data.fixableErrorCount || data.fixableWarningCount) {
+    lines[0] += ` (${data.fixableErrorCount ?? 0} fixable errors, ${data.fixableWarningCount ?? 0} fixable warnings)`;
+  }
   for (const d of data.diagnostics ?? []) {
-    lines.push(`  ${d.file}:${d.line} ${d.severity} ${d.rule}: ${d.message}`);
+    const loc = d.column ? `${d.file}:${d.line}:${d.column}` : `${d.file}:${d.line}`;
+    const extra = d.wikiUrl ? ` (${d.wikiUrl})` : "";
+    lines.push(`  ${loc} ${d.severity} ${d.rule}: ${d.message}${extra}`);
   }
   return lines.join("\n");
 }

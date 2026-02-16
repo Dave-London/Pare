@@ -13,7 +13,7 @@ export function registerStylelintTool(server: McpServer) {
     {
       title: "Stylelint Check",
       description:
-        "Runs Stylelint and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `stylelint` in the terminal.",
+        "Runs Stylelint and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `stylelint` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -51,6 +51,22 @@ export function registerStylelintTool(server: McpServer) {
           .describe(
             "Ignore stylelint-disable comments and enforce all rules (maps to --ignore-disables)",
           ),
+        maxWarnings: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Maximum number of warnings before failing (maps to --max-warnings)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Stylelint configuration file (maps to --config)"),
+        ignorePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to a custom ignore file (maps to --ignore-path)"),
         compact: z
           .boolean()
           .optional()
@@ -70,6 +86,9 @@ export function registerStylelintTool(server: McpServer) {
       cache,
       reportNeedlessDisables,
       ignoreDisables,
+      maxWarnings,
+      config,
+      ignorePath,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -83,6 +102,15 @@ export function registerStylelintTool(server: McpServer) {
       if (cache) args.push("--cache");
       if (reportNeedlessDisables) args.push("--report-needless-disables");
       if (ignoreDisables) args.push("--ignore-disables");
+      if (maxWarnings !== undefined) args.push(`--max-warnings=${maxWarnings}`);
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
+      if (ignorePath) {
+        assertNoFlagInjection(ignorePath, "ignorePath");
+        args.push(`--ignore-path=${ignorePath}`);
+      }
 
       const result = await stylelintCmd(args, cwd);
       const data = parseStylelintJson(result.stdout);

@@ -37,6 +37,8 @@ describe("parseEslintJson", () => {
         ],
         errorCount: 1,
         warningCount: 1,
+        fixableErrorCount: 0,
+        fixableWarningCount: 1,
       },
       {
         filePath: "/project/src/utils.ts",
@@ -52,6 +54,8 @@ describe("parseEslintJson", () => {
         ],
         errorCount: 0,
         warningCount: 1,
+        fixableErrorCount: 0,
+        fixableWarningCount: 0,
       },
     ]);
 
@@ -61,14 +65,18 @@ describe("parseEslintJson", () => {
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
     expect(result.filesChecked).toBe(2);
+    expect(result.fixableErrorCount).toBe(0);
+    expect(result.fixableWarningCount).toBe(1);
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/index.ts",
       line: 5,
+      column: 7,
       severity: "error",
       rule: "no-unused-vars",
       message: "'x' is defined but never used.",
     });
     expect(result.diagnostics[1].severity).toBe("warning");
+    expect(result.diagnostics[1].column).toBe(20);
   });
 
   it("parses clean ESLint output", () => {
@@ -81,6 +89,8 @@ describe("parseEslintJson", () => {
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(1);
+    expect(result.fixableErrorCount).toBe(0);
+    expect(result.fixableWarningCount).toBe(0);
   });
 
   it("handles invalid JSON gracefully", () => {
@@ -109,6 +119,51 @@ describe("parseEslintJson", () => {
 
     const result = parseEslintJson(json);
     expect(result.diagnostics[0].rule).toBe("unknown");
+    expect(result.diagnostics[0].column).toBe(1);
+  });
+
+  it("surfaces fixableErrorCount and fixableWarningCount", () => {
+    const json = JSON.stringify([
+      {
+        filePath: "/project/src/a.ts",
+        messages: [
+          {
+            ruleId: "semi",
+            severity: 2,
+            message: "Missing semicolon.",
+            line: 1,
+            column: 10,
+            fix: { range: [10, 10], text: ";" },
+          },
+          { ruleId: "no-unused-vars", severity: 1, message: "Unused var.", line: 2 },
+        ],
+        errorCount: 1,
+        warningCount: 1,
+        fixableErrorCount: 1,
+        fixableWarningCount: 0,
+      },
+      {
+        filePath: "/project/src/b.ts",
+        messages: [
+          {
+            ruleId: "quotes",
+            severity: 1,
+            message: "Use single quotes.",
+            line: 5,
+            column: 3,
+            fix: { range: [50, 60], text: "'x'" },
+          },
+        ],
+        errorCount: 0,
+        warningCount: 1,
+        fixableErrorCount: 0,
+        fixableWarningCount: 1,
+      },
+    ]);
+
+    const result = parseEslintJson(json);
+    expect(result.fixableErrorCount).toBe(1);
+    expect(result.fixableWarningCount).toBe(1);
   });
 });
 
@@ -193,11 +248,13 @@ describe("parseStylelintJson", () => {
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/styles.css",
       line: 5,
+      column: 3,
       severity: "error",
       rule: "color-no-invalid-hex",
       message: 'Unexpected invalid hex color "#xyz" (color-no-invalid-hex)',
     });
     expect(result.diagnostics[1].severity).toBe("warning");
+    expect(result.diagnostics[1].column).toBe(1);
   });
 
   it("parses clean Stylelint output", () => {
@@ -234,6 +291,7 @@ describe("parseStylelintJson", () => {
 
     const result = parseStylelintJson(json);
     expect(result.diagnostics[0].file).toBe("unknown");
+    expect(result.diagnostics[0].column).toBe(1);
   });
 });
 
@@ -282,6 +340,7 @@ describe("parseOxlintJson", () => {
     expect(result.diagnostics[0]).toEqual({
       file: "/project/src/index.ts",
       line: 5,
+      column: 7,
       severity: "error",
       rule: "no-unused-vars",
       message: "'x' is defined but never used.",
@@ -312,6 +371,7 @@ describe("parseOxlintJson", () => {
     const result = parseOxlintJson(lines);
     expect(result.total).toBe(1);
     expect(result.diagnostics[0].rule).toBe("no-var");
+    expect(result.diagnostics[0].column).toBe(1);
   });
 
   it("handles missing ruleId", () => {
@@ -393,14 +453,17 @@ describe("parseShellcheckJson", () => {
     expect(result.diagnostics[0]).toEqual({
       file: "deploy.sh",
       line: 5,
+      column: 3,
       severity: "error",
       rule: "SC2086",
       message: "Double quote to prevent globbing and word splitting.",
     });
     expect(result.diagnostics[1].severity).toBe("warning");
     expect(result.diagnostics[1].rule).toBe("SC2034");
+    expect(result.diagnostics[1].column).toBe(1);
     expect(result.diagnostics[2].severity).toBe("info");
     expect(result.diagnostics[2].rule).toBe("SC2148");
+    expect(result.diagnostics[2].column).toBe(1);
   });
 
   it("parses clean ShellCheck output (empty array)", () => {
@@ -438,6 +501,7 @@ describe("parseShellcheckJson", () => {
 
     const result = parseShellcheckJson(json);
     expect(result.diagnostics[0].severity).toBe("info");
+    expect(result.diagnostics[0].column).toBe(1);
   });
 
   it("handles missing code", () => {
@@ -505,14 +569,18 @@ describe("parseHadolintJson", () => {
     expect(result.diagnostics[0]).toEqual({
       file: "Dockerfile",
       line: 3,
+      column: 1,
       severity: "error",
       rule: "DL3006",
       message: "Always tag the version of an image explicitly.",
+      wikiUrl: "https://github.com/hadolint/hadolint/wiki/DL3006",
     });
     expect(result.diagnostics[1].severity).toBe("warning");
     expect(result.diagnostics[1].rule).toBe("DL3008");
+    expect(result.diagnostics[1].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3008");
     expect(result.diagnostics[2].severity).toBe("info");
     expect(result.diagnostics[2].rule).toBe("DL3048");
+    expect(result.diagnostics[2].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3048");
   });
 
   it("parses clean Hadolint output (empty array)", () => {
@@ -550,6 +618,7 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].severity).toBe("info");
+    expect(result.diagnostics[0].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3000");
   });
 
   it("handles missing code", () => {
@@ -565,6 +634,7 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].rule).toBe("unknown");
+    expect(result.diagnostics[0].wikiUrl).toBeUndefined();
   });
 
   it("handles non-array JSON gracefully", () => {
@@ -588,5 +658,7 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].rule).toBe("SC2046");
+    // SC-prefixed rules should not get a wiki URL (only DL rules do)
+    expect(result.diagnostics[0].wikiUrl).toBeUndefined();
   });
 });

@@ -35,6 +35,16 @@ export function registerBiomeFormatTool(server: McpServer) {
           .optional()
           .describe("Only format VCS-changed files (maps to --changed)"),
         staged: z.boolean().optional().describe("Only format staged files (maps to --staged)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Only format files changed since this git ref (maps to --since)"),
+        configPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Biome configuration file (maps to --config-path)"),
         indentStyle: z
           .enum(["tab", "space"])
           .optional()
@@ -64,6 +74,8 @@ export function registerBiomeFormatTool(server: McpServer) {
       patterns,
       changed,
       staged,
+      since,
+      configPath,
       indentStyle,
       lineWidth,
       quoteStyle,
@@ -78,6 +90,14 @@ export function registerBiomeFormatTool(server: McpServer) {
       const args = ["format", "--write"];
       if (changed) args.push("--changed");
       if (staged) args.push("--staged");
+      if (since) {
+        assertNoFlagInjection(since, "since");
+        args.push(`--since=${since}`);
+      }
+      if (configPath) {
+        assertNoFlagInjection(configPath, "configPath");
+        args.push(`--config-path=${configPath}`);
+      }
       if (indentStyle) args.push(`--indent-style=${indentStyle}`);
       if (lineWidth !== undefined) args.push(`--line-width=${lineWidth}`);
       if (quoteStyle) args.push(`--quote-style=${quoteStyle}`);

@@ -46,6 +46,21 @@ export function registerFormatCheckTool(server: McpServer) {
           .enum(["silent", "error", "warn", "log", "debug"])
           .optional()
           .describe("Log level to control output verbosity"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to a Prettier configuration file (maps to --config)"),
+        ignorePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to a custom ignore file (maps to --ignore-path)"),
+        parser: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Force a specific parser for ambiguous file types (maps to --parser)"),
         compact: z
           .boolean()
           .optional()
@@ -56,7 +71,18 @@ export function registerFormatCheckTool(server: McpServer) {
       },
       outputSchema: FormatCheckResultSchema,
     },
-    async ({ path, patterns, ignoreUnknown, cache, noConfig, logLevel, compact }) => {
+    async ({
+      path,
+      patterns,
+      ignoreUnknown,
+      cache,
+      noConfig,
+      logLevel,
+      config,
+      ignorePath,
+      parser,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -66,6 +92,18 @@ export function registerFormatCheckTool(server: McpServer) {
       if (cache) args.push("--cache");
       if (noConfig) args.push("--no-config");
       if (logLevel) args.push(`--log-level=${logLevel}`);
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
+      if (ignorePath) {
+        assertNoFlagInjection(ignorePath, "ignorePath");
+        args.push(`--ignore-path=${ignorePath}`);
+      }
+      if (parser) {
+        assertNoFlagInjection(parser, "parser");
+        args.push(`--parser=${parser}`);
+      }
       args.push(...(patterns || ["."]));
 
       const result = await prettier(args, cwd);
