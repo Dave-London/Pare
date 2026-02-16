@@ -135,11 +135,25 @@ X [ERROR] Expected ";" but found "const"
 <td><em>n/a</em></td>
 <td>
 
-~12 tokens
+~55 tokens
 
 ```json
 {
   "success": false,
+  "errors": [
+    {
+      "file": "src/index.ts",
+      "line": 3,
+      "column": 21,
+      "message": "Could not resolve \"missing-package\""
+    },
+    {
+      "file": "src/utils.ts",
+      "line": 10,
+      "column": 0,
+      "message": "Expected \";\" but found \"const\""
+    }
+  ],
   "duration": 0.1
 }
 ```
@@ -200,11 +214,18 @@ Done in 35ms
 <td><em>n/a</em></td>
 <td>
 
-~12 tokens
+~30 tokens
 
 ```json
 {
   "success": true,
+  "warnings": [
+    {
+      "file": "src/index.ts",
+      "line": 5,
+      "message": "Import \"foo\" will always be undefined because the file \"src/shim.ts\" has no exports"
+    }
+  ],
   "duration": 0.1
 }
 ```
@@ -218,13 +239,13 @@ Done in 35ms
 | Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ---------------- | ---------- | --------- | ------------ | ------- |
 | Successful build | ~30        | ~25       | ~12          | 17-60%  |
-| 2 build errors   | ~150       | ~60       | ~12          | 60-92%  |
-| With warnings    | ~80        | ~35       | ~12          | 56-85%  |
+| 2 build errors   | ~150       | ~60       | ~55          | 60-63%  |
+| With warnings    | ~80        | ~35       | ~30          | 56-63%  |
 
 ## Notes
 
 - Entry points are validated to prevent flag injection
 - The parser handles both modern diagnostic format (`X [ERROR] message`) and older inline format (`> file:line:col: error: message`)
 - Output files are detected from stdout lines ending in `.js`, `.mjs`, `.cjs`, `.css`, or `.map`
-- In compact mode, all arrays (`errors`, `warnings`, `outputFiles`) are omitted, returning only `success` and `duration`
+- In compact mode, the `outputFiles` array is omitted; non-empty `errors` and `warnings` arrays are preserved
 - The `bundle` flag defaults to `true`; set to `false` for transform-only mode

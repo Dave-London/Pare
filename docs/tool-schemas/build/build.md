@@ -122,12 +122,16 @@ npm ERR! Error: command failed
 <td><em>n/a</em></td>
 <td>
 
-~15 tokens
+~35 tokens
 
 ```json
 {
   "success": false,
-  "duration": 1.5
+  "duration": 1.5,
+  "errors": [
+    "src/index.ts(12,5): error TS2322: Type 'string' is not assignable to type 'number'.",
+    "src/utils.ts(8,3): error TS7006: Parameter 'x' implicitly has an 'any' type."
+  ]
 }
 ```
 
@@ -140,12 +144,12 @@ npm ERR! Error: command failed
 | Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ------------ | ---------- | --------- | ------------ | ------- |
 | Build passes | ~120       | ~25       | ~15          | 79-88%  |
-| Build fails  | ~180       | ~40       | ~15          | 78-92%  |
+| Build fails  | ~180       | ~40       | ~35          | 78-81%  |
 
 ## Notes
 
 - The `command` parameter is validated against an allow-list of safe commands (e.g., `npm`, `npx`, `pnpm`, `yarn`, `node`, `make`)
 - Error and warning lines are extracted by scanning output for lines containing `error` or `warn` keywords
-- In compact mode, the `errors` and `warnings` arrays are omitted, returning only `success` and `duration`
+- In compact mode, empty `errors` and `warnings` arrays are omitted; non-empty arrays are preserved
 - Duration is measured by the tool wrapper, not parsed from command output
 - This is a generic build runner; for framework-specific structured output, prefer the dedicated `tsc`, `esbuild`, `vite-build`, or `webpack` tools

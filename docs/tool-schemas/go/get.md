@@ -91,11 +91,12 @@ go: module github.com/example/nonexistent: no matching versions for query "lates
 <td><em>n/a</em></td>
 <td>
 
-~5 tokens
+~20 tokens
 
 ```json
 {
-  "success": false
+  "success": false,
+  "output": "go: module github.com/example/nonexistent: no matching versions for query \"latest\""
 }
 ```
 
@@ -108,12 +109,12 @@ go: module github.com/example/nonexistent: no matching versions for query "lates
 | Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
 | ----------------- | ---------- | --------- | ------------ | ------- |
 | Package installed | ~30        | ~20       | ~5           | 33-83%  |
-| Package not found | ~40        | ~20       | ~5           | 50-88%  |
+| Package not found | ~40        | ~20       | ~20          | 50%     |
 
 ## Notes
 
 - The `packages` parameter is required and accepts version suffixes (e.g., `@latest`, `@v1.2.3`)
 - Multiple packages can be installed in a single call (e.g., `['github.com/pkg/errors@latest', 'golang.org/x/sync@latest']`)
 - The `output` field contains the combined stdout/stderr from the `go get` command
-- Compact mode drops the output text, keeping only the success boolean
+- Compact mode preserves the `output` field when non-empty, ensuring error details remain visible
 - Package arguments are validated against flag injection
