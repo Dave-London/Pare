@@ -25,6 +25,38 @@ export function registerTurboTool(server: McpServer) {
           .optional()
           .describe("Package filter (e.g., '@scope/pkg' or 'pkg...')"),
         concurrency: z.number().optional().describe("Maximum number of concurrent tasks"),
+        force: z
+          .boolean()
+          .optional()
+          .describe("Bypass the turbo cache and re-run all tasks (maps to --force)"),
+        continue_on_error: z
+          .boolean()
+          .optional()
+          .describe(
+            "Continue running tasks even after failures to surface all errors (maps to --continue)",
+          ),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("Preview the task graph without executing (maps to --dry-run)"),
+        affected: z
+          .boolean()
+          .optional()
+          .describe(
+            "Run only tasks affected by changes since the base branch (maps to --affected)",
+          ),
+        graph: z
+          .boolean()
+          .optional()
+          .describe("Generate the task graph visualization (maps to --graph)"),
+        logOrder: z
+          .enum(["stream", "grouped", "auto"])
+          .optional()
+          .describe("Order of task log output"),
+        profile: z
+          .boolean()
+          .optional()
+          .describe("Generate a performance profile (maps to --profile)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -40,7 +72,20 @@ export function registerTurboTool(server: McpServer) {
       },
       outputSchema: TurboResultSchema,
     },
-    async ({ task, filter, concurrency, path, compact }) => {
+    async ({
+      task,
+      filter,
+      concurrency,
+      force,
+      continue_on_error,
+      dryRun,
+      affected,
+      graph,
+      logOrder,
+      profile,
+      path,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(task, "task");
       if (filter) assertNoFlagInjection(filter, "filter");
@@ -49,6 +94,13 @@ export function registerTurboTool(server: McpServer) {
 
       if (filter) cliArgs.push("--filter", filter);
       if (concurrency !== undefined) cliArgs.push("--concurrency", String(concurrency));
+      if (force) cliArgs.push("--force");
+      if (continue_on_error) cliArgs.push("--continue");
+      if (dryRun) cliArgs.push("--dry-run");
+      if (affected) cliArgs.push("--affected");
+      if (graph) cliArgs.push("--graph");
+      if (logOrder) cliArgs.push(`--log-order=${logOrder}`);
+      if (profile) cliArgs.push("--profile");
 
       const start = Date.now();
       const result = await turboCmd(cliArgs, cwd);

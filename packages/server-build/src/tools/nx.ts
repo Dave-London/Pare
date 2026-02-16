@@ -39,6 +39,34 @@ export function registerNxTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        parallel: z
+          .number()
+          .optional()
+          .describe("Max number of parallel tasks (maps to --parallel)"),
+        skipNxCache: z
+          .boolean()
+          .optional()
+          .describe("Skip the Nx cache and re-run all tasks (maps to --skip-nx-cache)"),
+        nxBail: z
+          .boolean()
+          .optional()
+          .describe("Stop task execution after the first failure (maps to --nx-bail)"),
+        verbose: z
+          .boolean()
+          .optional()
+          .describe("Enable verbose output for debugging (maps to --verbose)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("Preview the task graph without executing (maps to --dry-run)"),
+        outputStyle: z
+          .enum(["dynamic", "static", "stream", "stream-without-prefixes", "compact"])
+          .optional()
+          .describe("Output style for task logs"),
+        graph: z
+          .boolean()
+          .optional()
+          .describe("Generate the task graph visualization (maps to --graph)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -55,7 +83,22 @@ export function registerNxTool(server: McpServer) {
       },
       outputSchema: NxResultSchema,
     },
-    async ({ target, project, affected, base, path, args, compact }) => {
+    async ({
+      target,
+      project,
+      affected,
+      base,
+      path,
+      parallel,
+      skipNxCache,
+      nxBail,
+      verbose,
+      dryRun,
+      outputStyle,
+      graph,
+      args,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(target, "target");
       if (project) assertNoFlagInjection(project, "project");
@@ -74,6 +117,14 @@ export function registerNxTool(server: McpServer) {
       } else {
         cliArgs.push("run-many", `--target=${target}`);
       }
+
+      if (parallel !== undefined) cliArgs.push(`--parallel=${parallel}`);
+      if (skipNxCache) cliArgs.push("--skip-nx-cache");
+      if (nxBail) cliArgs.push("--nx-bail");
+      if (verbose) cliArgs.push("--verbose");
+      if (dryRun) cliArgs.push("--dry-run");
+      if (outputStyle) cliArgs.push(`--output-style=${outputStyle}`);
+      if (graph) cliArgs.push("--graph");
 
       if (args) {
         cliArgs.push(...args);

@@ -35,6 +35,26 @@ export function registerGolangciLintTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to golangci-lint config file"),
+        fix: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Automatically fix found issues where possible (--fix)"),
+        fast: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run only fast linters for quick feedback during iteration (--fast)"),
+        new: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show only new issues (--new). Useful for incremental linting."),
+        sortResults: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Sort lint results for consistent output (--sort-results)"),
         compact: z
           .boolean()
           .optional()
@@ -45,7 +65,7 @@ export function registerGolangciLintTool(server: McpServer) {
       },
       outputSchema: GolangciLintResultSchema,
     },
-    async ({ path, patterns, config, compact }) => {
+    async ({ path, patterns, config, fix, fast, new: newOnly, sortResults, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -58,6 +78,10 @@ export function registerGolangciLintTool(server: McpServer) {
       if (config) {
         args.push("--config", config);
       }
+      if (fix) args.push("--fix");
+      if (fast) args.push("--fast");
+      if (newOnly) args.push("--new");
+      if (sortResults) args.push("--sort-results");
       args.push(...(patterns || ["./..."]));
 
       const result = await golangciLintCmd(args, cwd);

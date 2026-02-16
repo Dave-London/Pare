@@ -26,6 +26,28 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default("production")
           .describe("Build mode (default: production)"),
+        manifest: z
+          .boolean()
+          .optional()
+          .describe("Generate a manifest.json for backend-integrated builds (maps to --manifest)"),
+        minify: z
+          .enum(["esbuild", "terser", "false"])
+          .optional()
+          .describe("Minification strategy (esbuild, terser, or false to disable)"),
+        logLevel: z
+          .enum(["info", "warn", "error", "silent"])
+          .optional()
+          .describe("Log level to control output verbosity"),
+        emptyOutDir: z
+          .boolean()
+          .optional()
+          .describe("Empty the output directory before building (maps to --emptyOutDir)"),
+        reportCompressedSize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Report compressed (gzip) size of output files — disable to speed up large builds",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -42,7 +64,17 @@ export function registerViteBuildTool(server: McpServer) {
       },
       outputSchema: ViteBuildResultSchema,
     },
-    async ({ path, mode, args, compact }) => {
+    async ({
+      path,
+      mode,
+      manifest,
+      minify,
+      logLevel,
+      emptyOutDir,
+      reportCompressedSize,
+      args,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       if (mode) assertNoFlagInjection(mode, "mode");
       for (const a of args ?? []) {
@@ -54,6 +86,13 @@ export function registerViteBuildTool(server: McpServer) {
       if (mode && mode !== "production") {
         cliArgs.push("--mode", mode);
       }
+      if (manifest) cliArgs.push("--manifest");
+      if (minify) cliArgs.push(`--minify=${minify}`);
+      if (logLevel) cliArgs.push(`--logLevel=${logLevel}`);
+      if (emptyOutDir !== undefined) {
+        cliArgs.push(emptyOutDir ? "--emptyOutDir" : "--no-emptyOutDir");
+      }
+      if (reportCompressedSize === false) cliArgs.push("--no-reportCompressedSize");
 
       if (args) {
         cliArgs.push(...args);

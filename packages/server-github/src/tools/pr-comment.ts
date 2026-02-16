@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseComment } from "../lib/parsers.js";
 import { formatComment } from "../lib/formatters.js";
@@ -17,6 +17,17 @@ export function registerPrCommentTool(server: McpServer) {
       inputSchema: {
         number: z.number().describe("Pull request number"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),
+        editLast: z
+          .boolean()
+          .optional()
+          .describe("Edit the last comment instead of creating a new one (--edit-last)"),
+        deleteLast: z.boolean().optional().describe("Delete the last comment (--delete-last)"),
+        createIfNone: z
+          .boolean()
+          .optional()
+          .describe(
+            "When used with editLast, create a new comment if no existing comment exists (--create-if-none)",
+          ),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -25,12 +36,13 @@ export function registerPrCommentTool(server: McpServer) {
       },
       outputSchema: CommentResultSchema,
     },
-    async ({ number, body, path }) => {
+    async ({ number, body, editLast, deleteLast, createIfNone, path }) => {
       const cwd = path || process.cwd();
 
-      assertNoFlagInjection(body, "body");
-
       const args = ["pr", "comment", String(number), "--body-file", "-"];
+      if (editLast) args.push("--edit-last");
+      if (deleteLast) args.push("--delete-last");
+      if (createIfNone) args.push("--create-if-none");
 
       const result = await ghCmd(args, { cwd, stdin: body });
 

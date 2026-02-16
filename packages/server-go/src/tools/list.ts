@@ -26,6 +26,41 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Package patterns to list (default: ['./...'])"),
+        updates: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Show available module updates (-u). Requires module mode (-m) which will be auto-enabled.",
+          ),
+        deps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "List not just the named packages but also all their transitive dependencies (-deps)",
+          ),
+        tolerateErrors: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Tolerate errors in packages -- useful for listing packages in partially broken projects (-e)",
+          ),
+        versions: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Show all known versions of each module (-versions). Requires module mode (-m) which will be auto-enabled.",
+          ),
+        find: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Find packages matching the patterns without resolving dependencies (-find). Faster for simple listing.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -36,12 +71,22 @@ export function registerListTool(server: McpServer) {
       },
       outputSchema: GoListResultSchema,
     },
-    async ({ path, packages, compact }) => {
+    async ({ path, packages, updates, deps, tolerateErrors, versions, find, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
-      const args = ["list", "-json", ...(packages || ["./..."])];
+      const args = ["list", "-json"];
+      // -u and -versions require -m (module mode); auto-enable it
+      if (updates || versions) {
+        args.push("-m");
+        if (updates) args.push("-u");
+        if (versions) args.push("-versions");
+      }
+      if (deps) args.push("-deps");
+      if (tolerateErrors) args.push("-e");
+      if (find) args.push("-find");
+      args.push(...(packages || ["./..."]));
       const result = await goCmd(args, cwd);
       const data = parseGoListOutput(result.stdout);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();

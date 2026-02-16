@@ -62,6 +62,40 @@ export function registerHelmTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to a values YAML file (--values)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("Simulate install/upgrade without making changes (--dry-run)"),
+        wait: z
+          .boolean()
+          .optional()
+          .describe("Wait until resources are ready after install/upgrade (--wait)"),
+        atomic: z
+          .boolean()
+          .optional()
+          .describe("Roll back on failure during install/upgrade (--atomic)"),
+        createNamespace: z
+          .boolean()
+          .optional()
+          .describe("Create namespace if it doesn't exist (--create-namespace)"),
+        installOnUpgrade: z
+          .boolean()
+          .optional()
+          .describe("Install the release if it doesn't exist during upgrade (--install)"),
+        reuseValues: z
+          .boolean()
+          .optional()
+          .describe("Reuse existing values on upgrade (--reuse-values)"),
+        allNamespaces: z
+          .boolean()
+          .optional()
+          .describe("List releases across all namespaces (-A, list action only)"),
+        showResources: z
+          .boolean()
+          .optional()
+          .describe("Show resources in status output (--show-resources, status action only)"),
+        noHooks: z.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
+        skipCrds: z.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
         compact: z
           .boolean()
           .optional()
@@ -77,7 +111,25 @@ export function registerHelmTool(server: McpServer) {
         HelmUpgradeResultSchema,
       ]),
     },
-    async ({ action, release, chart, namespace, setValues, values, compact }) => {
+    async ({
+      action,
+      release,
+      chart,
+      namespace,
+      setValues,
+      values,
+      dryRun,
+      wait,
+      atomic,
+      createNamespace,
+      installOnUpgrade,
+      reuseValues,
+      allNamespaces,
+      showResources,
+      noHooks,
+      skipCrds,
+      compact,
+    }) => {
       if (release) assertNoFlagInjection(release, "release");
       if (chart) assertNoFlagInjection(chart, "chart");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
@@ -86,7 +138,11 @@ export function registerHelmTool(server: McpServer) {
       switch (action) {
         case "list": {
           const args = ["list", "-o", "json"];
-          if (namespace) args.push("-n", namespace);
+          if (allNamespaces) {
+            args.push("-A");
+          } else if (namespace) {
+            args.push("-n", namespace);
+          }
 
           const result = await run("helm", args, { timeout: 60_000 });
           const data = parseHelmListOutput(
@@ -112,6 +168,7 @@ export function registerHelmTool(server: McpServer) {
 
           const args = ["status", release, "-o", "json"];
           if (namespace) args.push("-n", namespace);
+          if (showResources) args.push("--show-resources");
 
           const result = await run("helm", args, { timeout: 60_000 });
           const data = parseHelmStatusOutput(
@@ -146,6 +203,12 @@ export function registerHelmTool(server: McpServer) {
               args.push("--set", sv);
             }
           }
+          if (dryRun) args.push("--dry-run");
+          if (wait) args.push("--wait");
+          if (atomic) args.push("--atomic");
+          if (createNamespace) args.push("--create-namespace");
+          if (noHooks) args.push("--no-hooks");
+          if (skipCrds) args.push("--skip-crds");
 
           const result = await run("helm", args, { timeout: 120_000 });
           const data = parseHelmInstallOutput(
@@ -180,6 +243,14 @@ export function registerHelmTool(server: McpServer) {
               args.push("--set", sv);
             }
           }
+          if (dryRun) args.push("--dry-run");
+          if (wait) args.push("--wait");
+          if (atomic) args.push("--atomic");
+          if (createNamespace) args.push("--create-namespace");
+          if (installOnUpgrade) args.push("--install");
+          if (reuseValues) args.push("--reuse-values");
+          if (noHooks) args.push("--no-hooks");
+          if (skipCrds) args.push("--skip-crds");
 
           const result = await run("helm", args, { timeout: 120_000 });
           const data = parseHelmUpgradeOutput(

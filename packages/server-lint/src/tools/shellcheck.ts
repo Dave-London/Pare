@@ -30,6 +30,24 @@ export function registerShellcheckTool(server: McpServer) {
           .enum(["error", "warning", "info", "style"])
           .optional()
           .describe("Minimum severity level to report (default: style)"),
+        shell: z
+          .enum(["sh", "bash", "dash", "ksh"])
+          .optional()
+          .describe("Shell dialect to assume (maps to --shell)"),
+        externalSources: z
+          .boolean()
+          .optional()
+          .describe(
+            "Allow following source statements to external files (maps to --external-sources)",
+          ),
+        checkSourced: z
+          .boolean()
+          .optional()
+          .describe("Check sourced/included files (maps to --check-sourced)"),
+        norc: z
+          .boolean()
+          .optional()
+          .describe("Disable .shellcheckrc config file lookup (maps to --norc)"),
         compact: z
           .boolean()
           .optional()
@@ -40,15 +58,17 @@ export function registerShellcheckTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, severity, compact }) => {
+    async ({ path, patterns, severity, shell, externalSources, checkSourced, norc, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
       const args = ["--format=json"];
-      if (severity) {
-        args.push(`--severity=${severity}`);
-      }
+      if (severity) args.push(`--severity=${severity}`);
+      if (shell) args.push(`--shell=${shell}`);
+      if (externalSources) args.push("--external-sources");
+      if (checkSourced) args.push("--check-sourced");
+      if (norc) args.push("--norc");
       args.push(...(patterns || ["."]));
 
       const result = await shellcheckCmd(args, cwd);

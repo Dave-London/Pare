@@ -36,6 +36,48 @@ export function registerComposeUpTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        wait: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Wait for services to be running/healthy (default: false)"),
+        forceRecreate: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Force recreate containers even if config has not changed (default: false)"),
+        timeout: z.number().optional().describe("Timeout in seconds for container startup"),
+        noRecreate: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not recreate containers if they already exist (default: false)"),
+        noDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not start linked/dependent services (default: false)"),
+        removeOrphans: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Remove containers for services not defined in the Compose file (default: false)",
+          ),
+        waitTimeout: z
+          .number()
+          .optional()
+          .describe("Maximum time in seconds to wait for services when using --wait"),
+        renewAnonVolumes: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Recreate anonymous volumes instead of reusing previous data (default: false)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run in dry-run mode without actually starting services (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -46,7 +88,23 @@ export function registerComposeUpTool(server: McpServer) {
       },
       outputSchema: DockerComposeUpSchema,
     },
-    async ({ path, services, detach, build, file, compact }) => {
+    async ({
+      path,
+      services,
+      detach,
+      build,
+      file,
+      wait,
+      forceRecreate,
+      timeout,
+      noRecreate,
+      noDeps,
+      removeOrphans,
+      waitTimeout,
+      renewAnonVolumes,
+      dryRun,
+      compact,
+    }) => {
       if (file) assertNoFlagInjection(file, "file");
       if (services) {
         for (const s of services) {
@@ -59,6 +117,15 @@ export function registerComposeUpTool(server: McpServer) {
       args.push("up");
       if (detach) args.push("-d");
       if (build) args.push("--build");
+      if (wait) args.push("--wait");
+      if (forceRecreate) args.push("--force-recreate");
+      if (timeout != null) args.push("--timeout", String(timeout));
+      if (noRecreate) args.push("--no-recreate");
+      if (noDeps) args.push("--no-deps");
+      if (removeOrphans) args.push("--remove-orphans");
+      if (waitTimeout != null) args.push("--wait-timeout", String(waitTimeout));
+      if (renewAnonVolumes) args.push("--renew-anon-volumes");
+      if (dryRun) args.push("--dry-run");
       if (services && services.length > 0) {
         args.push(...services);
       }

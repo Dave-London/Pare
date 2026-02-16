@@ -23,6 +23,11 @@ export function registerBlameTool(server: McpServer) {
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
         startLine: z.number().optional().describe("Start line number for blame range"),
         endLine: z.number().optional().describe("End line number for blame range"),
+        detectMoves: z.boolean().optional().describe("Detect moved lines within a file (-M)"),
+        detectCopies: z.boolean().optional().describe("Detect lines copied from other files (-C)"),
+        ignoreWhitespace: z.boolean().optional().describe("Ignore whitespace changes (-w)"),
+        reverse: z.boolean().optional().describe("Find when lines were removed (--reverse)"),
+        showStats: z.boolean().optional().describe("Include work-amount statistics (--show-stats)"),
         compact: z
           .boolean()
           .optional()
@@ -33,7 +38,18 @@ export function registerBlameTool(server: McpServer) {
       },
       outputSchema: GitBlameSchema,
     },
-    async ({ path, file, startLine, endLine, compact }) => {
+    async ({
+      path,
+      file,
+      startLine,
+      endLine,
+      detectMoves,
+      detectCopies,
+      ignoreWhitespace,
+      reverse,
+      showStats,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(file, "file");
@@ -42,6 +58,11 @@ export function registerBlameTool(server: McpServer) {
       const resolvedFile = await resolveFilePath(file, cwd);
 
       const args = ["blame", "--porcelain"];
+      if (detectMoves) args.push("-M");
+      if (detectCopies) args.push("-C");
+      if (ignoreWhitespace) args.push("-w");
+      if (reverse) args.push("--reverse");
+      if (showStats) args.push("--show-stats");
       if (startLine !== undefined && endLine !== undefined) {
         args.push(`-L${startLine},${endLine}`);
       } else if (startLine !== undefined) {

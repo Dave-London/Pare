@@ -72,7 +72,7 @@ describe("@paretools/build integration", () => {
     it("returns structured build result", async () => {
       // Use a known-safe command that will fail fast (no actual build needed)
       const result = await client.callTool(
-        { name: "build", arguments: { command: "npm", args: ["--version"] } },
+        { name: "build", arguments: { command: "npm", args: ["version"] } },
         undefined,
         CALL_TIMEOUT,
       );

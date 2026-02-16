@@ -32,6 +32,17 @@ export function registerLogGraphTool(server: McpServer) {
           .optional()
           .describe("Branch, tag, or commit to start from"),
         all: z.boolean().optional().default(false).describe("Show all branches (--all)"),
+        firstParent: z
+          .boolean()
+          .optional()
+          .describe("Simplify graph to first parents only (--first-parent)"),
+        noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
+        simplifyByDecoration: z
+          .boolean()
+          .optional()
+          .describe("Show only decorated commits (--simplify-by-decoration)"),
+        branches: z.boolean().optional().describe("Show all branches (--branches)"),
+        remotes: z.boolean().optional().describe("Show remote branches (--remotes)"),
         compact: z
           .boolean()
           .optional()
@@ -42,13 +53,29 @@ export function registerLogGraphTool(server: McpServer) {
       },
       outputSchema: GitLogGraphSchema,
     },
-    async ({ path, maxCount, ref, all, compact }) => {
+    async ({
+      path,
+      maxCount,
+      ref,
+      all,
+      firstParent,
+      noMerges,
+      simplifyByDecoration,
+      branches,
+      remotes,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       const args = ["log", "--graph", "--oneline", "--decorate", `--max-count=${maxCount ?? 20}`];
 
       if (all) {
         args.push("--all");
       }
+      if (firstParent) args.push("--first-parent");
+      if (noMerges) args.push("--no-merges");
+      if (simplifyByDecoration) args.push("--simplify-by-decoration");
+      if (branches) args.push("--branches");
+      if (remotes) args.push("--remotes");
 
       if (ref) {
         assertNoFlagInjection(ref, "ref");

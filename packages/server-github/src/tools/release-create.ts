@@ -34,6 +34,26 @@ export function registerReleaseCreateTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in owner/repo format (default: current repo)"),
+        generateNotes: z
+          .boolean()
+          .optional()
+          .describe("Auto-generate release notes (--generate-notes)"),
+        verifyTag: z
+          .boolean()
+          .optional()
+          .describe("Verify the tag exists before creating release (--verify-tag)"),
+        notesFromTag: z
+          .boolean()
+          .optional()
+          .describe("Use the annotated tag message as release notes (--notes-from-tag)"),
+        latest: z
+          .boolean()
+          .optional()
+          .describe('Control the "Latest" badge on the release (--latest/--latest=false)'),
+        failOnNoCommits: z
+          .boolean()
+          .optional()
+          .describe("Fail if no commits since last release (--fail-on-no-commits)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -42,7 +62,21 @@ export function registerReleaseCreateTool(server: McpServer) {
       },
       outputSchema: ReleaseCreateResultSchema,
     },
-    async ({ tag, title, notes, draft, prerelease, target, repo, path }) => {
+    async ({
+      tag,
+      title,
+      notes,
+      draft,
+      prerelease,
+      target,
+      repo,
+      generateNotes,
+      verifyTag,
+      notesFromTag,
+      latest,
+      failOnNoCommits,
+      path,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(tag, "tag");
@@ -57,6 +91,11 @@ export function registerReleaseCreateTool(server: McpServer) {
       if (prerelease) args.push("--prerelease");
       if (target) args.push("--target", target);
       if (repo) args.push("--repo", repo);
+      if (generateNotes) args.push("--generate-notes");
+      if (verifyTag) args.push("--verify-tag");
+      if (notesFromTag) args.push("--notes-from-tag");
+      if (latest !== undefined) args.push(`--latest=${String(latest)}`);
+      if (failOnNoCommits) args.push("--fail-on-no-commits");
 
       const result = await ghCmd(args, cwd);
 

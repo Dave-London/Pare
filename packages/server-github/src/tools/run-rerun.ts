@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunRerun } from "../lib/parsers.js";
 import { formatRunRerun } from "../lib/formatters.js";
@@ -26,6 +26,7 @@ export function registerRunRerunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: detected from git remote)"),
+        debug: z.boolean().optional().describe("Enable runner diagnostic logging (-d/--debug)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -34,12 +35,15 @@ export function registerRunRerunTool(server: McpServer) {
       },
       outputSchema: RunRerunResultSchema,
     },
-    async ({ runId, failedOnly, repo, path }) => {
+    async ({ runId, failedOnly, repo, debug, path }) => {
       const cwd = path || process.cwd();
+
+      if (repo) assertNoFlagInjection(repo, "repo");
 
       const args = ["run", "rerun", String(runId)];
       if (failedOnly) args.push("--failed");
       if (repo) args.push("--repo", repo);
+      if (debug) args.push("--debug");
 
       const result = await ghCmd(args, cwd);
 

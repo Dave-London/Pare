@@ -31,16 +31,24 @@ export function registerResetTool(server: McpServer) {
           .optional()
           .default("HEAD")
           .describe("Ref to reset to (default: HEAD)"),
+        intentToAdd: z.boolean().optional().describe("Keep paths in index as intent-to-add (-N)"),
+        recurseSubmodules: z
+          .boolean()
+          .optional()
+          .describe("Recurse into submodules (--recurse-submodules)"),
       },
       outputSchema: GitResetSchema,
     },
-    async ({ path, files, ref }) => {
+    async ({ path, files, ref, intentToAdd, recurseSubmodules }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(ref, "ref");
 
       // Build args: git reset <ref> -- [files...]
-      const args = ["reset", ref];
+      const args = ["reset"];
+      if (intentToAdd) args.push("-N");
+      if (recurseSubmodules) args.push("--recurse-submodules");
+      args.push(ref);
 
       if (files && files.length > 0) {
         for (const f of files) {

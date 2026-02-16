@@ -51,6 +51,20 @@ export function registerRequestTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Follow HTTP redirects (default: true)"),
+        insecure: z
+          .boolean()
+          .optional()
+          .describe("Allow insecure TLS connections, e.g. self-signed certificates (-k)"),
+        retry: z
+          .number()
+          .min(0)
+          .max(10)
+          .optional()
+          .describe("Number of retries on transient failures (--retry)"),
+        compressed: z
+          .boolean()
+          .optional()
+          .describe("Request compressed response and decompress automatically (--compressed)"),
         compact: z
           .boolean()
           .optional()
@@ -66,7 +80,19 @@ export function registerRequestTool(server: McpServer) {
       },
       outputSchema: HttpResponseSchema,
     },
-    async ({ url, method, headers, body, timeout, followRedirects, compact, path }) => {
+    async ({
+      url,
+      method,
+      headers,
+      body,
+      timeout,
+      followRedirects,
+      insecure,
+      retry,
+      compressed,
+      compact,
+      path,
+    }) => {
       assertSafeUrl(url);
 
       const args = buildCurlArgs({
@@ -76,6 +102,9 @@ export function registerRequestTool(server: McpServer) {
         body,
         timeout: timeout ?? 30,
         followRedirects: followRedirects ?? true,
+        insecure,
+        retry,
+        compressed,
       });
 
       const cwd = path || process.cwd();
@@ -106,6 +135,9 @@ export function buildCurlArgs(opts: {
   body?: string;
   timeout: number;
   followRedirects: boolean;
+  insecure?: boolean;
+  retry?: number;
+  compressed?: boolean;
 }): string[] {
   const args: string[] = [
     "-s", // Silent mode (no progress)
@@ -143,6 +175,21 @@ export function buildCurlArgs(opts: {
   // Request body
   if (opts.body) {
     args.push("--data-raw", opts.body);
+  }
+
+  // Insecure TLS (self-signed certs)
+  if (opts.insecure) {
+    args.push("-k");
+  }
+
+  // Retry on transient failures
+  if (opts.retry !== undefined) {
+    args.push("--retry", String(opts.retry));
+  }
+
+  // Request compressed response
+  if (opts.compressed) {
+    args.push("--compressed");
   }
 
   // URL must be last

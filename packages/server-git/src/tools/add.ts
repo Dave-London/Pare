@@ -26,20 +26,58 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .describe("File paths to stage (required unless all is true)"),
         all: z.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("Preview staging without making changes (-n/--dry-run)"),
+        update: z
+          .boolean()
+          .optional()
+          .describe("Stage only modifications to tracked files, excluding untracked files (-u)"),
+        force: z.boolean().optional().describe("Allow staging of ignored files (-f)"),
+        intentToAdd: z
+          .boolean()
+          .optional()
+          .describe("Record intent to add files (-N/--intent-to-add)"),
+        ignoreRemoval: z
+          .boolean()
+          .optional()
+          .describe("Add new and modified files but do not stage deletions (--ignore-removal)"),
+        renormalize: z
+          .boolean()
+          .optional()
+          .describe("Re-apply clean filters to all tracked files (--renormalize)"),
+        ignoreErrors: z
+          .boolean()
+          .optional()
+          .describe("Continue staging past individual file failures (--ignore-errors)"),
       },
       outputSchema: GitAddSchema,
     },
-    async ({ path, files, all }) => {
+    async ({
+      path,
+      files,
+      all,
+      dryRun,
+      update,
+      force,
+      intentToAdd,
+      ignoreRemoval,
+      renormalize,
+      ignoreErrors,
+    }) => {
       const cwd = path || process.cwd();
 
-      if (!all && (!files || files.length === 0)) {
-        throw new Error("Either 'files' must be provided or 'all' must be true");
+      if (!all && !update && (!files || files.length === 0)) {
+        throw new Error("Either 'files' must be provided or 'all'/'update' must be true");
       }
 
       // Build args
       let args: string[];
       if (all) {
         args = ["add", "-A"];
+      } else if (update && (!files || files.length === 0)) {
+        args = ["add", "-u"];
       } else {
         // Validate each file path
         for (const file of files!) {
@@ -47,8 +85,17 @@ export function registerAddTool(server: McpServer) {
         }
         // Resolve file path casing — git pathspecs are case-sensitive even on Windows
         const resolvedFiles = await resolveFilePaths(files!, cwd);
-        args = ["add", "--", ...resolvedFiles];
+        args = ["add"];
+        if (update) args.push("-u");
+        args.push("--", ...resolvedFiles);
       }
+
+      if (dryRun) args.push("--dry-run");
+      if (force) args.push("--force");
+      if (intentToAdd) args.push("--intent-to-add");
+      if (ignoreRemoval) args.push("--ignore-removal");
+      if (renormalize) args.push("--renormalize");
+      if (ignoreErrors) args.push("--ignore-errors");
 
       const result = await git(args, cwd);
 

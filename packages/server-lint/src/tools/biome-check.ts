@@ -26,6 +26,20 @@ export function registerBiomeCheckTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),
+        apply: z.boolean().optional().describe("Apply safe fixes automatically (maps to --apply)"),
+        applyUnsafe: z
+          .boolean()
+          .optional()
+          .describe("Apply safe and unsafe fixes automatically (maps to --apply-unsafe)"),
+        diagnosticLevel: z
+          .enum(["info", "warn", "error"])
+          .optional()
+          .describe("Minimum diagnostic level to report"),
+        changed: z
+          .boolean()
+          .optional()
+          .describe("Only check VCS-changed files (maps to --changed)"),
+        staged: z.boolean().optional().describe("Only check staged files (maps to --staged)"),
         compact: z
           .boolean()
           .optional()
@@ -36,12 +50,18 @@ export function registerBiomeCheckTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, compact }) => {
+    async ({ path, patterns, apply, applyUnsafe, diagnosticLevel, changed, staged, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["check", "--reporter=json", ...(patterns || ["."])];
+      const args = ["check", "--reporter=json"];
+      if (apply) args.push("--apply");
+      if (applyUnsafe) args.push("--apply-unsafe");
+      if (diagnosticLevel) args.push(`--diagnostic-level=${diagnosticLevel}`);
+      if (changed) args.push("--changed");
+      if (staged) args.push("--staged");
+      args.push(...(patterns || ["."]));
 
       const result = await biome(args, cwd);
       const data = parseBiomeJson(result.stdout);

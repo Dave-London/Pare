@@ -45,6 +45,31 @@ export function registerComposeBuildTool(server: McpServer) {
           .optional()
           .default({})
           .describe("Build arguments as key-value pairs (e.g., {NODE_ENV: 'production'})"),
+        push: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Push images after building (default: false)"),
+        withDependencies: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Also build transitive dependencies (default: false)"),
+        quiet: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Suppress build output (default: false)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run in dry-run mode without actually building (default: false)"),
+        check: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Validate build config without building (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -55,7 +80,19 @@ export function registerComposeBuildTool(server: McpServer) {
       },
       outputSchema: DockerComposeBuildSchema,
     },
-    async ({ path, services, noCache, pull, buildArgs, compact }) => {
+    async ({
+      path,
+      services,
+      noCache,
+      pull,
+      buildArgs,
+      push,
+      withDependencies,
+      quiet,
+      dryRun,
+      check,
+      compact,
+    }) => {
       if (services) {
         for (const s of services) {
           assertNoFlagInjection(s, "services");
@@ -71,6 +108,11 @@ export function registerComposeBuildTool(server: McpServer) {
       const args = ["compose", "build"];
       if (noCache) args.push("--no-cache");
       if (pull) args.push("--pull");
+      if (push) args.push("--push");
+      if (withDependencies) args.push("--with-dependencies");
+      if (quiet) args.push("--quiet");
+      if (dryRun) args.push("--dry-run");
+      if (check) args.push("--check");
       if (buildArgs) {
         for (const [key, value] of Object.entries(buildArgs) as [string, string][]) {
           args.push("--build-arg", `${key}=${value}`);

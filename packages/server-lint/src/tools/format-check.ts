@@ -30,6 +30,22 @@ export function registerFormatCheckTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),
+        ignoreUnknown: z
+          .boolean()
+          .optional()
+          .describe("Ignore files that cannot be parsed (maps to --ignore-unknown)"),
+        cache: z
+          .boolean()
+          .optional()
+          .describe("Cache formatted files for faster subsequent checks (maps to --cache)"),
+        noConfig: z
+          .boolean()
+          .optional()
+          .describe("Do not look for a configuration file (maps to --no-config)"),
+        logLevel: z
+          .enum(["silent", "error", "warn", "log", "debug"])
+          .optional()
+          .describe("Log level to control output verbosity"),
         compact: z
           .boolean()
           .optional()
@@ -40,12 +56,17 @@ export function registerFormatCheckTool(server: McpServer) {
       },
       outputSchema: FormatCheckResultSchema,
     },
-    async ({ path, patterns, compact }) => {
+    async ({ path, patterns, ignoreUnknown, cache, noConfig, logLevel, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["--check", ...(patterns || ["."])];
+      const args = ["--check"];
+      if (ignoreUnknown) args.push("--ignore-unknown");
+      if (cache) args.push("--cache");
+      if (noConfig) args.push("--no-config");
+      if (logLevel) args.push(`--log-level=${logLevel}`);
+      args.push(...(patterns || ["."]));
 
       const result = await prettier(args, cwd);
       const data = parsePrettierCheck(result.stdout, result.stderr, result.exitCode);

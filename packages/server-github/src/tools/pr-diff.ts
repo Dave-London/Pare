@@ -27,6 +27,7 @@ export function registerPrDiffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
+        nameOnly: z.boolean().optional().describe("List only changed file names (--name-only)"),
         compact: z
           .boolean()
           .optional()
@@ -37,7 +38,7 @@ export function registerPrDiffTool(server: McpServer) {
       },
       outputSchema: PrDiffResultSchema,
     },
-    async ({ pr, repo, full, compact }) => {
+    async ({ pr, repo, full, nameOnly, compact }) => {
       if (repo) {
         assertNoFlagInjection(repo, "repo");
       }
@@ -49,6 +50,7 @@ export function registerPrDiffTool(server: McpServer) {
       // We use a two-pass approach: first get numstat, then optionally get full patch
       const diffArgs = ["pr", "diff", String(pr)];
       if (repo) diffArgs.push("--repo", repo);
+      if (nameOnly) diffArgs.push("--name-only");
 
       const result = await ghCmd(diffArgs, { cwd: process.cwd() });
 

@@ -39,6 +39,30 @@ export function registerSearchTool(server: McpServer) {
           .optional()
           .default(1000)
           .describe("Maximum number of matches to return (default: 1000)"),
+        maxCount: z
+          .number()
+          .optional()
+          .describe("Maximum matches per file to stop rg early (--max-count)"),
+        fixedStrings: z
+          .boolean()
+          .optional()
+          .describe("Treat pattern as a literal string instead of regex (--fixed-strings)"),
+        wordRegexp: z.boolean().optional().describe("Only match whole words (--word-regexp)"),
+        invertMatch: z
+          .boolean()
+          .optional()
+          .describe("Show lines that do NOT match the pattern (--invert-match)"),
+        multiline: z
+          .boolean()
+          .optional()
+          .describe("Allow patterns to span multiple lines (--multiline)"),
+        hidden: z.boolean().optional().describe("Search hidden files and directories (--hidden)"),
+        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        followSymlinks: z.boolean().optional().describe("Follow symbolic links (--follow)"),
+        noIgnore: z
+          .boolean()
+          .optional()
+          .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
         compact: z
           .boolean()
           .optional()
@@ -49,7 +73,23 @@ export function registerSearchTool(server: McpServer) {
       },
       outputSchema: SearchResultSchema,
     },
-    async ({ pattern, path, glob, caseSensitive, maxResults, compact }) => {
+    async ({
+      pattern,
+      path,
+      glob,
+      caseSensitive,
+      maxResults,
+      maxCount,
+      fixedStrings,
+      wordRegexp,
+      invertMatch,
+      multiline,
+      hidden,
+      maxDepth,
+      followSymlinks,
+      noIgnore,
+      compact,
+    }) => {
       assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
@@ -59,6 +99,42 @@ export function registerSearchTool(server: McpServer) {
 
       if (!caseSensitive) {
         args.push("--ignore-case");
+      }
+
+      if (fixedStrings) {
+        args.push("--fixed-strings");
+      }
+
+      if (wordRegexp) {
+        args.push("--word-regexp");
+      }
+
+      if (invertMatch) {
+        args.push("--invert-match");
+      }
+
+      if (multiline) {
+        args.push("--multiline");
+      }
+
+      if (hidden) {
+        args.push("--hidden");
+      }
+
+      if (maxCount !== undefined) {
+        args.push("--max-count", String(maxCount));
+      }
+
+      if (maxDepth !== undefined) {
+        args.push("--max-depth", String(maxDepth));
+      }
+
+      if (followSymlinks) {
+        args.push("--follow");
+      }
+
+      if (noIgnore) {
+        args.push("--no-ignore");
       }
 
       if (glob) {

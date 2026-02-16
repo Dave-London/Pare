@@ -25,6 +25,16 @@ export function registerImagesTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
+        digests: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show image digests (default: false)"),
+        noTrunc: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not truncate image IDs (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -35,11 +45,13 @@ export function registerImagesTool(server: McpServer) {
       },
       outputSchema: DockerImagesSchema,
     },
-    async ({ all, filter, compact }) => {
+    async ({ all, filter, digests, noTrunc, compact }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
 
       const args = ["images", "--format", "json"];
       if (all) args.push("-a");
+      if (digests) args.push("--digests");
+      if (noTrunc) args.push("--no-trunc");
       if (filter) args.push(filter);
 
       const result = await docker(args);

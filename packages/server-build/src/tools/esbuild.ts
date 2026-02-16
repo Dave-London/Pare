@@ -49,6 +49,18 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Generate source maps (default: false)"),
+        splitting: z
+          .boolean()
+          .optional()
+          .describe("Enable code splitting (requires format=esm and outdir)"),
+        legalComments: z
+          .enum(["none", "inline", "eof", "linked", "external"])
+          .optional()
+          .describe("How to handle legal comments (license headers)"),
+        logLevel: z
+          .enum(["verbose", "debug", "info", "warning", "error", "silent"])
+          .optional()
+          .describe("Log level to control output verbosity"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -75,6 +87,9 @@ export function registerEsbuildTool(server: McpServer) {
       format,
       platform,
       sourcemap,
+      splitting,
+      legalComments,
+      logLevel,
       args,
       compact,
     }) => {
@@ -94,6 +109,9 @@ export function registerEsbuildTool(server: McpServer) {
       if (format) cliArgs.push(`--format=${format}`);
       if (platform) cliArgs.push(`--platform=${platform}`);
       if (sourcemap) cliArgs.push("--sourcemap");
+      if (splitting) cliArgs.push("--splitting");
+      if (legalComments) cliArgs.push(`--legal-comments=${legalComments}`);
+      if (logLevel) cliArgs.push(`--log-level=${logLevel}`);
 
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");

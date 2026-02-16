@@ -41,6 +41,26 @@ export function registerLogsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Get logs from previous terminated container"),
+        timestamps: z
+          .boolean()
+          .optional()
+          .describe("Include timestamps on each line (--timestamps)"),
+        allContainers: z
+          .boolean()
+          .optional()
+          .describe("Get logs from all containers in the pod (--all-containers)"),
+        limitBytes: z
+          .number()
+          .optional()
+          .describe("Maximum bytes of logs to return (--limit-bytes)"),
+        prefix: z
+          .boolean()
+          .optional()
+          .describe("Prefix each log line with pod and container name (--prefix)"),
+        ignoreErrors: z
+          .boolean()
+          .optional()
+          .describe("Continue on errors fetching logs from containers (--ignore-errors)"),
         compact: z
           .boolean()
           .optional()
@@ -51,7 +71,20 @@ export function registerLogsTool(server: McpServer) {
       },
       outputSchema: KubectlLogsResultSchema,
     },
-    async ({ pod, namespace, container, tail, since, previous, compact }) => {
+    async ({
+      pod,
+      namespace,
+      container,
+      tail,
+      since,
+      previous,
+      timestamps,
+      allContainers,
+      limitBytes,
+      prefix,
+      ignoreErrors,
+      compact,
+    }) => {
       assertNoFlagInjection(pod, "pod");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
       if (container) assertNoFlagInjection(container, "container");
@@ -63,6 +96,11 @@ export function registerLogsTool(server: McpServer) {
       if (tail !== undefined) args.push("--tail", String(tail));
       if (since) args.push("--since", since);
       if (previous) args.push("--previous");
+      if (timestamps) args.push("--timestamps");
+      if (allContainers) args.push("--all-containers");
+      if (limitBytes !== undefined) args.push("--limit-bytes", String(limitBytes));
+      if (prefix) args.push("--prefix");
+      if (ignoreErrors) args.push("--ignore-errors");
 
       const result = await run("kubectl", args, { timeout: 60_000 });
       const data = parseLogsOutput(
