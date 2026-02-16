@@ -13,7 +13,7 @@ export function registerResetTool(server: McpServer) {
     {
       title: "Git Reset",
       description:
-        "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. Returns structured data with the ref, mode, and list of affected files. Use instead of running `git reset` in the terminal.",
+        "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. The 'hard' mode requires confirm=true as a safety guard since it permanently discards changes. Returns structured data with the ref, mode, and list of affected files. Use instead of running `git reset` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -37,6 +37,12 @@ export function registerResetTool(server: McpServer) {
           .describe(
             "Reset mode: soft (keep staged), mixed (default, unstage), hard (discard all), merge, keep",
           ),
+        confirm: z
+          .boolean()
+          .optional()
+          .describe(
+            "Safety confirmation required when mode is 'hard'. Must be set to true to proceed with --hard reset, which permanently discards uncommitted changes.",
+          ),
         intentToAdd: z.boolean().optional().describe("Keep paths in index as intent-to-add (-N)"),
         recurseSubmodules: z
           .boolean()
@@ -45,8 +51,16 @@ export function registerResetTool(server: McpServer) {
       },
       outputSchema: GitResetSchema,
     },
-    async ({ path, files, ref, mode, intentToAdd, recurseSubmodules }) => {
+    async ({ path, files, ref, mode, confirm, intentToAdd, recurseSubmodules }) => {
       const cwd = path || process.cwd();
+
+      // Safety guard: require explicit confirmation for --hard reset
+      if (mode === "hard" && confirm !== true) {
+        throw new Error(
+          "Safety guard: git reset --hard permanently discards all uncommitted changes (staged and unstaged). " +
+            "This action cannot be undone. Set confirm=true to proceed.",
+        );
+      }
 
       assertNoFlagInjection(ref, "ref");
 

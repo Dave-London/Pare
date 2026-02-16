@@ -143,3 +143,101 @@ describe("formatBisect", () => {
     expect(output).not.toContain("Author:");
   });
 });
+
+// ── parseBisectRun tests ────────────────────────────────────────────────
+
+import { parseBisectRun } from "../src/lib/parsers.js";
+import { formatBisectRun } from "../src/lib/formatters.js";
+
+describe("parseBisectRun", () => {
+  it("parses bisect run output that found the culprit", () => {
+    const stdout = `running ./test.sh
+Bisecting: 2 revisions left to test after this (roughly 1 steps)
+[abc1234def5678901234567890abcdef12345678] Fix something
+running ./test.sh
+abc1234def5678901234567890abcdef12345678 is the first bad commit
+commit abc1234def5678901234567890abcdef12345678
+Author: John Doe <john@example.com>
+Date:   Mon Jan 1 12:00:00 2024 +0000
+
+    Introduce the bug`;
+
+    const result = parseBisectRun(stdout, "");
+
+    expect(result.action).toBe("run");
+    expect(result.stepsRun).toBe(2);
+    expect(result.result).toBeDefined();
+    expect(result.result!.hash).toBe("abc1234def5678901234567890abcdef12345678");
+    expect(result.result!.message).toBe("Introduce the bug");
+    expect(result.result!.author).toBe("John Doe <john@example.com>");
+  });
+
+  it("parses bisect run output with no culprit found", () => {
+    const stdout = `running ./test.sh
+Bisecting: 3 revisions left to test after this (roughly 2 steps)
+running ./test.sh`;
+
+    const result = parseBisectRun(stdout, "");
+
+    expect(result.action).toBe("run");
+    expect(result.stepsRun).toBe(2);
+    expect(result.result).toBeUndefined();
+  });
+
+  it("handles empty output", () => {
+    const result = parseBisectRun("", "");
+
+    expect(result.action).toBe("run");
+    expect(result.stepsRun).toBe(0);
+    expect(result.result).toBeUndefined();
+  });
+
+  it("extracts the command from running line", () => {
+    const stdout = `running ./my-test-script.sh
+abc1234def5678901234567890abcdef12345678 is the first bad commit
+commit abc1234def5678901234567890abcdef12345678
+Author: Jane <jane@example.com>
+Date:   Tue Feb 1 10:00:00 2024 +0000
+
+    Bug fix`;
+
+    const result = parseBisectRun(stdout, "");
+
+    expect(result.command).toBe("./my-test-script.sh");
+  });
+});
+
+describe("formatBisectRun", () => {
+  it("formats bisect run result with culprit found", () => {
+    const data: GitBisect = {
+      action: "run",
+      command: "./test.sh",
+      stepsRun: 3,
+      result: {
+        hash: "abc1234def5678901234567890abcdef12345678",
+        message: "Bug commit",
+        author: "John Doe",
+      },
+      message: "Found it",
+    };
+    const output = formatBisectRun(data);
+
+    expect(output).toContain("Bisect run found culprit in 3 step(s)");
+    expect(output).toContain("abc1234d Bug commit");
+    expect(output).toContain("Author: John Doe");
+    expect(output).toContain("Command: ./test.sh");
+  });
+
+  it("formats bisect run result without culprit", () => {
+    const data: GitBisect = {
+      action: "run",
+      command: "./test.sh",
+      stepsRun: 5,
+      message: "Completed",
+    };
+    const output = formatBisectRun(data);
+
+    expect(output).toContain("Bisect run completed (5 step(s))");
+    expect(output).toContain("command: ./test.sh");
+  });
+});

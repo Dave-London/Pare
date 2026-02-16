@@ -1286,3 +1286,49 @@ export function parseWorktreeResult(
     ...(head ? { head } : {}),
   };
 }
+
+/** Parses `git bisect run <cmd>` output into structured bisect run result data. */
+export function parseBisectRun(stdout: string, stderr: string): GitBisect {
+  const combined = `${stdout}\n${stderr}`.trim();
+
+  // Count the number of bisect steps (lines like "running ..." or "Bisecting:")
+  const runningLines = combined.match(/^running\s+/gm);
+  const stepsRun = runningLines ? runningLines.length : 0;
+
+  // Check if bisect found the culprit commit
+  const culpritMatch = combined.match(/([a-f0-9]{40}) is the first bad commit/);
+  if (culpritMatch) {
+    const hash = culpritMatch[1];
+    const authorMatch = combined.match(/Author:\s+(.+)/);
+    const dateMatch = combined.match(/Date:\s+(.+)/);
+    const messageMatch = combined.match(/\n\n\s{4}(.+)/);
+
+    // Extract the command from first "running" line
+    const cmdMatch = combined.match(/^running\s+'?(.+?)'?\s*$/m);
+    const command = cmdMatch ? cmdMatch[1] : "unknown";
+
+    return {
+      action: "run",
+      command,
+      stepsRun,
+      result: {
+        hash,
+        message: messageMatch?.[1]?.trim() || "",
+        ...(authorMatch ? { author: authorMatch[1].trim() } : {}),
+        ...(dateMatch ? { date: dateMatch[1].trim() } : {}),
+      },
+      message: combined,
+    };
+  }
+
+  // No culprit found — bisect run might still be in progress or failed
+  const cmdMatch = combined.match(/^running\s+'?(.+?)'?\s*$/m);
+  const command = cmdMatch ? cmdMatch[1] : "unknown";
+
+  return {
+    action: "run",
+    command,
+    stepsRun,
+    message: combined || "Bisect run completed without identifying a commit",
+  };
+}

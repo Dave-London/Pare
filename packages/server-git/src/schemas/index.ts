@@ -195,10 +195,22 @@ export const GitTagEntrySchema = z.object({
   message: z.string().optional(),
 });
 
-/** Zod schema for structured git tag output with tag list and total count. */
+/** Zod schema for structured git tag output with tag list and total count, plus create/delete support. */
 export const GitTagSchema = z.object({
-  tags: z.union([z.array(GitTagEntrySchema), z.array(z.string())]),
-  total: z.number(),
+  tags: z.union([z.array(GitTagEntrySchema), z.array(z.string())]).optional(),
+  total: z.number().optional(),
+  /** Present for create/delete actions. */
+  success: z.boolean().optional(),
+  /** Action performed: create or delete (only present for mutate operations). */
+  action: z.enum(["create", "delete"]).optional(),
+  /** Tag name (only present for mutate operations). */
+  name: z.string().optional(),
+  /** Human-readable message (only present for mutate operations). */
+  message: z.string().optional(),
+  /** Commit ref (only present for create action with explicit commit). */
+  commit: z.string().optional(),
+  /** Whether the tag is annotated (only present for create action). */
+  annotated: z.boolean().optional(),
 });
 
 /** Full tag data (always returned by parser, before compact projection). */
@@ -251,10 +263,20 @@ export const GitRemoteEntrySchema = z.object({
   protocol: z.enum(["ssh", "https", "http", "git", "file", "unknown"]).optional(),
 });
 
-/** Zod schema for structured git remote output with remote list and total count. */
+/** Zod schema for structured git remote output with remote list and total count, plus add/remove support. */
 export const GitRemoteSchema = z.object({
-  remotes: z.union([z.array(GitRemoteEntrySchema), z.array(z.string())]),
-  total: z.number(),
+  remotes: z.union([z.array(GitRemoteEntrySchema), z.array(z.string())]).optional(),
+  total: z.number().optional(),
+  /** Present for add/remove actions. */
+  success: z.boolean().optional(),
+  /** Action performed: add or remove (only present for mutate operations). */
+  action: z.enum(["add", "remove"]).optional(),
+  /** Remote name (only present for mutate operations). */
+  name: z.string().optional(),
+  /** Remote URL (only present for add action). */
+  url: z.string().optional(),
+  /** Human-readable message (only present for mutate operations). */
+  message: z.string().optional(),
 });
 
 /** Full remote data (always returned by parser, before compact projection). */
@@ -468,7 +490,7 @@ export type GitReflog = z.infer<typeof GitReflogSchema>;
 
 /** Zod schema for structured git bisect output with action, current commit, remaining steps, and result. */
 export const GitBisectSchema = z.object({
-  action: z.enum(["start", "good", "bad", "reset", "status", "skip"]),
+  action: z.enum(["start", "good", "bad", "reset", "status", "skip", "run"]),
   current: z.string().optional(),
   remaining: z.number().optional(),
   result: z
@@ -480,6 +502,10 @@ export const GitBisectSchema = z.object({
     })
     .optional(),
   message: z.string(),
+  /** Command used for automated bisect run (only present for action=run). */
+  command: z.string().optional(),
+  /** Number of steps executed during bisect run (only present for action=run). */
+  stepsRun: z.number().optional(),
 });
 
 export type GitBisect = z.infer<typeof GitBisectSchema>;
@@ -526,3 +552,22 @@ export const GitWorktreeSchema = z.object({
 });
 
 export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
+
+/** Type alias for remote mutate results (uses unified GitRemoteSchema). */
+export type GitRemoteMutate = {
+  success: boolean;
+  action: "add" | "remove";
+  name: string;
+  url?: string;
+  message: string;
+};
+
+/** Type alias for tag mutate results (uses unified GitTagSchema). */
+export type GitTagMutate = {
+  success: boolean;
+  action: "create" | "delete";
+  name: string;
+  message: string;
+  commit?: string;
+  annotated?: boolean;
+};

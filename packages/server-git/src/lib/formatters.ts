@@ -22,6 +22,8 @@ import type {
   GitLogGraphFull,
   GitReflogFull,
   GitBisect,
+  GitRemoteMutate,
+  GitTagMutate,
   GitWorktreeListFull,
   GitWorktree,
 } from "../schemas/index.js";
@@ -655,4 +657,45 @@ export function formatWorktree(w: GitWorktree): string {
   const branch = w.branch ? ` on branch '${w.branch}'` : "";
   const head = w.head ? ` at ${w.head}` : "";
   return `Worktree at '${w.path}'${branch}${head}`;
+}
+
+// ── Bisect run formatter ────────────────────────────────────────────────
+
+/** Formats structured git bisect run result into a human-readable summary. */
+export function formatBisectRun(b: GitBisect): string {
+  const steps = b.stepsRun ?? 0;
+  const cmd = b.command ?? "unknown";
+
+  if (b.result) {
+    const parts = [
+      `Bisect run found culprit in ${steps} step(s): ${b.result.hash.slice(0, 8)} ${b.result.message}`,
+    ];
+    if (b.result.author) parts.push(`Author: ${b.result.author}`);
+    if (b.result.date) parts.push(`Date: ${b.result.date}`);
+    parts.push(`Command: ${cmd}`);
+    return parts.join("\n");
+  }
+
+  return `Bisect run completed (${steps} step(s)) — command: ${cmd}`;
+}
+
+// ── Remote mutate formatter ─────────────────────────────────────────────
+
+/** Formats structured git remote add/remove result into a human-readable summary. */
+export function formatRemoteMutate(r: GitRemoteMutate): string {
+  if (r.action === "add") {
+    return `Remote '${r.name}' added${r.url ? ` → ${r.url}` : ""}`;
+  }
+  return `Remote '${r.name}' removed`;
+}
+
+// ── Tag mutate formatter ────────────────────────────────────────────────
+
+/** Formats structured git tag create/delete result into a human-readable summary. */
+export function formatTagMutate(t: GitTagMutate): string {
+  if (t.action === "create") {
+    const type = t.annotated ? "Annotated tag" : "Lightweight tag";
+    return `${type} '${t.name}' created${t.commit ? ` at ${t.commit}` : ""}`;
+  }
+  return `Tag '${t.name}' deleted`;
 }

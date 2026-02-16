@@ -2,8 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parseBisect } from "../lib/parsers.js";
-import { formatBisect } from "../lib/formatters.js";
+import { parseBisect, parseBisectRun } from "../lib/parsers.js";
+import { formatBisect, formatBisectRun } from "../lib/formatters.js";
 import { GitBisectSchema } from "../schemas/index.js";
 
 /** Registers the `bisect` tool on the given MCP server. */
@@ -13,7 +13,7 @@ export function registerBisectTool(server: McpServer) {
     {
       title: "Git Bisect",
       description:
-        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, and skip actions. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
+        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, skip, and run actions. The 'run' action automates bisection with a test script. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -21,7 +21,7 @@ export function registerBisectTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["start", "good", "bad", "reset", "status", "skip"])
+          .enum(["start", "good", "bad", "reset", "status", "skip", "run"])
           .describe("Bisect action to perform"),
         bad: z
           .string()
@@ -36,6 +36,13 @@ export function registerBisectTool(server: McpServer) {
           .optional()
           .describe(
             "Good commit ref(s) — single string or array of refs to narrow the search range (used with start action)",
+          ),
+        command: z
+          .string()
+          .max(INPUT_LIMITS.MESSAGE_MAX)
+          .optional()
+          .describe(
+            "Script/command to run for automated bisection (used with run action). Must return exit code 0 for good, 1-124/126-127 for bad, 125 to skip.",
           ),
         paths: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -66,6 +73,32 @@ export function registerBisectTool(server: McpServer) {
     async (params) => {
       const cwd = params.path || process.cwd();
       const action = params.action;
+
+      if (action === "run") {
+        const command = params.command;
+        if (!command) {
+          throw new Error("The 'command' parameter is required for bisect run");
+        }
+
+        // Split the command into executable and args for execFile safety
+        // git bisect run expects the command as separate args
+        const cmdParts = command.split(/\s+/).filter(Boolean);
+        assertNoFlagInjection(cmdParts[0], "command");
+
+        const args = ["bisect", "run", ...cmdParts];
+        const result = await git(args, cwd);
+
+        // git bisect run can return non-zero if the bisect itself identifies
+        // a commit (exit code 0 means success), so we check for actual errors
+        // in the output rather than just exit code
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        if (result.exitCode !== 0 && !combined.includes("is the first bad commit")) {
+          throw new Error(`git bisect run failed: ${result.stderr || result.stdout}`);
+        }
+
+        const bisectRunResult = parseBisectRun(result.stdout, result.stderr);
+        return dualOutput(bisectRunResult, formatBisectRun);
+      }
 
       if (action === "start") {
         const bad = params.bad;

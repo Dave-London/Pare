@@ -1209,3 +1209,84 @@ describe("formatReflog — totalAvailable", () => {
     expect(output).not.toContain("showing");
   });
 });
+
+// ── Remote mutate formatter tests ────────────────────────────────────
+
+import { formatRemoteMutate, formatTagMutate } from "../src/lib/formatters.js";
+import type { GitRemoteMutate, GitTagMutate } from "../src/schemas/index.js";
+
+describe("formatRemoteMutate", () => {
+  it("formats remote add with URL", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "add",
+      name: "upstream",
+      url: "https://github.com/user/repo.git",
+      message: "Remote 'upstream' added",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("Remote 'upstream' added");
+    expect(output).toContain("https://github.com/user/repo.git");
+  });
+
+  it("formats remote remove", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "remove",
+      name: "upstream",
+      message: "Remote 'upstream' removed",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toBe("Remote 'upstream' removed");
+  });
+});
+
+describe("formatTagMutate", () => {
+  it("formats lightweight tag creation", () => {
+    const data: GitTagMutate = {
+      success: true,
+      action: "create",
+      name: "v1.0.0",
+      message: "Lightweight tag 'v1.0.0' created",
+      annotated: false,
+    };
+    const output = formatTagMutate(data);
+    expect(output).toContain("Lightweight tag 'v1.0.0' created");
+  });
+
+  it("formats annotated tag creation", () => {
+    const data: GitTagMutate = {
+      success: true,
+      action: "create",
+      name: "v2.0.0",
+      message: "Annotated tag 'v2.0.0' created",
+      annotated: true,
+    };
+    const output = formatTagMutate(data);
+    expect(output).toContain("Annotated tag 'v2.0.0' created");
+  });
+
+  it("formats tag creation at specific commit", () => {
+    const data: GitTagMutate = {
+      success: true,
+      action: "create",
+      name: "v1.0.0",
+      message: "Tag created at abc1234",
+      commit: "abc1234",
+      annotated: false,
+    };
+    const output = formatTagMutate(data);
+    expect(output).toContain("at abc1234");
+  });
+
+  it("formats tag deletion", () => {
+    const data: GitTagMutate = {
+      success: true,
+      action: "delete",
+      name: "v1.0.0",
+      message: "Tag 'v1.0.0' deleted",
+    };
+    const output = formatTagMutate(data);
+    expect(output).toBe("Tag 'v1.0.0' deleted");
+  });
+});
