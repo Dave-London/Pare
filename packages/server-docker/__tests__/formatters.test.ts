@@ -15,6 +15,11 @@ import {
   formatStatsCompact,
   compactComposeBuildMap,
   compactStatsMap,
+  formatRun,
+  formatExec,
+  formatComposeUp,
+  formatComposeDown,
+  formatPull,
 } from "../src/lib/formatters.js";
 import type {
   DockerPs,
@@ -28,6 +33,11 @@ import type {
   DockerComposeLogs,
   DockerComposeBuild,
   DockerStats,
+  DockerRun,
+  DockerExec,
+  DockerComposeUp,
+  DockerComposeDown,
+  DockerPull,
 } from "../src/schemas/index.js";
 
 describe("formatPs", () => {
@@ -592,5 +602,264 @@ describe("formatStatsCompact", () => {
     const data: DockerStats = { containers: [], total: 0 };
     const compact = compactStatsMap(data);
     expect(formatStatsCompact(compact)).toBe("No container stats available.");
+  });
+});
+
+// ── Additional tests for uncovered formatter branches ────────────────
+
+describe("formatRun", () => {
+  it("formats detached container run with name", () => {
+    const data: DockerRun = {
+      containerId: "abc123def456",
+      image: "nginx:latest",
+      detached: true,
+      name: "web",
+    };
+    const output = formatRun(data);
+    expect(output).toBe("Container abc123def456 (web) started from nginx:latest [detached]");
+  });
+
+  it("formats attached container run without name", () => {
+    const data: DockerRun = {
+      containerId: "abc123def456",
+      image: "myapp:dev",
+      detached: false,
+    };
+    const output = formatRun(data);
+    expect(output).toBe("Container abc123def456 started from myapp:dev [attached]");
+  });
+});
+
+describe("formatExec", () => {
+  it("formats successful exec with stdout", () => {
+    const data: DockerExec = {
+      exitCode: 0,
+      stdout: "some output text",
+      stderr: "",
+      success: true,
+    };
+    const output = formatExec(data);
+    expect(output).toContain("Exec succeeded");
+    expect(output).toContain("some output text");
+    expect(output).not.toContain("stderr:");
+  });
+
+  it("formats failed exec with stderr", () => {
+    const data: DockerExec = {
+      exitCode: 1,
+      stdout: "",
+      stderr: "command not found",
+      success: false,
+    };
+    const output = formatExec(data);
+    expect(output).toContain("Exec failed (exit code 1)");
+    expect(output).toContain("stderr: command not found");
+    expect(output).not.toContain("some output");
+  });
+
+  it("formats exec with duration", () => {
+    const data: DockerExec = {
+      exitCode: 0,
+      success: true,
+      duration: 2.5,
+    };
+    const output = formatExec(data);
+    expect(output).toBe("Exec succeeded in 2.5s");
+  });
+
+  it("formats exec with both stdout and stderr", () => {
+    const data: DockerExec = {
+      exitCode: 1,
+      stdout: "partial output",
+      stderr: "error occurred",
+      success: false,
+      duration: 1.2,
+    };
+    const output = formatExec(data);
+    expect(output).toContain("Exec failed (exit code 1) in 1.2s");
+    expect(output).toContain("partial output");
+    expect(output).toContain("stderr: error occurred");
+  });
+});
+
+describe("formatComposeUp", () => {
+  it("formats successful compose up with services", () => {
+    const data: DockerComposeUp = {
+      success: true,
+      services: ["web-1", "db-1"],
+      started: 2,
+    };
+    const output = formatComposeUp(data);
+    expect(output).toBe("Compose up: 2 services started (web-1, db-1)");
+  });
+
+  it("formats successful compose up with zero started services", () => {
+    const data: DockerComposeUp = {
+      success: true,
+      services: [],
+      started: 0,
+    };
+    const output = formatComposeUp(data);
+    expect(output).toBe("Compose up succeeded (no new services started)");
+  });
+
+  it("formats failed compose up", () => {
+    const data: DockerComposeUp = {
+      success: false,
+      started: 0,
+    };
+    const output = formatComposeUp(data);
+    expect(output).toBe("Compose up failed");
+  });
+});
+
+describe("formatComposeDown", () => {
+  it("formats successful compose down", () => {
+    const data: DockerComposeDown = {
+      success: true,
+      stopped: 3,
+      removed: 4,
+    };
+    const output = formatComposeDown(data);
+    expect(output).toBe("Compose down: 3 stopped, 4 removed");
+  });
+
+  it("formats failed compose down", () => {
+    const data: DockerComposeDown = {
+      success: false,
+      stopped: 0,
+      removed: 0,
+    };
+    const output = formatComposeDown(data);
+    expect(output).toBe("Compose down failed");
+  });
+});
+
+describe("formatPull", () => {
+  it("formats successful pull with digest", () => {
+    const data: DockerPull = {
+      image: "nginx",
+      tag: "latest",
+      digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      status: "pulled",
+      success: true,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("Pulled nginx:latest (sha256:abc123def456...)");
+  });
+
+  it("formats successful pull without digest", () => {
+    const data: DockerPull = {
+      image: "nginx",
+      tag: "latest",
+      status: "pulled",
+      success: true,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("Pulled nginx:latest");
+  });
+
+  it("formats up-to-date pull with digest", () => {
+    const data: DockerPull = {
+      image: "ubuntu",
+      tag: "22.04",
+      digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      status: "up-to-date",
+      success: true,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("ubuntu:22.04 is up to date (sha256:abc123def456...)");
+  });
+
+  it("formats up-to-date pull without digest", () => {
+    const data: DockerPull = {
+      image: "ubuntu",
+      tag: "22.04",
+      status: "up-to-date",
+      success: true,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("ubuntu:22.04 is up to date");
+  });
+
+  it("formats failed pull", () => {
+    const data: DockerPull = {
+      image: "nonexistent",
+      tag: "latest",
+      status: "error",
+      success: false,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("Pull failed for nonexistent:latest");
+  });
+});
+
+describe("formatInspect — image type", () => {
+  it("formats image inspect with tags, digests, size, entrypoint, cmd, env", () => {
+    const data: DockerInspect = {
+      id: "sha256:abc123",
+      name: "nginx",
+      inspectType: "image",
+      image: "nginx:latest",
+      repoTags: ["nginx:latest", "nginx:1.25"],
+      repoDigests: [
+        "nginx@sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      ],
+      size: 142000000,
+      platform: "linux",
+      created: "2024-06-01T00:00:00Z",
+      entrypoint: ["/docker-entrypoint.sh"],
+      cmd: ["nginx", "-g", "daemon off;"],
+      env: ["PATH=/usr/local/sbin", "NGINX_VERSION=1.25"],
+    };
+    const output = formatInspect(data);
+    expect(output).toContain("Image: nginx (sha256:abc123)");
+    expect(output).toContain("Tags: nginx:latest, nginx:1.25");
+    expect(output).toContain("Digests:");
+    expect(output).toContain("Size: 135.4 MB");
+    expect(output).toContain("Platform: linux");
+    expect(output).toContain("Created: 2024-06-01T00:00:00Z");
+    expect(output).toContain("Entrypoint: /docker-entrypoint.sh");
+    expect(output).toContain("Cmd: nginx -g daemon off;");
+    expect(output).toContain("Env: 2 variables");
+  });
+
+  it("formats minimal image inspect", () => {
+    const data: DockerInspect = {
+      id: "sha256:def456",
+      name: "alpine",
+      inspectType: "image",
+      image: "alpine:latest",
+    };
+    const output = formatInspect(data);
+    expect(output).toBe("Image: alpine (sha256:def456)");
+  });
+});
+
+describe("formatInspect — container branches", () => {
+  it("includes healthStatus and restartPolicy", () => {
+    const data: DockerInspect = {
+      id: "abc123",
+      name: "monitored-app",
+      state: { status: "running", running: true },
+      image: "myapp:latest",
+      healthStatus: "healthy",
+      restartPolicy: "always",
+    };
+    const output = formatInspect(data);
+    expect(output).toContain("Health: healthy");
+    expect(output).toContain("Restart: always");
+  });
+
+  it("includes env variable count", () => {
+    const data: DockerInspect = {
+      id: "abc123",
+      name: "env-app",
+      state: { status: "running", running: true },
+      image: "myapp:latest",
+      env: ["PATH=/usr/bin", "NODE_ENV=production", "PORT=3000"],
+    };
+    const output = formatInspect(data);
+    expect(output).toContain("Env: 3 variables");
   });
 });
