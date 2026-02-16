@@ -61,6 +61,7 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
 
 /**
  * Parses curl output for HEAD requests (no body expected).
+ * Extracts contentLength as a numeric field from the Content-Length header.
  */
 export function parseCurlHeadOutput(
   stdout: string,
@@ -69,12 +70,24 @@ export function parseCurlHeadOutput(
 ): HttpHeadResponse {
   const full = parseCurlOutput(stdout, stderr, exitCode);
 
+  // Extract Content-Length as a numeric field for easy size checking
+  const headers = full.headers ?? {};
+  const clHeader = headers["content-length"];
+  let contentLength: number | undefined;
+  if (clHeader !== undefined) {
+    const parsed = parseInt(clHeader, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      contentLength = parsed;
+    }
+  }
+
   return {
     status: full.status,
     statusText: full.statusText,
     headers: full.headers,
     timing: full.timing,
     contentType: full.contentType,
+    contentLength,
   };
 }
 

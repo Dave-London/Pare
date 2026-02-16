@@ -254,4 +254,61 @@ describe("parseCurlHeadOutput", () => {
     // HEAD response should not have a body field
     expect("body" in result).toBe(false);
   });
+
+  it("extracts contentLength as a numeric field from Content-Length header", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Type: text/html\r\n",
+      "Content-Length: 12345\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.100 0",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.contentLength).toBe(12345);
+  });
+
+  it("returns undefined contentLength when Content-Length header is missing", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Type: text/html\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.100 0",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.contentLength).toBeUndefined();
+  });
+
+  it("returns undefined contentLength for non-numeric Content-Length", () => {
+    const stdout = [
+      "HTTP/1.1 200 OK\r\n",
+      "Content-Length: invalid\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.100 0",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.contentLength).toBeUndefined();
+  });
+
+  it("handles zero Content-Length", () => {
+    const stdout = [
+      "HTTP/1.1 204 No Content\r\n",
+      "Content-Length: 0\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.050 0",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.contentLength).toBe(0);
+  });
 });

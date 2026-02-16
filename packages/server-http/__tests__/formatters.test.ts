@@ -91,6 +91,37 @@ describe("formatHttpHeadResponse", () => {
     // Should NOT contain body-related content
     expect(output).not.toContain("Size:");
   });
+
+  it("includes contentLength in human-readable output when present", () => {
+    const data: HttpHeadResponse = {
+      status: 200,
+      statusText: "OK",
+      headers: {
+        "content-type": "text/html",
+        "content-length": "5000",
+      },
+      timing: { total: 0.15 },
+      contentType: "text/html",
+      contentLength: 5000,
+    };
+
+    const output = formatHttpHeadResponse(data);
+
+    expect(output).toContain("Content-Length: 5000");
+  });
+
+  it("omits contentLength line when not present", () => {
+    const data: HttpHeadResponse = {
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      timing: { total: 0.1 },
+    };
+
+    const output = formatHttpHeadResponse(data);
+
+    expect(output).not.toContain("Content-Length:");
+  });
 });
 
 describe("compactResponseMap", () => {
@@ -161,6 +192,7 @@ describe("compactHeadResponseMap", () => {
       },
       timing: { total: 0.15 },
       contentType: "text/html",
+      contentLength: 5000,
     };
 
     const compact = compactHeadResponseMap(full);
@@ -168,6 +200,7 @@ describe("compactHeadResponseMap", () => {
     expect(compact.status).toBe(200);
     expect(compact.statusText).toBe("OK");
     expect(compact.contentType).toBe("text/html");
+    expect(compact.contentLength).toBe(5000);
     expect(compact.timing.total).toBe(0.15);
     expect("headers" in compact).toBe(false);
   });
@@ -185,5 +218,19 @@ describe("formatHeadResponseCompact", () => {
     const output = formatHeadResponseCompact(compact);
 
     expect(output).toBe("HTTP 200 OK (text/html) | 0.100s");
+  });
+
+  it("includes contentLength in compact HEAD response", () => {
+    const compact = {
+      status: 200,
+      statusText: "OK",
+      contentType: "text/html",
+      contentLength: 5000,
+      timing: { total: 0.1 },
+    };
+
+    const output = formatHeadResponseCompact(compact);
+
+    expect(output).toBe("HTTP 200 OK (text/html) | 5000 bytes | 0.100s");
   });
 });

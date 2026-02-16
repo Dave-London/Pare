@@ -12,6 +12,7 @@ import { HttpResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl, assertSafeHeader } from "../lib/url-validation.js";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
+const HTTP_VERSIONS = ["1.0", "1.1", "2"] as const;
 
 /** Registers the `request` tool on the given MCP server. */
 export function registerRequestTool(server: McpServer) {
@@ -46,6 +47,14 @@ export function registerRequestTool(server: McpServer) {
           .optional()
           .default(30)
           .describe("Request timeout in seconds (default: 30)"),
+        connectTimeout: z
+          .number()
+          .min(1)
+          .max(300)
+          .optional()
+          .describe(
+            "Maximum time in seconds for connection phase only (--connect-timeout). Independent of total timeout.",
+          ),
         followRedirects: z
           .boolean()
           .optional()
@@ -65,6 +74,34 @@ export function registerRequestTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Request compressed response and decompress automatically (--compressed)"),
+        basicAuth: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Basic auth credentials as 'user:password' (-u)"),
+        proxy: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Proxy URL (e.g., http://proxy:8080) (-x)"),
+        httpVersion: z
+          .enum(HTTP_VERSIONS)
+          .optional()
+          .describe("HTTP version to use: '1.0', '1.1', or '2' (--http1.0/--http1.1/--http2)"),
+        cookie: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Cookie string or cookie jar file path for session-based APIs (-b). Format: 'name=value; name2=value2'",
+          ),
+        resolve: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Custom DNS resolution (--resolve). Format: 'host:port:addr' (e.g., 'example.com:443:127.0.0.1')",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -86,14 +123,24 @@ export function registerRequestTool(server: McpServer) {
       headers,
       body,
       timeout,
+      connectTimeout,
       followRedirects,
       insecure,
       retry,
       compressed,
+      basicAuth,
+      proxy,
+      httpVersion,
+      cookie,
+      resolve,
       compact,
       path,
     }) => {
       assertSafeUrl(url);
+      if (basicAuth) assertNoFlagInjection(basicAuth, "basicAuth");
+      if (proxy) assertNoFlagInjection(proxy, "proxy");
+      if (cookie) assertNoFlagInjection(cookie, "cookie");
+      if (resolve) assertNoFlagInjection(resolve, "resolve");
 
       const args = buildCurlArgs({
         url,
@@ -101,10 +148,16 @@ export function registerRequestTool(server: McpServer) {
         headers,
         body,
         timeout: timeout ?? 30,
+        connectTimeout,
         followRedirects: followRedirects ?? true,
         insecure,
         retry,
         compressed,
+        basicAuth,
+        proxy,
+        httpVersion,
+        cookie,
+        resolve,
       });
 
       const cwd = path || process.cwd();
@@ -125,20 +178,38 @@ export function registerRequestTool(server: McpServer) {
 }
 
 /**
- * Builds the curl argument array from the request parameters.
- * Exported for reuse in get/post/head tools.
+ * Options for building curl arguments.
+ * Shared by all HTTP tools (get, post, head, request).
  */
-export function buildCurlArgs(opts: {
+export interface BuildCurlArgsOptions {
   url: string;
   method: string;
   headers?: Record<string, string>;
   body?: string;
   timeout: number;
+  connectTimeout?: number;
   followRedirects: boolean;
   insecure?: boolean;
   retry?: number;
   compressed?: boolean;
-}): string[] {
+  basicAuth?: string;
+  proxy?: string;
+  httpVersion?: string;
+  cookie?: string;
+  resolve?: string;
+  /** When true, use -I (--head) instead of -X HEAD for proper HEAD behavior. */
+  useHeadFlag?: boolean;
+  /** When true, add --post301 --post302 --post303 to preserve POST method on redirects. */
+  preserveMethodOnRedirect?: boolean;
+  /** URL-encoded form data items passed via --data-urlencode. */
+  dataUrlencode?: string[];
+}
+
+/**
+ * Builds the curl argument array from the request parameters.
+ * Exported for reuse in get/post/head tools.
+ */
+export function buildCurlArgs(opts: BuildCurlArgsOptions): string[] {
   const args: string[] = [
     "-s", // Silent mode (no progress)
     "-S", // Show errors
@@ -149,17 +220,31 @@ export function buildCurlArgs(opts: {
   const writeOut = `\n${PARE_META_SEPARATOR}\n%{time_total} %{size_download}`;
   args.push("-w", writeOut);
 
-  // HTTP method
-  args.push("-X", opts.method);
+  // HTTP method: use -I (--head) for HEAD requests, -X for everything else
+  if (opts.useHeadFlag) {
+    args.push("-I");
+  } else {
+    args.push("-X", opts.method);
+  }
 
   // Timeout
   args.push("--max-time", String(opts.timeout));
+
+  // Connection timeout (separate from total timeout)
+  if (opts.connectTimeout !== undefined) {
+    args.push("--connect-timeout", String(opts.connectTimeout));
+  }
 
   // Follow redirects
   if (opts.followRedirects) {
     args.push("-L");
     // Limit redirect hops to prevent infinite loops
     args.push("--max-redirs", "10");
+  }
+
+  // Preserve POST method on redirects (prevent silent POST-to-GET conversion)
+  if (opts.preserveMethodOnRedirect) {
+    args.push("--post301", "--post302", "--post303");
   }
 
   // Custom headers
@@ -177,6 +262,13 @@ export function buildCurlArgs(opts: {
     args.push("--data-raw", opts.body);
   }
 
+  // URL-encoded form data
+  if (opts.dataUrlencode) {
+    for (const item of opts.dataUrlencode) {
+      args.push("--data-urlencode", item);
+    }
+  }
+
   // Insecure TLS (self-signed certs)
   if (opts.insecure) {
     args.push("-k");
@@ -190,6 +282,41 @@ export function buildCurlArgs(opts: {
   // Request compressed response
   if (opts.compressed) {
     args.push("--compressed");
+  }
+
+  // Basic authentication
+  if (opts.basicAuth) {
+    args.push("-u", opts.basicAuth);
+  }
+
+  // HTTP proxy
+  if (opts.proxy) {
+    args.push("-x", opts.proxy);
+  }
+
+  // HTTP version
+  if (opts.httpVersion) {
+    switch (opts.httpVersion) {
+      case "1.0":
+        args.push("--http1.0");
+        break;
+      case "1.1":
+        args.push("--http1.1");
+        break;
+      case "2":
+        args.push("--http2");
+        break;
+    }
+  }
+
+  // Cookie
+  if (opts.cookie) {
+    args.push("-b", opts.cookie);
+  }
+
+  // Custom DNS resolution
+  if (opts.resolve) {
+    args.push("--resolve", opts.resolve);
   }
 
   // URL must be last
