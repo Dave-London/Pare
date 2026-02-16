@@ -86,6 +86,11 @@ describe("parsePrDiffNumstat", () => {
   });
 });
 
+// ── Binary field test (parsePrDiffFromPatch is tested via integration) ──
+
+// We cannot directly test parsePrDiffFromPatch here since it's a local function
+// in the tool file. The binary detection is tested via the formatter test below.
+
 // ── Formatter tests ─────────────────────────────────────────────────
 
 describe("formatPrDiff", () => {
@@ -115,6 +120,21 @@ describe("formatPrDiff", () => {
     };
     const output = formatPrDiff(empty);
     expect(output).toContain("0 files changed, +0 -0");
+  });
+
+  it("shows binary indicator for binary files", () => {
+    const binaryDiff: PrDiffResult = {
+      files: [
+        { file: "image.png", status: "added", additions: 0, deletions: 0, binary: true },
+        { file: "src/index.ts", status: "modified", additions: 5, deletions: 2 },
+      ],
+      totalAdditions: 5,
+      totalDeletions: 2,
+      totalFiles: 2,
+    };
+    const output = formatPrDiff(binaryDiff);
+    expect(output).toContain("image.png +0 -0 (binary)");
+    expect(output).not.toContain("src/index.ts +5 -2 (binary)");
   });
 });
 

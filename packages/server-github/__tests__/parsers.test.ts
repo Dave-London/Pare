@@ -361,6 +361,42 @@ describe("parsePrChecks", () => {
     expect(result.summary.pending).toBe(1);
     expect(result.summary.failed).toBe(0);
   });
+
+  it("deduplicates checks by name, keeping most recent re-run", () => {
+    const json = JSON.stringify([
+      {
+        name: "CI / build",
+        state: "FAILURE",
+        bucket: "fail",
+        description: "Build failed",
+        event: "pull_request",
+        workflow: "CI",
+        link: "",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:05:00Z",
+      },
+      {
+        name: "CI / build",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Build succeeded on re-run",
+        event: "pull_request",
+        workflow: "CI",
+        link: "",
+        startedAt: "2024-01-15T11:00:00Z",
+        completedAt: "2024-01-15T11:05:00Z",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 42);
+
+    expect(result.checks).toHaveLength(1);
+    expect(result.checks[0].state).toBe("SUCCESS");
+    expect(result.checks[0].description).toBe("Build succeeded on re-run");
+    expect(result.summary.total).toBe(1);
+    expect(result.summary.passed).toBe(1);
+    expect(result.summary.failed).toBe(0);
+  });
 });
 
 describe("parseComment", () => {
@@ -524,6 +560,10 @@ describe("parseRunView", () => {
     expect(result.workflowName).toBe("");
     expect(result.jobs).toEqual([]);
     expect(result.createdAt).toBe("");
+    expect(result.headSha).toBeUndefined();
+    expect(result.event).toBeUndefined();
+    expect(result.startedAt).toBeUndefined();
+    expect(result.attempt).toBeUndefined();
   });
 
   it("handles jobs with null conclusion", () => {
@@ -537,6 +577,31 @@ describe("parseRunView", () => {
 
     const result = parseRunView(json);
     expect(result.jobs[0].conclusion).toBeNull();
+  });
+
+  it("parses headSha, event, startedAt, and attempt fields", () => {
+    const json = JSON.stringify({
+      databaseId: 54321,
+      status: "completed",
+      conclusion: "success",
+      name: "CI",
+      workflowName: "Build",
+      headBranch: "main",
+      jobs: [],
+      url: "https://github.com/owner/repo/actions/runs/54321",
+      createdAt: "2024-06-01T10:00:00Z",
+      headSha: "abc123def456789012345678901234567890abcd",
+      event: "push",
+      startedAt: "2024-06-01T10:00:05Z",
+      attempt: 2,
+    });
+
+    const result = parseRunView(json);
+
+    expect(result.headSha).toBe("abc123def456789012345678901234567890abcd");
+    expect(result.event).toBe("push");
+    expect(result.startedAt).toBe("2024-06-01T10:00:05Z");
+    expect(result.attempt).toBe(2);
   });
 });
 

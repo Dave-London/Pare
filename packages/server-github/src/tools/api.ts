@@ -135,7 +135,9 @@ export function registerApiTool(server: McpServer) {
       }
 
       if (slurp) args.push("--slurp");
-      if (include) args.push("--include");
+      // Always include response headers so we can parse the real HTTP status code.
+      // The --include flag is always set; the user's `include` param is redundant but harmless.
+      args.push("--include");
       if (silent) args.push("--silent");
       if (verbose) args.push("--verbose");
       if (hostname) args.push("--hostname", hostname);

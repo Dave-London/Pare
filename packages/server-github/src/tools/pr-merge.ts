@@ -124,7 +124,7 @@ export function registerPrMergeTool(server: McpServer) {
         throw new Error(`gh pr merge failed: ${result.stderr}`);
       }
 
-      const data = parsePrMerge(result.stdout, prNum, method!, !!deleteBranch);
+      const data = parsePrMerge(result.stdout, prNum, method!, !!deleteBranch, auto, disableAuto);
       return dualOutput(data, formatPrMerge);
     },
   );
