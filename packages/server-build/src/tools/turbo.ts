@@ -57,6 +57,19 @@ export function registerTurboTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Generate a performance profile (maps to --profile)"),
+        outputLogs: z
+          .enum(["full", "hash-only", "new-only", "errors-only", "none"])
+          .optional()
+          .describe(
+            "Control which task logs are shown (default: 'new-only'). Maps to --output-logs.",
+          ),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Additional turbo flags (e.g., ['--env-mode=strict']). Each arg is validated with assertNoFlagInjection.",
+          ),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -83,6 +96,8 @@ export function registerTurboTool(server: McpServer) {
       graph,
       logOrder,
       profile,
+      outputLogs,
+      args,
       path,
       compact,
     }) => {
@@ -90,7 +105,8 @@ export function registerTurboTool(server: McpServer) {
       assertNoFlagInjection(task, "task");
       if (filter) assertNoFlagInjection(filter, "filter");
 
-      const cliArgs: string[] = ["run", task, "--output-logs=new-only"];
+      const outputLogsValue = outputLogs ?? "new-only";
+      const cliArgs: string[] = ["run", task, `--output-logs=${outputLogsValue}`];
 
       if (filter) cliArgs.push("--filter", filter);
       if (concurrency !== undefined) cliArgs.push("--concurrency", String(concurrency));
@@ -101,6 +117,13 @@ export function registerTurboTool(server: McpServer) {
       if (graph) cliArgs.push("--graph");
       if (logOrder) cliArgs.push(`--log-order=${logOrder}`);
       if (profile) cliArgs.push("--profile");
+
+      if (args) {
+        for (const a of args) {
+          assertNoFlagInjection(a, "args");
+        }
+        cliArgs.push(...args);
+      }
 
       const start = Date.now();
       const result = await turboCmd(cliArgs, cwd);

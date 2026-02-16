@@ -73,9 +73,13 @@ export function parseBuildCommandOutput(
 
   return {
     success: exitCode === 0,
+    exitCode,
     duration,
     errors,
     warnings,
+    stdout: stdout || undefined,
+    stderr: stderr || undefined,
+    outputLines: lines.length,
   };
 }
 

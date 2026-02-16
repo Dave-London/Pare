@@ -45,10 +45,33 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .describe("Target platform (browser, node, neutral)"),
         sourcemap: z
-          .boolean()
+          .enum(["true", "linked", "inline", "external", "both"])
           .optional()
-          .default(false)
-          .describe("Generate source maps (default: false)"),
+          .describe(
+            "Source map mode: 'true' for default, 'linked', 'inline', 'external', or 'both'",
+          ),
+        target: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Target environment (e.g., 'es2020', 'node16', 'chrome90'). Maps to --target."),
+        external: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Packages to exclude from the bundle (e.g., ['react', 'react-dom']). Maps to --external.",
+          ),
+        tsconfig: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to tsconfig.json for TypeScript configuration (maps to --tsconfig)"),
+        drop: z
+          .array(z.enum(["console", "debugger"]))
+          .max(2)
+          .optional()
+          .describe("Statements to drop from output (maps to --drop:console, --drop:debugger)"),
         splitting: z
           .boolean()
           .optional()
@@ -87,6 +110,10 @@ export function registerEsbuildTool(server: McpServer) {
       format,
       platform,
       sourcemap,
+      target,
+      external,
+      tsconfig,
+      drop,
       splitting,
       legalComments,
       logLevel,
@@ -108,7 +135,32 @@ export function registerEsbuildTool(server: McpServer) {
       if (minify) cliArgs.push("--minify");
       if (format) cliArgs.push(`--format=${format}`);
       if (platform) cliArgs.push(`--platform=${platform}`);
-      if (sourcemap) cliArgs.push("--sourcemap");
+      if (sourcemap) {
+        if (sourcemap === "true") {
+          cliArgs.push("--sourcemap");
+        } else {
+          cliArgs.push(`--sourcemap=${sourcemap}`);
+        }
+      }
+      if (target) {
+        assertNoFlagInjection(target, "target");
+        cliArgs.push(`--target=${target}`);
+      }
+      if (external) {
+        for (const ext of external) {
+          assertNoFlagInjection(ext, "external");
+          cliArgs.push(`--external:${ext}`);
+        }
+      }
+      if (tsconfig) {
+        assertNoFlagInjection(tsconfig, "tsconfig");
+        cliArgs.push(`--tsconfig=${tsconfig}`);
+      }
+      if (drop) {
+        for (const d of drop) {
+          cliArgs.push(`--drop:${d}`);
+        }
+      }
       if (splitting) cliArgs.push("--splitting");
       if (legalComments) cliArgs.push(`--legal-comments=${legalComments}`);
       if (logLevel) cliArgs.push(`--log-level=${logLevel}`);

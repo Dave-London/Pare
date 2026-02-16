@@ -26,13 +26,16 @@ export function formatTsc(data: TscResult): string {
 
 /** Formats structured build command results into a human-readable success/failure summary. */
 export function formatBuildCommand(data: BuildResult): string {
+  const exitInfo = data.exitCode !== undefined ? ` (exit ${data.exitCode})` : "";
+
   if (data.success) {
-    const parts = [`Build succeeded in ${data.duration}s`];
+    const parts = [`Build succeeded in ${data.duration}s${exitInfo}`];
     if ((data.warnings ?? []).length) parts.push(`${(data.warnings ?? []).length} warnings`);
+    if (data.outputLines !== undefined) parts.push(`${data.outputLines} output lines`);
     return parts.join(", ");
   }
 
-  const lines = [`Build failed (${data.duration}s)`];
+  const lines = [`Build failed (${data.duration}s)${exitInfo}`];
   for (const err of data.errors ?? []) {
     lines.push(`  ${err}`);
   }
@@ -284,6 +287,7 @@ export interface BuildCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
+  exitCode?: number;
   errors?: string[];
   warnings?: string[];
 }
@@ -293,6 +297,7 @@ export function compactBuildMap(data: BuildResult): BuildCompact {
     success: data.success,
     duration: data.duration,
   };
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   if (data.errors?.length) compact.errors = data.errors;
   if (data.warnings?.length) compact.warnings = data.warnings;
   return compact;

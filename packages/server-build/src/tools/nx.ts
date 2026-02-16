@@ -34,6 +34,28 @@ export function registerNxTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Base ref for affected comparison (e.g., 'main')"),
+        head: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Head ref for affected comparison (maps to --head)"),
+        configuration: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Build configuration to use (e.g., 'production', 'development'). Maps to --configuration.",
+          ),
+        projects: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Specific projects to include in run-many (maps to --projects)"),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Projects to exclude from run-many (maps to --exclude)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -88,6 +110,10 @@ export function registerNxTool(server: McpServer) {
       project,
       affected,
       base,
+      head,
+      configuration,
+      projects,
+      exclude,
       path,
       parallel,
       skipNxCache,
@@ -103,6 +129,8 @@ export function registerNxTool(server: McpServer) {
       assertNoFlagInjection(target, "target");
       if (project) assertNoFlagInjection(project, "project");
       if (base) assertNoFlagInjection(base, "base");
+      if (head) assertNoFlagInjection(head, "head");
+      if (configuration) assertNoFlagInjection(configuration, "configuration");
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -112,10 +140,27 @@ export function registerNxTool(server: McpServer) {
       if (affected) {
         cliArgs.push("affected", `--target=${target}`);
         if (base) cliArgs.push(`--base=${base}`);
+        if (head) cliArgs.push(`--head=${head}`);
       } else if (project) {
         cliArgs.push("run", `${project}:${target}`);
       } else {
         cliArgs.push("run-many", `--target=${target}`);
+      }
+
+      if (configuration) cliArgs.push(`--configuration=${configuration}`);
+
+      if (projects && projects.length > 0) {
+        for (const p of projects) {
+          assertNoFlagInjection(p, "projects");
+        }
+        cliArgs.push(`--projects=${projects.join(",")}`);
+      }
+
+      if (exclude && exclude.length > 0) {
+        for (const e of exclude) {
+          assertNoFlagInjection(e, "exclude");
+        }
+        cliArgs.push(`--exclude=${exclude.join(",")}`);
       }
 
       if (parallel !== undefined) cliArgs.push(`--parallel=${parallel}`);

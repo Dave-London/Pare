@@ -26,6 +26,32 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default("production")
           .describe("Build mode (default: production)"),
+        outDir: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Custom output directory (maps to --outDir)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Vite config file (maps to --config)"),
+        sourcemap: z
+          .union([z.boolean(), z.enum(["inline", "hidden"])])
+          .optional()
+          .describe(
+            "Generate source maps. true for default, 'inline' for inline, 'hidden' for hidden source maps.",
+          ),
+        base: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Public base path for non-root deployments (maps to --base)"),
+        ssr: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("SSR build entry point (maps to --ssr)"),
         manifest: z
           .boolean()
           .optional()
@@ -67,6 +93,11 @@ export function registerViteBuildTool(server: McpServer) {
     async ({
       path,
       mode,
+      outDir,
+      config,
+      sourcemap,
+      base,
+      ssr,
       manifest,
       minify,
       logLevel,
@@ -77,6 +108,10 @@ export function registerViteBuildTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       if (mode) assertNoFlagInjection(mode, "mode");
+      if (outDir) assertNoFlagInjection(outDir, "outDir");
+      if (config) assertNoFlagInjection(config, "config");
+      if (base) assertNoFlagInjection(base, "base");
+      if (ssr) assertNoFlagInjection(ssr, "ssr");
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -86,6 +121,17 @@ export function registerViteBuildTool(server: McpServer) {
       if (mode && mode !== "production") {
         cliArgs.push("--mode", mode);
       }
+      if (outDir) cliArgs.push(`--outDir=${outDir}`);
+      if (config) cliArgs.push(`--config=${config}`);
+      if (sourcemap !== undefined) {
+        if (typeof sourcemap === "boolean") {
+          cliArgs.push(sourcemap ? "--sourcemap" : "--no-sourcemap");
+        } else {
+          cliArgs.push(`--sourcemap=${sourcemap}`);
+        }
+      }
+      if (base) cliArgs.push(`--base=${base}`);
+      if (ssr) cliArgs.push(`--ssr=${ssr}`);
       if (manifest) cliArgs.push("--manifest");
       if (minify) cliArgs.push(`--minify=${minify}`);
       if (logLevel) cliArgs.push(`--logLevel=${logLevel}`);
