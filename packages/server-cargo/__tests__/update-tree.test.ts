@@ -65,7 +65,7 @@ describe("parseCargoTreeOutput", () => {
       "└── anyhow v1.0.89",
     ].join("\n");
 
-    const result = parseCargoTreeOutput(stdout);
+    const result = parseCargoTreeOutput(stdout, "", 0);
 
     expect(result.tree).toContain("my-app v0.1.0");
     expect(result.tree).toContain("serde v1.0.217");
@@ -81,14 +81,14 @@ describe("parseCargoTreeOutput", () => {
       "└── serde v1.0.217",
     ].join("\n");
 
-    const result = parseCargoTreeOutput(stdout);
+    const result = parseCargoTreeOutput(stdout, "", 0);
 
     // "serde" appears twice but is counted once, plus "my-app" and "serde_derive"
     expect(result.packages).toBe(3);
   });
 
   it("handles empty tree output", () => {
-    const result = parseCargoTreeOutput("");
+    const result = parseCargoTreeOutput("", "", 0);
 
     expect(result.tree).toBe("");
     expect(result.packages).toBe(0);
@@ -96,7 +96,7 @@ describe("parseCargoTreeOutput", () => {
 
   it("handles single root package", () => {
     const stdout = "my-app v0.1.0 (/home/user/project)";
-    const result = parseCargoTreeOutput(stdout);
+    const result = parseCargoTreeOutput(stdout, "", 0);
 
     expect(result.tree).toBe("my-app v0.1.0 (/home/user/project)");
     expect(result.packages).toBe(1);
@@ -110,7 +110,7 @@ describe("parseCargoTreeOutput", () => {
       "└── my_crate v0.1.0",
     ].join("\n");
 
-    const result = parseCargoTreeOutput(stdout);
+    const result = parseCargoTreeOutput(stdout, "", 0);
 
     expect(result.packages).toBe(4);
   });
@@ -176,6 +176,7 @@ describe("formatUpdateCompact", () => {
 describe("formatCargoTree", () => {
   it("formats tree with package count", () => {
     const data: CargoTreeResult = {
+      success: true,
       tree: "my-app v0.1.0\n├── serde v1.0.217",
       packages: 2,
     };
@@ -186,7 +187,7 @@ describe("formatCargoTree", () => {
   });
 
   it("formats tree with empty tree text", () => {
-    const data: CargoTreeResult = { tree: "", packages: 0 };
+    const data: CargoTreeResult = { success: true, tree: "", packages: 0 };
     expect(formatCargoTree(data)).toBe("cargo tree: 0 unique packages");
   });
 });
@@ -196,11 +197,12 @@ describe("formatCargoTree", () => {
 describe("compactTreeMap", () => {
   it("strips tree text and keeps package count", () => {
     const data: CargoTreeResult = {
+      success: true,
       tree: "my-app v0.1.0\n├── serde v1.0.217\n└── tokio v1.41.1",
       packages: 3,
     };
     const compact = compactTreeMap(data);
-    expect(compact).toEqual({ packages: 3 });
+    expect(compact).toEqual({ success: true, packages: 3 });
     expect(compact).not.toHaveProperty("tree");
   });
 });
@@ -209,10 +211,10 @@ describe("compactTreeMap", () => {
 
 describe("formatTreeCompact", () => {
   it("formats compact tree output", () => {
-    expect(formatTreeCompact({ packages: 5 })).toBe("cargo tree: 5 unique packages");
+    expect(formatTreeCompact({ success: true, packages: 5 })).toBe("cargo tree: 5 unique packages");
   });
 
   it("formats compact tree with zero packages", () => {
-    expect(formatTreeCompact({ packages: 0 })).toBe("cargo tree: 0 unique packages");
+    expect(formatTreeCompact({ success: true, packages: 0 })).toBe("cargo tree: 0 unique packages");
   });
 });

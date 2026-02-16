@@ -34,9 +34,10 @@ export interface CargoTestCompact {
   ignored: number;
 }
 
-/** Compact clippy: counts per severity, with diagnostics preserved when non-empty. */
+/** Compact clippy: success + counts per severity, with diagnostics preserved when non-empty. */
 export interface CargoClippyCompact {
   [key: string]: unknown;
+  success: boolean;
   diagnostics?: CargoClippyResult["diagnostics"];
   errors: number;
   warnings: number;
@@ -56,6 +57,7 @@ export interface CargoAddCompact {
   success: boolean;
   packages: string[];
   total: number;
+  error?: string;
 }
 
 /** Compact remove: success + package names. */
@@ -64,6 +66,7 @@ export interface CargoRemoveCompact {
   success: boolean;
   removed: string[];
   total: number;
+  error?: string;
 }
 
 /** Compact fmt: success + file count only. */
@@ -128,7 +131,10 @@ export function formatCargoRun(data: CargoRunResult): string {
 
 /** Formats structured cargo add output into a human-readable summary. */
 export function formatCargoAdd(data: CargoAddResult): string {
-  if (!data.success) return "cargo add: failed";
+  if (!data.success) {
+    const err = data.error ? `: ${data.error}` : "";
+    return `cargo add: failed${err}`;
+  }
 
   if (data.total === 0) return "cargo add: success, no packages added.";
 
@@ -141,7 +147,10 @@ export function formatCargoAdd(data: CargoAddResult): string {
 
 /** Formats structured cargo remove output into a human-readable summary. */
 export function formatCargoRemove(data: CargoRemoveResult): string {
-  if (!data.success) return "cargo remove: failed";
+  if (!data.success) {
+    const err = data.error ? `: ${data.error}` : "";
+    return `cargo remove: failed${err}`;
+  }
 
   if (data.total === 0) return "cargo remove: success, no packages removed.";
 
@@ -167,8 +176,11 @@ export function formatCargoFmt(data: CargoFmtResult): string {
 /** Formats structured cargo doc output into a human-readable summary. */
 export function formatCargoDoc(data: CargoDocResult): string {
   const status = data.success ? "success" : "failed";
-  if (data.warnings === 0) return `cargo doc: ${status}.`;
-  return `cargo doc: ${status} (${data.warnings} warning(s))`;
+  const parts = [`cargo doc: ${status}`];
+  if (data.warnings > 0) parts.push(`(${data.warnings} warning(s))`);
+  if (data.outputDir) parts.push(`-> ${data.outputDir}`);
+  if (data.warnings === 0 && !data.outputDir) return `${parts[0]}.`;
+  return parts.join(" ");
 }
 
 // ── Compact mappers ──────────────────────────────────────────────────
@@ -197,6 +209,7 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
 
 export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
   const compact: CargoClippyCompact = {
+    success: data.success,
     errors: data.errors,
     warnings: data.warnings,
     total: data.total,
@@ -213,19 +226,23 @@ export function compactRunMap(data: CargoRunResult): CargoRunCompact {
 }
 
 export function compactAddMap(data: CargoAddResult): CargoAddCompact {
-  return {
+  const compact: CargoAddCompact = {
     success: data.success,
     packages: (data.added ?? []).map((p) => p.name),
     total: data.total,
   };
+  if (data.error) compact.error = data.error;
+  return compact;
 }
 
 export function compactRemoveMap(data: CargoRemoveResult): CargoRemoveCompact {
-  return {
+  const compact: CargoRemoveCompact = {
     success: data.success,
     removed: data.removed,
     total: data.total,
   };
+  if (data.error) compact.error = data.error;
+  return compact;
 }
 
 export function compactFmtMap(data: CargoFmtResult): CargoFmtCompact {
@@ -265,13 +282,19 @@ export function formatRunCompact(data: CargoRunCompact): string {
 }
 
 export function formatAddCompact(data: CargoAddCompact): string {
-  if (!data.success) return "cargo add: failed";
+  if (!data.success) {
+    const err = data.error ? `: ${data.error}` : "";
+    return `cargo add: failed${err}`;
+  }
   if (data.total === 0) return "cargo add: success, no packages added.";
   return `cargo add: ${data.total} package(s) added: ${data.packages.join(", ")}`;
 }
 
 export function formatRemoveCompact(data: CargoRemoveCompact): string {
-  if (!data.success) return "cargo remove: failed";
+  if (!data.success) {
+    const err = data.error ? `: ${data.error}` : "";
+    return `cargo remove: failed${err}`;
+  }
   if (data.total === 0) return "cargo remove: success, no packages removed.";
   return `cargo remove: ${data.total} package(s) removed: ${data.removed.join(", ")}`;
 }
@@ -318,24 +341,30 @@ export function formatUpdateCompact(data: CargoUpdateCompact): string {
 
 /** Formats structured cargo tree output into a human-readable summary. */
 export function formatCargoTree(data: CargoTreeResult): string {
+  if (!data.success) {
+    return `cargo tree: failed${data.tree ? `\n${data.tree}` : ""}`;
+  }
   const lines = [`cargo tree: ${data.packages} unique packages`];
   if (data.tree) lines.push(data.tree);
   return lines.join("\n");
 }
 
-/** Compact tree: package count only, no full tree text. */
+/** Compact tree: success + package count only, no full tree text. */
 export interface CargoTreeCompact {
   [key: string]: unknown;
+  success: boolean;
   packages: number;
 }
 
 export function compactTreeMap(data: CargoTreeResult): CargoTreeCompact {
   return {
+    success: data.success,
     packages: data.packages,
   };
 }
 
 export function formatTreeCompact(data: CargoTreeCompact): string {
+  if (!data.success) return "cargo tree: failed";
   return `cargo tree: ${data.packages} unique packages`;
 }
 
@@ -343,7 +372,15 @@ export function formatTreeCompact(data: CargoTreeCompact): string {
 
 /** Formats structured cargo audit output into a human-readable vulnerability report. */
 export function formatCargoAudit(data: CargoAuditResult): string {
-  const summary = data.summary ?? { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+  const summary = data.summary ?? {
+    total: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    informational: 0,
+    unknown: 0,
+  };
   if (summary.total === 0) return "cargo audit: no vulnerabilities found.";
 
   const lines = [
@@ -356,25 +393,39 @@ export function formatCargoAudit(data: CargoAuditResult): string {
   return lines.join("\n");
 }
 
-/** Compact audit: summary counts only, no individual vulnerabilities. */
+/** Compact audit: success + summary counts only, no individual vulnerabilities. */
 export interface CargoAuditCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
   critical: number;
   high: number;
   medium: number;
   low: number;
+  informational: number;
+  unknown: number;
 }
 
 export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
-  const summary = data.summary ?? { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+  const summary = data.summary ?? {
+    total: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    informational: 0,
+    unknown: 0,
+  };
   return {
+    success: data.success,
     vulnerabilities: [],
     total: summary.total,
     critical: summary.critical,
     high: summary.high,
     medium: summary.medium,
     low: summary.low,
+    informational: summary.informational,
+    unknown: summary.unknown,
   };
 }
 

@@ -135,7 +135,7 @@ describe("parseCargoClippyJson", () => {
       }),
     ].join("\n");
 
-    const result = parseCargoClippyJson(stdout);
+    const result = parseCargoClippyJson(stdout, 0);
     expect(result.total).toBe(1);
     expect(result.warnings).toBe(1);
     expect(result.diagnostics[0].code).toBe("clippy::needless_return");
@@ -143,7 +143,7 @@ describe("parseCargoClippyJson", () => {
 
   it("parses clean clippy", () => {
     const stdout = JSON.stringify({ reason: "build-finished", success: true });
-    const result = parseCargoClippyJson(stdout);
+    const result = parseCargoClippyJson(stdout, 0);
     expect(result.total).toBe(0);
   });
 });
@@ -451,7 +451,7 @@ describe("parseCargoAuditJson", () => {
       },
     });
 
-    const result = parseCargoAuditJson(json);
+    const result = parseCargoAuditJson(json, 0);
 
     expect(result.vulnerabilities).toHaveLength(2);
     expect(result.vulnerabilities[0]).toEqual({
@@ -483,7 +483,7 @@ describe("parseCargoAuditJson", () => {
       },
     });
 
-    const result = parseCargoAuditJson(json);
+    const result = parseCargoAuditJson(json, 0);
 
     expect(result.vulnerabilities).toHaveLength(0);
     expect(result.summary.total).toBe(0);
@@ -509,7 +509,7 @@ describe("parseCargoAuditJson", () => {
       },
     });
 
-    const result = parseCargoAuditJson(json);
+    const result = parseCargoAuditJson(json, 0);
 
     expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].severity).toBe("unknown");
@@ -523,7 +523,7 @@ describe("parseCargoAuditJson", () => {
       database: { advisory_count: 500 },
     });
 
-    const result = parseCargoAuditJson(json);
+    const result = parseCargoAuditJson(json, 0);
 
     expect(result.vulnerabilities).toHaveLength(0);
     expect(result.summary.total).toBe(0);
@@ -564,7 +564,7 @@ describe("parseCargoAuditJson", () => {
       },
     });
 
-    const result = parseCargoAuditJson(json);
+    const result = parseCargoAuditJson(json, 0);
 
     expect(result.vulnerabilities[0].severity).toBe("critical");
     expect(result.vulnerabilities[1].severity).toBe("high");

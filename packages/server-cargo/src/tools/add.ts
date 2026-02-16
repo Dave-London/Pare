@@ -49,6 +49,36 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Disable default features of the dependency (--no-default-features)"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Package to target in a workspace (-p <SPEC>)"),
+        rename: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Rename the dependency (--rename <NAME>)"),
+        registry: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Registry to use (--registry <NAME>)"),
+        locked: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock is up to date (--locked)"),
+        frozen: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock and cache are up to date (--frozen)"),
+        offline: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run without accessing the network (--offline)"),
         compact: z
           .boolean()
           .optional()
@@ -68,16 +98,25 @@ export function registerAddTool(server: McpServer) {
       build,
       optional,
       noDefaultFeatures,
+      package: pkg,
+      rename,
+      registry,
+      locked,
+      frozen,
+      offline,
       compact,
     }) => {
       const cwd = path || process.cwd();
 
-      for (const pkg of packages) {
-        assertNoFlagInjection(pkg, "packages");
+      for (const p of packages) {
+        assertNoFlagInjection(p, "packages");
       }
       for (const f of features ?? []) {
         assertNoFlagInjection(f, "features");
       }
+      if (pkg) assertNoFlagInjection(pkg, "package");
+      if (rename) assertNoFlagInjection(rename, "rename");
+      if (registry) assertNoFlagInjection(registry, "registry");
 
       const args = ["add", ...packages];
       if (dev) args.push("--dev");
@@ -88,6 +127,12 @@ export function registerAddTool(server: McpServer) {
       if (build) args.push("--build");
       if (optional) args.push("--optional");
       if (noDefaultFeatures) args.push("--no-default-features");
+      if (pkg) args.push("-p", pkg);
+      if (rename) args.push("--rename", rename);
+      if (registry) args.push("--registry", registry);
+      if (locked) args.push("--locked");
+      if (frozen) args.push("--frozen");
+      if (offline) args.push("--offline");
 
       const result = await cargo(args, cwd);
       const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode);

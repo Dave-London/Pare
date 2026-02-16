@@ -40,8 +40,9 @@ export const CargoTestResultSchema = z.object({
 
 export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
 
-/** Zod schema for structured cargo clippy output with diagnostics and error/warning counts. */
+/** Zod schema for structured cargo clippy output with diagnostics, success flag, and error/warning counts. */
 export const CargoClippyResultSchema = z.object({
+  success: z.boolean(),
   diagnostics: z.array(CargoDiagnosticSchema).optional(),
   total: z.number(),
   errors: z.number(),
@@ -66,20 +67,22 @@ export const CargoAddedPackageSchema = z.object({
   version: z.string(),
 });
 
-/** Zod schema for structured cargo add output with added packages list. */
+/** Zod schema for structured cargo add output with added packages list and optional error message. */
 export const CargoAddResultSchema = z.object({
   success: z.boolean(),
   added: z.array(CargoAddedPackageSchema).optional(),
   total: z.number(),
+  error: z.string().optional(),
 });
 
 export type CargoAddResult = z.infer<typeof CargoAddResultSchema>;
 
-/** Zod schema for structured cargo remove output with removed package names. */
+/** Zod schema for structured cargo remove output with removed package names and optional error message. */
 export const CargoRemoveResultSchema = z.object({
   success: z.boolean(),
   removed: z.array(z.string()),
   total: z.number(),
+  error: z.string().optional(),
 });
 
 export type CargoRemoveResult = z.infer<typeof CargoRemoveResultSchema>;
@@ -93,10 +96,11 @@ export const CargoFmtResultSchema = z.object({
 
 export type CargoFmtResult = z.infer<typeof CargoFmtResultSchema>;
 
-/** Zod schema for structured cargo doc output with success flag and warning count. */
+/** Zod schema for structured cargo doc output with success flag, warning count, and optional output path. */
 export const CargoDocResultSchema = z.object({
   success: z.boolean(),
   warnings: z.number(),
+  outputDir: z.string().optional(),
 });
 
 export type CargoDocResult = z.infer<typeof CargoDocResultSchema>;
@@ -109,8 +113,9 @@ export const CargoUpdateResultSchema = z.object({
 
 export type CargoUpdateResult = z.infer<typeof CargoUpdateResultSchema>;
 
-/** Zod schema for structured cargo tree output with tree text and unique package count. */
+/** Zod schema for structured cargo tree output with tree text, unique package count, and success flag. */
 export const CargoTreeResultSchema = z.object({
+  success: z.boolean(),
   tree: z.string().optional(),
   packages: z.number(),
 });
@@ -127,12 +132,14 @@ export const CargoAuditVulnSchema = z.object({
     .describe("Severity level derived from CVSS"),
   title: z.string().describe("Short description of the vulnerability"),
   url: z.string().optional().describe("URL with more information"),
+  date: z.string().optional().describe("Date the advisory was published"),
   patched: z.array(z.string()).describe("Version requirements that fix the vulnerability"),
   unaffected: z.array(z.string()).optional().describe("Version requirements not affected"),
 });
 
-/** Zod schema for structured cargo audit output with vulnerability list and severity summary. */
+/** Zod schema for structured cargo audit output with vulnerability list, success flag, and severity summary. */
 export const CargoAuditResultSchema = z.object({
+  success: z.boolean(),
   vulnerabilities: z.array(CargoAuditVulnSchema).optional(),
   summary: z
     .object({

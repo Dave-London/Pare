@@ -35,6 +35,31 @@ export function registerRemoveTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be removed without modifying Cargo.toml (--dry-run)"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Package to target in a workspace (-p <SPEC>)"),
+        locked: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock is up to date (--locked)"),
+        frozen: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock and cache are up to date (--frozen)"),
+        offline: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run without accessing the network (--offline)"),
+        manifestPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Cargo.toml (--manifest-path <PATH>)"),
         compact: z
           .boolean()
           .optional()
@@ -45,17 +70,36 @@ export function registerRemoveTool(server: McpServer) {
       },
       outputSchema: CargoRemoveResultSchema,
     },
-    async ({ path, packages, dev, build, dryRun, compact }) => {
+    async ({
+      path,
+      packages,
+      dev,
+      build,
+      dryRun,
+      package: pkg,
+      locked,
+      frozen,
+      offline,
+      manifestPath,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
-      for (const pkg of packages) {
-        assertNoFlagInjection(pkg, "packages");
+      for (const p of packages) {
+        assertNoFlagInjection(p, "packages");
       }
+      if (pkg) assertNoFlagInjection(pkg, "package");
+      if (manifestPath) assertNoFlagInjection(manifestPath, "manifestPath");
 
       const args = ["remove", ...packages];
       if (dev) args.push("--dev");
       if (build) args.push("--build");
       if (dryRun) args.push("--dry-run");
+      if (pkg) args.push("-p", pkg);
+      if (locked) args.push("--locked");
+      if (frozen) args.push("--frozen");
+      if (offline) args.push("--offline");
+      if (manifestPath) args.push("--manifest-path", manifestPath);
 
       const result = await cargo(args, cwd);
       const data = parseCargoRemoveOutput(result.stdout, result.stderr, result.exitCode);

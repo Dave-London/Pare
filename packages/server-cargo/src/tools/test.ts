@@ -40,24 +40,50 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Test in release mode with optimizations (--release)"),
-        ignored: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Run only ignored tests (-- --ignored)"),
-        includeIgnored: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Run both ignored and non-ignored tests (-- --include-ignored)"),
         doc: z.boolean().optional().default(false).describe("Run only documentation tests (--doc)"),
-        exact: z
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Package to test in a workspace (-p <SPEC>)"),
+        features: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Space or comma separated list of features to activate (--features)"),
+        allFeatures: z
           .boolean()
           .optional()
           .default(false)
+          .describe("Activate all available features (--all-features)"),
+        noDefaultFeatures: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not activate the default feature (--no-default-features)"),
+        testArgs: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
           .describe(
-            "Exactly match the test name filter instead of substring matching (-- --exact)",
+            "Arguments to pass to the test harness (after --). " +
+              "Example: ['--test-threads=1', '--nocapture', '--ignored', '--include-ignored', '--exact']",
           ),
+        locked: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock is up to date (--locked)"),
+        frozen: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Require Cargo.lock and cache are up to date (--frozen)"),
+        offline: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run without accessing the network (--offline)"),
         compact: z
           .boolean()
           .optional()
@@ -74,28 +100,42 @@ export function registerTestTool(server: McpServer) {
       noFailFast,
       noRun,
       release,
-      ignored,
-      includeIgnored,
       doc,
-      exact,
+      package: pkg,
+      features,
+      allFeatures,
+      noDefaultFeatures,
+      testArgs,
+      locked,
+      frozen,
+      offline,
       compact,
     }) => {
       const cwd = path || process.cwd();
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (pkg) assertNoFlagInjection(pkg, "package");
 
       const args = ["test"];
+      if (pkg) args.push("-p", pkg);
       if (noFailFast) args.push("--no-fail-fast");
       if (noRun) args.push("--no-run");
       if (release) args.push("--release");
       if (doc) args.push("--doc");
+      if (features && features.length > 0) {
+        for (const f of features) {
+          assertNoFlagInjection(f, "features");
+        }
+        args.push("--features", features.join(","));
+      }
+      if (allFeatures) args.push("--all-features");
+      if (noDefaultFeatures) args.push("--no-default-features");
+      if (locked) args.push("--locked");
+      if (frozen) args.push("--frozen");
+      if (offline) args.push("--offline");
       if (filter) args.push(filter);
-
-      // Flags that go after `--` (test binary args)
-      const testArgs: string[] = [];
-      if (ignored) testArgs.push("--ignored");
-      if (includeIgnored) testArgs.push("--include-ignored");
-      if (exact) testArgs.push("--exact");
-      if (testArgs.length > 0) args.push("--", ...testArgs);
+      if (testArgs && testArgs.length > 0) {
+        args.push("--", ...testArgs);
+      }
 
       const result = await cargo(args, cwd);
       const data = parseCargoTestOutput(result.stdout, result.exitCode);
