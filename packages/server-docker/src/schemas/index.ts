@@ -124,10 +124,16 @@ export const DockerPullSchema = z.object({
 
 export type DockerPull = z.infer<typeof DockerPullSchema>;
 
-/** Zod schema for structured docker inspect output with container/image details. */
+/** Zod schema for structured docker inspect output with container/image details.
+ *  The `inspectType` field distinguishes between container and image inspect results.
+ *  Container-specific fields: `state`, `healthStatus`, `restartPolicy`.
+ *  Image-specific fields: `repoTags`, `repoDigests`, `size`, `cmd`, `entrypoint`.
+ */
 export const DockerInspectSchema = z.object({
   id: z.string(),
   name: z.string(),
+  /** Discriminates between container and image inspect results. */
+  inspectType: z.enum(["container", "image"]).optional(),
   state: z
     .object({
       status: z.string(),
@@ -143,6 +149,17 @@ export const DockerInspectSchema = z.object({
   healthStatus: z.enum(["healthy", "unhealthy", "starting", "none"]).optional(),
   env: z.array(z.string()).optional(),
   restartPolicy: z.string().optional(),
+  // Image-specific fields (present when inspectType === "image")
+  /** Repository tags for the image (e.g., ["nginx:latest", "nginx:1.25"]). */
+  repoTags: z.array(z.string()).optional(),
+  /** Repository digests for the image (e.g., ["nginx@sha256:abc..."]). */
+  repoDigests: z.array(z.string()).optional(),
+  /** Image size in bytes. */
+  size: z.number().optional(),
+  /** Default command (Config.Cmd) for the image. */
+  cmd: z.array(z.string()).optional(),
+  /** Entrypoint (Config.Entrypoint) for the image. */
+  entrypoint: z.array(z.string()).optional(),
 });
 
 export type DockerInspect = z.infer<typeof DockerInspectSchema>;

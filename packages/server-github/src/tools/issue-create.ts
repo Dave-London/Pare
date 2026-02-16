@@ -79,7 +79,9 @@ export function registerIssueCreateTool(server: McpServer) {
       if (template) assertNoFlagInjection(template, "template");
       if (repo) assertNoFlagInjection(repo, "repo");
 
-      const args = ["issue", "create", "--title", title, "--body", body];
+      // Use --body-file - to pass body via stdin, avoiding shell escaping issues
+      // for long bodies with special characters
+      const args = ["issue", "create", "--title", title, "--body-file", "-"];
       if (labels && labels.length > 0) {
         for (const label of labels) {
           args.push("--label", label);
@@ -100,7 +102,7 @@ export function registerIssueCreateTool(server: McpServer) {
       // S-gap P1: Map repo to --repo
       if (repo) args.push("--repo", repo);
 
-      const result = await ghCmd(args, cwd);
+      const result = await ghCmd(args, { cwd, stdin: body });
 
       if (result.exitCode !== 0) {
         throw new Error(`gh issue create failed: ${result.stderr}`);

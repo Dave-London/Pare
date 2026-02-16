@@ -25,6 +25,13 @@ export function registerImagesTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by reference (e.g., 'myapp', 'nginx:*')"),
+        filterExpr: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Key-value filter expression (--filter). Examples: 'dangling=true', 'reference=myimage:*', 'before=image:tag', 'since=image:tag', 'label=com.example.version'",
+          ),
         digests: z
           .boolean()
           .optional()
@@ -45,11 +52,13 @@ export function registerImagesTool(server: McpServer) {
       },
       outputSchema: DockerImagesSchema,
     },
-    async ({ all, filter, digests, noTrunc, compact }) => {
+    async ({ all, filter, filterExpr, digests, noTrunc, compact }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (filterExpr) assertNoFlagInjection(filterExpr, "filterExpr");
 
       const args = ["images", "--format", "json"];
       if (all) args.push("-a");
+      if (filterExpr) args.push("--filter", filterExpr);
       if (digests) args.push("--digests");
       if (noTrunc) args.push("--no-trunc");
       if (filter) args.push(filter);

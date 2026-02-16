@@ -5,6 +5,7 @@ import { ghCmd } from "../lib/gh-runner.js";
 import { parseGistCreate } from "../lib/parsers.js";
 import { formatGistCreate } from "../lib/formatters.js";
 import { GistCreateResultSchema } from "../schemas/index.js";
+import { assertSafeFilePath } from "../lib/path-validation.js";
 
 /** Registers the `gist-create` tool on the given MCP server. */
 export function registerGistCreateTool(server: McpServer) {
@@ -42,6 +43,12 @@ export function registerGistCreateTool(server: McpServer) {
       const cwd = path || process.cwd();
 
       if (description) assertNoFlagInjection(description, "description");
+
+      // Validate all file paths are safe before passing to gh CLI
+      for (const file of files) {
+        assertNoFlagInjection(file, "files");
+        assertSafeFilePath(file, cwd);
+      }
 
       const args = ["gist", "create"];
       if (description) {

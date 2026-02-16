@@ -13,65 +13,99 @@ export function registerIssueUpdateTool(server: McpServer) {
     {
       title: "Issue Update",
       description:
-        "Updates issue metadata (title, body, labels, assignees, milestone, projects). Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
+        "Updates issue metadata (title, body, labels, assignees, milestone, projects). " +
+        "All fields except `number` are optional — only supply the fields you want to change. " +
+        "For list fields (labels, assignees, projects), use `add*` to append and `remove*` to " +
+        "delete specific items without affecting others. " +
+        "Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
       inputSchema: {
-        // S-gap P1: Accept number or URL via union
+        // ── Target ──────────────────────────────────────────────────
+        /** Issue number (integer) or full GitHub issue URL. */
         number: z
           .union([z.number(), z.string().max(INPUT_LIMITS.STRING_MAX)])
-          .describe("Issue number or URL"),
+          .describe("Issue number or full GitHub issue URL to update"),
+        /** Repository path on disk. Defaults to cwd. */
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
-        title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("New issue title"),
+
+        // ── Content fields ──────────────────────────────────────────
+        /** Replace the issue title entirely. */
+        title: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("New issue title (replaces existing)"),
+        /** Replace the issue body entirely. Passed via stdin to avoid shell escaping issues. */
         body: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("New issue body/description"),
+          .describe("New issue body/description (replaces existing, sent via stdin)"),
+
+        // ── Labels (additive/subtractive) ───────────────────────────
+        /** Labels to add to the issue. Does not remove existing labels. */
         addLabels: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Labels to add"),
+          .describe("Labels to add (preserves existing labels)"),
+        /** Labels to remove from the issue. Ignores labels not present. */
         removeLabels: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Labels to remove"),
+          .describe("Labels to remove (ignores labels not currently set)"),
+
+        // ── Assignees (additive/subtractive) ────────────────────────
+        /** Assignees to add. Does not remove existing assignees. */
         addAssignees: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Assignees to add"),
+          .describe("GitHub usernames to assign (preserves existing assignees)"),
+        /** Assignees to remove. Ignores users not currently assigned. */
         removeAssignees: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Assignees to remove"),
-        // S-gap P0: Add milestone
+          .describe("GitHub usernames to unassign (ignores users not assigned)"),
+
+        // ── Milestone ───────────────────────────────────────────────
+        /** Set the milestone. Use `removeMilestone` to clear it instead. */
         milestone: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("Set milestone on the issue (--milestone)"),
+          .describe(
+            "Set milestone by name or number (--milestone). Mutually exclusive with removeMilestone.",
+          ),
+        /** Remove the current milestone from the issue. */
         removeMilestone: z
           .boolean()
           .optional()
-          .describe("Remove the milestone from the issue (--remove-milestone)"),
-        // S-gap P1: Add project management
+          .describe(
+            "Remove the milestone from the issue (--remove-milestone). Mutually exclusive with milestone.",
+          ),
+
+        // ── Projects (additive/subtractive) ─────────────────────────
+        /** Projects to add. Does not remove existing project associations. */
         addProjects: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Projects to add (--add-project)"),
+          .describe("Project board names to add (--add-project)"),
+        /** Projects to remove. Ignores projects not currently associated. */
         removeProjects: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
-          .describe("Projects to remove (--remove-project)"),
-        // S-gap P1: Add repo for cross-repo updates
+          .describe("Project board names to remove (--remove-project)"),
+
+        // ── Cross-repo ──────────────────────────────────────────────
+        /** Target a different repository than the one at `path`. */
         repo: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -157,10 +191,10 @@ export function registerIssueUpdateTool(server: McpServer) {
           args.push("--remove-assignee", assignee);
         }
       }
-      // S-gap P0: Map milestone
+      // Milestone: set or remove (mutually exclusive)
       if (milestone) args.push("--milestone", milestone);
       if (removeMilestone) args.push("--remove-milestone");
-      // S-gap P1: Map projects
+      // Projects: add or remove
       if (addProjects && addProjects.length > 0) {
         for (const project of addProjects) {
           args.push("--add-project", project);
