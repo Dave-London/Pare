@@ -33,6 +33,7 @@ export function registerPrListTool(server: McpServer) {
           .optional()
           .describe("Filter by author username"),
         label: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Filter by label"),
+        draft: z.boolean().optional().describe("Filter by draft status (-d/--draft)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -48,7 +49,7 @@ export function registerPrListTool(server: McpServer) {
       },
       outputSchema: PrListResultSchema,
     },
-    async ({ state, limit, author, label, path, compact }) => {
+    async ({ state, limit, author, label, draft, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (author) assertNoFlagInjection(author, "author");
@@ -58,6 +59,7 @@ export function registerPrListTool(server: McpServer) {
       if (state) args.push("--state", state);
       if (author) args.push("--author", author);
       if (label) args.push("--label", label);
+      if (draft) args.push("--draft");
 
       const result = await ghCmd(args, cwd);
 

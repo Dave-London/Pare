@@ -28,6 +28,23 @@ export function registerPrCreateTool(server: McpServer) {
           .optional()
           .describe("Head branch (default: current branch)"),
         draft: z.boolean().optional().default(false).describe("Create as draft PR"),
+        fill: z.boolean().optional().describe("Auto-fill title and body from commits (-f/--fill)"),
+        fillFirst: z
+          .boolean()
+          .optional()
+          .describe("Use first commit for title and body (--fill-first)"),
+        fillVerbose: z
+          .boolean()
+          .optional()
+          .describe("Use verbose commit messages for body (--fill-verbose)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe("Preview PR creation without executing (--dry-run)"),
+        noMaintainerEdit: z
+          .boolean()
+          .optional()
+          .describe("Disallow maintainer edits to the PR (--no-maintainer-edit)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -36,19 +53,36 @@ export function registerPrCreateTool(server: McpServer) {
       },
       outputSchema: PrCreateResultSchema,
     },
-    async ({ title, body, base, head, draft, path }) => {
+    async ({
+      title,
+      body,
+      base,
+      head,
+      draft,
+      fill,
+      fillFirst,
+      fillVerbose,
+      dryRun,
+      noMaintainerEdit,
+      path,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(title, "title");
       if (base) assertNoFlagInjection(base, "base");
       if (head) assertNoFlagInjection(head, "head");
 
-      const args = ["pr", "create", "--title", title, "--body", body];
+      const args = ["pr", "create", "--title", title, "--body-file", "-"];
       if (base) args.push("--base", base);
       if (head) args.push("--head", head);
       if (draft) args.push("--draft");
+      if (fill) args.push("--fill");
+      if (fillFirst) args.push("--fill-first");
+      if (fillVerbose) args.push("--fill-verbose");
+      if (dryRun) args.push("--dry-run");
+      if (noMaintainerEdit) args.push("--no-maintainer-edit");
 
-      const result = await ghCmd(args, cwd);
+      const result = await ghCmd(args, { cwd, stdin: body });
 
       if (result.exitCode !== 0) {
         throw new Error(`gh pr create failed: ${result.stderr}`);

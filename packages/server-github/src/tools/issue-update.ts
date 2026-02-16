@@ -47,6 +47,10 @@ export function registerIssueUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Assignees to remove"),
+        removeMilestone: z
+          .boolean()
+          .optional()
+          .describe("Remove the milestone from the issue (--remove-milestone)"),
       },
       outputSchema: EditResultSchema,
     },
@@ -59,6 +63,7 @@ export function registerIssueUpdateTool(server: McpServer) {
       removeLabels,
       addAssignees,
       removeAssignees,
+      removeMilestone,
     }) => {
       const cwd = path || process.cwd();
 
@@ -106,6 +111,7 @@ export function registerIssueUpdateTool(server: McpServer) {
           args.push("--remove-assignee", assignee);
         }
       }
+      if (removeMilestone) args.push("--remove-milestone");
       if (body) {
         args.push("--body-file", "-");
       }

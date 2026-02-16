@@ -19,6 +19,7 @@ export function registerPrViewTool(server: McpServer) {
         "Views a pull request by number. Returns structured data with state, checks, review decision, and diff stats. Use instead of running `gh pr view` in the terminal.",
       inputSchema: {
         number: z.number().describe("Pull request number"),
+        comments: z.boolean().optional().describe("Include PR comments in output (-c/--comments)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -34,10 +35,11 @@ export function registerPrViewTool(server: McpServer) {
       },
       outputSchema: PrViewResultSchema,
     },
-    async ({ number, path, compact }) => {
+    async ({ number, comments, path, compact }) => {
       const cwd = path || process.cwd();
 
       const args = ["pr", "view", String(number), "--json", PR_VIEW_FIELDS];
+      if (comments) args.push("--comments");
       const result = await ghCmd(args, cwd);
 
       if (result.exitCode !== 0) {
