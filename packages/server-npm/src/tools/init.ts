@@ -40,13 +40,69 @@ export function registerInitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Set private: true in package.json (maps to yarn --private)"),
+        license: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set the license field at init time (maps to --init-license)"),
+        authorName: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set author name (maps to --init-author-name)"),
+        authorEmail: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set author email (maps to --init-author-email)"),
+        authorUrl: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set author URL (maps to --init-author-url)"),
+        version: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Override default version '1.0.0' (maps to --init-version)"),
+        module: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set default module entry point (maps to --init-module)"),
+        workspace: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Create a workspace package (maps to npm --workspace)"),
         packageManager: packageManagerInput,
       },
       outputSchema: NpmInitSchema,
     },
-    async ({ path, yes, scope, force, private: isPrivate, packageManager }) => {
+    async ({
+      path,
+      yes,
+      scope,
+      force,
+      private: isPrivate,
+      license,
+      authorName,
+      authorEmail,
+      authorUrl,
+      version,
+      module: initModule,
+      workspace,
+      packageManager,
+    }) => {
       const cwd = path || process.cwd();
       if (scope) assertNoFlagInjection(scope, "scope");
+      if (license) assertNoFlagInjection(license, "license");
+      if (authorName) assertNoFlagInjection(authorName, "authorName");
+      if (authorEmail) assertNoFlagInjection(authorEmail, "authorEmail");
+      if (authorUrl) assertNoFlagInjection(authorUrl, "authorUrl");
+      if (version) assertNoFlagInjection(version, "version");
+      if (initModule) assertNoFlagInjection(initModule, "module");
+      if (workspace) assertNoFlagInjection(workspace, "workspace");
       const pm = await detectPackageManager(cwd, packageManager);
 
       const pmArgs = ["init"];
@@ -62,12 +118,19 @@ export function registerInitTool(server: McpServer) {
       if (isPrivate && pm === "yarn") {
         pmArgs.push("--private");
       }
+      if (license) pmArgs.push(`--init-license=${license}`);
+      if (authorName) pmArgs.push(`--init-author-name=${authorName}`);
+      if (authorEmail) pmArgs.push(`--init-author-email=${authorEmail}`);
+      if (authorUrl) pmArgs.push(`--init-author-url=${authorUrl}`);
+      if (version) pmArgs.push(`--init-version=${version}`);
+      if (initModule) pmArgs.push(`--init-module=${initModule}`);
+      if (workspace && pm === "npm") pmArgs.push(`--workspace=${workspace}`);
 
       const result = await runPm(pm, pmArgs, cwd);
       const packageJsonPath = join(cwd, "package.json");
 
       let packageName = "unknown";
-      let version = "0.0.0";
+      let pkgVersion = "0.0.0";
       let success = result.exitCode === 0;
 
       if (success) {
@@ -75,13 +138,13 @@ export function registerInitTool(server: McpServer) {
           const raw = await readFile(packageJsonPath, "utf-8");
           const pkg = JSON.parse(raw);
           packageName = pkg.name ?? "unknown";
-          version = pkg.version ?? "0.0.0";
+          pkgVersion = pkg.version ?? "0.0.0";
         } catch {
           success = false;
         }
       }
 
-      const data = parseInitOutput(success, packageName, version, packageJsonPath);
+      const data = parseInitOutput(success, packageName, pkgVersion, packageJsonPath);
       return dualOutput({ ...data, packageManager: pm }, formatInit);
     },
   );

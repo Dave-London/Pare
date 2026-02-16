@@ -18,7 +18,7 @@ import type { PackageManager } from "./detect-pm.js";
 interface NpmAuditVulnEntry {
   severity?: string;
   title?: string;
-  via?: Array<{ title?: string; url?: string }> | unknown[];
+  via?: Array<{ title?: string; url?: string; cwe?: string[] }> | unknown[];
   range?: string;
   fixAvailable?: boolean;
 }
@@ -33,6 +33,8 @@ interface NpmAuditAdvisory {
   vulnerable_versions?: string;
   range?: string;
   patched_versions?: string;
+  cves?: string[];
+  cwe?: string[];
 }
 
 /** Shape of an npm outdated entry from `npm outdated --json`. */
@@ -66,6 +68,10 @@ interface NpmSearchEntry {
   description?: string;
   author?: { name?: string } | string;
   date?: string;
+  keywords?: string[];
+  score?: { final?: number; detail?: unknown };
+  links?: { npm?: string; homepage?: string; repository?: string };
+  scope?: string;
 }
 
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
@@ -109,6 +115,37 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
   };
 }
 
+/**
+ * Extracts CVE identifier from an npm audit advisory URL.
+ * URLs typically look like: https://github.com/advisories/GHSA-xxx or
+ * contain CVE references in the via array.
+ */
+function extractCve(via: NpmAuditVulnEntry["via"], url?: string): { cve?: string; cwe?: string[] } {
+  const result: { cve?: string; cwe?: string[] } = {};
+
+  if (url) {
+    const cveMatch = url.match(/(CVE-\d{4}-\d+)/i);
+    if (cveMatch) result.cve = cveMatch[1].toUpperCase();
+  }
+
+  if (Array.isArray(via)) {
+    for (const v of via) {
+      if (typeof v === "object" && v !== null) {
+        const entry = v as { url?: string; cwe?: string[] };
+        if (!result.cve && entry.url) {
+          const cveMatch = entry.url.match(/(CVE-\d{4}-\d+)/i);
+          if (cveMatch) result.cve = cveMatch[1].toUpperCase();
+        }
+        if (entry.cwe && Array.isArray(entry.cwe) && entry.cwe.length > 0) {
+          result.cwe = entry.cwe;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 /** Parses `npm audit --json` output into structured vulnerability data with severity breakdown. */
 export function parseAuditJson(jsonStr: string): NpmAudit {
   const data = JSON.parse(jsonStr);
@@ -117,13 +154,17 @@ export function parseAuditJson(jsonStr: string): NpmAudit {
   const vulns = data.vulnerabilities ?? {};
   const vulnerabilities = Object.entries(vulns).map(([name, raw]) => {
     const v = raw as NpmAuditVulnEntry;
+    const url = (v.via?.[0] as { url?: string })?.url;
+    const { cve, cwe } = extractCve(v.via, url);
     return {
       name,
       severity: (v.severity ?? "info") as NpmAudit["vulnerabilities"][number]["severity"],
       title: v.title ?? (v.via?.[0] as { title?: string })?.title ?? "Unknown",
-      url: (v.via?.[0] as { url?: string })?.url,
+      url,
       range: v.range,
       fixAvailable: !!v.fixAvailable,
+      ...(cve ? { cve } : {}),
+      ...(cwe ? { cwe } : {}),
     };
   });
 
@@ -165,6 +206,8 @@ export function parsePnpmAuditJson(jsonStr: string): NpmAudit {
       url: adv.url,
       range: adv.vulnerable_versions ?? adv.range,
       fixAvailable: !!adv.patched_versions && adv.patched_versions !== "<0.0.0",
+      ...(adv.cves && adv.cves.length > 0 ? { cve: adv.cves[0] } : {}),
+      ...(adv.cwe && adv.cwe.length > 0 ? { cwe: adv.cwe } : {}),
     };
   });
 
@@ -328,7 +371,36 @@ export function parseInfoJson(jsonStr: string): NpmInfo {
     result.dependencies = data.dependencies;
   }
   if (data.dist?.tarball) {
-    result.dist = { tarball: data.dist.tarball };
+    result.dist = {
+      tarball: data.dist.tarball,
+      ...(data.dist.integrity ? { integrity: data.dist.integrity } : {}),
+    };
+  }
+  if (data.engines && Object.keys(data.engines).length > 0) {
+    result.engines = data.engines;
+  }
+  if (data.peerDependencies && Object.keys(data.peerDependencies).length > 0) {
+    result.peerDependencies = data.peerDependencies;
+  }
+  if (data.deprecated) {
+    result.deprecated =
+      typeof data.deprecated === "string" ? data.deprecated : "This package is deprecated";
+  }
+  if (data.repository) {
+    if (typeof data.repository === "string") {
+      result.repository = { url: data.repository };
+    } else if (typeof data.repository === "object") {
+      result.repository = {
+        ...(data.repository.type ? { type: data.repository.type } : {}),
+        ...(data.repository.url ? { url: data.repository.url } : {}),
+      };
+    }
+  }
+  if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
+    result.keywords = data.keywords;
+  }
+  if (data.versions && Array.isArray(data.versions) && data.versions.length > 0) {
+    result.versions = data.versions;
   }
 
   return result;
@@ -384,6 +456,8 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
           url: adv.url,
           range: adv.vulnerable_versions,
           fixAvailable: !!adv.patched_versions && adv.patched_versions !== "<0.0.0",
+          ...(adv.cves && adv.cves.length > 0 ? { cve: adv.cves[0] } : {}),
+          ...(adv.cwe && adv.cwe.length > 0 ? { cwe: adv.cwe } : {}),
         });
       } else if (entry.type === "auditSummary" && entry.data) {
         const v = entry.data.vulnerabilities ?? {};
@@ -542,17 +616,37 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
   const arr = Array.isArray(data) ? data : [];
   const packages = arr.map((pkg: unknown) => {
     const p = pkg as NpmSearchEntry;
-    return {
+    const result: NpmSearch["packages"][number] = {
       name: p.name ?? "unknown",
       version: p.version ?? "0.0.0",
       description: p.description ?? "",
-      ...(typeof p.author === "object" && p.author?.name
-        ? { author: p.author.name }
-        : p.author && typeof p.author === "string"
-          ? { author: p.author }
-          : {}),
-      ...(p.date ? { date: p.date } : {}),
     };
+
+    if (typeof p.author === "object" && p.author?.name) {
+      result.author = p.author.name;
+    } else if (p.author && typeof p.author === "string") {
+      result.author = p.author;
+    }
+
+    if (p.date) result.date = p.date;
+    if (p.keywords && Array.isArray(p.keywords) && p.keywords.length > 0) {
+      result.keywords = p.keywords;
+    }
+    if (p.score?.final !== undefined) {
+      result.score = p.score.final;
+    }
+    if (p.links) {
+      const links: { npm?: string; homepage?: string; repository?: string } = {};
+      if (p.links.npm) links.npm = p.links.npm;
+      if (p.links.homepage) links.homepage = p.links.homepage;
+      if (p.links.repository) links.repository = p.links.repository;
+      if (Object.keys(links).length > 0) result.links = links;
+    }
+    if (p.scope && p.scope !== "unscoped") {
+      result.scope = p.scope;
+    }
+
+    return result;
   });
 
   return { packages, total: packages.length };

@@ -29,6 +29,21 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default(0)
           .describe("Dependency tree depth (default: 0, top-level only)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Specific package names to check if installed and at what version"),
+        workspace: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Workspace to list packages for (maps to --workspace for npm)"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Escape-hatch for PM-specific flags not modeled in the schema"),
         compact: z
           .boolean()
           .optional()
@@ -62,6 +77,9 @@ export function registerListTool(server: McpServer) {
     async ({
       path,
       depth,
+      packages,
+      workspace,
+      args,
       compact,
       production,
       all,
@@ -71,6 +89,13 @@ export function registerListTool(server: McpServer) {
       filter,
     }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (workspace) assertNoFlagInjection(workspace, "workspace");
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
@@ -93,6 +118,9 @@ export function registerListTool(server: McpServer) {
       if (all && pm !== "yarn") pmArgs.push("--all");
       if (showLong && pm !== "yarn") pmArgs.push("--long");
       if (isGlobal) pmArgs.push("--global");
+      if (workspace && pm === "npm") pmArgs.push(`--workspace=${workspace}`);
+      if (packages && packages.length > 0) pmArgs.push(...packages);
+      if (args && args.length > 0) pmArgs.push(...args);
 
       const result = await runPm(pm, pmArgs, cwd);
 

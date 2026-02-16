@@ -34,6 +34,20 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the script"),
+        workspace: z
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
+          .optional()
+          .describe(
+            "Workspace target(s) — maps to npm --workspace or pnpm --filter for unified workspace targeting",
+          ),
+        scriptShell: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Override the shell used to run scripts (maps to --script-shell)"),
         ifPresent: z
           .boolean()
           .optional()
@@ -71,6 +85,8 @@ export function registerRunTool(server: McpServer) {
       path,
       script,
       args,
+      workspace,
+      scriptShell,
       ifPresent,
       recursive,
       ignoreScripts,
@@ -86,6 +102,13 @@ export function registerRunTool(server: McpServer) {
         assertNoFlagInjection(a, "args");
       }
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (scriptShell) assertNoFlagInjection(scriptShell, "scriptShell");
+
+      // Validate workspace values
+      const workspaces = workspace ? (Array.isArray(workspace) ? workspace : [workspace]) : [];
+      for (const w of workspaces) {
+        assertNoFlagInjection(w, "workspace");
+      }
 
       const pm = await detectPackageManager(cwd, packageManager);
 
@@ -100,6 +123,17 @@ export function registerRunTool(server: McpServer) {
       if (silent) pmArgs.push("--silent");
       if (parallel && pm === "pnpm") pmArgs.splice(0, 0, "--parallel");
       if (stream && pm === "pnpm") pmArgs.splice(0, 0, "--stream");
+      if (scriptShell) pmArgs.push(`--script-shell=${scriptShell}`);
+
+      // Add workspace targeting
+      for (const w of workspaces) {
+        if (pm === "npm") {
+          pmArgs.splice(0, 0, `--workspace=${w}`);
+        } else if (pm === "pnpm") {
+          pmArgs.splice(0, 0, `--filter=${w}`);
+        }
+      }
+
       if (args && args.length > 0) {
         pmArgs.push("--");
         pmArgs.push(...args);

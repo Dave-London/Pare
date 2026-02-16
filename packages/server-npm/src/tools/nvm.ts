@@ -31,7 +31,35 @@ export function registerNvmTool(server: McpServer) {
           throw new Error(`nvm current failed: ${result.stderr}`);
         }
         const parsed = parseNvmOutput("", result.stdout);
-        return dualOutput(parsed, formatNvm);
+
+        // Try to get the filesystem path to the active Node.js binary
+        let which: string | undefined;
+        try {
+          const whichResult = await run("nvm", ["which", "current"], { timeout: 15_000 });
+          if (whichResult.exitCode === 0 && whichResult.stdout.trim()) {
+            which = whichResult.stdout.trim();
+          }
+        } catch {
+          // nvm which may not be available on nvm-windows; that's ok
+        }
+
+        // Try to detect architecture
+        let arch: string | undefined;
+        try {
+          const archResult = await run("node", ["-e", "process.stdout.write(process.arch)"], {
+            timeout: 5_000,
+          });
+          if (archResult.exitCode === 0 && archResult.stdout.trim()) {
+            arch = archResult.stdout.trim();
+          }
+        } catch {
+          // Not critical
+        }
+
+        return dualOutput(
+          { ...parsed, ...(which ? { which } : {}), ...(arch ? { arch } : {}) },
+          formatNvm,
+        );
       }
 
       // action === "list"
@@ -50,7 +78,34 @@ export function registerNvmTool(server: McpServer) {
       }
 
       const parsed = parseNvmOutput(listResult.stdout, currentStdout);
-      return dualOutput(parsed, formatNvm);
+
+      // Try to get which path and arch
+      let which: string | undefined;
+      try {
+        const whichResult = await run("nvm", ["which", "current"], { timeout: 15_000 });
+        if (whichResult.exitCode === 0 && whichResult.stdout.trim()) {
+          which = whichResult.stdout.trim();
+        }
+      } catch {
+        // nvm which may not be available; that's ok
+      }
+
+      let arch: string | undefined;
+      try {
+        const archResult = await run("node", ["-e", "process.stdout.write(process.arch)"], {
+          timeout: 5_000,
+        });
+        if (archResult.exitCode === 0 && archResult.stdout.trim()) {
+          arch = archResult.stdout.trim();
+        }
+      } catch {
+        // Not critical
+      }
+
+      return dualOutput(
+        { ...parsed, ...(which ? { which } : {}), ...(arch ? { arch } : {}) },
+        formatNvm,
+      );
     },
   );
 }

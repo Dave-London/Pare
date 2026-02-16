@@ -27,6 +27,23 @@ export function registerInfoTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        registry: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Registry URL to query (maps to --registry, e.g., 'https://npm.pkg.github.com')",
+          ),
+        field: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Query a single field (e.g., 'engines', 'peerDependencies', 'versions')"),
+        workspace: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Workspace for scoped queries (maps to --workspace for npm)"),
         compact: z
           .boolean()
           .optional()
@@ -38,13 +55,21 @@ export function registerInfoTool(server: McpServer) {
       },
       outputSchema: NpmInfoSchema,
     },
-    async ({ package: pkg, path, compact, packageManager }) => {
+    async ({ package: pkg, path, registry, field, workspace, compact, packageManager }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(pkg, "package");
+      if (registry) assertNoFlagInjection(registry, "registry");
+      if (field) assertNoFlagInjection(field, "field");
+      if (workspace) assertNoFlagInjection(workspace, "workspace");
       const pm = await detectPackageManager(cwd, packageManager);
 
       // All package managers query the npm registry; yarn uses "info" as well
-      const result = await runPm(pm, ["info", pkg, "--json"], cwd);
+      const pmArgs = ["info", pkg, "--json"];
+      if (registry) pmArgs.push(`--registry=${registry}`);
+      if (field) pmArgs.push(field);
+      if (workspace && pm === "npm") pmArgs.push(`--workspace=${workspace}`);
+
+      const result = await runPm(pm, pmArgs, cwd);
 
       if (result.exitCode !== 0 && !result.stdout) {
         throw new Error(`${pm} info failed: ${result.stderr}`);
