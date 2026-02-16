@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parsePsJson } from "../lib/parsers.js";
 import { formatPs, compactPsMap, formatPsCompact } from "../lib/formatters.js";
@@ -26,6 +26,11 @@ export function registerPsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Display total file sizes per container (default: false)"),
+        filter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by status, name, label, network (--filter)"),
         compact: z
           .boolean()
           .optional()
@@ -36,11 +41,14 @@ export function registerPsTool(server: McpServer) {
       },
       outputSchema: DockerPsSchema,
     },
-    async ({ all, last, size, compact }) => {
+    async ({ all, last, size, filter, compact }) => {
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const args = ["ps", "--format", "json", "--no-trunc"];
       if (all) args.push("-a");
       if (last != null) args.push("--last", String(last));
       if (size) args.push("-s");
+      if (filter) args.push("--filter", filter);
       const result = await docker(args);
       const data = parsePsJson(result.stdout);
       return compactDualOutput(

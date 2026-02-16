@@ -56,12 +56,13 @@ export const DockerLogsSchema = z.object({
 
 export type DockerLogs = z.infer<typeof DockerLogsSchema>;
 
-/** Zod schema for a single Docker image with ID, repository, tag, size, and creation time. */
+/** Zod schema for a single Docker image with ID, repository, tag, size, digest, and creation time. */
 export const ImageSchema = z.object({
   id: z.string(),
   repository: z.string(),
   tag: z.string(),
   size: z.string(),
+  digest: z.string().optional(),
   created: z.string().optional(),
 });
 
@@ -83,12 +84,13 @@ export const DockerRunSchema = z.object({
 
 export type DockerRun = z.infer<typeof DockerRunSchema>;
 
-/** Zod schema for structured docker exec output with exit code, stdout, stderr, and success flag. */
+/** Zod schema for structured docker exec output with exit code, stdout, stderr, success flag, and duration. */
 export const DockerExecSchema = z.object({
   exitCode: z.number(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   success: z.boolean(),
+  duration: z.number().optional(),
 });
 
 export type DockerExec = z.infer<typeof DockerExecSchema>;
@@ -137,6 +139,9 @@ export const DockerInspectSchema = z.object({
   created: z.string().optional(),
   status: z.string().optional(),
   running: z.boolean().optional(),
+  healthStatus: z.enum(["healthy", "unhealthy", "starting", "none"]).optional(),
+  env: z.array(z.string()).optional(),
+  restartPolicy: z.string().optional(),
 });
 
 export type DockerInspect = z.infer<typeof DockerInspectSchema>;
@@ -147,6 +152,7 @@ export const NetworkSchema = z.object({
   name: z.string(),
   driver: z.string(),
   scope: z.string().optional(),
+  createdAt: z.string().optional(),
 });
 
 /** Zod schema for structured docker network ls output. */
@@ -163,6 +169,7 @@ export const VolumeSchema = z.object({
   driver: z.string(),
   mountpoint: z.string().optional(),
   scope: z.string().optional(),
+  createdAt: z.string().optional(),
 });
 
 /** Zod schema for structured docker volume ls output. */
@@ -177,7 +184,9 @@ export type DockerVolumeLs = z.infer<typeof DockerVolumeLsSchema>;
 export const ComposeServiceSchema = z.object({
   name: z.string(),
   service: z.string(),
-  state: z.string(),
+  state: z
+    .enum(["running", "exited", "paused", "restarting", "dead", "created", "removing"])
+    .catch("created"),
   status: z.string().optional(),
   ports: z.string().optional(),
 });
@@ -209,6 +218,7 @@ export const DockerComposeLogsSchema = z.object({
       z.object({
         service: z.string(),
         message: z.string(),
+        timestamp: z.string().optional(),
       }),
     )
     .optional(),
@@ -217,6 +227,7 @@ export const DockerComposeLogsSchema = z.object({
       z.object({
         service: z.string(),
         message: z.string(),
+        timestamp: z.string().optional(),
       }),
     )
     .optional(),

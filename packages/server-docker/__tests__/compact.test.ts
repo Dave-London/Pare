@@ -280,7 +280,7 @@ describe("formatLogsCompact", () => {
 });
 
 describe("compactPullMap", () => {
-  it("drops digest", () => {
+  it("preserves digest in compact output", () => {
     const data: DockerPull = {
       image: "nginx",
       tag: "latest",
@@ -290,8 +290,13 @@ describe("compactPullMap", () => {
 
     const compact = compactPullMap(data);
 
-    expect(compact).toEqual({ image: "nginx", tag: "latest", success: true });
-    expect(compact).not.toHaveProperty("digest");
+    expect(compact).toEqual({
+      image: "nginx",
+      tag: "latest",
+      digest: "sha256:abc123def456",
+      success: true,
+    });
+    expect(compact).toHaveProperty("digest", "sha256:abc123def456");
   });
 });
 

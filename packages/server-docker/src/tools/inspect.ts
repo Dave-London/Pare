@@ -19,6 +19,17 @@ export function registerInspectTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Container or image name/ID to inspect"),
+        type: z
+          .enum(["container", "image", "volume", "network"])
+          .optional()
+          .describe(
+            'Object type to inspect: "container", "image", "volume", or "network" (--type)',
+          ),
+        size: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Display total file sizes (-s, --size)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -34,10 +45,13 @@ export function registerInspectTool(server: McpServer) {
       },
       outputSchema: DockerInspectSchema,
     },
-    async ({ target, path, compact }) => {
+    async ({ target, type, size, path, compact }) => {
       assertNoFlagInjection(target, "target");
 
-      const args = ["inspect", "--format", "json", target];
+      const args = ["inspect", "--format", "json"];
+      if (type) args.push("--type", type);
+      if (size) args.push("-s");
+      args.push(target);
       const result = await docker(args, path);
 
       if (result.exitCode !== 0) {

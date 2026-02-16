@@ -38,6 +38,16 @@ export function registerComposeDownTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        rmi: z
+          .enum(["all", "local"])
+          .optional()
+          .describe('Remove images: "all" removes all, "local" removes only untagged images'),
+        services: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Specific services to tear down (default: all)"),
         timeout: z
           .number()
           .optional()
@@ -57,16 +67,25 @@ export function registerComposeDownTool(server: McpServer) {
       },
       outputSchema: DockerComposeDownSchema,
     },
-    async ({ path, volumes, removeOrphans, file, timeout, dryRun, compact }) => {
+    async ({ path, volumes, removeOrphans, file, rmi, services, timeout, dryRun, compact }) => {
       if (file) assertNoFlagInjection(file, "file");
+      if (services) {
+        for (const s of services) {
+          assertNoFlagInjection(s, "services");
+        }
+      }
 
       const args = ["compose"];
       if (file) args.push("-f", file);
       args.push("down");
       if (volumes) args.push("--volumes");
       if (removeOrphans) args.push("--remove-orphans");
+      if (rmi) args.push("--rmi", rmi);
       if (timeout != null) args.push("--timeout", String(timeout));
       if (dryRun) args.push("--dry-run");
+      if (services && services.length > 0) {
+        args.push(...services);
+      }
 
       const result = await docker(args, path);
       const data = parseComposeDownOutput(result.stdout, result.stderr, result.exitCode);

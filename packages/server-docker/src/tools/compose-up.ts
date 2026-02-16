@@ -36,6 +36,10 @@ export function registerComposeUpTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Compose file path (default: docker-compose.yml)"),
+        pull: z
+          .enum(["always", "missing", "never"])
+          .optional()
+          .describe('Pull image policy: "always", "missing", or "never" (--pull)'),
         wait: z
           .boolean()
           .optional()
@@ -94,6 +98,7 @@ export function registerComposeUpTool(server: McpServer) {
       detach,
       build,
       file,
+      pull,
       wait,
       forceRecreate,
       timeout,
@@ -117,6 +122,7 @@ export function registerComposeUpTool(server: McpServer) {
       args.push("up");
       if (detach) args.push("-d");
       if (build) args.push("--build");
+      if (pull) args.push("--pull", pull);
       if (wait) args.push("--wait");
       if (forceRecreate) args.push("--force-recreate");
       if (timeout != null) args.push("--timeout", String(timeout));

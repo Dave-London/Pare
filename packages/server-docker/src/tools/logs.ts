@@ -26,6 +26,13 @@ export function registerLogsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
+        until: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Show logs until timestamp (e.g., '5m', '2024-01-02') for time-bounded queries",
+          ),
         limit: z
           .number()
           .optional()
@@ -53,12 +60,14 @@ export function registerLogsTool(server: McpServer) {
       },
       outputSchema: DockerLogsSchema,
     },
-    async ({ container, tail, since, limit, timestamps, details, compact }) => {
+    async ({ container, tail, since, until, limit, timestamps, details, compact }) => {
       assertNoFlagInjection(container, "container");
       if (since) assertNoFlagInjection(since, "since");
+      if (until) assertNoFlagInjection(until, "until");
 
       const args = ["logs", container, "--tail", String(tail ?? 100)];
       if (since) args.push("--since", since);
+      if (until) args.push("--until", until);
       if (timestamps) args.push("--timestamps");
       if (details) args.push("--details");
 
