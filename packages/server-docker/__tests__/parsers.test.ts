@@ -89,7 +89,7 @@ describe("parsePsJson", () => {
     expect(result.containers[0].ports).toEqual([]);
   });
 
-  it("truncates long container IDs to 12 characters", () => {
+  it("preserves full container IDs (no truncation) since --no-trunc is passed", () => {
     const stdout = JSON.stringify({
       ID: "abc123def456789012345678901234567890123456789012345678901234abcd",
       Names: "long-id-app",
@@ -101,10 +101,10 @@ describe("parsePsJson", () => {
     });
 
     const result = parsePsJson(stdout);
-    expect(result.containers[0].id).toBe("abc123def456");
-    expect(result.containers[0].id).toHaveLength(12);
+    expect(result.containers[0].id).toBe(
+      "abc123def456789012345678901234567890123456789012345678901234abcd",
+    );
   });
-
   it("prefers RunningFor over CreatedAt for relative timestamps", () => {
     const stdout = JSON.stringify({
       ID: "abc123def456",

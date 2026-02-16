@@ -61,7 +61,8 @@ export function formatImages(data: DockerImages): string {
   const lines = [`${data.total} images:`];
   for (const img of data.images) {
     const tag = img.tag && img.tag !== "<none>" ? `:${img.tag}` : "";
-    lines.push(`  ${img.repository}${tag} (${img.size}, ${img.created})`);
+    const digest = img.digest ? ` [${img.digest.slice(0, 19)}...]` : "";
+    lines.push(`  ${img.repository}${tag} (${img.size}, ${img.created})${digest}`);
   }
   return lines.join("\n");
 }
@@ -76,7 +77,8 @@ export function formatRun(data: DockerRun): string {
 /** Formats structured Docker exec output into a human-readable summary. */
 export function formatExec(data: DockerExec): string {
   const status = data.success ? "succeeded" : `failed (exit code ${data.exitCode})`;
-  const lines = [`Exec ${status}`];
+  const dur = data.duration != null ? ` in ${data.duration}s` : "";
+  const lines = [`Exec ${status}${dur}`];
   if (data.stdout) lines.push(data.stdout);
   if (data.stderr) lines.push(`stderr: ${data.stderr}`);
   return lines.join("\n");
@@ -222,11 +224,12 @@ export function formatLogsCompact(data: DockerLogsCompact): string {
   return parts.join("\n");
 }
 
-/** Compact pull: passthrough (already small). */
+/** Compact pull: preserve digest since it is small and highly actionable. */
 export interface DockerPullCompact {
   [key: string]: unknown;
   image: string;
   tag: string;
+  digest?: string;
   success: boolean;
 }
 
@@ -234,13 +237,15 @@ export function compactPullMap(data: DockerPull): DockerPullCompact {
   return {
     image: data.image,
     tag: data.tag,
+    ...(data.digest ? { digest: data.digest } : {}),
     success: data.success,
   };
 }
 
 export function formatPullCompact(data: DockerPullCompact): string {
   if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
-  return `Pulled ${data.image}:${data.tag}`;
+  const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
+  return `Pulled ${data.image}:${data.tag}${digest}`;
 }
 
 /** Compact run: passthrough (already small). */
@@ -269,17 +274,20 @@ export interface DockerExecCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
+  duration?: number;
 }
 
 export function compactExecMap(data: DockerExec): DockerExecCompact {
   return {
     exitCode: data.exitCode,
     success: data.success,
+    ...(data.duration != null ? { duration: data.duration } : {}),
   };
 }
 
 export function formatExecCompact(data: DockerExecCompact): string {
-  return data.success ? "Exec succeeded" : `Exec failed (exit code ${data.exitCode})`;
+  const dur = data.duration != null ? ` in ${data.duration}s` : "";
+  return data.success ? `Exec succeeded${dur}` : `Exec failed (exit code ${data.exitCode})${dur}`;
 }
 
 /** Compact compose up: passthrough (already small). */
@@ -333,8 +341,13 @@ export function formatInspect(data: DockerInspect): string {
     lines.push(`  State: ${state.status} (running: ${state.running})`);
     if (state.startedAt) lines.push(`  Started: ${state.startedAt}`);
   }
+  if (data.healthStatus) lines.push(`  Health: ${data.healthStatus}`);
+  if (data.restartPolicy) lines.push(`  Restart: ${data.restartPolicy}`);
   if (data.platform) lines.push(`  Platform: ${data.platform}`);
   if (data.created) lines.push(`  Created: ${data.created}`);
+  if (data.env && data.env.length > 0) {
+    lines.push(`  Env: ${data.env.length} variables`);
+  }
   return lines.join("\n");
 }
 
@@ -346,6 +359,7 @@ export interface DockerInspectCompact {
   status: string;
   running: boolean;
   image: string;
+  healthStatus?: string;
 }
 
 export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
@@ -355,11 +369,13 @@ export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
     status: data.state?.status ?? data.status ?? "unknown",
     running: data.state?.running ?? data.running ?? false,
     image: data.image,
+    ...(data.healthStatus ? { healthStatus: data.healthStatus } : {}),
   };
 }
 
 export function formatInspectCompact(data: DockerInspectCompact): string {
-  return `${data.name} (${data.id}) ${data.status} [${data.running ? "running" : "stopped"}] image=${data.image}`;
+  const health = data.healthStatus ? ` health=${data.healthStatus}` : "";
+  return `${data.name} (${data.id}) ${data.status} [${data.running ? "running" : "stopped"}] image=${data.image}${health}`;
 }
 
 // ── Network LS ───────────────────────────────────────────────────────
@@ -370,21 +386,23 @@ export function formatNetworkLs(data: DockerNetworkLs): string {
 
   const lines = [`${data.total} networks:`];
   for (const n of data.networks) {
-    lines.push(`  ${n.name} (${n.driver}, ${n.scope})`);
+    const created = n.createdAt ? ` (${n.createdAt})` : "";
+    lines.push(`  ${n.name} (${n.driver}, ${n.scope})${created}`);
   }
   return lines.join("\n");
 }
 
-/** Compact network-ls: name and driver only. Drop id, scope. */
+/** Compact network-ls: name, driver, and id for subsequent inspect/rm calls. */
 export interface DockerNetworkLsCompact {
   [key: string]: unknown;
-  networks: Array<{ name: string; driver: string }>;
+  networks: Array<{ id?: string; name: string; driver: string }>;
   total: number;
 }
 
 export function compactNetworkLsMap(data: DockerNetworkLs): DockerNetworkLsCompact {
   return {
     networks: data.networks.map((n) => ({
+      ...(n.id ? { id: n.id } : {}),
       name: n.name,
       driver: n.driver,
     })),
@@ -396,7 +414,8 @@ export function formatNetworkLsCompact(data: DockerNetworkLsCompact): string {
   if (data.total === 0) return "No networks found.";
   const lines = [`${data.total} networks:`];
   for (const n of data.networks) {
-    lines.push(`  ${n.name} (${n.driver})`);
+    const id = n.id ? ` [${n.id}]` : "";
+    lines.push(`  ${n.name} (${n.driver})${id}`);
   }
   return lines.join("\n");
 }
@@ -409,15 +428,16 @@ export function formatVolumeLs(data: DockerVolumeLs): string {
 
   const lines = [`${data.total} volumes:`];
   for (const v of data.volumes) {
-    lines.push(`  ${v.name} (${v.driver}, ${v.scope})`);
+    const created = v.createdAt ? ` (${v.createdAt})` : "";
+    lines.push(`  ${v.name} (${v.driver}, ${v.scope})${created}`);
   }
   return lines.join("\n");
 }
 
-/** Compact volume-ls: name and driver only. Drop mountpoint, scope. */
+/** Compact volume-ls: name, driver, and mountpoint for verifying mount configurations. */
 export interface DockerVolumeLsCompact {
   [key: string]: unknown;
-  volumes: Array<{ name: string; driver: string }>;
+  volumes: Array<{ name: string; driver: string; mountpoint?: string }>;
   total: number;
 }
 
@@ -426,6 +446,7 @@ export function compactVolumeLsMap(data: DockerVolumeLs): DockerVolumeLsCompact 
     volumes: data.volumes.map((v) => ({
       name: v.name,
       driver: v.driver,
+      ...(v.mountpoint ? { mountpoint: v.mountpoint } : {}),
     })),
     total: data.total,
   };
@@ -435,7 +456,8 @@ export function formatVolumeLsCompact(data: DockerVolumeLsCompact): string {
   if (data.total === 0) return "No volumes found.";
   const lines = [`${data.total} volumes:`];
   for (const v of data.volumes) {
-    lines.push(`  ${v.name} (${v.driver})`);
+    const mp = v.mountpoint ? ` @ ${v.mountpoint}` : "";
+    lines.push(`  ${v.name} (${v.driver})${mp}`);
   }
   return lines.join("\n");
 }
@@ -501,13 +523,14 @@ export function formatComposeBuildCompact(data: DockerComposeBuildCompact): stri
   return `Compose build: ${data.built} built, ${data.failed} failed (${data.duration}s)`;
 }
 
-/** Compact stats: name, cpuPercent, memoryPercent, pids only. Drop I/O details. */
+/** Compact stats: name, cpuPercent, memoryPercent, memoryUsage, pids. Preserve memoryUsage since absolute memory is often more useful than percentage. */
 export interface DockerStatsCompact {
   [key: string]: unknown;
   containers: Array<{
     id: string;
     name: string;
     cpuPercent: number;
+    memoryUsage?: string;
     memoryPercent: number;
     pids: number;
   }>;
@@ -520,6 +543,7 @@ export function compactStatsMap(data: DockerStats): DockerStatsCompact {
       id: c.id,
       name: c.name,
       cpuPercent: c.cpuPercent,
+      memoryUsage: c.memoryUsage,
       memoryPercent: c.memoryPercent,
       pids: c.pids,
     })),
@@ -531,8 +555,9 @@ export function formatStatsCompact(data: DockerStatsCompact): string {
   if (data.total === 0) return "No container stats available.";
   const lines = [`${data.total} containers:`];
   for (const c of data.containers) {
+    const mem = c.memoryUsage ? ` ${c.memoryUsage}` : "";
     lines.push(
-      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem: ${c.memoryPercent.toFixed(2)}% PIDs: ${c.pids}`,
+      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem:${mem} (${c.memoryPercent.toFixed(2)}%) PIDs: ${c.pids}`,
     );
   }
   return lines.join("\n");
@@ -595,13 +620,13 @@ export function formatComposeLogs(data: DockerComposeLogs): string {
   return lines.join("\n");
 }
 
-/** Compact compose-logs: service list, total, head/tail entries. */
+/** Compact compose-logs: service list, total, head/tail entries. Preserve timestamps for log correlation. */
 export interface DockerComposeLogsCompact {
   [key: string]: unknown;
   services: string[];
   total: number;
-  head: Array<{ service: string; message: string }>;
-  tail: Array<{ service: string; message: string }>;
+  head: Array<{ service: string; message: string; timestamp?: string }>;
+  tail: Array<{ service: string; message: string; timestamp?: string }>;
 }
 
 export function compactComposeLogsMap(data: DockerComposeLogs): DockerComposeLogsCompact {
@@ -611,10 +636,18 @@ export function compactComposeLogsMap(data: DockerComposeLogs): DockerComposeLog
   return {
     services: data.services,
     total: data.total,
-    head: entries.slice(0, HEAD_SIZE).map((e) => ({ service: e.service, message: e.message })),
+    head: entries.slice(0, HEAD_SIZE).map((e) => ({
+      service: e.service,
+      message: e.message,
+      ...(e.timestamp ? { timestamp: e.timestamp } : {}),
+    })),
     tail:
       data.total > HEAD_SIZE + TAIL_SIZE
-        ? entries.slice(-TAIL_SIZE).map((e) => ({ service: e.service, message: e.message }))
+        ? entries.slice(-TAIL_SIZE).map((e) => ({
+            service: e.service,
+            message: e.message,
+            ...(e.timestamp ? { timestamp: e.timestamp } : {}),
+          }))
         : [],
   };
 }
@@ -622,12 +655,14 @@ export function compactComposeLogsMap(data: DockerComposeLogs): DockerComposeLog
 export function formatComposeLogsCompact(data: DockerComposeLogsCompact): string {
   const parts = [`Compose logs: ${data.services.length} services, ${data.total} entries`];
   for (const e of data.head) {
-    parts.push(`  ${e.service} | ${e.message}`);
+    const ts = e.timestamp ? `${e.timestamp} ` : "";
+    parts.push(`  ${e.service} | ${ts}${e.message}`);
   }
   if (data.tail.length) {
     parts.push(`  ... ${data.total - data.head.length - data.tail.length} entries omitted ...`);
     for (const e of data.tail) {
-      parts.push(`  ${e.service} | ${e.message}`);
+      const ts = e.timestamp ? `${e.timestamp} ` : "";
+      parts.push(`  ${e.service} | ${ts}${e.message}`);
     }
   }
   return parts.join("\n");

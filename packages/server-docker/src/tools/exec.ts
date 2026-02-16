@@ -27,12 +27,22 @@ export function registerExecTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory inside the container"),
+        user: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Run command as a specific user (e.g., "root", "1000:1000")'),
         env: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
           .describe('Environment variables (e.g., ["KEY=VALUE"])'),
+        envFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Read environment variables from a file (--env-file)"),
         detach: z
           .boolean()
           .optional()
@@ -53,7 +63,7 @@ export function registerExecTool(server: McpServer) {
       },
       outputSchema: DockerExecSchema,
     },
-    async ({ container, command, workdir, env, detach, path, compact }) => {
+    async ({ container, command, workdir, user, env, envFile, detach, path, compact }) => {
       if (!command || command.length === 0) {
         throw new Error("command array must not be empty");
       }
@@ -62,18 +72,25 @@ export function registerExecTool(server: McpServer) {
       // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
       assertNoFlagInjection(command[0], "command");
       if (workdir) assertNoFlagInjection(workdir, "workdir");
+      if (user) assertNoFlagInjection(user, "user");
+      if (envFile) assertNoFlagInjection(envFile, "envFile");
 
       const args = ["exec"];
       if (detach) args.push("-d");
       if (workdir) args.push("-w", workdir);
+      if (user) args.push("-u", user);
+      if (envFile) args.push("--env-file", envFile);
       for (const e of env ?? []) {
         assertNoFlagInjection(e, "env");
         args.push("-e", e);
       }
       args.push(container, ...command);
 
+      const start = Date.now();
       const result = await docker(args, path);
-      const data = parseExecOutput(result.stdout, result.stderr, result.exitCode);
+      const duration = Math.round((Date.now() - start) / 100) / 10;
+
+      const data = parseExecOutput(result.stdout, result.stderr, result.exitCode, duration);
       return compactDualOutput(
         data,
         result.stdout,

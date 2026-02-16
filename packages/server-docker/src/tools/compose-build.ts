@@ -30,6 +30,11 @@ export function registerComposeBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Specific services to build (default: all)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Compose file path for targeting non-default compose files (maps to -f)"),
         noCache: z
           .boolean()
           .optional()
@@ -50,6 +55,16 @@ export function registerComposeBuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Push images after building (default: false)"),
+        ssh: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("SSH agent socket or key for private repo access during build (--ssh)"),
+        builder: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Alternate builder to use (--builder)"),
         withDependencies: z
           .boolean()
           .optional()
@@ -83,16 +98,22 @@ export function registerComposeBuildTool(server: McpServer) {
     async ({
       path,
       services,
+      file,
       noCache,
       pull,
       buildArgs,
       push,
+      ssh,
+      builder,
       withDependencies,
       quiet,
       dryRun,
       check,
       compact,
     }) => {
+      if (file) assertNoFlagInjection(file, "file");
+      if (ssh) assertNoFlagInjection(ssh, "ssh");
+      if (builder) assertNoFlagInjection(builder, "builder");
       if (services) {
         for (const s of services) {
           assertNoFlagInjection(s, "services");
@@ -105,10 +126,14 @@ export function registerComposeBuildTool(server: McpServer) {
         }
       }
 
-      const args = ["compose", "build"];
+      const args = ["compose"];
+      if (file) args.push("-f", file);
+      args.push("build");
       if (noCache) args.push("--no-cache");
       if (pull) args.push("--pull");
       if (push) args.push("--push");
+      if (ssh) args.push("--ssh", ssh);
+      if (builder) args.push("--builder", builder);
       if (withDependencies) args.push("--with-dependencies");
       if (quiet) args.push("--quiet");
       if (dryRun) args.push("--dry-run");

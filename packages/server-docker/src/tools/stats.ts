@@ -29,6 +29,11 @@ export function registerStatsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate container IDs (default: false)"),
+        path: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Working directory (default: cwd), consistent with all other Docker tools"),
         compact: z
           .boolean()
           .optional()
@@ -39,7 +44,7 @@ export function registerStatsTool(server: McpServer) {
       },
       outputSchema: DockerStatsSchema,
     },
-    async ({ containers, all, noTrunc, compact }) => {
+    async ({ containers, all, noTrunc, path, compact }) => {
       if (containers) {
         for (const c of containers) {
           assertNoFlagInjection(c, "container");
@@ -53,7 +58,7 @@ export function registerStatsTool(server: McpServer) {
         args.push(...containers);
       }
 
-      const result = await docker(args);
+      const result = await docker(args, path);
       const data = parseStatsJson(result.stdout);
       return compactDualOutput(
         data,

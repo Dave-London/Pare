@@ -30,6 +30,11 @@ export function registerComposeLogsTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Specific services to get logs for (default: all)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Compose file path for consistency with other compose tools (maps to -f)"),
         tail: z
           .number()
           .optional()
@@ -39,6 +44,13 @@ export function registerComposeLogsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Show logs since timestamp (e.g., '10m', '2024-01-01')"),
+        until: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Show logs until timestamp (e.g., '5m', '2024-01-02') for time-windowed queries",
+          ),
         timestamps: z
           .boolean()
           .optional()
@@ -63,18 +75,34 @@ export function registerComposeLogsTool(server: McpServer) {
       },
       outputSchema: DockerComposeLogsSchema,
     },
-    async ({ path, services, tail, since, timestamps, index, noLogPrefix, compact }) => {
+    async ({
+      path,
+      services,
+      file,
+      tail,
+      since,
+      until,
+      timestamps,
+      index,
+      noLogPrefix,
+      compact,
+    }) => {
+      if (file) assertNoFlagInjection(file, "file");
       if (since) assertNoFlagInjection(since, "since");
+      if (until) assertNoFlagInjection(until, "until");
       if (services) {
         for (const s of services) {
           assertNoFlagInjection(s, "services");
         }
       }
 
-      const args = ["compose", "logs", "--no-color"];
+      const args = ["compose"];
+      if (file) args.push("-f", file);
+      args.push("logs", "--no-color");
       if (timestamps) args.push("--timestamps");
       if (tail != null) args.push("--tail", String(tail));
       if (since) args.push("--since", since);
+      if (until) args.push("--until", until);
       if (index != null) args.push("--index", String(index));
       if (noLogPrefix) args.push("--no-log-prefix");
       if (services && services.length > 0) {

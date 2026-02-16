@@ -24,7 +24,7 @@ export function parsePsJson(stdout: string): DockerPs {
   const containers = lines.map((line) => {
     const c = JSON.parse(line);
     return {
-      id: (c.ID ?? c.Id ?? "").slice(0, 12),
+      id: c.ID ?? c.Id ?? "",
       name: c.Names ?? c.Name ?? "",
       image: c.Image ?? "",
       status: c.Status ?? "",
@@ -120,7 +120,7 @@ export function parseLogsOutput(stdout: string, container: string, limit?: numbe
   };
 }
 
-/** Parses `docker images --format json` output into structured image data with repository, tag, and size. */
+/** Parses `docker images --format json` output into structured image data with repository, tag, size, and digest. */
 export function parseImagesJson(stdout: string): DockerImages {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const images = lines.map((line) => {
@@ -130,6 +130,7 @@ export function parseImagesJson(stdout: string): DockerImages {
       repository: img.Repository ?? "",
       tag: img.Tag ?? "",
       size: img.Size ?? "",
+      ...(img.Digest && img.Digest !== "<none>" ? { digest: img.Digest } : {}),
       created: img.CreatedSince ?? img.CreatedAt ?? "",
     };
   });
@@ -154,13 +155,19 @@ export function parseRunOutput(
   };
 }
 
-/** Parses `docker exec` output into structured data with exit code, stdout, stderr, and success. */
-export function parseExecOutput(stdout: string, stderr: string, exitCode: number): DockerExec {
+/** Parses `docker exec` output into structured data with exit code, stdout, stderr, success, and duration. */
+export function parseExecOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration?: number,
+): DockerExec {
   return {
     exitCode,
     stdout,
     stderr,
     success: exitCode === 0,
+    ...(duration != null ? { duration } : {}),
   };
 }
 
@@ -259,7 +266,7 @@ export function parsePullOutput(
   };
 }
 
-/** Parses `docker inspect --format json` output into structured inspect data. */
+/** Parses `docker inspect --format json` output into structured inspect data with healthStatus, env, and restartPolicy. */
 export function parseInspectJson(stdout: string): DockerInspect {
   // docker inspect --format json returns a JSON array with one element
   const parsed = JSON.parse(stdout);
@@ -267,6 +274,22 @@ export function parseInspectJson(stdout: string): DockerInspect {
 
   const state = obj.State ?? {};
   const config = obj.Config ?? {};
+  const hostConfig = obj.HostConfig ?? {};
+
+  // Extract health status from State.Health.Status
+  const healthRaw = state.Health?.Status;
+  const validHealth = ["healthy", "unhealthy", "starting", "none"];
+  const healthStatus =
+    healthRaw && validHealth.includes(healthRaw.toLowerCase())
+      ? (healthRaw.toLowerCase() as "healthy" | "unhealthy" | "starting" | "none")
+      : undefined;
+
+  // Extract environment variables from Config.Env
+  const envArr: string[] | undefined =
+    Array.isArray(config.Env) && config.Env.length > 0 ? config.Env : undefined;
+
+  // Extract restart policy from HostConfig.RestartPolicy.Name
+  const restartPolicy = hostConfig.RestartPolicy?.Name || undefined;
 
   return {
     id: (obj.Id ?? "").slice(0, 12),
@@ -281,10 +304,13 @@ export function parseInspectJson(stdout: string): DockerInspect {
     image: config.Image ?? obj.Image ?? "",
     ...(obj.Platform ? { platform: obj.Platform } : {}),
     created: obj.Created ?? "",
+    ...(healthStatus ? { healthStatus } : {}),
+    ...(envArr ? { env: envArr } : {}),
+    ...(restartPolicy && restartPolicy !== "" ? { restartPolicy } : {}),
   };
 }
 
-/** Parses `docker network ls --format json` output into structured network data. */
+/** Parses `docker network ls --format json` output into structured network data with createdAt. */
 export function parseNetworkLsJson(stdout: string): DockerNetworkLs {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const networks = lines.map((line) => {
@@ -294,13 +320,14 @@ export function parseNetworkLsJson(stdout: string): DockerNetworkLs {
       name: n.Name ?? "",
       driver: n.Driver ?? "",
       scope: n.Scope ?? "",
+      ...(n.CreatedAt ? { createdAt: n.CreatedAt } : {}),
     };
   });
 
   return { networks, total: networks.length };
 }
 
-/** Parses `docker volume ls --format json` output into structured volume data. */
+/** Parses `docker volume ls --format json` output into structured volume data with createdAt. */
 export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const volumes = lines.map((line) => {
@@ -310,6 +337,7 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
       driver: v.Driver ?? "",
       mountpoint: v.Mountpoint ?? "",
       scope: v.Scope ?? "",
+      ...(v.CreatedAt ? { createdAt: v.CreatedAt } : {}),
     };
   });
 

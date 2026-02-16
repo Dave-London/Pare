@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseVolumeLsJson } from "../lib/parsers.js";
 import { formatVolumeLs, compactVolumeLsMap, formatVolumeLsCompact } from "../lib/formatters.js";
@@ -20,6 +20,15 @@ export function registerVolumeLsTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        filter: z
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
+          .optional()
+          .describe(
+            "Filter by dangling, driver, label, name. String or string[] for multiple filters.",
+          ),
         cluster: z
           .boolean()
           .optional()
@@ -35,9 +44,17 @@ export function registerVolumeLsTool(server: McpServer) {
       },
       outputSchema: DockerVolumeLsSchema,
     },
-    async ({ path, cluster, compact }) => {
+    async ({ path, filter, cluster, compact }) => {
+      const filters = filter ? (Array.isArray(filter) ? filter : [filter]) : [];
+      for (const f of filters) {
+        assertNoFlagInjection(f, "filter");
+      }
+
       const args = ["volume", "ls", "--format", "json"];
       if (cluster) args.push("--cluster");
+      for (const f of filters) {
+        args.push("--filter", f);
+      }
       const result = await docker(args, path);
       const data = parseVolumeLsJson(result.stdout);
       return compactDualOutput(

@@ -561,7 +561,7 @@ describe("formatStatsCompact", () => {
     const output = formatStatsCompact(compact);
     expect(output).toContain("1 containers:");
     expect(output).toContain("web (abc123) CPU: 1.23%");
-    expect(output).toContain("Mem: 14.65%");
+    expect(output).toContain("Mem: 150MiB (14.65%)");
     expect(output).toContain("PIDs: 12");
     // Compact should NOT contain I/O details
     expect(output).not.toContain("Net:");

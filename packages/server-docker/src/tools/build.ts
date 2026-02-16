@@ -40,6 +40,56 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Always attempt to pull a newer version of the base image (default: false)"),
+        buildArgs: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe(
+            'Build-time variables passed via --build-arg (e.g., ["NODE_ENV=production", "VERSION=1.0"])',
+          ),
+        target: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Target build stage for multi-stage builds (--target)"),
+        platform: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Target platform for multi-arch builds (e.g., "linux/amd64", "linux/arm64")'),
+        label: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe('Image metadata labels (e.g., ["version=1.0", "maintainer=team"])'),
+        cacheFrom: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe('External cache sources for CI optimization (e.g., ["type=registry,ref=img"])'),
+        cacheTo: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe(
+            'Cache export destinations paired with cacheFrom (e.g., ["type=registry,ref=img"])',
+          ),
+        secret: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe('Build secrets (e.g., ["id=mysecret,src=secret.txt"])'),
+        ssh: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe('SSH agent socket/keys for private repo access (e.g., ["default"])'),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -56,9 +106,45 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: DockerBuildSchema,
     },
-    async ({ path, tag, file, noCache, pull, args, compact }) => {
+    async ({
+      path,
+      tag,
+      file,
+      noCache,
+      pull,
+      buildArgs,
+      target,
+      platform,
+      label,
+      cacheFrom,
+      cacheTo,
+      secret,
+      ssh,
+      args,
+      compact,
+    }) => {
       if (tag) assertNoFlagInjection(tag, "tag");
       if (file) assertNoFlagInjection(file, "file");
+      if (target) assertNoFlagInjection(target, "target");
+      if (platform) assertNoFlagInjection(platform, "platform");
+      for (const a of buildArgs ?? []) {
+        assertNoFlagInjection(a, "buildArgs");
+      }
+      for (const l of label ?? []) {
+        assertNoFlagInjection(l, "label");
+      }
+      for (const c of cacheFrom ?? []) {
+        assertNoFlagInjection(c, "cacheFrom");
+      }
+      for (const c of cacheTo ?? []) {
+        assertNoFlagInjection(c, "cacheTo");
+      }
+      for (const s of secret ?? []) {
+        assertNoFlagInjection(s, "secret");
+      }
+      for (const s of ssh ?? []) {
+        assertNoFlagInjection(s, "ssh");
+      }
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -69,6 +155,26 @@ export function registerBuildTool(server: McpServer) {
       if (file) dockerArgs.push("-f", file);
       if (noCache) dockerArgs.push("--no-cache");
       if (pull) dockerArgs.push("--pull");
+      if (target) dockerArgs.push("--target", target);
+      if (platform) dockerArgs.push("--platform", platform);
+      for (const ba of buildArgs ?? []) {
+        dockerArgs.push("--build-arg", ba);
+      }
+      for (const l of label ?? []) {
+        dockerArgs.push("--label", l);
+      }
+      for (const c of cacheFrom ?? []) {
+        dockerArgs.push("--cache-from", c);
+      }
+      for (const c of cacheTo ?? []) {
+        dockerArgs.push("--cache-to", c);
+      }
+      for (const s of secret ?? []) {
+        dockerArgs.push("--secret", s);
+      }
+      for (const s of ssh ?? []) {
+        dockerArgs.push("--ssh", s);
+      }
       if (args) dockerArgs.push(...args);
 
       const start = Date.now();
