@@ -86,6 +86,14 @@ export function formatCommit(c: GitCommit): string {
 
 /** Formats structured git push data into a human-readable push summary. */
 export function formatPush(p: GitPush): string {
+  if (!p.success) {
+    const parts = [`Push to ${p.remote}/${p.branch} failed`];
+    if (p.errorType) parts.push(`[${p.errorType}]`);
+    if (p.rejectedRef) parts.push(`rejected ref: ${p.rejectedRef}`);
+    if (p.hint) parts.push(`hint: ${p.hint}`);
+    parts.push(p.summary);
+    return parts.join("\n");
+  }
   const created = p.created ? " [new branch]" : "";
   return `Pushed to ${p.remote}/${p.branch}${created}: ${p.summary}`;
 }
@@ -110,6 +118,14 @@ export function formatPull(p: GitPull): string {
 
 /** Formats structured git checkout data into a human-readable checkout summary. */
 export function formatCheckout(c: GitCheckout): string {
+  if (!c.success) {
+    const parts = [`Checkout failed: ${c.errorType || "unknown"}`];
+    if (c.errorMessage) parts.push(c.errorMessage);
+    if (c.conflictFiles && c.conflictFiles.length > 0) {
+      parts.push(`Conflicting files: ${c.conflictFiles.join(", ")}`);
+    }
+    return parts.join("\n");
+  }
   if (c.detached) {
     return `HEAD is now detached at '${c.ref}' (was ${c.previousRef})`;
   }
@@ -302,6 +318,15 @@ export function formatStashListCompact(s: GitStashListCompact): string {
 
 /** Formats structured git stash result into a human-readable summary. */
 export function formatStash(s: GitStash): string {
+  if (!s.success) {
+    const parts = [`Stash ${s.action} failed`];
+    if (s.reason) parts.push(`[${s.reason}]`);
+    if (s.conflictFiles && s.conflictFiles.length > 0) {
+      parts.push(`Conflicting files: ${s.conflictFiles.join(", ")}`);
+    }
+    parts.push(s.message);
+    return parts.join("\n");
+  }
   const ref = s.stashRef ? ` (${s.stashRef})` : "";
   return `${s.message}${ref}`;
 }

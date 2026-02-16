@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePush } from "../src/lib/parsers.js";
+import { parsePush, parsePushError } from "../src/lib/parsers.js";
 import { formatPush } from "../src/lib/formatters.js";
 import type { GitPush } from "../src/schemas/index.js";
 
@@ -56,7 +56,7 @@ describe("parsePush", () => {
 });
 
 describe("formatPush", () => {
-  it("formats push result", () => {
+  it("formats successful push result", () => {
     const data: GitPush = {
       success: true,
       remote: "origin",
@@ -66,5 +66,23 @@ describe("formatPush", () => {
     const output = formatPush(data);
 
     expect(output).toBe("Pushed to origin/main: abc1234..def5678  main -> main");
+  });
+
+  it("formats failed push with error type", () => {
+    const data: GitPush = {
+      success: false,
+      remote: "origin",
+      branch: "main",
+      summary: "[rejected] main -> main (non-fast-forward)",
+      errorType: "rejected",
+      rejectedRef: "main",
+      hint: "Updates were rejected because the tip is behind",
+    };
+    const output = formatPush(data);
+
+    expect(output).toContain("Push to origin/main failed");
+    expect(output).toContain("[rejected]");
+    expect(output).toContain("rejected ref: main");
+    expect(output).toContain("hint: Updates were rejected");
   });
 });

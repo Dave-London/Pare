@@ -135,6 +135,18 @@ export const GitPushSchema = z.object({
   branch: z.string(),
   summary: z.string(),
   created: z.boolean().optional(),
+  errorType: z
+    .enum([
+      "rejected",
+      "no-upstream",
+      "permission-denied",
+      "repository-not-found",
+      "hook-declined",
+      "unknown",
+    ])
+    .optional(),
+  rejectedRef: z.string().optional(),
+  hint: z.string().optional(),
 });
 
 export type GitPush = z.infer<typeof GitPushSchema>;
@@ -155,10 +167,16 @@ export type GitPull = z.infer<typeof GitPullSchema>;
 
 /** Zod schema for structured git checkout output with ref, previous ref, and whether a new branch was created. */
 export const GitCheckoutSchema = z.object({
+  success: z.boolean(),
   ref: z.string(),
   previousRef: z.string(),
   created: z.boolean(),
   detached: z.boolean().optional(),
+  errorType: z
+    .enum(["dirty-tree", "conflict", "invalid-ref", "already-exists", "unknown"])
+    .optional(),
+  conflictFiles: z.array(z.string()).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type GitCheckout = z.infer<typeof GitCheckoutSchema>;
@@ -212,6 +230,8 @@ export const GitStashSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   stashRef: z.string().optional(),
+  reason: z.string().optional(),
+  conflictFiles: z.array(z.string()).optional(),
 });
 
 export type GitStash = z.infer<typeof GitStashSchema>;
@@ -364,12 +384,39 @@ export type GitLogGraphFull = {
 
 export type GitLogGraph = z.infer<typeof GitLogGraphSchema>;
 
+/** Normalized reflog action values. */
+export const REFLOG_ACTIONS = [
+  "commit",
+  "commit-initial",
+  "commit-amend",
+  "checkout",
+  "merge",
+  "rebase",
+  "rebase-finish",
+  "rebase-abort",
+  "rebase-pick",
+  "rebase-reword",
+  "rebase-edit",
+  "rebase-squash",
+  "rebase-fixup",
+  "pull",
+  "reset",
+  "branch",
+  "clone",
+  "cherry-pick",
+  "stash",
+  "other",
+] as const;
+
+export type ReflogAction = (typeof REFLOG_ACTIONS)[number];
+
 /** Zod schema for a single reflog entry with hash, selector, action, description, and date. */
 export const GitReflogEntrySchema = z.object({
   hash: z.string(),
   shortHash: z.string(),
   selector: z.string(),
-  action: z.string(),
+  action: z.enum(REFLOG_ACTIONS),
+  rawAction: z.string(),
   description: z.string(),
   date: z.string(),
 });
@@ -386,7 +433,8 @@ export type GitReflogFull = {
     hash: string;
     shortHash: string;
     selector: string;
-    action: string;
+    action: ReflogAction;
+    rawAction: string;
     description: string;
     date: string;
   }>;

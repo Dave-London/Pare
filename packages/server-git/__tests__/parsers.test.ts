@@ -8,11 +8,17 @@ import {
   parseTagOutput,
   parseStashListOutput,
   parseStashOutput,
+  parseStashError,
   parseRemoteOutput,
   parseBlameOutput,
   parseReset,
   parseLogGraph,
   parseReflogOutput,
+  normalizeReflogAction,
+  parseCheckout,
+  parseCheckoutError,
+  parsePush,
+  parsePushError,
   parseWorktreeList,
   parseWorktreeResult,
 } from "../src/lib/parsers.js";
@@ -805,7 +811,7 @@ describe("parseLogGraph", () => {
 });
 
 describe("parseReflogOutput", () => {
-  it("parses reflog entries with checkout action", () => {
+  it("parses reflog entries with checkout action and normalizes", () => {
     const stdout = [
       "abc123full\tabc1234\tHEAD@{0}\tcheckout: moving from main to feature\t2024-01-15 10:30:00 +0000",
       "def456full\tdef5678\tHEAD@{1}\tcommit: fix the bug\t2024-01-14 09:00:00 +0000",
@@ -819,6 +825,7 @@ describe("parseReflogOutput", () => {
       shortHash: "abc1234",
       selector: "HEAD@{0}",
       action: "checkout",
+      rawAction: "checkout",
       description: "moving from main to feature",
       date: "2024-01-15 10:30:00 +0000",
     });
@@ -827,6 +834,7 @@ describe("parseReflogOutput", () => {
       shortHash: "def5678",
       selector: "HEAD@{1}",
       action: "commit",
+      rawAction: "commit",
       description: "fix the bug",
       date: "2024-01-14 09:00:00 +0000",
     });
@@ -839,7 +847,7 @@ describe("parseReflogOutput", () => {
     expect(result.entries).toEqual([]);
   });
 
-  it("parses single reflog entry", () => {
+  it("parses single reflog entry and normalizes commit (initial)", () => {
     const stdout =
       "aaa111full\taaa1111\tHEAD@{0}\tcommit (initial): initial commit\t2024-01-01 00:00:00 +0000";
 
@@ -847,11 +855,12 @@ describe("parseReflogOutput", () => {
 
     expect(result.total).toBe(1);
     expect(result.entries[0].selector).toBe("HEAD@{0}");
-    expect(result.entries[0].action).toBe("commit (initial)");
+    expect(result.entries[0].action).toBe("commit-initial");
+    expect(result.entries[0].rawAction).toBe("commit (initial)");
     expect(result.entries[0].description).toBe("initial commit");
   });
 
-  it("parses various reflog actions", () => {
+  it("parses various reflog actions and normalizes them", () => {
     const stdout = [
       "aaa\ta1\tHEAD@{0}\tmerge feature: Fast-forward\t2024-01-15 10:00:00 +0000",
       "bbb\tb1\tHEAD@{1}\treset: moving to HEAD~1\t2024-01-14 09:00:00 +0000",
@@ -861,12 +870,62 @@ describe("parseReflogOutput", () => {
     const result = parseReflogOutput(stdout);
 
     expect(result.total).toBe(3);
-    expect(result.entries[0].action).toBe("merge feature");
+    expect(result.entries[0].action).toBe("merge");
+    expect(result.entries[0].rawAction).toBe("merge feature");
     expect(result.entries[0].description).toBe("Fast-forward");
     expect(result.entries[1].action).toBe("reset");
+    expect(result.entries[1].rawAction).toBe("reset");
     expect(result.entries[1].description).toBe("moving to HEAD~1");
-    expect(result.entries[2].action).toBe("rebase (finish)");
+    expect(result.entries[2].action).toBe("rebase-finish");
+    expect(result.entries[2].rawAction).toBe("rebase (finish)");
     expect(result.entries[2].description).toBe("returning to refs/heads/main");
+  });
+});
+
+describe("normalizeReflogAction", () => {
+  it("normalizes commit variants", () => {
+    expect(normalizeReflogAction("commit")).toBe("commit");
+    expect(normalizeReflogAction("commit (initial)")).toBe("commit-initial");
+    expect(normalizeReflogAction("commit (amend)")).toBe("commit-amend");
+    expect(normalizeReflogAction("commit: initial")).toBe("commit-initial");
+    expect(normalizeReflogAction("commit: amend")).toBe("commit-amend");
+  });
+
+  it("normalizes checkout", () => {
+    expect(normalizeReflogAction("checkout")).toBe("checkout");
+    expect(normalizeReflogAction("checkout: moving from main to feature")).toBe("checkout");
+  });
+
+  it("normalizes rebase variants", () => {
+    expect(normalizeReflogAction("rebase (finish)")).toBe("rebase-finish");
+    expect(normalizeReflogAction("rebase (abort)")).toBe("rebase-abort");
+    expect(normalizeReflogAction("rebase (pick)")).toBe("rebase-pick");
+    expect(normalizeReflogAction("rebase (reword)")).toBe("rebase-reword");
+    expect(normalizeReflogAction("rebase (squash)")).toBe("rebase-squash");
+    expect(normalizeReflogAction("rebase (fixup)")).toBe("rebase-fixup");
+    expect(normalizeReflogAction("rebase (edit)")).toBe("rebase-edit");
+    expect(normalizeReflogAction("rebase -i (pick)")).toBe("rebase-pick");
+    expect(normalizeReflogAction("rebase -i (finish)")).toBe("rebase-finish");
+    expect(normalizeReflogAction("rebase")).toBe("rebase");
+  });
+
+  it("normalizes merge (strips branch name)", () => {
+    expect(normalizeReflogAction("merge feature")).toBe("merge");
+    expect(normalizeReflogAction("merge origin/main")).toBe("merge");
+  });
+
+  it("normalizes other actions", () => {
+    expect(normalizeReflogAction("pull")).toBe("pull");
+    expect(normalizeReflogAction("reset")).toBe("reset");
+    expect(normalizeReflogAction("branch")).toBe("branch");
+    expect(normalizeReflogAction("clone")).toBe("clone");
+    expect(normalizeReflogAction("cherry-pick")).toBe("cherry-pick");
+    expect(normalizeReflogAction("stash")).toBe("stash");
+  });
+
+  it("returns 'other' for unknown actions", () => {
+    expect(normalizeReflogAction("unknown-action")).toBe("other");
+    expect(normalizeReflogAction("")).toBe("other");
   });
 });
 
@@ -964,5 +1023,191 @@ describe("parseWorktreeResult", () => {
     expect(result.success).toBe(true);
     expect(result.path).toBe("/tmp/wt");
     expect(result.branch).toBe("");
+  });
+});
+
+describe("parseCheckout — success field", () => {
+  it("returns success: true on normal checkout", () => {
+    const result = parseCheckout("", "Switched to branch 'feature'", "feature", "main", false);
+    expect(result.success).toBe(true);
+    expect(result.ref).toBe("feature");
+  });
+});
+
+describe("parseCheckoutError", () => {
+  it("classifies dirty working tree error", () => {
+    const stderr = `error: Your local changes to the following files would be overwritten by checkout:
+\tsrc/index.ts
+\tsrc/app.ts
+Please commit your changes or stash them before you switch branches.
+Aborting`;
+
+    const result = parseCheckoutError("", stderr, "feature", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("dirty-tree");
+    expect(result.conflictFiles).toEqual(["src/index.ts", "src/app.ts"]);
+    expect(result.errorMessage).toContain("would be overwritten");
+  });
+
+  it("classifies invalid ref error", () => {
+    const stderr = "error: pathspec 'nonexistent' did not match any file(s) known to git";
+
+    const result = parseCheckoutError("", stderr, "nonexistent", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("invalid-ref");
+    expect(result.created).toBe(false);
+  });
+
+  it("classifies branch already exists error", () => {
+    const stderr = "fatal: a branch named 'feature' already exists";
+
+    const result = parseCheckoutError("", stderr, "feature", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("already-exists");
+  });
+
+  it("classifies merge conflict error", () => {
+    const stderr = `CONFLICT (content): Merge conflict in src/index.ts
+CONFLICT (content): Merge conflict in src/utils.ts`;
+
+    const result = parseCheckoutError("", stderr, "feature", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("conflict");
+    expect(result.conflictFiles).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+
+  it("classifies unknown error", () => {
+    const stderr = "fatal: some completely unknown error";
+
+    const result = parseCheckoutError("", stderr, "feature", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("unknown");
+  });
+});
+
+describe("parsePush — success field", () => {
+  it("returns success: true on normal push", () => {
+    const result = parsePush("", "abc..def main -> main", "origin", "main");
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("parsePushError", () => {
+  it("classifies rejected (non-fast-forward) push", () => {
+    const stderr = `To github.com:user/repo.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'github.com:user/repo.git'
+hint: Updates were rejected because the tip of your current branch is behind`;
+
+    const result = parsePushError("", stderr, "origin", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("rejected");
+    expect(result.rejectedRef).toBe("main");
+    expect(result.hint).toContain("Updates were rejected");
+  });
+
+  it("classifies no-upstream error", () => {
+    const stderr = `fatal: The current branch feature has no upstream branch.
+To push the current branch and set the remote as upstream, use
+
+    git push --set-upstream origin feature`;
+
+    const result = parsePushError("", stderr, "origin", "feature");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("no-upstream");
+  });
+
+  it("classifies permission denied error", () => {
+    const stderr = "fatal: could not read credentials for 'https://github.com'";
+
+    const result = parsePushError("", stderr, "origin", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("permission-denied");
+  });
+
+  it("classifies repository not found error", () => {
+    const stderr =
+      "fatal: 'origin' does not appear to be a git repository\nfatal: Could not read from remote repository.";
+
+    const result = parsePushError("", stderr, "origin", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("repository-not-found");
+  });
+
+  it("classifies hook declined error", () => {
+    const stderr = `remote: error: hook declined to update refs/heads/main
+To github.com:user/repo.git
+ ! [remote rejected] main -> main (hook declined)`;
+
+    const result = parsePushError("", stderr, "origin", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("hook-declined");
+  });
+
+  it("classifies unknown push error", () => {
+    const stderr = "fatal: some completely unknown error";
+
+    const result = parsePushError("", stderr, "origin", "main");
+
+    expect(result.success).toBe(false);
+    expect(result.errorType).toBe("unknown");
+  });
+});
+
+describe("parseStashError", () => {
+  it("detects nothing-to-stash gracefully", () => {
+    const result = parseStashError("", "No local changes to save", "push");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("push");
+    expect(result.reason).toBe("no-local-changes");
+  });
+
+  it("detects stash pop/apply conflicts", () => {
+    const stderr = `Auto-merging src/index.ts
+CONFLICT (content): Merge conflict in src/index.ts
+CONFLICT (content): Merge conflict in src/utils.ts
+The stash entry is kept in case you need it again.`;
+
+    const result = parseStashError("", stderr, "pop");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("pop");
+    expect(result.reason).toBe("conflict");
+    expect(result.conflictFiles).toEqual(["src/index.ts", "src/utils.ts"]);
+  });
+
+  it("detects no stash entries", () => {
+    const result = parseStashError("", "No stash entries found.", "pop");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("pop");
+    expect(result.reason).toBe("no-stash-entries");
+  });
+
+  it("detects stash ref does not exist", () => {
+    const result = parseStashError("", "error: stash@{5} does not exist", "drop");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("drop");
+    expect(result.reason).toBe("no-stash-entries");
+  });
+
+  it("handles unknown stash errors", () => {
+    const result = parseStashError("", "fatal: some unexpected error", "apply");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("apply");
+    expect(result.reason).toBe("unknown");
   });
 });

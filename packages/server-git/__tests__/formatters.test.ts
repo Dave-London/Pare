@@ -587,6 +587,34 @@ describe("formatStash", () => {
 
     expect(output).toContain("Dropped stash@{0}");
   });
+
+  it("formats nothing-to-stash failure", () => {
+    const stash: GitStash = {
+      action: "push",
+      success: false,
+      message: "No local changes to save",
+      reason: "no-local-changes",
+    };
+    const output = formatStash(stash);
+
+    expect(output).toContain("Stash push failed");
+    expect(output).toContain("[no-local-changes]");
+  });
+
+  it("formats stash conflict failure", () => {
+    const stash: GitStash = {
+      action: "pop",
+      success: false,
+      message: "CONFLICT (content): Merge conflict in src/index.ts",
+      reason: "conflict",
+      conflictFiles: ["src/index.ts"],
+    };
+    const output = formatStash(stash);
+
+    expect(output).toContain("Stash pop failed");
+    expect(output).toContain("[conflict]");
+    expect(output).toContain("Conflicting files: src/index.ts");
+  });
 });
 
 describe("formatRemote", () => {
@@ -764,6 +792,7 @@ describe("formatReflog", () => {
           shortHash: "abc1234",
           selector: "HEAD@{0}",
           action: "checkout",
+          rawAction: "checkout",
           description: "moving from main to feature",
           date: "2024-01-15 10:30:00 +0000",
         },
@@ -772,6 +801,7 @@ describe("formatReflog", () => {
           shortHash: "def5678",
           selector: "HEAD@{1}",
           action: "commit",
+          rawAction: "commit",
           description: "fix the bug",
           date: "2024-01-14 09:00:00 +0000",
         },
@@ -798,6 +828,7 @@ describe("formatReflog", () => {
           shortHash: "aaa1111",
           selector: "HEAD@{0}",
           action: "reset",
+          rawAction: "reset",
           description: "",
           date: "2024-01-01 00:00:00 +0000",
         },

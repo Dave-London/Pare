@@ -7,6 +7,7 @@ describe("parseCheckout", () => {
   it("parses branch switch", () => {
     const result = parseCheckout("", "Switched to branch 'feature'", "feature", "main", false);
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("feature");
     expect(result.previousRef).toBe("main");
     expect(result.created).toBe(false);
@@ -21,6 +22,7 @@ describe("parseCheckout", () => {
       true,
     );
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("feature/new");
     expect(result.previousRef).toBe("main");
     expect(result.created).toBe(true);
@@ -29,6 +31,7 @@ describe("parseCheckout", () => {
   it("handles detached HEAD as previous ref", () => {
     const result = parseCheckout("", "Switched to branch 'main'", "main", "HEAD", false);
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("main");
     expect(result.previousRef).toBe("HEAD");
     expect(result.created).toBe(false);
@@ -37,6 +40,7 @@ describe("parseCheckout", () => {
   it("handles unknown previous ref", () => {
     const result = parseCheckout("", "Switched to branch 'dev'", "dev", "unknown", false);
 
+    expect(result.success).toBe(true);
     expect(result.ref).toBe("dev");
     expect(result.previousRef).toBe("unknown");
   });
@@ -45,6 +49,7 @@ describe("parseCheckout", () => {
 describe("formatCheckout", () => {
   it("formats branch switch", () => {
     const data: GitCheckout = {
+      success: true,
       ref: "feature",
       previousRef: "main",
       created: false,
@@ -54,6 +59,7 @@ describe("formatCheckout", () => {
 
   it("formats new branch creation", () => {
     const data: GitCheckout = {
+      success: true,
       ref: "feature/new",
       previousRef: "main",
       created: true,
@@ -61,5 +67,21 @@ describe("formatCheckout", () => {
     expect(formatCheckout(data)).toBe(
       "Created and switched to new branch 'feature/new' (was main)",
     );
+  });
+
+  it("formats checkout failure with dirty tree", () => {
+    const data: GitCheckout = {
+      success: false,
+      ref: "feature",
+      previousRef: "main",
+      created: false,
+      errorType: "dirty-tree",
+      conflictFiles: ["src/index.ts"],
+      errorMessage: "Your local changes would be overwritten",
+    };
+    const output = formatCheckout(data);
+
+    expect(output).toContain("Checkout failed: dirty-tree");
+    expect(output).toContain("Conflicting files: src/index.ts");
   });
 });

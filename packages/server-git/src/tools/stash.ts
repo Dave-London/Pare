@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parseStashOutput } from "../lib/parsers.js";
+import { parseStashOutput, parseStashError } from "../lib/parsers.js";
 import { formatStash } from "../lib/formatters.js";
 import { GitStashSchema } from "../schemas/index.js";
 
@@ -70,7 +70,8 @@ export function registerStashTool(server: McpServer) {
         args.push("clear");
         const result = await git(args, cwd);
         if (result.exitCode !== 0) {
-          throw new Error(`git stash clear failed: ${result.stderr}`);
+          const stashResult = parseStashError(result.stdout, result.stderr, "clear");
+          return dualOutput(stashResult, formatStash);
         }
         const stashResult = parseStashOutput(result.stdout, result.stderr, "clear");
         return dualOutput(stashResult, formatStash);
@@ -105,7 +106,8 @@ export function registerStashTool(server: McpServer) {
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`git stash ${action} failed: ${result.stderr}`);
+        const stashResult = parseStashError(result.stdout, result.stderr, action);
+        return dualOutput(stashResult, formatStash);
       }
 
       const stashResult = parseStashOutput(result.stdout, result.stderr, action);
