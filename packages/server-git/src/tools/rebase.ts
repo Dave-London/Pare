@@ -31,6 +31,18 @@ export function registerRebaseTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Continue after conflict resolution"),
+        autostash: z.boolean().optional().describe("Stash/unstash around rebase (--autostash)"),
+        autosquash: z
+          .boolean()
+          .optional()
+          .describe("Auto-apply fixup/squash commits (--autosquash)"),
+        forceRebase: z
+          .boolean()
+          .optional()
+          .describe("Force rebase even if up-to-date (--force-rebase)"),
+        rebaseMerges: z.boolean().optional().describe("Preserve merge commits (--rebase-merges)"),
+        updateRefs: z.boolean().optional().describe("Update dependent branches (--update-refs)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
       },
       outputSchema: GitRebaseSchema,
     },
@@ -86,7 +98,14 @@ export function registerRebaseTool(server: McpServer) {
           ? logResult.stdout.trim().split("\n").filter(Boolean).length
           : undefined;
 
-      const args = ["rebase", branch];
+      const args = ["rebase"];
+      if (params.autostash) args.push("--autostash");
+      if (params.autosquash) args.push("--autosquash");
+      if (params.forceRebase) args.push("--force-rebase");
+      if (params.rebaseMerges) args.push("--rebase-merges");
+      if (params.updateRefs) args.push("--update-refs");
+      if (params.signoff) args.push("--signoff");
+      args.push(branch);
       const result = await git(args, cwd);
 
       // Rebase can exit non-zero for conflicts — still produce useful output

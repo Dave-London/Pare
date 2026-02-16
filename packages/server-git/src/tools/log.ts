@@ -39,6 +39,16 @@ export function registerLogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by author name or email"),
+        noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
+        skip: z.number().optional().describe("Skip N commits for pagination (--skip)"),
+        follow: z.boolean().optional().describe("Follow file renames (--follow)"),
+        firstParent: z.boolean().optional().describe("Follow only first parent (--first-parent)"),
+        all: z.boolean().optional().describe("Show all refs (--all)"),
+        pickaxe: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Search for code changes (-S)"),
         compact: z
           .boolean()
           .optional()
@@ -49,13 +59,34 @@ export function registerLogTool(server: McpServer) {
       },
       outputSchema: GitLogSchema,
     },
-    async ({ path, maxCount, ref, author, compact }) => {
+    async ({
+      path,
+      maxCount,
+      ref,
+      author,
+      noMerges,
+      skip,
+      follow,
+      firstParent,
+      all,
+      pickaxe,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       const args = ["log", `--format=${LOG_FORMAT}`, `--max-count=${maxCount ?? 10}`];
 
       if (author) {
         assertNoFlagInjection(author, "author");
         args.push(`--author=${author}`);
+      }
+      if (noMerges) args.push("--no-merges");
+      if (skip !== undefined) args.push(`--skip=${skip}`);
+      if (follow) args.push("--follow");
+      if (firstParent) args.push("--first-parent");
+      if (all) args.push("--all");
+      if (pickaxe) {
+        assertNoFlagInjection(pickaxe, "pickaxe");
+        args.push(`-S${pickaxe}`);
       }
       if (ref) {
         assertNoFlagInjection(ref, "ref");

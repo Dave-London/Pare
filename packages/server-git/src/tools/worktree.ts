@@ -60,6 +60,21 @@ export function registerWorktreeTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Force removal even if worktree is dirty (used with remove action)"),
+        forceAdd: z
+          .boolean()
+          .optional()
+          .describe("Allow checking out already-checked-out branch on add (-f)"),
+        detach: z.boolean().optional().describe("Detach HEAD on add (-d/--detach)"),
+        noCheckout: z.boolean().optional().describe("Skip checkout on add (--no-checkout)"),
+        forceBranch: z.boolean().optional().describe("Create/reset branch on add (-B)"),
+        guessRemote: z
+          .boolean()
+          .optional()
+          .describe("Auto-detect remote tracking on add (--guess-remote)"),
+        listVerbose: z
+          .boolean()
+          .optional()
+          .describe("Verbose list output showing locked/prunable details (-v on list)"),
         compact: z
           .boolean()
           .optional()
@@ -75,7 +90,9 @@ export function registerWorktreeTool(server: McpServer) {
       const action = params.action || "list";
 
       if (action === "list") {
-        const result = await git(["worktree", "list", "--porcelain"], cwd);
+        const listArgs = ["worktree", "list", "--porcelain"];
+        if (params.listVerbose) listArgs.push("-v");
+        const result = await git(listArgs, cwd);
 
         if (result.exitCode !== 0) {
           throw new Error(`git worktree list failed: ${result.stderr}`);
@@ -102,7 +119,15 @@ export function registerWorktreeTool(server: McpServer) {
 
         const args = ["worktree", "add"];
 
-        if (params.createBranch && params.branch) {
+        if (params.forceAdd) args.push("-f");
+        if (params.detach) args.push("--detach");
+        if (params.noCheckout) args.push("--no-checkout");
+        if (params.guessRemote) args.push("--guess-remote");
+
+        if (params.forceBranch && params.branch) {
+          assertNoFlagInjection(params.branch, "branch");
+          args.push("-B", params.branch);
+        } else if (params.createBranch && params.branch) {
           assertNoFlagInjection(params.branch, "branch");
           args.push("-b", params.branch);
         }

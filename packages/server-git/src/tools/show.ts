@@ -30,6 +30,14 @@ export function registerShowTool(server: McpServer) {
           .optional()
           .default("HEAD")
           .describe("Commit hash, branch, or tag (default: HEAD)"),
+        patch: z.boolean().optional().describe("Include patch content in output (-p/--patch)"),
+        ignoreWhitespace: z.boolean().optional().describe("Filter whitespace-only changes (-w)"),
+        nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
+        showSignature: z
+          .boolean()
+          .optional()
+          .describe("GPG signature verification (--show-signature)"),
+        notes: z.boolean().optional().describe("Include git notes (--notes)"),
         compact: z
           .boolean()
           .optional()
@@ -40,22 +48,28 @@ export function registerShowTool(server: McpServer) {
       },
       outputSchema: GitShowSchema,
     },
-    async ({ path, ref, compact }) => {
+    async ({ path, ref, patch, ignoreWhitespace, nameStatus, showSignature, notes, compact }) => {
       const cwd = path || process.cwd();
       const commitRef = ref || "HEAD";
       assertNoFlagInjection(commitRef, "ref");
 
       // Get commit info
-      const infoResult = await git(
-        ["show", "--no-patch", `--format=${SHOW_FORMAT}`, commitRef],
-        cwd,
-      );
+      const infoArgs = ["show", "--no-patch", `--format=${SHOW_FORMAT}`];
+      if (showSignature) infoArgs.push("--show-signature");
+      if (notes) infoArgs.push("--notes");
+      infoArgs.push(commitRef);
+      const infoResult = await git(infoArgs, cwd);
       if (infoResult.exitCode !== 0) {
         throw new Error(`git show failed: ${infoResult.stderr}`);
       }
 
       // Get diff stats
-      const diffResult = await git(["show", "--numstat", "--format=", commitRef], cwd);
+      const diffArgs = ["show", "--numstat", "--format="];
+      if (patch) diffArgs.push("--patch");
+      if (ignoreWhitespace) diffArgs.push("-w");
+      if (nameStatus) diffArgs.push("--name-status");
+      diffArgs.push(commitRef);
+      const diffResult = await git(diffArgs, cwd);
 
       const show = parseShow(infoResult.stdout, diffResult.stdout);
       const rawStdout = `${infoResult.stdout}\n${diffResult.stdout}`;

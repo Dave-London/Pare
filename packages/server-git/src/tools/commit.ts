@@ -22,10 +22,39 @@ export function registerCommitTool(server: McpServer) {
           .describe("Repository path (default: cwd)"),
         message: z.string().max(INPUT_LIMITS.MESSAGE_MAX).describe("Commit message"),
         amend: z.boolean().optional().default(false).describe("Amend the previous commit"),
+        noVerify: z
+          .boolean()
+          .optional()
+          .describe("Bypass pre-commit and commit-msg hooks (--no-verify)"),
+        allowEmpty: z.boolean().optional().describe("Allow commit with no changes (--allow-empty)"),
+        all: z
+          .boolean()
+          .optional()
+          .describe("Auto-stage tracked modified/deleted files (-a/--all)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
+        noEdit: z.boolean().optional().describe("Keep existing message with --amend (--no-edit)"),
+        dryRun: z.boolean().optional().describe("Preview commit without executing (--dry-run)"),
+        gpgSign: z.boolean().optional().describe("GPG sign the commit (-S/--gpg-sign)"),
+        resetAuthor: z
+          .boolean()
+          .optional()
+          .describe("Reset author info on amended commits (--reset-author)"),
       },
       outputSchema: GitCommitSchema,
     },
-    async ({ path, message, amend }) => {
+    async ({
+      path,
+      message,
+      amend,
+      noVerify,
+      allowEmpty,
+      all,
+      signoff,
+      noEdit,
+      dryRun,
+      gpgSign,
+      resetAuthor,
+    }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(message, "commit message");
@@ -36,6 +65,14 @@ export function registerCommitTool(server: McpServer) {
       // break the command line. Works identically on all platforms.
       const args = ["commit"];
       if (amend) args.push("--amend");
+      if (noVerify) args.push("--no-verify");
+      if (allowEmpty) args.push("--allow-empty");
+      if (all) args.push("--all");
+      if (signoff) args.push("--signoff");
+      if (noEdit) args.push("--no-edit");
+      if (dryRun) args.push("--dry-run");
+      if (gpgSign) args.push("--gpg-sign");
+      if (resetAuthor) args.push("--reset-author");
       args.push("--file", "-");
 
       const result = await git(args, cwd, { stdin: message });

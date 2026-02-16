@@ -37,6 +37,17 @@ export function registerDiffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
+        ignoreWhitespace: z.boolean().optional().describe("Ignore all whitespace changes (-w)"),
+        contextLines: z.number().optional().describe("Number of context lines (-U<n>)"),
+        nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
+        ignoreSpaceChange: z.boolean().optional().describe("Ignore space amount changes (-b)"),
+        reverse: z.boolean().optional().describe("Reverse diff direction (-R)"),
+        wordDiff: z.boolean().optional().describe("Word-level diff (--word-diff)"),
+        relative: z.boolean().optional().describe("Show relative paths (--relative)"),
+        ignoreBlankLines: z
+          .boolean()
+          .optional()
+          .describe("Ignore blank line changes (--ignore-blank-lines)"),
         compact: z
           .boolean()
           .optional()
@@ -47,7 +58,22 @@ export function registerDiffTool(server: McpServer) {
       },
       outputSchema: GitDiffSchema,
     },
-    async ({ path, staged, ref, file, full, compact }) => {
+    async ({
+      path,
+      staged,
+      ref,
+      file,
+      full,
+      ignoreWhitespace,
+      contextLines,
+      nameStatus,
+      ignoreSpaceChange,
+      reverse,
+      wordDiff,
+      relative,
+      ignoreBlankLines,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       const args = ["diff", "--numstat"];
 
@@ -59,6 +85,14 @@ export function registerDiffTool(server: McpServer) {
       }
 
       if (staged) args.push("--cached");
+      if (ignoreWhitespace) args.push("-w");
+      if (contextLines !== undefined) args.push(`-U${contextLines}`);
+      if (nameStatus) args.push("--name-status");
+      if (ignoreSpaceChange) args.push("-b");
+      if (reverse) args.push("-R");
+      if (wordDiff) args.push("--word-diff");
+      if (relative) args.push("--relative");
+      if (ignoreBlankLines) args.push("--ignore-blank-lines");
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
@@ -79,6 +113,13 @@ export function registerDiffTool(server: McpServer) {
       if (full && diff.files.length > 0) {
         const patchArgs = ["diff"];
         if (staged) patchArgs.push("--cached");
+        if (ignoreWhitespace) patchArgs.push("-w");
+        if (contextLines !== undefined) patchArgs.push(`-U${contextLines}`);
+        if (ignoreSpaceChange) patchArgs.push("-b");
+        if (reverse) patchArgs.push("-R");
+        if (wordDiff) patchArgs.push("--word-diff");
+        if (relative) patchArgs.push("--relative");
+        if (ignoreBlankLines) patchArgs.push("--ignore-blank-lines");
         if (ref) patchArgs.push(ref); // Already validated above
         if (resolvedFile) {
           patchArgs.push("--", resolvedFile);

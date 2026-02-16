@@ -33,6 +33,24 @@ export function registerBisectTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Good commit ref (used with start action)"),
+        noCheckout: z
+          .boolean()
+          .optional()
+          .describe("Perform bisection without checking out each commit (--no-checkout)"),
+        firstParent: z
+          .boolean()
+          .optional()
+          .describe("Follow only first parent on merge commits (--first-parent)"),
+        termOld: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Custom term for the old/good state (--term-old)"),
+        termNew: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Custom term for the new/bad state (--term-new)"),
       },
       outputSchema: GitBisectSchema,
     },
@@ -50,9 +68,16 @@ export function registerBisectTool(server: McpServer) {
 
         assertNoFlagInjection(bad, "bad");
         assertNoFlagInjection(good, "good");
+        if (params.termOld) assertNoFlagInjection(params.termOld, "termOld");
+        if (params.termNew) assertNoFlagInjection(params.termNew, "termNew");
 
         // Start bisect session
-        const startResult = await git(["bisect", "start"], cwd);
+        const startArgs = ["bisect", "start"];
+        if (params.noCheckout) startArgs.push("--no-checkout");
+        if (params.firstParent) startArgs.push("--first-parent");
+        if (params.termOld) startArgs.push(`--term-old=${params.termOld}`);
+        if (params.termNew) startArgs.push(`--term-new=${params.termNew}`);
+        const startResult = await git(startArgs, cwd);
         if (startResult.exitCode !== 0) {
           throw new Error(`git bisect start failed: ${startResult.stderr}`);
         }

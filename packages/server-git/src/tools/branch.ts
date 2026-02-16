@@ -32,6 +32,15 @@ export function registerBranchTool(server: McpServer) {
           .optional()
           .describe("Delete branch with this name"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
+        forceDelete: z.boolean().optional().describe("Force-delete unmerged branches (-D)"),
+        merged: z.boolean().optional().describe("Filter to branches merged into HEAD (--merged)"),
+        noMerged: z
+          .boolean()
+          .optional()
+          .describe("Filter to branches not merged into HEAD (--no-merged)"),
+        remotes: z.boolean().optional().describe("List remote branches only (-r)"),
+        verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
+        force: z.boolean().optional().describe("Force branch creation even if it exists (-f)"),
         compact: z
           .boolean()
           .optional()
@@ -42,13 +51,32 @@ export function registerBranchTool(server: McpServer) {
       },
       outputSchema: GitBranchSchema,
     },
-    async ({ path, create, delete: deleteBranch, all, compact }) => {
+    async ({
+      path,
+      create,
+      delete: deleteBranch,
+      all,
+      forceDelete,
+      merged,
+      noMerged,
+      remotes,
+      verbose,
+      force,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
       // Create branch
       if (create) {
         assertNoFlagInjection(create, "branch name");
-        const result = await git(["checkout", "-b", create], cwd);
+        const createArgs = ["checkout"];
+        if (force) {
+          createArgs.push("-B");
+        } else {
+          createArgs.push("-b");
+        }
+        createArgs.push(create);
+        const result = await git(createArgs, cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to create branch: ${result.stderr}`);
         }
@@ -57,7 +85,8 @@ export function registerBranchTool(server: McpServer) {
       // Delete branch
       if (deleteBranch) {
         assertNoFlagInjection(deleteBranch, "branch name");
-        const result = await git(["branch", "-d", deleteBranch], cwd);
+        const deleteFlag = forceDelete ? "-D" : "-d";
+        const result = await git(["branch", deleteFlag, deleteBranch], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to delete branch: ${result.stderr}`);
         }
@@ -66,6 +95,10 @@ export function registerBranchTool(server: McpServer) {
       // List branches
       const args = ["branch"];
       if (all) args.push("-a");
+      if (remotes) args.push("-r");
+      if (merged) args.push("--merged");
+      if (noMerged) args.push("--no-merged");
+      if (verbose) args.push("-v");
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
