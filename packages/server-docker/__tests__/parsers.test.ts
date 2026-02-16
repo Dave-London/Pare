@@ -849,3 +849,118 @@ describe("parseStatsJson", () => {
     expect(result.containers[0].id).toHaveLength(12);
   });
 });
+
+// ---------------------------------------------------------------------------
+// parseInspectJson — image-type inspect
+// ---------------------------------------------------------------------------
+
+describe("parseInspectJson — image inspect", () => {
+  it("parses an image inspect output with RepoTags, Size, Architecture, Os", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+        RepoTags: ["nginx:latest", "nginx:1.25"],
+        RepoDigests: ["nginx@sha256:abcdef1234567890"],
+        Created: "2024-06-01T09:00:00Z",
+        Size: 187432960,
+        Architecture: "amd64",
+        Os: "linux",
+        Config: {
+          Env: ["PATH=/usr/local/sbin:/usr/local/bin", "NGINX_VERSION=1.25.4"],
+          Cmd: ["nginx", "-g", "daemon off;"],
+          Entrypoint: ["/docker-entrypoint.sh"],
+        },
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.inspectType).toBe("image");
+    expect(result.id).toBe("sha256:abc12");
+    expect(result.name).toBe("nginx:latest");
+    expect(result.image).toBe("nginx:latest");
+    expect(result.platform).toBe("linux/amd64");
+    expect(result.created).toBe("2024-06-01T09:00:00Z");
+    expect(result.repoTags).toEqual(["nginx:latest", "nginx:1.25"]);
+    expect(result.repoDigests).toEqual(["nginx@sha256:abcdef1234567890"]);
+    expect(result.size).toBe(187432960);
+    expect(result.env).toEqual(["PATH=/usr/local/sbin:/usr/local/bin", "NGINX_VERSION=1.25.4"]);
+    expect(result.cmd).toEqual(["nginx", "-g", "daemon off;"]);
+    expect(result.entrypoint).toEqual(["/docker-entrypoint.sh"]);
+    // Image should NOT have container state
+    expect(result.state).toBeUndefined();
+    expect(result.healthStatus).toBeUndefined();
+    expect(result.restartPolicy).toBeUndefined();
+  });
+
+  it("parses image inspect with minimal fields", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "sha256:def456abc789",
+        RepoTags: ["myapp:v1"],
+        Created: "2024-01-01T00:00:00Z",
+        Config: {},
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.inspectType).toBe("image");
+    expect(result.name).toBe("myapp:v1");
+    expect(result.repoTags).toEqual(["myapp:v1"]);
+    expect(result.env).toBeUndefined();
+    expect(result.cmd).toBeUndefined();
+    expect(result.entrypoint).toBeUndefined();
+    expect(result.size).toBeUndefined();
+  });
+
+  it("falls back to ID for name when no RepoTags", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "sha256:abc123def456abc123",
+        RepoTags: [],
+        RootFS: { Type: "layers" },
+        Created: "2024-01-01T00:00:00Z",
+        Config: {},
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.inspectType).toBe("image");
+    expect(result.name).toBe("sha256:abc12");
+  });
+
+  it("still parses containers correctly (backward compatibility)", () => {
+    const stdout = JSON.stringify([
+      {
+        Id: "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+        Name: "/web-app",
+        State: {
+          Status: "running",
+          Running: true,
+          StartedAt: "2024-06-01T10:00:00Z",
+        },
+        Config: {
+          Image: "nginx:latest",
+        },
+        Created: "2024-06-01T09:00:00Z",
+      },
+    ]);
+
+    const result = parseInspectJson(stdout);
+
+    expect(result.inspectType).toBe("container");
+    expect(result.id).toBe("abc123def456");
+    expect(result.name).toBe("web-app");
+    expect(result.state?.status).toBe("running");
+    expect(result.state?.running).toBe(true);
+    expect(result.image).toBe("nginx:latest");
+    // Container should NOT have image-specific fields
+    expect(result.repoTags).toBeUndefined();
+    expect(result.repoDigests).toBeUndefined();
+    expect(result.size).toBeUndefined();
+    expect(result.cmd).toBeUndefined();
+    expect(result.entrypoint).toBeUndefined();
+  });
+});

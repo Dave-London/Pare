@@ -336,8 +336,17 @@ export function formatComposeDownCompact(data: DockerComposeDownCompact): string
 
 // ── Inspect ──────────────────────────────────────────────────────────
 
-/** Formats structured Docker inspect data into a human-readable summary. */
+/** Formats structured Docker inspect data into a human-readable summary.
+ *  Handles both container and image inspect results. */
 export function formatInspect(data: DockerInspect): string {
+  if (data.inspectType === "image") {
+    return formatImageInspect(data);
+  }
+  return formatContainerInspect(data);
+}
+
+/** Formats a container inspect result. */
+function formatContainerInspect(data: DockerInspect): string {
   const lines = [`${data.name} (${data.id})`];
   lines.push(`  Image: ${data.image}`);
   const state = data.state;
@@ -355,21 +364,63 @@ export function formatInspect(data: DockerInspect): string {
   return lines.join("\n");
 }
 
-/** Compact inspect: id, name, status, running. Drop startedAt, platform, created. */
+/** Formats an image inspect result. */
+function formatImageInspect(data: DockerInspect): string {
+  const lines = [`Image: ${data.name} (${data.id})`];
+  if (data.repoTags && data.repoTags.length > 0) {
+    lines.push(`  Tags: ${data.repoTags.join(", ")}`);
+  }
+  if (data.repoDigests && data.repoDigests.length > 0) {
+    lines.push(`  Digests: ${data.repoDigests.map((d) => d.slice(0, 40) + "...").join(", ")}`);
+  }
+  if (data.size != null) {
+    const sizeMB = (data.size / 1024 / 1024).toFixed(1);
+    lines.push(`  Size: ${sizeMB} MB`);
+  }
+  if (data.platform) lines.push(`  Platform: ${data.platform}`);
+  if (data.created) lines.push(`  Created: ${data.created}`);
+  if (data.entrypoint && data.entrypoint.length > 0) {
+    lines.push(`  Entrypoint: ${data.entrypoint.join(" ")}`);
+  }
+  if (data.cmd && data.cmd.length > 0) {
+    lines.push(`  Cmd: ${data.cmd.join(" ")}`);
+  }
+  if (data.env && data.env.length > 0) {
+    lines.push(`  Env: ${data.env.length} variables`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact inspect: id, name, status, running. Drop startedAt, platform, created.
+ *  For images: id, name, tags, platform. */
 export interface DockerInspectCompact {
   [key: string]: unknown;
   id: string;
   name: string;
+  inspectType?: string;
   status: string;
   running: boolean;
   image: string;
   healthStatus?: string;
+  repoTags?: string[];
 }
 
 export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
+  if (data.inspectType === "image") {
+    return {
+      id: data.id,
+      name: data.name,
+      inspectType: "image",
+      status: "n/a",
+      running: false,
+      image: data.image,
+      ...(data.repoTags ? { repoTags: data.repoTags } : {}),
+    };
+  }
   return {
     id: data.id,
     name: data.name,
+    inspectType: "container",
     status: data.state?.status ?? data.status ?? "unknown",
     running: data.state?.running ?? data.running ?? false,
     image: data.image,
@@ -378,6 +429,10 @@ export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
 }
 
 export function formatInspectCompact(data: DockerInspectCompact): string {
+  if (data.inspectType === "image") {
+    const tags = data.repoTags ? ` tags=${data.repoTags.join(",")}` : "";
+    return `Image ${data.name} (${data.id})${tags}`;
+  }
   const health = data.healthStatus ? ` health=${data.healthStatus}` : "";
   return `${data.name} (${data.id}) ${data.status} [${data.running ? "running" : "stopped"}] image=${data.image}${health}`;
 }

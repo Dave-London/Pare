@@ -280,18 +280,39 @@ export function parsePullOutput(
   };
 }
 
-/** Parses `docker inspect --format json` output into structured inspect data with healthStatus, env, and restartPolicy. */
+/**
+ * Detects whether the inspected JSON object is an image (no State field) vs a container.
+ * Returns true when the object looks like a Docker image inspect result.
+ */
+function isImageInspect(obj: Record<string, unknown>): boolean {
+  // Images lack a State field and typically have RepoTags
+  return !("State" in obj) && ("RepoTags" in obj || "RootFS" in obj);
+}
+
+/** Parses `docker inspect --format json` output into structured inspect data with healthStatus, env, and restartPolicy.
+ *  Handles both container and image inspect output. */
 export function parseInspectJson(stdout: string): DockerInspect {
   // docker inspect --format json returns a JSON array with one element
   const parsed = JSON.parse(stdout);
   const obj = Array.isArray(parsed) ? parsed[0] : parsed;
 
-  const state = obj.State ?? {};
-  const config = obj.Config ?? {};
-  const hostConfig = obj.HostConfig ?? {};
+  if (isImageInspect(obj)) {
+    return parseImageInspect(obj);
+  }
+
+  return parseContainerInspect(obj);
+}
+
+/** Parses container-type inspect JSON into DockerInspect. */
+function parseContainerInspect(obj: Record<string, unknown>): DockerInspect {
+  const state = (obj.State ?? {}) as Record<string, unknown>;
+  const config = (obj.Config ?? {}) as Record<string, unknown>;
+  const hostConfig = (obj.HostConfig ?? {}) as Record<string, unknown>;
 
   // Extract health status from State.Health.Status
-  const healthRaw = state.Health?.Status;
+  const healthRaw = (state.Health as Record<string, unknown> | undefined)?.Status as
+    | string
+    | undefined;
   const validHealth = ["healthy", "unhealthy", "starting", "none"];
   const healthStatus =
     healthRaw && validHealth.includes(healthRaw.toLowerCase())
@@ -300,27 +321,68 @@ export function parseInspectJson(stdout: string): DockerInspect {
 
   // Extract environment variables from Config.Env
   const envArr: string[] | undefined =
-    Array.isArray(config.Env) && config.Env.length > 0 ? config.Env : undefined;
+    Array.isArray(config.Env) && config.Env.length > 0 ? (config.Env as string[]) : undefined;
 
   // Extract restart policy from HostConfig.RestartPolicy.Name
-  const restartPolicy = hostConfig.RestartPolicy?.Name || undefined;
+  const restartPolicy = (hostConfig.RestartPolicy as Record<string, unknown> | undefined)?.Name as
+    | string
+    | undefined;
 
   return {
-    id: (obj.Id ?? "").slice(0, 12),
-    name: (obj.Name ?? "").replace(/^\//, ""),
+    id: ((obj.Id as string) ?? "").slice(0, 12),
+    name: ((obj.Name as string) ?? "").replace(/^\//, ""),
+    inspectType: "container",
     state: {
-      status: (state.Status ?? "unknown").toLowerCase(),
-      running: state.Running ?? false,
-      ...(state.StartedAt && state.StartedAt !== "0001-01-01T00:00:00Z"
-        ? { startedAt: state.StartedAt }
+      status: ((state.Status as string) ?? "unknown").toLowerCase(),
+      running: (state.Running as boolean) ?? false,
+      ...((state.StartedAt as string) && (state.StartedAt as string) !== "0001-01-01T00:00:00Z"
+        ? { startedAt: state.StartedAt as string }
         : {}),
     },
-    image: config.Image ?? obj.Image ?? "",
-    ...(obj.Platform ? { platform: obj.Platform } : {}),
-    created: obj.Created ?? "",
+    image: (config.Image as string) ?? (obj.Image as string) ?? "",
+    ...(obj.Platform ? { platform: obj.Platform as string } : {}),
+    created: (obj.Created as string) ?? "",
     ...(healthStatus ? { healthStatus } : {}),
     ...(envArr ? { env: envArr } : {}),
     ...(restartPolicy && restartPolicy !== "" ? { restartPolicy } : {}),
+  };
+}
+
+/** Parses image-type inspect JSON into DockerInspect. */
+function parseImageInspect(obj: Record<string, unknown>): DockerInspect {
+  const config = (obj.Config ?? {}) as Record<string, unknown>;
+  const repoTags = Array.isArray(obj.RepoTags) ? (obj.RepoTags as string[]) : [];
+  const repoDigests = Array.isArray(obj.RepoDigests) ? (obj.RepoDigests as string[]) : [];
+
+  // Extract environment variables from Config.Env
+  const envArr: string[] | undefined =
+    Array.isArray(config.Env) && config.Env.length > 0 ? (config.Env as string[]) : undefined;
+
+  // Extract command and entrypoint
+  const cmd = Array.isArray(config.Cmd) ? (config.Cmd as string[]) : undefined;
+  const entrypoint = Array.isArray(config.Entrypoint) ? (config.Entrypoint as string[]) : undefined;
+
+  // Build platform from Architecture + Os
+  const arch = obj.Architecture as string | undefined;
+  const os = obj.Os as string | undefined;
+  const platform = arch && os ? `${os}/${arch}` : arch || os || undefined;
+
+  // Derive image name from first RepoTag or the image ID
+  const imageName = repoTags.length > 0 ? repoTags[0] : ((obj.Id as string) ?? "").slice(0, 12);
+
+  return {
+    id: ((obj.Id as string) ?? "").slice(0, 12),
+    name: imageName,
+    inspectType: "image",
+    image: imageName,
+    ...(platform ? { platform } : {}),
+    created: (obj.Created as string) ?? "",
+    ...(repoTags.length > 0 ? { repoTags } : {}),
+    ...(repoDigests.length > 0 ? { repoDigests } : {}),
+    ...(obj.Size != null ? { size: obj.Size as number } : {}),
+    ...(envArr ? { env: envArr } : {}),
+    ...(cmd ? { cmd } : {}),
+    ...(entrypoint ? { entrypoint } : {}),
   };
 }
 
