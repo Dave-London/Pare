@@ -240,7 +240,7 @@ export function parseComposeDownOutput(
   };
 }
 
-/** Parses `docker pull` output into structured data with image, tag, digest, and success flag. */
+/** Parses `docker pull` output into structured data with image, tag, digest, status, and success flag. */
 export function parsePullOutput(
   stdout: string,
   stderr: string,
@@ -258,10 +258,24 @@ export function parsePullOutput(
   const digestMatch = combined.match(/Digest:\s*(sha256:[a-f0-9]+)/);
   const digest = digestMatch?.[1];
 
+  // Determine pull status from output
+  let status: "pulled" | "up-to-date" | "error";
+  if (exitCode !== 0) {
+    status = "error";
+  } else if (
+    combined.includes("Image is up to date") ||
+    (combined.includes("Already exists") && !combined.includes("Pull complete"))
+  ) {
+    status = "up-to-date";
+  } else {
+    status = "pulled";
+  }
+
   return {
     image: imageName,
     tag,
     ...(digest ? { digest } : {}),
+    status,
     success: exitCode === 0,
   };
 }
@@ -459,18 +473,77 @@ export function parseComposePsJson(stdout: string): DockerComposePs {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const services = lines.map((line) => {
     const s = JSON.parse(line);
-    const ports = s.Ports ?? s.Publishers ?? "";
-    const portsStr = typeof ports === "string" ? ports : "";
+    const ports = parseComposePorts(s.Publishers, s.Ports);
     return {
       name: s.Name ?? "",
       service: s.Service ?? "",
       state: (s.State ?? "unknown").toLowerCase(),
       status: s.Status ?? "",
-      ...(portsStr ? { ports: portsStr } : {}),
+      ...(ports.length > 0 ? { ports } : {}),
     };
   });
 
   return { services, total: services.length };
+}
+
+/**
+ * Parses compose service port info from the Publishers array or Ports string.
+ * Docker compose ps --format json returns a Publishers field as an array of objects:
+ *   [{ URL: "0.0.0.0", TargetPort: 80, PublishedPort: 8080, Protocol: "tcp" }]
+ * Falls back to the Ports string for older compose versions.
+ */
+function parseComposePorts(
+  publishers: unknown,
+  portsStr: unknown,
+): { host?: number; container: number; protocol: "tcp" | "udp" }[] {
+  // Try structured Publishers array first
+  if (Array.isArray(publishers) && publishers.length > 0) {
+    return publishers
+      .filter(
+        (p) =>
+          p != null && typeof p === "object" && (p.TargetPort != null || p.target_port != null),
+      )
+      .map((p) => {
+        const container = p.TargetPort ?? p.target_port ?? 0;
+        const host = p.PublishedPort ?? p.published_port ?? 0;
+        const protocol = ((p.Protocol ?? p.protocol ?? "tcp") as string).toLowerCase() as
+          | "tcp"
+          | "udp";
+        return {
+          ...(host > 0 ? { host } : {}),
+          container,
+          protocol,
+        };
+      });
+  }
+
+  // Fallback: parse Ports string (same format as docker ps)
+  if (typeof portsStr === "string" && portsStr.trim()) {
+    return portsStr
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => {
+        const protoMatch = p.match(/\/(tcp|udp)/);
+        const protocol = (protoMatch?.[1] ?? "tcp") as "tcp" | "udp";
+        const arrowParts = p.split("->");
+
+        if (arrowParts.length === 2) {
+          const hostPort = arrowParts[0].split(":").pop();
+          const containerPort = arrowParts[1].replace(/\/(tcp|udp)/, "");
+          return {
+            host: parseInt(hostPort ?? "0", 10),
+            container: parseInt(containerPort, 10),
+            protocol,
+          };
+        }
+
+        const port = parseInt(p.replace(/\/(tcp|udp)/, ""), 10);
+        return { container: port, protocol };
+      });
+  }
+
+  return [];
 }
 
 /** Parses `docker compose logs` output into structured entries grouped by service.

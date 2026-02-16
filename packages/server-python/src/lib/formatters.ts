@@ -450,12 +450,14 @@ export function formatPipShowCompact(data: PipShowCompact): string {
 /** Formats structured ruff format results into a human-readable summary. */
 export function formatRuffFormat(data: RuffFormatResult): string {
   if (data.success && data.filesChanged === 0) {
-    return "ruff format: all files already formatted.";
+    const unchanged = data.filesUnchanged > 0 ? ` (${data.filesUnchanged} unchanged)` : "";
+    return `ruff format: all files already formatted.${unchanged}`;
   }
 
   const lines: string[] = [];
   const verb = data.checkMode ? "would be reformatted" : "reformatted";
-  lines.push(`ruff format: ${data.filesChanged} files ${verb}`);
+  const unchanged = data.filesUnchanged > 0 ? `, ${data.filesUnchanged} unchanged` : "";
+  lines.push(`ruff format: ${data.filesChanged} files ${verb}${unchanged}`);
 
   if (data.files && data.files.length > 0) {
     for (const f of data.files) {
@@ -466,11 +468,12 @@ export function formatRuffFormat(data: RuffFormatResult): string {
   return lines.join("\n");
 }
 
-/** Compact ruff-format: success + filesChanged count + checkMode. Drop individual file lists. */
+/** Compact ruff-format: success + filesChanged count + filesUnchanged + checkMode. Drop individual file lists. */
 export interface RuffFormatResultCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
+  filesUnchanged: number;
   checkMode?: boolean;
 }
 
@@ -478,16 +481,19 @@ export function compactRuffFormatMap(data: RuffFormatResult): RuffFormatResultCo
   return {
     success: data.success,
     filesChanged: data.filesChanged,
+    filesUnchanged: data.filesUnchanged,
     checkMode: data.checkMode || undefined,
   };
 }
 
 export function formatRuffFormatCompact(data: RuffFormatResultCompact): string {
   if (data.success && data.filesChanged === 0) {
-    return "ruff format: all files already formatted.";
+    const unchanged = data.filesUnchanged > 0 ? ` (${data.filesUnchanged} unchanged)` : "";
+    return `ruff format: all files already formatted.${unchanged}`;
   }
   const verb = data.checkMode ? "would be reformatted" : "reformatted";
-  return `ruff format: ${data.filesChanged} files ${verb}`;
+  const unchanged = data.filesUnchanged > 0 ? `, ${data.filesUnchanged} unchanged` : "";
+  return `ruff format: ${data.filesChanged} files ${verb}${unchanged}`;
 }
 
 // ── conda formatters ─────────────────────────────────────────────────

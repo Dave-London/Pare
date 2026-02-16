@@ -120,6 +120,7 @@ export const GoListPackageSchema = z.object({
   name: z.string(),
   goFiles: z.array(z.string()).optional(),
   testGoFiles: z.array(z.string()).optional(),
+  imports: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured go list output with package list and total count. */

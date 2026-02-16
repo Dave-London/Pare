@@ -191,6 +191,7 @@ export type PipShow = z.infer<typeof PipShowSchema>;
 export const RuffFormatResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
+  filesUnchanged: z.number(),
   files: z.array(z.string()).optional(),
   checkMode: z.boolean().optional(),
 });

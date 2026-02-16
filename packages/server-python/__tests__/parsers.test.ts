@@ -592,6 +592,7 @@ describe("parseRuffFormatOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(2);
+    expect(result.filesUnchanged).toBe(0);
     expect(result.files).toEqual(["src/main.py", "src/utils.py"]);
     expect(result.checkMode).toBe(true);
   });
@@ -603,6 +604,7 @@ describe("parseRuffFormatOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(1);
+    expect(result.filesUnchanged).toBe(0);
     expect(result.files).toEqual(["src/main.py"]);
     expect(result.checkMode).toBe(false);
   });
@@ -614,6 +616,7 @@ describe("parseRuffFormatOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBe(0);
     expect(result.files).toBeUndefined();
     expect(result.checkMode).toBe(false);
   });
@@ -623,6 +626,7 @@ describe("parseRuffFormatOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBe(0);
     expect(result.files).toBeUndefined();
     expect(result.checkMode).toBe(false);
   });
@@ -633,6 +637,40 @@ describe("parseRuffFormatOutput", () => {
 
     expect(result.checkMode).toBe(true);
     expect(result.filesChanged).toBe(3);
+  });
+
+  it("parses filesUnchanged from summary with both changed and unchanged", () => {
+    const stderr = ["reformatted: src/main.py", "1 file reformatted, 5 files left unchanged"].join(
+      "\n",
+    );
+
+    const result = parseRuffFormatOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(1);
+    expect(result.filesUnchanged).toBe(5);
+    expect(result.files).toEqual(["src/main.py"]);
+  });
+
+  it("parses filesUnchanged when all files are unchanged", () => {
+    const stderr = "10 files left unchanged";
+
+    const result = parseRuffFormatOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.filesUnchanged).toBe(10);
+    expect(result.files).toBeUndefined();
+  });
+
+  it("parses check mode with unchanged count", () => {
+    const stderr = "2 files would be reformatted, 8 files would be left unchanged";
+
+    const result = parseRuffFormatOutput("", stderr, 1);
+
+    expect(result.checkMode).toBe(true);
+    expect(result.filesChanged).toBe(2);
+    expect(result.filesUnchanged).toBe(8);
   });
 });
 

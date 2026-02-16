@@ -280,11 +280,12 @@ describe("formatLogsCompact", () => {
 });
 
 describe("compactPullMap", () => {
-  it("preserves digest in compact output", () => {
+  it("preserves digest and status in compact output", () => {
     const data: DockerPull = {
       image: "nginx",
       tag: "latest",
       digest: "sha256:abc123def456",
+      status: "pulled",
       success: true,
     };
 
@@ -294,20 +295,57 @@ describe("compactPullMap", () => {
       image: "nginx",
       tag: "latest",
       digest: "sha256:abc123def456",
+      status: "pulled",
       success: true,
     });
     expect(compact).toHaveProperty("digest", "sha256:abc123def456");
+    expect(compact).toHaveProperty("status", "pulled");
+  });
+
+  it("preserves up-to-date status", () => {
+    const data: DockerPull = {
+      image: "ubuntu",
+      tag: "latest",
+      status: "up-to-date",
+      success: true,
+    };
+
+    const compact = compactPullMap(data);
+
+    expect(compact.status).toBe("up-to-date");
+    expect(compact.success).toBe(true);
   });
 });
 
 describe("formatPullCompact", () => {
   it("formats compact pull", () => {
-    const compact = { image: "nginx", tag: "latest", success: true };
+    const compact = {
+      image: "nginx",
+      tag: "latest",
+      status: "pulled" as const,
+      success: true,
+    };
     expect(formatPullCompact(compact)).toBe("Pulled nginx:latest");
   });
 
+  it("formats compact pull up-to-date", () => {
+    const compact = {
+      image: "ubuntu",
+      tag: "latest",
+      digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      status: "up-to-date" as const,
+      success: true,
+    };
+    expect(formatPullCompact(compact)).toBe("ubuntu:latest is up to date (sha256:abc123def456...)");
+  });
+
   it("formats compact pull failure", () => {
-    const compact = { image: "nginx", tag: "latest", success: false };
+    const compact = {
+      image: "nginx",
+      tag: "latest",
+      status: "error" as const,
+      success: false,
+    };
     expect(formatPullCompact(compact)).toBe("Pull failed for nginx:latest");
   });
 });

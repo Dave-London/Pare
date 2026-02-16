@@ -316,7 +316,9 @@ export function formatGoList(data: GoListResult): string {
 
   const lines = [`go list: ${data.total} packages`];
   for (const pkg of data.packages ?? []) {
-    lines.push(`  ${pkg.importPath} (${pkg.name})`);
+    const importsCount = pkg.imports?.length ?? 0;
+    const importsSuffix = importsCount > 0 ? ` [${importsCount} imports]` : "";
+    lines.push(`  ${pkg.importPath} (${pkg.name})${importsSuffix}`);
   }
   return lines.join("\n");
 }

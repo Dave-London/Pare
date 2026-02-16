@@ -618,9 +618,14 @@ export function parseRuffFormatOutput(
   const reformattedMatch = output.match(/(\d+) files? (?:would be )?reformatted/);
   const filesChanged = reformattedMatch ? parseInt(reformattedMatch[1], 10) : files.length;
 
+  // Parse unchanged count: "N files left unchanged" or "N files would be left unchanged"
+  const unchangedMatch = output.match(/(\d+) files? (?:would be )?left unchanged/);
+  const filesUnchanged = unchangedMatch ? parseInt(unchangedMatch[1], 10) : 0;
+
   return {
     success: exitCode === 0,
     filesChanged: filesChanged || files.length,
+    filesUnchanged,
     files: files.length > 0 ? files : undefined,
     checkMode,
   };

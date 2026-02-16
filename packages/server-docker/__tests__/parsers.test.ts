@@ -569,7 +569,7 @@ describe("parseVolumeLsJson", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseComposePsJson", () => {
-  it("parses multiple compose services", () => {
+  it("parses multiple compose services with Ports string fallback", () => {
     const stdout = [
       JSON.stringify({
         Name: "myapp-web-1",
@@ -594,9 +594,56 @@ describe("parseComposePsJson", () => {
     expect(result.services[0].service).toBe("web");
     expect(result.services[0].state).toBe("running");
     expect(result.services[0].status).toBe("Up 2 hours");
-    expect(result.services[0].ports).toBe("0.0.0.0:8080->80/tcp");
+    expect(result.services[0].ports).toEqual([{ host: 8080, container: 80, protocol: "tcp" }]);
     expect(result.services[1].name).toBe("myapp-db-1");
     expect(result.services[1].ports).toBeUndefined();
+  });
+
+  it("parses structured Publishers array from compose v2 JSON", () => {
+    const stdout = JSON.stringify({
+      Name: "myapp-web-1",
+      Service: "web",
+      State: "running",
+      Status: "Up 2 hours",
+      Publishers: [
+        { URL: "0.0.0.0", TargetPort: 80, PublishedPort: 8080, Protocol: "tcp" },
+        { URL: "", TargetPort: 443, PublishedPort: 0, Protocol: "tcp" },
+      ],
+    });
+
+    const result = parseComposePsJson(stdout);
+
+    expect(result.services[0].ports).toHaveLength(2);
+    expect(result.services[0].ports![0]).toEqual({ host: 8080, container: 80, protocol: "tcp" });
+    expect(result.services[0].ports![1]).toEqual({ container: 443, protocol: "tcp" });
+  });
+
+  it("parses Publishers with snake_case keys", () => {
+    const stdout = JSON.stringify({
+      Name: "myapp-api-1",
+      Service: "api",
+      State: "running",
+      Status: "Up 1 hour",
+      Publishers: [{ target_port: 3000, published_port: 3000, protocol: "tcp" }],
+    });
+
+    const result = parseComposePsJson(stdout);
+
+    expect(result.services[0].ports).toHaveLength(1);
+    expect(result.services[0].ports![0]).toEqual({ host: 3000, container: 3000, protocol: "tcp" });
+  });
+
+  it("handles empty Publishers array", () => {
+    const stdout = JSON.stringify({
+      Name: "myapp-worker-1",
+      Service: "worker",
+      State: "running",
+      Status: "Up 1 hour",
+      Publishers: [],
+    });
+
+    const result = parseComposePsJson(stdout);
+    expect(result.services[0].ports).toBeUndefined();
   });
 
   it("parses empty output", () => {

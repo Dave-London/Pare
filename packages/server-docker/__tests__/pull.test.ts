@@ -4,7 +4,7 @@ import { formatPull } from "../src/lib/formatters.js";
 import type { DockerPull } from "../src/schemas/index.js";
 
 describe("parsePullOutput", () => {
-  it("parses successful pull with digest", () => {
+  it("parses successful pull with digest and status=pulled", () => {
     const stdout = [
       "Using default tag: latest",
       "latest: Pulling from library/nginx",
@@ -22,9 +22,10 @@ describe("parsePullOutput", () => {
       "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
     );
     expect(result.success).toBe(true);
+    expect(result.status).toBe("pulled");
   });
 
-  it("parses pull without explicit tag (defaults to latest)", () => {
+  it("parses pull up-to-date with status=up-to-date", () => {
     const stdout = [
       "Using default tag: latest",
       "latest: Pulling from library/ubuntu",
@@ -40,6 +41,7 @@ describe("parsePullOutput", () => {
       "sha256:fedcba987654fedcba987654fedcba987654fedcba987654fedcba987654fedc",
     );
     expect(result.success).toBe(true);
+    expect(result.status).toBe("up-to-date");
   });
 
   it("parses pull with specific tag", () => {
@@ -54,9 +56,10 @@ describe("parsePullOutput", () => {
     expect(result.image).toBe("ubuntu");
     expect(result.tag).toBe("22.04");
     expect(result.success).toBe(true);
+    expect(result.status).toBe("pulled");
   });
 
-  it("parses failed pull (image not found)", () => {
+  it("parses failed pull with status=error", () => {
     const stderr =
       "Error response from daemon: pull access denied for nonexistent/image, repository does not exist";
 
@@ -65,6 +68,7 @@ describe("parsePullOutput", () => {
     expect(result.image).toBe("nonexistent/image");
     expect(result.tag).toBe("v1");
     expect(result.success).toBe(false);
+    expect(result.status).toBe("error");
     expect(result.digest).toBeUndefined();
   });
 
@@ -80,6 +84,7 @@ describe("parsePullOutput", () => {
     expect(result.image).toBe("registry.example.com:5000/myapp");
     expect(result.tag).toBe("v1");
     expect(result.success).toBe(true);
+    expect(result.status).toBe("pulled");
   });
 
   it("handles pull with digest in stderr", () => {
@@ -92,6 +97,7 @@ describe("parsePullOutput", () => {
       "sha256:deadbeef1234deadbeef1234deadbeef1234deadbeef1234deadbeef1234dead",
     );
     expect(result.success).toBe(true);
+    expect(result.status).toBe("pulled");
   });
 
   it("handles pull with no digest info", () => {
@@ -101,6 +107,7 @@ describe("parsePullOutput", () => {
     expect(result.tag).toBe("dev");
     expect(result.digest).toBeUndefined();
     expect(result.success).toBe(true);
+    expect(result.status).toBe("pulled");
   });
 
   it("parses auth failure (unauthorized)", () => {
@@ -110,6 +117,7 @@ describe("parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "registry.example.com/myapp:latest");
 
     expect(result.success).toBe(false);
+    expect(result.status).toBe("error");
     expect(result.image).toBe("registry.example.com/myapp");
     expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
@@ -122,6 +130,7 @@ describe("parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "totallynotarealimage:latest");
 
     expect(result.success).toBe(false);
+    expect(result.status).toBe("error");
     expect(result.image).toBe("totallynotarealimage");
     expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
@@ -134,6 +143,7 @@ describe("parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "nginx:latest");
 
     expect(result.success).toBe(false);
+    expect(result.status).toBe("error");
     expect(result.image).toBe("nginx");
     expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
@@ -146,6 +156,7 @@ describe("parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "alpine:3.19");
 
     expect(result.success).toBe(false);
+    expect(result.status).toBe("error");
     expect(result.image).toBe("alpine");
     expect(result.tag).toBe("3.19");
     expect(result.digest).toBeUndefined();
@@ -158,6 +169,7 @@ describe("formatPull", () => {
       image: "nginx",
       tag: "latest",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      status: "pulled",
       success: true,
     };
     const output = formatPull(data);
@@ -168,16 +180,30 @@ describe("formatPull", () => {
     const data: DockerPull = {
       image: "ubuntu",
       tag: "22.04",
+      status: "pulled",
       success: true,
     };
     const output = formatPull(data);
     expect(output).toBe("Pulled ubuntu:22.04");
   });
 
+  it("formats up-to-date pull", () => {
+    const data: DockerPull = {
+      image: "ubuntu",
+      tag: "latest",
+      digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+      status: "up-to-date",
+      success: true,
+    };
+    const output = formatPull(data);
+    expect(output).toBe("ubuntu:latest is up to date (sha256:abc123def456...)");
+  });
+
   it("formats failed pull", () => {
     const data: DockerPull = {
       image: "nonexistent/image",
       tag: "v1",
+      status: "error",
       success: false,
     };
     const output = formatPull(data);

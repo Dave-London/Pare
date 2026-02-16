@@ -334,6 +334,7 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
     name: string;
     goFiles?: string[];
     testGoFiles?: string[];
+    imports?: string[];
   }[] = [];
 
   if (!stdout.trim()) {
@@ -353,6 +354,7 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
         name: pkg.Name ?? "",
         goFiles: pkg.GoFiles,
         testGoFiles: pkg.TestGoFiles,
+        imports: pkg.Imports,
       });
     } catch {
       // skip malformed JSON chunks

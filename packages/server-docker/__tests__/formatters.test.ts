@@ -333,7 +333,7 @@ describe("formatVolumeLs", () => {
 });
 
 describe("formatComposePs", () => {
-  it("formats compose service list with ports", () => {
+  it("formats compose service list with structured ports", () => {
     const data: DockerComposePs = {
       services: [
         {
@@ -341,7 +341,7 @@ describe("formatComposePs", () => {
           service: "web",
           state: "running",
           status: "Up 2 hours",
-          ports: "0.0.0.0:8080->80/tcp",
+          ports: [{ host: 8080, container: 80, protocol: "tcp" }],
         },
         { name: "myapp-db-1", service: "db", state: "running", status: "Up 2 hours" },
       ],
@@ -350,8 +350,26 @@ describe("formatComposePs", () => {
     const output = formatComposePs(data);
     expect(output).toContain("2 services:");
     expect(output).toContain("myapp-web-1 (web)");
-    expect(output).toContain("[0.0.0.0:8080->80/tcp]");
+    expect(output).toContain("[8080->80/tcp]");
     expect(output).toContain("myapp-db-1 (db)");
+  });
+
+  it("formats compose service with container-only port (no host)", () => {
+    const data: DockerComposePs = {
+      services: [
+        {
+          name: "myapp-web-1",
+          service: "web",
+          state: "running",
+          status: "Up 1 hour",
+          ports: [{ container: 3000, protocol: "tcp" }],
+        },
+      ],
+      total: 1,
+    };
+    const output = formatComposePs(data);
+    expect(output).toContain("[3000/tcp]");
+    expect(output).not.toContain("->");
   });
 
   it("formats empty compose service list", () => {
