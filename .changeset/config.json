@@ -2,7 +2,27 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": ["@changesets/changelog-github", { "repo": "Dave-London/Pare" }],
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@paretools/shared",
+      "@paretools/git",
+      "@paretools/github",
+      "@paretools/docker",
+      "@paretools/python",
+      "@paretools/cargo",
+      "@paretools/go",
+      "@paretools/npm",
+      "@paretools/lint",
+      "@paretools/build",
+      "@paretools/k8s",
+      "@paretools/search",
+      "@paretools/http",
+      "@paretools/test",
+      "@paretools/security",
+      "@paretools/make",
+      "@paretools/process"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
