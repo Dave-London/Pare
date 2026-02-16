@@ -42,6 +42,20 @@ export function registerSemgrepTool(server: McpServer) {
           .enum(["INFO", "WARNING", "ERROR"])
           .optional()
           .describe("Severity filter. Default: all severities"),
+        dataflowTraces: z
+          .boolean()
+          .optional()
+          .describe("Include dataflow traces for taint analysis findings (--dataflow-traces)"),
+        autofix: z.boolean().optional().describe("Automatically apply suggested fixes (--autofix)"),
+        dryrun: z
+          .boolean()
+          .optional()
+          .describe("Preview autofix changes without applying them (--dryrun)"),
+        maxTargetBytes: z
+          .number()
+          .optional()
+          .describe("Maximum file size in bytes to scan, skip larger files (--max-target-bytes)"),
+        jobs: z.number().optional().describe("Number of parallel jobs for scanning (--jobs)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -57,7 +71,18 @@ export function registerSemgrepTool(server: McpServer) {
       },
       outputSchema: SemgrepScanResultSchema,
     },
-    async ({ patterns, config, severity, path, compact }) => {
+    async ({
+      patterns,
+      config,
+      severity,
+      dataflowTraces,
+      autofix,
+      dryrun,
+      maxTargetBytes,
+      jobs,
+      path,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
@@ -75,6 +100,26 @@ export function registerSemgrepTool(server: McpServer) {
 
       if (severity) {
         args.push("--severity", severity);
+      }
+
+      if (dataflowTraces) {
+        args.push("--dataflow-traces");
+      }
+
+      if (autofix) {
+        args.push("--autofix");
+      }
+
+      if (dryrun) {
+        args.push("--dryrun");
+      }
+
+      if (maxTargetBytes !== undefined) {
+        args.push("--max-target-bytes", String(maxTargetBytes));
+      }
+
+      if (jobs !== undefined) {
+        args.push("--jobs", String(jobs));
       }
 
       args.push(...patterns);

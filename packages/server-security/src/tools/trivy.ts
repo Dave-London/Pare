@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, INPUT_LIMITS, assertAllowedRoot } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  INPUT_LIMITS,
+  assertAllowedRoot,
+  assertNoFlagInjection,
+} from "@paretools/shared";
 import { parseTrivyJson } from "../lib/parsers.js";
 import { formatTrivyScan, compactTrivyScanMap, formatTrivyScanCompact } from "../lib/formatters.js";
 import { TrivyScanResultSchema } from "../schemas/index.js";
@@ -34,6 +40,14 @@ export function registerTrivyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Only show vulnerabilities with known fixes"),
+        exitCode: z
+          .number()
+          .optional()
+          .describe("Exit code when vulnerabilities are found (--exit-code)"),
+        skipDbUpdate: z
+          .boolean()
+          .optional()
+          .describe("Skip vulnerability database update for faster scans (--skip-db-update)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -49,7 +63,17 @@ export function registerTrivyTool(server: McpServer) {
       },
       outputSchema: TrivyScanResultSchema,
     },
-    async ({ target, scanType, severity, ignoreUnfixed, path, compact }) => {
+    async ({
+      target,
+      scanType,
+      severity,
+      ignoreUnfixed,
+      exitCode,
+      skipDbUpdate,
+      path,
+      compact,
+    }) => {
+      assertNoFlagInjection(target, "target");
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
@@ -61,6 +85,14 @@ export function registerTrivyTool(server: McpServer) {
 
       if (ignoreUnfixed) {
         args.push("--ignore-unfixed");
+      }
+
+      if (exitCode !== undefined) {
+        args.push("--exit-code", String(exitCode));
+      }
+
+      if (skipDbUpdate) {
+        args.push("--skip-db-update");
       }
 
       args.push(target);
