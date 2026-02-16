@@ -20,6 +20,14 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        fix: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Automatically apply fixes for vulnerable dependencies (cargo audit fix). " +
+              "Updates Cargo.toml to use patched versions where available.",
+          ),
         noFetch: z
           .boolean()
           .optional()
@@ -76,6 +84,7 @@ export function registerAuditTool(server: McpServer) {
     },
     async ({
       path,
+      fix,
       noFetch,
       ignore,
       deny,
@@ -93,7 +102,8 @@ export function registerAuditTool(server: McpServer) {
       if (file) assertNoFlagInjection(file, "file");
       if (db) assertNoFlagInjection(db, "db");
 
-      const args = ["audit", "--json"];
+      // Gap #87: Support cargo audit fix
+      const args = fix ? ["audit", "fix", "--json"] : ["audit", "--json"];
       if (noFetch) args.push("--no-fetch");
       if (ignore && ignore.length > 0) {
         for (const id of ignore) {
@@ -112,7 +122,7 @@ export function registerAuditTool(server: McpServer) {
 
       // cargo audit returns exit code 1 when vulnerabilities are found, which is expected
       const output = result.stdout || result.stderr;
-      const data = parseCargoAuditJson(output, result.exitCode);
+      const data = parseCargoAuditJson(output, result.exitCode, !!fix);
       return compactDualOutput(
         data,
         output,

@@ -6,6 +6,9 @@ import {
   parseCargoFmtOutput,
   parseCargoAddOutput,
   parseCargoAuditJson,
+  extractCvssScore,
+  detectRunFailureType,
+  parseCargoRemoveOutput,
   cvssToSeverity,
 } from "../src/lib/parsers.js";
 
@@ -574,6 +577,9 @@ describe("parseCargoAuditJson", () => {
       url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
       patched: [">=0.25.1"],
       unaffected: [],
+      cvssScore: 9.8,
+      cvssVector: "9.8",
+      date: undefined,
     });
     expect(result.vulnerabilities[1].severity).toBe("medium");
     expect(result.vulnerabilities[1].unaffected).toEqual(["<0.9.0"]);

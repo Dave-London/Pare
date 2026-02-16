@@ -33,6 +33,7 @@ export interface CargoTestCompact {
   passed: number;
   failed: number;
   ignored: number;
+  compilationDiagnostics?: CargoTestResult["compilationDiagnostics"];
 }
 
 /** Compact clippy: success + counts per severity, with diagnostics preserved when non-empty. */
@@ -50,6 +51,7 @@ export interface CargoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
+  failureType?: "compilation" | "runtime" | "timeout";
 }
 
 /** Compact add: success + package names only, no version details. */
@@ -58,6 +60,7 @@ export interface CargoAddCompact {
   success: boolean;
   packages: string[];
   total: number;
+  dependencyType?: "normal" | "dev" | "build";
   dryRun?: boolean;
   error?: string;
 }
@@ -68,6 +71,7 @@ export interface CargoRemoveCompact {
   success: boolean;
   removed: string[];
   total: number;
+  dependencyType?: "normal" | "dev" | "build";
   error?: string;
 }
 
@@ -96,6 +100,9 @@ export function formatCargoBuild(data: CargoBuildResult): string {
   for (const d of data.diagnostics ?? []) {
     const code = d.code ? ` [${d.code}]` : "";
     lines.push(`  ${d.file}:${d.line}:${d.column} ${d.severity}${code}: ${d.message}`);
+    if (d.suggestion) {
+      lines.push(`    suggestion: ${d.suggestion}`);
+    }
   }
   return lines.join("\n");
 }
@@ -115,6 +122,14 @@ export function formatCargoTest(data: CargoTestResult): string {
       }
     }
   }
+  // Gap #95: Show compilation diagnostics when available
+  if (data.compilationDiagnostics && data.compilationDiagnostics.length > 0) {
+    lines.push(`\nCompilation diagnostics (${data.compilationDiagnostics.length}):`);
+    for (const d of data.compilationDiagnostics) {
+      const code = d.code ? ` [${d.code}]` : "";
+      lines.push(`  ${d.file}:${d.line}:${d.column} ${d.severity}${code}: ${d.message}`);
+    }
+  }
   return lines.join("\n");
 }
 
@@ -126,6 +141,9 @@ export function formatCargoClippy(data: CargoClippyResult): string {
   for (const d of data.diagnostics ?? []) {
     const code = d.code ? ` [${d.code}]` : "";
     lines.push(`  ${d.file}:${d.line}:${d.column} ${d.severity}${code}: ${d.message}`);
+    if (d.suggestion) {
+      lines.push(`    suggestion: ${d.suggestion}`);
+    }
   }
   return lines.join("\n");
 }
@@ -133,7 +151,8 @@ export function formatCargoClippy(data: CargoClippyResult): string {
 /** Formats structured cargo run output into a human-readable summary. */
 export function formatCargoRun(data: CargoRunResult): string {
   const status = data.success ? "success" : "failed";
-  const lines = [`cargo run: ${status} (exit code ${data.exitCode})`];
+  const failType = data.failureType ? ` [${data.failureType}]` : "";
+  const lines = [`cargo run: ${status}${failType} (exit code ${data.exitCode})`];
   if (data.stdout) {
     const truncNote = data.stdoutTruncated ? " [truncated]" : "";
     lines.push(`stdout${truncNote}:\n${data.stdout}`);
@@ -153,11 +172,13 @@ export function formatCargoAdd(data: CargoAddResult): string {
   }
 
   const dryRunSuffix = data.dryRun ? " (dry-run)" : "";
+  const depTypeSuffix =
+    data.dependencyType && data.dependencyType !== "normal" ? ` [${data.dependencyType}]` : "";
 
   if (data.total === 0)
     return `cargo add: success, no packages added.${dryRunSuffix ? ` ${dryRunSuffix.trim()}` : ""}`;
 
-  const lines = [`cargo add: ${data.total} package(s) added${dryRunSuffix}`];
+  const lines = [`cargo add: ${data.total} package(s) added${depTypeSuffix}${dryRunSuffix}`];
   for (const pkg of data.added ?? []) {
     lines.push(`  ${pkg.name} v${pkg.version}`);
   }
@@ -171,9 +192,12 @@ export function formatCargoRemove(data: CargoRemoveResult): string {
     return `cargo remove: failed${err}`;
   }
 
+  const depTypeSuffix =
+    data.dependencyType && data.dependencyType !== "normal" ? ` [${data.dependencyType}]` : "";
+
   if (data.total === 0) return "cargo remove: success, no packages removed.";
 
-  const lines = [`cargo remove: ${data.total} package(s) removed`];
+  const lines = [`cargo remove: ${data.total} package(s) removed${depTypeSuffix}`];
   for (const name of data.removed) {
     lines.push(`  ${name}`);
   }
@@ -224,7 +248,7 @@ export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
 export function compactTestMap(data: CargoTestResult): CargoTestCompact {
   // In compact mode, only keep failed tests (with their output) for diagnostics
   const failedTests = (data.tests ?? []).filter((t) => t.status === "FAILED");
-  return {
+  const compact: CargoTestCompact = {
     success: data.success,
     tests: failedTests.length > 0 ? failedTests : [],
     total: data.total,
@@ -232,6 +256,11 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
     failed: data.failed,
     ignored: data.ignored,
   };
+  // Gap #95: Preserve compilation diagnostics in compact mode
+  if (data.compilationDiagnostics?.length) {
+    compact.compilationDiagnostics = data.compilationDiagnostics;
+  }
+  return compact;
 }
 
 export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
@@ -246,10 +275,12 @@ export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
 }
 
 export function compactRunMap(data: CargoRunResult): CargoRunCompact {
-  return {
+  const compact: CargoRunCompact = {
     exitCode: data.exitCode,
     success: data.success,
   };
+  if (data.failureType) compact.failureType = data.failureType;
+  return compact;
 }
 
 export function compactAddMap(data: CargoAddResult): CargoAddCompact {
@@ -258,6 +289,7 @@ export function compactAddMap(data: CargoAddResult): CargoAddCompact {
     packages: (data.added ?? []).map((p) => p.name),
     total: data.total,
   };
+  if (data.dependencyType) compact.dependencyType = data.dependencyType;
   if (data.dryRun) compact.dryRun = true;
   if (data.error) compact.error = data.error;
   return compact;
@@ -269,6 +301,7 @@ export function compactRemoveMap(data: CargoRemoveResult): CargoRemoveCompact {
     removed: data.removed,
     total: data.total,
   };
+  if (data.dependencyType) compact.dependencyType = data.dependencyType;
   if (data.error) compact.error = data.error;
   return compact;
 }
@@ -309,7 +342,8 @@ export function formatClippyCompact(data: CargoClippyCompact): string {
 
 export function formatRunCompact(data: CargoRunCompact): string {
   const status = data.success ? "success" : "failed";
-  return `cargo run: ${status} (exit code ${data.exitCode})`;
+  const failType = data.failureType ? ` [${data.failureType}]` : "";
+  return `cargo run: ${status}${failType} (exit code ${data.exitCode})`;
 }
 
 export function formatAddCompact(data: CargoAddCompact): string {
@@ -358,7 +392,7 @@ export function formatCargoUpdate(data: CargoUpdateResult): string {
   return lines.join("\n");
 }
 
-/** Compact update: success flag + updated packages, no raw output text. */
+/** Compact update: success flag + updated packages, no raw output text. Gap #96: always includes updateCount. */
 export interface CargoUpdateCompact {
   [key: string]: unknown;
   success: boolean;
@@ -427,14 +461,19 @@ export function formatCargoAudit(data: CargoAuditResult): string {
     informational: 0,
     unknown: 0,
   };
-  if (summary.total === 0) return "cargo audit: no vulnerabilities found.";
+
+  const fixesSuffix =
+    data.fixesApplied !== undefined ? ` (${data.fixesApplied} fix(es) applied)` : "";
+
+  if (summary.total === 0) return `cargo audit: no vulnerabilities found.${fixesSuffix}`;
 
   const lines = [
-    `cargo audit: ${summary.total} vulnerabilities (${summary.critical} critical, ${summary.high} high, ${summary.medium} medium, ${summary.low} low)`,
+    `cargo audit: ${summary.total} vulnerabilities (${summary.critical} critical, ${summary.high} high, ${summary.medium} medium, ${summary.low} low)${fixesSuffix}`,
   ];
   for (const v of data.vulnerabilities ?? []) {
     const patched = v.patched.length > 0 ? ` (patched: ${v.patched.join(", ")})` : "";
-    lines.push(`  [${v.severity}] ${v.id} ${v.package}@${v.version}: ${v.title}${patched}`);
+    const score = v.cvssScore !== undefined ? ` [CVSS: ${v.cvssScore}]` : "";
+    lines.push(`  [${v.severity}] ${v.id} ${v.package}@${v.version}: ${v.title}${score}${patched}`);
   }
   return lines.join("\n");
 }
@@ -450,6 +489,7 @@ export interface CargoAuditCompact {
   low: number;
   informational: number;
   unknown: number;
+  fixesApplied?: number;
 }
 
 export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
@@ -462,7 +502,7 @@ export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
     informational: 0,
     unknown: 0,
   };
-  return {
+  const compact: CargoAuditCompact = {
     success: data.success,
     vulnerabilities: [],
     total: summary.total,
@@ -473,9 +513,15 @@ export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
     informational: summary.informational,
     unknown: summary.unknown,
   };
+  if (data.fixesApplied !== undefined) {
+    compact.fixesApplied = data.fixesApplied;
+  }
+  return compact;
 }
 
 export function formatAuditCompact(data: CargoAuditCompact): string {
-  if (data.total === 0) return "cargo audit: no vulnerabilities found.";
-  return `cargo audit: ${data.total} vulnerabilities (${data.critical} critical, ${data.high} high, ${data.medium} medium, ${data.low} low)`;
+  const fixesSuffix =
+    data.fixesApplied !== undefined ? ` (${data.fixesApplied} fix(es) applied)` : "";
+  if (data.total === 0) return `cargo audit: no vulnerabilities found.${fixesSuffix}`;
+  return `cargo audit: ${data.total} vulnerabilities (${data.critical} critical, ${data.high} high, ${data.medium} medium, ${data.low} low)${fixesSuffix}`;
 }

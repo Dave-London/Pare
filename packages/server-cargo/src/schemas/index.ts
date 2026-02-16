@@ -8,6 +8,7 @@ export const CargoDiagnosticSchema = z.object({
   severity: z.enum(["error", "warning", "note", "help"]),
   code: z.string().optional(),
   message: z.string(),
+  suggestion: z.string().optional().describe("Suggested fix text from compiler/clippy children"),
 });
 
 /** Zod schema for structured cargo build output including success status, diagnostics, and error/warning counts. */
@@ -37,6 +38,10 @@ export const CargoTestResultSchema = z.object({
   passed: z.number(),
   failed: z.number(),
   ignored: z.number(),
+  compilationDiagnostics: z
+    .array(CargoDiagnosticSchema)
+    .optional()
+    .describe("Compiler diagnostics from --message-format=json when tests fail to compile"),
 });
 
 export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
@@ -58,6 +63,10 @@ export const CargoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   success: z.boolean(),
+  failureType: z
+    .enum(["compilation", "runtime", "timeout"])
+    .optional()
+    .describe("Type of failure: compilation (rustc error), runtime (program error), or timeout"),
   stdoutTruncated: z
     .boolean()
     .optional()
@@ -81,6 +90,10 @@ export const CargoAddResultSchema = z.object({
   success: z.boolean(),
   added: z.array(CargoAddedPackageSchema).optional(),
   total: z.number(),
+  dependencyType: z
+    .enum(["normal", "dev", "build"])
+    .optional()
+    .describe("Type of dependency: normal, dev, or build"),
   dryRun: z
     .boolean()
     .optional()
@@ -95,6 +108,10 @@ export const CargoRemoveResultSchema = z.object({
   success: z.boolean(),
   removed: z.array(z.string()),
   total: z.number(),
+  dependencyType: z
+    .enum(["normal", "dev", "build"])
+    .optional()
+    .describe("Type of dependency that was removed: normal, dev, or build"),
   error: z.string().optional(),
 });
 
@@ -187,6 +204,8 @@ export const CargoAuditVulnSchema = z.object({
   date: z.string().optional().describe("Date the advisory was published"),
   patched: z.array(z.string()).describe("Version requirements that fix the vulnerability"),
   unaffected: z.array(z.string()).optional().describe("Version requirements not affected"),
+  cvssScore: z.number().optional().describe("Raw CVSS base score (0.0-10.0)"),
+  cvssVector: z.string().optional().describe("Raw CVSS vector string"),
 });
 
 /** Zod schema for structured cargo audit output with vulnerability list, success flag, and severity summary. */
@@ -204,6 +223,10 @@ export const CargoAuditResultSchema = z.object({
       unknown: z.number(),
     })
     .optional(),
+  fixesApplied: z
+    .number()
+    .optional()
+    .describe("Number of fixes applied when using cargo audit fix"),
 });
 
 export type CargoAuditResult = z.infer<typeof CargoAuditResultSchema>;

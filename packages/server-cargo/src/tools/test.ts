@@ -115,7 +115,8 @@ export function registerTestTool(server: McpServer) {
       if (filter) assertNoFlagInjection(filter, "filter");
       if (pkg) assertNoFlagInjection(pkg, "package");
 
-      const args = ["test"];
+      // Gap #95: Run with --message-format=json to capture compilation diagnostics
+      const args = ["test", "--message-format=json"];
       if (pkg) args.push("-p", pkg);
       if (noFailFast) args.push("--no-fail-fast");
       if (noRun) args.push("--no-run");
@@ -138,7 +139,25 @@ export function registerTestTool(server: McpServer) {
       }
 
       const result = await cargo(args, cwd);
-      const data = parseCargoTestOutput(result.stdout, result.exitCode);
+
+      // Gap #95: The stdout contains both JSON messages and human-readable test output.
+      // JSON lines are those starting with '{', human output is everything else.
+      // We separate them to parse diagnostics from JSON and tests from human output.
+      const lines = result.stdout.split("\n");
+      const jsonLines: string[] = [];
+      const humanLines: string[] = [];
+      for (const line of lines) {
+        if (line.trim().startsWith("{")) {
+          jsonLines.push(line);
+        } else {
+          humanLines.push(line);
+        }
+      }
+
+      const humanOutput = humanLines.join("\n");
+      const jsonOutput = jsonLines.length > 0 ? jsonLines.join("\n") : undefined;
+
+      const data = parseCargoTestOutput(humanOutput, result.exitCode, jsonOutput);
       return compactDualOutput(
         data,
         result.stdout,

@@ -134,8 +134,11 @@ export function registerAddTool(server: McpServer) {
       if (frozen) args.push("--frozen");
       if (offline) args.push("--offline");
 
+      // Gap #86: Determine dependency type from flags
+      const depType: "normal" | "dev" | "build" = dev ? "dev" : build ? "build" : "normal";
+
       const result = await cargo(args, cwd);
-      const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode);
+      const data = parseCargoAddOutput(result.stdout, result.stderr, result.exitCode, depType);
       return compactDualOutput(
         data,
         result.stdout + result.stderr,

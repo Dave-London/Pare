@@ -14,26 +14,33 @@ import type {
 
 interface CargoMessage {
   reason: string;
+  success?: boolean;
   message?: {
     code?: { code: string } | null;
     level: string;
     message: string;
     spans: { file_name: string; line_start: number; column_start: number }[];
+    children?: { level: string; message: string }[];
   };
 }
 
 /**
  * Parses `cargo build --message-format=json` output.
  * Each line is a JSON object with a "reason" field.
- * We care about reason="compiler-message" entries.
+ * We care about reason="compiler-message" entries and the "build-finished" event.
+ * Gap #89: Uses build-finished event's success field as authoritative success indicator.
  */
 export function parseCargoBuildJson(stdout: string, exitCode: number): CargoBuildResult {
-  const diagnostics = parseCompilerMessages(stdout);
+  const { diagnostics, buildFinishedSuccess } = parseCompilerMessages(stdout);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
+  // Gap #89: Use build-finished event's success field when available,
+  // fall back to exit code
+  const success = buildFinishedSuccess !== undefined ? buildFinishedSuccess : exitCode === 0;
+
   return {
-    success: exitCode === 0,
+    success,
     diagnostics,
     total: diagnostics.length,
     errors,
@@ -48,8 +55,14 @@ export function parseCargoBuildJson(stdout: string, exitCode: number): CargoBuil
  *
  * For failed tests, captures stdout/stderr output between the "failures:" section
  * and the "failures:" name list or "test result:" line.
+ *
+ * Gap #95: Also parses JSON message format output for compilation diagnostics.
  */
-export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTestResult {
+export function parseCargoTestOutput(
+  stdout: string,
+  exitCode: number,
+  jsonOutput?: string,
+): CargoTestResult {
   const lines = stdout.split("\n");
   const tests: {
     name: string;
@@ -93,7 +106,7 @@ export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTes
   const failed = tests.filter((t) => t.status === "FAILED").length;
   const ignored = tests.filter((t) => t.status === "ignored").length;
 
-  return {
+  const result: CargoTestResult = {
     success: exitCode === 0,
     tests,
     total: tests.length,
@@ -101,6 +114,16 @@ export function parseCargoTestOutput(stdout: string, exitCode: number): CargoTes
     failed,
     ignored,
   };
+
+  // Gap #95: Parse compilation diagnostics from JSON message format output
+  if (jsonOutput) {
+    const { diagnostics } = parseCompilerMessages(jsonOutput);
+    if (diagnostics.length > 0) {
+      result.compilationDiagnostics = diagnostics;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -162,9 +185,10 @@ function parseFailureOutputSections(stdout: string): Map<string, string> {
 /**
  * Parses `cargo clippy --message-format=json` output.
  * Same JSON format as cargo build. Now includes success field.
+ * Gap #90: Captures suggestion text from JSON children.
  */
 export function parseCargoClippyJson(stdout: string, exitCode: number): CargoClippyResult {
-  const diagnostics = parseCompilerMessages(stdout);
+  const { diagnostics } = parseCompilerMessages(stdout);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
@@ -181,12 +205,14 @@ export function parseCargoClippyJson(stdout: string, exitCode: number): CargoCli
  * Parses `cargo run` output.
  * Returns exit code, stdout, stderr, and success flag.
  * Optionally truncates stdout/stderr to maxOutputSize bytes.
+ * Gap #94: Distinguishes compilation vs runtime vs timeout failure.
  */
 export function parseCargoRunOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
   maxOutputSize?: number,
+  timedOut?: boolean,
 ): CargoRunResult {
   const limit = maxOutputSize ?? 0;
   let stdoutTruncated = false;
@@ -212,10 +238,46 @@ export function parseCargoRunOutput(
     success: exitCode === 0,
   };
 
+  // Gap #94: Determine failure type
+  if (exitCode !== 0) {
+    result.failureType = detectRunFailureType(stderr, exitCode, timedOut);
+  }
+
   if (stdoutTruncated) result.stdoutTruncated = true;
   if (stderrTruncated) result.stderrTruncated = true;
 
   return result;
+}
+
+/**
+ * Detects whether a cargo run failure is a compilation error, runtime error, or timeout.
+ * Gap #94: Compilation errors have specific patterns from rustc.
+ */
+export function detectRunFailureType(
+  stderr: string,
+  exitCode: number,
+  timedOut?: boolean,
+): "compilation" | "runtime" | "timeout" {
+  if (timedOut) return "timeout";
+
+  // Compilation failure patterns from cargo/rustc
+  const compilationPatterns = [
+    /error\[E\d+\]/,
+    /could not compile/,
+    /aborting due to \d+ previous error/,
+    /^error: .+ not found/m,
+    /cannot find/,
+  ];
+
+  for (const pattern of compilationPatterns) {
+    if (pattern.test(stderr)) {
+      return "compilation";
+    }
+  }
+
+  // Exit code 101 is commonly used by cargo for compilation failures,
+  // but also by panics. If we didn't match compilation patterns, it's runtime.
+  return "runtime";
 }
 
 /**
@@ -225,11 +287,14 @@ export function parseCargoRunOutput(
  * Dry-run mode outputs the same Adding lines followed by:
  *   "warning: aborting add due to dry run"
  * On failure, captures the error message.
+ *
+ * Gap #86: Accepts dependency type flags to include in output.
  */
 export function parseCargoAddOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  depType?: "normal" | "dev" | "build",
 ): CargoAddResult {
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
@@ -238,11 +303,21 @@ export function parseCargoAddOutput(
   // Detect dry-run mode from the cargo warning message
   const isDryRun = /warning[:\s]*aborting add due to dry run/i.test(combined);
 
+  // Gap #86: Detect dependency type from output if not explicitly provided
+  let detectedType: "normal" | "dev" | "build" | undefined = depType;
+
   for (const line of lines) {
     // Match both "Adding" (normal and dry-run) and "Updating" lines
-    const addMatch = line.match(/Adding\s+(\S+)\s+v(\S+)\s+to\s+/);
+    const addMatch = line.match(/Adding\s+(\S+)\s+v(\S+)\s+to\s+(\S+)/);
     if (addMatch) {
       added.push({ name: addMatch[1], version: addMatch[2] });
+      // Detect type from "to dev-dependencies" / "to build-dependencies" / "to dependencies"
+      if (!depType) {
+        const target = addMatch[3];
+        if (target === "dev-dependencies") detectedType = "dev";
+        else if (target === "build-dependencies") detectedType = "build";
+        else if (target === "dependencies") detectedType = "normal";
+      }
       continue;
     }
     // Some cargo versions use "Updating" in dry-run output when a dep is already present
@@ -257,6 +332,10 @@ export function parseCargoAddOutput(
     added,
     total: added.length,
   };
+
+  if (detectedType) {
+    result.dependencyType = detectedType;
+  }
 
   if (isDryRun) {
     result.dryRun = true;
@@ -281,20 +360,33 @@ export function parseCargoAddOutput(
  * Parses `cargo remove` output.
  * Lines like: "      Removing serde from dependencies"
  * On failure, captures the error message.
+ *
+ * Gap #93: Accepts dependency type flags to include in output.
  */
 export function parseCargoRemoveOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  depType?: "normal" | "dev" | "build",
 ): CargoRemoveResult {
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
   const removed: string[] = [];
 
+  // Gap #93: Detect dependency type from output if not explicitly provided
+  let detectedType: "normal" | "dev" | "build" | undefined = depType;
+
   for (const line of lines) {
-    const match = line.match(/Removing\s+(\S+)\s+from\s+/);
+    const match = line.match(/Removing\s+(\S+)\s+from\s+(\S+)/);
     if (match) {
       removed.push(match[1]);
+      // Detect type from "from dev-dependencies" / "from build-dependencies" / "from dependencies"
+      if (!depType) {
+        const target = match[2];
+        if (target === "dev-dependencies") detectedType = "dev";
+        else if (target === "build-dependencies") detectedType = "build";
+        else if (target === "dependencies") detectedType = "normal";
+      }
     }
   }
 
@@ -303,6 +395,10 @@ export function parseCargoRemoveOutput(
     removed,
     total: removed.length,
   };
+
+  if (detectedType) {
+    result.dependencyType = detectedType;
+  }
 
   if (exitCode !== 0) {
     const errorLines = stderr
@@ -320,7 +416,7 @@ export function parseCargoRemoveOutput(
 /**
  * Parses `cargo fmt` output in both check and fix (non-check) modes.
  *
- * Check mode: parses "Diff in <file>:" lines or bare file paths from `--check` output.
+ * Check mode: Gap #92 - uses --files-with-diff for more reliable file detection.
  * Fix mode: parses file paths from `-- -l` (--files-with-diff) output, which lists
  *   files that were actually reformatted, one path per line on stdout.
  */
@@ -333,14 +429,16 @@ export function parseCargoFmtOutput(
   const files: string[] = [];
 
   if (checkMode) {
-    // In check mode, cargo fmt --check outputs "Diff in <file>:" lines to stdout
-    // or just lists file paths. It may also output raw diff lines.
+    // Gap #92: In check mode with --files-with-diff, the output contains
+    // file paths directly, one per line. Parse those first.
     const combined = stdout + "\n" + stderr;
     const lines = combined.split("\n");
 
     for (const line of lines) {
-      // Match "Diff in <path> at line N:" format
-      const diffMatch = line.match(/^Diff in (.+?) at line/);
+      const trimmed = line.trim();
+
+      // Match "Diff in <path> at line N:" format (legacy/verbose output)
+      const diffMatch = trimmed.match(/^Diff in (.+?) at line/);
       if (diffMatch) {
         const file = diffMatch[1];
         if (!files.includes(file)) {
@@ -349,13 +447,14 @@ export function parseCargoFmtOutput(
         continue;
       }
 
-      // Some versions just list the file path directly
-      const trimmed = line.trim();
+      // File paths from --files-with-diff or bare paths ending in .rs
       if (
         trimmed &&
         !trimmed.startsWith("+") &&
         !trimmed.startsWith("-") &&
         !trimmed.startsWith("@") &&
+        !trimmed.startsWith("warning") &&
+        !trimmed.startsWith("error") &&
         trimmed.endsWith(".rs")
       ) {
         if (!files.includes(trimmed)) {
@@ -466,6 +565,8 @@ export function parseCargoDocOutput(
  *   "    Removing old-crate v0.5.0"
  *   "    Downgrading foo v2.0.0 -> v1.5.0"
  *   "    Locking serde v1.0.200 -> v1.0.217"  (newer cargo versions)
+ *
+ * Gap #96: Compact mode now includes updateCount instead of dropping all data.
  */
 export function parseCargoUpdateOutput(
   stdout: string,
@@ -593,6 +694,34 @@ export function cvssToSeverity(
   const score = parseFloat(trimmed);
   if (isNaN(score)) return "unknown";
   return scoreToSeverity(score);
+}
+
+/**
+ * Extracts a numeric CVSS score from a CVSS string.
+ * Gap #88: Used to populate cvssScore field in audit output.
+ */
+export function extractCvssScore(cvss: string | null | undefined): number | undefined {
+  if (!cvss) return undefined;
+
+  const trimmed = cvss.trim();
+
+  // Try CVSS v3.x vector string
+  const v3Match = trimmed.match(/^CVSS:3\.\d+\/(.*)/);
+  if (v3Match) {
+    const score = computeCvss3BaseScore(v3Match[1]);
+    return score !== null ? score : undefined;
+  }
+
+  // Try CVSS v2 vector string
+  const v2Cleaned = trimmed.replace(/^\(|\)$/g, "");
+  if (/^AV:[NAL]\/AC:[HML]\/Au:[MSN]\/C:[NPC]\/I:[NPC]\/A:[NPC]/.test(v2Cleaned)) {
+    const score = computeCvss2BaseScore(v2Cleaned);
+    return score !== null ? score : undefined;
+  }
+
+  // Try plain numeric score
+  const score = parseFloat(trimmed);
+  return isNaN(score) ? undefined : score;
 }
 
 /**
@@ -764,8 +893,14 @@ function roundUp(value: number): number {
 /**
  * Parses `cargo audit --json` output.
  * Returns structured vulnerability data with severity summary and success flag.
+ * Gap #87: Supports cargo audit fix with fixesApplied count.
+ * Gap #88: Includes raw CVSS score and vector string.
  */
-export function parseCargoAuditJson(jsonStr: string, exitCode: number): CargoAuditResult {
+export function parseCargoAuditJson(
+  jsonStr: string,
+  exitCode: number,
+  fixMode?: boolean,
+): CargoAuditResult {
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(jsonStr);
@@ -805,7 +940,19 @@ export function parseCargoAuditJson(jsonStr: string, exitCode: number): CargoAud
       const pkg = v.package ?? {};
       const versions = v.versions ?? {};
 
-      return {
+      const entry: {
+        id: string;
+        package: string;
+        version: string;
+        severity: Severity;
+        title: string;
+        url?: string;
+        date?: string;
+        patched: string[];
+        unaffected?: string[];
+        cvssScore?: number;
+        cvssVector?: string;
+      } = {
         id: advisory.id ?? "unknown",
         package: pkg.name ?? "unknown",
         version: pkg.version ?? "unknown",
@@ -816,6 +963,17 @@ export function parseCargoAuditJson(jsonStr: string, exitCode: number): CargoAud
         patched: versions.patched ?? [],
         unaffected: versions.unaffected ?? [],
       };
+
+      // Gap #88: Include raw CVSS score and vector
+      if (advisory.cvss) {
+        const score = extractCvssScore(advisory.cvss);
+        if (score !== undefined) {
+          entry.cvssScore = score;
+        }
+        entry.cvssVector = advisory.cvss;
+      }
+
+      return entry;
     },
   );
 
@@ -836,14 +994,40 @@ export function parseCargoAuditJson(jsonStr: string, exitCode: number): CargoAud
     }
   }
 
-  return {
+  const result: CargoAuditResult = {
     success: exitCode === 0 || vulnerabilities.length === 0,
     vulnerabilities,
     summary,
   };
+
+  // Gap #87: For fix mode, count fixes from patched vulnerabilities
+  if (fixMode) {
+    // In fix mode, cargo audit fix attempts to fix all vulnerabilities.
+    // The number of fixes is inferred from vulnerabilities that have patched versions.
+    const fixable = vulnerabilities.filter((v) => v.patched.length > 0).length;
+    result.fixesApplied = fixable;
+  }
+
+  return result;
 }
 
-function parseCompilerMessages(stdout: string) {
+/**
+ * Parses compiler messages from JSON output.
+ * Gap #89: Extracts build-finished event's success field.
+ * Gap #90: Extracts suggestion text from children array.
+ */
+function parseCompilerMessages(stdout: string): {
+  diagnostics: {
+    file: string;
+    line: number;
+    column: number;
+    severity: "error" | "warning" | "note" | "help";
+    code?: string;
+    message: string;
+    suggestion?: string;
+  }[];
+  buildFinishedSuccess?: boolean;
+} {
   const lines = stdout.trim().split("\n").filter(Boolean);
   const diagnostics: {
     file: string;
@@ -852,13 +1036,21 @@ function parseCompilerMessages(stdout: string) {
     severity: "error" | "warning" | "note" | "help";
     code?: string;
     message: string;
+    suggestion?: string;
   }[] = [];
+  let buildFinishedSuccess: boolean | undefined;
 
   for (const line of lines) {
     let msg: CargoMessage;
     try {
       msg = JSON.parse(line);
     } catch {
+      continue;
+    }
+
+    // Gap #89: Capture build-finished event's success field
+    if (msg.reason === "build-finished") {
+      buildFinishedSuccess = msg.success;
       continue;
     }
 
@@ -873,15 +1065,35 @@ function parseCompilerMessages(stdout: string) {
         : "warning"
     ) as "error" | "warning" | "note" | "help";
 
-    diagnostics.push({
+    const diagnostic: {
+      file: string;
+      line: number;
+      column: number;
+      severity: "error" | "warning" | "note" | "help";
+      code?: string;
+      message: string;
+      suggestion?: string;
+    } = {
       file: span.file_name,
       line: span.line_start,
       column: span.column_start,
       severity,
       code: msg.message.code?.code || undefined,
       message: msg.message.message,
-    });
+    };
+
+    // Gap #90: Extract suggestion text from children array
+    if (msg.message.children && msg.message.children.length > 0) {
+      const helpChild = msg.message.children.find(
+        (c) => c.level === "help" || c.level === "suggestion",
+      );
+      if (helpChild && helpChild.message) {
+        diagnostic.suggestion = helpChild.message;
+      }
+    }
+
+    diagnostics.push(diagnostic);
   }
 
-  return diagnostics;
+  return { diagnostics, buildFinishedSuccess };
 }
