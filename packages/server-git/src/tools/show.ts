@@ -30,6 +30,16 @@ export function registerShowTool(server: McpServer) {
           .optional()
           .default("HEAD")
           .describe("Commit hash, branch, or tag (default: HEAD)"),
+        dateFormat: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Date format (--date), e.g. short, iso, relative, format:%Y-%m-%d"),
+        diffFilter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter diff output by change type (--diff-filter), e.g. A, M, D"),
         patch: z.boolean().optional().describe("Include patch content in output (-p/--patch)"),
         ignoreWhitespace: z.boolean().optional().describe("Filter whitespace-only changes (-w)"),
         nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
@@ -48,13 +58,32 @@ export function registerShowTool(server: McpServer) {
       },
       outputSchema: GitShowSchema,
     },
-    async ({ path, ref, patch, ignoreWhitespace, nameStatus, showSignature, notes, compact }) => {
+    async ({
+      path,
+      ref,
+      dateFormat,
+      diffFilter,
+      patch,
+      ignoreWhitespace,
+      nameStatus,
+      showSignature,
+      notes,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       const commitRef = ref || "HEAD";
       assertNoFlagInjection(commitRef, "ref");
+      if (dateFormat) assertNoFlagInjection(dateFormat, "dateFormat");
+      if (diffFilter) assertNoFlagInjection(diffFilter, "diffFilter");
+
+      // Build format string — use --date if dateFormat specified
+      const showFormat = dateFormat
+        ? `%H${DELIMITER}%an <%ae>${DELIMITER}%ad${DELIMITER}%B`
+        : SHOW_FORMAT;
 
       // Get commit info
-      const infoArgs = ["show", "--no-patch", `--format=${SHOW_FORMAT}`];
+      const infoArgs = ["show", "--no-patch", `--format=${showFormat}`];
+      if (dateFormat) infoArgs.push(`--date=${dateFormat}`);
       if (showSignature) infoArgs.push("--show-signature");
       if (notes) infoArgs.push("--notes");
       infoArgs.push(commitRef);
@@ -68,6 +97,7 @@ export function registerShowTool(server: McpServer) {
       if (patch) diffArgs.push("--patch");
       if (ignoreWhitespace) diffArgs.push("-w");
       if (nameStatus) diffArgs.push("--name-status");
+      if (diffFilter) diffArgs.push(`--diff-filter=${diffFilter}`);
       diffArgs.push(commitRef);
       const diffResult = await git(diffArgs, cwd);
 

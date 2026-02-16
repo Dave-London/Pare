@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseStatus } from "../lib/parsers.js";
 import { formatStatus } from "../lib/formatters.js";
@@ -20,6 +20,19 @@ export function registerStatusTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
+        pathspec: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Filter status to specific paths (-- <pathspec>)"),
+        untrackedFiles: z
+          .enum(["no", "normal", "all"])
+          .optional()
+          .describe("Control untracked file display mode (-u/--untracked-files)"),
+        ignoreSubmodules: z
+          .enum(["none", "untracked", "dirty", "all"])
+          .optional()
+          .describe("Ignore submodule changes (--ignore-submodules)"),
         showStash: z.boolean().optional().describe("Include stash count (--show-stash)"),
         renames: z
           .boolean()
@@ -31,7 +44,17 @@ export function registerStatusTool(server: McpServer) {
       },
       outputSchema: GitStatusSchema,
     },
-    async ({ path, showStash, renames, noRenames, noLockIndex, showIgnored }) => {
+    async ({
+      path,
+      pathspec,
+      untrackedFiles,
+      ignoreSubmodules,
+      showStash,
+      renames,
+      noRenames,
+      noLockIndex,
+      showIgnored,
+    }) => {
       const cwd = path || process.cwd();
       const statusArgs = ["status", "--porcelain=v1", "--branch"];
       if (showStash) statusArgs.push("--show-stash");
@@ -39,6 +62,14 @@ export function registerStatusTool(server: McpServer) {
       if (noRenames) statusArgs.push("--no-renames");
       if (noLockIndex) statusArgs.push("--no-lock-index");
       if (showIgnored) statusArgs.push("--ignored");
+      if (untrackedFiles) statusArgs.push(`--untracked-files=${untrackedFiles}`);
+      if (ignoreSubmodules) statusArgs.push(`--ignore-submodules=${ignoreSubmodules}`);
+      if (pathspec && pathspec.length > 0) {
+        for (const p of pathspec) {
+          assertNoFlagInjection(p, "pathspec");
+        }
+        statusArgs.push("--", ...pathspec);
+      }
       const result = await git(statusArgs, cwd);
 
       if (result.exitCode !== 0) {

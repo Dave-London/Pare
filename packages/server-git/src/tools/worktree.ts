@@ -23,7 +23,7 @@ export function registerWorktreeTool(server: McpServer) {
     {
       title: "Git Worktree",
       description:
-        "Lists, adds, or removes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits. Use instead of running `git worktree` in the terminal.",
+        "Lists, adds, removes, locks, unlocks, or prunes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits. Use instead of running `git worktree` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -31,7 +31,7 @@ export function registerWorktreeTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["list", "add", "remove"])
+          .enum(["list", "add", "remove", "lock", "unlock", "prune"])
           .optional()
           .default("list")
           .describe("Worktree action to perform (default: list)"),
@@ -39,7 +39,7 @@ export function registerWorktreeTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Path for the new or existing worktree (required for add/remove)"),
+          .describe("Path for the new or existing worktree (required for add/remove/lock/unlock)"),
         branch: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -75,6 +75,11 @@ export function registerWorktreeTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Verbose list output showing locked/prunable details (-v on list)"),
+        reason: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Reason for locking the worktree (--reason, used with lock)"),
         compact: z
           .boolean()
           .optional()
@@ -157,6 +162,56 @@ export function registerWorktreeTool(server: McpServer) {
           worktreePath,
           branch,
         );
+        return dualOutput(worktreeResult, formatWorktree);
+      }
+
+      if (action === "lock") {
+        const worktreePath = params.worktreePath;
+        if (!worktreePath) {
+          throw new Error("'worktreePath' is required for worktree lock");
+        }
+        assertNoFlagInjection(worktreePath, "worktreePath");
+
+        const args = ["worktree", "lock"];
+        if (params.reason) {
+          assertNoFlagInjection(params.reason, "reason");
+          args.push(`--reason=${params.reason}`);
+        }
+        args.push(worktreePath);
+
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git worktree lock failed: ${result.stderr}`);
+        }
+
+        const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+        return dualOutput(worktreeResult, formatWorktree);
+      }
+
+      if (action === "unlock") {
+        const worktreePath = params.worktreePath;
+        if (!worktreePath) {
+          throw new Error("'worktreePath' is required for worktree unlock");
+        }
+        assertNoFlagInjection(worktreePath, "worktreePath");
+
+        const result = await git(["worktree", "unlock", worktreePath], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git worktree unlock failed: ${result.stderr}`);
+        }
+
+        const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+        return dualOutput(worktreeResult, formatWorktree);
+      }
+
+      if (action === "prune") {
+        const args = ["worktree", "prune"];
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git worktree prune failed: ${result.stderr}`);
+        }
+
+        const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, "", "");
         return dualOutput(worktreeResult, formatWorktree);
       }
 

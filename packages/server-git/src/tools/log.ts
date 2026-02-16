@@ -39,6 +39,41 @@ export function registerLogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by author name or email"),
+        committer: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by committer name or email (--committer)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter commits after this date (--since), e.g. '2024-01-01' or '2 weeks ago'"),
+        until: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter commits before this date (--until)"),
+        grep: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by commit message pattern (--grep)"),
+        filePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Filter commits affecting a specific file (-- <path>)"),
+        dateFormat: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Control date format (--date), e.g. short, iso, relative, format:%Y-%m-%d"),
+        diffFilter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by change type (--diff-filter), e.g. A, M, D"),
         noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
         skip: z.number().optional().describe("Skip N commits for pagination (--skip)"),
         follow: z.boolean().optional().describe("Follow file renames (--follow)"),
@@ -64,6 +99,13 @@ export function registerLogTool(server: McpServer) {
       maxCount,
       ref,
       author,
+      committer,
+      since,
+      until,
+      grep,
+      filePath,
+      dateFormat,
+      diffFilter,
       noMerges,
       skip,
       follow,
@@ -73,11 +115,38 @@ export function registerLogTool(server: McpServer) {
       compact,
     }) => {
       const cwd = path || process.cwd();
-      const args = ["log", `--format=${LOG_FORMAT}`, `--max-count=${maxCount ?? 10}`];
+      const logFormat = dateFormat
+        ? `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ad${DELIMITER}%D${DELIMITER}%s`
+        : LOG_FORMAT;
+      const args = ["log", `--format=${logFormat}`, `--max-count=${maxCount ?? 10}`];
 
       if (author) {
         assertNoFlagInjection(author, "author");
         args.push(`--author=${author}`);
+      }
+      if (committer) {
+        assertNoFlagInjection(committer, "committer");
+        args.push(`--committer=${committer}`);
+      }
+      if (since) {
+        assertNoFlagInjection(since, "since");
+        args.push(`--since=${since}`);
+      }
+      if (until) {
+        assertNoFlagInjection(until, "until");
+        args.push(`--until=${until}`);
+      }
+      if (grep) {
+        assertNoFlagInjection(grep, "grep");
+        args.push(`--grep=${grep}`);
+      }
+      if (dateFormat) {
+        assertNoFlagInjection(dateFormat, "dateFormat");
+        args.push(`--date=${dateFormat}`);
+      }
+      if (diffFilter) {
+        assertNoFlagInjection(diffFilter, "diffFilter");
+        args.push(`--diff-filter=${diffFilter}`);
       }
       if (noMerges) args.push("--no-merges");
       if (skip !== undefined) args.push(`--skip=${skip}`);
@@ -91,6 +160,10 @@ export function registerLogTool(server: McpServer) {
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
+      }
+      if (filePath) {
+        assertNoFlagInjection(filePath, "filePath");
+        args.push("--", filePath);
       }
 
       const result = await git(args, cwd);

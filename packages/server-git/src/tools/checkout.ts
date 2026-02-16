@@ -13,7 +13,7 @@ export function registerCheckoutTool(server: McpServer) {
     {
       title: "Git Checkout",
       description:
-        "Switches branches or restores files. Returns structured data with ref, previous ref, and whether a new branch was created. Use instead of running `git checkout` in the terminal.",
+        "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status. Use instead of running `git checkout` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -25,6 +25,16 @@ export function registerCheckoutTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Branch name, tag, or commit to checkout"),
         create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
+        startPoint: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Start point for new branch creation (commit, tag, or branch)"),
+        orphan: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Create a new orphan branch with this name (--orphan)"),
         force: z.boolean().optional().describe("Force checkout discarding local changes (-f)"),
         track: z.boolean().optional().describe("Set up tracking for remote branches (--track)"),
         forceCreate: z.boolean().optional().describe("Force-create branch even if it exists (-B)"),
@@ -32,14 +42,34 @@ export function registerCheckoutTool(server: McpServer) {
       },
       outputSchema: GitCheckoutSchema,
     },
-    async ({ path, ref, create, force, track, forceCreate, detach }) => {
+    async ({ path, ref, create, startPoint, orphan, force, track, forceCreate, detach }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(ref, "ref");
+      if (startPoint) assertNoFlagInjection(startPoint, "startPoint");
+      if (orphan) assertNoFlagInjection(orphan, "orphan");
 
       // Get current branch/ref before checkout
       const prevResult = await git(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
       const previousRef = prevResult.exitCode === 0 ? prevResult.stdout.trim() : "unknown";
+
+      // Handle orphan branch creation
+      if (orphan) {
+        const args = ["checkout", "--orphan", orphan];
+        if (force) args.push("--force");
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git checkout --orphan failed: ${result.stderr}`);
+        }
+        const checkoutResult = parseCheckout(
+          result.stdout,
+          result.stderr,
+          orphan,
+          previousRef,
+          true,
+        );
+        return dualOutput(checkoutResult, formatCheckout);
+      }
 
       // Build checkout args
       const args = ["checkout"];
@@ -52,6 +82,7 @@ export function registerCheckoutTool(server: McpServer) {
       if (track) args.push("--track");
       if (detach) args.push("--detach");
       args.push(ref);
+      if (startPoint && (create || forceCreate)) args.push(startPoint);
 
       const result = await git(args, cwd);
 

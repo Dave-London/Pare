@@ -13,7 +13,7 @@ export function registerPullTool(server: McpServer) {
     {
       title: "Git Pull",
       description:
-        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, and any conflicts. Use instead of running `git pull` in the terminal.",
+        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, conflicts, up-to-date and fast-forward indicators. Use instead of running `git pull` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -36,6 +36,20 @@ export function registerPullTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Use rebase instead of merge (--rebase)"),
+        rebaseMode: z
+          .enum(["true", "false", "merges", "interactive"])
+          .optional()
+          .describe("Control rebase behavior (--rebase=<mode>)"),
+        strategy: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Merge strategy (--strategy), e.g. recursive, ort"),
+        strategyOption: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Strategy-specific option (-X), e.g. theirs, ours"),
         ffOnly: z.boolean().optional().describe("Only fast-forward pulls (--ff-only)"),
         autostash: z.boolean().optional().describe("Stash/unstash around pull (--autostash)"),
         noCommit: z.boolean().optional().describe("Pull without auto-committing (--no-commit)"),
@@ -50,6 +64,9 @@ export function registerPullTool(server: McpServer) {
       remote,
       branch,
       rebase,
+      rebaseMode,
+      strategy,
+      strategyOption,
       ffOnly,
       autostash,
       noCommit,
@@ -63,15 +80,23 @@ export function registerPullTool(server: McpServer) {
       if (branch) {
         assertNoFlagInjection(branch, "branch");
       }
+      if (strategy) assertNoFlagInjection(strategy, "strategy");
+      if (strategyOption) assertNoFlagInjection(strategyOption, "strategyOption");
 
       const args = ["pull"];
-      args.push(rebase ? "--rebase" : "--no-rebase");
+      if (rebaseMode) {
+        args.push(`--rebase=${rebaseMode}`);
+      } else {
+        args.push(rebase ? "--rebase" : "--no-rebase");
+      }
       if (ffOnly) args.push("--ff-only");
       if (autostash) args.push("--autostash");
       if (noCommit) args.push("--no-commit");
       if (depth !== undefined) args.push(`--depth=${depth}`);
       if (noVerify) args.push("--no-verify");
       if (squash) args.push("--squash");
+      if (strategy) args.push(`--strategy=${strategy}`);
+      if (strategyOption) args.push(`-X${strategyOption}`);
       args.push(remote);
       if (branch) args.push(branch);
 

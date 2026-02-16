@@ -13,14 +13,16 @@ export function registerStashTool(server: McpServer) {
     {
       title: "Git Stash",
       description:
-        "Pushes, pops, applies, or drops stash entries. Returns structured result with action, success, and message. Use instead of running `git stash` in the terminal.",
+        "Pushes, pops, applies, drops, or clears stash entries. Returns structured result with action, success, message, and stash reference. Use instead of running `git stash` in the terminal.",
       inputSchema: {
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
-        action: z.enum(["push", "pop", "apply", "drop"]).describe("Stash action to perform"),
+        action: z
+          .enum(["push", "pop", "apply", "drop", "clear"])
+          .describe("Stash action to perform"),
         message: z
           .string()
           .max(INPUT_LIMITS.MESSAGE_MAX)
@@ -63,6 +65,16 @@ export function registerStashTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       const args = ["stash"];
+
+      if (action === "clear") {
+        args.push("clear");
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git stash clear failed: ${result.stderr}`);
+        }
+        const stashResult = parseStashOutput(result.stdout, result.stderr, "clear");
+        return dualOutput(stashResult, formatStash);
+      }
 
       if (action === "push") {
         args.push("push");

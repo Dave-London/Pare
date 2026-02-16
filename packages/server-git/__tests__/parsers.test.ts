@@ -366,11 +366,13 @@ describe("parseStashListOutput", () => {
       index: 0,
       message: "WIP on main: abc1234 Fix bug",
       date: "2024-01-15 10:30:00 +0000",
+      branch: "main",
     });
     expect(result.stashes[1]).toEqual({
       index: 1,
       message: "On main: save progress",
       date: "2024-01-14 09:00:00 +0000",
+      branch: "main",
     });
   });
 
@@ -449,6 +451,7 @@ describe("parseRemoteOutput", () => {
       name: "origin",
       fetchUrl: "https://github.com/user/repo.git",
       pushUrl: "https://github.com/user/repo.git",
+      protocol: "https",
     });
   });
 
@@ -518,6 +521,7 @@ describe("parseBlameOutput", () => {
     expect(result.commits[0]).toEqual({
       hash: "abc12345",
       author: "John Doe",
+      email: "john@example.com",
       date: new Date(1700000000 * 1000).toISOString(),
       lines: [
         { lineNumber: 1, content: "const x = 1;" },
@@ -701,21 +705,21 @@ describe("parseReset", () => {
     const result = parseReset(stdout, "", "HEAD");
 
     expect(result.ref).toBe("HEAD");
-    expect(result.unstaged).toEqual(["src/index.ts", "src/app.ts"]);
+    expect(result.filesAffected).toEqual(["src/index.ts", "src/app.ts"]);
   });
 
   it("handles empty output", () => {
     const result = parseReset("", "", "HEAD");
 
     expect(result.ref).toBe("HEAD");
-    expect(result.unstaged).toEqual([]);
+    expect(result.filesAffected).toEqual([]);
   });
 
   it("parses output with various status types", () => {
     const stdout = "Unstaged changes after reset:\nM\tmodified.ts\nD\tdeleted.ts\nA\tadded.ts\n";
     const result = parseReset(stdout, "", "HEAD");
 
-    expect(result.unstaged).toEqual(["modified.ts", "deleted.ts", "added.ts"]);
+    expect(result.filesAffected).toEqual(["modified.ts", "deleted.ts", "added.ts"]);
   });
 });
 

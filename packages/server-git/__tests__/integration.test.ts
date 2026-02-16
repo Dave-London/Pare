@@ -515,7 +515,7 @@ describe("@paretools/git write-tool integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(sc.ref).toBe("HEAD");
-      expect(Array.isArray(sc.unstaged)).toBe(true);
+      expect(Array.isArray(sc.filesAffected)).toBe(true);
     });
 
     it("unstages all files when no files specified", async () => {
@@ -536,7 +536,7 @@ describe("@paretools/git write-tool integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(sc.ref).toBe("HEAD");
-      expect(Array.isArray(sc.unstaged)).toBe(true);
+      expect(Array.isArray(sc.filesAffected)).toBe(true);
     });
 
     it("rejects flag-injection in ref", async () => {

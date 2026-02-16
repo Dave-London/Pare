@@ -269,11 +269,15 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
   const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
   const resolvedBranch = branch || branchMatch?.[1] || "unknown";
 
+  // Detect if the remote branch was newly created
+  const created = /\[new branch\]|\[new tag\]/.test(combined);
+
   return {
     success: true,
     remote,
     branch: resolvedBranch,
     summary: combined || "Push completed successfully",
+    ...(created ? { created } : {}),
   };
 }
 
@@ -297,6 +301,9 @@ export function parsePull(stdout: string, stderr: string): GitPull {
   // Check for "Already up to date."
   const alreadyUpToDate = /Already up to date/i.test(combined);
 
+  // Detect fast-forward
+  const fastForward = /Fast-forward|fast-forward/i.test(combined);
+
   let summary: string;
   if (conflicts.length > 0) {
     summary = `Pull completed with ${conflicts.length} conflict(s)`;
@@ -313,6 +320,8 @@ export function parsePull(stdout: string, stderr: string): GitPull {
     insertions: insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0,
     deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
     conflicts,
+    ...(alreadyUpToDate ? { upToDate: true } : {}),
+    ...(fastForward ? { fastForward: true } : {}),
   };
 }
 
@@ -324,10 +333,18 @@ export function parseCheckout(
   previousRef: string,
   created: boolean,
 ): GitCheckout {
+  const combined = `${stdout}\n${stderr}`.trim();
+  // Detect detached HEAD state
+  const detached =
+    /HEAD is now at/.test(combined) ||
+    /detached.*HEAD/.test(combined) ||
+    /HEAD.*detached/.test(combined);
+
   return {
     ref,
     previousRef,
     created,
+    ...(detached ? { detached: true } : {}),
   };
 }
 
@@ -352,28 +369,56 @@ export function parseStashListOutput(stdout: string): GitStashListFull {
   const stashes = lines.map((line) => {
     const [ref, message, date] = line.split("\t");
     const indexMatch = ref?.match(/stash@\{(\d+)\}/);
+    // Extract branch from message: "WIP on <branch>: ..." or "On <branch>: ..."
+    const branchMatch = (message || "").match(/(?:WIP on|On)\s+([^:]+):/);
     return {
       index: indexMatch ? parseInt(indexMatch[1], 10) : 0,
       message: message || "",
       date: date || "",
+      ...(branchMatch ? { branch: branchMatch[1] } : {}),
     };
   });
 
   return { stashes, total: stashes.length };
 }
 
-/** Parses `git stash push/pop/apply/drop` output into structured stash result data. */
+/** Parses `git stash push/pop/apply/drop/clear` output into structured stash result data. */
 export function parseStashOutput(
   stdout: string,
   stderr: string,
-  action: "push" | "pop" | "apply" | "drop",
+  action: "push" | "pop" | "apply" | "drop" | "clear",
 ): GitStash {
   const combined = `${stdout}\n${stderr}`.trim();
+
+  // Extract stash reference from push output (e.g., "Saved working directory and index state WIP on main: abc1234 msg")
+  let stashRef: string | undefined;
+  if (action === "push") {
+    // After a push, the new stash is always stash@{0}
+    if (combined && !combined.includes("No local changes to save")) {
+      stashRef = "stash@{0}";
+    }
+  } else if (action === "pop" || action === "apply" || action === "drop") {
+    const refMatch = combined.match(/stash@\{\d+\}/);
+    if (refMatch) stashRef = refMatch[0];
+  }
+
   return {
     action,
     success: true,
     message: combined || `Stash ${action} completed successfully`,
+    ...(stashRef ? { stashRef } : {}),
   };
+}
+
+/** Detects URL protocol from a git remote URL. */
+function detectProtocol(url: string): "ssh" | "https" | "http" | "git" | "file" | "unknown" {
+  if (url.startsWith("https://")) return "https";
+  if (url.startsWith("http://")) return "http";
+  if (url.startsWith("git://")) return "git";
+  if (url.startsWith("file://") || url.startsWith("/")) return "file";
+  // SSH patterns: git@host:path or ssh://user@host/path
+  if (url.startsWith("ssh://") || /^[^/]+@[^/]+:/.test(url)) return "ssh";
+  return "unknown";
 }
 
 /** Parses `git remote -v` output into structured remote data, grouping fetch/push URLs by name. */
@@ -397,6 +442,7 @@ export function parseRemoteOutput(stdout: string): GitRemoteFull {
     name,
     fetchUrl: urls.fetchUrl,
     pushUrl: urls.pushUrl,
+    protocol: detectProtocol(urls.fetchUrl),
   }));
 
   return { remotes, total: remotes.length };
@@ -408,18 +454,24 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
 
   let currentHash = "";
   let currentAuthor = "";
+  let currentEmail = "";
   let currentDate = "";
   let currentLineNumber = 0;
   let totalLines = 0;
 
   // Track commit info we've seen (porcelain only shows full info once per commit)
-  const commitInfo = new Map<string, { author: string; date: string }>();
+  const commitInfo = new Map<string, { author: string; email?: string; date: string }>();
 
   // Build commit groups in encounter order (keyed by short hash)
   const commitOrder: string[] = [];
   const commitGroups = new Map<
     string,
-    { author: string; date: string; lines: Array<{ lineNumber: number; content: string }> }
+    {
+      author: string;
+      email?: string;
+      date: string;
+      lines: Array<{ lineNumber: number; content: string }>;
+    }
   >();
 
   let i = 0;
@@ -436,6 +488,7 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
       const existing = commitInfo.get(currentHash);
       if (existing) {
         currentAuthor = existing.author;
+        currentEmail = existing.email || "";
         currentDate = existing.date;
       }
 
@@ -446,6 +499,13 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
     // Key-value pairs
     if (line.startsWith("author ")) {
       currentAuthor = line.slice(7);
+      i++;
+      continue;
+    }
+
+    if (line.startsWith("author-mail ")) {
+      // Extract email, strip angle brackets: "<user@example.com>" -> "user@example.com"
+      currentEmail = line.slice(12).replace(/^<|>$/g, "");
       i++;
       continue;
     }
@@ -461,13 +521,22 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
     if (line.startsWith("\t")) {
       // Store commit info for reuse
       if (!commitInfo.has(currentHash)) {
-        commitInfo.set(currentHash, { author: currentAuthor, date: currentDate });
+        commitInfo.set(currentHash, {
+          author: currentAuthor,
+          date: currentDate,
+          ...(currentEmail ? { email: currentEmail } : {}),
+        });
       }
 
       const shortHash = currentHash.slice(0, 8);
       let group = commitGroups.get(shortHash);
       if (!group) {
-        group = { author: currentAuthor, date: currentDate, lines: [] };
+        group = {
+          author: currentAuthor,
+          date: currentDate,
+          ...(currentEmail ? { email: currentEmail } : {}),
+          lines: [],
+        };
         commitGroups.set(shortHash, group);
         commitOrder.push(shortHash);
       }
@@ -500,19 +569,23 @@ export function parseRestore(files: string[], source: string, staged: boolean): 
   };
 }
 
-/** Parses `git reset` output into structured reset data with the ref and list of unstaged files. */
-export function parseReset(stdout: string, stderr: string, ref: string): GitReset {
+/** Parses `git reset` output into structured reset data with the ref, mode, and list of affected files. */
+export function parseReset(stdout: string, stderr: string, ref: string, mode?: string): GitReset {
   const combined = `${stdout}\n${stderr}`.trim();
-  const unstaged: string[] = [];
+  const filesAffected: string[] = [];
 
   for (const line of combined.split("\n")) {
     const match = line.match(/^[A-Z]\t(.+)$/);
     if (match) {
-      unstaged.push(match[1]);
+      filesAffected.push(match[1]);
     }
   }
 
-  return { ref, unstaged };
+  return {
+    ref,
+    ...(mode ? { mode: mode as GitReset["mode"] } : {}),
+    filesAffected,
+  };
 }
 
 /** Parses `git cherry-pick` output into structured cherry-pick result data. */
@@ -530,6 +603,10 @@ export function parseCherryPick(
   while ((match = conflictPattern.exec(combined)) !== null) {
     conflicts.push(match[1].trim());
   }
+
+  // Try to extract new commit hash from output
+  const newCommitMatch = combined.match(/\[[\w/.-]+\s+([a-f0-9]{7,40})\]/);
+  const newCommitHash = newCommitMatch ? newCommitMatch[1] : undefined;
 
   if (exitCode !== 0 && conflicts.length > 0) {
     return {
@@ -554,6 +631,7 @@ export function parseCherryPick(
       success: true,
       applied: commits,
       conflicts: [],
+      ...(newCommitHash ? { newCommitHash } : {}),
     };
   }
 
@@ -689,11 +767,16 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
         rest = rest.slice(refsMatch[0].length);
       }
 
+      // Detect merge commit: graph line has a merge marker (two parent lines converging)
+      // Common pattern: "*   " with extra space or "|\  " before the merge marker
+      const isMerge = /Merge\s/.test(rest) || /^\*\s{2,}/.test(graph);
+
       commits.push({
         graph,
         hashShort,
         message: rest,
         ...(refs ? { refs } : {}),
+        ...(isMerge ? { isMerge: true } : {}),
       });
     } else {
       // Pure graph continuation line (no commit) — store with empty hash/message
@@ -830,9 +913,15 @@ export function parseWorktreeResult(
   path: string,
   branch: string,
 ): GitWorktree {
+  // Try to extract HEAD commit from output
+  const combined = `${stdout}\n${stderr}`.trim();
+  const headMatch = combined.match(/HEAD is now at ([a-f0-9]{7,40})/);
+  const head = headMatch ? headMatch[1] : undefined;
+
   return {
     success: true,
     path,
     branch,
+    ...(head ? { head } : {}),
   };
 }

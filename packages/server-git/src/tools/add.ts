@@ -51,6 +51,15 @@ export function registerAddTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Continue staging past individual file failures (--ignore-errors)"),
+        pathspecFromFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Read pathspec from file (--pathspec-from-file)"),
+        chmod: z
+          .enum(["+x", "-x"])
+          .optional()
+          .describe("Override file permission bits (--chmod=+x or --chmod=-x)"),
       },
       outputSchema: GitAddSchema,
     },
@@ -65,19 +74,28 @@ export function registerAddTool(server: McpServer) {
       ignoreRemoval,
       renormalize,
       ignoreErrors,
+      pathspecFromFile,
+      chmod,
     }) => {
       const cwd = path || process.cwd();
 
-      if (!all && !update && (!files || files.length === 0)) {
-        throw new Error("Either 'files' must be provided or 'all'/'update' must be true");
+      if (!all && !update && (!files || files.length === 0) && !pathspecFromFile) {
+        throw new Error(
+          "Either 'files' must be provided, 'all'/'update' must be true, or 'pathspecFromFile' must be set",
+        );
       }
 
       // Build args
       let args: string[];
       if (all) {
         args = ["add", "-A"];
-      } else if (update && (!files || files.length === 0)) {
+      } else if (update && (!files || files.length === 0) && !pathspecFromFile) {
         args = ["add", "-u"];
+      } else if (pathspecFromFile) {
+        assertNoFlagInjection(pathspecFromFile, "pathspecFromFile");
+        args = ["add"];
+        if (update) args.push("-u");
+        args.push(`--pathspec-from-file=${pathspecFromFile}`);
       } else {
         // Validate each file path
         for (const file of files!) {
@@ -96,6 +114,7 @@ export function registerAddTool(server: McpServer) {
       if (ignoreRemoval) args.push("--ignore-removal");
       if (renormalize) args.push("--renormalize");
       if (ignoreErrors) args.push("--ignore-errors");
+      if (chmod) args.push(`--chmod=${chmod}`);
 
       const result = await git(args, cwd);
 

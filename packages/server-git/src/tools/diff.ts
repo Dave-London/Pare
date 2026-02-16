@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
-import { git, resolveFilePath } from "../lib/git-runner.js";
+import { git, resolveFilePath, resolveFilePaths } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
 import { formatDiff, compactDiffMap, formatDiffCompact } from "../lib/formatters.js";
 import { GitDiffSchema } from "../schemas/index.js";
@@ -32,11 +32,31 @@ export function registerDiffTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Limit diff to a specific file"),
+        files: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Limit diff to multiple file paths"),
         full: z
           .boolean()
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
+        diffFilter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Filter by change type (--diff-filter), e.g. A (added), M (modified), D (deleted), R (renamed)",
+          ),
+        algorithm: z
+          .enum(["myers", "minimal", "patience", "histogram"])
+          .optional()
+          .describe("Select diff algorithm (--diff-algorithm)"),
+        findRenames: z
+          .number()
+          .optional()
+          .describe("Rename detection threshold percentage (-M<n>), e.g. 50 for 50%"),
         ignoreWhitespace: z.boolean().optional().describe("Ignore all whitespace changes (-w)"),
         contextLines: z.number().optional().describe("Number of context lines (-U<n>)"),
         nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
@@ -63,7 +83,11 @@ export function registerDiffTool(server: McpServer) {
       staged,
       ref,
       file,
+      files,
       full,
+      diffFilter,
+      algorithm,
+      findRenames,
       ignoreWhitespace,
       contextLines,
       nameStatus,
@@ -77,11 +101,18 @@ export function registerDiffTool(server: McpServer) {
       const cwd = path || process.cwd();
       const args = ["diff", "--numstat"];
 
-      // Resolve file path casing — git pathspecs are case-sensitive even on Windows
+      // Resolve file paths casing — git pathspecs are case-sensitive even on Windows
       let resolvedFile: string | undefined;
+      let resolvedFiles: string[] | undefined;
       if (file) {
         assertNoFlagInjection(file, "file");
         resolvedFile = await resolveFilePath(file, cwd);
+      }
+      if (files && files.length > 0) {
+        for (const f of files) {
+          assertNoFlagInjection(f, "files");
+        }
+        resolvedFiles = await resolveFilePaths(files, cwd);
       }
 
       if (staged) args.push("--cached");
@@ -93,12 +124,22 @@ export function registerDiffTool(server: McpServer) {
       if (wordDiff) args.push("--word-diff");
       if (relative) args.push("--relative");
       if (ignoreBlankLines) args.push("--ignore-blank-lines");
+      if (diffFilter) {
+        assertNoFlagInjection(diffFilter, "diffFilter");
+        args.push(`--diff-filter=${diffFilter}`);
+      }
+      if (algorithm) args.push(`--diff-algorithm=${algorithm}`);
+      if (findRenames !== undefined) args.push(`-M${findRenames}%`);
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
       }
-      if (resolvedFile) {
-        args.push("--", resolvedFile);
+      // Append file paths after --
+      const pathArgs: string[] = [];
+      if (resolvedFile) pathArgs.push(resolvedFile);
+      if (resolvedFiles) pathArgs.push(...resolvedFiles);
+      if (pathArgs.length > 0) {
+        args.push("--", ...pathArgs);
       }
 
       const result = await git(args, cwd);
@@ -120,9 +161,12 @@ export function registerDiffTool(server: McpServer) {
         if (wordDiff) patchArgs.push("--word-diff");
         if (relative) patchArgs.push("--relative");
         if (ignoreBlankLines) patchArgs.push("--ignore-blank-lines");
+        if (diffFilter) patchArgs.push(`--diff-filter=${diffFilter}`);
+        if (algorithm) patchArgs.push(`--diff-algorithm=${algorithm}`);
+        if (findRenames !== undefined) patchArgs.push(`-M${findRenames}%`);
         if (ref) patchArgs.push(ref); // Already validated above
-        if (resolvedFile) {
-          patchArgs.push("--", resolvedFile);
+        if (pathArgs.length > 0) {
+          patchArgs.push("--", ...pathArgs);
         }
 
         const patchResult = await git(patchArgs, cwd);

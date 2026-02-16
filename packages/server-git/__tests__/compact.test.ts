@@ -202,9 +202,9 @@ describe("compactShowMap", () => {
 
     expect(compact.hashShort).toBe("abc123d");
     expect(compact.message).toBe("Fix parser bug");
+    expect(compact.author).toBe("Jane Doe <jane@example.com>");
+    expect(compact.date).toBe("2 hours ago");
     expect(compact).not.toHaveProperty("hash");
-    expect(compact).not.toHaveProperty("author");
-    expect(compact).not.toHaveProperty("date");
     expect(compact).not.toHaveProperty("diff");
   });
 
@@ -224,8 +224,16 @@ describe("compactShowMap", () => {
 
 describe("formatShowCompact", () => {
   it("formats compact show as single line", () => {
-    const compact = { hashShort: "abc1234", message: "Fix parser bug" };
-    expect(formatShowCompact(compact)).toBe("abc1234 Fix parser bug");
+    const compact = {
+      hashShort: "abc1234",
+      message: "Fix parser bug",
+      author: "Jane <j@e.com>",
+      date: "2h ago",
+    };
+    const output = formatShowCompact(compact);
+    expect(output).toContain("abc1234 Fix parser bug");
+    expect(output).toContain("Author: Jane <j@e.com>");
+    expect(output).toContain("Date: 2h ago");
   });
 });
 

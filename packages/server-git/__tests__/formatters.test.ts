@@ -701,18 +701,18 @@ describe("formatBlame", () => {
 
 describe("formatReset", () => {
   it("formats reset with unstaged files", () => {
-    const data: GitReset = { ref: "HEAD", unstaged: ["src/a.ts", "src/b.ts"] };
-    expect(formatReset(data)).toBe("Reset to HEAD: unstaged 2 file(s): src/a.ts, src/b.ts");
+    const data: GitReset = { ref: "HEAD", filesAffected: ["src/a.ts", "src/b.ts"] };
+    expect(formatReset(data)).toBe("Reset to HEAD: 2 file(s) affected: src/a.ts, src/b.ts");
   });
 
   it("formats reset with no unstaged files", () => {
-    const data: GitReset = { ref: "HEAD", unstaged: [] };
-    expect(formatReset(data)).toBe("Reset to HEAD — no files unstaged");
+    const data: GitReset = { ref: "HEAD", filesAffected: [] };
+    expect(formatReset(data)).toBe("Reset to HEAD — no files affected");
   });
 
   it("formats reset with single file", () => {
-    const data: GitReset = { ref: "HEAD", unstaged: ["README.md"] };
-    expect(formatReset(data)).toBe("Reset to HEAD: unstaged 1 file(s): README.md");
+    const data: GitReset = { ref: "HEAD", filesAffected: ["README.md"] };
+    expect(formatReset(data)).toBe("Reset to HEAD: 1 file(s) affected: README.md");
   });
 });
 
