@@ -58,6 +58,11 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Update snapshots (vitest/jest only, adds -u flag)"),
+        coverage: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run with coverage (adds --coverage for vitest/jest, --cov for pytest)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -74,7 +79,7 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: TestRunSchema,
     },
-    async ({ path, framework, filter, updateSnapshots, args, compact }) => {
+    async ({ path, framework, filter, updateSnapshots, coverage, args, compact }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -104,6 +109,22 @@ export function registerRunTool(server: McpServer) {
       // Snapshot update support (vitest/jest only)
       if (updateSnapshots && (detected === "vitest" || detected === "jest")) {
         extraArgs.push("-u");
+      }
+
+      // Coverage support
+      if (coverage) {
+        switch (detected) {
+          case "vitest":
+          case "jest":
+            extraArgs.push("--coverage");
+            break;
+          case "pytest":
+            extraArgs.push("--cov");
+            break;
+          case "mocha":
+            // mocha uses nyc wrapper; not supported via flag
+            break;
+        }
       }
 
       // For vitest/jest, write JSON to a temp file instead of relying on
