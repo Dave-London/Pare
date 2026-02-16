@@ -32,6 +32,21 @@ export function registerLogGraphTool(server: McpServer) {
           .optional()
           .describe("Branch, tag, or commit to start from"),
         all: z.boolean().optional().default(false).describe("Show all branches (--all)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter graph by date (--since)"),
+        author: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by author (--author)"),
+        filePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Filter to specific file (-- <path>)"),
         firstParent: z
           .boolean()
           .optional()
@@ -58,6 +73,9 @@ export function registerLogGraphTool(server: McpServer) {
       maxCount,
       ref,
       all,
+      since,
+      author,
+      filePath,
       firstParent,
       noMerges,
       simplifyByDecoration,
@@ -71,6 +89,14 @@ export function registerLogGraphTool(server: McpServer) {
       if (all) {
         args.push("--all");
       }
+      if (since) {
+        assertNoFlagInjection(since, "since");
+        args.push(`--since=${since}`);
+      }
+      if (author) {
+        assertNoFlagInjection(author, "author");
+        args.push(`--author=${author}`);
+      }
       if (firstParent) args.push("--first-parent");
       if (noMerges) args.push("--no-merges");
       if (simplifyByDecoration) args.push("--simplify-by-decoration");
@@ -80,6 +106,11 @@ export function registerLogGraphTool(server: McpServer) {
       if (ref) {
         assertNoFlagInjection(ref, "ref");
         args.push(ref);
+      }
+
+      if (filePath) {
+        assertNoFlagInjection(filePath, "filePath");
+        args.push("--", filePath);
       }
 
       const result = await git(args, cwd);

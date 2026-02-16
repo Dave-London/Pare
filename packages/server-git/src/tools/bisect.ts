@@ -13,7 +13,7 @@ export function registerBisectTool(server: McpServer) {
     {
       title: "Git Bisect",
       description:
-        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, and status actions. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
+        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, and skip actions. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -21,7 +21,7 @@ export function registerBisectTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["start", "good", "bad", "reset", "status"])
+          .enum(["start", "good", "bad", "reset", "status", "skip"])
           .describe("Bisect action to perform"),
         bad: z
           .string()
@@ -29,10 +29,19 @@ export function registerBisectTool(server: McpServer) {
           .optional()
           .describe("Bad commit ref (used with start action)"),
         good: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
           .optional()
-          .describe("Good commit ref (used with start action)"),
+          .describe(
+            "Good commit ref(s) — single string or array of refs to narrow the search range (used with start action)",
+          ),
+        paths: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Restrict bisection to changes affecting specific paths (-- <paths>)"),
         noCheckout: z
           .boolean()
           .optional()
@@ -60,16 +69,24 @@ export function registerBisectTool(server: McpServer) {
 
       if (action === "start") {
         const bad = params.bad;
-        const good = params.good;
+        const goodParam = params.good;
 
-        if (!bad || !good) {
+        if (!bad || !goodParam) {
           throw new Error("Both 'bad' and 'good' commit refs are required for bisect start");
         }
 
         assertNoFlagInjection(bad, "bad");
-        assertNoFlagInjection(good, "good");
+        const goodRefs = Array.isArray(goodParam) ? goodParam : [goodParam];
+        for (const g of goodRefs) {
+          assertNoFlagInjection(g, "good");
+        }
         if (params.termOld) assertNoFlagInjection(params.termOld, "termOld");
         if (params.termNew) assertNoFlagInjection(params.termNew, "termNew");
+        if (params.paths) {
+          for (const p of params.paths) {
+            assertNoFlagInjection(p, "paths");
+          }
+        }
 
         // Start bisect session
         const startArgs = ["bisect", "start"];
@@ -77,6 +94,10 @@ export function registerBisectTool(server: McpServer) {
         if (params.firstParent) startArgs.push("--first-parent");
         if (params.termOld) startArgs.push(`--term-old=${params.termOld}`);
         if (params.termNew) startArgs.push(`--term-new=${params.termNew}`);
+        // Append paths restriction
+        if (params.paths && params.paths.length > 0) {
+          startArgs.push("--", ...params.paths);
+        }
         const startResult = await git(startArgs, cwd);
         if (startResult.exitCode !== 0) {
           throw new Error(`git bisect start failed: ${startResult.stderr}`);
@@ -90,14 +111,17 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect bad failed: ${badResult.stderr}`);
         }
 
-        // Mark the good commit — this triggers the first bisect step
-        const goodResult = await git(["bisect", "good", good], cwd);
-        if (goodResult.exitCode !== 0) {
-          await git(["bisect", "reset"], cwd);
-          throw new Error(`git bisect good failed: ${goodResult.stderr}`);
+        // Mark good commit(s) — last one triggers the first bisect step
+        let lastGoodResult = badResult;
+        for (const goodRef of goodRefs) {
+          lastGoodResult = await git(["bisect", "good", goodRef], cwd);
+          if (lastGoodResult.exitCode !== 0) {
+            await git(["bisect", "reset"], cwd);
+            throw new Error(`git bisect good failed: ${lastGoodResult.stderr}`);
+          }
         }
 
-        const bisectResult = parseBisect(goodResult.stdout, goodResult.stderr, "start");
+        const bisectResult = parseBisect(lastGoodResult.stdout, lastGoodResult.stderr, "start");
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -118,6 +142,16 @@ export function registerBisectTool(server: McpServer) {
         }
 
         const bisectResult = parseBisect(result.stdout, result.stderr, "bad");
+        return dualOutput(bisectResult, formatBisect);
+      }
+
+      if (action === "skip") {
+        const result = await git(["bisect", "skip"], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git bisect skip failed: ${result.stderr}`);
+        }
+
+        const bisectResult = parseBisect(result.stdout, result.stderr, "skip");
         return dualOutput(bisectResult, formatBisect);
       }
 

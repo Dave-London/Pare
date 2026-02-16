@@ -13,7 +13,7 @@ export function registerMergeTool(server: McpServer) {
     {
       title: "Git Merge",
       description:
-        "Merges a branch into the current branch. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash. Use instead of running `git merge` in the terminal.",
+        "Merges a branch into the current branch. Supports abort, continue, and quit actions. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash. Use instead of running `git merge` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -23,11 +23,31 @@ export function registerMergeTool(server: McpServer) {
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),
         noFf: z.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),
+        continue: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Continue after conflict resolution (--continue)"),
+        quit: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Quit merge without reverting (--quit)"),
         message: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Custom merge commit message"),
+        strategy: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Merge strategy (--strategy), e.g. recursive, ort, resolve"),
+        strategyOption: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Strategy-specific option (-X), e.g. theirs, ours, patience"),
         ffOnly: z.boolean().optional().describe("Only fast-forward merges (--ff-only)"),
         squash: z.boolean().optional().describe("Squash merge (--squash)"),
         noCommit: z.boolean().optional().describe("Merge without auto-committing (--no-commit)"),
@@ -46,7 +66,11 @@ export function registerMergeTool(server: McpServer) {
       branch,
       noFf,
       abort,
+      continue: cont,
+      quit,
       message,
+      strategy,
+      strategyOption,
       ffOnly,
       squash,
       noCommit,
@@ -67,10 +91,37 @@ export function registerMergeTool(server: McpServer) {
         return dualOutput(mergeResult, formatMerge);
       }
 
+      // Handle --continue
+      if (cont) {
+        const result = await git(["merge", "--continue"], cwd);
+        if (result.exitCode !== 0) {
+          const combined = `${result.stdout}\n${result.stderr}`;
+          if (/CONFLICT/.test(combined)) {
+            const mergeResult = parseMerge(result.stdout, result.stderr, branch);
+            return dualOutput(mergeResult, formatMerge);
+          }
+          throw new Error(`git merge --continue failed: ${result.stderr}`);
+        }
+        const mergeResult = parseMerge(result.stdout, result.stderr, branch);
+        return dualOutput(mergeResult, formatMerge);
+      }
+
+      // Handle --quit
+      if (quit) {
+        const result = await git(["merge", "--quit"], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git merge --quit failed: ${result.stderr}`);
+        }
+        const mergeResult = parseMergeAbort(result.stdout, result.stderr);
+        return dualOutput(mergeResult, formatMerge);
+      }
+
       assertNoFlagInjection(branch, "branch");
       if (message) {
         assertNoFlagInjection(message, "message");
       }
+      if (strategy) assertNoFlagInjection(strategy, "strategy");
+      if (strategyOption) assertNoFlagInjection(strategyOption, "strategyOption");
 
       // Build merge args
       const args = ["merge"];
@@ -82,6 +133,8 @@ export function registerMergeTool(server: McpServer) {
       if (signoff) args.push("--signoff");
       if (autostash) args.push("--autostash");
       if (noVerify) args.push("--no-verify");
+      if (strategy) args.push(`--strategy=${strategy}`);
+      if (strategyOption) args.push(`-X${strategyOption}`);
       if (message) args.push("-m", message);
       args.push(branch);
 

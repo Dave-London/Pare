@@ -39,6 +39,38 @@ export function registerCommitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Reset author info on amended commits (--reset-author)"),
+        trailer: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Trailer strings to append (--trailer), e.g. 'Signed-off-by: Name <email>'"),
+        author: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Override author (--author), e.g. 'Name <email>'"),
+        date: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Override author date (--date)"),
+        fixup: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Create fixup commit for autosquash (--fixup=<commit>)"),
+        cleanup: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Control message whitespace handling (--cleanup), e.g. strip, whitespace, verbatim, scissors, default",
+          ),
+        reuseMessage: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Reuse message from existing commit (-C <commit>)"),
       },
       outputSchema: GitCommitSchema,
     },
@@ -54,10 +86,26 @@ export function registerCommitTool(server: McpServer) {
       dryRun,
       gpgSign,
       resetAuthor,
+      trailer,
+      author,
+      date,
+      fixup,
+      cleanup,
+      reuseMessage,
     }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(message, "commit message");
+      if (author) assertNoFlagInjection(author, "author");
+      if (date) assertNoFlagInjection(date, "date");
+      if (fixup) assertNoFlagInjection(fixup, "fixup");
+      if (cleanup) assertNoFlagInjection(cleanup, "cleanup");
+      if (reuseMessage) assertNoFlagInjection(reuseMessage, "reuseMessage");
+      if (trailer) {
+        for (const t of trailer) {
+          assertNoFlagInjection(t, "trailer");
+        }
+      }
 
       // Use --file - to pipe the message via stdin instead of -m.
       // This avoids cmd.exe argument escaping issues on Windows where
@@ -73,6 +121,16 @@ export function registerCommitTool(server: McpServer) {
       if (dryRun) args.push("--dry-run");
       if (gpgSign) args.push("--gpg-sign");
       if (resetAuthor) args.push("--reset-author");
+      if (author) args.push(`--author=${author}`);
+      if (date) args.push(`--date=${date}`);
+      if (fixup) args.push(`--fixup=${fixup}`);
+      if (cleanup) args.push(`--cleanup=${cleanup}`);
+      if (reuseMessage) args.push(`-C`, reuseMessage);
+      if (trailer) {
+        for (const t of trailer) {
+          args.push("--trailer", t);
+        }
+      }
       args.push("--file", "-");
 
       const result = await git(args, cwd, { stdin: message });

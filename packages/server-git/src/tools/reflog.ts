@@ -16,13 +16,18 @@ export function registerReflogTool(server: McpServer) {
     {
       title: "Git Reflog",
       description:
-        "Returns reference log entries as structured data, useful for recovery operations. Use instead of running `git reflog` in the terminal.",
+        "Returns reference log entries as structured data, useful for recovery operations. Also supports checking if a reflog exists. Use instead of running `git reflog` in the terminal.",
       inputSchema: {
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
+        action: z
+          .enum(["show", "exists"])
+          .optional()
+          .default("show")
+          .describe("Reflog action: show (list entries) or exists (check if reflog exists)"),
         maxCount: z
           .number()
           .optional()
@@ -33,6 +38,21 @@ export function registerReflogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Which ref to show (default: HEAD)"),
+        grepReflog: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter reflog by message pattern (--grep-reflog)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter entries after this date (--since)"),
+        until: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter entries before this date (--until)"),
         skip: z.number().optional().describe("Skip N entries for pagination (--skip)"),
         all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
         reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
@@ -46,13 +66,58 @@ export function registerReflogTool(server: McpServer) {
       },
       outputSchema: GitReflogSchema,
     },
-    async ({ path, maxCount, ref, skip, all, reverse, compact }) => {
+    async ({
+      path,
+      action,
+      maxCount,
+      ref,
+      grepReflog,
+      since,
+      until,
+      skip,
+      all,
+      reverse,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
+
+      // Handle exists action
+      if (action === "exists") {
+        const existsRef = ref || "HEAD";
+        assertNoFlagInjection(existsRef, "ref");
+        const result = await git(["reflog", "exists", existsRef], cwd);
+        // Exit code 0 = exists, non-zero = doesn't exist
+        const exists = result.exitCode === 0;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: exists
+                ? `Reflog for '${existsRef}' exists`
+                : `Reflog for '${existsRef}' does not exist`,
+            },
+          ],
+          structuredContent: { entries: [], total: exists ? 1 : 0 },
+        };
+      }
+
       const args = ["reflog", "show", `--format=${REFLOG_FORMAT}`, `--max-count=${maxCount ?? 20}`];
 
       if (skip !== undefined) args.push(`--skip=${skip}`);
       if (all) args.push("--all");
       if (reverse) args.push("--reverse");
+      if (grepReflog) {
+        assertNoFlagInjection(grepReflog, "grepReflog");
+        args.push(`--grep-reflog=${grepReflog}`);
+      }
+      if (since) {
+        assertNoFlagInjection(since, "since");
+        args.push(`--since=${since}`);
+      }
+      if (until) {
+        assertNoFlagInjection(until, "until");
+        args.push(`--until=${until}`);
+      }
 
       if (ref) {
         assertNoFlagInjection(ref, "ref");

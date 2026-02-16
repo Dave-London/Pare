@@ -14,7 +14,7 @@ export function registerBranchTool(server: McpServer) {
     {
       title: "Git Branch",
       description:
-        "Lists, creates, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
+        "Lists, creates, renames, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -26,11 +26,41 @@ export function registerBranchTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Create a new branch with this name"),
+        startPoint: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Start point for branch creation (commit, tag, or branch)"),
         delete: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Delete branch with this name"),
+        rename: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("New name when renaming the current branch (-m/-M)"),
+        setUpstream: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set tracking branch (-u/--set-upstream-to)"),
+        sort: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Sort branch list (--sort), e.g. -committerdate, authordate"),
+        contains: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter branches containing a commit (--contains)"),
+        pattern: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter branches matching a pattern (<pattern>)"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
         forceDelete: z.boolean().optional().describe("Force-delete unmerged branches (-D)"),
         merged: z.boolean().optional().describe("Filter to branches merged into HEAD (--merged)"),
@@ -54,7 +84,13 @@ export function registerBranchTool(server: McpServer) {
     async ({
       path,
       create,
+      startPoint,
       delete: deleteBranch,
+      rename,
+      setUpstream,
+      sort,
+      contains,
+      pattern,
       all,
       forceDelete,
       merged,
@@ -66,9 +102,29 @@ export function registerBranchTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
 
+      // Rename branch
+      if (rename) {
+        assertNoFlagInjection(rename, "branch name");
+        const renameFlag = force ? "-M" : "-m";
+        const result = await git(["branch", renameFlag, rename], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`Failed to rename branch: ${result.stderr}`);
+        }
+      }
+
+      // Set upstream
+      if (setUpstream) {
+        assertNoFlagInjection(setUpstream, "upstream");
+        const result = await git(["branch", `--set-upstream-to=${setUpstream}`], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`Failed to set upstream: ${result.stderr}`);
+        }
+      }
+
       // Create branch
       if (create) {
         assertNoFlagInjection(create, "branch name");
+        if (startPoint) assertNoFlagInjection(startPoint, "start point");
         const createArgs = ["checkout"];
         if (force) {
           createArgs.push("-B");
@@ -76,6 +132,7 @@ export function registerBranchTool(server: McpServer) {
           createArgs.push("-b");
         }
         createArgs.push(create);
+        if (startPoint) createArgs.push(startPoint);
         const result = await git(createArgs, cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to create branch: ${result.stderr}`);
@@ -99,6 +156,18 @@ export function registerBranchTool(server: McpServer) {
       if (merged) args.push("--merged");
       if (noMerged) args.push("--no-merged");
       if (verbose) args.push("-v");
+      if (sort) {
+        assertNoFlagInjection(sort, "sort");
+        args.push(`--sort=${sort}`);
+      }
+      if (contains) {
+        assertNoFlagInjection(contains, "contains");
+        args.push(`--contains=${contains}`);
+      }
+      if (pattern) {
+        assertNoFlagInjection(pattern, "pattern");
+        args.push(pattern);
+      }
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {

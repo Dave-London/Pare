@@ -134,6 +134,7 @@ export const GitPushSchema = z.object({
   remote: z.string(),
   branch: z.string(),
   summary: z.string(),
+  created: z.boolean().optional(),
 });
 
 export type GitPush = z.infer<typeof GitPushSchema>;
@@ -146,6 +147,8 @@ export const GitPullSchema = z.object({
   insertions: z.number(),
   deletions: z.number(),
   conflicts: z.array(z.string()),
+  upToDate: z.boolean().optional(),
+  fastForward: z.boolean().optional(),
 });
 
 export type GitPull = z.infer<typeof GitPullSchema>;
@@ -155,6 +158,7 @@ export const GitCheckoutSchema = z.object({
   ref: z.string(),
   previousRef: z.string(),
   created: z.boolean(),
+  detached: z.boolean().optional(),
 });
 
 export type GitCheckout = z.infer<typeof GitCheckoutSchema>;
@@ -185,6 +189,7 @@ export const GitStashEntrySchema = z.object({
   index: z.number(),
   message: z.string(),
   date: z.string(),
+  branch: z.string().optional(),
 });
 
 /** Zod schema for structured git stash list output with stash entries and total count. */
@@ -195,17 +200,18 @@ export const GitStashListSchema = z.object({
 
 /** Full stash list data (always returned by parser, before compact projection). */
 export type GitStashListFull = {
-  stashes: Array<{ index: number; message: string; date: string }>;
+  stashes: Array<{ index: number; message: string; date: string; branch?: string }>;
   total: number;
 };
 
 export type GitStashList = z.infer<typeof GitStashListSchema>;
 
-/** Zod schema for structured git stash push/pop/apply/drop output. */
+/** Zod schema for structured git stash push/pop/apply/drop/clear output. */
 export const GitStashSchema = z.object({
-  action: z.enum(["push", "pop", "apply", "drop"]),
+  action: z.enum(["push", "pop", "apply", "drop", "clear"]),
   success: z.boolean(),
   message: z.string(),
+  stashRef: z.string().optional(),
 });
 
 export type GitStash = z.infer<typeof GitStashSchema>;
@@ -215,6 +221,7 @@ export const GitRemoteEntrySchema = z.object({
   name: z.string(),
   fetchUrl: z.string(),
   pushUrl: z.string(),
+  protocol: z.enum(["ssh", "https", "http", "git", "file", "unknown"]).optional(),
 });
 
 /** Zod schema for structured git remote output with remote list and total count. */
@@ -225,7 +232,12 @@ export const GitRemoteSchema = z.object({
 
 /** Full remote data (always returned by parser, before compact projection). */
 export type GitRemoteFull = {
-  remotes: Array<{ name: string; fetchUrl: string; pushUrl: string }>;
+  remotes: Array<{
+    name: string;
+    fetchUrl: string;
+    pushUrl: string;
+    protocol?: "ssh" | "https" | "http" | "git" | "file" | "unknown";
+  }>;
   total: number;
 };
 
@@ -235,6 +247,7 @@ export type GitRemote = z.infer<typeof GitRemoteSchema>;
 export const GitBlameCommitSchema = z.object({
   hash: z.string(),
   author: z.string(),
+  email: z.string().optional(),
   date: z.string(),
   lines: z.array(z.object({ lineNumber: z.number(), content: z.string() })),
 });
@@ -254,6 +267,7 @@ export type GitBlameFull = {
   commits: Array<{
     hash: string;
     author: string;
+    email?: string;
     date: string;
     lines: Array<{ lineNumber: number; content: string }>;
   }>;
@@ -272,10 +286,11 @@ export const GitRestoreSchema = z.object({
 
 export type GitRestore = z.infer<typeof GitRestoreSchema>;
 
-/** Zod schema for structured git reset output with ref and list of unstaged files. */
+/** Zod schema for structured git reset output with ref, mode, and list of unstaged files. */
 export const GitResetSchema = z.object({
   ref: z.string(),
-  unstaged: z.array(z.string()),
+  mode: z.enum(["soft", "mixed", "hard", "merge", "keep"]).optional(),
+  filesAffected: z.array(z.string()),
 });
 
 export type GitReset = z.infer<typeof GitResetSchema>;
@@ -285,6 +300,7 @@ export const GitCherryPickSchema = z.object({
   success: z.boolean(),
   applied: z.array(z.string()),
   conflicts: z.array(z.string()),
+  newCommitHash: z.string().optional(),
 });
 
 export type GitCherryPick = z.infer<typeof GitCherryPickSchema>;
@@ -317,6 +333,7 @@ export const GitLogGraphEntrySchema = z.object({
   hashShort: z.string(),
   message: z.string(),
   refs: z.string().optional(),
+  isMerge: z.boolean().optional(),
 });
 
 /** Zod schema for a compact log-graph commit entry with abbreviated keys. */
@@ -335,7 +352,13 @@ export const GitLogGraphSchema = z.object({
 
 /** Full log-graph data (always returned by parser, before compact projection). */
 export type GitLogGraphFull = {
-  commits: Array<{ graph: string; hashShort: string; message: string; refs?: string }>;
+  commits: Array<{
+    graph: string;
+    hashShort: string;
+    message: string;
+    refs?: string;
+    isMerge?: boolean;
+  }>;
   total: number;
 };
 
@@ -374,7 +397,7 @@ export type GitReflog = z.infer<typeof GitReflogSchema>;
 
 /** Zod schema for structured git bisect output with action, current commit, remaining steps, and result. */
 export const GitBisectSchema = z.object({
-  action: z.enum(["start", "good", "bad", "reset", "status"]),
+  action: z.enum(["start", "good", "bad", "reset", "status", "skip"]),
   current: z.string().optional(),
   remaining: z.number().optional(),
   result: z
@@ -417,6 +440,7 @@ export const GitWorktreeSchema = z.object({
   success: z.boolean(),
   path: z.string(),
   branch: z.string(),
+  head: z.string().optional(),
 });
 
 export type GitWorktree = z.infer<typeof GitWorktreeSchema>;

@@ -86,7 +86,8 @@ export function formatCommit(c: GitCommit): string {
 
 /** Formats structured git push data into a human-readable push summary. */
 export function formatPush(p: GitPush): string {
-  return `Pushed to ${p.remote}/${p.branch}: ${p.summary}`;
+  const created = p.created ? " [new branch]" : "";
+  return `Pushed to ${p.remote}/${p.branch}${created}: ${p.summary}`;
 }
 
 /** Formats structured git pull data into a human-readable pull summary. */
@@ -98,11 +99,20 @@ export function formatPull(p: GitPull): string {
   if (p.conflicts.length > 0) {
     parts.push(`Conflicts: ${p.conflicts.join(", ")}`);
   }
+  if (p.upToDate) {
+    parts.push("(up to date)");
+  }
+  if (p.fastForward) {
+    parts.push("(fast-forward)");
+  }
   return parts.join("\n");
 }
 
 /** Formats structured git checkout data into a human-readable checkout summary. */
 export function formatCheckout(c: GitCheckout): string {
+  if (c.detached) {
+    return `HEAD is now detached at '${c.ref}' (was ${c.previousRef})`;
+  }
   if (c.created) {
     return `Created and switched to new branch '${c.ref}' (was ${c.previousRef})`;
   }
@@ -119,8 +129,9 @@ export function formatRestore(r: GitRestore): string {
 
 /** Formats structured git reset data into a human-readable reset summary. */
 export function formatReset(r: GitReset): string {
-  if (r.unstaged.length === 0) return `Reset to ${r.ref} — no files unstaged`;
-  return `Reset to ${r.ref}: unstaged ${r.unstaged.length} file(s): ${r.unstaged.join(", ")}`;
+  const modeStr = r.mode ? ` (${r.mode})` : "";
+  if (r.filesAffected.length === 0) return `Reset to ${r.ref}${modeStr} — no files affected`;
+  return `Reset to ${r.ref}${modeStr}: ${r.filesAffected.length} file(s) affected: ${r.filesAffected.join(", ")}`;
 }
 
 // ── Compact types, mappers, and formatters ───────────────────────────
@@ -196,22 +207,29 @@ export function formatBranchCompact(b: GitBranchCompact): string {
   return b.branches.map((name) => `${name === b.current ? "* " : "  "}${name}`).join("\n");
 }
 
-/** Compact show: hashShort + first line of message only, no diff or author details. */
+/** Compact show: hashShort + message + author + date, no diff. */
 export interface GitShowCompact {
   [key: string]: unknown;
   hashShort: string;
   message: string;
+  author?: string;
+  date?: string;
 }
 
 export function compactShowMap(s: GitShow): GitShowCompact {
   return {
     hashShort: s.hashShort ?? (s.hash ?? "").slice(0, 7),
     message: s.message.split("\n")[0],
+    ...(s.author ? { author: s.author } : {}),
+    ...(s.date ? { date: s.date } : {}),
   };
 }
 
 export function formatShowCompact(s: GitShowCompact): string {
-  return `${s.hashShort} ${s.message}`;
+  const parts = [`${s.hashShort} ${s.message}`];
+  if (s.author) parts.push(`Author: ${s.author}`);
+  if (s.date) parts.push(`Date: ${s.date}`);
+  return parts.join("\n");
 }
 
 // ── Tag formatters ───────────────────────────────────────────────────
@@ -253,7 +271,12 @@ export function formatTagCompact(t: GitTagCompact): string {
 /** Formats structured git stash list data into a human-readable stash listing. */
 export function formatStashList(s: GitStashListFull): string {
   if (s.stashes.length === 0) return "No stashes found";
-  return s.stashes.map((st) => `stash@{${st.index}}: ${st.message} (${st.date})`).join("\n");
+  return s.stashes
+    .map((st) => {
+      const branch = st.branch ? ` [${st.branch}]` : "";
+      return `stash@{${st.index}}: ${st.message}${branch} (${st.date})`;
+    })
+    .join("\n");
 }
 
 /** Compact stash list: just index + message as string array + total. */
@@ -279,7 +302,8 @@ export function formatStashListCompact(s: GitStashListCompact): string {
 
 /** Formats structured git stash result into a human-readable summary. */
 export function formatStash(s: GitStash): string {
-  return s.message;
+  const ref = s.stashRef ? ` (${s.stashRef})` : "";
+  return `${s.message}${ref}`;
 }
 
 // ── Remote formatters ────────────────────────────────────────────────
@@ -288,10 +312,10 @@ export function formatStash(s: GitStash): string {
 export function formatRemote(r: GitRemoteFull): string {
   if (r.remotes.length === 0) return "No remotes configured";
   return r.remotes
-    .map(
-      (remote) =>
-        `${remote.name}\t${remote.fetchUrl} (fetch)\n${remote.name}\t${remote.pushUrl} (push)`,
-    )
+    .map((remote) => {
+      const proto = remote.protocol ? ` [${remote.protocol}]` : "";
+      return `${remote.name}\t${remote.fetchUrl} (fetch)${proto}\n${remote.name}\t${remote.pushUrl} (push)`;
+    })
     .join("\n");
 }
 
@@ -395,7 +419,8 @@ export function formatCherryPick(cp: GitCherryPick): string {
   if (cp.applied.length === 0) {
     return "Cherry-pick completed (no commits applied)";
   }
-  return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}`;
+  const hashPart = cp.newCommitHash ? ` -> ${cp.newCommitHash}` : "";
+  return `Cherry-pick applied ${cp.applied.length} commit(s): ${cp.applied.join(", ")}${hashPart}`;
 }
 
 // ── Rebase formatters ─────────────────────────────────────────────────
@@ -454,7 +479,8 @@ export function formatLogGraph(lg: GitLogGraphFull): string {
     .map((c) => {
       if (c.hashShort === "") return c.graph;
       const refs = c.refs ? ` (${c.refs})` : "";
-      return `${c.graph} ${c.hashShort} ${c.message}${refs}`;
+      const merge = c.isMerge ? " [merge]" : "";
+      return `${c.graph} ${c.hashShort} ${c.message}${refs}${merge}`;
     })
     .join("\n");
 }
@@ -498,7 +524,7 @@ export function formatReflog(r: GitReflogFull): string {
     .join("\n");
 }
 
-/** Compact reflog: selector + action as string array + total. */
+/** Compact reflog: selector + action + description as string array + total. */
 export interface GitReflogCompact {
   [key: string]: unknown;
   entries: string[];
@@ -576,5 +602,6 @@ export function formatWorktreeListCompact(w: GitWorktreeListCompact): string {
 /** Formats structured git worktree add/remove result into a human-readable summary. */
 export function formatWorktree(w: GitWorktree): string {
   const branch = w.branch ? ` on branch '${w.branch}'` : "";
-  return `Worktree at '${w.path}'${branch}`;
+  const head = w.head ? ` at ${w.head}` : "";
+  return `Worktree at '${w.path}'${branch}${head}`;
 }

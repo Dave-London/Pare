@@ -13,7 +13,7 @@ export function registerCherryPickTool(server: McpServer) {
     {
       title: "Git Cherry-Pick",
       description:
-        "Applies specific commits to the current branch. Returns structured data with applied commits and any conflicts. Use instead of running `git cherry-pick` in the terminal.",
+        "Applies specific commits to the current branch. Returns structured data with applied commits, any conflicts, and new commit hash. Use instead of running `git cherry-pick` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -31,6 +31,16 @@ export function registerCherryPickTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Continue after resolving conflicts"),
+        skip: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip current cherry-pick and continue (--skip)"),
+        quit: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Quit cherry-pick without reverting (--quit)"),
         noCommit: z
           .boolean()
           .optional()
@@ -50,6 +60,16 @@ export function registerCherryPickTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Keep redundant/empty commits (--keep-redundant-commits)"),
+        strategy: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Merge strategy (--strategy), e.g. recursive, ort"),
+        strategyOption: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Strategy-specific option (-X/--strategy-option), e.g. theirs, ours"),
       },
       outputSchema: GitCherryPickSchema,
     },
@@ -58,6 +78,8 @@ export function registerCherryPickTool(server: McpServer) {
       const commits = input.commits;
       const abort = input.abort;
       const cont = input.continue;
+      const skip = input.skip;
+      const quit = input.quit;
       const noCommit = input.noCommit;
 
       // Handle abort
@@ -65,6 +87,26 @@ export function registerCherryPickTool(server: McpServer) {
         const result = await git(["cherry-pick", "--abort"], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`git cherry-pick --abort failed: ${result.stderr}`);
+        }
+        const parsed = parseCherryPick(result.stdout, result.stderr, result.exitCode, []);
+        return dualOutput(parsed, formatCherryPick);
+      }
+
+      // Handle skip
+      if (skip) {
+        const result = await git(["cherry-pick", "--skip"], cwd);
+        const parsed = parseCherryPick(result.stdout, result.stderr, result.exitCode, commits);
+        if (result.exitCode !== 0 && parsed.conflicts.length === 0) {
+          throw new Error(`git cherry-pick --skip failed: ${result.stderr}`);
+        }
+        return dualOutput(parsed, formatCherryPick);
+      }
+
+      // Handle quit
+      if (quit) {
+        const result = await git(["cherry-pick", "--quit"], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git cherry-pick --quit failed: ${result.stderr}`);
         }
         const parsed = parseCherryPick(result.stdout, result.stderr, result.exitCode, []);
         return dualOutput(parsed, formatCherryPick);
@@ -82,7 +124,7 @@ export function registerCherryPickTool(server: McpServer) {
 
       // Validate commits
       if (commits.length === 0) {
-        throw new Error("commits array is required when not using abort or continue");
+        throw new Error("commits array is required when not using abort, continue, skip, or quit");
       }
 
       for (const c of commits) {
@@ -97,6 +139,14 @@ export function registerCherryPickTool(server: McpServer) {
       if (input.allowEmpty) args.push("--allow-empty");
       if (input.signoff) args.push("--signoff");
       if (input.keepRedundantCommits) args.push("--keep-redundant-commits");
+      if (input.strategy) {
+        assertNoFlagInjection(input.strategy, "strategy");
+        args.push(`--strategy=${input.strategy}`);
+      }
+      if (input.strategyOption) {
+        assertNoFlagInjection(input.strategyOption, "strategyOption");
+        args.push(`-X${input.strategyOption}`);
+      }
       args.push(...commits);
 
       const result = await git(args, cwd);

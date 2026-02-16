@@ -13,7 +13,7 @@ export function registerResetTool(server: McpServer) {
     {
       title: "Git Reset",
       description:
-        "Unstages files by resetting them to a ref (default: HEAD). Returns structured data with the ref and list of unstaged files. Use instead of running `git reset` in the terminal.",
+        "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. Returns structured data with the ref, mode, and list of affected files. Use instead of running `git reset` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -31,6 +31,12 @@ export function registerResetTool(server: McpServer) {
           .optional()
           .default("HEAD")
           .describe("Ref to reset to (default: HEAD)"),
+        mode: z
+          .enum(["soft", "mixed", "hard", "merge", "keep"])
+          .optional()
+          .describe(
+            "Reset mode: soft (keep staged), mixed (default, unstage), hard (discard all), merge, keep",
+          ),
         intentToAdd: z.boolean().optional().describe("Keep paths in index as intent-to-add (-N)"),
         recurseSubmodules: z
           .boolean()
@@ -39,13 +45,14 @@ export function registerResetTool(server: McpServer) {
       },
       outputSchema: GitResetSchema,
     },
-    async ({ path, files, ref, intentToAdd, recurseSubmodules }) => {
+    async ({ path, files, ref, mode, intentToAdd, recurseSubmodules }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(ref, "ref");
 
-      // Build args: git reset <ref> -- [files...]
+      // Build args: git reset [--mode] <ref> -- [files...]
       const args = ["reset"];
+      if (mode) args.push(`--${mode}`);
       if (intentToAdd) args.push("-N");
       if (recurseSubmodules) args.push("--recurse-submodules");
       args.push(ref);
@@ -65,7 +72,7 @@ export function registerResetTool(server: McpServer) {
         throw new Error(`git reset failed: ${result.stderr}`);
       }
 
-      const resetResult = parseReset(result.stdout, result.stderr, ref);
+      const resetResult = parseReset(result.stdout, result.stderr, ref, mode);
       return dualOutput(resetResult, formatReset);
     },
   );

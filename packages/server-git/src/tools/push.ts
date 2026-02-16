@@ -13,7 +13,7 @@ export function registerPushTool(server: McpServer) {
     {
       title: "Git Push",
       description:
-        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, and summary. Use instead of running `git push` in the terminal.",
+        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, summary, and whether the remote branch was newly created. Use instead of running `git push` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -31,6 +31,11 @@ export function registerPushTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Branch to push (default: current branch)"),
+        refspec: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Explicit refspec (e.g. 'HEAD:refs/heads/branch')"),
         force: z.boolean().optional().default(false).describe("Force push (--force)"),
         setUpstream: z.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
         dryRun: z.boolean().optional().describe("Preview push without executing (--dry-run)"),
@@ -43,6 +48,11 @@ export function registerPushTool(server: McpServer) {
         delete: z.boolean().optional().describe("Delete remote branch/tag (--delete)"),
         noVerify: z.boolean().optional().describe("Bypass pre-push hook (--no-verify)"),
         atomic: z.boolean().optional().describe("Atomic push (--atomic)"),
+        pushOption: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Push options (-o/--push-option), e.g. 'ci.skip'"),
       },
       outputSchema: GitPushSchema,
     },
@@ -50,6 +60,7 @@ export function registerPushTool(server: McpServer) {
       path,
       remote,
       branch,
+      refspec,
       force,
       setUpstream,
       dryRun,
@@ -59,12 +70,21 @@ export function registerPushTool(server: McpServer) {
       delete: deleteBranch,
       noVerify,
       atomic,
+      pushOption,
     }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(remote, "remote");
       if (branch) {
         assertNoFlagInjection(branch, "branch");
+      }
+      if (refspec) {
+        assertNoFlagInjection(refspec, "refspec");
+      }
+      if (pushOption) {
+        for (const opt of pushOption) {
+          assertNoFlagInjection(opt, "pushOption");
+        }
       }
 
       const args = ["push"];
@@ -77,9 +97,16 @@ export function registerPushTool(server: McpServer) {
       if (deleteBranch) args.push("--delete");
       if (noVerify) args.push("--no-verify");
       if (atomic) args.push("--atomic");
+      if (pushOption) {
+        for (const opt of pushOption) {
+          args.push("-o", opt);
+        }
+      }
       args.push(remote);
 
-      if (branch) {
+      if (refspec) {
+        args.push(refspec);
+      } else if (branch) {
         args.push(branch);
       } else if (setUpstream) {
         // When setting upstream without an explicit branch, git needs the

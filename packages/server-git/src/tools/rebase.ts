@@ -13,7 +13,7 @@ export function registerRebaseTool(server: McpServer) {
     {
       title: "Git Rebase",
       description:
-        "Rebases the current branch onto a target branch. Supports abort and continue for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count. Use instead of running `git rebase` in the terminal.",
+        "Rebases the current branch onto a target branch. Supports abort, continue, skip, and quit for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count. Use instead of running `git rebase` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -24,13 +24,47 @@ export function registerRebaseTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("Target branch to rebase onto (required unless abort/continue)"),
+          .describe("Target branch to rebase onto (required unless abort/continue/skip/quit)"),
+        onto: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Rebase onto a different base (--onto)"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress rebase"),
         continue: z
           .boolean()
           .optional()
           .default(false)
           .describe("Continue after conflict resolution"),
+        skip: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip current commit during rebase (--skip)"),
+        quit: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Quit rebase without reverting (--quit)"),
+        strategy: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Merge strategy (--strategy), e.g. recursive, ort"),
+        strategyOption: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Strategy-specific option (-X), e.g. theirs, ours"),
+        exec: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Run command after each commit (--exec)"),
+        empty: z
+          .enum(["drop", "keep", "ask"])
+          .optional()
+          .describe("Control empty commit handling (--empty)"),
         autostash: z.boolean().optional().describe("Stash/unstash around rebase (--autostash)"),
         autosquash: z
           .boolean()
@@ -51,6 +85,8 @@ export function registerRebaseTool(server: McpServer) {
       const branch = params.branch;
       const abort = params.abort;
       const cont = params.continue;
+      const skip = params.skip;
+      const quit = params.quit;
 
       // Get current branch before rebase
       const currentResult = await git(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
@@ -61,6 +97,31 @@ export function registerRebaseTool(server: McpServer) {
         const result = await git(["rebase", "--abort"], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`git rebase --abort failed: ${result.stderr}`);
+        }
+        const rebaseResult = parseRebase(result.stdout, result.stderr, "", current);
+        return dualOutput(rebaseResult, formatRebase);
+      }
+
+      // Handle skip
+      if (skip) {
+        const result = await git(["rebase", "--skip"], cwd);
+        if (result.exitCode !== 0) {
+          const combined = `${result.stdout}\n${result.stderr}`;
+          if (/CONFLICT/.test(combined) || /could not apply/.test(combined)) {
+            const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
+            return dualOutput(rebaseResult, formatRebase);
+          }
+          throw new Error(`git rebase --skip failed: ${result.stderr}`);
+        }
+        const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
+        return dualOutput(rebaseResult, formatRebase);
+      }
+
+      // Handle quit
+      if (quit) {
+        const result = await git(["rebase", "--quit"], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git rebase --quit failed: ${result.stderr}`);
         }
         const rebaseResult = parseRebase(result.stdout, result.stderr, "", current);
         return dualOutput(rebaseResult, formatRebase);
@@ -86,10 +147,16 @@ export function registerRebaseTool(server: McpServer) {
 
       // Normal rebase — branch is required
       if (!branch) {
-        throw new Error("branch is required for rebase (unless using abort or continue)");
+        throw new Error(
+          "branch is required for rebase (unless using abort, continue, skip, or quit)",
+        );
       }
 
       assertNoFlagInjection(branch, "branch");
+      if (params.onto) assertNoFlagInjection(params.onto, "onto");
+      if (params.strategy) assertNoFlagInjection(params.strategy, "strategy");
+      if (params.strategyOption) assertNoFlagInjection(params.strategyOption, "strategyOption");
+      if (params.exec) assertNoFlagInjection(params.exec, "exec");
 
       // Count commits that will be rebased using git log
       const logResult = await git(["log", "--oneline", `${branch}..HEAD`], cwd);
@@ -105,6 +172,13 @@ export function registerRebaseTool(server: McpServer) {
       if (params.rebaseMerges) args.push("--rebase-merges");
       if (params.updateRefs) args.push("--update-refs");
       if (params.signoff) args.push("--signoff");
+      if (params.strategy) args.push(`--strategy=${params.strategy}`);
+      if (params.strategyOption) args.push(`-X${params.strategyOption}`);
+      if (params.exec) args.push(`--exec=${params.exec}`);
+      if (params.empty) args.push(`--empty=${params.empty}`);
+      if (params.onto) {
+        args.push("--onto", params.onto);
+      }
       args.push(branch);
       const result = await git(args, cwd);
 

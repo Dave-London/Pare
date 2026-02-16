@@ -13,7 +13,7 @@ export function registerBlameTool(server: McpServer) {
     {
       title: "Git Blame",
       description:
-        "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, date) and their attributed lines. Use instead of running `git blame` in the terminal.",
+        "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, email, date) and their attributed lines. Use instead of running `git blame` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -23,6 +23,33 @@ export function registerBlameTool(server: McpServer) {
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
         startLine: z.number().optional().describe("Start line number for blame range"),
         endLine: z.number().optional().describe("End line number for blame range"),
+        funcname: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Blame by function name (-L :<funcname>)"),
+        rev: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Blame from a specific commit/tag (<rev>)"),
+        ignoreRevsFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe(
+            "Path to file listing revisions to ignore (--ignore-revs-file), e.g. .git-blame-ignore-revs",
+          ),
+        ignoreRev: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Specific commit(s) to ignore (--ignore-rev, repeated)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Limit blame history to a date range (--since)"),
         detectMoves: z.boolean().optional().describe("Detect moved lines within a file (-M)"),
         detectCopies: z.boolean().optional().describe("Detect lines copied from other files (-C)"),
         ignoreWhitespace: z.boolean().optional().describe("Ignore whitespace changes (-w)"),
@@ -43,6 +70,11 @@ export function registerBlameTool(server: McpServer) {
       file,
       startLine,
       endLine,
+      funcname,
+      rev,
+      ignoreRevsFile,
+      ignoreRev,
+      since,
       detectMoves,
       detectCopies,
       ignoreWhitespace,
@@ -53,6 +85,15 @@ export function registerBlameTool(server: McpServer) {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(file, "file");
+      if (rev) assertNoFlagInjection(rev, "rev");
+      if (ignoreRevsFile) assertNoFlagInjection(ignoreRevsFile, "ignoreRevsFile");
+      if (ignoreRev) {
+        for (const r of ignoreRev) {
+          assertNoFlagInjection(r, "ignoreRev");
+        }
+      }
+      if (since) assertNoFlagInjection(since, "since");
+      if (funcname) assertNoFlagInjection(funcname, "funcname");
 
       // Resolve file path casing — git pathspecs are case-sensitive even on Windows
       const resolvedFile = await resolveFilePath(file, cwd);
@@ -63,11 +104,21 @@ export function registerBlameTool(server: McpServer) {
       if (ignoreWhitespace) args.push("-w");
       if (reverse) args.push("--reverse");
       if (showStats) args.push("--show-stats");
-      if (startLine !== undefined && endLine !== undefined) {
+      if (since) args.push(`--since=${since}`);
+      if (ignoreRevsFile) args.push(`--ignore-revs-file=${ignoreRevsFile}`);
+      if (ignoreRev) {
+        for (const r of ignoreRev) {
+          args.push(`--ignore-rev=${r}`);
+        }
+      }
+      if (funcname) {
+        args.push(`-L:${funcname}`);
+      } else if (startLine !== undefined && endLine !== undefined) {
         args.push(`-L${startLine},${endLine}`);
       } else if (startLine !== undefined) {
         args.push(`-L${startLine},`);
       }
+      if (rev) args.push(rev);
       args.push("--", resolvedFile);
 
       const result = await git(args, cwd);
