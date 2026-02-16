@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.8.5
+
+### Patch Changes
+
+- [#431](https://github.com/Dave-London/Pare/pull/431) [`7bb2541`](https://github.com/Dave-London/Pare/commit/7bb2541bfeaf27f1560ea1fdcecfff36dfb2068a) Thanks [@Dave-London](https://github.com/Dave-London)! - Align @paretools/shared version with all server packages
+
 ## 0.8.3
 
 ### Patch Changes

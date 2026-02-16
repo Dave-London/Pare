@@ -1,5 +1,12 @@
 # @paretools/go
 
+## 0.8.5
+
+### Patch Changes
+
+- Updated dependencies [[`7bb2541`](https://github.com/Dave-London/Pare/commit/7bb2541bfeaf27f1560ea1fdcecfff36dfb2068a)]:
+  - @paretools/shared@0.8.5
+
 ## 0.8.4
 
 ### Patch Changes
