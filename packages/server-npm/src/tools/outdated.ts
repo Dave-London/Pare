@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseOutdatedJson, parseYarnOutdatedJson } from "../lib/parsers.js";
@@ -24,18 +24,62 @@ export function registerOutdatedTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        production: z
+          .boolean()
+          .optional()
+          .describe(
+            "Check only production dependencies (maps to --omit=dev for npm, --prod for pnpm)",
+          ),
+        all: z
+          .boolean()
+          .optional()
+          .describe("Show all nested outdated dependencies (maps to --all for npm)"),
+        long: z
+          .boolean()
+          .optional()
+          .describe(
+            "Show extended info such as homepage and repository URLs (maps to --long for npm/pnpm)",
+          ),
+        compatible: z
+          .boolean()
+          .optional()
+          .describe("Show only semver-compatible updates (maps to --compatible for pnpm)"),
+        devOnly: z
+          .boolean()
+          .optional()
+          .describe("Check only dev dependencies (maps to --dev for pnpm)"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
       outputSchema: NpmOutdatedSchema,
     },
-    async ({ path, packageManager, filter }) => {
+    async ({
+      path,
+      production,
+      all,
+      long: showLong,
+      compatible,
+      devOnly,
+      packageManager,
+      filter,
+    }) => {
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
 
       const pmArgs: string[] = [];
       if (pm === "pnpm" && filter) pmArgs.push(`--filter=${filter}`);
       pmArgs.push("outdated", "--json");
+
+      if (production) {
+        if (pm === "npm") pmArgs.push("--omit=dev");
+        else if (pm === "pnpm") pmArgs.push("--prod");
+      }
+      if (all && pm === "npm") pmArgs.push("--all");
+      if (showLong && pm !== "yarn") pmArgs.push("--long");
+      if (compatible && pm === "pnpm") pmArgs.push("--compatible");
+      if (devOnly && pm === "pnpm") pmArgs.push("--dev");
 
       const result = await runPm(pm, pmArgs, cwd);
 

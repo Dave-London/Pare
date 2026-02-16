@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseListJson, parseYarnListJson } from "../lib/parsers.js";
@@ -36,12 +36,42 @@ export function registerListTool(server: McpServer) {
           .describe(
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
+        production: z
+          .boolean()
+          .optional()
+          .describe(
+            "Show only production dependencies (maps to --omit=dev for npm, --prod for pnpm)",
+          ),
+        all: z
+          .boolean()
+          .optional()
+          .describe("Show complete dependency tree (maps to --all for npm)"),
+        long: z
+          .boolean()
+          .optional()
+          .describe("Show extended info such as description and homepage (maps to --long)"),
+        global: z
+          .boolean()
+          .optional()
+          .describe("List globally installed packages (maps to --global)"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
       outputSchema: NpmListSchema,
     },
-    async ({ path, depth, compact, packageManager, filter }) => {
+    async ({
+      path,
+      depth,
+      compact,
+      production,
+      all,
+      long: showLong,
+      global: isGlobal,
+      packageManager,
+      filter,
+    }) => {
+      if (filter) assertNoFlagInjection(filter, "filter");
+
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
 
@@ -55,6 +85,14 @@ export function registerListTool(server: McpServer) {
         // pnpm uses "list" while npm uses "ls" — both accept "ls" too
         pmArgs.push(pm === "pnpm" ? "list" : "ls", "--json", `--depth=${depth ?? 0}`);
       }
+
+      if (production) {
+        if (pm === "npm") pmArgs.push("--omit=dev");
+        else if (pm === "pnpm") pmArgs.push("--prod");
+      }
+      if (all && pm !== "yarn") pmArgs.push("--all");
+      if (showLong && pm !== "yarn") pmArgs.push("--long");
+      if (isGlobal) pmArgs.push("--global");
 
       const result = await runPm(pm, pmArgs, cwd);
 

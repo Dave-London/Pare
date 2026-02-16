@@ -39,12 +39,64 @@ export function registerInstallTool(server: McpServer) {
           .describe(
             "Skip lifecycle scripts (preinstall/postinstall). Defaults to true for safety. Set to false if packages need postinstall scripts to run (e.g., esbuild, sharp).",
           ),
+        saveDev: z
+          .boolean()
+          .optional()
+          .describe("Install as dev dependency (maps to --save-dev / -D)"),
+        frozenLockfile: z
+          .boolean()
+          .optional()
+          .describe(
+            "Fail if lockfile needs updating — for CI workflows (maps to --frozen-lockfile for pnpm/yarn, --ci for npm)",
+          ),
+        dryRun: z
+          .boolean()
+          .optional()
+          .describe(
+            "Preview what would be installed without actually installing (maps to --dry-run)",
+          ),
+        production: z
+          .boolean()
+          .optional()
+          .describe(
+            "Install only production dependencies (maps to --omit=dev for npm, --prod for pnpm, --production for yarn)",
+          ),
+        legacyPeerDeps: z
+          .boolean()
+          .optional()
+          .describe("Ignore peer dependency conflicts (maps to --legacy-peer-deps, npm only)"),
+        force: z
+          .boolean()
+          .optional()
+          .describe("Force reinstallation of all packages (maps to --force)"),
+        noAudit: z
+          .boolean()
+          .optional()
+          .describe("Skip the automatic audit step to speed up installation (maps to --no-audit)"),
+        exact: z
+          .boolean()
+          .optional()
+          .describe("Save exact versions instead of semver ranges (maps to --save-exact / -E)"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
       outputSchema: NpmInstallSchema,
     },
-    async ({ path, args, ignoreScripts, packageManager, filter }) => {
+    async ({
+      path,
+      args,
+      ignoreScripts,
+      saveDev,
+      frozenLockfile,
+      dryRun,
+      production,
+      legacyPeerDeps,
+      force,
+      noAudit,
+      exact,
+      packageManager,
+      filter,
+    }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -56,9 +108,24 @@ export function registerInstallTool(server: McpServer) {
       const flags: string[] = [];
       if (ignoreScripts) flags.push("--ignore-scripts");
       if (pm === "pnpm" && filter) flags.push(`--filter=${filter}`);
+      if (saveDev) flags.push("--save-dev");
+      if (frozenLockfile) {
+        if (pm !== "npm") flags.push("--frozen-lockfile");
+      }
+      if (dryRun) flags.push("--dry-run");
+      if (production) {
+        if (pm === "npm") flags.push("--omit=dev");
+        else if (pm === "pnpm") flags.push("--prod");
+        else flags.push("--production");
+      }
+      if (legacyPeerDeps && pm === "npm") flags.push("--legacy-peer-deps");
+      if (force) flags.push("--force");
+      if (noAudit) flags.push("--no-audit");
+      if (exact) flags.push("--save-exact");
 
+      const subcommand = frozenLockfile && pm === "npm" ? "ci" : "install";
       const start = Date.now();
-      const result = await runPm(pm, ["install", ...flags, ...(args || [])], cwd);
+      const result = await runPm(pm, [subcommand, ...flags, ...(args || [])], cwd);
       const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
 
       const output = result.stdout + "\n" + result.stderr;

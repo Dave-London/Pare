@@ -24,14 +24,24 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        packageLockOnly: z
+          .boolean()
+          .optional()
+          .describe(
+            "Audit from lockfile without requiring node_modules (maps to --package-lock-only for npm)",
+          ),
         packageManager: packageManagerInput,
       },
       outputSchema: NpmAuditSchema,
     },
-    async ({ path, packageManager }) => {
+    async ({ path, packageLockOnly, packageManager }) => {
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
-      const result = await runPm(pm, ["audit", "--json"], cwd);
+
+      const pmArgs = ["audit", "--json"];
+      if (packageLockOnly && pm === "npm") pmArgs.push("--package-lock-only");
+
+      const result = await runPm(pm, pmArgs, cwd);
 
       // audit returns exit code 1 when vulnerabilities are found, which is expected
       const output = result.stdout || result.stderr;
