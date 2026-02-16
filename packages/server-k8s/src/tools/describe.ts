@@ -24,6 +24,16 @@ export function registerDescribeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Kubernetes namespace (omit for default)"),
+        allNamespaces: z
+          .boolean()
+          .optional()
+          .describe("Describe resources across all namespaces (-A)"),
+        showEvents: z
+          .boolean()
+          .optional()
+          .describe(
+            "Show events in describe output (default: true). Set false to hide events (--show-events=false)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -34,13 +44,20 @@ export function registerDescribeTool(server: McpServer) {
       },
       outputSchema: KubectlDescribeResultSchema,
     },
-    async ({ resource, name, namespace, compact }) => {
+    async ({ resource, name, namespace, allNamespaces, showEvents, compact }) => {
       assertNoFlagInjection(resource, "resource");
       assertNoFlagInjection(name, "name");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
 
       const args = ["describe", resource, name];
-      if (namespace) args.push("-n", namespace);
+      if (allNamespaces) {
+        args.push("-A");
+      } else if (namespace) {
+        args.push("-n", namespace);
+      }
+      if (showEvents === false) {
+        args.push("--show-events=false");
+      }
 
       const result = await run("kubectl", args, { timeout: 60_000 });
       const data = parseDescribeOutput(
