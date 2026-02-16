@@ -3,10 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import type { parsePrDiffNumstat } from "../lib/parsers.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../lib/formatters.js";
-import { PrDiffResultSchema } from "../schemas/index.js";
-import type { PrDiffResult } from "../schemas/index.js";
+import { PrDiffResultSchema, type PrDiffResult } from "../schemas/index.js";
 
 /** Maximum diff output size before marking as truncated (256 KB). */
 const MAX_DIFF_SIZE = 256 * 1024;
