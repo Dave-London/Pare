@@ -89,7 +89,10 @@ describe("@paretools/go integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(sc.total).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.errors)).toBe(true);
+        // errors is conditionally included (only when non-empty)
+        if (sc.errors !== undefined) {
+          expect(Array.isArray(sc.errors)).toBe(true);
+        }
       }
     });
   });
