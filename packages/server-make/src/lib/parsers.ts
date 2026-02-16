@@ -69,8 +69,11 @@ export function parseJustList(stdout: string): {
  * We extract lines matching `^[a-zA-Z0-9_-]+:` that are not built-in targets
  * (starting with `.`) and not comments.
  */
-export function parseMakeTargets(stdout: string): { targets: { name: string }[]; total: number } {
-  const targets: { name: string }[] = [];
+export function parseMakeTargets(stdout: string): {
+  targets: { name: string; description?: string }[];
+  total: number;
+} {
+  const targets: { name: string; description?: string }[] = [];
   const seen = new Set<string>();
 
   // The make -pRrq output includes a "# Files" section followed by rules.
@@ -94,6 +97,48 @@ export function parseMakeTargets(stdout: string): { targets: { name: string }[];
   }
 
   return { targets, total: targets.length };
+}
+
+/**
+ * Enriches parsed make targets with descriptions extracted from the Makefile source.
+ *
+ * Supports the common `target: [deps] ## Description text` convention where a
+ * double-hash comment at the end of the target rule line serves as documentation.
+ * This convention is widely used in Makefiles that provide a `help` target.
+ *
+ * @param targets - Targets previously extracted from `make -pRrq` output
+ * @param makefileSource - Raw contents of the Makefile
+ * @returns The same targets array, mutated with `description` fields where found
+ */
+export function enrichMakeTargetDescriptions(
+  targets: { name: string; description?: string }[],
+  makefileSource: string,
+): { name: string; description?: string }[] {
+  // Build a map of target name → description from lines matching: target: ... ## desc
+  const descMap = new Map<string, string>();
+  // Match: targetname: [anything] ## description
+  const descRe = /^([a-zA-Z0-9_][a-zA-Z0-9_.\-/]*):[^#]*##\s*(.+)$/;
+
+  for (const line of makefileSource.split("\n")) {
+    const match = line.match(descRe);
+    if (match) {
+      const name = match[1];
+      const desc = match[2].trim();
+      if (desc) {
+        descMap.set(name, desc);
+      }
+    }
+  }
+
+  // Enrich targets with descriptions
+  for (const target of targets) {
+    const desc = descMap.get(target.name);
+    if (desc) {
+      target.description = desc;
+    }
+  }
+
+  return targets;
 }
 
 /**

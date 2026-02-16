@@ -253,7 +253,7 @@ describe("formatInit", () => {
     expect(output).toBe("Created my-new-project@1.0.0 at /home/user/my-new-project/package.json");
   });
 
-  it("formats failed init", () => {
+  it("formats failed init without stderr", () => {
     const data: NpmInit = {
       packageManager: "npm",
       success: false,
@@ -263,6 +263,21 @@ describe("formatInit", () => {
     };
     const output = formatInit(data);
     expect(output).toBe("Failed to initialize package.json at /home/user/restricted");
+  });
+
+  it("formats failed init with stderr", () => {
+    const data: NpmInit = {
+      packageManager: "npm",
+      success: false,
+      packageName: "",
+      version: "",
+      path: "/home/user/restricted",
+      stderr: "npm ERR! EACCES: permission denied",
+    };
+    const output = formatInit(data);
+    expect(output).toContain("Failed to initialize package.json at /home/user/restricted");
+    expect(output).toContain("stderr:");
+    expect(output).toContain("npm ERR! EACCES: permission denied");
   });
 });
 

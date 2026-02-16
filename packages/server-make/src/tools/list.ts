@@ -2,9 +2,16 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { makeCmd, justCmd, resolveTool } from "../lib/make-runner.js";
-import { parseJustList, parseMakeTargets, buildListResult } from "../lib/parsers.js";
+import {
+  parseJustList,
+  parseMakeTargets,
+  enrichMakeTargetDescriptions,
+  buildListResult,
+} from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { MakeListResultSchema } from "../schemas/index.js";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 /** Registers the `list` tool on the given MCP server. */
 export function registerListTool(server: McpServer) {
@@ -86,6 +93,15 @@ export function registerListTool(server: McpServer) {
         // prints the database to stdout. We only care about stdout.
         rawOutput = result.stdout.trim();
         parsed = parseMakeTargets(result.stdout);
+
+        // Enrich targets with ## descriptions from the Makefile source
+        const makefilePath = file || join(cwd, "Makefile");
+        try {
+          const makefileSource = await readFile(makefilePath, "utf-8");
+          enrichMakeTargetDescriptions(parsed.targets, makefileSource);
+        } catch {
+          // Makefile not readable (e.g. generated targets only) — skip enrichment
+        }
       }
 
       // Apply client-side filter if provided

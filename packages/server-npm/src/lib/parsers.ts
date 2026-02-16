@@ -346,12 +346,15 @@ export function parseInitOutput(
   packageName: string,
   version: string,
   packageJsonPath: string,
+  stderr?: string,
 ): NpmInit {
+  const trimmed = stderr?.trim();
   return {
     success,
     packageName,
     version,
     path: packageJsonPath,
+    ...(trimmed ? { stderr: trimmed } : {}),
   };
 }
 
