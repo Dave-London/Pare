@@ -38,6 +38,14 @@ export function registerGetTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Label selector (e.g., app=nginx)"),
+        ignoreNotFound: z
+          .boolean()
+          .optional()
+          .describe("Suppress not-found errors instead of failing (--ignore-not-found)"),
+        chunkSize: z
+          .number()
+          .optional()
+          .describe("Number of results to return per request for pagination (--chunk-size)"),
         compact: z
           .boolean()
           .optional()
@@ -48,7 +56,16 @@ export function registerGetTool(server: McpServer) {
       },
       outputSchema: KubectlGetResultSchema,
     },
-    async ({ resource, name, namespace, allNamespaces, selector, compact }) => {
+    async ({
+      resource,
+      name,
+      namespace,
+      allNamespaces,
+      selector,
+      ignoreNotFound,
+      chunkSize,
+      compact,
+    }) => {
       assertNoFlagInjection(resource, "resource");
       if (name) assertNoFlagInjection(name, "name");
       if (namespace) assertNoFlagInjection(namespace, "namespace");
@@ -62,6 +79,8 @@ export function registerGetTool(server: McpServer) {
         args.push("-n", namespace);
       }
       if (selector) args.push("-l", selector);
+      if (ignoreNotFound) args.push("--ignore-not-found");
+      if (chunkSize !== undefined) args.push("--chunk-size", String(chunkSize));
       args.push("-o", "json");
 
       const result = await run("kubectl", args, { timeout: 60_000 });
