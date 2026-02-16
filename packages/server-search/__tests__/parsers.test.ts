@@ -182,7 +182,7 @@ describe("parseRgJsonOutput", () => {
 });
 
 describe("parseFdOutput", () => {
-  it("parses fd output with file paths", () => {
+  it("parses fd output with file paths and normalized extensions", () => {
     const stdout = ["src/index.ts", "src/lib/parsers.ts", "README.md"].join("\n");
 
     const result = parseFdOutput(stdout, 1000);
@@ -192,17 +192,17 @@ describe("parseFdOutput", () => {
     expect(result.files[0]).toEqual({
       path: "src/index.ts",
       name: "index.ts",
-      ext: ".ts",
+      ext: "ts",
     });
     expect(result.files[1]).toEqual({
       path: "src/lib/parsers.ts",
       name: "parsers.ts",
-      ext: ".ts",
+      ext: "ts",
     });
     expect(result.files[2]).toEqual({
       path: "README.md",
       name: "README.md",
-      ext: ".md",
+      ext: "md",
     });
   });
 

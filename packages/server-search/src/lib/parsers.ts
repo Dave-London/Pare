@@ -91,6 +91,15 @@ export function parseRgJsonOutput(stdout: string, maxResults: number): SearchRes
 // ── fd parser ───────────────────────────────────────────────────────
 
 /**
+ * Normalizes a file extension by stripping the leading dot.
+ * This ensures output format matches the input format used in the `extension` param.
+ * e.g., ".ts" -> "ts", ".json" -> "json", "" -> ""
+ */
+function normalizeExt(ext: string): string {
+  return ext.startsWith(".") ? ext.slice(1) : ext;
+}
+
+/**
  * Parses `fd` output (one file path per line) into a structured FindResult.
  * Extracts basename and extension for each entry.
  */
@@ -105,7 +114,7 @@ export function parseFdOutput(stdout: string, maxResults: number): FindResult {
     if (!filePath) continue;
 
     const name = path.basename(filePath);
-    const ext = path.extname(filePath);
+    const ext = normalizeExt(path.extname(filePath));
 
     files.push({
       path: filePath,

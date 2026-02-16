@@ -26,14 +26,35 @@ export function registerFindTool(server: McpServer) {
           .optional()
           .describe("Directory to search in (default: cwd)"),
         type: z
-          .enum(["file", "directory", "symlink"])
+          .enum(["file", "directory", "symlink", "executable", "empty"])
           .optional()
-          .describe("Filter by entry type: file, directory, or symlink"),
+          .describe("Filter by entry type: file, directory, symlink, executable, or empty"),
         extension: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by file extension (e.g., 'ts', 'js')"),
+        exclude: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Exclude entries matching this glob pattern (maps to --exclude, e.g., 'node_modules', 'dist')",
+          ),
+        size: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Filter by file size (maps to --size, e.g., '+1m' for >1MB, '-100k' for <100KB)",
+          ),
+        changedWithin: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Filter by modification time (maps to --changed-within, e.g., '1d', '2h', '30min')",
+          ),
         maxResults: z
           .number()
           .optional()
@@ -73,6 +94,9 @@ export function registerFindTool(server: McpServer) {
       path,
       type,
       extension,
+      exclude,
+      size,
+      changedWithin,
       maxResults,
       maxDepth,
       hidden,
@@ -86,17 +110,38 @@ export function registerFindTool(server: McpServer) {
       if (pattern) assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (extension) assertNoFlagInjection(extension, "extension");
+      if (exclude) assertNoFlagInjection(exclude, "exclude");
+      if (size) assertNoFlagInjection(size, "size");
+      if (changedWithin) assertNoFlagInjection(changedWithin, "changedWithin");
 
       const cwd = path || process.cwd();
       const args = ["--color", "never"];
 
       if (type) {
-        const typeMap = { file: "f", directory: "d", symlink: "l" } as const;
+        const typeMap = {
+          file: "f",
+          directory: "d",
+          symlink: "l",
+          executable: "x",
+          empty: "e",
+        } as const;
         args.push("--type", typeMap[type]);
       }
 
       if (extension) {
         args.push("--extension", extension);
+      }
+
+      if (exclude) {
+        args.push("--exclude", exclude);
+      }
+
+      if (size) {
+        args.push("--size", size);
+      }
+
+      if (changedWithin) {
+        args.push("--changed-within", changedWithin);
       }
 
       if (maxResults) {

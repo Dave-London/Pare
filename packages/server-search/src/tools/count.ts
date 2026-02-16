@@ -34,6 +34,12 @@ export function registerCountTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Case-sensitive search (default: true)"),
+        maxResults: z
+          .number()
+          .optional()
+          .describe(
+            "Maximum number of files to include in results — truncates per-file list to prevent excessive output in large repos",
+          ),
         countMatches: z
           .boolean()
           .optional()
@@ -52,6 +58,17 @@ export function registerCountTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Show files with zero matches (--include-zero)"),
+        type: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Filter by file type (e.g., 'ts', 'js', 'py', 'rust'). Maps to --type TYPE."),
+        sort: z
+          .enum(["path", "count"])
+          .optional()
+          .describe(
+            "Sort results: 'path' for alphabetical by file path, 'count' for descending match count",
+          ),
         maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
         noIgnore: z
           .boolean()
@@ -72,12 +89,15 @@ export function registerCountTool(server: McpServer) {
       path,
       glob,
       caseSensitive,
+      maxResults,
       countMatches,
       fixedStrings,
       wordRegexp,
       invertMatch,
       hidden,
       includeZero,
+      type,
+      sort,
       maxDepth,
       noIgnore,
       compact,
@@ -85,6 +105,7 @@ export function registerCountTool(server: McpServer) {
       assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
+      if (type) assertNoFlagInjection(type, "type");
 
       const cwd = path || process.cwd();
       const args = countMatches ? ["--count-matches"] : ["--count"];
@@ -113,6 +134,10 @@ export function registerCountTool(server: McpServer) {
         args.push("--include-zero");
       }
 
+      if (type) {
+        args.push("--type", type);
+      }
+
       if (maxDepth !== undefined) {
         args.push("--max-depth", String(maxDepth));
       }
@@ -133,7 +158,25 @@ export function registerCountTool(server: McpServer) {
       const result = await rgCmd(args, cwd);
 
       // rg exits with code 1 when no matches are found — that's not an error
-      const data = parseRgCountOutput(result.stdout);
+      let data = parseRgCountOutput(result.stdout);
+
+      // Apply client-side sort if requested
+      if (sort && data.files) {
+        if (sort === "path") {
+          data.files.sort((a, b) => a.file.localeCompare(b.file));
+        } else if (sort === "count") {
+          data.files.sort((a, b) => b.count - a.count);
+        }
+      }
+
+      // Apply maxResults truncation to the per-file list
+      if (maxResults !== undefined && data.files && data.files.length > maxResults) {
+        data = {
+          ...data,
+          files: data.files.slice(0, maxResults),
+        };
+      }
+
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return compactDualOutput(
