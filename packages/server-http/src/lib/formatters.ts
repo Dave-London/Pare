@@ -44,6 +44,10 @@ export function formatHttpHeadResponse(data: HttpHeadResponse): string {
     lines.push(`Content-Type: ${data.contentType}`);
   }
 
+  if (data.contentLength !== undefined) {
+    lines.push(`Content-Length: ${data.contentLength}`);
+  }
+
   lines.push(`Time: ${data.timing.total.toFixed(3)}s`);
 
   const headers = data.headers ?? {};
@@ -82,6 +86,7 @@ export function compactHeadResponseMap(data: HttpHeadResponse): HttpHeadResponse
     status: data.status,
     statusText: data.statusText,
     contentType: data.contentType,
+    contentLength: data.contentLength,
     timing: data.timing,
   };
 }
@@ -89,5 +94,6 @@ export function compactHeadResponseMap(data: HttpHeadResponse): HttpHeadResponse
 /** Formats compact HEAD response. */
 export function formatHeadResponseCompact(data: HttpHeadResponseCompact): string {
   const ct = data.contentType ? ` (${data.contentType})` : "";
-  return `HTTP ${data.status} ${data.statusText}${ct} | ${data.timing.total.toFixed(3)}s`;
+  const cl = data.contentLength !== undefined ? ` | ${data.contentLength} bytes` : "";
+  return `HTTP ${data.status} ${data.statusText}${ct}${cl} | ${data.timing.total.toFixed(3)}s`;
 }

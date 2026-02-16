@@ -179,6 +179,183 @@ describe("security: buildCurlArgs safety", () => {
     expect(args).toContain("--data-raw");
     expect(args).not.toContain("--data");
   });
+
+  it("includes --connect-timeout for connectTimeout", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      connectTimeout: 5,
+      followRedirects: true,
+    });
+
+    const idx = args.indexOf("--connect-timeout");
+    expect(idx).toBeGreaterThan(-1);
+    expect(args[idx + 1]).toBe("5");
+  });
+
+  it("does not include --connect-timeout when not specified", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+    });
+
+    expect(args).not.toContain("--connect-timeout");
+  });
+
+  it("includes -u for basicAuth", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      basicAuth: "user:pass",
+    });
+
+    const idx = args.indexOf("-u");
+    expect(idx).toBeGreaterThan(-1);
+    expect(args[idx + 1]).toBe("user:pass");
+  });
+
+  it("includes -x for proxy", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      proxy: "http://proxy:8080",
+    });
+
+    const idx = args.indexOf("-x");
+    expect(idx).toBeGreaterThan(-1);
+    expect(args[idx + 1]).toBe("http://proxy:8080");
+  });
+
+  it("includes --http1.1 for httpVersion 1.1", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      httpVersion: "1.1",
+    });
+
+    expect(args).toContain("--http1.1");
+  });
+
+  it("includes --http2 for httpVersion 2", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      httpVersion: "2",
+    });
+
+    expect(args).toContain("--http2");
+  });
+
+  it("includes --http1.0 for httpVersion 1.0", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      httpVersion: "1.0",
+    });
+
+    expect(args).toContain("--http1.0");
+  });
+
+  it("includes -b for cookie", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      cookie: "session=abc123; theme=dark",
+    });
+
+    const idx = args.indexOf("-b");
+    expect(idx).toBeGreaterThan(-1);
+    expect(args[idx + 1]).toBe("session=abc123; theme=dark");
+  });
+
+  it("includes --resolve for custom DNS resolution", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 30,
+      followRedirects: true,
+      resolve: "example.com:443:127.0.0.1",
+    });
+
+    const idx = args.indexOf("--resolve");
+    expect(idx).toBeGreaterThan(-1);
+    expect(args[idx + 1]).toBe("example.com:443:127.0.0.1");
+  });
+
+  it("uses -I flag when useHeadFlag is true (instead of -X HEAD)", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "HEAD",
+      timeout: 30,
+      followRedirects: true,
+      useHeadFlag: true,
+    });
+
+    expect(args).toContain("-I");
+    expect(args).not.toContain("-X");
+  });
+
+  it("includes --post301/302/303 for preserveMethodOnRedirect", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "POST",
+      body: '{"key":"value"}',
+      timeout: 30,
+      followRedirects: true,
+      preserveMethodOnRedirect: true,
+    });
+
+    expect(args).toContain("--post301");
+    expect(args).toContain("--post302");
+    expect(args).toContain("--post303");
+  });
+
+  it("does not include --post301/302/303 when preserveMethodOnRedirect is not set", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "POST",
+      body: '{"key":"value"}',
+      timeout: 30,
+      followRedirects: true,
+    });
+
+    expect(args).not.toContain("--post301");
+    expect(args).not.toContain("--post302");
+    expect(args).not.toContain("--post303");
+  });
+
+  it("includes --data-urlencode for dataUrlencode items", () => {
+    const args = buildCurlArgs({
+      url: "https://example.com",
+      method: "POST",
+      timeout: 30,
+      followRedirects: true,
+      dataUrlencode: ["name=John Doe", "city=New York"],
+    });
+
+    const firstIdx = args.indexOf("--data-urlencode");
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(args[firstIdx + 1]).toBe("name=John Doe");
+
+    const secondIdx = args.indexOf("--data-urlencode", firstIdx + 1);
+    expect(secondIdx).toBeGreaterThan(-1);
+    expect(args[secondIdx + 1]).toBe("city=New York");
+  });
 });
 
 // ---------------------------------------------------------------------------

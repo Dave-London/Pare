@@ -28,6 +28,7 @@ export const HttpHeadResponseSchema = z.object({
   headers: HttpHeadersSchema.optional(),
   timing: HttpTimingSchema,
   contentType: z.string().optional(),
+  contentLength: z.number().optional(),
 });
 
 export type HttpHeadResponse = z.infer<typeof HttpHeadResponseSchema>;
@@ -48,6 +49,7 @@ export const HttpHeadResponseCompactSchema = z.object({
   status: z.number(),
   statusText: z.string(),
   contentType: z.string().optional(),
+  contentLength: z.number().optional(),
   timing: HttpTimingSchema,
 });
 

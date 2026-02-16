@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { curlCmd } from "../lib/curl-runner.js";
 import { parseCurlHeadOutput } from "../lib/parsers.js";
 import {
@@ -11,6 +11,8 @@ import {
 import { HttpHeadResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
+
+const HTTP_VERSIONS = ["1.0", "1.1", "2"] as const;
 
 /** Registers the `head` tool on the given MCP server. */
 export function registerHeadTool(server: McpServer) {
@@ -39,6 +41,14 @@ export function registerHeadTool(server: McpServer) {
           .optional()
           .default(30)
           .describe("Request timeout in seconds (default: 30)"),
+        connectTimeout: z
+          .number()
+          .min(1)
+          .max(300)
+          .optional()
+          .describe(
+            "Maximum time in seconds for connection phase only (--connect-timeout). Fast failure for availability probing.",
+          ),
         followRedirects: z
           .boolean()
           .optional()
@@ -54,6 +64,27 @@ export function registerHeadTool(server: McpServer) {
           .max(10)
           .optional()
           .describe("Number of retries on transient failures (--retry)"),
+        basicAuth: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Basic auth credentials as 'user:password' (-u)"),
+        proxy: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Proxy URL (e.g., http://proxy:8080) (-x)"),
+        httpVersion: z
+          .enum(HTTP_VERSIONS)
+          .optional()
+          .describe("HTTP version to use: '1.0', '1.1', or '2' (--http1.0/--http1.1/--http2)"),
+        resolve: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Custom DNS resolution (--resolve). Format: 'host:port:addr' (e.g., 'example.com:443:127.0.0.1')",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -69,17 +100,40 @@ export function registerHeadTool(server: McpServer) {
       },
       outputSchema: HttpHeadResponseSchema,
     },
-    async ({ url, headers, timeout, followRedirects, insecure, retry, compact, path }) => {
+    async ({
+      url,
+      headers,
+      timeout,
+      connectTimeout,
+      followRedirects,
+      insecure,
+      retry,
+      basicAuth,
+      proxy,
+      httpVersion,
+      resolve,
+      compact,
+      path,
+    }) => {
       assertSafeUrl(url);
+      if (basicAuth) assertNoFlagInjection(basicAuth, "basicAuth");
+      if (proxy) assertNoFlagInjection(proxy, "proxy");
+      if (resolve) assertNoFlagInjection(resolve, "resolve");
 
       const args = buildCurlArgs({
         url,
         method: "HEAD",
         headers,
         timeout: timeout ?? 30,
+        connectTimeout,
         followRedirects: followRedirects ?? true,
         insecure,
         retry,
+        basicAuth,
+        proxy,
+        httpVersion,
+        resolve,
+        useHeadFlag: true, // Use -I instead of -X HEAD to avoid potential hangs
       });
 
       const cwd = path || process.cwd();

@@ -12,6 +12,8 @@ import { HttpResponseSchema } from "../schemas/index.js";
 import { assertSafeUrl } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
 
+const HTTP_VERSIONS = ["1.0", "1.1", "2"] as const;
+
 /** Registers the `post` tool on the given MCP server. */
 export function registerPostTool(server: McpServer) {
   server.registerTool(
@@ -46,11 +48,25 @@ export function registerPostTool(server: McpServer) {
           .optional()
           .default(30)
           .describe("Request timeout in seconds (default: 30)"),
+        connectTimeout: z
+          .number()
+          .min(1)
+          .max(300)
+          .optional()
+          .describe(
+            "Maximum time in seconds for connection phase only (--connect-timeout). Detects connection failures fast.",
+          ),
         followRedirects: z
           .boolean()
           .optional()
           .default(true)
           .describe("Follow HTTP redirects (default: true)"),
+        preserveMethodOnRedirect: z
+          .boolean()
+          .optional()
+          .describe(
+            "Preserve POST method on 301/302/303 redirects instead of converting to GET (--post301/--post302/--post303)",
+          ),
         insecure: z
           .boolean()
           .optional()
@@ -64,6 +80,26 @@ export function registerPostTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Request compressed response and decompress automatically (--compressed)"),
+        basicAuth: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Basic auth credentials as 'user:password' (-u)"),
+        proxy: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Proxy URL (e.g., http://proxy:8080) (-x)"),
+        dataUrlencode: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "URL-encoded form data items (--data-urlencode). Each item is 'key=value'. Use instead of manual URL encoding.",
+          ),
+        httpVersion: z
+          .enum(HTTP_VERSIONS)
+          .optional()
+          .describe("HTTP version to use: '1.0', '1.1', or '2' (--http1.0/--http1.1/--http2)"),
         compact: z
           .boolean()
           .optional()
@@ -85,15 +121,28 @@ export function registerPostTool(server: McpServer) {
       headers,
       contentType,
       timeout,
+      connectTimeout,
       followRedirects,
+      preserveMethodOnRedirect,
       insecure,
       accept,
       compressed,
+      basicAuth,
+      proxy,
+      dataUrlencode,
+      httpVersion,
       compact,
       path,
     }) => {
       assertSafeUrl(url);
       if (accept) assertNoFlagInjection(accept, "accept");
+      if (basicAuth) assertNoFlagInjection(basicAuth, "basicAuth");
+      if (proxy) assertNoFlagInjection(proxy, "proxy");
+      if (dataUrlencode) {
+        for (const item of dataUrlencode) {
+          assertNoFlagInjection(item, "dataUrlencode");
+        }
+      }
 
       // Merge content-type header with user-supplied headers
       const mergedHeaders: Record<string, string> = {
@@ -111,9 +160,15 @@ export function registerPostTool(server: McpServer) {
         headers: mergedHeaders,
         body,
         timeout: timeout ?? 30,
+        connectTimeout,
         followRedirects: followRedirects ?? true,
         insecure,
         compressed,
+        basicAuth,
+        proxy,
+        httpVersion,
+        preserveMethodOnRedirect,
+        dataUrlencode,
       });
 
       const cwd = path || process.cwd();
