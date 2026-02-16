@@ -183,6 +183,7 @@ export function registerRunTool(server: McpServer) {
         stdin: stdin || undefined,
         maxBuffer: maxBuffer || undefined,
         shell: shell || undefined,
+        replaceEnv: stripEnv || undefined,
       };
 
       try {

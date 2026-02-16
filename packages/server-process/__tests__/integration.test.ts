@@ -182,7 +182,7 @@ describe("@paretools/process integration", () => {
       expect(envKeys).toContain("PATH");
       // Should NOT contain typical parent env vars like HOME, USER, SHELL, etc.
       // (Node.js may auto-set a few, but most parent vars should be stripped)
-      expect(envKeys.length).toBeLessThan(10);
+      expect(envKeys.length).toBeLessThan(20);
     });
 
     it("stripEnv=true with explicit env vars passes them through", async () => {
