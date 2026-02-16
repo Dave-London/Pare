@@ -174,6 +174,7 @@ describe("formatMypyCompact", () => {
 describe("compactRuffMap", () => {
   it("keeps total and fixable counts, drops diagnostics", () => {
     const data: RuffResult = {
+      success: false,
       diagnostics: [
         {
           file: "src/main.py",
@@ -206,7 +207,7 @@ describe("compactRuffMap", () => {
 
 describe("formatRuffCompact", () => {
   it("formats clean result", () => {
-    const compact = { total: 0, fixable: 0 };
+    const compact = { success: true, total: 0, fixable: 0 };
     expect(formatRuffCompact(compact)).toBe("ruff: no issues found.");
   });
 
@@ -300,6 +301,7 @@ describe("formatPipInstallCompact", () => {
 describe("compactPipAuditMap", () => {
   it("keeps total count, drops vulnerability details", () => {
     const data: PipAuditResult = {
+      success: false,
       vulnerabilities: [
         {
           name: "requests",
@@ -328,12 +330,12 @@ describe("compactPipAuditMap", () => {
 
 describe("formatPipAuditCompact", () => {
   it("formats clean audit", () => {
-    const compact = { total: 0 };
+    const compact = { success: true, total: 0 };
     expect(formatPipAuditCompact(compact)).toBe("No vulnerabilities found.");
   });
 
   it("formats audit with vulnerabilities", () => {
-    const compact = { total: 3 };
+    const compact = { success: false, total: 3 };
     expect(formatPipAuditCompact(compact)).toBe("3 vulnerabilities found.");
   });
 });
@@ -417,6 +419,7 @@ describe("formatUvRunCompact", () => {
 describe("compactPipListMap", () => {
   it("keeps total count, drops package details", () => {
     const data: PipList = {
+      success: true,
       packages: [
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
@@ -433,12 +436,12 @@ describe("compactPipListMap", () => {
 
 describe("formatPipListCompact", () => {
   it("formats empty list", () => {
-    const compact = { total: 0 };
+    const compact = { success: true, total: 0 };
     expect(formatPipListCompact(compact)).toBe("No packages installed.");
   });
 
   it("formats list with packages", () => {
-    const compact = { total: 15 };
+    const compact = { success: true, total: 15 };
     expect(formatPipListCompact(compact)).toBe("15 packages installed.");
   });
 });
@@ -448,6 +451,7 @@ describe("formatPipListCompact", () => {
 describe("compactPipShowMap", () => {
   it("keeps name, version, and summary; drops detailed metadata", () => {
     const data: PipShow = {
+      success: true,
       name: "requests",
       version: "2.31.0",
       summary: "Python HTTP for Humans.",
@@ -473,12 +477,17 @@ describe("compactPipShowMap", () => {
 
 describe("formatPipShowCompact", () => {
   it("formats package not found", () => {
-    const compact = { name: "", version: "", summary: "" };
+    const compact = { success: false, name: "", version: "", summary: "" };
     expect(formatPipShowCompact(compact)).toBe("Package not found.");
   });
 
   it("formats package with summary", () => {
-    const compact = { name: "requests", version: "2.31.0", summary: "Python HTTP for Humans." };
+    const compact = {
+      success: true,
+      name: "requests",
+      version: "2.31.0",
+      summary: "Python HTTP for Humans.",
+    };
     expect(formatPipShowCompact(compact)).toBe("requests==2.31.0: Python HTTP for Humans.");
   });
 });

@@ -65,6 +65,36 @@ export function registerPipInstallTool(server: McpServer) {
           .describe(
             "Force reinstall of all packages even if already installed (--force-reinstall)",
           ),
+        constraint: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to constraints file for version pinning (-c FILE)"),
+        editable: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to local package for editable install (-e PATH)"),
+        indexUrl: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Base URL of the Python Package Index (-i URL)"),
+        extraIndexUrl: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Extra package index URLs for additional registries"),
+        target: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Install packages into target directory (-t DIR)"),
+        report: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Write JSON install report to file (--report FILE)"),
         compact: z
           .boolean()
           .optional()
@@ -84,6 +114,12 @@ export function registerPipInstallTool(server: McpServer) {
       noDeps,
       pre,
       forceReinstall,
+      constraint,
+      editable,
+      indexUrl,
+      extraIndexUrl,
+      target,
+      report,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -91,6 +127,14 @@ export function registerPipInstallTool(server: McpServer) {
         assertNoFlagInjection(p, "packages");
       }
       if (requirements) assertNoFlagInjection(requirements, "requirements");
+      if (constraint) assertNoFlagInjection(constraint, "constraint");
+      if (editable) assertNoFlagInjection(editable, "editable");
+      if (indexUrl) assertNoFlagInjection(indexUrl, "indexUrl");
+      if (target) assertNoFlagInjection(target, "target");
+      if (report) assertNoFlagInjection(report, "report");
+      for (const u of extraIndexUrl ?? []) {
+        assertNoFlagInjection(u, "extraIndexUrl");
+      }
 
       const args = ["install"];
       if (dryRun) args.push("--dry-run");
@@ -98,7 +142,17 @@ export function registerPipInstallTool(server: McpServer) {
       if (noDeps) args.push("--no-deps");
       if (pre) args.push("--pre");
       if (forceReinstall) args.push("--force-reinstall");
-      if (requirements) {
+      if (constraint) args.push("-c", constraint);
+      if (indexUrl) args.push("-i", indexUrl);
+      for (const u of extraIndexUrl ?? []) {
+        args.push("--extra-index-url", u);
+      }
+      if (target) args.push("-t", target);
+      if (report) args.push("--report", report);
+
+      if (editable) {
+        args.push("-e", editable);
+      } else if (requirements) {
         args.push("-r", requirements);
       } else if (packages && packages.length > 0) {
         args.push(...packages);

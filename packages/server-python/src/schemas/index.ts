@@ -48,10 +48,12 @@ export const RuffDiagnosticSchema = z.object({
   code: z.string(),
   message: z.string(),
   fixable: z.boolean(),
+  url: z.string().optional(),
 });
 
-/** Zod schema for structured ruff check output with diagnostics, total count, and fixable count. */
+/** Zod schema for structured ruff check output with diagnostics, total count, fixable count, and success. */
 export const RuffResultSchema = z.object({
+  success: z.boolean(),
   diagnostics: z.array(RuffDiagnosticSchema).optional(),
   total: z.number(),
   fixable: z.number(),
@@ -68,8 +70,9 @@ export const PipAuditVulnSchema = z.object({
   fixVersions: z.array(z.string()),
 });
 
-/** Zod schema for structured pip-audit output with vulnerability list and total count. */
+/** Zod schema for structured pip-audit output with vulnerability list, total count, and success status. */
 export const PipAuditResultSchema = z.object({
+  success: z.boolean(),
   vulnerabilities: z.array(PipAuditVulnSchema).optional(),
   total: z.number(),
 });
@@ -135,14 +138,17 @@ export const BlackResultSchema = z.object({
 
 export type BlackResult = z.infer<typeof BlackResultSchema>;
 
-/** Zod schema for a single pip list package entry with name and version. */
+/** Zod schema for a single pip list package entry with name, version, and optional metadata. */
 export const PipListPackageSchema = z.object({
   name: z.string(),
   version: z.string(),
+  location: z.string().optional(),
+  editableProject: z.boolean().optional(),
 });
 
-/** Zod schema for structured pip list output with packages and total count. */
+/** Zod schema for structured pip list output with packages, total count, and success status. */
 export const PipListSchema = z.object({
+  success: z.boolean(),
   packages: z.array(PipListPackageSchema).optional(),
   total: z.number(),
 });
@@ -151,14 +157,19 @@ export type PipList = z.infer<typeof PipListSchema>;
 
 /** Zod schema for structured pip show output with package metadata. */
 export const PipShowSchema = z.object({
+  success: z.boolean(),
   name: z.string(),
   version: z.string(),
   summary: z.string(),
   homepage: z.string().optional(),
   author: z.string().optional(),
+  authorEmail: z.string().optional(),
   license: z.string().optional(),
   location: z.string().optional(),
   requires: z.array(z.string()).optional(),
+  requiredBy: z.array(z.string()).optional(),
+  metadataVersion: z.string().optional(),
+  classifiers: z.array(z.string()).optional(),
 });
 
 export type PipShow = z.infer<typeof PipShowSchema>;
@@ -252,6 +263,7 @@ export type PyenvResult = z.infer<typeof PyenvResultSchema>;
 export const PoetryPackageSchema = z.object({
   name: z.string(),
   version: z.string(),
+  description: z.string().optional(),
 });
 
 /** Zod schema for a build artifact from poetry build. */

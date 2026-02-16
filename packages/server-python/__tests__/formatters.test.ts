@@ -150,6 +150,7 @@ describe("formatMypy", () => {
 describe("formatRuff", () => {
   it("formats clean ruff result", () => {
     const data: RuffResult = {
+      success: true,
       diagnostics: [],
       total: 0,
       fixable: 0,
@@ -159,6 +160,7 @@ describe("formatRuff", () => {
 
   it("formats ruff result with issues", () => {
     const data: RuffResult = {
+      success: false,
       diagnostics: [
         {
           file: "src/main.py",
@@ -190,6 +192,7 @@ describe("formatRuff", () => {
 describe("formatPipAudit", () => {
   it("formats clean audit", () => {
     const data: PipAuditResult = {
+      success: true,
       vulnerabilities: [],
       total: 0,
     };
@@ -198,6 +201,7 @@ describe("formatPipAudit", () => {
 
   it("formats audit with vulnerabilities and fix versions", () => {
     const data: PipAuditResult = {
+      success: false,
       vulnerabilities: [
         {
           name: "requests",
@@ -352,12 +356,13 @@ describe("formatBlack — edge cases", () => {
 
 describe("formatPipList", () => {
   it("formats empty package list", () => {
-    const data: PipList = { packages: [], total: 0 };
+    const data: PipList = { success: true, packages: [], total: 0 };
     expect(formatPipList(data)).toBe("No packages installed.");
   });
 
   it("formats package list with multiple packages", () => {
     const data: PipList = {
+      success: true,
       packages: [
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
@@ -386,6 +391,7 @@ describe("formatPipShow", () => {
 
   it("formats full package metadata", () => {
     const data: PipShow = {
+      success: true,
       name: "requests",
       version: "2.31.0",
       summary: "Python HTTP for Humans.",

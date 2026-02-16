@@ -49,7 +49,7 @@ export function registerPipShowTool(server: McpServer) {
       if (files) args.push("--files");
       args.push(pkg as string);
       const result = await pip(args, cwd);
-      const data = parsePipShowOutput(result.stdout);
+      const data = parsePipShowOutput(result.stdout, result.exitCode);
       return compactDualOutput(
         data,
         result.stdout,

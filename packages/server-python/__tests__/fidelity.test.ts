@@ -336,7 +336,7 @@ describe("fidelity: mypy", () => {
 
 describe("fidelity: ruff", () => {
   it("parses single violation with fix available", () => {
-    const result = parseRuffJson(RUFF_SINGLE_VIOLATION);
+    const result = parseRuffJson(RUFF_SINGLE_VIOLATION, 1);
 
     expect(result.total).toBe(1);
     expect(result.fixable).toBe(1);
@@ -353,7 +353,7 @@ describe("fidelity: ruff", () => {
   });
 
   it("parses multiple violations across files", () => {
-    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS);
+    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS, 1);
 
     expect(result.total).toBe(4);
 
@@ -372,7 +372,7 @@ describe("fidelity: ruff", () => {
   });
 
   it("preserves accurate fixable count", () => {
-    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS);
+    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS, 1);
 
     // F401, F841, and W291 have fix objects; E501 has fix: null
     expect(result.fixable).toBe(3);
@@ -385,7 +385,7 @@ describe("fidelity: ruff", () => {
   });
 
   it("handles empty JSON array (clean code)", () => {
-    const result = parseRuffJson(RUFF_EMPTY);
+    const result = parseRuffJson(RUFF_EMPTY, 0);
 
     expect(result.diagnostics).toHaveLength(0);
     expect(result.total).toBe(0);
@@ -393,7 +393,7 @@ describe("fidelity: ruff", () => {
   });
 
   it("preserves end_location for range information", () => {
-    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS);
+    const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS, 1);
 
     const f841 = result.diagnostics.find((d) => d.code === "F841")!;
     expect(f841.line).toBe(22);
@@ -405,7 +405,7 @@ describe("fidelity: ruff", () => {
 
 describe("fidelity: pip-audit", () => {
   it("preserves vulnerabilities with fix versions", () => {
-    const result = parsePipAuditJson(PIP_AUDIT_VULNS);
+    const result = parsePipAuditJson(PIP_AUDIT_VULNS, 1);
 
     expect(result.total).toBe(2);
     expect(result.vulnerabilities).toHaveLength(2);
@@ -423,14 +423,14 @@ describe("fidelity: pip-audit", () => {
   });
 
   it("handles no vulnerabilities", () => {
-    const result = parsePipAuditJson(PIP_AUDIT_CLEAN);
+    const result = parsePipAuditJson(PIP_AUDIT_CLEAN, 0);
 
     expect(result.vulnerabilities).toHaveLength(0);
     expect(result.total).toBe(0);
   });
 
   it("preserves multiple vulnerabilities for same package", () => {
-    const result = parsePipAuditJson(PIP_AUDIT_MULTI_VULN_SAME_PKG);
+    const result = parsePipAuditJson(PIP_AUDIT_MULTI_VULN_SAME_PKG, 1);
 
     // Django has 3 vulns, flask has 0
     expect(result.total).toBe(3);
@@ -460,7 +460,7 @@ describe("fidelity: pip-audit", () => {
   });
 
   it("skips packages with empty vulns arrays", () => {
-    const result = parsePipAuditJson(PIP_AUDIT_VULNS);
+    const result = parsePipAuditJson(PIP_AUDIT_VULNS, 1);
 
     // flask has vulns: [] so should not appear in vulnerabilities
     const flaskVulns = result.vulnerabilities.filter((v) => v.name === "flask");
@@ -770,7 +770,7 @@ const RUFF_FORMAT_CLEAN = "0 files reformatted";
 
 describe("fidelity: pip list", () => {
   it("preserves all package names and versions", () => {
-    const result = parsePipListJson(PIP_LIST_JSON);
+    const result = parsePipListJson(PIP_LIST_JSON, 0);
 
     expect(result.total).toBe(5);
     expect(result.packages).toHaveLength(5);
@@ -788,7 +788,7 @@ describe("fidelity: pip list", () => {
   });
 
   it("handles empty package list", () => {
-    const result = parsePipListJson(PIP_LIST_EMPTY);
+    const result = parsePipListJson(PIP_LIST_EMPTY, 0);
 
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
@@ -797,7 +797,7 @@ describe("fidelity: pip list", () => {
 
 describe("fidelity: pip show", () => {
   it("preserves full package metadata", () => {
-    const result = parsePipShowOutput(PIP_SHOW_REQUESTS);
+    const result = parsePipShowOutput(PIP_SHOW_REQUESTS, 0);
 
     expect(result.name).toBe("requests");
     expect(result.version).toBe("2.31.0");
@@ -810,7 +810,7 @@ describe("fidelity: pip show", () => {
   });
 
   it("handles empty Requires field", () => {
-    const result = parsePipShowOutput(PIP_SHOW_MINIMAL);
+    const result = parsePipShowOutput(PIP_SHOW_MINIMAL, 0);
 
     expect(result.name).toBe("certifi");
     expect(result.version).toBe("2023.7.22");

@@ -50,6 +50,31 @@ export function registerRuffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show rule violation statistics (--statistics)"),
+        select: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rule codes or prefixes to enable (e.g. ['E', 'F401'])"),
+        ignore: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rule codes or prefixes to suppress (e.g. ['E501'])"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to custom ruff config file"),
+        targetVersion: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Python version target override (e.g. 'py38')"),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("File patterns to exclude from checking"),
         compact: z
           .boolean()
           .optional()
@@ -70,12 +95,29 @@ export function registerRuffTool(server: McpServer) {
       lineLength,
       noCache,
       statistics,
+      select,
+      ignore,
+      config,
+      targetVersion,
+      exclude,
       compact,
     }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
       }
+      if (config) assertNoFlagInjection(config, "config");
+      if (targetVersion) assertNoFlagInjection(targetVersion, "targetVersion");
+      for (const s of select ?? []) {
+        assertNoFlagInjection(s, "select");
+      }
+      for (const i of ignore ?? []) {
+        assertNoFlagInjection(i, "ignore");
+      }
+      for (const e of exclude ?? []) {
+        assertNoFlagInjection(e, "exclude");
+      }
+
       const args = ["check", "--output-format", "json", ...(targets || ["."])];
       if (fix) args.push("--fix");
       if (unsafeFixes) args.push("--unsafe-fixes");
@@ -84,9 +126,16 @@ export function registerRuffTool(server: McpServer) {
       if (lineLength !== undefined) args.push("--line-length", String(lineLength));
       if (noCache) args.push("--no-cache");
       if (statistics) args.push("--statistics");
+      if (select && select.length > 0) args.push("--select", select.join(","));
+      if (ignore && ignore.length > 0) args.push("--ignore", ignore.join(","));
+      if (config) args.push("--config", config);
+      if (targetVersion) args.push("--target-version", targetVersion);
+      for (const e of exclude ?? []) {
+        args.push("--exclude", e);
+      }
 
       const result = await ruff(args, cwd);
-      const data = parseRuffJson(result.stdout);
+      const data = parseRuffJson(result.stdout, result.exitCode);
       return compactDualOutput(
         data,
         result.stdout,

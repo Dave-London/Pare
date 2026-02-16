@@ -50,6 +50,21 @@ export function registerUvRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without updating the lockfile (--frozen)"),
+        withPackages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Additional packages to inject for one-off use (--with PKG)"),
+        python: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Python interpreter version to use (-p VERSION)"),
+        envFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to environment file (--env-file FILE)"),
         compact: z
           .boolean()
           .optional()
@@ -60,15 +75,38 @@ export function registerUvRunTool(server: McpServer) {
       },
       outputSchema: UvRunSchema,
     },
-    async ({ path, command, isolated, module, noSync, locked, frozen, compact }) => {
+    async ({
+      path,
+      command,
+      isolated,
+      module,
+      noSync,
+      locked,
+      frozen,
+      withPackages,
+      python,
+      envFile,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(command[0], "command");
+      if (python) assertNoFlagInjection(python, "python");
+      if (envFile) assertNoFlagInjection(envFile, "envFile");
+      for (const p of withPackages ?? []) {
+        assertNoFlagInjection(p, "withPackages");
+      }
+
       const args = ["run"];
       if (isolated) args.push("--isolated");
       if (module) args.push("-m");
       if (noSync) args.push("--no-sync");
       if (locked) args.push("--locked");
       if (frozen) args.push("--frozen");
+      for (const p of withPackages ?? []) {
+        args.push("--with", p);
+      }
+      if (python) args.push("-p", python);
+      if (envFile) args.push("--env-file", envFile);
       args.push(...command);
 
       const start = Date.now();

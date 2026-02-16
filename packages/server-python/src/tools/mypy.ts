@@ -43,6 +43,39 @@ export function registerMypyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Disable incremental mode (--no-incremental)"),
+        configFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to mypy config file (--config-file)"),
+        pythonVersion: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Python version to target (e.g. '3.11')"),
+        exclude: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Regular expression to exclude files/directories"),
+        followImports: z
+          .enum(["normal", "silent", "skip", "error"])
+          .optional()
+          .describe("How to handle imports (normal/silent/skip/error)"),
+        module: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Specific module to type-check (-m MODULE)"),
+        package: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Specific package to type-check (-p PACKAGE)"),
+        installTypes: z
+          .boolean()
+          .optional()
+          .describe("Auto-install missing type stubs (--install-types --non-interactive)"),
         compact: z
           .boolean()
           .optional()
@@ -53,15 +86,51 @@ export function registerMypyTool(server: McpServer) {
       },
       outputSchema: MypyResultSchema,
     },
-    async ({ path, targets, strict, ignoreMissingImports, noIncremental, compact }) => {
+    async (input) => {
+      const path = input["path"] as string | undefined;
+      const targets = input["targets"] as string[] | undefined;
+      const strict = input["strict"] as boolean | undefined;
+      const ignoreMissingImports = input["ignoreMissingImports"] as boolean | undefined;
+      const noIncremental = input["noIncremental"] as boolean | undefined;
+      const configFile = input["configFile"] as string | undefined;
+      const pythonVersion = input["pythonVersion"] as string | undefined;
+      const exclude = input["exclude"] as string | undefined;
+      const followImports = input["followImports"] as string | undefined;
+      const mod = input["module"] as string | undefined;
+      const pkg = input["package"] as string | undefined;
+      const installTypes = input["installTypes"] as boolean | undefined;
+      const compact = input["compact"] as boolean | undefined;
+
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
       }
-      const args = ["--show-error-codes", "--show-column-numbers", ...(targets || ["."])];
+      if (configFile) assertNoFlagInjection(configFile, "configFile");
+      if (pythonVersion) assertNoFlagInjection(pythonVersion, "pythonVersion");
+      if (exclude) assertNoFlagInjection(exclude, "exclude");
+      if (mod) assertNoFlagInjection(mod, "module");
+      if (pkg) assertNoFlagInjection(pkg, "package");
+
+      const args: string[] = ["--show-error-codes", "--show-column-numbers"];
+
+      // Config and version options
+      if (configFile) args.push("--config-file", configFile);
+      if (pythonVersion) args.push("--python-version", pythonVersion);
+      if (exclude) args.push("--exclude", exclude);
+      if (followImports) args.push("--follow-imports", followImports);
+      if (installTypes) args.push("--install-types", "--non-interactive");
       if (strict) args.push("--strict");
       if (ignoreMissingImports) args.push("--ignore-missing-imports");
       if (noIncremental) args.push("--no-incremental");
+
+      // Target selection: module > package > file targets
+      if (mod) {
+        args.push("-m", mod);
+      } else if (pkg) {
+        args.push("-p", pkg);
+      } else {
+        args.push(...(targets || ["."]));
+      }
 
       const result = await mypy(args, cwd);
       const data = parseMypyOutput(result.stdout, result.exitCode);

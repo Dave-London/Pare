@@ -30,6 +30,15 @@ export function registerPytestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe('Pytest marker expression (e.g. "not slow")'),
+        keyword: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Keyword expression for test filtering (-k EXPR)"),
+        tracebackStyle: z
+          .enum(["short", "long", "line", "no", "native", "auto"])
+          .optional()
+          .describe("Traceback output style (default: short)"),
         verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
         exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
         maxFail: z
@@ -53,6 +62,23 @@ export function registerPytestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Disable stdout/stderr capturing, useful for print-debugging (-s)"),
+        coverage: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Source directory for coverage measurement (--cov=SOURCE)"),
+        parallel: z
+          .number()
+          .int()
+          .min(0)
+          .max(128)
+          .optional()
+          .describe("Number of parallel workers for pytest-xdist (-n NUM, 0=auto)"),
+        configFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to pytest config file (-c FILE)"),
         compact: z
           .boolean()
           .optional()
@@ -67,12 +93,17 @@ export function registerPytestTool(server: McpServer) {
       path,
       targets,
       markers,
+      keyword,
+      tracebackStyle,
       verbose,
       exitFirst,
       maxFail,
       collectOnly,
       lastFailed,
       noCapture,
+      coverage,
+      parallel,
+      configFile,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -80,8 +111,12 @@ export function registerPytestTool(server: McpServer) {
         assertNoFlagInjection(t, "targets");
       }
       if (markers) assertNoFlagInjection(markers, "markers");
+      if (keyword) assertNoFlagInjection(keyword, "keyword");
+      if (coverage) assertNoFlagInjection(coverage, "coverage");
+      if (configFile) assertNoFlagInjection(configFile, "configFile");
 
-      const args = ["--tb=short", "-q"];
+      const tbStyle = tracebackStyle || "short";
+      const args = [`--tb=${tbStyle}`, "-q"];
 
       if (verbose) args.splice(args.indexOf("-q"), 1, "-v");
       if (exitFirst) args.push("-x");
@@ -90,6 +125,10 @@ export function registerPytestTool(server: McpServer) {
       if (lastFailed) args.push("--lf");
       if (noCapture) args.push("-s");
       if (markers) args.push("-m", markers);
+      if (keyword) args.push("-k", keyword);
+      if (coverage) args.push(`--cov=${coverage}`);
+      if (parallel != null) args.push("-n", String(parallel));
+      if (configFile) args.push("-c", configFile);
       if (targets && targets.length > 0) args.push(...targets);
 
       const result = await pytest(args, cwd);
