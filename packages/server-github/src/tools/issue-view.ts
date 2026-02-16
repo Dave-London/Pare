@@ -18,6 +18,10 @@ export function registerIssueViewTool(server: McpServer) {
         "Views an issue by number. Returns structured data with state, labels, assignees, and body. Use instead of running `gh issue view` in the terminal.",
       inputSchema: {
         number: z.number().describe("Issue number"),
+        comments: z
+          .boolean()
+          .optional()
+          .describe("Include issue comments in output (-c/--comments)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -33,10 +37,11 @@ export function registerIssueViewTool(server: McpServer) {
       },
       outputSchema: IssueViewResultSchema,
     },
-    async ({ number, path, compact }) => {
+    async ({ number, comments, path, compact }) => {
       const cwd = path || process.cwd();
 
       const args = ["issue", "view", String(number), "--json", ISSUE_VIEW_FIELDS];
+      if (comments) args.push("--comments");
       const result = await ghCmd(args, cwd);
 
       if (result.exitCode !== 0) {

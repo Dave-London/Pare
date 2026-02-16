@@ -30,10 +30,44 @@ export function registerRestoreTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Restore from specific ref (--source)"),
+        ours: z.boolean().optional().describe("Restore ours version during conflicts (--ours)"),
+        theirs: z
+          .boolean()
+          .optional()
+          .describe("Restore theirs version during conflicts (--theirs)"),
+        worktree: z.boolean().optional().describe("Restore working tree files (--worktree)"),
+        merge: z.boolean().optional().describe("Recreate conflicted merge (--merge)"),
+        ignoreUnmerged: z
+          .boolean()
+          .optional()
+          .describe("Ignore unmerged entries (--ignore-unmerged)"),
+        noOverlay: z.boolean().optional().describe("Remove extra files (--no-overlay)"),
+        conflict: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Set conflict style (--conflict)"),
+        recurseSubmodules: z
+          .boolean()
+          .optional()
+          .describe("Recurse into submodules (--recurse-submodules)"),
       },
       outputSchema: GitRestoreSchema,
     },
-    async ({ path, files, staged, source }) => {
+    async ({
+      path,
+      files,
+      staged,
+      source,
+      ours,
+      theirs,
+      worktree,
+      merge,
+      ignoreUnmerged,
+      noOverlay,
+      conflict,
+      recurseSubmodules,
+    }) => {
       const cwd = path || process.cwd();
 
       if (!files || files.length === 0) {
@@ -57,6 +91,17 @@ export function registerRestoreTool(server: McpServer) {
       const args = ["restore"];
       if (staged) args.push("--staged");
       if (source) args.push("--source", source);
+      if (ours) args.push("--ours");
+      if (theirs) args.push("--theirs");
+      if (worktree) args.push("--worktree");
+      if (merge) args.push("--merge");
+      if (ignoreUnmerged) args.push("--ignore-unmerged");
+      if (noOverlay) args.push("--no-overlay");
+      if (conflict) {
+        assertNoFlagInjection(conflict, "conflict");
+        args.push(`--conflict=${conflict}`);
+      }
+      if (recurseSubmodules) args.push("--recurse-submodules");
       args.push("--", ...resolvedFiles);
 
       const result = await git(args, cwd);

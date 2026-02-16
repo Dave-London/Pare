@@ -27,6 +27,22 @@ export function registerLintTool(server: McpServer) {
           .default(["."])
           .describe("File patterns to lint (default: ['.'])"),
         fix: z.boolean().optional().default(false).describe("Auto-fix problems"),
+        quiet: z
+          .boolean()
+          .optional()
+          .describe("Report errors only, suppress warnings (maps to --quiet)"),
+        noIgnore: z
+          .boolean()
+          .optional()
+          .describe("Disable ignore patterns to lint normally-ignored files (maps to --no-ignore)"),
+        cache: z
+          .boolean()
+          .optional()
+          .describe("Cache lint results for faster subsequent runs (maps to --cache)"),
+        fixDryRun: z
+          .boolean()
+          .optional()
+          .describe("Preview fixes without writing them (maps to --fix-dry-run)"),
         compact: z
           .boolean()
           .optional()
@@ -37,13 +53,17 @@ export function registerLintTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, fix, compact }) => {
+    async ({ path, patterns, fix, quiet, noIgnore, cache, fixDryRun, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
       const args = ["--format", "json", ...(patterns || ["."])];
       if (fix) args.push("--fix");
+      if (quiet) args.push("--quiet");
+      if (noIgnore) args.push("--no-ignore");
+      if (cache) args.push("--cache");
+      if (fixDryRun) args.push("--fix-dry-run");
 
       const result = await eslint(args, cwd);
       const data = parseEslintJson(result.stdout);

@@ -34,16 +34,25 @@ export function registerSearchTool(server: McpServer) {
           .describe(
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
+        preferOnline: z
+          .boolean()
+          .optional()
+          .describe(
+            "Bypass cache and fetch fresh results from the registry (maps to --prefer-online)",
+          ),
       },
       outputSchema: NpmSearchSchema,
     },
-    async ({ query, path, limit, compact }) => {
+    async ({ query, path, limit, compact, preferOnline }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(query, "query");
 
       const args = ["search", query, "--json"];
       if (limit !== undefined) {
         args.push(`--searchlimit=${limit}`);
+      }
+      if (preferOnline) {
+        args.push("--prefer-online");
       }
 
       // Always use npm for search — pnpm doesn't have a search command

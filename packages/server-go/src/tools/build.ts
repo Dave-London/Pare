@@ -26,6 +26,19 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Packages to build (default: ./...)"),
+        race: z.boolean().optional().default(false).describe("Enable data race detection (-race)"),
+        trimpath: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Remove all file system paths from the resulting binary (-trimpath). Needed for reproducible builds.",
+          ),
+        verbose: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print the names of packages as they are compiled (-v)"),
         compact: z
           .boolean()
           .optional()
@@ -36,12 +49,17 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: GoBuildResultSchema,
     },
-    async ({ path, packages, compact }) => {
+    async ({ path, packages, race, trimpath, verbose, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
-      const result = await goCmd(["build", ...(packages || ["./..."])], cwd);
+      const args = ["build"];
+      if (race) args.push("-race");
+      if (trimpath) args.push("-trimpath");
+      if (verbose) args.push("-v");
+      args.push(...(packages || ["./..."]));
+      const result = await goCmd(args, cwd);
       const data = parseGoBuildOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

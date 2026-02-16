@@ -25,10 +25,14 @@ export function registerCheckoutTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Branch name, tag, or commit to checkout"),
         create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
+        force: z.boolean().optional().describe("Force checkout discarding local changes (-f)"),
+        track: z.boolean().optional().describe("Set up tracking for remote branches (--track)"),
+        forceCreate: z.boolean().optional().describe("Force-create branch even if it exists (-B)"),
+        detach: z.boolean().optional().describe("Detach HEAD at target (--detach)"),
       },
       outputSchema: GitCheckoutSchema,
     },
-    async ({ path, ref, create }) => {
+    async ({ path, ref, create, force, track, forceCreate, detach }) => {
       const cwd = path || process.cwd();
 
       assertNoFlagInjection(ref, "ref");
@@ -39,7 +43,14 @@ export function registerCheckoutTool(server: McpServer) {
 
       // Build checkout args
       const args = ["checkout"];
-      if (create) args.push("-b");
+      if (force) args.push("--force");
+      if (forceCreate) {
+        args.push("-B");
+      } else if (create) {
+        args.push("-b");
+      }
+      if (track) args.push("--track");
+      if (detach) args.push("--detach");
       args.push(ref);
 
       const result = await git(args, cwd);

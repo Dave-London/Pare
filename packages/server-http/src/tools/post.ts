@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { curlCmd } from "../lib/curl-runner.js";
 import { parseCurlOutput } from "../lib/parsers.js";
 import {
@@ -51,6 +51,19 @@ export function registerPostTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Follow HTTP redirects (default: true)"),
+        insecure: z
+          .boolean()
+          .optional()
+          .describe("Allow insecure TLS connections, e.g. self-signed certificates (-k)"),
+        accept: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Expected response format via Accept header (e.g., 'application/json')"),
+        compressed: z
+          .boolean()
+          .optional()
+          .describe("Request compressed response and decompress automatically (--compressed)"),
         compact: z
           .boolean()
           .optional()
@@ -66,14 +79,31 @@ export function registerPostTool(server: McpServer) {
       },
       outputSchema: HttpResponseSchema,
     },
-    async ({ url, body, headers, contentType, timeout, followRedirects, compact, path }) => {
+    async ({
+      url,
+      body,
+      headers,
+      contentType,
+      timeout,
+      followRedirects,
+      insecure,
+      accept,
+      compressed,
+      compact,
+      path,
+    }) => {
       assertSafeUrl(url);
+      if (accept) assertNoFlagInjection(accept, "accept");
 
       // Merge content-type header with user-supplied headers
       const mergedHeaders: Record<string, string> = {
         "Content-Type": contentType ?? "application/json",
         ...headers,
       };
+
+      if (accept) {
+        mergedHeaders["Accept"] = accept;
+      }
 
       const args = buildCurlArgs({
         url,
@@ -82,6 +112,8 @@ export function registerPostTool(server: McpServer) {
         body,
         timeout: timeout ?? 30,
         followRedirects: followRedirects ?? true,
+        insecure,
+        compressed,
       });
 
       const cwd = path || process.cwd();

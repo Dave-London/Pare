@@ -13,7 +13,8 @@ export function registerTscTool(server: McpServer) {
     {
       title: "TypeScript Check",
       description:
-        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). Use instead of running `tsc` in the terminal.",
+        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). Use instead of running `tsc` in the terminal. " +
+        "Note: In compact mode, diagnostics are trimmed to file, line, and code — column and message fields are omitted to save tokens.",
       inputSchema: {
         path: z
           .string()
@@ -26,6 +27,24 @@ export function registerTscTool(server: McpServer) {
           .default(true)
           .describe("Skip emitting output files (default: true)"),
         project: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Path to tsconfig.json"),
+        incremental: z
+          .boolean()
+          .optional()
+          .describe(
+            "Enable incremental compilation for faster repeated checks (maps to --incremental)",
+          ),
+        skipLibCheck: z
+          .boolean()
+          .optional()
+          .describe(
+            "Skip type checking of declaration files for faster feedback (maps to --skipLibCheck)",
+          ),
+        emitDeclarationOnly: z
+          .boolean()
+          .optional()
+          .describe(
+            "Only emit .d.ts declaration files without JS output (maps to --emitDeclarationOnly)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -36,13 +55,16 @@ export function registerTscTool(server: McpServer) {
       },
       outputSchema: TscResultSchema,
     },
-    async ({ path, noEmit, project, compact }) => {
+    async ({ path, noEmit, project, incremental, skipLibCheck, emitDeclarationOnly, compact }) => {
       const cwd = path || process.cwd();
       if (project) assertNoFlagInjection(project, "project");
 
       const args: string[] = [];
       if (noEmit !== false) args.push("--noEmit");
       if (project) args.push("--project", project);
+      if (incremental) args.push("--incremental");
+      if (skipLibCheck) args.push("--skipLibCheck");
+      if (emitDeclarationOnly) args.push("--emitDeclarationOnly");
 
       const result = await tsc(args, cwd);
       const rawOutput = result.stdout + "\n" + result.stderr;

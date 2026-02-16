@@ -30,12 +30,51 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the test script"),
+        ifPresent: z
+          .boolean()
+          .optional()
+          .describe(
+            "Don't error if the test script is missing — useful in heterogeneous monorepos (maps to --if-present)",
+          ),
+        recursive: z
+          .boolean()
+          .optional()
+          .describe(
+            "Run tests in all workspace packages (maps to --recursive for pnpm, --workspaces for npm)",
+          ),
+        ignoreScripts: z
+          .boolean()
+          .optional()
+          .describe("Skip pretest/posttest lifecycle hooks (maps to --ignore-scripts)"),
+        silent: z
+          .boolean()
+          .optional()
+          .describe("Strip npm/pnpm log chrome for cleaner output (maps to --silent)"),
+        parallel: z
+          .boolean()
+          .optional()
+          .describe("Run workspace tests in parallel (maps to --parallel for pnpm)"),
+        stream: z
+          .boolean()
+          .optional()
+          .describe("Stream output with package name prefixes (maps to --stream for pnpm)"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
       outputSchema: NpmTestSchema,
     },
-    async ({ path, args, packageManager, filter }) => {
+    async ({
+      path,
+      args,
+      ifPresent,
+      recursive,
+      ignoreScripts,
+      silent,
+      parallel,
+      stream,
+      packageManager,
+      filter,
+    }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -46,7 +85,16 @@ export function registerTestTool(server: McpServer) {
 
       const pmArgs: string[] = [];
       if (pm === "pnpm" && filter) pmArgs.push(`--filter=${filter}`);
+      if (recursive) {
+        if (pm === "pnpm") pmArgs.push("--recursive");
+        else if (pm === "npm") pmArgs.push("--workspaces");
+      }
+      if (parallel && pm === "pnpm") pmArgs.push("--parallel");
+      if (stream && pm === "pnpm") pmArgs.push("--stream");
       pmArgs.push("test");
+      if (ifPresent) pmArgs.push("--if-present");
+      if (ignoreScripts) pmArgs.push("--ignore-scripts");
+      if (silent) pmArgs.push("--silent");
       if (args && args.length > 0) {
         pmArgs.push("--");
         pmArgs.push(...args);

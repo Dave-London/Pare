@@ -30,21 +30,61 @@ export function registerStashTool(server: McpServer) {
           .number()
           .optional()
           .describe("Stash index for pop/apply/drop (e.g., 0 for stash@{0})"),
+        includeUntracked: z
+          .boolean()
+          .optional()
+          .describe("Stash untracked files (-u/--include-untracked)"),
+        staged: z.boolean().optional().describe("Stash only staged changes (--staged)"),
+        keepIndex: z.boolean().optional().describe("Keep staged changes in index (--keep-index)"),
+        pathspec: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Stash specific files (-- <pathspec>)"),
+        all: z.boolean().optional().describe("Include ignored files (-a/--all)"),
+        reinstateIndex: z
+          .boolean()
+          .optional()
+          .describe("Reinstate staged changes on apply (--index)"),
       },
       outputSchema: GitStashSchema,
     },
-    async ({ path, action, message, index }) => {
+    async ({
+      path,
+      action,
+      message,
+      index,
+      includeUntracked,
+      staged,
+      keepIndex,
+      pathspec,
+      all,
+      reinstateIndex,
+    }) => {
       const cwd = path || process.cwd();
       const args = ["stash"];
 
       if (action === "push") {
         args.push("push");
+        if (includeUntracked) args.push("--include-untracked");
+        if (staged) args.push("--staged");
+        if (keepIndex) args.push("--keep-index");
+        if (all) args.push("--all");
         if (message) {
           assertNoFlagInjection(message, "stash message");
           args.push("-m", message);
         }
+        if (pathspec && pathspec.length > 0) {
+          for (const p of pathspec) {
+            assertNoFlagInjection(p, "pathspec");
+          }
+          args.push("--", ...pathspec);
+        }
       } else {
         args.push(action);
+        if ((action === "pop" || action === "apply") && reinstateIndex) {
+          args.push("--index");
+        }
         if (index !== undefined) {
           args.push(`stash@{${index}}`);
         }

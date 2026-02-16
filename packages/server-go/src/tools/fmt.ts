@@ -31,6 +31,21 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check mode: list unformatted files without fixing (default: false)"),
+        diff: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Display diffs instead of rewriting files (-d)"),
+        simplify: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Try to simplify code in addition to formatting (-s)"),
+        allErrors: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Report all errors, not just the first 10 per file (-e)"),
         compact: z
           .boolean()
           .optional()
@@ -41,13 +56,17 @@ export function registerFmtTool(server: McpServer) {
       },
       outputSchema: GoFmtResultSchema,
     },
-    async ({ path, patterns, check, compact }) => {
+    async ({ path, patterns, check, diff, simplify, allErrors, compact }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
       const flag = check ? "-l" : "-w";
-      const args = [flag, ...(patterns || ["."])];
+      const args = [flag];
+      if (diff) args.push("-d");
+      if (simplify) args.push("-s");
+      if (allErrors) args.push("-e");
+      args.push(...(patterns || ["."]));
       const result = await gofmtCmd(args, cwd);
       const data = parseGoFmtOutput(result.stdout, result.stderr, result.exitCode, !!check);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();

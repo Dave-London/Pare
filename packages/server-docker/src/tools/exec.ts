@@ -33,6 +33,11 @@ export function registerExecTool(server: McpServer) {
           .optional()
           .default([])
           .describe('Environment variables (e.g., ["KEY=VALUE"])'),
+        detach: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run command in the background (default: false)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -48,20 +53,18 @@ export function registerExecTool(server: McpServer) {
       },
       outputSchema: DockerExecSchema,
     },
-    async ({ container, command, workdir, env, path, compact }) => {
+    async ({ container, command, workdir, env, detach, path, compact }) => {
       if (!command || command.length === 0) {
         throw new Error("command array must not be empty");
       }
       assertNoFlagInjection(container, "container");
-      assertNoFlagInjection(command[0], "command");
-      if (workdir) assertNoFlagInjection(workdir, "workdir");
       // Validate first element of command array (the binary name) to prevent flag injection.
       // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
-      if (command.length > 0) {
-        assertNoFlagInjection(command[0], "command");
-      }
+      assertNoFlagInjection(command[0], "command");
+      if (workdir) assertNoFlagInjection(workdir, "workdir");
 
       const args = ["exec"];
+      if (detach) args.push("-d");
       if (workdir) args.push("-w", workdir);
       for (const e of env ?? []) {
         assertNoFlagInjection(e, "env");

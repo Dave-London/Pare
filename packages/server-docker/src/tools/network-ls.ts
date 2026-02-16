@@ -20,6 +20,11 @@ export function registerNetworkLsTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        noTrunc: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not truncate network IDs (default: false)"),
         compact: z
           .boolean()
           .optional()
@@ -30,8 +35,9 @@ export function registerNetworkLsTool(server: McpServer) {
       },
       outputSchema: DockerNetworkLsSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, noTrunc, compact }) => {
       const args = ["network", "ls", "--format", "json"];
+      if (noTrunc) args.push("--no-trunc");
       const result = await docker(args, path);
       const data = parseNetworkLsJson(result.stdout);
       return compactDualOutput(

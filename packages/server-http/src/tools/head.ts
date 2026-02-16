@@ -44,6 +44,16 @@ export function registerHeadTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Follow HTTP redirects (default: true)"),
+        insecure: z
+          .boolean()
+          .optional()
+          .describe("Allow insecure TLS connections, e.g. self-signed certificates (-k)"),
+        retry: z
+          .number()
+          .min(0)
+          .max(10)
+          .optional()
+          .describe("Number of retries on transient failures (--retry)"),
         compact: z
           .boolean()
           .optional()
@@ -59,7 +69,7 @@ export function registerHeadTool(server: McpServer) {
       },
       outputSchema: HttpHeadResponseSchema,
     },
-    async ({ url, headers, timeout, followRedirects, compact, path }) => {
+    async ({ url, headers, timeout, followRedirects, insecure, retry, compact, path }) => {
       assertSafeUrl(url);
 
       const args = buildCurlArgs({
@@ -68,6 +78,8 @@ export function registerHeadTool(server: McpServer) {
         headers,
         timeout: timeout ?? 30,
         followRedirects: followRedirects ?? true,
+        insecure,
+        retry,
       });
 
       const cwd = path || process.cwd();

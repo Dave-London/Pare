@@ -20,6 +20,8 @@ export function registerStashListTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
+        maxCount: z.number().optional().describe("Limit number of stash entries (-n/--max-count)"),
+        stat: z.boolean().optional().describe("Include diffstat per stash (--stat)"),
         compact: z
           .boolean()
           .optional()
@@ -30,9 +32,11 @@ export function registerStashListTool(server: McpServer) {
       },
       outputSchema: GitStashListSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, maxCount, stat, compact }) => {
       const cwd = path || process.cwd();
       const args = ["stash", "list", "--format=%gd\t%gs\t%ci"];
+      if (maxCount !== undefined) args.push(`--max-count=${maxCount}`);
+      if (stat) args.push("--stat");
 
       const result = await git(args, cwd);
 

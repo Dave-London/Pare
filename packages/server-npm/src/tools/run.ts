@@ -34,12 +34,52 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the script"),
+        ifPresent: z
+          .boolean()
+          .optional()
+          .describe(
+            "Don't error if the script is missing — useful in heterogeneous monorepos (maps to --if-present)",
+          ),
+        recursive: z
+          .boolean()
+          .optional()
+          .describe(
+            "Run script in all workspace packages (maps to --recursive for pnpm, --workspaces for npm)",
+          ),
+        ignoreScripts: z
+          .boolean()
+          .optional()
+          .describe("Skip pre/post lifecycle hooks (maps to --ignore-scripts)"),
+        silent: z
+          .boolean()
+          .optional()
+          .describe("Strip npm/pnpm log chrome from output (maps to --silent)"),
+        parallel: z
+          .boolean()
+          .optional()
+          .describe("Run workspace scripts in parallel (maps to --parallel for pnpm)"),
+        stream: z
+          .boolean()
+          .optional()
+          .describe("Stream output with package name prefixes (maps to --stream for pnpm)"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
       outputSchema: NpmRunSchema,
     },
-    async ({ path, script, args, packageManager, filter }) => {
+    async ({
+      path,
+      script,
+      args,
+      ifPresent,
+      recursive,
+      ignoreScripts,
+      silent,
+      parallel,
+      stream,
+      packageManager,
+      filter,
+    }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(script, "script");
       for (const a of args ?? []) {
@@ -51,6 +91,15 @@ export function registerRunTool(server: McpServer) {
 
       const pmArgs = ["run", script];
       if (pm === "pnpm" && filter) pmArgs.splice(0, 0, `--filter=${filter}`);
+      if (ifPresent) pmArgs.push("--if-present");
+      if (recursive) {
+        if (pm === "pnpm") pmArgs.splice(0, 0, "--recursive");
+        else if (pm === "npm") pmArgs.splice(0, 0, "--workspaces");
+      }
+      if (ignoreScripts) pmArgs.push("--ignore-scripts");
+      if (silent) pmArgs.push("--silent");
+      if (parallel && pm === "pnpm") pmArgs.splice(0, 0, "--parallel");
+      if (stream && pm === "pnpm") pmArgs.splice(0, 0, "--stream");
       if (args && args.length > 0) {
         pmArgs.push("--");
         pmArgs.push(...args);

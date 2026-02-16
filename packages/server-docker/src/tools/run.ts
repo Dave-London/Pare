@@ -55,6 +55,12 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Command to run in the container"),
+        cpus: z.number().optional().describe("Number of CPUs to allocate (e.g., 1.5)"),
+        readOnly: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Mount the container root filesystem as read-only (default: false)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -70,7 +76,20 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: DockerRunSchema,
     },
-    async ({ image, name, ports, volumes, env, detach, rm, command, path, compact }) => {
+    async ({
+      image,
+      name,
+      ports,
+      volumes,
+      env,
+      detach,
+      rm,
+      command,
+      cpus,
+      readOnly,
+      path,
+      compact,
+    }) => {
       assertNoFlagInjection(image, "image");
       if (name) assertNoFlagInjection(name, "name");
       // Validate first element of command array (the binary name) to prevent flag injection.
@@ -96,6 +115,8 @@ export function registerRunTool(server: McpServer) {
         assertNoFlagInjection(e, "env");
         args.push("-e", e);
       }
+      if (cpus != null) args.push("--cpus", String(cpus));
+      if (readOnly) args.push("--read-only");
       args.push(image);
       if (command && command.length > 0) {
         args.push(...command);

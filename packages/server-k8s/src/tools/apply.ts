@@ -25,6 +25,28 @@ export function registerApplyTool(server: McpServer) {
           .optional()
           .default("none")
           .describe("Dry run mode: none, client, or server"),
+        serverSide: z
+          .boolean()
+          .optional()
+          .describe("Use server-side apply with conflict detection (--server-side)"),
+        wait: z
+          .boolean()
+          .optional()
+          .describe("Wait until resources are ready after applying (--wait)"),
+        recursive: z.boolean().optional().describe("Process directories recursively (-R)"),
+        kustomize: z
+          .boolean()
+          .optional()
+          .describe("Apply a kustomization directory (-k instead of -f)"),
+        prune: z
+          .boolean()
+          .optional()
+          .describe("Prune resources not in the manifest for GitOps workflows (--prune)"),
+        force: z.boolean().optional().describe("Force resource recreation if needed (--force)"),
+        forceConflicts: z
+          .boolean()
+          .optional()
+          .describe("Force apply even with field ownership conflicts (--force-conflicts)"),
         compact: z
           .boolean()
           .optional()
@@ -35,14 +57,45 @@ export function registerApplyTool(server: McpServer) {
       },
       outputSchema: KubectlApplyResultSchema,
     },
-    async ({ file, namespace, dryRun, compact }) => {
-      const args = ["apply", "-f", file];
+    async ({
+      file,
+      namespace,
+      dryRun,
+      serverSide,
+      wait,
+      recursive,
+      kustomize,
+      prune,
+      force,
+      forceConflicts,
+      compact,
+    }) => {
+      assertNoFlagInjection(file, "file");
+      const args = ["apply", kustomize ? "-k" : "-f", file];
       if (namespace) {
         assertNoFlagInjection(namespace, "namespace");
         args.push("-n", namespace);
       }
       if (dryRun && dryRun !== "none") {
         args.push("--dry-run", dryRun);
+      }
+      if (serverSide) {
+        args.push("--server-side");
+      }
+      if (wait) {
+        args.push("--wait");
+      }
+      if (recursive) {
+        args.push("-R");
+      }
+      if (prune) {
+        args.push("--prune");
+      }
+      if (force) {
+        args.push("--force");
+      }
+      if (forceConflicts) {
+        args.push("--force-conflicts");
       }
       args.push("-o", "json");
 

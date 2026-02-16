@@ -36,6 +36,20 @@ export function registerCherryPickTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Apply changes without committing (-n)"),
+        mainline: z
+          .number()
+          .optional()
+          .describe("Parent number for cherry-picking merge commits (-m/--mainline)"),
+        appendCherryPickLine: z
+          .boolean()
+          .optional()
+          .describe('Append "(cherry picked from commit ...)" to message (-x)'),
+        allowEmpty: z.boolean().optional().describe("Allow empty commits (--allow-empty)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
+        keepRedundantCommits: z
+          .boolean()
+          .optional()
+          .describe("Keep redundant/empty commits (--keep-redundant-commits)"),
       },
       outputSchema: GitCherryPickSchema,
     },
@@ -78,6 +92,11 @@ export function registerCherryPickTool(server: McpServer) {
       // Build cherry-pick args
       const args = ["cherry-pick"];
       if (noCommit) args.push("-n");
+      if (input.mainline !== undefined) args.push("-m", String(input.mainline));
+      if (input.appendCherryPickLine) args.push("-x");
+      if (input.allowEmpty) args.push("--allow-empty");
+      if (input.signoff) args.push("--signoff");
+      if (input.keepRedundantCommits) args.push("--keep-redundant-commits");
       args.push(...commits);
 
       const result = await git(args, cwd);

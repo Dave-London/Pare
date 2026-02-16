@@ -20,12 +20,26 @@ export function registerStatusTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository path (default: cwd)"),
+        showStash: z.boolean().optional().describe("Include stash count (--show-stash)"),
+        renames: z
+          .boolean()
+          .optional()
+          .describe("Enable rename detection (--renames). Set to false with noRenames."),
+        noRenames: z.boolean().optional().describe("Disable rename detection (--no-renames)"),
+        noLockIndex: z.boolean().optional().describe("Do not lock the index (--no-lock-index)"),
+        showIgnored: z.boolean().optional().describe("Show ignored files (--ignored)"),
       },
       outputSchema: GitStatusSchema,
     },
-    async ({ path }) => {
+    async ({ path, showStash, renames, noRenames, noLockIndex, showIgnored }) => {
       const cwd = path || process.cwd();
-      const result = await git(["status", "--porcelain=v1", "--branch"], cwd);
+      const statusArgs = ["status", "--porcelain=v1", "--branch"];
+      if (showStash) statusArgs.push("--show-stash");
+      if (renames) statusArgs.push("--renames");
+      if (noRenames) statusArgs.push("--no-renames");
+      if (noLockIndex) statusArgs.push("--no-lock-index");
+      if (showIgnored) statusArgs.push("--ignored");
+      const result = await git(statusArgs, cwd);
 
       if (result.exitCode !== 0) {
         throw new Error(`git status failed: ${result.stderr}`);
