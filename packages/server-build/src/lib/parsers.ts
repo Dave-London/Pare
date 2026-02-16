@@ -5,9 +5,12 @@ import type {
   EsbuildResult,
   EsbuildError,
   EsbuildWarning,
+  EsbuildMetafile,
   ViteBuildResult,
   ViteOutputFile,
   WebpackResult,
+  WebpackProfile,
+  WebpackProfileModule,
   TurboResult,
   TurboTask,
   NxResult,
@@ -49,6 +52,87 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
   };
 }
 
+// ---------------------------------------------------------------------------
+// Improved error/warning heuristics (Gap #78)
+// ---------------------------------------------------------------------------
+
+/** Patterns that identify an error line in generic build output.
+ *  Each pattern is tested against the full line (case-insensitive unless
+ *  the regex already specifies flags). */
+const BUILD_ERROR_PATTERNS: RegExp[] = [
+  // TypeScript: error TS1234
+  /\berror\s+TS\d+/i,
+  // Webpack: ERROR in ./path
+  /^ERROR\s+in\s+/,
+  // Generic: Error: message  (capital E, colon after)
+  /\bError:\s/,
+  // Generic: error: message  (lowercase, colon after — compilers like clang, rustc)
+  /\berror:\s/,
+  // Failed / FAILED
+  /\bFAILED\b/,
+  // Build failed
+  /\bbuild\s+failed\b/i,
+  // Compilation failed
+  /\bcompilation\s+failed\b/i,
+  // Module not found (webpack/rollup)
+  /\bModule\s+not\s+found\b/i,
+  // SyntaxError
+  /\bSyntaxError\b/,
+  // ReferenceError, TypeError (runtime errors surfaced during build)
+  /\bReferenceError\b/,
+  /\bTypeError\b/,
+];
+
+/** Patterns that identify a warning line. */
+const BUILD_WARNING_PATTERNS: RegExp[] = [
+  // TypeScript: warning TS1234
+  /\bwarning\s+TS\d+/i,
+  // Webpack: WARNING in ./path
+  /^WARNING\s+in\s+/,
+  // Generic: Warning: message  (capital W, colon after)
+  /\bWarning:\s/,
+  // Generic: warning: message  (lowercase, colon after)
+  /\bwarning:\s/,
+  // WARN prefix (npm, pnpm, vite)
+  /\bWARN\b/,
+  // Vite/Rollup: (!) prefix for warnings
+  /^\(\!\)\s/,
+  // Deprecation warnings
+  /\bDeprecationWarning\b/,
+  /\bdeprecated\b/i,
+];
+
+/** Lines that should NOT be classified as errors even though they match error patterns.
+ *  For example "0 errors" or "Found 0 errors". */
+const BUILD_ERROR_EXCLUDE: RegExp[] = [
+  /\b0\s+errors?\b/i,
+  /\bno\s+errors?\b/i,
+  /\berrors?:\s*0\b/i,
+];
+
+/** Lines that should NOT be classified as warnings. */
+const BUILD_WARNING_EXCLUDE: RegExp[] = [
+  /\b0\s+warnings?\b/i,
+  /\bno\s+warnings?\b/i,
+  /\bwarnings?:\s*0\b/i,
+];
+
+function matchesAny(line: string, patterns: RegExp[]): boolean {
+  return patterns.some((p) => p.test(line));
+}
+
+function isErrorLine(line: string): boolean {
+  if (!matchesAny(line, BUILD_ERROR_PATTERNS)) return false;
+  if (matchesAny(line, BUILD_ERROR_EXCLUDE)) return false;
+  return true;
+}
+
+function isWarningLine(line: string): boolean {
+  if (!matchesAny(line, BUILD_WARNING_PATTERNS)) return false;
+  if (matchesAny(line, BUILD_WARNING_EXCLUDE)) return false;
+  return true;
+}
+
 /** Parses generic build command output into structured results with success status, errors, and warnings. */
 export function parseBuildCommandOutput(
   stdout: string,
@@ -63,11 +147,11 @@ export function parseBuildCommandOutput(
   const warnings: string[] = [];
 
   for (const line of lines) {
-    const lower = line.toLowerCase();
-    if (lower.includes("error") && !lower.includes("0 error")) {
-      errors.push(line.trim());
-    } else if (lower.includes("warn") && !lower.includes("0 warn")) {
-      warnings.push(line.trim());
+    const trimmed = line.trim();
+    if (isErrorLine(trimmed)) {
+      errors.push(trimmed);
+    } else if (isWarningLine(trimmed)) {
+      warnings.push(trimmed);
     }
   }
 
@@ -102,6 +186,8 @@ export function parseEsbuildOutput(
   stderr: string,
   exitCode: number,
   duration: number,
+  metafilePath?: string,
+  metafileContent?: string,
 ): EsbuildResult {
   const errors: EsbuildError[] = [];
   const warnings: EsbuildWarning[] = [];
@@ -172,13 +258,47 @@ export function parseEsbuildOutput(
     }
   }
 
+  // Parse metafile if provided (Gap #80)
+  let metafile: EsbuildMetafile | undefined;
+  if (metafileContent) {
+    metafile = parseEsbuildMetafile(metafileContent);
+  }
+
   return {
     success: exitCode === 0,
     errors,
     warnings,
     outputFiles: outputFiles.length > 0 ? outputFiles : undefined,
     duration,
+    metafile,
   };
+}
+
+/** Parses an esbuild metafile JSON string into a structured metafile object. */
+export function parseEsbuildMetafile(content: string): EsbuildMetafile | undefined {
+  try {
+    const raw = JSON.parse(content) as Record<string, unknown>;
+    const inputs: Record<string, { bytes: number }> = {};
+    const outputs: Record<string, { bytes: number }> = {};
+
+    const rawInputs = raw.inputs as Record<string, Record<string, unknown>> | undefined;
+    if (rawInputs && typeof rawInputs === "object") {
+      for (const [key, val] of Object.entries(rawInputs)) {
+        inputs[key] = { bytes: typeof val.bytes === "number" ? val.bytes : 0 };
+      }
+    }
+
+    const rawOutputs = raw.outputs as Record<string, Record<string, unknown>> | undefined;
+    if (rawOutputs && typeof rawOutputs === "object") {
+      for (const [key, val] of Object.entries(rawOutputs)) {
+        outputs[key] = { bytes: typeof val.bytes === "number" ? val.bytes : 0 };
+      }
+    }
+
+    return { inputs, outputs };
+  } catch {
+    return undefined;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +308,27 @@ export function parseEsbuildOutput(
 // Vite output format: dist/assets/index-abc123.js  12.34 kB │ gzip: 4.56 kB
 // or: dist/index.html                 0.45 kB │ gzip: 0.29 kB
 const VITE_OUTPUT_RE = /^\s*(.+?)\s{2,}(\d+[\d.]*\s*[kKmMgG]?[bB])\s/;
+
+/** Parses a human-readable size string (e.g. "45.2 kB", "1.5 MB", "320 B") into bytes.
+ *  Returns undefined if the string cannot be parsed. */
+export function parseSizeToBytes(sizeStr: string): number | undefined {
+  const match = sizeStr.trim().match(/^(\d+(?:\.\d+)?)\s*([kKmMgG]?[bB])$/);
+  if (!match) return undefined;
+  const value = parseFloat(match[1]);
+  const unit = match[2].toLowerCase();
+  switch (unit) {
+    case "b":
+      return Math.round(value);
+    case "kb":
+      return Math.round(value * 1000);
+    case "mb":
+      return Math.round(value * 1_000_000);
+    case "gb":
+      return Math.round(value * 1_000_000_000);
+    default:
+      return undefined;
+  }
+}
 
 /** Parses Vite production build output into structured file list with sizes. */
 export function parseViteBuildOutput(
@@ -211,19 +352,19 @@ export function parseViteBuildOutput(
       const size = outputMatch[2].trim();
       // Skip lines that are clearly not file outputs (e.g. header lines)
       if (file && !file.startsWith("vite") && !file.startsWith("building")) {
-        outputs.push({ file, size });
+        const sizeBytes = parseSizeToBytes(size);
+        outputs.push({ file, size, sizeBytes });
         continue;
       }
     }
 
     // Collect error and warning lines
-    const lower = line.toLowerCase();
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    if (lower.includes("error") && !lower.includes("0 error")) {
+    if (isErrorLine(trimmed)) {
       errors.push(trimmed);
-    } else if (lower.includes("warn") && !lower.includes("0 warn")) {
+    } else if (isWarningLine(trimmed)) {
       warnings.push(trimmed);
     }
   }
@@ -247,6 +388,7 @@ export function parseWebpackOutput(
   stderr: string,
   exitCode: number,
   duration: number,
+  profileEnabled?: boolean,
 ): WebpackResult {
   // webpack --json outputs a JSON stats object to stdout
   // Try to parse it; fall back to basic error extraction if it fails
@@ -264,7 +406,7 @@ export function parseWebpackOutput(
   }
 
   if (jsonStats) {
-    return parseWebpackJson(jsonStats, exitCode, duration);
+    return parseWebpackJson(jsonStats, exitCode, duration, profileEnabled);
   }
 
   // Fallback: parse as text output
@@ -275,6 +417,7 @@ function parseWebpackJson(
   stats: Record<string, unknown>,
   exitCode: number,
   duration: number,
+  profileEnabled?: boolean,
 ): WebpackResult {
   const rawAssets = Array.isArray(stats.assets) ? stats.assets : [];
   const assets = rawAssets.map((a: Record<string, unknown>) => ({
@@ -307,6 +450,12 @@ function parseWebpackJson(
     modules = stats.modules.length;
   }
 
+  // Parse profile data from modules when --profile is enabled (Gap #85)
+  let profile: WebpackProfile | undefined;
+  if (profileEnabled && Array.isArray(stats.modules)) {
+    profile = parseWebpackProfile(stats.modules as Record<string, unknown>[]);
+  }
+
   return {
     success: exitCode === 0 && errors.length === 0,
     duration,
@@ -314,7 +463,40 @@ function parseWebpackJson(
     errors,
     warnings,
     modules,
+    profile,
   };
+}
+
+/** Extracts timing data from webpack modules when --profile is enabled. */
+export function parseWebpackProfile(
+  modules: Record<string, unknown>[],
+): WebpackProfile | undefined {
+  const profileModules: WebpackProfileModule[] = [];
+
+  for (const mod of modules) {
+    const name = typeof mod.name === "string" ? mod.name : String(mod.name ?? "");
+    // webpack --profile adds profile.total (or profile.building) to each module
+    let time = 0;
+    const profileData = mod.profile as Record<string, unknown> | undefined;
+    if (profileData && typeof profileData === "object") {
+      // webpack profile object has: factory, building, dependencies, etc.
+      // The total time is the sum of factory + building + dependencies
+      const factory = typeof profileData.factory === "number" ? profileData.factory : 0;
+      const building = typeof profileData.building === "number" ? profileData.building : 0;
+      const dependencies =
+        typeof profileData.dependencies === "number" ? profileData.dependencies : 0;
+      time = factory + building + dependencies;
+    } else if (typeof mod.time === "number") {
+      time = mod.time;
+    }
+
+    if (name && time > 0) {
+      profileModules.push({ name, time });
+    }
+  }
+
+  if (profileModules.length === 0) return undefined;
+  return { modules: profileModules };
 }
 
 function parseWebpackText(
@@ -330,11 +512,10 @@ function parseWebpackText(
   const warnings: string[] = [];
 
   for (const line of lines) {
-    const lower = line.toLowerCase();
     const trimmed = line.trim();
-    if (lower.includes("error") && !lower.includes("0 error")) {
+    if (isErrorLine(trimmed)) {
       errors.push(trimmed);
-    } else if (lower.includes("warn") && !lower.includes("0 warn")) {
+    } else if (isWarningLine(trimmed)) {
       warnings.push(trimmed);
     }
   }
@@ -375,6 +556,29 @@ const TURBO_TASK_FAIL_RE = /^(.+?)#(\S+):.*(?:exited\s*\(\d+\)|ERROR)/;
 const TURBO_TASKS_SUMMARY_RE = /Tasks:\s+(\d+)\s+successful,\s+(\d+)\s+total/;
 const TURBO_CACHED_RE = /Cached:\s+(\d+)\s+cached,\s+(\d+)\s+total/;
 
+/** Parses a duration string like "100ms", "2.5s", "1m30s" into milliseconds. */
+export function parseDurationToMs(durationStr: string): number | undefined {
+  // Try ms format: "100ms", "1234ms"
+  const msMatch = durationStr.match(/^(\d+(?:\.\d+)?)\s*ms$/i);
+  if (msMatch) return Math.round(parseFloat(msMatch[1]));
+
+  // Try seconds format: "2.5s", "10s"
+  const sMatch = durationStr.match(/^(\d+(?:\.\d+)?)\s*s$/i);
+  if (sMatch) return Math.round(parseFloat(sMatch[1]) * 1000);
+
+  // Try minutes+seconds: "1m30s"
+  const minsMatch = durationStr.match(/^(\d+)m(\d+(?:\.\d+)?)s$/i);
+  if (minsMatch) {
+    return Math.round(parseInt(minsMatch[1], 10) * 60_000 + parseFloat(minsMatch[2]) * 1000);
+  }
+
+  // Try minutes only: "2m"
+  const mOnlyMatch = durationStr.match(/^(\d+(?:\.\d+)?)\s*m$/i);
+  if (mOnlyMatch) return Math.round(parseFloat(mOnlyMatch[1]) * 60_000);
+
+  return undefined;
+}
+
 /** Parses Turborepo `turbo run` output into structured per-package task results with cache info. */
 export function parseTurboOutput(
   stdout: string,
@@ -399,11 +603,14 @@ export function parseTurboOutput(
       const key = `${taskMatch[1]}#${taskMatch[2]}`;
       if (!seenTasks.has(key)) {
         seenTasks.add(key);
+        const durationStr = taskMatch[4];
+        const durationMs = parseDurationToMs(durationStr);
         tasks.push({
           package: taskMatch[1],
           task: taskMatch[2],
           status: "pass",
-          duration: taskMatch[4],
+          duration: durationStr,
+          durationMs,
           cache: taskMatch[3] === "hit" ? "hit" : "miss",
         });
       }
@@ -497,12 +704,27 @@ export function parseNxOutput(
       const isFailure = trimmed.startsWith("✖") || trimmed.startsWith("✗");
       const status: "success" | "failure" | "skipped" = isFailure ? "failure" : "success";
 
+      // Distinguish local vs remote cache (Gap #81)
+      let cache: "local" | "remote" | "miss" | undefined;
+      if (cacheInfo) {
+        const lower = cacheInfo.toLowerCase();
+        if (lower.includes("remote")) {
+          cache = "remote";
+        } else if (lower.includes("local")) {
+          cache = "local";
+        } else {
+          // Unknown cache type — treat as local
+          cache = "local";
+        }
+      }
+      // Tasks without cache info: no cache field (undefined means not cached)
+
       tasks.push({
         project,
         target,
         status,
         duration: dur,
-        cache: cacheInfo ? true : undefined,
+        cache,
       });
       continue;
     }
@@ -510,7 +732,7 @@ export function parseNxOutput(
 
   const passed = tasks.filter((t) => t.status === "success").length;
   const failed = tasks.filter((t) => t.status === "failure").length;
-  const cached = tasks.filter((t) => t.cache === true).length;
+  const cached = tasks.filter((t) => t.cache !== undefined).length;
 
   return {
     success: exitCode === 0,

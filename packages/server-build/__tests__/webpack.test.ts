@@ -74,6 +74,26 @@ const WEBPACK_JSON_WITH_PREFIX = [
   }),
 ].join("\n");
 
+const WEBPACK_JSON_WITH_PROFILE = JSON.stringify({
+  assets: [{ name: "main.js", size: 52480 }],
+  errors: [],
+  warnings: [],
+  modules: [
+    {
+      name: "./src/index.ts",
+      profile: { factory: 10, building: 20, dependencies: 5 },
+    },
+    {
+      name: "./src/app.ts",
+      profile: { factory: 5, building: 15, dependencies: 3 },
+    },
+    {
+      name: "./src/utils.ts",
+      profile: { factory: 0, building: 0, dependencies: 0 },
+    },
+  ],
+});
+
 // ---------------------------------------------------------------------------
 // Parser tests
 // ---------------------------------------------------------------------------
@@ -85,9 +105,9 @@ describe("parseWebpackOutput", () => {
     expect(result.success).toBe(true);
     expect(result.duration).toBe(2.5);
     expect(result.assets).toHaveLength(3);
-    expect(result.assets[0]).toEqual({ name: "main.js", size: 52480 });
-    expect(result.assets[1]).toEqual({ name: "vendor.js", size: 143360 });
-    expect(result.assets[2]).toEqual({ name: "styles.css", size: 8192 });
+    expect(result.assets![0]).toEqual({ name: "main.js", size: 52480 });
+    expect(result.assets![1]).toEqual({ name: "vendor.js", size: 143360 });
+    expect(result.assets![2]).toEqual({ name: "styles.css", size: 8192 });
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
     expect(result.modules).toBe(3);
@@ -98,8 +118,8 @@ describe("parseWebpackOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.errors).toHaveLength(2);
-    expect(result.errors[0]).toContain("Module not found");
-    expect(result.errors[1]).toContain("SyntaxError");
+    expect(result.errors![0]).toContain("Module not found");
+    expect(result.errors![1]).toContain("SyntaxError");
     expect(result.assets).toEqual([]);
   });
 
@@ -108,10 +128,10 @@ describe("parseWebpackOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.warnings).toHaveLength(2);
-    expect(result.warnings[0]).toContain("asset size limit");
-    expect(result.warnings[1]).toContain("Critical dependency");
+    expect(result.warnings![0]).toContain("asset size limit");
+    expect(result.warnings![1]).toContain("Critical dependency");
     expect(result.assets).toHaveLength(1);
-    expect(result.assets[0].name).toBe("bundle.js");
+    expect(result.assets![0].name).toBe("bundle.js");
   });
 
   it("parses JSON output with string errors and numeric modules", () => {
@@ -119,10 +139,10 @@ describe("parseWebpackOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.errors).toHaveLength(2);
-    expect(result.errors[0]).toBe("Module not found: './missing'");
-    expect(result.errors[1]).toBe("Compilation failed");
+    expect(result.errors![0]).toBe("Module not found: './missing'");
+    expect(result.errors![1]).toBe("Compilation failed");
     expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toContain("Deprecation warning");
+    expect(result.warnings![0]).toContain("Deprecation warning");
     expect(result.modules).toBe(42);
   });
 
@@ -140,8 +160,8 @@ describe("parseWebpackOutput", () => {
     const result = parseWebpackOutput(WEBPACK_TEXT_FALLBACK, "", 1, 1.5);
 
     expect(result.success).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
-    const errorText = result.errors.join(" ");
+    expect(result.errors!.length).toBeGreaterThan(0);
+    const errorText = result.errors!.join(" ");
     expect(errorText).toContain("ERROR");
     expect(result.assets).toEqual([]);
   });
@@ -151,7 +171,7 @@ describe("parseWebpackOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.assets).toHaveLength(1);
-    expect(result.assets[0].name).toBe("main.js");
+    expect(result.assets![0].name).toBe("main.js");
     expect(result.modules).toBe(5);
   });
 
@@ -182,7 +202,31 @@ describe("parseWebpackOutput", () => {
     const result = parseWebpackOutput(stdout, "", 0, 0.5);
 
     expect(result.success).toBe(true);
-    expect(result.warnings.length).toBeGreaterThanOrEqual(1);
+    expect(result.warnings!.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // Gap #85: profile parsing
+  it("parses profile data when profile flag is enabled", () => {
+    const result = parseWebpackOutput(WEBPACK_JSON_WITH_PROFILE, "", 0, 2.0, true);
+
+    expect(result.success).toBe(true);
+    expect(result.profile).toBeDefined();
+    expect(result.profile!.modules).toHaveLength(2); // 3rd module has 0 time, skipped
+    expect(result.profile!.modules[0]).toEqual({
+      name: "./src/index.ts",
+      time: 35,
+    });
+    expect(result.profile!.modules[1]).toEqual({
+      name: "./src/app.ts",
+      time: 23,
+    });
+  });
+
+  it("does not include profile when flag is not set", () => {
+    const result = parseWebpackOutput(WEBPACK_JSON_WITH_PROFILE, "", 0, 2.0);
+
+    expect(result.success).toBe(true);
+    expect(result.profile).toBeUndefined();
   });
 });
 
@@ -263,5 +307,27 @@ describe("formatWebpack", () => {
     const output = formatWebpack(data);
     expect(output).toContain("1 assets");
     expect(output).not.toContain("modules");
+  });
+
+  // Gap #85: profile formatting
+  it("formats build with profile data", () => {
+    const data: WebpackResult = {
+      success: true,
+      duration: 2.0,
+      assets: [{ name: "main.js", size: 52480 }],
+      errors: [],
+      warnings: [],
+      modules: 3,
+      profile: {
+        modules: [
+          { name: "./src/index.ts", time: 35 },
+          { name: "./src/app.ts", time: 23 },
+        ],
+      },
+    };
+    const output = formatWebpack(data);
+    expect(output).toContain("Profile: 2 modules with timing data");
+    expect(output).toContain("./src/index.ts  35ms");
+    expect(output).toContain("./src/app.ts  23ms");
   });
 });

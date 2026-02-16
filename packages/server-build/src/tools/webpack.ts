@@ -60,6 +60,20 @@ export function registerWebpackTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Enable or disable webpack caching (maps to --cache / --no-cache)"),
+        env: z
+          .record(z.string(), z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "Environment variables passed to the webpack config function via --env key=value " +
+              "(e.g., { production: 'true', apiUrl: 'https://api.example.com' }).",
+          ),
+        profile: z
+          .boolean()
+          .optional()
+          .describe(
+            "Enable webpack profiling to capture per-module timing data (maps to --profile). " +
+              "When enabled, profile data is included in the structured output.",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -76,7 +90,21 @@ export function registerWebpackTool(server: McpServer) {
       },
       outputSchema: WebpackResultSchema,
     },
-    async ({ path, config, mode, entry, target, devtool, analyze, bail, cache, args, compact }) => {
+    async ({
+      path,
+      config,
+      mode,
+      entry,
+      target,
+      devtool,
+      analyze,
+      bail,
+      cache,
+      env,
+      profile,
+      args,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       if (config) assertNoFlagInjection(config, "config");
       if (entry) assertNoFlagInjection(entry, "entry");
@@ -84,6 +112,15 @@ export function registerWebpackTool(server: McpServer) {
       if (devtool) assertNoFlagInjection(devtool, "devtool");
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
+      }
+
+      // Validate env keys and values (Gap #84)
+      const envRecord = env as Record<string, string> | undefined;
+      if (envRecord) {
+        for (const [key, value] of Object.entries(envRecord)) {
+          assertNoFlagInjection(String(key), "env key");
+          assertNoFlagInjection(String(value), "env value");
+        }
       }
 
       const cliArgs: string[] = [];
@@ -98,6 +135,14 @@ export function registerWebpackTool(server: McpServer) {
       if (cache !== undefined) {
         cliArgs.push(cache ? "--cache" : "--no-cache");
       }
+      // Gap #84: env parameter — pass key=value pairs to webpack config function
+      if (envRecord) {
+        for (const [key, value] of Object.entries(envRecord)) {
+          cliArgs.push("--env", `${key}=${value}`);
+        }
+      }
+      // Gap #85: profile parameter — enable per-module timing data
+      if (profile) cliArgs.push("--profile");
       cliArgs.push("--json");
       cliArgs.push("--no-color");
 
@@ -110,7 +155,13 @@ export function registerWebpackTool(server: McpServer) {
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 
-      const data = parseWebpackOutput(result.stdout, result.stderr, result.exitCode, duration);
+      const data = parseWebpackOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        duration,
+        profile,
+      );
       return compactDualOutput(
         data,
         rawOutput,

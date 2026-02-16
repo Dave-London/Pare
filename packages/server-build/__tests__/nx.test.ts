@@ -70,12 +70,13 @@ describe("parseNxOutput", () => {
     expect(result.failed).toBe(0);
     expect(result.cached).toBe(2);
 
+    // Gap #81: cache is now "local" | "remote" | "miss" instead of boolean
     expect(result.tasks[0]).toEqual({
       project: "app",
       target: "build",
       status: "success",
       duration: 1.2,
-      cache: true,
+      cache: "local",
     });
     expect(result.tasks[1]).toEqual({
       project: "lib",
@@ -83,6 +84,13 @@ describe("parseNxOutput", () => {
       status: "success",
       duration: 3.4,
       cache: undefined,
+    });
+    expect(result.tasks[2]).toEqual({
+      project: "shared",
+      target: "build",
+      status: "success",
+      duration: 0.8,
+      cache: "local",
     });
   });
 
@@ -96,12 +104,13 @@ describe("parseNxOutput", () => {
     expect(result.cached).toBe(1);
 
     expect(result.tasks[0].status).toBe("success");
-    expect(result.tasks[0].cache).toBe(true);
+    expect(result.tasks[0].cache).toBe("local");
     expect(result.tasks[1].status).toBe("failure");
     expect(result.tasks[1].project).toBe("app");
+    expect(result.tasks[1].cache).toBeUndefined();
   });
 
-  it("parses all-cached output", () => {
+  it("parses all-cached output with local and remote cache", () => {
     const result = parseNxOutput(NX_ALL_CACHED, "", 0, 0.4);
 
     expect(result.success).toBe(true);
@@ -109,6 +118,11 @@ describe("parseNxOutput", () => {
     expect(result.cached).toBe(3);
     expect(result.passed).toBe(3);
     expect(result.failed).toBe(0);
+
+    // Gap #81: distinguish local vs remote cache
+    expect(result.tasks[0].cache).toBe("local");
+    expect(result.tasks[1].cache).toBe("remote");
+    expect(result.tasks[2].cache).toBe("local");
   });
 
   it("parses single project output", () => {
@@ -151,8 +165,10 @@ describe("parseNxOutput", () => {
     expect(result.cached).toBe(1);
 
     expect(result.tasks[0].project).toBe("@scope/pkg-a");
+    expect(result.tasks[0].cache).toBe("local");
     expect(result.tasks[1].project).toBe("@scope/pkg-b");
     expect(result.tasks[1].status).toBe("failure");
+    expect(result.tasks[1].cache).toBeUndefined();
   });
 
   it("preserves duration exactly", () => {
@@ -178,7 +194,7 @@ describe("formatNx", () => {
       success: true,
       duration: 5.4,
       tasks: [
-        { project: "app", target: "build", status: "success", duration: 1.2, cache: true },
+        { project: "app", target: "build", status: "success", duration: 1.2, cache: "local" },
         { project: "lib", target: "build", status: "success", duration: 3.4 },
       ],
       total: 2,
@@ -188,8 +204,24 @@ describe("formatNx", () => {
     };
     const output = formatNx(data);
     expect(output).toContain("nx: 2 passed, 0 failed, 1 cached (5.4s)");
-    expect(output).toContain("✔ app:build [cache] (1.2s)");
+    expect(output).toContain("✔ app:build [local] (1.2s)");
     expect(output).toContain("✔ lib:build (3.4s)");
+  });
+
+  it("formats tasks with remote cache", () => {
+    const data: NxResult = {
+      success: true,
+      duration: 1.0,
+      tasks: [
+        { project: "lib", target: "build", status: "success", duration: 0.2, cache: "remote" },
+      ],
+      total: 1,
+      passed: 1,
+      failed: 0,
+      cached: 1,
+    };
+    const output = formatNx(data);
+    expect(output).toContain("✔ lib:build [remote] (0.2s)");
   });
 
   it("formats failed build with tasks", () => {
@@ -197,7 +229,7 @@ describe("formatNx", () => {
       success: false,
       duration: 2.6,
       tasks: [
-        { project: "lib", target: "build", status: "success", duration: 0.5, cache: true },
+        { project: "lib", target: "build", status: "success", duration: 0.5, cache: "local" },
         { project: "app", target: "build", status: "failure", duration: 2.1 },
       ],
       total: 2,
@@ -249,7 +281,9 @@ describe("compactNxMap", () => {
     const data: NxResult = {
       success: true,
       duration: 5.4,
-      tasks: [{ project: "app", target: "build", status: "success", duration: 1.2, cache: true }],
+      tasks: [
+        { project: "app", target: "build", status: "success", duration: 1.2, cache: "local" },
+      ],
       total: 1,
       passed: 1,
       failed: 0,

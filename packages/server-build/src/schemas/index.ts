@@ -87,6 +87,17 @@ export const EsbuildWarningSchema = z.object({
   message: z.string(),
 });
 
+/** Zod schema for a single metafile entry with byte size. */
+export const MetafileEntrySchema = z.object({
+  bytes: z.number(),
+});
+
+/** Zod schema for esbuild metafile output with inputs and outputs maps. */
+export const EsbuildMetafileSchema = z.object({
+  inputs: z.record(z.string(), MetafileEntrySchema),
+  outputs: z.record(z.string(), MetafileEntrySchema),
+});
+
 /** Zod schema for structured esbuild output including errors, warnings, output files, and duration.
  *  In compact mode, arrays are omitted; only success and duration are returned. */
 export const EsbuildResultSchema = z.object({
@@ -95,6 +106,7 @@ export const EsbuildResultSchema = z.object({
   warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
   duration: z.number(),
+  metafile: EsbuildMetafileSchema.optional(),
 });
 
 /** Full esbuild error -- always returned by the parser. */
@@ -114,6 +126,17 @@ export interface EsbuildWarning {
   message: string;
 }
 
+/** Metafile entry with byte size. */
+export interface MetafileEntry {
+  bytes: number;
+}
+
+/** Esbuild metafile with inputs and outputs. */
+export interface EsbuildMetafile {
+  inputs: Record<string, MetafileEntry>;
+  outputs: Record<string, MetafileEntry>;
+}
+
 /** Full esbuild result -- always returned by the parser. */
 export interface EsbuildResult {
   [key: string]: unknown;
@@ -122,16 +145,18 @@ export interface EsbuildResult {
   warnings?: EsbuildWarning[];
   outputFiles?: string[];
   duration: number;
+  metafile?: EsbuildMetafile;
 }
 
 // ---------------------------------------------------------------------------
 // vite-build
 // ---------------------------------------------------------------------------
 
-/** Zod schema for a single Vite build output file entry with name and size. */
+/** Zod schema for a single Vite build output file entry with name, size string, and normalized byte size. */
 export const ViteOutputFileSchema = z.object({
   file: z.string(),
   size: z.string(),
+  sizeBytes: z.number().optional(),
 });
 
 /** Zod schema for structured Vite production build output with files, sizes, and duration.
@@ -149,6 +174,7 @@ export interface ViteOutputFile {
   [key: string]: unknown;
   file: string;
   size: string;
+  sizeBytes?: number;
 }
 
 /** Full Vite build result -- always returned by the parser. */
@@ -171,6 +197,17 @@ export const WebpackAssetSchema = z.object({
   size: z.number(),
 });
 
+/** Zod schema for a webpack profile module entry with name and timing. */
+export const WebpackProfileModuleSchema = z.object({
+  name: z.string(),
+  time: z.number(),
+});
+
+/** Zod schema for webpack profile data. */
+export const WebpackProfileSchema = z.object({
+  modules: z.array(WebpackProfileModuleSchema),
+});
+
 /** Zod schema for structured webpack build output with assets, errors, warnings, and module count.
  *  In compact mode, arrays are omitted; only success, duration, and modules are returned. */
 export const WebpackResultSchema = z.object({
@@ -180,6 +217,7 @@ export const WebpackResultSchema = z.object({
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
   modules: z.number().optional(),
+  profile: WebpackProfileSchema.optional(),
 });
 
 /** Full webpack asset entry. */
@@ -187,6 +225,17 @@ export interface WebpackAsset {
   [key: string]: unknown;
   name: string;
   size: number;
+}
+
+/** Webpack profile module entry. */
+export interface WebpackProfileModule {
+  name: string;
+  time: number;
+}
+
+/** Webpack profile data. */
+export interface WebpackProfile {
+  modules: WebpackProfileModule[];
 }
 
 /** Full webpack result -- always returned by the parser. */
@@ -198,6 +247,7 @@ export interface WebpackResult {
   errors?: string[];
   warnings?: string[];
   modules?: number;
+  profile?: WebpackProfile;
 }
 
 // ---------------------------------------------------------------------------
@@ -210,6 +260,7 @@ export const TurboTaskSchema = z.object({
   task: z.string(),
   status: z.enum(["pass", "fail"]),
   duration: z.string().optional(),
+  durationMs: z.number().optional(),
   cache: z.enum(["hit", "miss"]).optional(),
 });
 
@@ -232,6 +283,7 @@ export interface TurboTask {
   task: string;
   status: "pass" | "fail";
   duration?: string;
+  durationMs?: number;
   cache?: "hit" | "miss";
 }
 
@@ -257,7 +309,10 @@ export const NxTaskSchema = z.object({
   target: z.string(),
   status: z.enum(["success", "failure", "skipped"]),
   duration: z.number().optional(),
-  cache: z.boolean().optional(),
+  cache: z
+    .enum(["local", "remote", "miss"])
+    .optional()
+    .describe("Cache state: local hit, remote hit, or miss (no cache)"),
 });
 
 /** Zod schema for structured Nx output with per-project task results and summary.
@@ -279,7 +334,7 @@ export interface NxTask {
   target: string;
   status: "success" | "failure" | "skipped";
   duration?: number;
-  cache?: boolean;
+  cache?: "local" | "remote" | "miss";
 }
 
 /** Full Nx result -- always returned by the parser. */

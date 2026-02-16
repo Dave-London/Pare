@@ -5,6 +5,10 @@ import { esbuildCmd } from "../lib/build-runner.js";
 import { parseEsbuildOutput } from "../lib/parsers.js";
 import { formatEsbuild, compactEsbuildMap, formatEsbuildCompact } from "../lib/formatters.js";
 import { EsbuildResultSchema } from "../schemas/index.js";
+import { readFile, unlink } from "node:fs/promises";
+import { join } from "node:path";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 
 /** Registers the `esbuild` tool on the given MCP server. */
 export function registerEsbuildTool(server: McpServer) {
@@ -84,6 +88,20 @@ export function registerEsbuildTool(server: McpServer) {
           .enum(["verbose", "debug", "info", "warning", "error", "silent"])
           .optional()
           .describe("Log level to control output verbosity"),
+        define: z
+          .record(z.string(), z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "Compile-time constant replacements (e.g., { 'process.env.NODE_ENV': '\"production\"' }). " +
+              "Maps to --define:KEY=VALUE for each entry.",
+          ),
+        metafile: z
+          .boolean()
+          .optional()
+          .describe(
+            "Generate a metafile with bundle analysis data (inputs/outputs with byte sizes). " +
+              "When enabled, the metafile is included in the structured output.",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -117,6 +135,8 @@ export function registerEsbuildTool(server: McpServer) {
       splitting,
       legalComments,
       logLevel,
+      define,
+      metafile,
       args,
       compact,
     }) => {
@@ -165,6 +185,24 @@ export function registerEsbuildTool(server: McpServer) {
       if (legalComments) cliArgs.push(`--legal-comments=${legalComments}`);
       if (logLevel) cliArgs.push(`--log-level=${logLevel}`);
 
+      // Gap #79: define parameter — compile-time constant replacements
+      const defineRecord = define as Record<string, string> | undefined;
+      if (defineRecord) {
+        for (const [key, value] of Object.entries(defineRecord)) {
+          assertNoFlagInjection(String(key), "define key");
+          assertNoFlagInjection(String(value), "define value");
+          cliArgs.push(`--define:${key}=${value}`);
+        }
+      }
+
+      // Gap #80: metafile parameter — bundle analysis data
+      let metafilePath: string | undefined;
+      if (metafile) {
+        const suffix = randomBytes(6).toString("hex");
+        metafilePath = join(tmpdir(), `pare-esbuild-meta-${suffix}.json`);
+        cliArgs.push(`--metafile=${metafilePath}`);
+      }
+
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -177,7 +215,30 @@ export function registerEsbuildTool(server: McpServer) {
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 
-      const data = parseEsbuildOutput(result.stdout, result.stderr, result.exitCode, duration);
+      // Read metafile if it was generated
+      let metafileContent: string | undefined;
+      if (metafilePath) {
+        try {
+          metafileContent = await readFile(metafilePath, "utf-8");
+        } catch {
+          // Metafile may not exist if build failed
+        }
+        // Clean up the temp metafile
+        try {
+          await unlink(metafilePath);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+
+      const data = parseEsbuildOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        duration,
+        metafilePath,
+        metafileContent,
+      );
       return compactDualOutput(
         data,
         rawOutput,

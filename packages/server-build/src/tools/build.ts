@@ -51,6 +51,12 @@ export function registerBuildTool(server: McpServer) {
           .describe(
             `Timeout in milliseconds (default: ${DEFAULT_TIMEOUT_MS}, max: ${MAX_TIMEOUT_MS}). Use for builds that need more or less time.`,
           ),
+        env: z
+          .record(z.string(), z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "Environment variables to set for the build process (e.g., { NODE_ENV: 'production', CI: 'true' }). Merged with existing environment.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -61,11 +67,19 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: BuildResultSchema,
     },
-    async ({ command, args, path, timeout, compact }) => {
+    async ({ command, args, path, timeout, env, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
+      }
+      // Validate env values to prevent flag injection
+      const envRecord = env as Record<string, string> | undefined;
+      if (envRecord) {
+        for (const [key, value] of Object.entries(envRecord)) {
+          assertNoFlagInjection(String(key), "env key");
+          assertNoFlagInjection(String(value), "env value");
+        }
       }
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "build");
@@ -73,7 +87,7 @@ export function registerBuildTool(server: McpServer) {
       const timeoutMs = timeout ? Math.min(timeout, MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS;
 
       const start = Date.now();
-      const result = await runBuildCommand(command, args || [], cwd, timeoutMs);
+      const result = await runBuildCommand(command, args || [], cwd, timeoutMs, envRecord);
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 

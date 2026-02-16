@@ -84,6 +84,7 @@ describe("parseTurboOutput", () => {
       task: "build",
       status: "pass",
       duration: "100ms",
+      durationMs: 100,
       cache: "hit",
     });
   });
@@ -100,11 +101,17 @@ describe("parseTurboOutput", () => {
     // First task is cached
     expect(result.tasks[0].cache).toBe("hit");
     expect(result.tasks[0].package).toBe("@paretools/shared");
+    expect(result.tasks[0].durationMs).toBe(100);
 
     // Second task is a miss
     expect(result.tasks[1].cache).toBe("miss");
     expect(result.tasks[1].package).toBe("@paretools/git");
     expect(result.tasks[1].duration).toBe("2.5s");
+    expect(result.tasks[1].durationMs).toBe(2500);
+
+    // Third task
+    expect(result.tasks[2].duration).toBe("3.1s");
+    expect(result.tasks[2].durationMs).toBe(3100);
   });
 
   it("parses failed run with exit code 1", () => {
@@ -144,10 +151,12 @@ describe("parseTurboOutput", () => {
     expect(result.tasks[0].package).toBe("@paretools/shared");
     expect(result.tasks[0].task).toBe("test");
     expect(result.tasks[0].cache).toBe("miss");
+    expect(result.tasks[0].durationMs).toBe(1500);
 
     expect(result.tasks[1].package).toBe("@paretools/git");
     expect(result.tasks[1].task).toBe("test");
     expect(result.tasks[1].cache).toBe("hit");
+    expect(result.tasks[1].durationMs).toBe(200);
   });
 
   it("parses ERROR task lines", () => {
@@ -196,6 +205,7 @@ describe("formatTurbo", () => {
           task: "build",
           status: "pass",
           duration: "100ms",
+          durationMs: 100,
           cache: "hit",
         },
         {
@@ -203,6 +213,7 @@ describe("formatTurbo", () => {
           task: "build",
           status: "pass",
           duration: "2.5s",
+          durationMs: 2500,
           cache: "miss",
         },
       ],
@@ -215,14 +226,25 @@ describe("formatTurbo", () => {
     expect(output).toContain("turbo: 2 tasks completed in 2.5s");
     expect(output).toContain("1 cached");
     expect(output).toContain("@paretools/shared#build: pass [hit] (100ms)");
+    expect(output).toContain("[100ms]");
     expect(output).toContain("@paretools/git#build: pass [miss] (2.5s)");
+    expect(output).toContain("[2500ms]");
   });
 
   it("formats successful run with no cached tasks", () => {
     const data: TurboResult = {
       success: true,
       duration: 5.0,
-      tasks: [{ package: "web", task: "lint", status: "pass", duration: "3s", cache: "miss" }],
+      tasks: [
+        {
+          package: "web",
+          task: "lint",
+          status: "pass",
+          duration: "3s",
+          durationMs: 3000,
+          cache: "miss",
+        },
+      ],
       totalTasks: 1,
       passed: 1,
       failed: 0,
@@ -243,6 +265,7 @@ describe("formatTurbo", () => {
           task: "build",
           status: "pass",
           duration: "100ms",
+          durationMs: 100,
           cache: "hit",
         },
         { package: "@paretools/git", task: "build", status: "fail", cache: "miss" },
