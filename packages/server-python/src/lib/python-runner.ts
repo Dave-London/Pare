@@ -34,3 +34,8 @@ export async function pyenv(args: string[], cwd?: string): Promise<RunResult> {
 export async function poetry(args: string[], cwd?: string): Promise<RunResult> {
   return run("poetry", args, { cwd, timeout: 180_000 });
 }
+
+/** pip-audit is a standalone binary, NOT a pip subcommand. */
+export async function pipAudit(args: string[], cwd?: string): Promise<RunResult> {
+  return run("pip-audit", args, { cwd, timeout: 180_000 });
+}

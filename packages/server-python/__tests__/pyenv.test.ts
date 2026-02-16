@@ -7,13 +7,15 @@ import type { PyenvResult } from "../src/schemas/index.js";
 
 describe("parsePyenvOutput", () => {
   describe("versions action", () => {
-    it("parses list of installed versions with --bare output", () => {
-      const stdout = "2.7.18\n3.10.13\n3.11.7\n3.12.0\n";
+    it("parses list of installed versions (without --bare)", () => {
+      // pyenv versions (no --bare) includes leading spaces and * marker for current
+      const stdout = "  2.7.18\n  3.10.13\n* 3.11.7 (set by /home/user/.pyenv/version)\n  3.12.0\n";
       const result = parsePyenvOutput(stdout, "", 0, "versions");
 
       expect(result.success).toBe(true);
       expect(result.action).toBe("versions");
       expect(result.versions).toEqual(["2.7.18", "3.10.13", "3.11.7", "3.12.0"]);
+      expect(result.current).toBe("3.11.7");
     });
 
     it("parses versions with current marker", () => {
@@ -25,6 +27,15 @@ describe("parsePyenvOutput", () => {
       expect(result.versions).toContain("2.7.18");
       expect(result.versions).toContain("3.11.7");
       expect(result.current).toBe("3.12.0");
+    });
+
+    it("parses versions without any current marker (no version set)", () => {
+      const stdout = "  2.7.18\n  3.10.13\n  3.12.0\n";
+      const result = parsePyenvOutput(stdout, "", 0, "versions");
+
+      expect(result.success).toBe(true);
+      expect(result.versions).toEqual(["2.7.18", "3.10.13", "3.12.0"]);
+      expect(result.current).toBeUndefined();
     });
 
     it("handles empty versions list", () => {

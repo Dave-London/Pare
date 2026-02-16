@@ -23,7 +23,8 @@ export function formatPipInstall(data: PipInstall): string {
   if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
   if (!data.success) return "pip install failed.";
 
-  const lines = [`Installed ${data.total} packages:`];
+  const verb = data.dryRun ? "Would install" : "Installed";
+  const lines = [`${verb} ${data.total} packages:`];
   for (const pkg of data.installed ?? []) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
@@ -87,7 +88,18 @@ export function formatPytest(data: PytestResult): string {
 
 /** Formats structured uv install results into a human-readable summary. */
 export function formatUvInstall(data: UvInstall): string {
-  if (!data.success) return "uv install failed.";
+  if (!data.success) {
+    const lines = ["uv install failed."];
+    if (data.resolutionConflicts && data.resolutionConflicts.length > 0) {
+      lines.push("Resolution conflicts:");
+      for (const c of data.resolutionConflicts) {
+        lines.push(`  ${c.package} ${c.constraint}`);
+      }
+    } else if (data.error) {
+      lines.push(data.error);
+    }
+    return lines.join("\n");
+  }
   if (data.total === 0) return "All requirements already satisfied.";
 
   const lines = [`Installed ${data.total} packages in ${data.duration}s:`];
@@ -114,6 +126,10 @@ export function formatUvRun(data: UvRun): string {
 
 /** Formats structured Black formatter results into a human-readable summary. */
 export function formatBlack(data: BlackResult): string {
+  if (data.errorType === "internal_error") {
+    return "black: internal error (exit 123). Check for syntax errors.";
+  }
+
   if (data.filesChecked === 0) return "black: no Python files found.";
 
   if (data.success && data.filesChanged === 0) {
@@ -124,7 +140,7 @@ export function formatBlack(data: BlackResult): string {
   const wouldReformat = data.wouldReformat ?? [];
   if (wouldReformat.length > 0) {
     lines.push(
-      `black: ${data.filesChanged} files ${data.success ? "reformatted" : "would be reformatted"}, ${data.filesUnchanged} unchanged`,
+      `black: ${data.filesChanged} files ${data.errorType === "check_failed" ? "would be reformatted" : "reformatted"}, ${data.filesUnchanged} unchanged`,
     );
     for (const f of wouldReformat) {
       lines.push(`  ${f}`);
@@ -224,13 +240,14 @@ export function formatRuffCompact(data: RuffResultCompact): string {
   return `ruff: ${data.total} issues (${data.fixable} fixable)`;
 }
 
-/** Compact black: success + changed/unchanged counts. Drop individual file lists. */
+/** Compact black: success + changed/unchanged counts + errorType. Drop individual file lists. */
 export interface BlackResultCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
   filesUnchanged: number;
   filesChecked: number;
+  errorType?: "check_failed" | "internal_error";
 }
 
 export function compactBlackMap(data: BlackResult): BlackResultCompact {
@@ -239,21 +256,26 @@ export function compactBlackMap(data: BlackResult): BlackResultCompact {
     filesChanged: data.filesChanged,
     filesUnchanged: data.filesUnchanged,
     filesChecked: data.filesChecked,
+    errorType: data.errorType,
   };
 }
 
 export function formatBlackCompact(data: BlackResultCompact): string {
+  if (data.errorType === "internal_error") {
+    return "black: internal error (exit 123).";
+  }
   if (data.filesChecked === 0) return "black: no Python files found.";
   if (data.filesChanged === 0) return `black: ${data.filesUnchanged} files already formatted.`;
   return `black: ${data.filesChanged} reformatted, ${data.filesUnchanged} unchanged`;
 }
 
-/** Compact pip-install: success + installed count. Drop individual package details. */
+/** Compact pip-install: success + installed count + dryRun. Drop individual package details. */
 export interface PipInstallCompact {
   [key: string]: unknown;
   success: boolean;
   total: number;
   alreadySatisfied: boolean;
+  dryRun?: boolean;
 }
 
 export function compactPipInstallMap(data: PipInstall): PipInstallCompact {
@@ -261,13 +283,15 @@ export function compactPipInstallMap(data: PipInstall): PipInstallCompact {
     success: data.success,
     total: data.total,
     alreadySatisfied: data.alreadySatisfied,
+    dryRun: data.dryRun || undefined,
   };
 }
 
 export function formatPipInstallCompact(data: PipInstallCompact): string {
   if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
   if (!data.success) return "pip install failed.";
-  return `Installed ${data.total} packages.`;
+  const verb = data.dryRun ? "Would install" : "Installed";
+  return `${verb} ${data.total} packages.`;
 }
 
 /** Compact pip-audit: success + vulnerability count. Drop individual CVE details. */
@@ -289,12 +313,14 @@ export function formatPipAuditCompact(data: PipAuditResultCompact): string {
   return `${data.total} vulnerabilities found.`;
 }
 
-/** Compact uv-install: success + installed count + duration. Drop individual packages. */
+/** Compact uv-install: success + installed count + duration + error info. Drop individual packages. */
 export interface UvInstallCompact {
   [key: string]: unknown;
   success: boolean;
   total: number;
   duration: number;
+  error?: string;
+  resolutionConflicts?: { package: string; constraint: string }[];
 }
 
 export function compactUvInstallMap(data: UvInstall): UvInstallCompact {
@@ -302,11 +328,18 @@ export function compactUvInstallMap(data: UvInstall): UvInstallCompact {
     success: data.success,
     total: data.total,
     duration: data.duration,
+    error: data.error,
+    resolutionConflicts: data.resolutionConflicts,
   };
 }
 
 export function formatUvInstallCompact(data: UvInstallCompact): string {
-  if (!data.success) return "uv install failed.";
+  if (!data.success) {
+    if (data.resolutionConflicts && data.resolutionConflicts.length > 0) {
+      return `uv install failed: ${data.resolutionConflicts.length} resolution conflicts.`;
+    }
+    return "uv install failed.";
+  }
   if (data.total === 0) return "All requirements already satisfied.";
   return `Installed ${data.total} packages in ${data.duration}s.`;
 }
@@ -421,7 +454,7 @@ export function formatRuffFormat(data: RuffFormatResult): string {
   }
 
   const lines: string[] = [];
-  const verb = data.success ? "reformatted" : "would be reformatted";
+  const verb = data.checkMode ? "would be reformatted" : "reformatted";
   lines.push(`ruff format: ${data.filesChanged} files ${verb}`);
 
   if (data.files && data.files.length > 0) {
@@ -433,17 +466,19 @@ export function formatRuffFormat(data: RuffFormatResult): string {
   return lines.join("\n");
 }
 
-/** Compact ruff-format: success + filesChanged count. Drop individual file lists. */
+/** Compact ruff-format: success + filesChanged count + checkMode. Drop individual file lists. */
 export interface RuffFormatResultCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
+  checkMode?: boolean;
 }
 
 export function compactRuffFormatMap(data: RuffFormatResult): RuffFormatResultCompact {
   return {
     success: data.success,
     filesChanged: data.filesChanged,
+    checkMode: data.checkMode || undefined,
   };
 }
 
@@ -451,7 +486,7 @@ export function formatRuffFormatCompact(data: RuffFormatResultCompact): string {
   if (data.success && data.filesChanged === 0) {
     return "ruff format: all files already formatted.";
   }
-  const verb = data.success ? "reformatted" : "would be reformatted";
+  const verb = data.checkMode ? "would be reformatted" : "reformatted";
   return `ruff format: ${data.filesChanged} files ${verb}`;
 }
 

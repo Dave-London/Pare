@@ -21,12 +21,16 @@ import { z } from "zod";
 
 type MypyDiagnostic = z.infer<typeof MypyDiagnosticSchema>;
 
-/** Parses `pip install` output into structured data with installed packages and satisfaction status. */
+/** Parses `pip install` output into structured data with installed packages and satisfaction status.
+ *  Handles both normal installs ("Successfully installed ...") and dry-run output ("Would install ..."). */
 export function parsePipInstall(stdout: string, stderr: string, exitCode: number): PipInstall {
   const output = stdout + "\n" + stderr;
   const alreadySatisfied = output.includes("already satisfied");
+  const dryRun = output.includes("Would install") || output.includes("--dry-run");
 
   const installed: { name: string; version: string }[] = [];
+
+  // Normal mode: "Successfully installed pkg-1.0.0 pkg2-2.0.0"
   const installMatch = output.match(/Successfully installed (.+)/);
   if (installMatch) {
     const packages = installMatch[1].trim().split(/\s+/);
@@ -41,10 +45,28 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
     }
   }
 
+  // Dry-run mode: "Would install pkg-1.0.0 pkg2-2.0.0"
+  if (installed.length === 0) {
+    const dryRunMatch = output.match(/Would install (.+)/);
+    if (dryRunMatch) {
+      const packages = dryRunMatch[1].trim().split(/\s+/);
+      for (const pkg of packages) {
+        const lastDash = pkg.lastIndexOf("-");
+        if (lastDash > 0) {
+          installed.push({
+            name: pkg.slice(0, lastDash),
+            version: pkg.slice(lastDash + 1),
+          });
+        }
+      }
+    }
+  }
+
   return {
     success: exitCode === 0,
     installed,
     alreadySatisfied,
+    dryRun,
     total: installed.length,
   };
 }
@@ -253,8 +275,11 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
 // Matches uv install output lines like: " + package==version" or "Installed N packages in Ns"
 const UV_INSTALLED_PKG_RE = /^\s*\+\s+(\S+)==(\S+)/;
 const UV_SUMMARY_RE = /Installed (\d+) packages? in ([\d.]+)/;
+// Matches uv resolution conflict lines like: "`package>=1.0` and `package<1.0`"
+const UV_CONFLICT_RE = /`([a-zA-Z0-9_-]+)\s*([^`]*)`/g;
 
-/** Parses uv pip install output into structured data with installed packages. */
+/** Parses uv pip install output into structured data with installed packages.
+ *  On failure, extracts resolution conflict information from stderr. */
 export function parseUvInstall(stdout: string, stderr: string, exitCode: number): UvInstall {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
@@ -273,11 +298,54 @@ export function parseUvInstall(stdout: string, stderr: string, exitCode: number)
     }
   }
 
+  // On failure, extract resolution error details from stderr
+  let error: string | undefined;
+  let resolutionConflicts: { package: string; constraint: string }[] | undefined;
+
+  if (exitCode !== 0) {
+    const stderrTrimmed = stderr.trim();
+    if (stderrTrimmed) {
+      error = stderrTrimmed;
+    }
+
+    // Check for resolution/version conflict errors
+    if (
+      stderr.includes("version solving failed") ||
+      stderr.includes("Cannot install") ||
+      stderr.includes("conflict") ||
+      stderr.includes("incompatible")
+    ) {
+      const conflicts: { package: string; constraint: string }[] = [];
+      const seen = new Set<string>();
+
+      for (const line of stderr.split("\n")) {
+        // Reset lastIndex for global regex
+        UV_CONFLICT_RE.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = UV_CONFLICT_RE.exec(line)) !== null) {
+          const pkg = match[1];
+          const constraint = match[2].trim();
+          const key = `${pkg}:${constraint}`;
+          if (!seen.has(key) && constraint) {
+            seen.add(key);
+            conflicts.push({ package: pkg, constraint });
+          }
+        }
+      }
+
+      if (conflicts.length > 0) {
+        resolutionConflicts = conflicts;
+      }
+    }
+  }
+
   return {
     success: exitCode === 0,
     installed,
     total: installed.length,
     duration,
+    error,
+    resolutionConflicts,
   };
 }
 
@@ -346,15 +414,24 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
 
   // In check mode, success means no files need reformatting
   // In format mode, success is always true (exitCode 0) unless black errors
-  // exitCode 1 in check mode = files would be reformatted
-  // exitCode 123 = internal error
+  // exitCode 1 in check mode = files would be reformatted ("check_failed")
+  // exitCode 123 = internal error (parse error or crash)
   const success = exitCode === 0;
+
+  let errorType: "check_failed" | "internal_error" | undefined;
+  if (exitCode === 1) {
+    errorType = "check_failed";
+  } else if (exitCode === 123) {
+    errorType = "internal_error";
+  }
 
   return {
     filesChanged,
     filesUnchanged,
     filesChecked,
     success,
+    exitCode: exitCode !== 0 ? exitCode : undefined,
+    errorType,
     wouldReformat,
   };
 }
@@ -502,9 +579,11 @@ export function parsePyenvOutput(
   }
 }
 
-const RUFF_FORMAT_FILE_RE = /^(?:Would reformat|reformatted): (.+)$/;
+const RUFF_FORMAT_WOULD_RE = /^Would reformat: (.+)$/;
+const RUFF_FORMAT_DID_RE = /^reformatted: (.+)$/;
 
-/** Parses `ruff format` output into structured result with file counts. */
+/** Parses `ruff format` output into structured result with file counts.
+ *  Distinguishes check mode ("Would reformat") from fix mode ("reformatted"). */
 export function parseRuffFormatOutput(
   stdout: string,
   stderr: string,
@@ -515,12 +594,24 @@ export function parseRuffFormatOutput(
   const lines = output.split("\n");
 
   const files: string[] = [];
+  let checkMode = false;
 
   for (const line of lines) {
-    const match = line.match(RUFF_FORMAT_FILE_RE);
-    if (match) {
-      files.push(match[1].trim());
+    const wouldMatch = line.match(RUFF_FORMAT_WOULD_RE);
+    if (wouldMatch) {
+      files.push(wouldMatch[1].trim());
+      checkMode = true;
+      continue;
     }
+    const didMatch = line.match(RUFF_FORMAT_DID_RE);
+    if (didMatch) {
+      files.push(didMatch[1].trim());
+    }
+  }
+
+  // Also detect check mode from summary line
+  if (output.includes("would be reformatted")) {
+    checkMode = true;
   }
 
   // Parse summary line: "N files reformatted" or "N files would be reformatted" or "N files left unchanged"
@@ -531,6 +622,7 @@ export function parseRuffFormatOutput(
     success: exitCode === 0,
     filesChanged: filesChanged || files.length,
     files: files.length > 0 ? files : undefined,
+    checkMode,
   };
 }
 
