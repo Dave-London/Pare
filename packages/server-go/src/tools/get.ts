@@ -24,6 +24,21 @@ export function registerGetTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        testDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Also download packages needed to build and test the specified packages (-t)"),
+        verbose: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print information about download and resolution progress (-v)"),
+        downloadOnly: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Download the named packages but do not install them (-d)"),
         compact: z
           .boolean()
           .optional()
@@ -34,12 +49,16 @@ export function registerGetTool(server: McpServer) {
       },
       outputSchema: GoGetResultSchema,
     },
-    async ({ packages, path, compact }) => {
+    async ({ packages, path, testDeps, verbose, downloadOnly, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages) {
         assertNoFlagInjection(p, "packages");
       }
-      const args = ["get", ...packages];
+      const args = ["get"];
+      if (testDeps) args.push("-t");
+      if (verbose) args.push("-v");
+      if (downloadOnly) args.push("-d");
+      args.push(...packages);
       const result = await goCmd(args, cwd);
       const data = parseGoGetOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();

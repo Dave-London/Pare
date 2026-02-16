@@ -31,6 +31,25 @@ export function registerTestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test name filter regex"),
+        failfast: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Stop running tests after the first failure (-failfast). Saves time and tokens.",
+          ),
+        short: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Tell long-running tests to shorten their run time (-short). Enables quick smoke tests.",
+          ),
+        race: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable data race detection during tests (-race)"),
         compact: z
           .boolean()
           .optional()
@@ -41,14 +60,18 @@ export function registerTestTool(server: McpServer) {
       },
       outputSchema: GoTestResultSchema,
     },
-    async ({ path, packages, run: runFilter, compact }) => {
+    async ({ path, packages, run: runFilter, failfast, short, race, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
       if (runFilter) assertNoFlagInjection(runFilter, "run");
 
-      const args = ["test", "-json", ...(packages || ["./..."])];
+      const args = ["test", "-json"];
+      if (failfast) args.push("-failfast");
+      if (short) args.push("-short");
+      if (race) args.push("-race");
+      args.push(...(packages || ["./..."]));
       if (runFilter) args.push("-run", runFilter);
 
       const result = await goCmd(args, cwd);

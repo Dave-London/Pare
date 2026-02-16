@@ -20,6 +20,23 @@ export function registerModTidyTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        diff: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Non-destructive check mode: show what changes would be made without modifying files (-diff)",
+          ),
+        verbose: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print information about removed modules (-v)"),
+        continueOnError: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Attempt to proceed despite errors encountered while loading packages (-e)"),
         compact: z
           .boolean()
           .optional()
@@ -30,9 +47,13 @@ export function registerModTidyTool(server: McpServer) {
       },
       outputSchema: GoModTidyResultSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, diff, verbose, continueOnError, compact }) => {
       const cwd = path || process.cwd();
-      const result = await goCmd(["mod", "tidy"], cwd);
+      const args = ["mod", "tidy"];
+      if (diff) args.push("-diff");
+      if (verbose) args.push("-v");
+      if (continueOnError) args.push("-e");
+      const result = await goCmd(args, cwd);
       const data = parseGoModTidyOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

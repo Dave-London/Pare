@@ -25,6 +25,13 @@ export function registerEnvTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Specific environment variables to query (e.g., ['GOROOT', 'GOPATH'])"),
+        changed: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Show only variables whose effective value differs from the default (-changed)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -35,12 +42,14 @@ export function registerEnvTool(server: McpServer) {
       },
       outputSchema: GoEnvResultSchema,
     },
-    async ({ path, vars, compact }) => {
+    async ({ path, vars, changed, compact }) => {
       for (const v of vars || []) {
         assertNoFlagInjection(v, "vars");
       }
       const cwd = path || process.cwd();
-      const args = ["env", "-json", ...(vars || [])];
+      const args = ["env", "-json"];
+      if (changed) args.push("-changed");
+      args.push(...(vars || []));
       const result = await goCmd(args, cwd);
       const data = parseGoEnvOutput(result.stdout);
       const rawOutput = result.stdout.trim();
