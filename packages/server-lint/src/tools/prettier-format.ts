@@ -50,6 +50,11 @@ export function registerPrettierFormatTool(server: McpServer) {
           .enum(["lf", "crlf", "cr", "auto"])
           .optional()
           .describe("Line ending style override"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to a Prettier configuration file (maps to --config)"),
         compact: z
           .boolean()
           .optional()
@@ -60,7 +65,17 @@ export function registerPrettierFormatTool(server: McpServer) {
       },
       outputSchema: FormatWriteResultSchema,
     },
-    async ({ path, patterns, ignoreUnknown, cache, noConfig, logLevel, endOfLine, compact }) => {
+    async ({
+      path,
+      patterns,
+      ignoreUnknown,
+      cache,
+      noConfig,
+      logLevel,
+      endOfLine,
+      config,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -71,6 +86,10 @@ export function registerPrettierFormatTool(server: McpServer) {
       if (noConfig) args.push("--no-config");
       if (logLevel) args.push(`--log-level=${logLevel}`);
       if (endOfLine) args.push(`--end-of-line=${endOfLine}`);
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
       args.push(...(patterns || ["."]));
 
       const result = await prettier(args, cwd);

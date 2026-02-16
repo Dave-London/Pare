@@ -40,6 +40,7 @@ describe("parseBiomeJson", () => {
     expect(result.diagnostics[0]).toEqual({
       file: "src/index.ts",
       line: 5,
+      column: 10,
       severity: "error",
       rule: "lint/suspicious/noDoubleEquals",
       message: "Use === instead of ==.",
@@ -48,6 +49,7 @@ describe("parseBiomeJson", () => {
     expect(result.diagnostics[1]).toEqual({
       file: "src/utils.ts",
       line: 12,
+      column: 1,
       severity: "warning",
       rule: "lint/style/useConst",
       message: "Use const instead of let.",
@@ -148,6 +150,7 @@ describe("parseBiomeJson", () => {
 
     expect(result.diagnostics[0].file).toBe("unknown");
     expect(result.diagnostics[0].line).toBe(0);
+    expect(result.diagnostics[0].column).toBeUndefined();
   });
 
   it("handles mixed lint and format diagnostics", () => {

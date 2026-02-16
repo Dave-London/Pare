@@ -13,7 +13,7 @@ export function registerShellcheckTool(server: McpServer) {
     {
       title: "ShellCheck",
       description:
-        "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `shellcheck` in the terminal.",
+        "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `shellcheck` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -48,6 +48,33 @@ export function registerShellcheckTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Disable .shellcheckrc config file lookup (maps to --norc)"),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Check codes to exclude, e.g. ['SC2086', 'SC2034'] (maps to --exclude)"),
+        enable: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Optional checks to enable, e.g. ['add-default-case', 'require-variable-braces'] (maps to --enable)",
+          ),
+        include: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Only report these check codes (maps to --include)"),
+        rcfile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to a custom ShellCheck config file (maps to --rcfile)"),
+        sourcePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to resolve source commands (maps to --source-path)"),
         compact: z
           .boolean()
           .optional()
@@ -58,7 +85,21 @@ export function registerShellcheckTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, severity, shell, externalSources, checkSourced, norc, compact }) => {
+    async ({
+      path,
+      patterns,
+      severity,
+      shell,
+      externalSources,
+      checkSourced,
+      norc,
+      exclude,
+      enable,
+      include,
+      rcfile,
+      sourcePath,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -69,6 +110,32 @@ export function registerShellcheckTool(server: McpServer) {
       if (externalSources) args.push("--external-sources");
       if (checkSourced) args.push("--check-sourced");
       if (norc) args.push("--norc");
+      if (exclude && exclude.length > 0) {
+        for (const code of exclude) {
+          assertNoFlagInjection(code, "exclude");
+        }
+        args.push(`--exclude=${exclude.join(",")}`);
+      }
+      if (enable && enable.length > 0) {
+        for (const check of enable) {
+          assertNoFlagInjection(check, "enable");
+        }
+        args.push(`--enable=${enable.join(",")}`);
+      }
+      if (include && include.length > 0) {
+        for (const code of include) {
+          assertNoFlagInjection(code, "include");
+        }
+        args.push(`--include=${include.join(",")}`);
+      }
+      if (rcfile) {
+        assertNoFlagInjection(rcfile, "rcfile");
+        args.push(`--rcfile=${rcfile}`);
+      }
+      if (sourcePath) {
+        assertNoFlagInjection(sourcePath, "sourcePath");
+        args.push(`--source-path=${sourcePath}`);
+      }
       args.push(...(patterns || ["."]));
 
       const result = await shellcheckCmd(args, cwd);

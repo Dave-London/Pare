@@ -40,6 +40,35 @@ export function registerBiomeCheckTool(server: McpServer) {
           .optional()
           .describe("Only check VCS-changed files (maps to --changed)"),
         staged: z.boolean().optional().describe("Only check staged files (maps to --staged)"),
+        since: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Only check files changed since this git ref (maps to --since)"),
+        configPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Biome configuration file (maps to --config-path)"),
+        linterEnabled: z
+          .boolean()
+          .optional()
+          .describe("Enable or disable the linter (maps to --linter-enabled)"),
+        formatterEnabled: z
+          .boolean()
+          .optional()
+          .describe("Enable or disable the formatter (maps to --formatter-enabled)"),
+        maxDiagnostics: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Maximum number of diagnostics to display (maps to --max-diagnostics)"),
+        skip: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rules to skip (maps to --skip)"),
         compact: z
           .boolean()
           .optional()
@@ -50,7 +79,22 @@ export function registerBiomeCheckTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, apply, applyUnsafe, diagnosticLevel, changed, staged, compact }) => {
+    async ({
+      path,
+      patterns,
+      apply,
+      applyUnsafe,
+      diagnosticLevel,
+      changed,
+      staged,
+      since,
+      configPath,
+      linterEnabled,
+      formatterEnabled,
+      maxDiagnostics,
+      skip,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -61,6 +105,29 @@ export function registerBiomeCheckTool(server: McpServer) {
       if (diagnosticLevel) args.push(`--diagnostic-level=${diagnosticLevel}`);
       if (changed) args.push("--changed");
       if (staged) args.push("--staged");
+      if (since) {
+        assertNoFlagInjection(since, "since");
+        args.push(`--since=${since}`);
+      }
+      if (configPath) {
+        assertNoFlagInjection(configPath, "configPath");
+        args.push(`--config-path=${configPath}`);
+      }
+      if (linterEnabled !== undefined) {
+        args.push(`--linter-enabled=${linterEnabled}`);
+      }
+      if (formatterEnabled !== undefined) {
+        args.push(`--formatter-enabled=${formatterEnabled}`);
+      }
+      if (maxDiagnostics !== undefined) {
+        args.push(`--max-diagnostics=${maxDiagnostics}`);
+      }
+      if (skip) {
+        for (const rule of skip) {
+          assertNoFlagInjection(rule, "skip");
+          args.push(`--skip=${rule}`);
+        }
+      }
       args.push(...(patterns || ["."]));
 
       const result = await biome(args, cwd);

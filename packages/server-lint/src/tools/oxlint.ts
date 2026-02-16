@@ -13,7 +13,7 @@ export function registerOxlintTool(server: McpServer) {
     {
       title: "Oxlint Check",
       description:
-        "Runs Oxlint and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `oxlint` in the terminal.",
+        "Runs Oxlint and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `oxlint` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -37,6 +37,43 @@ export function registerOxlintTool(server: McpServer) {
           .describe("Apply suggestion-level fixes (maps to --fix-suggestions)"),
         threads: z.number().optional().describe("Number of threads to use for parallel linting"),
         noIgnore: z.boolean().optional().describe("Disable ignore patterns (maps to --no-ignore)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Oxlint configuration file (maps to --config)"),
+        deny: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rules to deny (error level) (maps to -D)"),
+        warn: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rules to warn on (maps to -W)"),
+        allow: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rules to allow (disable) (maps to -A)"),
+        plugins: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Plugin categories to enable (e.g., 'import', 'jest', 'jsx-a11y') (maps to --<plugin>-plugin)",
+          ),
+        tsconfig: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to tsconfig.json for type-aware rules (maps to --tsconfig)"),
+        ignorePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to an alternate ignore file (maps to --ignore-path)"),
         compact: z
           .boolean()
           .optional()
@@ -47,7 +84,23 @@ export function registerOxlintTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, fix, quiet, fixSuggestions, threads, noIgnore, compact }) => {
+    async ({
+      path,
+      patterns,
+      fix,
+      quiet,
+      fixSuggestions,
+      threads,
+      noIgnore,
+      config,
+      deny,
+      warn,
+      allow,
+      plugins,
+      tsconfig,
+      ignorePath,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -58,6 +111,42 @@ export function registerOxlintTool(server: McpServer) {
       if (fixSuggestions) args.push("--fix-suggestions");
       if (threads !== undefined) args.push(`--threads=${threads}`);
       if (noIgnore) args.push("--no-ignore");
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
+      if (deny) {
+        for (const rule of deny) {
+          assertNoFlagInjection(rule, "deny");
+          args.push("-D", rule);
+        }
+      }
+      if (warn) {
+        for (const rule of warn) {
+          assertNoFlagInjection(rule, "warn");
+          args.push("-W", rule);
+        }
+      }
+      if (allow) {
+        for (const rule of allow) {
+          assertNoFlagInjection(rule, "allow");
+          args.push("-A", rule);
+        }
+      }
+      if (plugins) {
+        for (const plugin of plugins) {
+          assertNoFlagInjection(plugin, "plugins");
+          args.push(`--${plugin}-plugin`);
+        }
+      }
+      if (tsconfig) {
+        assertNoFlagInjection(tsconfig, "tsconfig");
+        args.push(`--tsconfig=${tsconfig}`);
+      }
+      if (ignorePath) {
+        assertNoFlagInjection(ignorePath, "ignorePath");
+        args.push(`--ignore-path=${ignorePath}`);
+      }
 
       const result = await oxlintCmd(args, cwd);
       const data = parseOxlintJson(result.stdout);

@@ -4,9 +4,11 @@ import { z } from "zod";
 export const LintDiagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),
+  column: z.number().optional(),
   severity: z.enum(["error", "warning", "info"]),
   rule: z.string(),
   message: z.string(),
+  wikiUrl: z.string().optional(),
 });
 
 /** Zod schema for structured ESLint output including diagnostics, counts, and files checked. */
@@ -15,6 +17,8 @@ export const LintResultSchema = z.object({
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
+  fixableErrorCount: z.number().optional(),
+  fixableWarningCount: z.number().optional(),
   filesChecked: z.number(),
 });
 

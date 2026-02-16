@@ -13,7 +13,7 @@ export function registerLintTool(server: McpServer) {
     {
       title: "ESLint Check",
       description:
-        "Runs ESLint and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `eslint` in the terminal.",
+        "Runs ESLint and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `eslint` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -43,6 +43,31 @@ export function registerLintTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Preview fixes without writing them (maps to --fix-dry-run)"),
+        maxWarnings: z
+          .number()
+          .int()
+          .min(-1)
+          .optional()
+          .describe(
+            "Maximum number of warnings before failing (maps to --max-warnings). Use -1 for no limit.",
+          ),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to ESLint configuration file (maps to --config)"),
+        fixType: z
+          .array(z.enum(["problem", "suggestion", "layout", "directive"]))
+          .max(4)
+          .optional()
+          .describe(
+            "Types of fixes to apply (maps to --fix-type). Requires --fix or --fix-dry-run.",
+          ),
+        rule: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Ad-hoc rule overrides, e.g. ['no-console: error'] (maps to --rule)"),
         compact: z
           .boolean()
           .optional()
@@ -53,7 +78,20 @@ export function registerLintTool(server: McpServer) {
       },
       outputSchema: LintResultSchema,
     },
-    async ({ path, patterns, fix, quiet, noIgnore, cache, fixDryRun, compact }) => {
+    async ({
+      path,
+      patterns,
+      fix,
+      quiet,
+      noIgnore,
+      cache,
+      fixDryRun,
+      maxWarnings,
+      config,
+      fixType,
+      rule,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
@@ -64,6 +102,20 @@ export function registerLintTool(server: McpServer) {
       if (noIgnore) args.push("--no-ignore");
       if (cache) args.push("--cache");
       if (fixDryRun) args.push("--fix-dry-run");
+      if (maxWarnings !== undefined) args.push(`--max-warnings=${maxWarnings}`);
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
+      if (fixType && fixType.length > 0) {
+        args.push(`--fix-type=${fixType.join(",")}`);
+      }
+      if (rule) {
+        for (const r of rule) {
+          assertNoFlagInjection(r, "rule");
+          args.push("--rule", r);
+        }
+      }
 
       const result = await eslint(args, cwd);
       const data = parseEslintJson(result.stdout);

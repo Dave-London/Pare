@@ -49,6 +49,40 @@ export function registerHadolintTool(server: McpServer) {
           .optional()
           .describe("Enforce strict label schema (maps to --strict-labels)"),
         verbose: z.boolean().optional().describe("Enable verbose output (maps to --verbose)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to Hadolint configuration file (maps to --config)"),
+        requireLabel: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Required labels in Dockerfiles, e.g. ['maintainer:text'] (maps to --require-label)",
+          ),
+        shell: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Default shell for RUN instruction linting, e.g. '/bin/bash' (maps to --shell)",
+          ),
+        errorRules: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rule codes to treat as errors (maps to --error)"),
+        warningRules: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rule codes to treat as warnings (maps to --warning)"),
+        infoRules: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Rule codes to treat as info (maps to --info)"),
         compact: z
           .boolean()
           .optional()
@@ -68,6 +102,12 @@ export function registerHadolintTool(server: McpServer) {
       noFail,
       strictLabels,
       verbose,
+      config,
+      requireLabel,
+      shell,
+      errorRules,
+      warningRules,
+      infoRules,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -94,6 +134,44 @@ export function registerHadolintTool(server: McpServer) {
       if (noFail) args.push("--no-fail");
       if (strictLabels) args.push("--strict-labels");
       if (verbose) args.push("--verbose");
+
+      if (config) {
+        assertNoFlagInjection(config, "config");
+        args.push(`--config=${config}`);
+      }
+
+      if (requireLabel) {
+        for (const label of requireLabel) {
+          assertNoFlagInjection(label, "requireLabel");
+          args.push(`--require-label=${label}`);
+        }
+      }
+
+      if (shell) {
+        assertNoFlagInjection(shell, "shell");
+        args.push(`--shell=${shell}`);
+      }
+
+      if (errorRules) {
+        for (const rule of errorRules) {
+          assertNoFlagInjection(rule, "errorRules");
+          args.push(`--error=${rule}`);
+        }
+      }
+
+      if (warningRules) {
+        for (const rule of warningRules) {
+          assertNoFlagInjection(rule, "warningRules");
+          args.push(`--warning=${rule}`);
+        }
+      }
+
+      if (infoRules) {
+        for (const rule of infoRules) {
+          assertNoFlagInjection(rule, "infoRules");
+          args.push(`--info=${rule}`);
+        }
+      }
 
       args.push(...(patterns || ["Dockerfile"]));
 

@@ -9,7 +9,7 @@ import type {
  * Parses ESLint JSON output (from `eslint --format json`).
  *
  * ESLint JSON format is an array of objects:
- * [{ filePath, messages: [{ ruleId, severity, message, line, column, endLine, endColumn, fix }], errorCount, warningCount }]
+ * [{ filePath, messages: [{ ruleId, severity, message, line, column, endLine, endColumn, fix }], errorCount, warningCount, fixableErrorCount, fixableWarningCount }]
  */
 export function parseEslintJson(stdout: string): LintResult {
   let files: EslintJsonEntry[];
@@ -20,16 +20,25 @@ export function parseEslintJson(stdout: string): LintResult {
   }
 
   const diagnostics: LintDiagnostic[] = [];
+  let fixableErrorCount = 0;
+  let fixableWarningCount = 0;
 
   for (const file of files) {
+    fixableErrorCount += file.fixableErrorCount ?? 0;
+    fixableWarningCount += file.fixableWarningCount ?? 0;
+
     for (const msg of file.messages) {
-      diagnostics.push({
+      const diag: LintDiagnostic = {
         file: file.filePath,
         line: msg.line ?? 0,
         severity: msg.severity === 2 ? "error" : msg.severity === 1 ? "warning" : "info",
         rule: msg.ruleId ?? "unknown",
         message: msg.message,
-      });
+      };
+      if (msg.column !== undefined && msg.column !== null) {
+        diag.column = msg.column;
+      }
+      diagnostics.push(diag);
     }
   }
 
@@ -41,6 +50,8 @@ export function parseEslintJson(stdout: string): LintResult {
     total: diagnostics.length,
     errors,
     warnings,
+    fixableErrorCount,
+    fixableWarningCount,
     filesChecked: files.length,
   };
 }
@@ -59,6 +70,8 @@ interface EslintJsonEntry {
   }[];
   errorCount: number;
   warningCount: number;
+  fixableErrorCount?: number;
+  fixableWarningCount?: number;
 }
 
 /**
@@ -162,13 +175,20 @@ export function parseBiomeJson(stdout: string): LintResult {
     // but default to 0 if line info is not in the JSON output.
     const line = diag.location?.sourceCode?.lineNumber ?? 0;
 
-    diagnostics.push({
+    const diagnostic: LintDiagnostic = {
       file,
       line,
       severity,
       rule,
       message,
-    });
+    };
+
+    const col = diag.location?.sourceCode?.columnNumber;
+    if (col !== undefined && col !== null) {
+      diagnostic.column = col;
+    }
+
+    diagnostics.push(diagnostic);
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
@@ -234,13 +254,17 @@ export function parseStylelintJson(stdout: string): LintResult {
 
   for (const file of files) {
     for (const warn of file.warnings) {
-      diagnostics.push({
+      const diag: LintDiagnostic = {
         file: file.source ?? "unknown",
         line: warn.line ?? 0,
         severity: warn.severity === "error" ? "error" : "warning",
         rule: warn.rule ?? "unknown",
         message: warn.text ?? "",
-      });
+      };
+      if (warn.column !== undefined && warn.column !== null) {
+        diag.column = warn.column;
+      }
+      diagnostics.push(diag);
     }
   }
 
@@ -295,13 +319,17 @@ export function parseOxlintJson(stdout: string): LintResult {
     const file = entry.file ?? "unknown";
     filesSet.add(file);
 
-    diagnostics.push({
+    const diag: LintDiagnostic = {
       file,
       line: entry.line ?? 0,
       severity: mapOxlintSeverity(entry.severity),
       rule: entry.ruleId ?? "unknown",
       message: entry.message,
-    });
+    };
+    if (entry.column !== undefined && entry.column !== null) {
+      diag.column = entry.column;
+    }
+    diagnostics.push(diag);
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
@@ -370,13 +398,17 @@ export function parseShellcheckJson(stdout: string): LintResult {
     const file = finding.file ?? "unknown";
     filesSet.add(file);
 
-    diagnostics.push({
+    const diag: LintDiagnostic = {
       file,
       line: finding.line ?? 0,
       severity: mapShellcheckLevel(finding.level),
       rule: finding.code != null ? `SC${finding.code}` : "unknown",
       message: finding.message ?? "",
-    });
+    };
+    if (finding.column !== undefined && finding.column !== null) {
+      diag.column = finding.column;
+    }
+    diagnostics.push(diag);
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
@@ -445,13 +477,22 @@ export function parseHadolintJson(stdout: string): LintResult {
     const file = finding.file ?? "unknown";
     filesSet.add(file);
 
-    diagnostics.push({
+    const rule = finding.code ?? "unknown";
+    const diag: LintDiagnostic = {
       file,
       line: finding.line ?? 0,
       severity: mapHadolintLevel(finding.level),
-      rule: finding.code ?? "unknown",
+      rule,
       message: finding.message ?? "",
-    });
+    };
+    if (finding.column !== undefined && finding.column !== null) {
+      diag.column = finding.column;
+    }
+    // Compute wiki URL for DL-prefixed rules
+    if (typeof rule === "string" && rule.startsWith("DL")) {
+      diag.wikiUrl = `https://github.com/hadolint/hadolint/wiki/${rule}`;
+    }
+    diagnostics.push(diag);
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
