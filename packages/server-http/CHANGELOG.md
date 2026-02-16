@@ -1,5 +1,12 @@
 # @paretools/http
 
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [[`ac29d96`](https://github.com/Dave-London/Pare/commit/ac29d969a284ce14a67b45e24583cb57f591d210)]:
+  - @paretools/shared@0.8.3
+
 ## 0.8.3
 
 ### Patch Changes
