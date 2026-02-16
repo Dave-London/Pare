@@ -394,6 +394,7 @@ export interface PipShowCompact {
   name: string;
   version: string;
   summary: string;
+  requires: string[];
 }
 
 export function compactPipShowMap(data: PipShow): PipShowCompact {
@@ -402,6 +403,7 @@ export function compactPipShowMap(data: PipShow): PipShowCompact {
     name: data.name,
     version: data.version,
     summary: data.summary,
+    requires: data.requires ?? [],
   };
 }
 
