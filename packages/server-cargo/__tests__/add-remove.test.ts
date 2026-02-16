@@ -114,6 +114,29 @@ describe("formatCargoAdd", () => {
 
     expect(output).toBe("cargo add: success, no packages added.");
   });
+
+  it("formats dry-run add with packages", () => {
+    const output = formatCargoAdd({
+      success: true,
+      added: [{ name: "serde", version: "1.0.217" }],
+      total: 1,
+      dryRun: true,
+    });
+
+    expect(output).toContain("cargo add: 1 package(s) added (dry-run)");
+    expect(output).toContain("serde v1.0.217");
+  });
+
+  it("formats dry-run add with no packages", () => {
+    const output = formatCargoAdd({
+      success: true,
+      added: [],
+      total: 0,
+      dryRun: true,
+    });
+
+    expect(output).toContain("dry-run");
+  });
 });
 
 // ---------------------------------------------------------------------------

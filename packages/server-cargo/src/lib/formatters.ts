@@ -57,6 +57,7 @@ export interface CargoAddCompact {
   success: boolean;
   packages: string[];
   total: number;
+  dryRun?: boolean;
   error?: string;
 }
 
@@ -136,9 +137,12 @@ export function formatCargoAdd(data: CargoAddResult): string {
     return `cargo add: failed${err}`;
   }
 
-  if (data.total === 0) return "cargo add: success, no packages added.";
+  const dryRunSuffix = data.dryRun ? " (dry-run)" : "";
 
-  const lines = [`cargo add: ${data.total} package(s) added`];
+  if (data.total === 0)
+    return `cargo add: success, no packages added.${dryRunSuffix ? ` ${dryRunSuffix.trim()}` : ""}`;
+
+  const lines = [`cargo add: ${data.total} package(s) added${dryRunSuffix}`];
   for (const pkg of data.added ?? []) {
     lines.push(`  ${pkg.name} v${pkg.version}`);
   }
@@ -231,6 +235,7 @@ export function compactAddMap(data: CargoAddResult): CargoAddCompact {
     packages: (data.added ?? []).map((p) => p.name),
     total: data.total,
   };
+  if (data.dryRun) compact.dryRun = true;
   if (data.error) compact.error = data.error;
   return compact;
 }
@@ -286,8 +291,10 @@ export function formatAddCompact(data: CargoAddCompact): string {
     const err = data.error ? `: ${data.error}` : "";
     return `cargo add: failed${err}`;
   }
-  if (data.total === 0) return "cargo add: success, no packages added.";
-  return `cargo add: ${data.total} package(s) added: ${data.packages.join(", ")}`;
+  const dryRunSuffix = data.dryRun ? " (dry-run)" : "";
+  if (data.total === 0)
+    return `cargo add: success, no packages added.${dryRunSuffix ? ` ${dryRunSuffix.trim()}` : ""}`;
+  return `cargo add: ${data.total} package(s) added${dryRunSuffix}: ${data.packages.join(", ")}`;
 }
 
 export function formatRemoveCompact(data: CargoRemoveCompact): string {

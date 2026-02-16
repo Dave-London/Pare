@@ -96,6 +96,8 @@ export function registerFmtTool(server: McpServer) {
       if (config) rustfmtArgs.push("--config", config);
       if (configPath) rustfmtArgs.push("--config-path", configPath);
       if (emit) rustfmtArgs.push("--emit", emit);
+      // In non-check mode, pass -l (--files-with-diff) to get list of reformatted files
+      if (!check) rustfmtArgs.push("-l");
       if (rustfmtArgs.length > 0) {
         args.push("--", ...rustfmtArgs);
       }

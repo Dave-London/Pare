@@ -4,7 +4,9 @@ import {
   parseCargoTestOutput,
   parseCargoClippyJson,
   parseCargoFmtOutput,
+  parseCargoAddOutput,
   parseCargoAuditJson,
+  cvssToSeverity,
 } from "../src/lib/parsers.js";
 
 describe("parseCargoBuildJson", () => {
@@ -571,5 +573,255 @@ describe("parseCargoAuditJson", () => {
     expect(result.vulnerabilities[2].severity).toBe("medium");
     expect(result.vulnerabilities[3].severity).toBe("low");
     expect(result.vulnerabilities[4].severity).toBe("informational");
+  });
+
+  it("parses CVSS v3 vector strings into correct severity", () => {
+    // CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H -> critical (~9.8)
+    const json = JSON.stringify({
+      vulnerabilities: {
+        found: true,
+        count: 2,
+        list: [
+          {
+            advisory: {
+              id: "RUSTSEC-2022-0090",
+              title: "Critical vector vuln",
+              cvss: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            },
+            package: { name: "libsqlite3-sys", version: "0.24.2" },
+            versions: { patched: [">=0.25.1"] },
+          },
+          {
+            advisory: {
+              id: "RUSTSEC-2021-0078",
+              title: "Low vector vuln",
+              cvss: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+            },
+            package: { name: "hyper", version: "0.14.0" },
+            versions: { patched: [">=0.14.10"] },
+          },
+        ],
+      },
+    });
+
+    const result = parseCargoAuditJson(json, 1);
+
+    expect(result.vulnerabilities[0].severity).toBe("critical");
+    expect(result.vulnerabilities[1].severity).toBe("medium");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cvssToSeverity — unit tests for CVSS vector parsing
+// ---------------------------------------------------------------------------
+
+describe("cvssToSeverity", () => {
+  it("returns unknown for null/undefined", () => {
+    expect(cvssToSeverity(null)).toBe("unknown");
+    expect(cvssToSeverity(undefined)).toBe("unknown");
+    expect(cvssToSeverity("")).toBe("unknown");
+  });
+
+  it("handles plain numeric scores", () => {
+    expect(cvssToSeverity("10.0")).toBe("critical");
+    expect(cvssToSeverity("9.0")).toBe("critical");
+    expect(cvssToSeverity("8.5")).toBe("high");
+    expect(cvssToSeverity("7.0")).toBe("high");
+    expect(cvssToSeverity("6.9")).toBe("medium");
+    expect(cvssToSeverity("4.0")).toBe("medium");
+    expect(cvssToSeverity("3.9")).toBe("low");
+    expect(cvssToSeverity("0.1")).toBe("low");
+    expect(cvssToSeverity("0.0")).toBe("informational");
+  });
+
+  it("parses CVSS v3.1 critical vector (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)", () => {
+    // Expected base score: 9.8 -> critical
+    const result = cvssToSeverity("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H");
+    expect(result).toBe("critical");
+  });
+
+  it("parses CVSS v3.0 high vector (AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H)", () => {
+    // Expected base score: 8.8 -> high
+    const result = cvssToSeverity("CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H");
+    expect(result).toBe("high");
+  });
+
+  it("parses CVSS v3.1 medium vector (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N)", () => {
+    // Expected base score: 5.3 -> medium
+    const result = cvssToSeverity("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N");
+    expect(result).toBe("medium");
+  });
+
+  it("parses CVSS v3.1 low vector (AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N)", () => {
+    // Expected base score: 1.8 -> low
+    const result = cvssToSeverity("CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N");
+    expect(result).toBe("low");
+  });
+
+  it("parses CVSS v3.1 scope-changed vector correctly", () => {
+    // CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H -> 10.0 -> critical
+    const result = cvssToSeverity("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H");
+    expect(result).toBe("critical");
+  });
+
+  it("parses CVSS v3.1 zero-impact vector as informational", () => {
+    // All impact metrics = N, impact sub-score = 0 -> base score = 0.0
+    const result = cvssToSeverity("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N");
+    expect(result).toBe("informational");
+  });
+
+  it("parses CVSS v2 vector strings", () => {
+    // (AV:N/AC:L/Au:N/C:C/I:C/A:C) -> 10.0 -> critical
+    expect(cvssToSeverity("(AV:N/AC:L/Au:N/C:C/I:C/A:C)")).toBe("critical");
+    // AV:N/AC:L/Au:N/C:C/I:C/A:C (without parens) -> 10.0 -> critical
+    expect(cvssToSeverity("AV:N/AC:L/Au:N/C:C/I:C/A:C")).toBe("critical");
+  });
+
+  it("parses CVSS v2 low-severity vector", () => {
+    // AV:L/AC:H/Au:M/C:N/I:P/A:N -> low
+    const result = cvssToSeverity("AV:L/AC:H/Au:M/C:N/I:P/A:N");
+    expect(result).toBe("low");
+  });
+
+  it("returns unknown for completely invalid strings", () => {
+    expect(cvssToSeverity("not-a-score")).toBe("unknown");
+    expect(cvssToSeverity("CVSS:3.1/")).toBe("unknown");
+    expect(cvssToSeverity("CVSS:3.1/AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")).toBe("unknown");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseCargoAddOutput — dry-run mode
+// ---------------------------------------------------------------------------
+
+describe("parseCargoAddOutput dry-run", () => {
+  it("parses dry-run output with Adding lines and warning", () => {
+    const stderr = [
+      "      Adding serde v1.0.217 to dependencies",
+      "      Adding tokio v1.41.1 to dependencies",
+      "warning: aborting add due to dry run",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(true);
+    expect(result.total).toBe(2);
+    expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
+    expect(result.added[1]).toEqual({ name: "tokio", version: "1.41.1" });
+  });
+
+  it("does not set dryRun for normal (non-dry-run) add", () => {
+    const stderr = "      Adding serde v1.0.217 to dependencies";
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBeUndefined();
+    expect(result.total).toBe(1);
+  });
+
+  it("parses dry-run with features output", () => {
+    const stderr = [
+      "      Adding serde v1.0.217 to dependencies",
+      "             Features:",
+      "             + derive",
+      "             + std",
+      "warning: aborting add due to dry run",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(true);
+    expect(result.total).toBe(1);
+    expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
+  });
+
+  it("filters dry-run warning from error lines on failure", () => {
+    const stderr = [
+      "error: the crate `nonexistent` could not be found",
+      "warning: aborting add due to dry run",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 101);
+
+    expect(result.success).toBe(false);
+    expect(result.dryRun).toBe(true);
+    // The error message should not contain the dry-run warning
+    expect(result.error).not.toContain("aborting add due to dry run");
+    expect(result.error).toContain("could not be found");
+  });
+
+  it("parses Updating lines from dry-run when dep already present", () => {
+    const stderr = [
+      "    Updating serde v1.0.200 -> v1.0.217",
+      "warning: aborting add due to dry run",
+    ].join("\n");
+
+    const result = parseCargoAddOutput("", stderr, 0);
+
+    expect(result.success).toBe(true);
+    expect(result.dryRun).toBe(true);
+    expect(result.total).toBe(1);
+    expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseCargoFmtOutput — non-check (fix) mode file reporting
+// ---------------------------------------------------------------------------
+
+describe("parseCargoFmtOutput non-check mode", () => {
+  it("parses reformatted file paths from -l output in fix mode", () => {
+    // When cargo fmt -- -l is used, reformatted file paths are listed on stdout
+    const stdout = ["src/main.rs", "src/lib.rs", "src/utils/helpers.rs"].join("\n");
+
+    const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(3);
+    expect(result.files).toContain("src/main.rs");
+    expect(result.files).toContain("src/lib.rs");
+    expect(result.files).toContain("src/utils/helpers.rs");
+  });
+
+  it("returns empty file list when no files needed formatting in fix mode", () => {
+    const result = parseCargoFmtOutput("", "", 0, false);
+
+    expect(result.success).toBe(true);
+    expect(result.filesChanged).toBe(0);
+    expect(result.files).toEqual([]);
+  });
+
+  it("ignores warning/error lines in fix mode output", () => {
+    const stdout = "src/main.rs";
+    const stderr = "warning: some rustfmt warning\nerror: some rustfmt error";
+
+    const result = parseCargoFmtOutput(stdout, stderr, 0, false);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.files).toContain("src/main.rs");
+    expect(result.files).not.toContain("warning: some rustfmt warning");
+    expect(result.files).not.toContain("error: some rustfmt error");
+  });
+
+  it("deduplicates file paths in fix mode", () => {
+    const stdout = ["src/main.rs", "src/main.rs"].join("\n");
+
+    const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.files).toEqual(["src/main.rs"]);
+  });
+
+  it("only includes .rs files in fix mode output", () => {
+    const stdout = ["src/main.rs", "src/config.toml", "README.md", "src/lib.rs"].join("\n");
+
+    const result = parseCargoFmtOutput(stdout, "", 0, false);
+
+    expect(result.filesChanged).toBe(2);
+    expect(result.files).toContain("src/main.rs");
+    expect(result.files).toContain("src/lib.rs");
+    expect(result.files).not.toContain("src/config.toml");
   });
 });
