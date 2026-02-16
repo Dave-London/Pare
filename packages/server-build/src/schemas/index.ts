@@ -46,18 +46,26 @@ export interface TscResult {
  *  In compact mode, error/warning arrays are omitted. */
 export const BuildResultSchema = z.object({
   success: z.boolean(),
+  exitCode: z.number().optional(),
   duration: z.number(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
+  outputLines: z.number().optional(),
 });
 
 /** Full build result -- always returned by the parser. */
 export interface BuildResult {
   [key: string]: unknown;
   success: boolean;
+  exitCode?: number;
   duration: number;
   errors?: string[];
   warnings?: string[];
+  stdout?: string;
+  stderr?: string;
+  outputLines?: number;
 }
 
 // ---------------------------------------------------------------------------

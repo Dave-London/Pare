@@ -45,6 +45,23 @@ export function registerTscTool(server: McpServer) {
           .describe(
             "Only emit .d.ts declaration files without JS output (maps to --emitDeclarationOnly)",
           ),
+        declaration: z
+          .boolean()
+          .optional()
+          .describe("Generate .d.ts declaration files (maps to --declaration)"),
+        declarationDir: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe(
+            "Output directory for .d.ts declaration files (maps to --declarationDir). Use with --declaration.",
+          ),
+        pretty: z
+          .boolean()
+          .optional()
+          .describe(
+            "Enable or disable pretty-printed output (maps to --pretty). Set false for normalized parser-friendly output.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -55,9 +72,21 @@ export function registerTscTool(server: McpServer) {
       },
       outputSchema: TscResultSchema,
     },
-    async ({ path, noEmit, project, incremental, skipLibCheck, emitDeclarationOnly, compact }) => {
+    async ({
+      path,
+      noEmit,
+      project,
+      incremental,
+      skipLibCheck,
+      emitDeclarationOnly,
+      declaration,
+      declarationDir,
+      pretty,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       if (project) assertNoFlagInjection(project, "project");
+      if (declarationDir) assertNoFlagInjection(declarationDir, "declarationDir");
 
       const args: string[] = [];
       if (noEmit !== false) args.push("--noEmit");
@@ -65,6 +94,9 @@ export function registerTscTool(server: McpServer) {
       if (incremental) args.push("--incremental");
       if (skipLibCheck) args.push("--skipLibCheck");
       if (emitDeclarationOnly) args.push("--emitDeclarationOnly");
+      if (declaration) args.push("--declaration");
+      if (declarationDir) args.push("--declarationDir", declarationDir);
+      if (pretty === false) args.push("--pretty", "false");
 
       const result = await tsc(args, cwd);
       const rawOutput = result.stdout + "\n" + result.stderr;

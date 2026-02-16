@@ -13,6 +13,11 @@ import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { BuildResultSchema } from "../schemas/index.js";
 
+/** Max timeout cap in milliseconds (10 minutes). */
+const MAX_TIMEOUT_MS = 600_000;
+/** Default timeout in milliseconds (5 minutes). */
+const DEFAULT_TIMEOUT_MS = 300_000;
+
 /** Registers the `build` tool on the given MCP server. */
 export function registerBuildTool(server: McpServer) {
   server.registerTool(
@@ -37,6 +42,15 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        timeout: z
+          .number()
+          .int()
+          .min(1000)
+          .max(MAX_TIMEOUT_MS)
+          .optional()
+          .describe(
+            `Timeout in milliseconds (default: ${DEFAULT_TIMEOUT_MS}, max: ${MAX_TIMEOUT_MS}). Use for builds that need more or less time.`,
+          ),
         compact: z
           .boolean()
           .optional()
@@ -47,7 +61,7 @@ export function registerBuildTool(server: McpServer) {
       },
       outputSchema: BuildResultSchema,
     },
-    async ({ command, args, path, compact }) => {
+    async ({ command, args, path, timeout, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
       for (const a of args ?? []) {
@@ -55,8 +69,11 @@ export function registerBuildTool(server: McpServer) {
       }
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "build");
+
+      const timeoutMs = timeout ? Math.min(timeout, MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS;
+
       const start = Date.now();
-      const result = await runBuildCommand(command, args || [], cwd);
+      const result = await runBuildCommand(command, args || [], cwd, timeoutMs);
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 

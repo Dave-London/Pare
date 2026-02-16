@@ -8,9 +8,10 @@ export async function runBuildCommand(
   cmd: string,
   args: string[],
   cwd?: string,
+  timeout?: number,
 ): Promise<RunResult> {
   // Build commands can take minutes for large projects
-  return run(cmd, args, { cwd, timeout: 300_000 });
+  return run(cmd, args, { cwd, timeout: timeout ?? 300_000 });
 }
 
 export async function esbuildCmd(args: string[], cwd?: string): Promise<RunResult> {

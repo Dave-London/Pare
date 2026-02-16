@@ -29,6 +29,29 @@ export function registerWebpackTool(server: McpServer) {
           .enum(["production", "development", "none"])
           .optional()
           .describe("Build mode (production, development, none)"),
+        entry: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Entry point file to build (maps to --entry)"),
+        target: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Build target environment (e.g., 'web', 'node', 'electron-main'). Maps to --target.",
+          ),
+        devtool: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Source map strategy (e.g., 'source-map', 'eval', 'cheap-module-source-map'). Maps to --devtool.",
+          ),
+        analyze: z
+          .boolean()
+          .optional()
+          .describe("Enable webpack-bundle-analyzer for bundle size analysis (maps to --analyze)"),
         bail: z
           .boolean()
           .optional()
@@ -53,9 +76,12 @@ export function registerWebpackTool(server: McpServer) {
       },
       outputSchema: WebpackResultSchema,
     },
-    async ({ path, config, mode, bail, cache, args, compact }) => {
+    async ({ path, config, mode, entry, target, devtool, analyze, bail, cache, args, compact }) => {
       const cwd = path || process.cwd();
       if (config) assertNoFlagInjection(config, "config");
+      if (entry) assertNoFlagInjection(entry, "entry");
+      if (target) assertNoFlagInjection(target, "target");
+      if (devtool) assertNoFlagInjection(devtool, "devtool");
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -64,6 +90,10 @@ export function registerWebpackTool(server: McpServer) {
 
       if (config) cliArgs.push("--config", config);
       if (mode) cliArgs.push("--mode", mode);
+      if (entry) cliArgs.push("--entry", entry);
+      if (target) cliArgs.push("--target", target);
+      if (devtool) cliArgs.push("--devtool", devtool);
+      if (analyze) cliArgs.push("--analyze");
       if (bail) cliArgs.push("--bail");
       if (cache !== undefined) {
         cliArgs.push(cache ? "--cache" : "--no-cache");
