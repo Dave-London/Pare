@@ -4,6 +4,7 @@ import {
   compactDualOutput,
   assertAllowedCommand,
   assertNoPathQualifiedCommand,
+  assertNoFlagInjection,
   assertAllowedRoot,
   INPUT_LIMITS,
 } from "@paretools/shared";
@@ -19,7 +20,8 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Run Build",
       description:
-        "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal.",
+        "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal. " +
+        "Allowed commands: ant, bazel, bun, bunx, cargo, cmake, dotnet, esbuild, go, gradle, gradlew, make, msbuild, mvn, npm, npx, nx, pnpm, rollup, tsc, turbo, vite, webpack, yarn.",
       inputSchema: {
         command: z
           .string()
@@ -48,6 +50,9 @@ export function registerBuildTool(server: McpServer) {
     async ({ command, args, path, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "build");
       const start = Date.now();

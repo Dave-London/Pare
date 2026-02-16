@@ -29,6 +29,14 @@ export function registerWebpackTool(server: McpServer) {
           .enum(["production", "development", "none"])
           .optional()
           .describe("Build mode (production, development, none)"),
+        bail: z
+          .boolean()
+          .optional()
+          .describe("Fail on the first error instead of tolerating them (maps to --bail)"),
+        cache: z
+          .boolean()
+          .optional()
+          .describe("Enable or disable webpack caching (maps to --cache / --no-cache)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -45,7 +53,7 @@ export function registerWebpackTool(server: McpServer) {
       },
       outputSchema: WebpackResultSchema,
     },
-    async ({ path, config, mode, args, compact }) => {
+    async ({ path, config, mode, bail, cache, args, compact }) => {
       const cwd = path || process.cwd();
       if (config) assertNoFlagInjection(config, "config");
       for (const a of args ?? []) {
@@ -56,7 +64,12 @@ export function registerWebpackTool(server: McpServer) {
 
       if (config) cliArgs.push("--config", config);
       if (mode) cliArgs.push("--mode", mode);
+      if (bail) cliArgs.push("--bail");
+      if (cache !== undefined) {
+        cliArgs.push(cache ? "--cache" : "--no-cache");
+      }
       cliArgs.push("--json");
+      cliArgs.push("--no-color");
 
       if (args) {
         cliArgs.push(...args);
