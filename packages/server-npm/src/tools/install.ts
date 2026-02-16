@@ -77,6 +77,19 @@ export function registerInstallTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Save exact versions instead of semver ranges (maps to --save-exact / -E)"),
+        global: z
+          .boolean()
+          .optional()
+          .describe(
+            "Install packages globally (maps to --global / -g). Use with caution — may require elevated permissions.",
+          ),
+        registry: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Registry URL to install from (maps to --registry, e.g., 'https://npm.pkg.github.com')",
+          ),
         packageManager: packageManagerInput,
         filter: filterInput,
       },
@@ -94,6 +107,8 @@ export function registerInstallTool(server: McpServer) {
       force,
       noAudit,
       exact,
+      global: isGlobal,
+      registry,
       packageManager,
       filter,
     }) => {
@@ -101,6 +116,7 @@ export function registerInstallTool(server: McpServer) {
         assertNoFlagInjection(a, "args");
       }
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (registry) assertNoFlagInjection(registry, "registry");
 
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
@@ -122,6 +138,8 @@ export function registerInstallTool(server: McpServer) {
       if (force) flags.push("--force");
       if (noAudit) flags.push("--no-audit");
       if (exact) flags.push("--save-exact");
+      if (isGlobal) flags.push("--global");
+      if (registry) flags.push(`--registry=${registry}`);
 
       const subcommand = frozenLockfile && pm === "npm" ? "ci" : "install";
       const start = Date.now();

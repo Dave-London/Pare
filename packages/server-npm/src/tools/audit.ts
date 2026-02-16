@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseAuditJson, parsePnpmAuditJson, parseYarnAuditJson } from "../lib/parsers.js";
@@ -24,6 +24,32 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        level: z
+          .enum(["info", "low", "moderate", "high", "critical"])
+          .optional()
+          .describe("Minimum severity level to report (maps to --audit-level for npm/pnpm)"),
+        production: z
+          .boolean()
+          .optional()
+          .describe(
+            "Audit only production (runtime) dependencies (maps to --production for npm, --prod for pnpm, --groups=dependencies for yarn)",
+          ),
+        omit: z
+          .array(z.enum(["dev", "optional", "peer"]))
+          .optional()
+          .describe(
+            "Dependency groups to omit from the audit (maps to --omit for npm, e.g. ['dev', 'optional'])",
+          ),
+        workspace: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Workspace to audit (maps to --workspace for npm)"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Escape-hatch for PM-specific flags not modeled in the schema"),
         packageLockOnly: z
           .boolean()
           .optional()
@@ -34,12 +60,31 @@ export function registerAuditTool(server: McpServer) {
       },
       outputSchema: NpmAuditSchema,
     },
-    async ({ path, packageLockOnly, packageManager }) => {
+    async ({ path, level, production, omit, workspace, args, packageLockOnly, packageManager }) => {
       const cwd = path || process.cwd();
+      if (workspace) assertNoFlagInjection(workspace, "workspace");
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
       const pm = await detectPackageManager(cwd, packageManager);
 
       const pmArgs = ["audit", "--json"];
       if (packageLockOnly && pm === "npm") pmArgs.push("--package-lock-only");
+      if (level) {
+        if (pm === "npm" || pm === "pnpm") pmArgs.push(`--audit-level=${level}`);
+      }
+      if (production) {
+        if (pm === "npm") pmArgs.push("--production");
+        else if (pm === "pnpm") pmArgs.push("--prod");
+        else if (pm === "yarn") pmArgs.push("--groups=dependencies");
+      }
+      if (omit && pm === "npm") {
+        for (const group of omit) {
+          pmArgs.push(`--omit=${group}`);
+        }
+      }
+      if (workspace && pm === "npm") pmArgs.push(`--workspace=${workspace}`);
+      if (args && args.length > 0) pmArgs.push(...args);
 
       const result = await runPm(pm, pmArgs, cwd);
 

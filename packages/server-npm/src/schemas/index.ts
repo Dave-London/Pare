@@ -37,6 +37,8 @@ export const NpmAuditVulnSchema = z.object({
   url: z.string().optional(),
   range: z.string().optional(),
   fixAvailable: z.boolean(),
+  cve: z.string().optional().describe("CVE identifier for cross-referencing"),
+  cwe: z.array(z.string()).optional().describe("CWE identifiers for weakness classification"),
 });
 
 /** Zod schema for structured npm audit output with vulnerability list and severity summary. */
@@ -138,6 +140,12 @@ export const NpmInitSchema = z.object({
 
 export type NpmInit = z.infer<typeof NpmInitSchema>;
 
+/** Zod schema for repository metadata. */
+export const NpmRepositorySchema = z.object({
+  type: z.string().optional(),
+  url: z.string().optional(),
+});
+
 /** Zod schema for structured npm info output with package metadata. */
 export const NpmInfoSchema = z.object({
   packageManager: packageManagerField,
@@ -150,11 +158,31 @@ export const NpmInfoSchema = z.object({
   dist: z
     .object({
       tarball: z.string().optional(),
+      integrity: z.string().optional().describe("Subresource integrity hash"),
     })
     .optional(),
+  engines: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("Node.js and other engine version requirements"),
+  peerDependencies: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("Peer dependencies that must be co-installed"),
+  deprecated: z.string().optional().describe("Deprecation message if package is deprecated"),
+  repository: NpmRepositorySchema.optional().describe("Source code repository info"),
+  keywords: z.array(z.string()).optional().describe("Package keywords for discovery"),
+  versions: z.array(z.string()).optional().describe("All published versions"),
 });
 
 export type NpmInfo = z.infer<typeof NpmInfoSchema>;
+
+/** Zod schema for npm search package links. */
+export const NpmSearchLinksSchema = z.object({
+  npm: z.string().optional(),
+  homepage: z.string().optional(),
+  repository: z.string().optional(),
+});
 
 /** Zod schema for a single package entry in npm search results. */
 export const NpmSearchPackageSchema = z.object({
@@ -163,6 +191,10 @@ export const NpmSearchPackageSchema = z.object({
   description: z.string(),
   author: z.string().optional(),
   date: z.string().optional(),
+  keywords: z.array(z.string()).optional().describe("Package keywords"),
+  score: z.number().optional().describe("Registry-computed relevance score"),
+  links: NpmSearchLinksSchema.optional().describe("Package URLs"),
+  scope: z.string().optional().describe("Package scope (e.g., '@types')"),
 });
 
 /** Zod schema for structured npm search output with matching packages. */
@@ -170,6 +202,10 @@ export const NpmSearchSchema = z.object({
   packageManager: packageManagerField,
   packages: z.array(NpmSearchPackageSchema),
   total: z.number(),
+  registryTotal: z
+    .number()
+    .optional()
+    .describe("Total matching packages in registry (may differ from returned count)"),
 });
 
 export type NpmSearch = z.infer<typeof NpmSearchSchema>;
@@ -179,6 +215,8 @@ export const NvmResultSchema = z.object({
   current: z.string().describe("Currently active Node.js version"),
   versions: z.array(z.string()).describe("List of installed Node.js versions"),
   default: z.string().optional().describe("Default Node.js version (alias default)"),
+  which: z.string().optional().describe("Filesystem path to the active Node.js binary"),
+  arch: z.string().optional().describe("Architecture of the active Node.js (e.g., x64, arm64)"),
 });
 
 export type NvmResult = z.infer<typeof NvmResultSchema>;

@@ -24,6 +24,21 @@ export function registerOutdatedTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Specific package names to check for updates"),
+        workspace: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Workspace to check (maps to --workspace for npm)"),
+        args: z
+          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Escape-hatch for PM-specific flags not modeled in the schema"),
         production: z
           .boolean()
           .optional()
@@ -55,6 +70,9 @@ export function registerOutdatedTool(server: McpServer) {
     },
     async ({
       path,
+      packages,
+      workspace,
+      args,
       production,
       all,
       long: showLong,
@@ -64,6 +82,13 @@ export function registerOutdatedTool(server: McpServer) {
       filter,
     }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (workspace) assertNoFlagInjection(workspace, "workspace");
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
+      for (const a of args ?? []) {
+        assertNoFlagInjection(a, "args");
+      }
 
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
@@ -80,6 +105,9 @@ export function registerOutdatedTool(server: McpServer) {
       if (showLong && pm !== "yarn") pmArgs.push("--long");
       if (compatible && pm === "pnpm") pmArgs.push("--compatible");
       if (devOnly && pm === "pnpm") pmArgs.push("--dev");
+      if (workspace && pm === "npm") pmArgs.push(`--workspace=${workspace}`);
+      if (packages && packages.length > 0) pmArgs.push(...packages);
+      if (args && args.length > 0) pmArgs.push(...args);
 
       const result = await runPm(pm, pmArgs, cwd);
 

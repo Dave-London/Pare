@@ -30,6 +30,15 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the test script"),
+        workspace: z
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
+          .optional()
+          .describe(
+            "Workspace target(s) — maps to npm --workspace or pnpm --filter for unified workspace targeting",
+          ),
         ifPresent: z
           .boolean()
           .optional()
@@ -66,6 +75,7 @@ export function registerTestTool(server: McpServer) {
     async ({
       path,
       args,
+      workspace,
       ifPresent,
       recursive,
       ignoreScripts,
@@ -80,6 +90,12 @@ export function registerTestTool(server: McpServer) {
       }
       if (filter) assertNoFlagInjection(filter, "filter");
 
+      // Validate workspace values
+      const workspaces = workspace ? (Array.isArray(workspace) ? workspace : [workspace]) : [];
+      for (const w of workspaces) {
+        assertNoFlagInjection(w, "workspace");
+      }
+
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
 
@@ -91,6 +107,16 @@ export function registerTestTool(server: McpServer) {
       }
       if (parallel && pm === "pnpm") pmArgs.push("--parallel");
       if (stream && pm === "pnpm") pmArgs.push("--stream");
+
+      // Add workspace targeting
+      for (const w of workspaces) {
+        if (pm === "npm") {
+          pmArgs.push(`--workspace=${w}`);
+        } else if (pm === "pnpm") {
+          pmArgs.push(`--filter=${w}`);
+        }
+      }
+
       pmArgs.push("test");
       if (ifPresent) pmArgs.push("--if-present");
       if (ignoreScripts) pmArgs.push("--ignore-scripts");

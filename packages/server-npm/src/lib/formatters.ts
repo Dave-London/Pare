@@ -42,8 +42,9 @@ export function formatAudit(data: NpmAudit): string {
     `${data.summary.total} vulnerabilities (${data.summary.critical} critical, ${data.summary.high} high, ${data.summary.moderate} moderate, ${data.summary.low} low)`,
   ];
   for (const v of data.vulnerabilities) {
+    const cveInfo = v.cve ? ` [${v.cve}]` : "";
     lines.push(
-      `  [${v.severity}] ${v.name}: ${v.title}${v.fixAvailable ? " (fix available)" : ""}`,
+      `  [${v.severity}] ${v.name}: ${v.title}${cveInfo}${v.fixAvailable ? " (fix available)" : ""}`,
     );
   }
   return lines.join("\n");
@@ -137,8 +138,26 @@ export function formatListCompact(data: NpmListCompact): string {
 export function formatInfo(data: NpmInfo): string {
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
+  if (data.deprecated) lines.push(`DEPRECATED: ${data.deprecated}`);
   if (data.license) lines.push(`License: ${data.license}`);
   if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
+  if (data.repository?.url) lines.push(`Repository: ${data.repository.url}`);
+  if (data.keywords && data.keywords.length > 0) {
+    lines.push(`Keywords: ${data.keywords.join(", ")}`);
+  }
+  if (data.engines) {
+    const engineParts = Object.entries(data.engines)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+    lines.push(`Engines: ${engineParts}`);
+  }
+  if (data.peerDependencies) {
+    const peerCount = Object.keys(data.peerDependencies).length;
+    lines.push(`Peer Dependencies: ${peerCount}`);
+    for (const [name, version] of Object.entries(data.peerDependencies)) {
+      lines.push(`  ${name}: ${version}`);
+    }
+  }
   if (data.dependencies) {
     const depCount = Object.keys(data.dependencies).length;
     lines.push(`Dependencies: ${depCount}`);
@@ -149,10 +168,13 @@ export function formatInfo(data: NpmInfo): string {
   if (data.dist?.tarball) {
     lines.push(`Tarball: ${data.dist.tarball}`);
   }
+  if (data.versions && data.versions.length > 0) {
+    lines.push(`Published Versions: ${data.versions.length}`);
+  }
   return lines.join("\n");
 }
 
-/** Compact info: drop dependencies and dist details. */
+/** Compact info: drop dependencies, dist details, versions. */
 export interface NpmInfoCompact {
   [key: string]: unknown;
   name: string;
@@ -160,6 +182,7 @@ export interface NpmInfoCompact {
   description: string;
   license?: string;
   homepage?: string;
+  deprecated?: string;
 }
 
 export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
@@ -170,12 +193,14 @@ export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
   };
   if (data.license) result.license = data.license;
   if (data.homepage) result.homepage = data.homepage;
+  if (data.deprecated) result.deprecated = data.deprecated;
   return result;
 }
 
 export function formatInfoCompact(data: NpmInfoCompact): string {
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
+  if (data.deprecated) lines.push(`DEPRECATED: ${data.deprecated}`);
   if (data.license) lines.push(`License: ${data.license}`);
   if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
   return lines.join("\n");
@@ -190,12 +215,13 @@ export function formatSearch(data: NpmSearch): string {
   const lines = [`${data.total} packages found:`];
   for (const pkg of data.packages) {
     const author = pkg.author ? ` by ${pkg.author}` : "";
-    lines.push(`  ${pkg.name}@${pkg.version} — ${pkg.description}${author}`);
+    const scope = pkg.scope ? ` [${pkg.scope}]` : "";
+    lines.push(`  ${pkg.name}@${pkg.version}${scope} — ${pkg.description}${author}`);
   }
   return lines.join("\n");
 }
 
-/** Compact search: drop author and date fields. */
+/** Compact search: drop author, date, keywords, links, score fields. */
 export interface NpmSearchCompact {
   [key: string]: unknown;
   packages: { name: string; version: string; description: string }[];
@@ -230,6 +256,12 @@ export function formatNvm(data: NvmResult): string {
   const lines = [`Current: ${data.current}`];
   if (data.default) {
     lines.push(`Default: ${data.default}`);
+  }
+  if (data.which) {
+    lines.push(`Path: ${data.which}`);
+  }
+  if (data.arch) {
+    lines.push(`Architecture: ${data.arch}`);
   }
   if (data.versions.length > 0) {
     lines.push(`Installed (${data.versions.length}):`);

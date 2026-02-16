@@ -27,6 +27,23 @@ export function registerSearchTool(server: McpServer) {
           .optional()
           .default(20)
           .describe("Maximum number of results to return (default: 20)"),
+        exclude: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Exclude packages matching this text from results (maps to --searchexclude)"),
+        registry: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe(
+            "Registry URL to search (maps to --registry, e.g., 'https://npm.pkg.github.com')",
+          ),
+        searchopts: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Advanced search filtering options (maps to --searchopts)"),
         compact: z
           .boolean()
           .optional()
@@ -43,13 +60,25 @@ export function registerSearchTool(server: McpServer) {
       },
       outputSchema: NpmSearchSchema,
     },
-    async ({ query, path, limit, compact, preferOnline }) => {
+    async ({ query, path, limit, exclude, registry, searchopts, compact, preferOnline }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(query, "query");
+      if (exclude) assertNoFlagInjection(exclude, "exclude");
+      if (registry) assertNoFlagInjection(registry, "registry");
+      if (searchopts) assertNoFlagInjection(searchopts, "searchopts");
 
       const args = ["search", query, "--json"];
       if (limit !== undefined) {
         args.push(`--searchlimit=${limit}`);
+      }
+      if (exclude) {
+        args.push(`--searchexclude=${exclude}`);
+      }
+      if (registry) {
+        args.push(`--registry=${registry}`);
+      }
+      if (searchopts) {
+        args.push(`--searchopts=${searchopts}`);
       }
       if (preferOnline) {
         args.push("--prefer-online");
