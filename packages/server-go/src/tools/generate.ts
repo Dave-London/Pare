@@ -26,6 +26,23 @@ export function registerGenerateTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Packages to generate (default: ./...)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Print the commands that would be executed but do not run them (-n). Essential for safe previewing.",
+          ),
+        verbose: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print the names of packages and files as they are processed (-v)"),
+        commands: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print commands as they are executed (-x)"),
         compact: z
           .boolean()
           .optional()
@@ -36,12 +53,17 @@ export function registerGenerateTool(server: McpServer) {
       },
       outputSchema: GoGenerateResultSchema,
     },
-    async ({ path, patterns, compact }) => {
+    async ({ path, patterns, dryRun, verbose, commands, compact }) => {
       for (const p of patterns || []) {
         assertNoFlagInjection(p, "patterns");
       }
       const cwd = path || process.cwd();
-      const result = await goCmd(["generate", ...(patterns || ["./..."])], cwd);
+      const args = ["generate"];
+      if (dryRun) args.push("-n");
+      if (verbose) args.push("-v");
+      if (commands) args.push("-x");
+      args.push(...(patterns || ["./..."]));
+      const result = await goCmd(args, cwd);
       const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

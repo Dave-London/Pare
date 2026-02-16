@@ -37,7 +37,8 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Build flags to pass to go run (e.g., -race, -tags)"),
+          .describe("Build flags to pass to go run (e.g., -tags)"),
+        race: z.boolean().optional().default(false).describe("Enable data race detection (-race)"),
         compact: z
           .boolean()
           .optional()
@@ -48,14 +49,16 @@ export function registerRunTool(server: McpServer) {
       },
       outputSchema: GoRunResultSchema,
     },
-    async ({ path, file, args, buildArgs, compact }) => {
+    async ({ path, file, args, buildArgs, race, compact }) => {
       const cwd = path || process.cwd();
       const target = file || ".";
       assertNoFlagInjection(target, "file");
       for (const a of buildArgs ?? []) {
         assertNoFlagInjection(a, "buildArgs");
       }
-      const cmdArgs = ["run", ...(buildArgs || []), target];
+      const cmdArgs = ["run"];
+      if (race) cmdArgs.push("-race");
+      cmdArgs.push(...(buildArgs || []), target);
       const programArgs = args || [];
       if (programArgs.length > 0) {
         cmdArgs.push("--", ...programArgs);
