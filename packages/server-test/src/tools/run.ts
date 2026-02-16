@@ -45,6 +45,7 @@ export function buildRunExtraArgs(
     bail?: number | boolean;
     testNamePattern?: string;
     workers?: number;
+    timeout?: number;
     args?: string[];
   },
 ): string[] {
@@ -207,6 +208,24 @@ export function buildRunExtraArgs(
     }
   }
 
+  // Timeout: per-test timeout
+  if (opts.timeout !== undefined) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push(`--timeout=${opts.timeout}`);
+        break;
+      case "jest":
+        extraArgs.push(`--testTimeout=${opts.timeout}`);
+        break;
+      case "vitest":
+        extraArgs.push(`--testTimeout=${opts.timeout}`);
+        break;
+      case "mocha":
+        extraArgs.push("--timeout", String(opts.timeout));
+        break;
+    }
+  }
+
   return extraArgs;
 }
 
@@ -294,6 +313,14 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Number of parallel workers (maps to -n for pytest-xdist, --maxWorkers for jest, --pool.threads.maxThreads for vitest, --jobs for mocha)",
           ),
+        timeout: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe(
+            "Per-test timeout in milliseconds (maps to --timeout for pytest-timeout, --testTimeout for jest/vitest, --timeout for mocha)",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -324,6 +351,7 @@ export function registerRunTool(server: McpServer) {
       bail,
       testNamePattern,
       workers,
+      timeout,
       args,
       compact,
     }) => {
@@ -357,6 +385,7 @@ export function registerRunTool(server: McpServer) {
         bail,
         testNamePattern,
         workers,
+        timeout,
         args,
       });
 

@@ -15,6 +15,7 @@ describe("parsePlaywrightJson", () => {
     expect(result.summary.skipped).toBe(1);
     expect(result.summary.timedOut).toBe(1);
     expect(result.summary.interrupted).toBe(0);
+    expect(result.summary.flaky).toBe(0);
     expect(result.summary.duration).toBe(36.1);
 
     expect(result.suites).toHaveLength(2);
@@ -75,6 +76,7 @@ describe("parsePlaywrightJson", () => {
     expect(result.summary.failed).toBe(0);
     expect(result.summary.skipped).toBe(0);
     expect(result.summary.timedOut).toBe(0);
+    expect(result.summary.flaky).toBe(0);
     expect(result.failures).toHaveLength(0);
   });
 
@@ -115,6 +117,7 @@ describe("parsePlaywrightJson", () => {
     expect(result.summary.total).toBe(1);
     expect(result.summary.passed).toBe(1);
     expect(result.summary.failed).toBe(0);
+    expect(result.summary.flaky).toBe(0);
     expect(result.failures).toHaveLength(0);
   });
 
@@ -205,6 +208,7 @@ describe("parsePlaywrightJson", () => {
     expect(result.summary.total).toBe(0);
     expect(result.summary.passed).toBe(0);
     expect(result.summary.failed).toBe(0);
+    expect(result.summary.flaky).toBe(0);
     expect(result.suites).toHaveLength(0);
     expect(result.failures).toHaveLength(0);
   });
@@ -240,5 +244,90 @@ describe("parsePlaywrightJson", () => {
 
     expect(result.summary.failed).toBe(1);
     expect(result.suites[0].tests[0].retry).toBe(1);
+  });
+
+  it("extracts flaky count from stats", () => {
+    const json = JSON.stringify({
+      config: { rootDir: "/project" },
+      suites: [
+        {
+          title: "mixed.spec.ts",
+          file: "tests/mixed.spec.ts",
+          specs: [
+            {
+              title: "stable test",
+              file: "tests/mixed.spec.ts",
+              line: 3,
+              tests: [
+                {
+                  projectName: "chromium",
+                  results: [{ status: "passed", duration: 100, retry: 0 }],
+                },
+              ],
+            },
+            {
+              title: "flaky test",
+              file: "tests/mixed.spec.ts",
+              line: 10,
+              tests: [
+                {
+                  projectName: "chromium",
+                  results: [
+                    {
+                      status: "failed",
+                      duration: 200,
+                      retry: 0,
+                      error: { message: "Flaky failure" },
+                    },
+                    { status: "passed", duration: 300, retry: 1 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      stats: {
+        startTime: "2024-01-15T10:00:00.000Z",
+        duration: 5000,
+        expected: 1,
+        unexpected: 0,
+        flaky: 2,
+        skipped: 0,
+        interrupted: 0,
+      },
+    });
+
+    const result = parsePlaywrightJson(json);
+
+    expect(result.summary.flaky).toBe(2);
+    expect(result.summary.duration).toBe(5);
+  });
+
+  it("defaults flaky to 0 when stats are missing", () => {
+    const json = JSON.stringify({
+      config: { rootDir: "/project" },
+      suites: [],
+    });
+
+    const result = parsePlaywrightJson(json);
+
+    expect(result.summary.flaky).toBe(0);
+  });
+
+  it("defaults flaky to 0 when stats.flaky is missing", () => {
+    const json = JSON.stringify({
+      config: { rootDir: "/project" },
+      suites: [],
+      stats: {
+        duration: 1000,
+        expected: 1,
+        unexpected: 0,
+      },
+    });
+
+    const result = parsePlaywrightJson(json);
+
+    expect(result.summary.flaky).toBe(0);
   });
 });
