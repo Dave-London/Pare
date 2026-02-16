@@ -6,6 +6,9 @@ import { parseGistCreate } from "../lib/parsers.js";
 import { formatGistCreate } from "../lib/formatters.js";
 import { GistCreateResultSchema } from "../schemas/index.js";
 import { assertSafeFilePath } from "../lib/path-validation.js";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 /** Registers the `gist-create` tool on the given MCP server. */
 export function registerGistCreateTool(server: McpServer) {
@@ -18,9 +21,17 @@ export function registerGistCreateTool(server: McpServer) {
       inputSchema: {
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .min(1)
           .max(INPUT_LIMITS.ARRAY_MAX)
-          .describe("File paths to include in the gist"),
+          .optional()
+          .describe("File paths to include in the gist. Either files or content must be provided."),
+        // P1-gap #143: Add content-based gist creation from inline content
+        content: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe(
+            "Inline content as filename-to-content map (e.g., {'script.py': 'print(1)'}). " +
+              "Creates gist from inline content instead of file paths. Either files or content must be provided.",
+          ),
         description: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -39,35 +50,73 @@ export function registerGistCreateTool(server: McpServer) {
       },
       outputSchema: GistCreateResultSchema,
     },
-    async ({ files, description, public: isPublic, path }) => {
+    async ({ files, content: contentMap, description, public: isPublic, path }) => {
       const cwd = path || process.cwd();
 
       if (description) assertNoFlagInjection(description, "description");
 
-      // Validate all file paths are safe before passing to gh CLI
-      for (const file of files) {
-        assertNoFlagInjection(file, "files");
-        assertSafeFilePath(file, cwd);
+      // P1-gap #143: Validate that at least one of files or content is provided
+      const hasFiles = files && files.length > 0;
+      const hasContent = contentMap && Object.keys(contentMap).length > 0;
+      if (!hasFiles && !hasContent) {
+        throw new Error("Either `files` or `content` must be provided.");
       }
 
-      const args = ["gist", "create"];
-      if (description) {
-        args.push("--desc", description);
-      }
-      if (isPublic) {
-        args.push("--public");
-      }
-      args.push(...files);
+      // Track temp dir for cleanup
+      let tempDir: string | undefined;
+      let resolvedFiles: string[] = [];
 
-      const result = await ghCmd(args, cwd);
+      try {
+        if (hasFiles) {
+          // Validate all file paths are safe before passing to gh CLI
+          for (const file of files!) {
+            assertNoFlagInjection(file, "files");
+            assertSafeFilePath(file, cwd);
+          }
+          resolvedFiles = files!;
+        }
 
-      if (result.exitCode !== 0) {
-        throw new Error(`gh gist create failed: ${result.stderr}`);
+        if (hasContent) {
+          // P1-gap #143: Write inline content to temp files
+          tempDir = mkdtempSync(join(tmpdir(), "pare-gist-"));
+          for (const [filename, fileContent] of Object.entries(contentMap!)) {
+            assertNoFlagInjection(filename, "content filename");
+            const tempPath = join(tempDir, filename);
+            writeFileSync(tempPath, fileContent);
+            resolvedFiles.push(tempPath);
+          }
+        }
+
+        const args = ["gist", "create"];
+        if (description) {
+          args.push("--desc", description);
+        }
+        if (isPublic) {
+          args.push("--public");
+        }
+        args.push(...resolvedFiles);
+
+        const result = await ghCmd(args, cwd);
+
+        if (result.exitCode !== 0) {
+          throw new Error(`gh gist create failed: ${result.stderr}`);
+        }
+
+        // Build file list for output (use original filenames for content-based gists)
+        const outputFiles = hasContent ? Object.keys(contentMap!) : (files ?? []);
+
+        const data = parseGistCreate(result.stdout, !!isPublic, outputFiles, description);
+        return dualOutput(data, formatGistCreate);
+      } finally {
+        // P1-gap #143: Clean up temp files
+        if (tempDir) {
+          try {
+            rmSync(tempDir, { recursive: true, force: true });
+          } catch {
+            // Best-effort cleanup
+          }
+        }
       }
-
-      // S-gap: Pass files and description for echo in output
-      const data = parseGistCreate(result.stdout, !!isPublic, files, description);
-      return dualOutput(data, formatGistCreate);
     },
   );
 }

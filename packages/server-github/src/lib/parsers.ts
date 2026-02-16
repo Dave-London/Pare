@@ -42,6 +42,23 @@ export function parsePrView(json: string): PrViewResult {
     }),
   );
 
+  // P1-gap #147: Parse reviews array
+  const reviews = raw.reviews
+    ? (
+        raw.reviews as {
+          author: { login: string };
+          state: string;
+          body?: string;
+          submittedAt?: string;
+        }[]
+      ).map((r) => ({
+        author: r.author?.login ?? "unknown",
+        state: r.state,
+        body: r.body || undefined,
+        submittedAt: r.submittedAt ?? undefined,
+      }))
+    : undefined;
+
   return {
     number: raw.number,
     state: raw.state,
@@ -69,6 +86,8 @@ export function parsePrView(json: string): PrViewResult {
     projectItems: raw.projectItems
       ? (raw.projectItems as { title: string }[]).map((p) => p.title)
       : undefined,
+    // P1-gap #147
+    reviews,
   };
 }
 
@@ -230,15 +249,44 @@ export function parsePrReview(
   number: number,
   event: string,
   body?: string,
+  stderr?: string,
 ): PrReviewResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
+
+  // P1-gap #145: Parse review event type from CLI output for confirmation
+  // Map the CLI event name to GitHub's review event type
+  const eventMap: Record<string, string> = {
+    approve: "APPROVE",
+    "request-changes": "REQUEST_CHANGES",
+    comment: "COMMENT",
+  };
+  const resolvedEvent = eventMap[event] ?? event;
+
+  // P1-gap #146: Classify review errors from stderr
+  const errorType = stderr ? classifyReviewError(stderr) : undefined;
+
   return {
     number,
-    event,
+    event: resolvedEvent,
     url,
     body: body ?? undefined,
+    errorType,
   };
+}
+
+/**
+ * Classifies review error from stderr into structured error types.
+ * P1-gap #146.
+ */
+function classifyReviewError(stderr: string): PrReviewResult["errorType"] {
+  const lower = stderr.toLowerCase();
+  if (/not found|could not resolve|no pull request/i.test(lower)) return "not-found";
+  if (/permission|forbidden|403/i.test(lower)) return "permission-denied";
+  if (/already reviewed|already approved|already submitted/i.test(lower)) return "already-reviewed";
+  if (/draft|is a draft/i.test(lower)) return "draft-pr";
+  if (stderr.trim()) return "unknown";
+  return undefined;
 }
 
 /**
@@ -404,18 +452,29 @@ export function parseIssueClose(
   number: number,
   reason?: string,
   comment?: string,
+  stderr?: string,
 ): IssueCloseResult {
   // Robust URL extraction: find the GitHub issue URL anywhere in the output
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/issues\/\d+)/);
   const url = urlMatch ? urlMatch[1] : stdout.trim();
   // S-gap: Extract comment URL from output if a comment was added
   const commentUrlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+#issuecomment-\d+)/);
+  // P1-gap #144: Detect already-closed issues
+  const combined = `${stdout}\n${stderr ?? ""}`;
+  const alreadyClosed =
+    /already closed/i.test(combined) ||
+    /issue .* is already closed/i.test(combined) ||
+    /already been closed/i.test(combined)
+      ? true
+      : undefined;
+
   return {
     number,
     state: "closed",
     url,
     reason: reason ?? undefined,
     commentUrl: comment && commentUrlMatch ? commentUrlMatch[1] : undefined,
+    alreadyClosed,
   };
 }
 
@@ -494,6 +553,11 @@ export function parseRunList(json: string): RunListResult {
       headBranch: string;
       url: string;
       createdAt: string;
+      // P1-gap #148: Additional fields
+      headSha?: string;
+      event?: string;
+      startedAt?: string;
+      attempt?: number;
     }) => ({
       id: r.databaseId,
       status: r.status,
@@ -503,6 +567,11 @@ export function parseRunList(json: string): RunListResult {
       headBranch: r.headBranch,
       url: r.url,
       createdAt: r.createdAt ?? "",
+      // P1-gap #148
+      headSha: r.headSha ?? undefined,
+      event: r.event ?? undefined,
+      startedAt: r.startedAt ?? undefined,
+      attempt: r.attempt ?? undefined,
     }),
   );
 
@@ -529,12 +598,23 @@ export function parseRunRerun(
   const urlMatch = combined.match(/(https:\/\/github\.com\/[^\s]+\/actions\/runs\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
 
+  // P1-gap #149: Parse attempt number from output
+  const attemptMatch = combined.match(/attempt[\s#:]*?(\d+)/i);
+  const attempt = attemptMatch ? parseInt(attemptMatch[1], 10) : undefined;
+
+  // P1-gap #149: Extract new run URL if a different URL appears (for the new attempt)
+  // Sometimes gh outputs the new run URL after a rerun
+  const allUrls = combined.match(/https:\/\/github\.com\/[^\s]+\/actions\/runs\/\d+/g) ?? [];
+  const newRunUrl = allUrls.length > 1 ? allUrls[allUrls.length - 1] : undefined;
+
   return {
     runId,
     status: "requested",
     failedOnly,
     url,
     job: job ?? undefined,
+    attempt,
+    newRunUrl,
   };
 }
 
@@ -607,6 +687,7 @@ export function parseApi(
   exitCode: number,
   endpoint: string,
   method: string,
+  stderr?: string,
 ): ApiResult {
   // Default: infer status from exit code
   let statusCode = exitCode === 0 ? 200 : 422;
@@ -648,7 +729,33 @@ export function parseApi(
     body = bodyText;
   }
 
-  return { status, statusCode, body, endpoint, method };
+  // P1-gap #141: Preserve error body for debugging when request failed
+  const errorBody = exitCode !== 0 && stderr ? parseErrorBody(stderr) : undefined;
+
+  return { status, statusCode, body, endpoint, method, errorBody };
+}
+
+/**
+ * Attempts to parse error body from stderr output.
+ * gh api may output JSON error details or plain text to stderr.
+ */
+function parseErrorBody(stderr: string): unknown {
+  const trimmed = stderr.trim();
+  if (!trimmed) return undefined;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Check if stderr contains an embedded JSON object (e.g., after a prefix message)
+    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch {
+        // fall through
+      }
+    }
+    return trimmed;
+  }
 }
 
 /**

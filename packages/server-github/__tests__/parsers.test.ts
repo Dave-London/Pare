@@ -645,3 +645,194 @@ describe("parseRunList", () => {
     expect(result.runs).toEqual([]);
   });
 });
+
+// ── P1-gap #147: PR view reviews ────────────────────────────────────
+
+describe("parsePrView — reviews (P1 #147)", () => {
+  it("parses reviews array from PR view JSON", () => {
+    const json = JSON.stringify({
+      number: 42,
+      state: "OPEN",
+      title: "Add feature",
+      headRefName: "feat/add",
+      baseRefName: "main",
+      url: "https://github.com/owner/repo/pull/42",
+      reviews: [
+        {
+          author: { login: "alice" },
+          state: "APPROVED",
+          body: "LGTM!",
+          submittedAt: "2024-06-01T12:00:00Z",
+        },
+        {
+          author: { login: "bob" },
+          state: "CHANGES_REQUESTED",
+          body: "Please fix the typo",
+          submittedAt: "2024-06-01T13:00:00Z",
+        },
+      ],
+    });
+
+    const result = parsePrView(json);
+
+    expect(result.reviews).toHaveLength(2);
+    expect(result.reviews![0]).toEqual({
+      author: "alice",
+      state: "APPROVED",
+      body: "LGTM!",
+      submittedAt: "2024-06-01T12:00:00Z",
+    });
+    expect(result.reviews![1]).toEqual({
+      author: "bob",
+      state: "CHANGES_REQUESTED",
+      body: "Please fix the typo",
+      submittedAt: "2024-06-01T13:00:00Z",
+    });
+  });
+
+  it("returns undefined reviews when not present in JSON", () => {
+    const json = JSON.stringify({
+      number: 1,
+      state: "OPEN",
+      title: "No reviews",
+      headRefName: "fix/bug",
+      baseRefName: "main",
+      url: "https://github.com/owner/repo/pull/1",
+    });
+
+    const result = parsePrView(json);
+    expect(result.reviews).toBeUndefined();
+  });
+
+  it("handles reviews with empty body", () => {
+    const json = JSON.stringify({
+      number: 5,
+      state: "OPEN",
+      title: "Test",
+      headRefName: "test",
+      baseRefName: "main",
+      url: "https://github.com/owner/repo/pull/5",
+      reviews: [
+        {
+          author: { login: "carol" },
+          state: "APPROVED",
+          body: "",
+          submittedAt: "2024-06-01T14:00:00Z",
+        },
+      ],
+    });
+
+    const result = parsePrView(json);
+    expect(result.reviews![0].body).toBeUndefined();
+  });
+});
+
+// ── P1-gap #148: Run list expanded fields ───────────────────────────
+
+describe("parseRunList — expanded fields (P1 #148)", () => {
+  it("parses headSha, event, startedAt, attempt from run list", () => {
+    const json = JSON.stringify([
+      {
+        databaseId: 100,
+        status: "completed",
+        conclusion: "success",
+        name: "Build",
+        workflowName: "CI",
+        headBranch: "main",
+        url: "https://github.com/owner/repo/actions/runs/100",
+        createdAt: "2024-01-15T10:00:00Z",
+        headSha: "abc123def456789012345678901234567890abcd",
+        event: "push",
+        startedAt: "2024-01-15T10:00:05Z",
+        attempt: 1,
+      },
+      {
+        databaseId: 101,
+        status: "completed",
+        conclusion: "failure",
+        name: "Test",
+        workflowName: "CI",
+        headBranch: "feat/test",
+        url: "https://github.com/owner/repo/actions/runs/101",
+        createdAt: "2024-01-15T11:00:00Z",
+        headSha: "def456abc789012345678901234567890abcdef0",
+        event: "pull_request",
+        startedAt: "2024-01-15T11:00:03Z",
+        attempt: 2,
+      },
+    ]);
+
+    const result = parseRunList(json);
+
+    expect(result.runs[0].headSha).toBe("abc123def456789012345678901234567890abcd");
+    expect(result.runs[0].event).toBe("push");
+    expect(result.runs[0].startedAt).toBe("2024-01-15T10:00:05Z");
+    expect(result.runs[0].attempt).toBe(1);
+
+    expect(result.runs[1].headSha).toBe("def456abc789012345678901234567890abcdef0");
+    expect(result.runs[1].event).toBe("pull_request");
+    expect(result.runs[1].startedAt).toBe("2024-01-15T11:00:03Z");
+    expect(result.runs[1].attempt).toBe(2);
+  });
+
+  it("handles missing expanded fields gracefully", () => {
+    const json = JSON.stringify([
+      {
+        databaseId: 200,
+        status: "in_progress",
+        conclusion: null,
+        name: "Build",
+        workflowName: "CI",
+        headBranch: "main",
+        url: "https://url",
+        createdAt: "2024-01-15T10:00:00Z",
+      },
+    ]);
+
+    const result = parseRunList(json);
+
+    expect(result.runs[0].headSha).toBeUndefined();
+    expect(result.runs[0].event).toBeUndefined();
+    expect(result.runs[0].startedAt).toBeUndefined();
+    expect(result.runs[0].attempt).toBeUndefined();
+  });
+});
+
+// ── P1-gap #149: Run rerun attempt tracking ─────────────────────────
+
+import { parseRunRerun } from "../src/lib/parsers.js";
+
+describe("parseRunRerun — attempt tracking (P1 #149)", () => {
+  it("extracts attempt number from output", () => {
+    const result = parseRunRerun("", "✓ Requested rerun of run 12345 (attempt #3)", 12345, false);
+
+    expect(result.attempt).toBe(3);
+  });
+
+  it("extracts new run URL when multiple URLs present", () => {
+    const stdout = "https://github.com/owner/repo/actions/runs/12345";
+    const stderr = "✓ Rerun started: https://github.com/owner/repo/actions/runs/12346";
+    const result = parseRunRerun(stdout, stderr, 12345, false);
+
+    expect(result.url).toBe("https://github.com/owner/repo/actions/runs/12345");
+    expect(result.newRunUrl).toBe("https://github.com/owner/repo/actions/runs/12346");
+  });
+
+  it("does not set newRunUrl when only one URL present", () => {
+    const result = parseRunRerun(
+      "https://github.com/owner/repo/actions/runs/12345",
+      "",
+      12345,
+      false,
+    );
+
+    expect(result.newRunUrl).toBeUndefined();
+  });
+
+  it("handles output with no attempt info", () => {
+    const result = parseRunRerun("", "✓ Requested rerun of run 12345", 12345, false);
+
+    expect(result.attempt).toBeUndefined();
+    expect(result.newRunUrl).toBeUndefined();
+  });
+});

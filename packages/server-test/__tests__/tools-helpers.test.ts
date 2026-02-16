@@ -182,6 +182,52 @@ describe("buildRunExtraArgs", () => {
     });
   });
 
+  // --- shard ---
+  describe("shard", () => {
+    it("adds --shard for jest", () => {
+      const result = buildRunExtraArgs("jest", { shard: "1/3" });
+      expect(result).toEqual(["--shard", "1/3"]);
+    });
+
+    it("adds --shard for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { shard: "2/4" });
+      expect(result).toEqual(["--shard", "2/4"]);
+    });
+
+    it("ignores shard for pytest (unsupported)", () => {
+      const result = buildRunExtraArgs("pytest", { shard: "1/2" });
+      expect(result).toEqual([]);
+    });
+
+    it("ignores shard for mocha (unsupported)", () => {
+      const result = buildRunExtraArgs("mocha", { shard: "1/2" });
+      expect(result).toEqual([]);
+    });
+  });
+
+  // --- config ---
+  describe("config", () => {
+    it("adds --override-ini for pytest", () => {
+      const result = buildRunExtraArgs("pytest", { config: "pytest.ini" });
+      expect(result).toEqual(["--override-ini=config=pytest.ini"]);
+    });
+
+    it("adds --config for jest", () => {
+      const result = buildRunExtraArgs("jest", { config: "jest.ci.config.js" });
+      expect(result).toEqual(["--config", "jest.ci.config.js"]);
+    });
+
+    it("adds --config for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { config: "vitest.ci.config.ts" });
+      expect(result).toEqual(["--config", "vitest.ci.config.ts"]);
+    });
+
+    it("adds --config for mocha", () => {
+      const result = buildRunExtraArgs("mocha", { config: ".mocharc.yml" });
+      expect(result).toEqual(["--config", ".mocharc.yml"]);
+    });
+  });
+
   // --- updateSnapshots ---
   describe("updateSnapshots", () => {
     it("adds -u for vitest", () => {
@@ -453,6 +499,86 @@ describe("buildCoverageExtraArgs", () => {
     });
   });
 
+  // --- filter ---
+  describe("filter", () => {
+    it("adds -k for pytest", () => {
+      const result = buildCoverageExtraArgs("pytest", { filter: "test_login" });
+      expect(result).toEqual(["-k", "test_login"]);
+    });
+
+    it("adds --testPathPattern for jest", () => {
+      const result = buildCoverageExtraArgs("jest", { filter: "login" });
+      expect(result).toEqual(["--testPathPattern", "login"]);
+    });
+
+    it("adds filter directly for vitest", () => {
+      const result = buildCoverageExtraArgs("vitest", { filter: "login" });
+      expect(result).toEqual(["login"]);
+    });
+
+    it("adds --grep for mocha", () => {
+      const result = buildCoverageExtraArgs("mocha", { filter: "auth" });
+      expect(result).toEqual(["--grep", "auth"]);
+    });
+  });
+
+  // --- source ---
+  describe("source", () => {
+    it("adds --cov=PATH for pytest", () => {
+      const result = buildCoverageExtraArgs("pytest", { source: ["src/"] });
+      expect(result).toEqual(["--cov=src/"]);
+    });
+
+    it("adds --collectCoverageFrom for jest", () => {
+      const result = buildCoverageExtraArgs("jest", { source: ["src/**/*.ts"] });
+      expect(result).toEqual(["--collectCoverageFrom=src/**/*.ts"]);
+    });
+
+    it("adds --coverage.include for vitest", () => {
+      const result = buildCoverageExtraArgs("vitest", { source: ["src/"] });
+      expect(result).toEqual(["--coverage.include=src/"]);
+    });
+
+    it("adds --include for mocha", () => {
+      const result = buildCoverageExtraArgs("mocha", { source: ["lib/"] });
+      expect(result).toEqual(["--include", "lib/"]);
+    });
+
+    it("handles multiple source paths", () => {
+      const result = buildCoverageExtraArgs("vitest", { source: ["src/", "lib/"] });
+      expect(result).toEqual(["--coverage.include=src/", "--coverage.include=lib/"]);
+    });
+  });
+
+  // --- exclude ---
+  describe("exclude", () => {
+    it("adds --cov-config for pytest", () => {
+      const result = buildCoverageExtraArgs("pytest", { exclude: ["tests/"] });
+      expect(result).toEqual(["--cov-config=.coveragerc"]);
+    });
+
+    it("adds --coveragePathIgnorePatterns for jest", () => {
+      const result = buildCoverageExtraArgs("jest", { exclude: ["node_modules"] });
+      expect(result).toEqual(["--coveragePathIgnorePatterns=node_modules"]);
+    });
+
+    it("adds --coverage.exclude for vitest", () => {
+      const result = buildCoverageExtraArgs("vitest", { exclude: ["tests/"] });
+      expect(result).toEqual(["--coverage.exclude=tests/"]);
+    });
+
+    it("adds --exclude for mocha", () => {
+      const result = buildCoverageExtraArgs("mocha", { exclude: ["vendor/"] });
+      expect(result).toEqual(["--exclude", "vendor/"]);
+    });
+  });
+
+  // --- args passthrough ---
+  it("passes through extra args", () => {
+    const result = buildCoverageExtraArgs("vitest", { args: ["--silent"] });
+    expect(result).toEqual(["--silent"]);
+  });
+
   // --- combined ---
   it("combines branch and all for pytest (only branch applies)", () => {
     const result = buildCoverageExtraArgs("pytest", { branch: true, all: true });
@@ -513,6 +639,31 @@ describe("buildPlaywrightExtraArgs", () => {
   it("adds --project with value", () => {
     const result = buildPlaywrightExtraArgs({ project: "chromium" });
     expect(result).toEqual(["--project", "chromium"]);
+  });
+
+  it("adds --grep with value", () => {
+    const result = buildPlaywrightExtraArgs({ grep: "login" });
+    expect(result).toEqual(["--grep", "login"]);
+  });
+
+  it("adds --browser with value", () => {
+    const result = buildPlaywrightExtraArgs({ browser: "firefox" });
+    expect(result).toEqual(["--browser", "firefox"]);
+  });
+
+  it("adds --shard with value", () => {
+    const result = buildPlaywrightExtraArgs({ shard: "1/3" });
+    expect(result).toEqual(["--shard", "1/3"]);
+  });
+
+  it("adds --trace with value", () => {
+    const result = buildPlaywrightExtraArgs({ trace: "retain-on-failure" });
+    expect(result).toEqual(["--trace", "retain-on-failure"]);
+  });
+
+  it("adds --config with value", () => {
+    const result = buildPlaywrightExtraArgs({ config: "playwright.ci.config.ts" });
+    expect(result).toEqual(["--config", "playwright.ci.config.ts"]);
   });
 
   it("adds --headed", () => {

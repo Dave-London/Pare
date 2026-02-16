@@ -555,3 +555,137 @@ describe("compactRunList", () => {
     expect(text).toContain("1 runs:");
   });
 });
+
+// ── P1-gap #147: PR view with reviews ───────────────────────────────
+
+describe("formatPrView — reviews (P1 #147)", () => {
+  it("formats PR view with reviews", () => {
+    const data: PrViewResult = {
+      number: 42,
+      state: "OPEN",
+      title: "Add feature",
+      body: null,
+      mergeable: "MERGEABLE",
+      reviewDecision: "APPROVED",
+      checks: [],
+      url: "https://github.com/owner/repo/pull/42",
+      headBranch: "feat/add",
+      baseBranch: "main",
+      additions: 10,
+      deletions: 5,
+      changedFiles: 2,
+      reviews: [
+        { author: "alice", state: "APPROVED", body: "LGTM!", submittedAt: "2024-06-01T12:00:00Z" },
+        {
+          author: "bob",
+          state: "CHANGES_REQUESTED",
+          body: "Fix typo",
+          submittedAt: "2024-06-01T13:00:00Z",
+        },
+      ],
+    };
+    const output = formatPrView(data);
+
+    expect(output).toContain("reviews:");
+    expect(output).toContain("@alice: APPROVED");
+    expect(output).toContain("@bob: CHANGES_REQUESTED");
+    expect(output).toContain("LGTM!");
+    expect(output).toContain("Fix typo");
+  });
+
+  it("omits reviews section when no reviews", () => {
+    const data: PrViewResult = {
+      number: 1,
+      state: "OPEN",
+      title: "No reviews",
+      body: null,
+      mergeable: "MERGEABLE",
+      reviewDecision: "",
+      checks: [],
+      url: "https://url",
+      headBranch: "feat/test",
+      baseBranch: "main",
+      additions: 0,
+      deletions: 0,
+      changedFiles: 0,
+    };
+    const output = formatPrView(data);
+    expect(output).not.toContain("reviews:");
+  });
+});
+
+// ── P1-gap #148: Run list expanded fields ───────────────────────────
+
+describe("formatRunList — expanded fields (P1 #148)", () => {
+  it("formats run list with headSha and event", () => {
+    const data: RunListResult = {
+      runs: [
+        {
+          id: 100,
+          status: "completed",
+          conclusion: "success",
+          name: "Build",
+          workflowName: "CI",
+          headBranch: "main",
+          url: "https://url",
+          createdAt: "2024-01-01T00:00:00Z",
+          headSha: "abc123def456789012345678901234567890abcd",
+          event: "push",
+          startedAt: "2024-01-01T00:00:05Z",
+          attempt: 1,
+        },
+      ],
+      total: 1,
+    };
+    const output = formatRunList(data);
+
+    expect(output).toContain("abc123d");
+    expect(output).toContain("(push)");
+  });
+});
+
+// ── P1-gap #149: Run rerun attempt tracking ─────────────────────────
+
+import { formatRunRerun } from "../src/lib/formatters.js";
+import type { RunRerunResult } from "../src/schemas/index.js";
+
+describe("formatRunRerun — attempt tracking (P1 #149)", () => {
+  it("formats rerun with attempt number", () => {
+    const data: RunRerunResult = {
+      runId: 12345,
+      status: "requested",
+      failedOnly: false,
+      url: "https://github.com/owner/repo/actions/runs/12345",
+      attempt: 3,
+    };
+    const output = formatRunRerun(data);
+
+    expect(output).toContain("attempt #3");
+  });
+
+  it("formats rerun with new run URL", () => {
+    const data: RunRerunResult = {
+      runId: 12345,
+      status: "requested",
+      failedOnly: false,
+      url: "https://github.com/owner/repo/actions/runs/12345",
+      newRunUrl: "https://github.com/owner/repo/actions/runs/12346",
+    };
+    const output = formatRunRerun(data);
+
+    expect(output).toContain("https://github.com/owner/repo/actions/runs/12346");
+  });
+
+  it("formats rerun without attempt info", () => {
+    const data: RunRerunResult = {
+      runId: 12345,
+      status: "requested",
+      failedOnly: false,
+      url: "https://github.com/owner/repo/actions/runs/12345",
+    };
+    const output = formatRunRerun(data);
+
+    expect(output).not.toContain("attempt");
+    expect(output).toContain("Rerun requested for run #12345");
+  });
+});

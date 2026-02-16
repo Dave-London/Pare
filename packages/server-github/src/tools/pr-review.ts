@@ -80,11 +80,18 @@ export function registerPrReviewTool(server: McpServer) {
 
       const result = await ghCmd(args, { cwd, stdin });
 
+      // P1-gap #146: Classify errors instead of always throwing
       if (result.exitCode !== 0) {
+        // Return structured error output with classification
+        const data = parsePrReview(result.stdout, prNum, event, body, result.stderr);
+        if (data.errorType && data.errorType !== "unknown") {
+          // Return structured result with error classification
+          return dualOutput(data, formatPrReview);
+        }
         throw new Error(`gh pr review failed: ${result.stderr}`);
       }
 
-      // S-gap: Pass body for echo in output
+      // P1-gap #145: Pass body for echo in output (event mapped to GitHub type)
       const data = parsePrReview(result.stdout, prNum, event, body);
       return dualOutput(data, formatPrReview);
     },

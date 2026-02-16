@@ -128,3 +128,75 @@ describe("formatIssueClose", () => {
     expect(formatIssueClose(data)).toBe("Closed issue #1: https://github.com/owner/repo/issues/1");
   });
 });
+
+// ── P1-gap #144: Already-closed detection ───────────────────────────
+
+describe("parseIssueClose — already-closed detection (P1 #144)", () => {
+  it("detects already-closed from stderr", () => {
+    const stdout = "";
+    const result = parseIssueClose(stdout, 42, undefined, undefined, "issue #42 is already closed");
+
+    expect(result.alreadyClosed).toBe(true);
+    expect(result.state).toBe("closed");
+    expect(result.number).toBe(42);
+  });
+
+  it("detects already-closed with different phrasing", () => {
+    const stdout = "";
+    const result = parseIssueClose(stdout, 10, undefined, undefined, "Issue already closed");
+
+    expect(result.alreadyClosed).toBe(true);
+  });
+
+  it("detects already-closed from 'already been closed' phrasing", () => {
+    const stdout = "";
+    const result = parseIssueClose(
+      stdout,
+      5,
+      undefined,
+      undefined,
+      "This issue has already been closed",
+    );
+
+    expect(result.alreadyClosed).toBe(true);
+  });
+
+  it("does not flag alreadyClosed for normal close", () => {
+    const stdout = "https://github.com/owner/repo/issues/42\n";
+    const result = parseIssueClose(stdout, 42, "completed");
+
+    expect(result.alreadyClosed).toBeUndefined();
+  });
+
+  it("does not flag alreadyClosed when no stderr", () => {
+    const stdout = "✓ Closed issue #42\nhttps://github.com/owner/repo/issues/42\n";
+    const result = parseIssueClose(stdout, 42);
+
+    expect(result.alreadyClosed).toBeUndefined();
+  });
+});
+
+describe("formatIssueClose — already-closed display (P1 #144)", () => {
+  it("shows already-closed indicator", () => {
+    const data: IssueCloseResult = {
+      number: 42,
+      state: "closed",
+      url: "https://github.com/owner/repo/issues/42",
+      alreadyClosed: true,
+    };
+    const output = formatIssueClose(data);
+
+    expect(output).toContain("[already closed]");
+  });
+
+  it("does not show indicator when not already closed", () => {
+    const data: IssueCloseResult = {
+      number: 42,
+      state: "closed",
+      url: "https://github.com/owner/repo/issues/42",
+    };
+    const output = formatIssueClose(data);
+
+    expect(output).not.toContain("[already closed]");
+  });
+});

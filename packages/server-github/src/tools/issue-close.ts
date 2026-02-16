@@ -63,12 +63,24 @@ export function registerIssueCloseTool(server: McpServer) {
 
       const result = await ghCmd(args, cwd);
 
+      // P1-gap #144: Detect already-closed issues instead of throwing
       if (result.exitCode !== 0) {
+        const combined = `${result.stdout}\n${result.stderr}`;
+        const isAlreadyClosed =
+          /already closed/i.test(combined) ||
+          /issue .* is already closed/i.test(combined) ||
+          /already been closed/i.test(combined);
+
+        if (isAlreadyClosed) {
+          // Return structured output with alreadyClosed flag
+          const data = parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr);
+          return dualOutput(data, formatIssueClose);
+        }
         throw new Error(`gh issue close failed: ${result.stderr}`);
       }
 
-      // S-gap: Pass reason and comment for echo in output
-      const data = parseIssueClose(result.stdout, issueNum, reason, comment);
+      // S-gap: Pass reason, comment, and stderr for echo in output
+      const data = parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr);
       return dualOutput(data, formatIssueClose);
     },
   );

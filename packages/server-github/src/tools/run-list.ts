@@ -6,7 +6,9 @@ import { parseRunList } from "../lib/parsers.js";
 import { formatRunList, compactRunListMap, formatRunListCompact } from "../lib/formatters.js";
 import { RunListResultSchema } from "../schemas/index.js";
 
-const RUN_LIST_FIELDS = "databaseId,status,conclusion,name,workflowName,headBranch,url,createdAt";
+// P1-gap #148: Expanded fields
+const RUN_LIST_FIELDS =
+  "databaseId,status,conclusion,name,workflowName,headBranch,url,createdAt,headSha,event,startedAt,attempt";
 
 /** Registers the `run-list` tool on the given MCP server. */
 export function registerRunListTool(server: McpServer) {
