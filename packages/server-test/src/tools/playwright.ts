@@ -17,6 +17,11 @@ import { PlaywrightResultSchema } from "../schemas/index.js";
 export function buildPlaywrightExtraArgs(opts: {
   filter?: string;
   project?: string;
+  grep?: string;
+  browser?: string;
+  shard?: string;
+  trace?: "on" | "off" | "retain-on-failure";
+  config?: string;
   headed?: boolean;
   updateSnapshots?: boolean;
   workers?: number;
@@ -37,6 +42,26 @@ export function buildPlaywrightExtraArgs(opts: {
 
   if (opts.project) {
     extraArgs.push("--project", opts.project);
+  }
+
+  if (opts.grep) {
+    extraArgs.push("--grep", opts.grep);
+  }
+
+  if (opts.browser) {
+    extraArgs.push("--browser", opts.browser);
+  }
+
+  if (opts.shard) {
+    extraArgs.push("--shard", opts.shard);
+  }
+
+  if (opts.trace) {
+    extraArgs.push("--trace", opts.trace);
+  }
+
+  if (opts.config) {
+    extraArgs.push("--config", opts.config);
   }
 
   if (opts.headed) {
@@ -99,6 +124,30 @@ export function registerPlaywrightTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Playwright project name (e.g., 'chromium', 'firefox', 'webkit')"),
+        grep: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Regex pattern for matching tests by title (--grep)"),
+        browser: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Browser to use (e.g., "chromium", "firefox", "webkit") via --browser'),
+        shard: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Shard spec for distributed E2E test execution (e.g., "1/3") via --shard'),
+        trace: z
+          .enum(["on", "off", "retain-on-failure"])
+          .optional()
+          .describe("Trace recording mode (--trace)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to non-default Playwright config file (--config)"),
         headed: z.boolean().optional().default(false).describe("Run tests in headed browser mode"),
         updateSnapshots: z
           .boolean()
@@ -157,6 +206,11 @@ export function registerPlaywrightTool(server: McpServer) {
       path,
       filter,
       project,
+      grep,
+      browser,
+      shard,
+      trace,
+      config,
       headed,
       updateSnapshots,
       workers,
@@ -179,11 +233,28 @@ export function registerPlaywrightTool(server: McpServer) {
       if (project) {
         assertNoFlagInjection(project, "project");
       }
+      if (grep) {
+        assertNoFlagInjection(grep, "grep");
+      }
+      if (browser) {
+        assertNoFlagInjection(browser, "browser");
+      }
+      if (shard) {
+        assertNoFlagInjection(shard, "shard");
+      }
+      if (config) {
+        assertNoFlagInjection(config, "config");
+      }
 
       const cwd = path || process.cwd();
       const extraArgs = buildPlaywrightExtraArgs({
         filter,
         project,
+        grep,
+        browser,
+        shard,
+        trace,
+        config,
         headed,
         updateSnapshots,
         workers,

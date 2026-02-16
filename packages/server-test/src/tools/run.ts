@@ -35,6 +35,8 @@ export function buildRunExtraArgs(
   framework: Framework,
   opts: {
     filter?: string;
+    shard?: string;
+    config?: string;
     updateSnapshots?: boolean;
     coverage?: boolean;
     onlyChanged?: boolean;
@@ -58,6 +60,38 @@ export function buildRunExtraArgs(
         break;
       case "mocha":
         extraArgs.push("--grep", opts.filter);
+        break;
+    }
+  }
+
+  // Shard support (jest/vitest)
+  if (opts.shard) {
+    switch (framework) {
+      case "jest":
+      case "vitest":
+        extraArgs.push("--shard", opts.shard);
+        break;
+      case "pytest":
+      case "mocha":
+        // pytest/mocha don't have native --shard; ignore silently
+        break;
+    }
+  }
+
+  // Config file support
+  if (opts.config) {
+    switch (framework) {
+      case "pytest":
+        extraArgs.push(`--override-ini=config=${opts.config}`);
+        break;
+      case "jest":
+        extraArgs.push("--config", opts.config);
+        break;
+      case "vitest":
+        extraArgs.push("--config", opts.config);
+        break;
+      case "mocha":
+        extraArgs.push("--config", opts.config);
         break;
     }
   }
@@ -141,6 +175,18 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test filter pattern (file path or test name pattern)"),
+        shard: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            'Shard spec for distributed test execution (e.g., "1/3") via --shard (jest/vitest)',
+          ),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to test config file (--config for all frameworks)"),
         updateSnapshots: z
           .boolean()
           .optional()
@@ -189,6 +235,8 @@ export function registerRunTool(server: McpServer) {
       path,
       framework,
       filter,
+      shard,
+      config,
       updateSnapshots,
       coverage,
       onlyChanged,
@@ -203,11 +251,19 @@ export function registerRunTool(server: McpServer) {
       if (filter) {
         assertNoFlagInjection(filter, "filter");
       }
+      if (shard) {
+        assertNoFlagInjection(shard, "shard");
+      }
+      if (config) {
+        assertNoFlagInjection(config, "config");
+      }
 
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
       const extraArgs = buildRunExtraArgs(detected, {
         filter,
+        shard,
+        config,
         updateSnapshots,
         coverage,
         onlyChanged,

@@ -67,28 +67,28 @@ describe("getRunCommand", () => {
 // ---------------------------------------------------------------------------
 describe("getCoverageCommand", () => {
   it("returns python -m pytest --cov for pytest", () => {
-    const { cmd, cmdArgs } = getCoverageCommand("pytest");
+    const { cmd, cmdArgs } = getCoverageCommand("pytest", []);
     expect(cmd).toBe("python");
     expect(cmdArgs).toContain("--cov");
     expect(cmdArgs).toContain("--cov-report=term-missing");
   });
 
   it("returns npx jest --coverage for jest", () => {
-    const { cmd, cmdArgs } = getCoverageCommand("jest");
+    const { cmd, cmdArgs } = getCoverageCommand("jest", []);
     expect(cmd).toBe("npx");
     expect(cmdArgs).toContain("jest");
     expect(cmdArgs).toContain("--coverage");
   });
 
   it("returns npx vitest run --coverage for vitest", () => {
-    const { cmd, cmdArgs } = getCoverageCommand("vitest");
+    const { cmd, cmdArgs } = getCoverageCommand("vitest", []);
     expect(cmd).toBe("npx");
     expect(cmdArgs).toContain("vitest");
     expect(cmdArgs).toContain("--coverage");
   });
 
   it("returns npx nyc mocha for mocha", () => {
-    const { cmd, cmdArgs } = getCoverageCommand("mocha");
+    const { cmd, cmdArgs } = getCoverageCommand("mocha", []);
     expect(cmd).toBe("npx");
     expect(cmdArgs[0]).toBe("nyc");
     expect(cmdArgs).toContain("mocha");
