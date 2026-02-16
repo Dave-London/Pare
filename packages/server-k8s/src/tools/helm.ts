@@ -8,6 +8,8 @@ import {
   parseHelmUpgradeOutput,
   parseHelmUninstallOutput,
   parseHelmRollbackOutput,
+  parseHelmHistoryOutput,
+  parseHelmTemplateOutput,
 } from "../lib/parsers.js";
 import {
   formatHelmList,
@@ -16,6 +18,8 @@ import {
   formatHelmUpgrade,
   formatHelmUninstall,
   formatHelmRollback,
+  formatHelmHistory,
+  formatHelmTemplate,
   compactHelmListMap,
   formatHelmListCompact,
   compactHelmStatusMap,
@@ -28,6 +32,10 @@ import {
   formatHelmUninstallCompact,
   compactHelmRollbackMap,
   formatHelmRollbackCompact,
+  compactHelmHistoryMap,
+  formatHelmHistoryCompact,
+  compactHelmTemplateMap,
+  formatHelmTemplateCompact,
 } from "../lib/formatters.js";
 import {
   HelmListResultSchema,
@@ -36,6 +44,8 @@ import {
   HelmUpgradeResultSchema,
   HelmUninstallResultSchema,
   HelmRollbackResultSchema,
+  HelmHistoryResultSchema,
+  HelmTemplateResultSchema,
 } from "../schemas/index.js";
 
 /** Registers the `helm` tool on the given MCP server. */
@@ -45,21 +55,32 @@ export function registerHelmTool(server: McpServer) {
     {
       title: "Helm",
       description:
-        "Manages Helm releases (install, upgrade, list, status). Returns structured JSON output. Use instead of running `helm` in the terminal.",
+        "Manages Helm releases (install, upgrade, list, status, history, template). Returns structured JSON output. Use instead of running `helm` in the terminal.",
       inputSchema: {
         action: z
-          .enum(["list", "status", "install", "upgrade", "uninstall", "rollback"])
+          .enum([
+            "list",
+            "status",
+            "install",
+            "upgrade",
+            "uninstall",
+            "rollback",
+            "history",
+            "template",
+          ])
           .describe("Helm action to perform"),
         release: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("Release name (required for status, install, upgrade)"),
+          .describe("Release name (required for status, install, upgrade, history, template)"),
         chart: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("Chart reference (required for install, upgrade; e.g., bitnami/nginx)"),
+          .describe(
+            "Chart reference (required for install, upgrade, template; e.g., bitnami/nginx)",
+          ),
         namespace: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -172,6 +193,8 @@ export function registerHelmTool(server: McpServer) {
         HelmUpgradeResultSchema,
         HelmUninstallResultSchema,
         HelmRollbackResultSchema,
+        HelmHistoryResultSchema,
+        HelmTemplateResultSchema,
       ]),
     },
     async ({
@@ -424,6 +447,66 @@ export function registerHelmTool(server: McpServer) {
             formatHelmRollback,
             compactHelmRollbackMap,
             formatHelmRollbackCompact,
+            compact === false,
+          );
+        }
+
+        case "history": {
+          if (!release) throw new Error("release is required for history action");
+
+          const args = ["history", release, "-o", "json"];
+          if (namespace) args.push("-n", namespace);
+
+          const result = await run("helm", args, { timeout: 180_000 });
+          const data = parseHelmHistoryOutput(
+            result.stdout,
+            result.stderr,
+            result.exitCode,
+            release,
+            namespace,
+          );
+          const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+
+          return compactDualOutput(
+            data,
+            rawOutput,
+            formatHelmHistory,
+            compactHelmHistoryMap,
+            formatHelmHistoryCompact,
+            compact === false,
+          );
+        }
+
+        case "template": {
+          if (!release) throw new Error("release is required for template action");
+          if (!chart) throw new Error("chart is required for template action");
+
+          const args = ["template", release, chart];
+          if (namespace) args.push("-n", namespace);
+          for (const v of valuesFiles) {
+            args.push("--values", v);
+          }
+          if (setValues) {
+            for (const sv of setValues) {
+              assertNoFlagInjection(sv, "setValues");
+              args.push("--set", sv);
+            }
+          }
+          if (version) args.push("--version", version);
+          if (repo) args.push("--repo", repo);
+          if (noHooks) args.push("--no-hooks");
+          if (skipCrds) args.push("--skip-crds");
+
+          const result = await run("helm", args, { timeout: 180_000 });
+          const data = parseHelmTemplateOutput(result.stdout, result.stderr, result.exitCode);
+          const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+
+          return compactDualOutput(
+            data,
+            rawOutput,
+            formatHelmTemplate,
+            compactHelmTemplateMap,
+            formatHelmTemplateCompact,
             compact === false,
           );
         }

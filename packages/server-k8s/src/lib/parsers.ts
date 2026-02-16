@@ -7,6 +7,7 @@ import type {
   K8sAppliedResource,
   K8sCondition,
   K8sEvent,
+  K8sOwnerReference,
   HelmListResult,
   HelmStatusResult,
   HelmInstallResult,
@@ -14,6 +15,9 @@ import type {
   HelmUninstallResult,
   HelmRollbackResult,
   HelmRelease,
+  HelmHistoryResult,
+  HelmRevision,
+  HelmTemplateResult,
 } from "../schemas/index.js";
 
 /**
@@ -91,6 +95,41 @@ function extractResource(raw: Record<string, unknown>): K8sResource {
     if (m.labels && typeof m.labels === "object") {
       metadata.labels = m.labels as Record<string, string>;
     }
+    if (m.annotations && typeof m.annotations === "object") {
+      metadata.annotations = m.annotations as Record<string, string>;
+    }
+    if (Array.isArray(m.ownerReferences) && m.ownerReferences.length > 0) {
+      metadata.ownerReferences = m.ownerReferences
+        .filter(
+          (ref: unknown) =>
+            ref &&
+            typeof ref === "object" &&
+            typeof (ref as Record<string, unknown>).apiVersion === "string" &&
+            typeof (ref as Record<string, unknown>).kind === "string" &&
+            typeof (ref as Record<string, unknown>).name === "string" &&
+            typeof (ref as Record<string, unknown>).uid === "string",
+        )
+        .map((ref: unknown) => {
+          const r = ref as Record<string, string>;
+          return {
+            apiVersion: r.apiVersion,
+            kind: r.kind,
+            name: r.name,
+            uid: r.uid,
+          } satisfies K8sOwnerReference;
+        });
+      if (metadata.ownerReferences.length === 0) {
+        delete metadata.ownerReferences;
+      }
+    }
+    if (Array.isArray(m.finalizers) && m.finalizers.length > 0) {
+      metadata.finalizers = m.finalizers.filter((f: unknown): f is string => typeof f === "string");
+      if (metadata.finalizers.length === 0) {
+        delete metadata.finalizers;
+      }
+    }
+    if (typeof m.resourceVersion === "string") metadata.resourceVersion = m.resourceVersion;
+    if (typeof m.uid === "string") metadata.uid = m.uid;
     result.metadata = metadata;
   }
   if (raw.status && typeof raw.status === "object") {
@@ -663,6 +702,123 @@ export function parseHelmRollbackOutput(
     namespace,
     revision: revision !== undefined ? String(revision) : undefined,
     status,
+    exitCode,
+  };
+}
+
+// ── Helm history parser ─────────────────────────────────────────────
+
+/**
+ * Parses `helm history <release> -o json` output into a structured history result.
+ */
+export function parseHelmHistoryOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  release: string,
+  namespace?: string,
+): HelmHistoryResult {
+  if (exitCode !== 0) {
+    return {
+      action: "history",
+      success: false,
+      name: release,
+      namespace,
+      revisions: [],
+      total: 0,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  let revisions: HelmRevision[] = [];
+  try {
+    const parsed = JSON.parse(stdout);
+    if (Array.isArray(parsed)) {
+      revisions = parsed.map((r: Record<string, unknown>) => {
+        const rev: HelmRevision = {
+          revision: Number(r.revision ?? 0),
+          updated: String(r.updated ?? ""),
+          status: String(r.status ?? ""),
+          chart: String(r.chart ?? ""),
+        };
+        if (r.app_version != null && String(r.app_version) !== "") {
+          rev.appVersion = String(r.app_version);
+        }
+        if (r.description != null && String(r.description) !== "") {
+          rev.description = String(r.description);
+        }
+        return rev;
+      });
+    }
+  } catch {
+    return {
+      action: "history",
+      success: false,
+      name: release,
+      namespace,
+      revisions: [],
+      total: 0,
+      exitCode,
+      error: `Failed to parse helm JSON output: ${stdout.slice(0, 200)}`,
+    };
+  }
+
+  return {
+    action: "history",
+    success: true,
+    name: release,
+    namespace,
+    revisions,
+    total: revisions.length,
+    exitCode,
+  };
+}
+
+// ── Helm template parser ────────────────────────────────────────────
+
+/**
+ * Parses `helm template` output into a structured template result.
+ * Counts YAML document separators (`---`) to determine manifest count.
+ */
+export function parseHelmTemplateOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): HelmTemplateResult {
+  if (exitCode !== 0) {
+    return {
+      action: "template",
+      success: false,
+      manifestCount: 0,
+      exitCode,
+      error: stderr.trim() || undefined,
+    };
+  }
+
+  const manifests = stdout.trimEnd();
+
+  // Count the number of YAML document separators.
+  // Each `---` at the start of a line indicates a new manifest.
+  let manifestCount = 0;
+  if (manifests) {
+    const lines = manifests.split("\n");
+    for (const line of lines) {
+      if (line.trim() === "---") {
+        manifestCount++;
+      }
+    }
+    // If there are manifests but no separators, count as 1
+    if (manifestCount === 0 && manifests.trim().length > 0) {
+      manifestCount = 1;
+    }
+  }
+
+  return {
+    action: "template",
+    success: true,
+    manifests,
+    manifestCount,
     exitCode,
   };
 }

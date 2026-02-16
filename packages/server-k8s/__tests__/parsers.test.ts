@@ -163,6 +163,222 @@ describe("parseGetOutput", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeUndefined();
   });
+
+  // ── Gap #164: Expanded metadata fields ────────────────────────────
+
+  it("extracts annotations from resource metadata", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "annotated-pod",
+            namespace: "default",
+            annotations: {
+              "kubectl.kubernetes.io/last-applied-configuration": "{}",
+              "prometheus.io/scrape": "true",
+            },
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.annotations).toEqual({
+      "kubectl.kubernetes.io/last-applied-configuration": "{}",
+      "prometheus.io/scrape": "true",
+    });
+  });
+
+  it("extracts ownerReferences from resource metadata", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "owned-pod",
+            namespace: "default",
+            ownerReferences: [
+              {
+                apiVersion: "apps/v1",
+                kind: "ReplicaSet",
+                name: "nginx-rs-abc123",
+                uid: "12345-abcde",
+                controller: true,
+                blockOwnerDeletion: true,
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.ownerReferences).toHaveLength(1);
+    expect(result.items[0].metadata?.ownerReferences![0]).toEqual({
+      apiVersion: "apps/v1",
+      kind: "ReplicaSet",
+      name: "nginx-rs-abc123",
+      uid: "12345-abcde",
+    });
+  });
+
+  it("extracts finalizers from resource metadata", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Namespace",
+          metadata: {
+            name: "my-ns",
+            finalizers: ["kubernetes"],
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "namespaces");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.finalizers).toEqual(["kubernetes"]);
+  });
+
+  it("extracts resourceVersion and uid from resource metadata", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "my-pod",
+            namespace: "default",
+            resourceVersion: "12345",
+            uid: "abc-def-ghi-jkl",
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods", "default");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.resourceVersion).toBe("12345");
+    expect(result.items[0].metadata?.uid).toBe("abc-def-ghi-jkl");
+  });
+
+  it("skips invalid ownerReferences entries", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "my-pod",
+            ownerReferences: [
+              { kind: "ReplicaSet" }, // missing apiVersion, name, uid
+              {
+                apiVersion: "apps/v1",
+                kind: "ReplicaSet",
+                name: "valid-rs",
+                uid: "valid-uid",
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.ownerReferences).toHaveLength(1);
+    expect(result.items[0].metadata?.ownerReferences![0].name).toBe("valid-rs");
+  });
+
+  it("omits empty ownerReferences and finalizers arrays", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "my-pod",
+            ownerReferences: [],
+            finalizers: [],
+          },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods");
+
+    expect(result.success).toBe(true);
+    expect(result.items[0].metadata?.ownerReferences).toBeUndefined();
+    expect(result.items[0].metadata?.finalizers).toBeUndefined();
+  });
+
+  it("extracts all expanded metadata fields together", () => {
+    const stdout = JSON.stringify({
+      kind: "List",
+      apiVersion: "v1",
+      items: [
+        {
+          apiVersion: "v1",
+          kind: "Pod",
+          metadata: {
+            name: "full-pod",
+            namespace: "production",
+            creationTimestamp: "2026-01-15T12:00:00Z",
+            labels: { app: "web" },
+            annotations: { note: "test" },
+            ownerReferences: [
+              {
+                apiVersion: "apps/v1",
+                kind: "ReplicaSet",
+                name: "web-rs",
+                uid: "owner-uid-123",
+              },
+            ],
+            finalizers: ["kubernetes.io/pv-protection"],
+            resourceVersion: "67890",
+            uid: "pod-uid-456",
+          },
+          status: { phase: "Running" },
+        },
+      ],
+    });
+
+    const result = parseGetOutput(stdout, "", 0, "pods", "production");
+
+    expect(result.success).toBe(true);
+    const meta = result.items[0].metadata!;
+    expect(meta.name).toBe("full-pod");
+    expect(meta.namespace).toBe("production");
+    expect(meta.annotations).toEqual({ note: "test" });
+    expect(meta.ownerReferences).toHaveLength(1);
+    expect(meta.ownerReferences![0].kind).toBe("ReplicaSet");
+    expect(meta.finalizers).toEqual(["kubernetes.io/pv-protection"]);
+    expect(meta.resourceVersion).toBe("67890");
+    expect(meta.uid).toBe("pod-uid-456");
+  });
 });
 
 describe("parseDescribeConditions", () => {
@@ -754,7 +970,12 @@ describe("parseHelmUpgradeOutput", () => {
 
 // ── Helm uninstall/rollback parser tests ─────────────────────────────
 
-import { parseHelmUninstallOutput, parseHelmRollbackOutput } from "../src/lib/parsers.js";
+import {
+  parseHelmUninstallOutput,
+  parseHelmRollbackOutput,
+  parseHelmHistoryOutput,
+  parseHelmTemplateOutput,
+} from "../src/lib/parsers.js";
 
 describe("parseHelmUninstallOutput", () => {
   it("parses successful uninstall", () => {
@@ -807,5 +1028,178 @@ describe("parseHelmRollbackOutput", () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain("not found");
     expect(result.revision).toBe("1");
+  });
+});
+
+// ── Gap #165: Helm history parser tests ─────────────────────────────
+
+describe("parseHelmHistoryOutput", () => {
+  it("parses successful history output", () => {
+    const stdout = JSON.stringify([
+      {
+        revision: 1,
+        updated: "2026-01-01T00:00:00Z",
+        status: "superseded",
+        chart: "nginx-1.0.0",
+        app_version: "1.25.0",
+        description: "Install complete",
+      },
+      {
+        revision: 2,
+        updated: "2026-01-02T00:00:00Z",
+        status: "deployed",
+        chart: "nginx-1.1.0",
+        app_version: "1.25.1",
+        description: "Upgrade complete",
+      },
+    ]);
+
+    const result = parseHelmHistoryOutput(stdout, "", 0, "my-release", "default");
+
+    expect(result.action).toBe("history");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.namespace).toBe("default");
+    expect(result.total).toBe(2);
+    expect(result.revisions).toHaveLength(2);
+    expect(result.revisions![0]).toEqual({
+      revision: 1,
+      updated: "2026-01-01T00:00:00Z",
+      status: "superseded",
+      chart: "nginx-1.0.0",
+      appVersion: "1.25.0",
+      description: "Install complete",
+    });
+    expect(result.revisions![1]).toEqual({
+      revision: 2,
+      updated: "2026-01-02T00:00:00Z",
+      status: "deployed",
+      chart: "nginx-1.1.0",
+      appVersion: "1.25.1",
+      description: "Upgrade complete",
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles failure with stderr", () => {
+    const result = parseHelmHistoryOutput("", "Error: release: not found", 1, "missing", "default");
+
+    expect(result.success).toBe(false);
+    expect(result.name).toBe("missing");
+    expect(result.namespace).toBe("default");
+    expect(result.total).toBe(0);
+    expect(result.revisions).toEqual([]);
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("not found");
+  });
+
+  it("handles invalid JSON output", () => {
+    const result = parseHelmHistoryOutput("not-json{", "", 0, "test");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to parse helm JSON output");
+  });
+
+  it("handles revision without optional fields", () => {
+    const stdout = JSON.stringify([
+      {
+        revision: 1,
+        updated: "2026-01-01T00:00:00Z",
+        status: "deployed",
+        chart: "nginx-1.0.0",
+      },
+    ]);
+
+    const result = parseHelmHistoryOutput(stdout, "", 0, "my-release");
+
+    expect(result.success).toBe(true);
+    expect(result.revisions![0].appVersion).toBeUndefined();
+    expect(result.revisions![0].description).toBeUndefined();
+  });
+
+  it("handles empty history array", () => {
+    const result = parseHelmHistoryOutput("[]", "", 0, "my-release");
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.revisions).toEqual([]);
+  });
+});
+
+// ── Gap #166: Helm template parser tests ────────────────────────────
+
+describe("parseHelmTemplateOutput", () => {
+  it("parses successful template output with multiple manifests", () => {
+    const stdout = [
+      "---",
+      "# Source: nginx/templates/serviceaccount.yaml",
+      "apiVersion: v1",
+      "kind: ServiceAccount",
+      "metadata:",
+      "  name: my-release-nginx",
+      "---",
+      "# Source: nginx/templates/service.yaml",
+      "apiVersion: v1",
+      "kind: Service",
+      "metadata:",
+      "  name: my-release-nginx",
+      "---",
+      "# Source: nginx/templates/deployment.yaml",
+      "apiVersion: apps/v1",
+      "kind: Deployment",
+      "metadata:",
+      "  name: my-release-nginx",
+    ].join("\n");
+
+    const result = parseHelmTemplateOutput(stdout, "", 0);
+
+    expect(result.action).toBe("template");
+    expect(result.success).toBe(true);
+    expect(result.manifestCount).toBe(3);
+    expect(result.manifests).toContain("ServiceAccount");
+    expect(result.manifests).toContain("Service");
+    expect(result.manifests).toContain("Deployment");
+    expect(result.exitCode).toBe(0);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles failure with stderr", () => {
+    const result = parseHelmTemplateOutput("", "Error: chart not found", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.manifestCount).toBe(0);
+    expect(result.manifests).toBeUndefined();
+    expect(result.exitCode).toBe(1);
+    expect(result.error).toContain("chart not found");
+  });
+
+  it("handles empty output", () => {
+    const result = parseHelmTemplateOutput("", "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.manifestCount).toBe(0);
+    expect(result.manifests).toBe("");
+  });
+
+  it("handles single manifest without separator", () => {
+    const stdout = ["apiVersion: v1", "kind: ConfigMap", "metadata:", "  name: test-config"].join(
+      "\n",
+    );
+
+    const result = parseHelmTemplateOutput(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.manifestCount).toBe(1);
+    expect(result.manifests).toContain("ConfigMap");
+  });
+
+  it("counts manifests correctly with trailing newlines", () => {
+    const stdout = "---\napiVersion: v1\nkind: Pod\n---\napiVersion: v1\nkind: Service\n\n";
+
+    const result = parseHelmTemplateOutput(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.manifestCount).toBe(2);
   });
 });
