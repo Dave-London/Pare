@@ -31,17 +31,44 @@ export function registerSemgrepTool(server: McpServer) {
           .default(["."])
           .describe("File patterns or paths to scan (default: ['.'])"),
         config: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
           .optional()
           .default("auto")
           .describe(
-            'Semgrep config/ruleset (e.g. "auto", "p/security-audit", "p/owasp-top-ten"). Default: "auto"',
+            'Semgrep config/ruleset(s). String or string[] for multiple configs (e.g., "auto", "p/security-audit", ["p/owasp-top-ten", "p/cwe-top-25"]). Default: "auto"',
           ),
         severity: z
           .enum(["INFO", "WARNING", "ERROR"])
           .optional()
           .describe("Severity filter. Default: all severities"),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Glob patterns to exclude from scanning (--exclude)"),
+        include: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Glob patterns to include in scanning (--include)"),
+        excludeRule: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Rule IDs to suppress (--exclude-rule, for known false positives)"),
+        baselineCommit: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Baseline commit for differential scanning in PR workflows (--baseline-commit)",
+          ),
         dataflowTraces: z
           .boolean()
           .optional()
@@ -75,6 +102,10 @@ export function registerSemgrepTool(server: McpServer) {
       patterns,
       config,
       severity,
+      exclude,
+      include,
+      excludeRule,
+      baselineCommit,
       dataflowTraces,
       autofix,
       dryrun,
@@ -86,20 +117,51 @@ export function registerSemgrepTool(server: McpServer) {
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
+      // Normalize config to array
+      const configs = config ? (Array.isArray(config) ? config : [config]) : ["auto"];
+
       // Validate inputs against flag injection
-      if (config) assertNoFlagInjection(config, "config");
+      for (const c of configs) {
+        assertNoFlagInjection(c, "config");
+      }
       for (const p of patterns) {
         assertNoFlagInjection(p, "patterns");
       }
+      for (const e of exclude ?? []) {
+        assertNoFlagInjection(e, "exclude");
+      }
+      for (const i of include ?? []) {
+        assertNoFlagInjection(i, "include");
+      }
+      for (const r of excludeRule ?? []) {
+        assertNoFlagInjection(r, "excludeRule");
+      }
+      if (baselineCommit) assertNoFlagInjection(baselineCommit, "baselineCommit");
 
       const args: string[] = ["scan", "--json", "--quiet"];
 
-      if (config) {
-        args.push("--config", config);
+      for (const c of configs) {
+        args.push("--config", c);
       }
 
       if (severity) {
         args.push("--severity", severity);
+      }
+
+      for (const e of exclude ?? []) {
+        args.push("--exclude", e);
+      }
+
+      for (const i of include ?? []) {
+        args.push("--include", i);
+      }
+
+      for (const r of excludeRule ?? []) {
+        args.push("--exclude-rule", r);
+      }
+
+      if (baselineCommit) {
+        args.push("--baseline-commit", baselineCommit);
       }
 
       if (dataflowTraces) {
@@ -126,7 +188,9 @@ export function registerSemgrepTool(server: McpServer) {
 
       const result = await run("semgrep", args, { cwd, timeout: 300_000 });
 
-      const data = parseSemgrepJson(result.stdout, config);
+      // Use first config for display; join all for the structured output
+      const configDisplay = configs.join(",");
+      const data = parseSemgrepJson(result.stdout, configDisplay);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return compactDualOutput(

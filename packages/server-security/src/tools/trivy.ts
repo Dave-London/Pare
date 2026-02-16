@@ -32,9 +32,54 @@ export function registerTrivyTool(server: McpServer) {
             'Scan type: "image" for container images, "fs" for filesystem, "config" for IaC misconfigurations',
           ),
         severity: z
-          .enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"])
+          .union([
+            z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+            z
+              .array(z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]))
+              .max(INPUT_LIMITS.ARRAY_MAX),
+          ])
           .optional()
-          .describe("Severity filter. Default: all severities"),
+          .describe(
+            'Severity filter. Single value or array for CSV (e.g., ["CRITICAL", "HIGH"]). Default: all severities',
+          ),
+        scanners: z
+          .array(z.enum(["vuln", "misconfig", "secret", "license"]))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe(
+            'Scanner types to enable (--scanners, e.g., ["vuln", "misconfig"]). Default: all',
+          ),
+        vulnType: z
+          .array(z.enum(["os", "library"]))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe(
+            'Vulnerability types to scan (--vuln-type, e.g., ["os", "library"]). Default: all',
+          ),
+        skipDirs: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Directories to skip during scanning (--skip-dirs)"),
+        skipFiles: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .default([])
+          .describe("Files to skip during scanning (--skip-files)"),
+        platform: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe('Platform for multi-arch image scanning (--platform, e.g., "linux/amd64")'),
+        ignorefile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to custom .trivyignore file (--ignorefile)"),
         ignoreUnfixed: z
           .boolean()
           .optional()
@@ -67,6 +112,12 @@ export function registerTrivyTool(server: McpServer) {
       target,
       scanType,
       severity,
+      scanners,
+      vulnType,
+      skipDirs,
+      skipFiles,
+      platform,
+      ignorefile,
       ignoreUnfixed,
       exitCode,
       skipDbUpdate,
@@ -74,13 +125,52 @@ export function registerTrivyTool(server: McpServer) {
       compact,
     }) => {
       assertNoFlagInjection(target, "target");
+      if (platform) assertNoFlagInjection(platform, "platform");
+      if (ignorefile) assertNoFlagInjection(ignorefile, "ignorefile");
+      for (const d of skipDirs ?? []) {
+        assertNoFlagInjection(d, "skipDirs");
+      }
+      for (const f of skipFiles ?? []) {
+        assertNoFlagInjection(f, "skipFiles");
+      }
+
       const cwd = path || process.cwd();
       assertAllowedRoot(cwd, "security");
 
       const args: string[] = [scanType, "--format", "json", "--quiet"];
 
+      // Handle severity as single value or CSV array
       if (severity) {
-        args.push("--severity", severity);
+        const severityStr = Array.isArray(severity) ? severity.join(",") : severity;
+        args.push("--severity", severityStr);
+      }
+
+      // Scanners (comma-separated)
+      if (scanners && scanners.length > 0) {
+        args.push("--scanners", scanners.join(","));
+      }
+
+      // Vulnerability types (comma-separated)
+      if (vulnType && vulnType.length > 0) {
+        args.push("--vuln-type", vulnType.join(","));
+      }
+
+      // Skip directories
+      for (const d of skipDirs ?? []) {
+        args.push("--skip-dirs", d);
+      }
+
+      // Skip files
+      for (const f of skipFiles ?? []) {
+        args.push("--skip-files", f);
+      }
+
+      if (platform) {
+        args.push("--platform", platform);
+      }
+
+      if (ignorefile) {
+        args.push("--ignorefile", ignorefile);
       }
 
       if (ignoreUnfixed) {
