@@ -85,12 +85,12 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
 }
 
 /** Parses `ruff check --output-format json` output into structured lint diagnostics with fixability info. */
-export function parseRuffJson(stdout: string): RuffResult {
+export function parseRuffJson(stdout: string, exitCode: number): RuffResult {
   let entries: RuffJsonEntry[];
   try {
     entries = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, fixable: 0 };
+    return { success: exitCode === 0, diagnostics: [], total: 0, fixable: 0 };
   }
 
   const diagnostics = entries.map((e) => ({
@@ -102,11 +102,12 @@ export function parseRuffJson(stdout: string): RuffResult {
     code: e.code,
     message: e.message,
     fixable: !!e.fix,
+    url: e.url || undefined,
   }));
 
   const fixable = diagnostics.filter((d) => d.fixable).length;
 
-  return { diagnostics, total: diagnostics.length, fixable };
+  return { success: exitCode === 0, diagnostics, total: diagnostics.length, fixable };
 }
 
 interface RuffJsonEntry {
@@ -116,15 +117,16 @@ interface RuffJsonEntry {
   location: { row: number; column: number };
   end_location?: { row: number; column: number };
   fix?: unknown;
+  url?: string;
 }
 
 /** Parses `pip-audit --format json` output into structured vulnerability data with fix versions. */
-export function parsePipAuditJson(stdout: string): PipAuditResult {
+export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditResult {
   let data: PipAuditJson;
   try {
     data = JSON.parse(stdout);
   } catch {
-    return { vulnerabilities: [], total: 0 };
+    return { success: exitCode === 0, vulnerabilities: [], total: 0 };
   }
 
   const vulnerabilities = (data.dependencies ?? []).flatMap((dep) =>
@@ -137,7 +139,7 @@ export function parsePipAuditJson(stdout: string): PipAuditResult {
     })),
   );
 
-  return { vulnerabilities, total: vulnerabilities.length };
+  return { success: exitCode === 0, vulnerabilities, total: vulnerabilities.length };
 }
 
 interface PipAuditJson {
@@ -358,28 +360,38 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
 }
 
 /** Parses `pip list --format json` output into structured package list. */
-export function parsePipListJson(stdout: string): PipList {
-  let entries: { name: string; version: string }[];
+export function parsePipListJson(stdout: string, exitCode: number): PipList {
+  let entries: PipListJsonEntry[];
   try {
     entries = JSON.parse(stdout);
   } catch {
-    return { packages: [], total: 0 };
+    return { success: exitCode === 0, packages: [], total: 0 };
   }
 
   if (!Array.isArray(entries)) {
-    return { packages: [], total: 0 };
+    return { success: exitCode === 0, packages: [], total: 0 };
   }
 
   const packages = entries.map((e) => ({
     name: e.name,
     version: e.version,
+    location: e.location || undefined,
+    editableProject: e.editable_project != null ? true : undefined,
   }));
 
-  return { packages, total: packages.length };
+  return { success: exitCode === 0, packages, total: packages.length };
 }
 
-/** Parses `pip show <package>` key-value output into structured package metadata. */
-export function parsePipShowOutput(stdout: string): PipShow {
+interface PipListJsonEntry {
+  name: string;
+  version: string;
+  location?: string;
+  editable_project?: string;
+}
+
+/** Parses `pip show <package>` key-value output into structured package metadata.
+ *  Splits on the first occurrence of ": " to handle values containing ": ". */
+export function parsePipShowOutput(stdout: string, exitCode: number): PipShow {
   const lines = stdout.split("\n");
   const data: Record<string, string> = {};
 
@@ -397,15 +409,32 @@ export function parsePipShowOutput(stdout: string): PipShow {
       ? data["Requires"].split(",").map((r) => r.trim())
       : [];
 
+  const requiredBy =
+    data["Required-by"] && data["Required-by"].trim()
+      ? data["Required-by"].split(",").map((r) => r.trim())
+      : [];
+
+  const classifiers =
+    data["Classifier"] && data["Classifier"].trim()
+      ? data["Classifier"].split(",").map((c) => c.trim())
+      : [];
+
+  const hasName = Boolean(data["Name"]);
+
   return {
+    success: exitCode === 0 && hasName,
     name: data["Name"] || "",
     version: data["Version"] || "",
     summary: data["Summary"] || "",
     homepage: data["Home-page"] || undefined,
     author: data["Author"] || undefined,
+    authorEmail: data["Author-email"] || undefined,
     license: data["License"] || undefined,
     location: data["Location"] || undefined,
     requires,
+    requiredBy: requiredBy.length > 0 ? requiredBy : undefined,
+    metadataVersion: data["Metadata-Version"] || undefined,
+    classifiers: classifiers.length > 0 ? classifiers : undefined,
   };
 }
 
@@ -609,7 +638,7 @@ export function parseCondaEnvListJson(stdout: string, activePrefix?: string): Co
 // ─── poetry parsers ──────────────────────────────────────────────────────────
 
 /** Regex matching `poetry show --no-ansi` lines: "package-name  version  description" */
-const POETRY_SHOW_RE = /^(\S+)\s+(\S+)/;
+const POETRY_SHOW_RE = /^(\S+)\s+(\S+)(?:\s+(.+))?/;
 
 /** Regex matching `poetry build` artifact lines: " - Built package-1.0.0.tar.gz" or "  Built package-1.0.0-py3-none-any.whl" */
 const POETRY_BUILT_RE = /Built\s+(\S+)/;
@@ -628,11 +657,15 @@ export function parsePoetryOutput(
   const lines = output.split("\n");
 
   if (action === "show") {
-    const packages: { name: string; version: string }[] = [];
+    const packages: { name: string; version: string; description?: string }[] = [];
     for (const line of lines) {
       const match = line.match(POETRY_SHOW_RE);
       if (match) {
-        packages.push({ name: match[1], version: match[2] });
+        packages.push({
+          name: match[1],
+          version: match[2],
+          description: match[3]?.trim() || undefined,
+        });
       }
     }
     return {

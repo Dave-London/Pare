@@ -28,6 +28,15 @@ export function registerPoetryTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Packages for add/remove actions"),
+        group: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Dependency group for install/add/remove (e.g. 'dev')"),
+        format: z
+          .enum(["sdist", "wheel"])
+          .optional()
+          .describe("Build output format for build action"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -63,11 +72,12 @@ export function registerPoetryTool(server: McpServer) {
       },
       outputSchema: PoetryResultSchema,
     },
-    async ({ action, packages, path, dryRun, outdated, latest, tree, compact }) => {
+    async ({ action, packages, group, format, path, dryRun, outdated, latest, tree, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
+      if (group) assertNoFlagInjection(group, "group");
 
       const args: string[] = [action, "--no-interaction", "--no-ansi"];
 
@@ -79,6 +89,14 @@ export function registerPoetryTool(server: McpServer) {
         if (outdated) args.push("--outdated");
         if (latest) args.push("--latest");
         if (tree) args.push("--tree");
+      }
+
+      if (group && (action === "install" || action === "add" || action === "remove")) {
+        args.push("--group", group);
+      }
+
+      if (action === "build" && format) {
+        args.push("--format", format);
       }
 
       if ((action === "add" || action === "remove") && packages && packages.length > 0) {

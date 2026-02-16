@@ -206,12 +206,14 @@ export function formatMypyCompact(data: MypyResultCompact): string {
 /** Compact ruff: success + diagnostic count. Drop individual entries. */
 export interface RuffResultCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
   fixable: number;
 }
 
 export function compactRuffMap(data: RuffResult): RuffResultCompact {
   return {
+    success: data.success,
     total: data.total,
     fixable: data.fixable,
   };
@@ -271,11 +273,13 @@ export function formatPipInstallCompact(data: PipInstallCompact): string {
 /** Compact pip-audit: success + vulnerability count. Drop individual CVE details. */
 export interface PipAuditResultCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
 }
 
 export function compactPipAuditMap(data: PipAuditResult): PipAuditResultCompact {
   return {
+    success: data.success,
     total: data.total,
   };
 }
@@ -344,11 +348,13 @@ export function formatPipList(data: PipList): string {
 /** Compact pip-list: total count only. Drop individual package details. */
 export interface PipListCompact {
   [key: string]: unknown;
+  success: boolean;
   total: number;
 }
 
 export function compactPipListMap(data: PipList): PipListCompact {
   return {
+    success: data.success,
     total: data.total,
   };
 }
@@ -367,27 +373,37 @@ export function formatPipShow(data: PipShow): string {
   const lines = [`${data.name}==${data.version}`];
   if (data.summary) lines.push(`  Summary: ${data.summary}`);
   if (data.author) lines.push(`  Author: ${data.author}`);
+  if (data.authorEmail) lines.push(`  Author-email: ${data.authorEmail}`);
   if (data.license) lines.push(`  License: ${data.license}`);
   if (data.homepage) lines.push(`  Homepage: ${data.homepage}`);
   if (data.location) lines.push(`  Location: ${data.location}`);
+  if (data.metadataVersion) lines.push(`  Metadata-Version: ${data.metadataVersion}`);
   const requires = data.requires ?? [];
   if (requires.length > 0) lines.push(`  Requires: ${requires.join(", ")}`);
+  const requiredBy = data.requiredBy ?? [];
+  if (requiredBy.length > 0) lines.push(`  Required-by: ${requiredBy.join(", ")}`);
+  const classifiers = data.classifiers ?? [];
+  if (classifiers.length > 0) lines.push(`  Classifiers: ${classifiers.join(", ")}`);
   return lines.join("\n");
 }
 
 /** Compact pip-show: name + version + summary only. Drop detailed metadata. */
 export interface PipShowCompact {
   [key: string]: unknown;
+  success: boolean;
   name: string;
   version: string;
   summary: string;
+  requires: string[];
 }
 
 export function compactPipShowMap(data: PipShow): PipShowCompact {
   return {
+    success: data.success,
     name: data.name,
     version: data.version,
     summary: data.summary,
+    requires: data.requires ?? [],
   };
 }
 
@@ -650,7 +666,8 @@ export function formatPoetry(data: PoetryResult): string {
     if (pkgs.length === 0) return "No packages found.";
     const lines = [`${pkgs.length} packages:`];
     for (const pkg of pkgs) {
-      lines.push(`  ${pkg.name}==${pkg.version}`);
+      const desc = pkg.description ? ` - ${pkg.description}` : "";
+      lines.push(`  ${pkg.name}==${pkg.version}${desc}`);
     }
     return lines.join("\n");
   }

@@ -103,10 +103,11 @@ describe("parseRuffJson", () => {
       },
     ]);
 
-    const result = parseRuffJson(json);
+    const result = parseRuffJson(json, 1);
 
     expect(result.total).toBe(2);
     expect(result.fixable).toBe(1);
+    expect(result.success).toBe(false);
     expect(result.diagnostics[0]).toEqual({
       file: "src/main.py",
       line: 1,
@@ -121,13 +122,13 @@ describe("parseRuffJson", () => {
   });
 
   it("parses clean output", () => {
-    const result = parseRuffJson("[]");
+    const result = parseRuffJson("[]", 0);
     expect(result.total).toBe(0);
     expect(result.fixable).toBe(0);
   });
 
   it("handles invalid JSON", () => {
-    const result = parseRuffJson("not json");
+    const result = parseRuffJson("not json", 0);
     expect(result.total).toBe(0);
   });
 });
@@ -151,9 +152,10 @@ describe("parsePipAuditJson", () => {
       ],
     });
 
-    const result = parsePipAuditJson(json);
+    const result = parsePipAuditJson(json, 0);
 
     expect(result.total).toBe(1);
+    expect(result.success).toBe(true);
     expect(result.vulnerabilities[0]).toEqual({
       name: "requests",
       version: "2.25.0",
@@ -168,12 +170,12 @@ describe("parsePipAuditJson", () => {
       dependencies: [{ name: "requests", version: "2.31.0", vulns: [] }],
     });
 
-    const result = parsePipAuditJson(json);
+    const result = parsePipAuditJson(json, 0);
     expect(result.total).toBe(0);
   });
 
   it("handles invalid JSON", () => {
-    const result = parsePipAuditJson("not json");
+    const result = parsePipAuditJson("not json", 0);
     expect(result.total).toBe(0);
   });
 });
@@ -237,7 +239,7 @@ describe("parseMypyOutput — error paths", () => {
 
 describe("parseRuffJson — error paths", () => {
   it("handles empty string", () => {
-    const result = parseRuffJson("");
+    const result = parseRuffJson("", 0);
     expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
@@ -246,24 +248,24 @@ describe("parseRuffJson — error paths", () => {
     // parseRuffJson expects an array from ruff --output-format json.
     // Non-array valid JSON (object, null) causes a TypeError on .map().
     // This documents the current behavior — ruff always produces an array.
-    expect(() => parseRuffJson('{"key": "value"}')).toThrow();
+    expect(() => parseRuffJson('{"key": "value"}', 0)).toThrow();
   });
 
   it("throws on null JSON", () => {
     // null is valid JSON but not an array — .map() throws TypeError
-    expect(() => parseRuffJson("null")).toThrow();
+    expect(() => parseRuffJson("null", 0)).toThrow();
   });
 });
 
 describe("parsePipAuditJson — error paths", () => {
   it("handles empty string", () => {
-    const result = parsePipAuditJson("");
+    const result = parsePipAuditJson("", 0);
     expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
 
   it("handles JSON with missing dependencies key", () => {
-    const result = parsePipAuditJson("{}");
+    const result = parsePipAuditJson("{}", 0);
     expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
@@ -272,7 +274,7 @@ describe("parsePipAuditJson — error paths", () => {
     const json = JSON.stringify({
       dependencies: [{ name: "requests", version: "2.31.0" }],
     });
-    const result = parsePipAuditJson(json);
+    const result = parsePipAuditJson(json, 0);
     expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
@@ -399,33 +401,34 @@ describe("parsePipListJson", () => {
       { name: "flask", version: "3.0.0" },
       { name: "requests", version: "2.31.0" },
     ]);
-    const result = parsePipListJson(json);
+    const result = parsePipListJson(json, 0);
 
     expect(result.total).toBe(2);
+    expect(result.success).toBe(true);
     expect(result.packages[0]).toEqual({ name: "flask", version: "3.0.0" });
     expect(result.packages[1]).toEqual({ name: "requests", version: "2.31.0" });
   });
 
   it("parses empty array", () => {
-    const result = parsePipListJson("[]");
+    const result = parsePipListJson("[]", 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
   it("handles invalid JSON", () => {
-    const result = parsePipListJson("not json");
+    const result = parsePipListJson("not json", 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
   it("handles empty string", () => {
-    const result = parsePipListJson("");
+    const result = parsePipListJson("", 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
   it("handles non-array JSON", () => {
-    const result = parsePipListJson('{"key": "value"}');
+    const result = parsePipListJson('{"key": "value"}', 0);
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
@@ -448,7 +451,7 @@ describe("parsePipShowOutput", () => {
       "Required-by: ",
     ].join("\n");
 
-    const result = parsePipShowOutput(stdout);
+    const result = parsePipShowOutput(stdout, 0);
 
     expect(result.name).toBe("requests");
     expect(result.version).toBe("2.31.0");
@@ -458,6 +461,9 @@ describe("parsePipShowOutput", () => {
     expect(result.license).toBe("Apache-2.0");
     expect(result.location).toBe("/usr/lib/python3.11/site-packages");
     expect(result.requires).toEqual(["charset-normalizer", "idna", "urllib3", "certifi"]);
+    expect(result.success).toBe(true);
+    expect(result.authorEmail).toBe("me@kennethreitz.org");
+    expect(result.requiredBy).toBeUndefined();
   });
 
   it("parses output with empty Requires field", () => {
@@ -473,25 +479,28 @@ describe("parsePipShowOutput", () => {
       "Required-by: requests",
     ].join("\n");
 
-    const result = parsePipShowOutput(stdout);
+    const result = parsePipShowOutput(stdout, 0);
 
     expect(result.name).toBe("certifi");
     expect(result.requires).toEqual([]);
+    expect(result.requiredBy).toEqual(["requests"]);
+    expect(result.success).toBe(true);
   });
 
   it("handles empty output", () => {
-    const result = parsePipShowOutput("");
+    const result = parsePipShowOutput("", 1);
 
     expect(result.name).toBe("");
     expect(result.version).toBe("");
     expect(result.summary).toBe("");
     expect(result.requires).toEqual([]);
+    expect(result.success).toBe(false);
   });
 
   it("handles output with missing optional fields", () => {
     const stdout = ["Name: mypackage", "Version: 1.0.0", "Summary: A test package"].join("\n");
 
-    const result = parsePipShowOutput(stdout);
+    const result = parsePipShowOutput(stdout, 0);
 
     expect(result.name).toBe("mypackage");
     expect(result.version).toBe("1.0.0");
@@ -731,9 +740,17 @@ describe("parsePoetryOutput — show", () => {
     expect(result.action).toBe("show");
     expect(result.total).toBe(3);
     expect(result.packages).toEqual([
-      { name: "certifi", version: "2023.7.22" },
-      { name: "charset-normalizer", version: "3.3.0" },
-      { name: "requests", version: "2.31.0" },
+      {
+        name: "certifi",
+        version: "2023.7.22",
+        description: "Python package for Mozilla's CA Bundle.",
+      },
+      {
+        name: "charset-normalizer",
+        version: "3.3.0",
+        description: "The Real First Universal Charset Detector.",
+      },
+      { name: "requests", version: "2.31.0", description: "Python HTTP for Humans." },
     ]);
   });
 

@@ -64,6 +64,30 @@ export function registerRuffFormatTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to custom ruff config file"),
+        targetVersion: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Python version target override (e.g. 'py38')"),
+        exclude: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("File patterns to exclude from formatting"),
+        range: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Line range for formatting (e.g. '10-20')"),
+        quoteStyle: z
+          .enum(["single", "double"])
+          .optional()
+          .describe("Quote style override for formatting"),
         compact: z
           .boolean()
           .optional()
@@ -84,12 +108,24 @@ export function registerRuffFormatTool(server: McpServer) {
       isolated,
       indentWidth,
       path,
+      config,
+      targetVersion,
+      exclude,
+      range,
+      quoteStyle,
       compact,
     }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
+      if (config) assertNoFlagInjection(config, "config");
+      if (targetVersion) assertNoFlagInjection(targetVersion, "targetVersion");
+      if (range) assertNoFlagInjection(range, "range");
+      for (const e of exclude ?? []) {
+        assertNoFlagInjection(e, "exclude");
+      }
+
       const args = ["format", ...(patterns || ["."])];
       if (check) args.push("--check");
       if (diff) args.push("--diff");
@@ -98,6 +134,13 @@ export function registerRuffFormatTool(server: McpServer) {
       if (noCache) args.push("--no-cache");
       if (isolated) args.push("--isolated");
       if (indentWidth !== undefined) args.push("--indent-width", String(indentWidth));
+      if (config) args.push("--config", config);
+      if (targetVersion) args.push("--target-version", targetVersion);
+      if (range) args.push("--range", range);
+      if (quoteStyle) args.push("--config", `format.quote-style = "${quoteStyle}"`);
+      for (const e of exclude ?? []) {
+        args.push("--exclude", e);
+      }
 
       const result = await ruff(args, cwd);
       const data = parseRuffFormatOutput(result.stdout, result.stderr, result.exitCode);

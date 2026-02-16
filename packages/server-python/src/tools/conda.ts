@@ -30,6 +30,16 @@ export function registerCondaTool(server: McpServer) {
           .describe(
             "Environment name (used with 'list' action to list packages in a specific env)",
           ),
+        prefix: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Environment prefix path as alternative to name (--prefix DIR)"),
+        packageFilter: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Regex filter for conda list to show only matching packages"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -45,14 +55,18 @@ export function registerCondaTool(server: McpServer) {
       },
       outputSchema: CondaResultSchema,
     },
-    async ({ action, name, path, compact }) => {
+    async ({ action, name, prefix, packageFilter, path, compact }) => {
       const cwd = path || process.cwd();
       if (name) assertNoFlagInjection(name, "name");
+      if (prefix) assertNoFlagInjection(prefix, "prefix");
+      if (packageFilter) assertNoFlagInjection(packageFilter, "packageFilter");
 
       switch (action) {
         case "list": {
           const args = ["list", "--json"];
           if (name) args.push("--name", name);
+          else if (prefix) args.push("--prefix", prefix);
+          if (packageFilter) args.push(packageFilter);
           const result = await conda(args, cwd);
           const data = parseCondaListJson(result.stdout, name);
           return compactDualOutput(

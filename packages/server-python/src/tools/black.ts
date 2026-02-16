@@ -53,6 +53,11 @@ export function registerBlackTool(server: McpServer) {
           .default(false)
           .describe("Skip string quote normalization (-S)"),
         preview: z.boolean().optional().default(false).describe("Enable preview style (--preview)"),
+        config: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to explicit Black config file (--config)"),
         compact: z
           .boolean()
           .optional()
@@ -72,6 +77,7 @@ export function registerBlackTool(server: McpServer) {
       diff,
       skipStringNormalization,
       preview,
+      config,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -79,6 +85,8 @@ export function registerBlackTool(server: McpServer) {
         assertNoFlagInjection(t, "targets");
       }
       if (targetVersion) assertNoFlagInjection(targetVersion, "targetVersion");
+      if (config) assertNoFlagInjection(config, "config");
+
       const args = [...(targets || ["."])];
       if (check) args.push("--check");
       if (lineLength !== undefined) args.push("--line-length", String(lineLength));
@@ -86,6 +94,7 @@ export function registerBlackTool(server: McpServer) {
       if (diff) args.push("--diff");
       if (skipStringNormalization) args.push("-S");
       if (preview) args.push("--preview");
+      if (config) args.push("--config", config);
 
       const result = await black(args, cwd);
       const data = parseBlackOutput(result.stdout, result.stderr, result.exitCode);
