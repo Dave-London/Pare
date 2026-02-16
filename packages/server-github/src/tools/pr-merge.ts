@@ -22,6 +22,11 @@ export function registerPrMergeTool(server: McpServer) {
           .default("squash")
           .describe("Merge method (default: squash)"),
         deleteBranch: z.boolean().optional().default(false).describe("Delete branch after merge"),
+        admin: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Bypass branch protection rules (--admin)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -37,11 +42,12 @@ export function registerPrMergeTool(server: McpServer) {
       },
       outputSchema: PrMergeResultSchema,
     },
-    async ({ number, method, deleteBranch, path }) => {
+    async ({ number, method, deleteBranch, admin, path }) => {
       const cwd = path || process.cwd();
 
       const args = ["pr", "merge", String(number), `--${method}`];
       if (deleteBranch) args.push("--delete-branch");
+      if (admin) args.push("--admin");
 
       const result = await ghCmd(args, cwd);
 

@@ -48,7 +48,7 @@ export function registerPullTool(server: McpServer) {
       }
 
       const args = ["pull"];
-      if (rebase) args.push("--rebase");
+      args.push(rebase ? "--rebase" : "--no-rebase");
       args.push(remote);
       if (branch) args.push(branch);
 

@@ -48,7 +48,16 @@ export function registerPushTool(server: McpServer) {
       if (force) args.push("--force");
       if (setUpstream) args.push("-u");
       args.push(remote);
-      if (branch) args.push(branch);
+
+      if (branch) {
+        args.push(branch);
+      } else if (setUpstream) {
+        // When setting upstream without an explicit branch, git needs the
+        // current branch name to create the remote tracking reference.
+        const branchResult = await git(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
+        const currentBranch = branchResult.stdout.trim();
+        if (currentBranch) args.push(currentBranch);
+      }
 
       const result = await git(args, cwd);
 
