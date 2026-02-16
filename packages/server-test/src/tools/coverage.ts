@@ -44,6 +44,7 @@ export function buildCoverageExtraArgs(
     filter?: string;
     source?: string[];
     exclude?: string[];
+    failUnder?: number;
     args?: string[];
   },
 ): string[] {
@@ -123,6 +124,24 @@ export function buildCoverageExtraArgs(
     }
   }
 
+  // Fail-under: minimum coverage threshold
+  if (opts.failUnder !== undefined) {
+    switch (framework) {
+      case "pytest":
+        extra.push(`--cov-fail-under=${opts.failUnder}`);
+        break;
+      case "jest":
+        extra.push(`--coverageThreshold={"global":{"lines":${opts.failUnder}}}`);
+        break;
+      case "vitest":
+        extra.push(`--coverage.thresholds.lines=${opts.failUnder}`);
+        break;
+      case "mocha":
+        extra.push(`--check-coverage`, `--lines`, String(opts.failUnder));
+        break;
+    }
+  }
+
   return extra;
 }
 
@@ -173,6 +192,14 @@ export function registerCoverageTool(server: McpServer) {
           .optional()
           .default([])
           .describe("File patterns to exclude from coverage"),
+        failUnder: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe(
+            "Minimum line coverage percentage; fail if below (maps to --cov-fail-under for pytest, --coverageThreshold for jest, --coverage.thresholds.lines for vitest, --check-coverage --lines for nyc)",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -189,7 +216,7 @@ export function registerCoverageTool(server: McpServer) {
       },
       outputSchema: CoverageSchema,
     },
-    async ({ path, framework, branch, all, filter, source, exclude, args, compact }) => {
+    async ({ path, framework, branch, all, filter, source, exclude, failUnder, args, compact }) => {
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -209,6 +236,7 @@ export function registerCoverageTool(server: McpServer) {
         filter,
         source,
         exclude,
+        failUnder,
         args,
       });
 

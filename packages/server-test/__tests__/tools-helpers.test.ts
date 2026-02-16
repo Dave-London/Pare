@@ -297,6 +297,85 @@ describe("buildRunExtraArgs", () => {
     });
   });
 
+  // --- bail ---
+  describe("bail", () => {
+    it("adds --maxfail=N for pytest", () => {
+      const result = buildRunExtraArgs("pytest", { bail: 3 });
+      expect(result).toEqual(["--maxfail=3"]);
+    });
+
+    it("adds --bail=N for jest", () => {
+      const result = buildRunExtraArgs("jest", { bail: 5 });
+      expect(result).toEqual(["--bail=5"]);
+    });
+
+    it("adds --bail=N for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { bail: 2 });
+      expect(result).toEqual(["--bail=2"]);
+    });
+
+    it("adds --bail for mocha", () => {
+      const result = buildRunExtraArgs("mocha", { bail: 3 });
+      expect(result).toEqual(["--bail"]);
+    });
+
+    it("treats true as 1", () => {
+      const result = buildRunExtraArgs("pytest", { bail: true });
+      expect(result).toEqual(["--maxfail=1"]);
+    });
+
+    it("does not add flag when false", () => {
+      const result = buildRunExtraArgs("pytest", { bail: false });
+      expect(result).toEqual([]);
+    });
+  });
+
+  // --- testNamePattern ---
+  describe("testNamePattern", () => {
+    it("adds -k for pytest", () => {
+      const result = buildRunExtraArgs("pytest", { testNamePattern: "test_login" });
+      expect(result).toEqual(["-k", "test_login"]);
+    });
+
+    it("adds --testNamePattern for jest", () => {
+      const result = buildRunExtraArgs("jest", { testNamePattern: "login" });
+      expect(result).toEqual(["--testNamePattern=login"]);
+    });
+
+    it("adds --grep for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { testNamePattern: "login" });
+      expect(result).toEqual(["--grep=login"]);
+    });
+
+    it("adds --grep for mocha", () => {
+      const result = buildRunExtraArgs("mocha", { testNamePattern: "auth" });
+      expect(result).toEqual(["--grep", "auth"]);
+    });
+  });
+
+  // --- workers ---
+  describe("workers", () => {
+    it("adds -n for pytest", () => {
+      const result = buildRunExtraArgs("pytest", { workers: 4 });
+      expect(result).toEqual(["-n", "4"]);
+    });
+
+    it("adds --maxWorkers for jest", () => {
+      const result = buildRunExtraArgs("jest", { workers: 8 });
+      expect(result).toEqual(["--maxWorkers=8"]);
+    });
+
+    it("adds --pool.threads.maxThreads for vitest", () => {
+      const result = buildRunExtraArgs("vitest", { workers: 6 });
+      expect(result).toEqual(["--pool.threads.maxThreads=6"]);
+    });
+
+    it("adds --jobs for mocha", () => {
+      const result = buildRunExtraArgs("mocha", { workers: 3 });
+      expect(result).toEqual(["--jobs", "3"]);
+    });
+  });
+
   // --- combined options ---
   it("combines multiple options correctly", () => {
     const result = buildRunExtraArgs("vitest", {
@@ -304,6 +383,9 @@ describe("buildRunExtraArgs", () => {
       onlyChanged: true,
       exitFirst: true,
       passWithNoTests: true,
+      bail: 3,
+      testNamePattern: "should work",
+      workers: 4,
       args: ["src/"],
     });
     expect(result).toContain("src/");
@@ -311,6 +393,9 @@ describe("buildRunExtraArgs", () => {
     expect(result).toContain("--changed");
     expect(result).toContain("--bail=1");
     expect(result).toContain("--passWithNoTests");
+    expect(result).toContain("--bail=3");
+    expect(result).toContain("--grep=should work");
+    expect(result).toContain("--pool.threads.maxThreads=4");
   });
 });
 
@@ -377,6 +462,34 @@ describe("buildCoverageExtraArgs", () => {
   it("combines branch and all for vitest (only all applies)", () => {
     const result = buildCoverageExtraArgs("vitest", { branch: true, all: true });
     expect(result).toEqual(["--coverage.all"]);
+  });
+
+  // --- failUnder ---
+  describe("failUnder", () => {
+    it("adds --cov-fail-under for pytest", () => {
+      const result = buildCoverageExtraArgs("pytest", { failUnder: 80 });
+      expect(result).toEqual(["--cov-fail-under=80"]);
+    });
+
+    it("adds --coverageThreshold for jest", () => {
+      const result = buildCoverageExtraArgs("jest", { failUnder: 90 });
+      expect(result).toEqual(['--coverageThreshold={"global":{"lines":90}}']);
+    });
+
+    it("adds --coverage.thresholds.lines for vitest", () => {
+      const result = buildCoverageExtraArgs("vitest", { failUnder: 75 });
+      expect(result).toEqual(["--coverage.thresholds.lines=75"]);
+    });
+
+    it("adds --check-coverage --lines for mocha (nyc)", () => {
+      const result = buildCoverageExtraArgs("mocha", { failUnder: 85 });
+      expect(result).toEqual(["--check-coverage", "--lines", "85"]);
+    });
+
+    it("does not add flag when undefined", () => {
+      const result = buildCoverageExtraArgs("vitest", { failUnder: undefined });
+      expect(result).toEqual([]);
+    });
   });
 });
 
