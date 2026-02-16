@@ -287,6 +287,80 @@ describe("parsePrChecks", () => {
     expect(result.summary.passed).toBe(1);
     expect(result.summary.total).toBe(3);
   });
+
+  it("parses all-pending checks (exit code 8 scenario)", () => {
+    // When gh pr checks exits with code 8, it still returns valid JSON
+    // with all checks in the "pending" bucket
+    const json = JSON.stringify([
+      {
+        name: "CI / build",
+        state: "PENDING",
+        bucket: "pending",
+        description: "",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/456",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "",
+      },
+      {
+        name: "CI / test",
+        state: "PENDING",
+        bucket: "pending",
+        description: "",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/123/job/789",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 55);
+
+    expect(result.pr).toBe(55);
+    expect(result.checks).toHaveLength(2);
+    expect(result.summary.total).toBe(2);
+    expect(result.summary.pending).toBe(2);
+    expect(result.summary.passed).toBe(0);
+    expect(result.summary.failed).toBe(0);
+  });
+
+  it("parses mixed pending/complete checks (exit code 8 scenario)", () => {
+    // Exit code 8 can also occur when some checks passed but others are still pending
+    const json = JSON.stringify([
+      {
+        name: "CI / build",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Build succeeded",
+        event: "pull_request",
+        workflow: "CI",
+        link: "",
+        startedAt: "2024-01-15T10:00:00Z",
+        completedAt: "2024-01-15T10:05:00Z",
+      },
+      {
+        name: "CI / deploy",
+        state: "PENDING",
+        bucket: "pending",
+        description: "",
+        event: "pull_request",
+        workflow: "CI",
+        link: "",
+        startedAt: "2024-01-15T10:05:00Z",
+        completedAt: "",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 30);
+
+    expect(result.pr).toBe(30);
+    expect(result.summary.total).toBe(2);
+    expect(result.summary.passed).toBe(1);
+    expect(result.summary.pending).toBe(1);
+    expect(result.summary.failed).toBe(0);
+  });
 });
 
 describe("parseComment", () => {

@@ -59,7 +59,8 @@ export function registerPrChecksTool(server: McpServer) {
       if (required) args.push("--required");
       const result = await ghCmd(args);
 
-      if (result.exitCode !== 0) {
+      // Exit code 8 means checks are still pending — gh still returns valid JSON
+      if (result.exitCode !== 0 && result.exitCode !== 8) {
         throw new Error(`gh pr checks failed: ${result.stderr}`);
       }
 
