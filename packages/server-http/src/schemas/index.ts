@@ -3,10 +3,33 @@ import { z } from "zod";
 /** Zod schema for a single HTTP header key-value pair as a record. */
 export const HttpHeadersSchema = z.record(z.string(), z.string());
 
+/** Zod schema for expanded timing details from curl's -w format variables. */
+export const TimingDetailsSchema = z.object({
+  namelookup: z.number().describe("Time from start until DNS resolution completed (seconds)"),
+  connect: z.number().describe("Time from start until TCP connection established (seconds)"),
+  appconnect: z
+    .number()
+    .optional()
+    .describe("Time from start until TLS handshake completed (seconds)"),
+  pretransfer: z
+    .number()
+    .optional()
+    .describe("Time from start until just before transfer begins (seconds)"),
+  starttransfer: z
+    .number()
+    .optional()
+    .describe("Time from start until first response byte received (seconds)"),
+});
+
+export type TimingDetails = z.infer<typeof TimingDetailsSchema>;
+
 /** Zod schema for HTTP timing information. */
 export const HttpTimingSchema = z.object({
   total: z.number(),
+  details: TimingDetailsSchema.optional(),
 });
+
+export type HttpTiming = z.infer<typeof HttpTimingSchema>;
 
 /** Zod schema for the full HTTP response result (used by request, get, post). */
 export const HttpResponseSchema = z.object({
@@ -44,13 +67,27 @@ export const HttpResponseCompactSchema = z.object({
 
 export type HttpResponseCompact = z.infer<typeof HttpResponseCompactSchema>;
 
-/** Compact HEAD response: status and timing only. Drop headers. */
+/**
+ * Compact HEAD response: status, timing, and key headers.
+ * Retains essential headers even in compact mode: content-length, cache-control,
+ * etag, last-modified, content-type.
+ */
 export const HttpHeadResponseCompactSchema = z.object({
   status: z.number(),
   statusText: z.string(),
   contentType: z.string().optional(),
   contentLength: z.number().optional(),
   timing: HttpTimingSchema,
+  essentialHeaders: HttpHeadersSchema.optional(),
 });
 
 export type HttpHeadResponseCompact = z.infer<typeof HttpHeadResponseCompactSchema>;
+
+/** Headers that should be preserved in HEAD compact mode. */
+export const HEAD_ESSENTIAL_HEADERS = [
+  "content-length",
+  "cache-control",
+  "etag",
+  "last-modified",
+  "content-type",
+] as const;

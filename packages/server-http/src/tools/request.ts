@@ -203,6 +203,8 @@ export interface BuildCurlArgsOptions {
   preserveMethodOnRedirect?: boolean;
   /** URL-encoded form data items passed via --data-urlencode. */
   dataUrlencode?: string[];
+  /** Multipart form data items passed via -F. Each key-value becomes -F key=value. */
+  form?: Record<string, string>;
 }
 
 /**
@@ -216,8 +218,17 @@ export function buildCurlArgs(opts: BuildCurlArgsOptions): string[] {
     "-i", // Include response headers in output
   ];
 
-  // Write-out format for timing and size metadata
-  const writeOut = `\n${PARE_META_SEPARATOR}\n%{time_total} %{size_download}`;
+  // Write-out format for timing and size metadata (expanded with detailed timing)
+  const writeOut = [
+    `\n${PARE_META_SEPARATOR}\n`,
+    "%{time_total}",
+    "%{size_download}",
+    "%{time_namelookup}",
+    "%{time_connect}",
+    "%{time_appconnect}",
+    "%{time_pretransfer}",
+    "%{time_starttransfer}",
+  ].join(" ");
   args.push("-w", writeOut);
 
   // HTTP method: use -I (--head) for HEAD requests, -X for everything else
@@ -257,15 +268,23 @@ export function buildCurlArgs(opts: BuildCurlArgsOptions): string[] {
     }
   }
 
-  // Request body
-  if (opts.body) {
-    args.push("--data-raw", opts.body);
-  }
+  // Multipart form data (-F): takes priority over body/data-raw
+  if (opts.form && Object.keys(opts.form).length > 0) {
+    for (const [key, value] of Object.entries(opts.form)) {
+      assertNoFlagInjection(value, "form value");
+      args.push("-F", `${key}=${value}`);
+    }
+  } else {
+    // Request body
+    if (opts.body) {
+      args.push("--data-raw", opts.body);
+    }
 
-  // URL-encoded form data
-  if (opts.dataUrlencode) {
-    for (const item of opts.dataUrlencode) {
-      args.push("--data-urlencode", item);
+    // URL-encoded form data
+    if (opts.dataUrlencode) {
+      for (const item of opts.dataUrlencode) {
+        args.push("--data-urlencode", item);
+      }
     }
   }
 
