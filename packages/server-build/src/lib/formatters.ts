@@ -56,6 +56,11 @@ export function formatEsbuild(data: EsbuildResult): string {
     if (data.outputFiles && data.outputFiles.length > 0) {
       parts.push(`${data.outputFiles.length} output files`);
     }
+    if (data.metafile) {
+      const inputCount = Object.keys(data.metafile.inputs).length;
+      const outputCount = Object.keys(data.metafile.outputs).length;
+      parts.push(`${inputCount} inputs, ${outputCount} outputs`);
+    }
     return parts.join(", ");
   }
 
@@ -97,7 +102,8 @@ export function formatViteBuild(data: ViteBuildResult): string {
     if (outputs.length > 0) {
       lines.push(`  ${outputs.length} output files:`);
       for (const out of outputs) {
-        lines.push(`    ${out.file}  ${out.size}`);
+        const bytesInfo = out.sizeBytes !== undefined ? ` (${out.sizeBytes} bytes)` : "";
+        lines.push(`    ${out.file}  ${out.size}${bytesInfo}`);
       }
     }
     if (warnings.length > 0) {
@@ -133,6 +139,14 @@ export function formatWebpack(data: WebpackResult): string {
     for (const asset of assets) {
       const sizeKB = (asset.size / 1024).toFixed(1);
       lines.push(`  ${asset.name}  ${sizeKB} kB`);
+    }
+    if (data.profile) {
+      lines.push(`  Profile: ${data.profile.modules.length} modules with timing data`);
+      // Show top 5 slowest modules
+      const sorted = [...data.profile.modules].sort((a, b) => b.time - a.time).slice(0, 5);
+      for (const mod of sorted) {
+        lines.push(`    ${mod.name}  ${mod.time}ms`);
+      }
     }
     return lines.join("\n");
   }
@@ -327,7 +341,8 @@ export function formatTurbo(data: TurboResult): string {
     for (const t of tasks) {
       const cachePart = t.cache ? ` [${t.cache}]` : "";
       const durationPart = t.duration ? ` (${t.duration})` : "";
-      lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
+      const msPart = t.durationMs !== undefined ? ` [${t.durationMs}ms]` : "";
+      lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}${msPart}`);
     }
     return lines.join("\n");
   }
@@ -357,7 +372,7 @@ export function formatNx(data: NxResult): string {
   const lines = [summary];
   for (const task of tasks) {
     const icon = task.status === "success" ? "✔" : "✖";
-    const cacheTag = task.cache ? " [cache]" : "";
+    const cacheTag = task.cache ? ` [${task.cache}]` : "";
     const dur = task.duration !== undefined ? ` (${task.duration}s)` : "";
     lines.push(`  ${icon} ${task.project}:${task.target}${cacheTag}${dur}`);
   }

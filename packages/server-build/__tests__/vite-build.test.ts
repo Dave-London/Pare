@@ -52,7 +52,7 @@ const VITE_SINGLE_FILE = ["dist/bundle.js     12.50 kB │ gzip: 4.20 kB"].join(
 // ---------------------------------------------------------------------------
 
 describe("parseViteBuildOutput", () => {
-  it("parses successful build with multiple output files", () => {
+  it("parses successful build with multiple output files and sizeBytes", () => {
     const result = parseViteBuildOutput(VITE_SUCCESS_OUTPUT, "", 0, 1.2);
 
     expect(result.success).toBe(true);
@@ -60,10 +60,27 @@ describe("parseViteBuildOutput", () => {
     expect(result.errors).toEqual([]);
     expect(result.outputs).toHaveLength(4);
 
-    expect(result.outputs[0]).toEqual({ file: "dist/index.html", size: "0.45 kB" });
-    expect(result.outputs[1]).toEqual({ file: "dist/assets/index-abc123.css", size: "8.12 kB" });
-    expect(result.outputs[2]).toEqual({ file: "dist/assets/index-def456.js", size: "52.31 kB" });
-    expect(result.outputs[3]).toEqual({ file: "dist/assets/vendor-ghi789.js", size: "142.05 kB" });
+    // Gap #83: sizeBytes field
+    expect(result.outputs[0]).toEqual({
+      file: "dist/index.html",
+      size: "0.45 kB",
+      sizeBytes: 450,
+    });
+    expect(result.outputs[1]).toEqual({
+      file: "dist/assets/index-abc123.css",
+      size: "8.12 kB",
+      sizeBytes: 8120,
+    });
+    expect(result.outputs[2]).toEqual({
+      file: "dist/assets/index-def456.js",
+      size: "52.31 kB",
+      sizeBytes: 52310,
+    });
+    expect(result.outputs[3]).toEqual({
+      file: "dist/assets/vendor-ghi789.js",
+      size: "142.05 kB",
+      sizeBytes: 142050,
+    });
   });
 
   it("parses empty project with no output files", () => {
@@ -78,9 +95,9 @@ describe("parseViteBuildOutput", () => {
     const result = parseViteBuildOutput("", VITE_ERROR_OUTPUT, 1, 0.5);
 
     expect(result.success).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
-    const errorText = result.errors.join(" ");
-    expect(errorText).toContain("error");
+    expect(result.errors!.length).toBeGreaterThan(0);
+    const errorText = result.errors!.join(" ");
+    expect(errorText.toLowerCase()).toContain("error");
   });
 
   it("parses build with warnings", () => {
@@ -88,17 +105,18 @@ describe("parseViteBuildOutput", () => {
 
     expect(result.success).toBe(true);
     // The warning line contains "warning" in the text about chunkSizeWarningLimit
-    expect(result.warnings.length).toBeGreaterThanOrEqual(1);
-    expect(result.outputs.length).toBeGreaterThanOrEqual(1);
+    expect(result.warnings!.length).toBeGreaterThanOrEqual(1);
+    expect(result.outputs!.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("parses single output file", () => {
+  it("parses single output file with sizeBytes", () => {
     const result = parseViteBuildOutput(VITE_SINGLE_FILE, "", 0, 0.5);
 
     expect(result.success).toBe(true);
     expect(result.outputs).toHaveLength(1);
     expect(result.outputs[0].file).toBe("dist/bundle.js");
     expect(result.outputs[0].size).toBe("12.50 kB");
+    expect(result.outputs[0].sizeBytes).toBe(12500);
   });
 
   it("handles completely empty output", () => {
@@ -127,7 +145,9 @@ describe("parseViteBuildOutput", () => {
     // "dist/building-blocks.js" does NOT start with "building" so it is kept
     expect(result.outputs).toHaveLength(2);
     expect(result.outputs[0].file).toBe("dist/vite-plugin-output.js");
+    expect(result.outputs[0].sizeBytes).toBe(12340);
     expect(result.outputs[1].file).toBe("dist/building-blocks.js");
+    expect(result.outputs[1].sizeBytes).toBe(8000);
   });
 
   it("handles error in stderr with error details in stdout", () => {
@@ -135,7 +155,7 @@ describe("parseViteBuildOutput", () => {
     const result = parseViteBuildOutput("", stderr, 1, 0.1);
 
     expect(result.success).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors!.length).toBeGreaterThan(0);
   });
 
   it("preserves duration exactly", () => {
@@ -149,13 +169,13 @@ describe("parseViteBuildOutput", () => {
 // ---------------------------------------------------------------------------
 
 describe("formatViteBuild", () => {
-  it("formats successful build with output files", () => {
+  it("formats successful build with output files and sizeBytes", () => {
     const data: ViteBuildResult = {
       success: true,
       duration: 1.5,
       outputs: [
-        { file: "dist/index.html", size: "0.45 kB" },
-        { file: "dist/assets/index.js", size: "52.31 kB" },
+        { file: "dist/index.html", size: "0.45 kB", sizeBytes: 450 },
+        { file: "dist/assets/index.js", size: "52.31 kB", sizeBytes: 52310 },
       ],
       errors: [],
       warnings: [],
@@ -165,8 +185,10 @@ describe("formatViteBuild", () => {
     expect(output).toContain("2 output files");
     expect(output).toContain("dist/index.html");
     expect(output).toContain("0.45 kB");
+    expect(output).toContain("(450 bytes)");
     expect(output).toContain("dist/assets/index.js");
     expect(output).toContain("52.31 kB");
+    expect(output).toContain("(52310 bytes)");
   });
 
   it("formats successful build with no output files", () => {
@@ -185,7 +207,7 @@ describe("formatViteBuild", () => {
     const data: ViteBuildResult = {
       success: true,
       duration: 3.0,
-      outputs: [{ file: "dist/bundle.js", size: "752 kB" }],
+      outputs: [{ file: "dist/bundle.js", size: "752 kB", sizeBytes: 752000 }],
       errors: [],
       warnings: ["Chunk size exceeds limit"],
     };
