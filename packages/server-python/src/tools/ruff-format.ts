@@ -31,6 +31,34 @@ export function registerRuffFormatTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check mode (report without modifying files)"),
+        diff: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show diff of formatting changes without applying (--diff)"),
+        lineLength: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Override the configured line length (--line-length)"),
+        preview: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable preview formatting rules (--preview)"),
+        noCache: z.boolean().optional().default(false).describe("Disable cache (--no-cache)"),
+        isolated: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Ignore all configuration files (--isolated)"),
+        indentWidth: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Override the configured indent width (--indent-width)"),
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -46,13 +74,30 @@ export function registerRuffFormatTool(server: McpServer) {
       },
       outputSchema: RuffFormatResultSchema,
     },
-    async ({ patterns, check, path, compact }) => {
+    async ({
+      patterns,
+      check,
+      diff,
+      lineLength,
+      preview,
+      noCache,
+      isolated,
+      indentWidth,
+      path,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
       const args = ["format", ...(patterns || ["."])];
       if (check) args.push("--check");
+      if (diff) args.push("--diff");
+      if (lineLength !== undefined) args.push("--line-length", String(lineLength));
+      if (preview) args.push("--preview");
+      if (noCache) args.push("--no-cache");
+      if (isolated) args.push("--isolated");
+      if (indentWidth !== undefined) args.push("--indent-width", String(indentWidth));
 
       const result = await ruff(args, cwd);
       const data = parseRuffFormatOutput(result.stdout, result.stderr, result.exitCode);

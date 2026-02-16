@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { conda } from "../lib/python-runner.js";
 import { parseCondaListJson, parseCondaInfoJson, parseCondaEnvListJson } from "../lib/parsers.js";
 import {
@@ -47,6 +47,7 @@ export function registerCondaTool(server: McpServer) {
     },
     async ({ action, name, path, compact }) => {
       const cwd = path || process.cwd();
+      if (name) assertNoFlagInjection(name, "name");
 
       switch (action) {
         case "list": {

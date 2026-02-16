@@ -24,6 +24,36 @@ export function registerPipAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to requirements file"),
+        fix: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Auto-remediate vulnerabilities (--fix)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Preview fix changes without applying (--dry-run)"),
+        strict: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Fail on skipped dependencies (-S, --strict)"),
+        noDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip auditing dependencies (--no-deps)"),
+        skipEditable: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip auditing editable packages (--skip-editable)"),
+        local: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Only audit packages in the local virtualenv (-l, --local)"),
         compact: z
           .boolean()
           .optional()
@@ -34,12 +64,18 @@ export function registerPipAuditTool(server: McpServer) {
       },
       outputSchema: PipAuditResultSchema,
     },
-    async ({ path, requirements, compact }) => {
+    async ({ path, requirements, fix, dryRun, strict, noDeps, skipEditable, local, compact }) => {
       const cwd = path || process.cwd();
       if (requirements) assertNoFlagInjection(requirements, "requirements");
 
-      const args = ["audit", "--format", "json"];
+      const args = ["--format", "json"];
       if (requirements) args.push("-r", requirements);
+      if (fix) args.push("--fix");
+      if (dryRun) args.push("--dry-run");
+      if (strict) args.push("--strict");
+      if (noDeps) args.push("--no-deps");
+      if (skipEditable) args.push("--skip-editable");
+      if (local) args.push("--local");
 
       // pip-audit is a separate tool: pip-audit (not pip audit)
       const { run } = await import("@paretools/shared");

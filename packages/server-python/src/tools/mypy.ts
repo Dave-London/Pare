@@ -26,6 +26,23 @@ export function registerMypyTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("Files or directories to check (default: ['.'])"),
+        strict: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable strict mode for thorough type checking (--strict)"),
+        ignoreMissingImports: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Suppress errors about missing imports for projects with incomplete stubs (--ignore-missing-imports)",
+          ),
+        noIncremental: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disable incremental mode (--no-incremental)"),
         compact: z
           .boolean()
           .optional()
@@ -36,12 +53,15 @@ export function registerMypyTool(server: McpServer) {
       },
       outputSchema: MypyResultSchema,
     },
-    async ({ path, targets, compact }) => {
+    async ({ path, targets, strict, ignoreMissingImports, noIncremental, compact }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
       }
-      const args = [...(targets || ["."])];
+      const args = ["--show-error-codes", "--show-column-numbers", ...(targets || ["."])];
+      if (strict) args.push("--strict");
+      if (ignoreMissingImports) args.push("--ignore-missing-imports");
+      if (noIncremental) args.push("--no-incremental");
 
       const result = await mypy(args, cwd);
       const data = parseMypyOutput(result.stdout, result.exitCode);

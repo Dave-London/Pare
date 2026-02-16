@@ -31,6 +31,21 @@ export function registerPyenvTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        skipExisting: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip installation if version is already installed (--skip-existing)"),
+        force: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Force reinstallation of an already installed version (--force)"),
+        unset: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Clear local/global version setting (--unset)"),
         compact: z
           .boolean()
           .optional()
@@ -41,7 +56,7 @@ export function registerPyenvTool(server: McpServer) {
       },
       outputSchema: PyenvResultSchema,
     },
-    async ({ action, version, path, compact }) => {
+    async ({ action, version, path, skipExisting, force, unset, compact }) => {
       const cwd = path || process.cwd();
       if (version) assertNoFlagInjection(version, "version");
 
@@ -63,10 +78,15 @@ export function registerPyenvTool(server: McpServer) {
               isError: true,
             };
           }
-          args.push("install", version);
+          args.push("install");
+          if (skipExisting) args.push("--skip-existing");
+          if (force) args.push("--force");
+          args.push(version);
           break;
         case "local":
-          if (!version) {
+          if (unset) {
+            args.push("local", "--unset");
+          } else if (!version) {
             // Without a version argument, pyenv local shows the current local version
             args.push("local");
           } else {
@@ -74,7 +94,9 @@ export function registerPyenvTool(server: McpServer) {
           }
           break;
         case "global":
-          if (!version) {
+          if (unset) {
+            args.push("global", "--unset");
+          } else if (!version) {
             // Without a version argument, pyenv global shows the current global version
             args.push("global");
           } else {

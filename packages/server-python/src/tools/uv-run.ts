@@ -25,6 +25,31 @@ export function registerUvRunTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .min(1)
           .describe("Command and arguments to run (e.g. ['python', 'script.py'])"),
+        isolated: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run in a clean isolated environment (--isolated)"),
+        module: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run as python -m <module> instead of a script (-m)"),
+        noSync: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Skip syncing the environment for faster execution (--no-sync)"),
+        locked: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Assert the lockfile is up-to-date (--locked)"),
+        frozen: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run without updating the lockfile (--frozen)"),
         compact: z
           .boolean()
           .optional()
@@ -35,10 +60,16 @@ export function registerUvRunTool(server: McpServer) {
       },
       outputSchema: UvRunSchema,
     },
-    async ({ path, command, compact }) => {
+    async ({ path, command, isolated, module, noSync, locked, frozen, compact }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(command[0], "command");
-      const args = ["run", ...command];
+      const args = ["run"];
+      if (isolated) args.push("--isolated");
+      if (module) args.push("-m");
+      if (noSync) args.push("--no-sync");
+      if (locked) args.push("--locked");
+      if (frozen) args.push("--frozen");
+      args.push(...command);
 
       const start = Date.now();
       const result = await uv(args, cwd);

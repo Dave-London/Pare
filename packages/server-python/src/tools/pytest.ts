@@ -32,6 +32,27 @@ export function registerPytestTool(server: McpServer) {
           .describe('Pytest marker expression (e.g. "not slow")'),
         verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
         exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
+        maxFail: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Stop after N failures (--maxfail=N)"),
+        collectOnly: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Only collect tests, do not run them (--collect-only)"),
+        lastFailed: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Re-run only tests that failed last time (--lf)"),
+        noCapture: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disable stdout/stderr capturing, useful for print-debugging (-s)"),
         compact: z
           .boolean()
           .optional()
@@ -42,7 +63,18 @@ export function registerPytestTool(server: McpServer) {
       },
       outputSchema: PytestResultSchema,
     },
-    async ({ path, targets, markers, verbose, exitFirst, compact }) => {
+    async ({
+      path,
+      targets,
+      markers,
+      verbose,
+      exitFirst,
+      maxFail,
+      collectOnly,
+      lastFailed,
+      noCapture,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
@@ -53,6 +85,10 @@ export function registerPytestTool(server: McpServer) {
 
       if (verbose) args.splice(args.indexOf("-q"), 1, "-v");
       if (exitFirst) args.push("-x");
+      if (maxFail !== undefined) args.push(`--maxfail=${maxFail}`);
+      if (collectOnly) args.push("--collect-only");
+      if (lastFailed) args.push("--lf");
+      if (noCapture) args.push("-s");
       if (markers) args.push("-m", markers);
       if (targets && targets.length > 0) args.push(...targets);
 

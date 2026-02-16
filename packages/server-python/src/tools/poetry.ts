@@ -33,6 +33,26 @@ export function registerPoetryTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Preview changes without applying, for install/add/remove (--dry-run)"),
+        outdated: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show only outdated packages, for show action (--outdated)"),
+        latest: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show latest available version, for show action (--latest)"),
+        tree: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show dependency tree, for show action (--tree)"),
         compact: z
           .boolean()
           .optional()
@@ -43,16 +63,22 @@ export function registerPoetryTool(server: McpServer) {
       },
       outputSchema: PoetryResultSchema,
     },
-    async ({ action, packages, path, compact }) => {
+    async ({ action, packages, path, dryRun, outdated, latest, tree, compact }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
 
-      const args: string[] = [action];
+      const args: string[] = [action, "--no-interaction", "--no-ansi"];
+
+      if ((action === "install" || action === "add" || action === "remove") && dryRun) {
+        args.push("--dry-run");
+      }
 
       if (action === "show") {
-        args.push("--no-ansi");
+        if (outdated) args.push("--outdated");
+        if (latest) args.push("--latest");
+        if (tree) args.push("--tree");
       }
 
       if ((action === "add" || action === "remove") && packages && packages.length > 0) {

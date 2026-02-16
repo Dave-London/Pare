@@ -43,6 +43,28 @@ export function registerPipInstallTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be installed without actually installing (--dry-run)"),
+        upgrade: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Upgrade already-installed packages to the newest version (--upgrade / -U)"),
+        noDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not install package dependencies (--no-deps)"),
+        pre: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Include pre-release and development versions (--pre)"),
+        forceReinstall: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Force reinstall of all packages even if already installed (--force-reinstall)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -53,7 +75,17 @@ export function registerPipInstallTool(server: McpServer) {
       },
       outputSchema: PipInstallSchema,
     },
-    async ({ packages, requirements, path, dryRun, compact }) => {
+    async ({
+      packages,
+      requirements,
+      path,
+      dryRun,
+      upgrade,
+      noDeps,
+      pre,
+      forceReinstall,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -62,6 +94,10 @@ export function registerPipInstallTool(server: McpServer) {
 
       const args = ["install"];
       if (dryRun) args.push("--dry-run");
+      if (upgrade) args.push("--upgrade");
+      if (noDeps) args.push("--no-deps");
+      if (pre) args.push("--pre");
+      if (forceReinstall) args.push("--force-reinstall");
       if (requirements) {
         args.push("-r", requirements);
       } else if (packages && packages.length > 0) {

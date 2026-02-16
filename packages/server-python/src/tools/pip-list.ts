@@ -21,6 +21,31 @@ export function registerPipListTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        local: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Only list packages in the local virtualenv (-l, --local)"),
+        user: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Only list packages installed in user-site (--user)"),
+        notRequired: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("List packages that are not dependencies of other packages (--not-required)"),
+        editable: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Only list editable packages (-e, --editable)"),
+        excludeEditable: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Exclude editable packages from the list (--exclude-editable)"),
         compact: z
           .boolean()
           .optional()
@@ -31,10 +56,16 @@ export function registerPipListTool(server: McpServer) {
       },
       outputSchema: PipListSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, local, user, notRequired, editable, excludeEditable, compact }) => {
       const cwd = path || process.cwd();
 
-      const result = await pip(["list", "--format", "json"], cwd);
+      const args = ["list", "--format", "json"];
+      if (local) args.push("--local");
+      if (user) args.push("--user");
+      if (notRequired) args.push("--not-required");
+      if (editable) args.push("--editable");
+      if (excludeEditable) args.push("--exclude-editable");
+      const result = await pip(args, cwd);
       const data = parsePipListJson(result.stdout);
       return compactDualOutput(
         data,
