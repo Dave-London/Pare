@@ -29,6 +29,7 @@ export const GitLogEntrySchema = z.object({
   author: z.string().optional(),
   date: z.string().optional(),
   message: z.string(),
+  fullMessage: z.string().optional(),
   refs: z.string().optional(),
 });
 
@@ -119,6 +120,7 @@ export const GitAddFileSchema = z.object({
 export const GitAddSchema = z.object({
   staged: z.number(),
   files: z.array(GitAddFileSchema),
+  newlyStaged: z.number().optional(),
 });
 
 export type GitAdd = z.infer<typeof GitAddSchema>;
@@ -158,6 +160,13 @@ export const GitPushSchema = z.object({
 
 export type GitPush = z.infer<typeof GitPushSchema>;
 
+/** Zod schema for a file changed during a pull with optional line stats. */
+export const GitPullChangedFileSchema = z.object({
+  file: z.string(),
+  insertions: z.number().optional(),
+  deletions: z.number().optional(),
+});
+
 /** Zod schema for structured git pull output with success status, summary, change stats, and conflicts. */
 export const GitPullSchema = z.object({
   success: z.boolean(),
@@ -166,6 +175,8 @@ export const GitPullSchema = z.object({
   insertions: z.number(),
   deletions: z.number(),
   conflicts: z.array(z.string()),
+  conflictFiles: z.array(z.string()).optional(),
+  changedFiles: z.array(GitPullChangedFileSchema).optional(),
   upToDate: z.boolean().optional(),
   fastForward: z.boolean().optional(),
 });
@@ -221,12 +232,14 @@ export type GitTagFull = {
 
 export type GitTag = z.infer<typeof GitTagSchema>;
 
-/** Zod schema for a single stash entry with index, message, and date. */
+/** Zod schema for a single stash entry with index, message, date, and optional content summary. */
 export const GitStashEntrySchema = z.object({
   index: z.number(),
   message: z.string(),
   date: z.string(),
   branch: z.string().optional(),
+  files: z.number().optional(),
+  summary: z.string().optional(),
 });
 
 /** Zod schema for structured git stash list output with stash entries and total count. */
@@ -237,20 +250,44 @@ export const GitStashListSchema = z.object({
 
 /** Full stash list data (always returned by parser, before compact projection). */
 export type GitStashListFull = {
-  stashes: Array<{ index: number; message: string; date: string; branch?: string }>;
+  stashes: Array<{
+    index: number;
+    message: string;
+    date: string;
+    branch?: string;
+    files?: number;
+    summary?: string;
+  }>;
   total: number;
 };
 
 export type GitStashList = z.infer<typeof GitStashListSchema>;
 
-/** Zod schema for structured git stash push/pop/apply/drop/clear output. */
+/** Zod schema for structured git stash push/pop/apply/drop/clear/show output. */
 export const GitStashSchema = z.object({
-  action: z.enum(["push", "pop", "apply", "drop", "clear"]),
+  action: z.enum(["push", "pop", "apply", "drop", "clear", "show"]),
   success: z.boolean(),
   message: z.string(),
   stashRef: z.string().optional(),
   reason: z.string().optional(),
   conflictFiles: z.array(z.string()).optional(),
+  diffStat: z
+    .object({
+      filesChanged: z.number(),
+      insertions: z.number(),
+      deletions: z.number(),
+      files: z
+        .array(
+          z.object({
+            file: z.string(),
+            insertions: z.number().optional(),
+            deletions: z.number().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  patch: z.string().optional(),
 });
 
 export type GitStash = z.infer<typeof GitStashSchema>;
@@ -263,20 +300,36 @@ export const GitRemoteEntrySchema = z.object({
   protocol: z.enum(["ssh", "https", "http", "git", "file", "unknown"]).optional(),
 });
 
-/** Zod schema for structured git remote output with remote list and total count, plus add/remove support. */
+/** Zod schema for structured git remote output with remote list and total count, plus add/remove/rename/set-url/prune/show support. */
 export const GitRemoteSchema = z.object({
   remotes: z.union([z.array(GitRemoteEntrySchema), z.array(z.string())]).optional(),
   total: z.number().optional(),
-  /** Present for add/remove actions. */
+  /** Present for mutate actions. */
   success: z.boolean().optional(),
-  /** Action performed: add or remove (only present for mutate operations). */
-  action: z.enum(["add", "remove"]).optional(),
+  /** Action performed (only present for mutate operations). */
+  action: z.enum(["add", "remove", "rename", "set-url", "prune", "show"]).optional(),
   /** Remote name (only present for mutate operations). */
   name: z.string().optional(),
-  /** Remote URL (only present for add action). */
+  /** Remote URL (only present for add/set-url actions). */
   url: z.string().optional(),
   /** Human-readable message (only present for mutate operations). */
   message: z.string().optional(),
+  /** Old remote name (only present for rename action). */
+  oldName: z.string().optional(),
+  /** New remote name (only present for rename action). */
+  newName: z.string().optional(),
+  /** Pruned branches (only present for prune action). */
+  prunedBranches: z.array(z.string()).optional(),
+  /** Remote show details (only present for show action). */
+  showDetails: z
+    .object({
+      fetchUrl: z.string().optional(),
+      pushUrl: z.string().optional(),
+      headBranch: z.string().optional(),
+      remoteBranches: z.array(z.string()).optional(),
+      localBranches: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
 /** Full remote data (always returned by parser, before compact projection). */
@@ -396,6 +449,7 @@ export const GitLogGraphEntrySchema = z.object({
   hashShort: z.string(),
   message: z.string(),
   refs: z.string().optional(),
+  parsedRefs: z.array(z.string()).optional(),
   isMerge: z.boolean().optional(),
 });
 
@@ -420,6 +474,7 @@ export type GitLogGraphFull = {
     hashShort: string;
     message: string;
     refs?: string;
+    parsedRefs?: string[];
     isMerge?: boolean;
   }>;
   total: number;
@@ -556,10 +611,20 @@ export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
 /** Type alias for remote mutate results (uses unified GitRemoteSchema). */
 export type GitRemoteMutate = {
   success: boolean;
-  action: "add" | "remove";
+  action: "add" | "remove" | "rename" | "set-url" | "prune" | "show";
   name: string;
   url?: string;
   message: string;
+  oldName?: string;
+  newName?: string;
+  prunedBranches?: string[];
+  showDetails?: {
+    fetchUrl?: string;
+    pushUrl?: string;
+    headBranch?: string;
+    remoteBranches?: string[];
+    localBranches?: string[];
+  };
 };
 
 /** Type alias for tag mutate results (uses unified GitTagSchema). */

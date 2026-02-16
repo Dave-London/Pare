@@ -14,7 +14,7 @@ export function registerStashListTool(server: McpServer) {
     {
       title: "Git Stash List",
       description:
-        "Lists all stash entries with index, message, date, and branch. Returns structured stash data. Use instead of running `git stash list` in the terminal.",
+        "Lists all stash entries with index, message, date, branch, and optional file change summary. Returns structured stash data. Use instead of running `git stash list` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -38,6 +38,12 @@ export function registerStashListTool(server: McpServer) {
           .optional()
           .describe("Control date format (--date), e.g. short, iso, relative"),
         stat: z.boolean().optional().describe("Include diffstat per stash (--stat)"),
+        includeSummary: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include file count and change summary per stash entry. Runs an additional git stash show per entry.",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -48,7 +54,7 @@ export function registerStashListTool(server: McpServer) {
       },
       outputSchema: GitStashListSchema,
     },
-    async ({ path, maxCount, grep, since, dateFormat, stat, compact }) => {
+    async ({ path, maxCount, grep, since, dateFormat, stat, includeSummary, compact }) => {
       const cwd = path || process.cwd();
       const dateArg = dateFormat || "iso";
       const args = ["stash", "list", `--format=%gd\t%gs\t%cd`, `--date=${dateArg}`];
@@ -73,6 +79,29 @@ export function registerStashListTool(server: McpServer) {
       }
 
       const stashList = parseStashListOutput(result.stdout);
+
+      // Gap #140: Add file change summary per stash entry
+      if (includeSummary && stashList.stashes.length > 0) {
+        // Run git stash show --stat for each stash entry to get file count and summary
+        await Promise.all(
+          stashList.stashes.map(async (stash) => {
+            const showResult = await git(
+              ["stash", "show", "--stat", `stash@{${stash.index}}`],
+              cwd,
+            );
+            if (showResult.exitCode === 0 && showResult.stdout.trim()) {
+              const showOutput = showResult.stdout.trim();
+              // Parse the summary line: " N files changed, X insertions(+), Y deletions(-)"
+              const summaryMatch = showOutput.match(/(\d+)\s+files?\s+changed.*$/m);
+              if (summaryMatch) {
+                stash.files = parseInt(summaryMatch[1], 10);
+                stash.summary = summaryMatch[0].trim();
+              }
+            }
+          }),
+        );
+      }
+
       return compactDualOutput(
         stashList,
         result.stdout,

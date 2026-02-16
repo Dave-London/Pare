@@ -13,7 +13,7 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Git Add",
       description:
-        "Stages files for commit. Returns structured data with count and list of staged files. Use instead of running `git add` in the terminal.",
+        "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged. Use instead of running `git add` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -85,6 +85,20 @@ export function registerAddTool(server: McpServer) {
         );
       }
 
+      // Capture status BEFORE add to track newly staged files (Gap #126)
+      const beforeStatus = await git(["status", "--porcelain=v1"], cwd);
+      const previousStagedFiles = new Set<string>();
+      if (beforeStatus.exitCode === 0) {
+        for (const line of beforeStatus.stdout.split("\n").filter(Boolean)) {
+          const index = line[0];
+          if (index && index !== " " && index !== "?") {
+            const file = line.slice(3).trim();
+            const parts = file.split(" -> ");
+            previousStagedFiles.add(parts[parts.length - 1]);
+          }
+        }
+      }
+
       // Build args
       let args: string[];
       if (all) {
@@ -128,7 +142,7 @@ export function registerAddTool(server: McpServer) {
         throw new Error(`git status failed after add: ${statusResult.stderr}`);
       }
 
-      const addResult = parseAdd(statusResult.stdout);
+      const addResult = parseAdd(statusResult.stdout, previousStagedFiles);
       return dualOutput(addResult, formatAdd);
     },
   );

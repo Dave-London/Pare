@@ -20,6 +20,9 @@ import {
   formatWorktreeList,
   formatWorktree,
   formatAdd,
+  formatRemoteMutate,
+  formatTagMutate,
+  formatPull,
 } from "../src/lib/formatters.js";
 import type {
   GitStatus,
@@ -42,6 +45,9 @@ import type {
   GitReflogFull,
   GitWorktreeListFull,
   GitWorktree,
+  GitPull,
+  GitRemoteMutate,
+  GitTagMutate,
 } from "../src/schemas/index.js";
 
 describe("formatStatus", () => {
@@ -1212,9 +1218,6 @@ describe("formatReflog — totalAvailable", () => {
 
 // ── Remote mutate formatter tests ────────────────────────────────────
 
-import { formatRemoteMutate, formatTagMutate } from "../src/lib/formatters.js";
-import type { GitRemoteMutate, GitTagMutate } from "../src/schemas/index.js";
-
 describe("formatRemoteMutate", () => {
   it("formats remote add with URL", () => {
     const data: GitRemoteMutate = {
@@ -1288,5 +1291,167 @@ describe("formatTagMutate", () => {
     };
     const output = formatTagMutate(data);
     expect(output).toBe("Tag 'v1.0.0' deleted");
+  });
+});
+
+// ── P1 gap formatter tests ──────────────────────────────────────────
+
+describe("formatAdd — newlyStaged (Gap #126)", () => {
+  it("includes newlyStaged count in output", () => {
+    const data: GitAdd = {
+      staged: 3,
+      files: [
+        { file: "a.ts", status: "modified" },
+        { file: "b.ts", status: "added" },
+        { file: "c.ts", status: "modified" },
+      ],
+      newlyStaged: 2,
+    };
+    const output = formatAdd(data);
+    expect(output).toContain("(2 newly staged)");
+    expect(output).toContain("Staged 3 file(s)");
+  });
+
+  it("omits newlyStaged info when undefined", () => {
+    const data: GitAdd = {
+      staged: 1,
+      files: [{ file: "a.ts", status: "modified" }],
+    };
+    const output = formatAdd(data);
+    expect(output).not.toContain("newly staged");
+  });
+});
+
+describe("formatPull — changed files and conflicts (Gaps #131, #132)", () => {
+  it("includes changed files in output", () => {
+    const data: GitPull = {
+      success: true,
+      summary: "Fast-forward",
+      filesChanged: 2,
+      insertions: 7,
+      deletions: 3,
+      conflicts: [],
+      changedFiles: [
+        { file: "src/index.ts", insertions: 5, deletions: 2 },
+        { file: "src/utils.ts", insertions: 2, deletions: 1 },
+      ],
+    };
+    const output = formatPull(data);
+    expect(output).toContain("Changed: src/index.ts, src/utils.ts");
+  });
+});
+
+describe("formatStash — show action (Gap #139)", () => {
+  it("formats stash show with diff stats", () => {
+    const data: GitStash = {
+      action: "show",
+      success: true,
+      message: "Stash show completed",
+      diffStat: {
+        filesChanged: 2,
+        insertions: 7,
+        deletions: 3,
+        files: [
+          { file: "src/index.ts", insertions: 5, deletions: 2 },
+          { file: "src/utils.ts", insertions: 2, deletions: 1 },
+        ],
+      },
+    };
+    const output = formatStash(data);
+    expect(output).toContain("2 file(s) changed, +7 -3");
+    expect(output).toContain("src/index.ts");
+  });
+});
+
+describe("formatRemoteMutate — new actions (Gaps #133-#136)", () => {
+  it("formats rename action", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "rename",
+      name: "new-origin",
+      oldName: "origin",
+      newName: "new-origin",
+      message: "Remote 'origin' renamed to 'new-origin'",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("renamed to 'new-origin'");
+  });
+
+  it("formats set-url action", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "set-url",
+      name: "origin",
+      url: "https://github.com/user/repo.git",
+      message: "URL set",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("URL set to https://github.com/user/repo.git");
+  });
+
+  it("formats prune action with branches", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "prune",
+      name: "origin",
+      prunedBranches: ["origin/old-branch"],
+      message: "Pruned",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("Pruned remote 'origin'");
+    expect(output).toContain("origin/old-branch");
+  });
+
+  it("formats prune action with no branches", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "prune",
+      name: "origin",
+      prunedBranches: [],
+      message: "Nothing to prune",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("nothing to prune");
+  });
+
+  it("formats show action", () => {
+    const data: GitRemoteMutate = {
+      success: true,
+      action: "show",
+      name: "origin",
+      showDetails: {
+        fetchUrl: "git@github.com:user/repo.git",
+        pushUrl: "git@github.com:user/repo.git",
+        headBranch: "main",
+        remoteBranches: ["main", "develop"],
+      },
+      message: "Details",
+    };
+    const output = formatRemoteMutate(data);
+    expect(output).toContain("Remote 'origin':");
+    expect(output).toContain("Fetch URL: git@github.com:user/repo.git");
+    expect(output).toContain("HEAD branch: main");
+    expect(output).toContain("Remote branches: main, develop");
+  });
+});
+
+describe("formatStashList — summary fields (Gap #140)", () => {
+  it("includes file count and summary in output", () => {
+    const data: GitStashListFull = {
+      stashes: [
+        {
+          index: 0,
+          message: "WIP on main: abc1234 Fix bug",
+          date: "2024-01-15",
+          branch: "main",
+          files: 3,
+          summary: "3 files changed, 10 insertions(+), 5 deletions(-)",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatStashList(data);
+    expect(output).toContain("(3 file(s))");
+    expect(output).toContain("3 files changed");
   });
 });

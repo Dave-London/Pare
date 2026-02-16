@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
-import { parseReset } from "../lib/parsers.js";
+import { parseReset, validateResetArgs } from "../lib/parsers.js";
 import { formatReset } from "../lib/formatters.js";
 import { GitResetSchema } from "../schemas/index.js";
 
@@ -60,6 +60,12 @@ export function registerResetTool(server: McpServer) {
           "Safety guard: git reset --hard permanently discards all uncommitted changes (staged and unstaged). " +
             "This action cannot be undone. Set confirm=true to proceed.",
         );
+      }
+
+      // Gap #137: Validate files+mode combination before executing
+      const validationError = validateResetArgs(mode, files);
+      if (validationError) {
+        throw new Error(validationError);
       }
 
       assertNoFlagInjection(ref, "ref");

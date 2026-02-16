@@ -7,8 +7,11 @@ import { parseLog } from "../lib/parsers.js";
 import { formatLog, compactLogMap, formatLogCompact } from "../lib/formatters.js";
 import { GitLogSchema } from "../schemas/index.js";
 
-const DELIMITER = "@@";
-const LOG_FORMAT = `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ar${DELIMITER}%D${DELIMITER}%s`;
+// Use NUL byte as field delimiter to avoid corruption from @@ in commit messages.
+// %x00 is the NUL byte format specifier in git.
+const NUL = "%x00";
+const RECORD_END = "%x01";
+const LOG_FORMAT = `%H${NUL}%h${NUL}%an <%ae>${NUL}%ar${NUL}%D${NUL}%s${NUL}%b${RECORD_END}`;
 
 /** Registers the `log` tool on the given MCP server. */
 export function registerLogTool(server: McpServer) {
@@ -116,7 +119,7 @@ export function registerLogTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       const logFormat = dateFormat
-        ? `%H${DELIMITER}%h${DELIMITER}%an <%ae>${DELIMITER}%ad${DELIMITER}%D${DELIMITER}%s`
+        ? `%H${NUL}%h${NUL}%an <%ae>${NUL}%ad${NUL}%D${NUL}%s${NUL}%b${RECORD_END}`
         : LOG_FORMAT;
       const args = ["log", `--format=${logFormat}`, `--max-count=${maxCount ?? 10}`];
 

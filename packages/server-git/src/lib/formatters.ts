@@ -81,7 +81,8 @@ export function formatShow(s: GitShow): string {
 /** Formats structured git add data into a human-readable summary of staged files. */
 export function formatAdd(a: GitAdd): string {
   if (a.staged === 0) return "No files staged";
-  return `Staged ${a.staged} file(s): ${a.files.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`;
+  const newlyInfo = a.newlyStaged !== undefined ? ` (${a.newlyStaged} newly staged)` : "";
+  return `Staged ${a.staged} file(s)${newlyInfo}: ${a.files.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`;
 }
 
 /** Formats structured git commit data into a human-readable commit summary. */
@@ -114,6 +115,9 @@ export function formatPull(p: GitPull): string {
   }
   if (p.conflicts.length > 0) {
     parts.push(`Conflicts: ${p.conflicts.join(", ")}`);
+  }
+  if (p.changedFiles && p.changedFiles.length > 0) {
+    parts.push(`Changed: ${p.changedFiles.map((f) => f.file).join(", ")}`);
   }
   if (p.upToDate) {
     parts.push("(up to date)");
@@ -303,7 +307,9 @@ export function formatStashList(s: GitStashListFull): string {
   return s.stashes
     .map((st) => {
       const branch = st.branch ? ` [${st.branch}]` : "";
-      return `stash@{${st.index}}: ${st.message}${branch} (${st.date})`;
+      const fileInfo = st.files !== undefined ? ` (${st.files} file(s))` : "";
+      const summaryInfo = st.summary ? ` — ${st.summary}` : "";
+      return `stash@{${st.index}}: ${st.message}${branch} (${st.date})${fileInfo}${summaryInfo}`;
     })
     .join("\n");
 }
@@ -340,6 +346,19 @@ export function formatStash(s: GitStash): string {
     parts.push(s.message);
     return parts.join("\n");
   }
+
+  if (s.action === "show" && s.diffStat) {
+    const parts = [
+      `${s.diffStat.filesChanged} file(s) changed, +${s.diffStat.insertions} -${s.diffStat.deletions}`,
+    ];
+    if (s.diffStat.files && s.diffStat.files.length > 0) {
+      for (const f of s.diffStat.files) {
+        parts.push(`  ${f.file} +${f.insertions ?? 0} -${f.deletions ?? 0}`);
+      }
+    }
+    return parts.join("\n");
+  }
+
   const ref = s.stashRef ? ` (${s.stashRef})` : "";
   return `${s.message}${ref}`;
 }
@@ -396,7 +415,7 @@ export function formatBlame(b: GitBlameFull): string {
   }
   flat.sort((a, b) => a.lineNumber - b.lineNumber);
   return flat
-    .map((l) => `${l.hash} (${l.author} ${l.date}) ${l.lineNumber}: ${l.content}`)
+    .map((l) => `${l.hash.slice(0, 8)} (${l.author} ${l.date}) ${l.lineNumber}: ${l.content}`)
     .join("\n");
 }
 
@@ -419,7 +438,7 @@ export function compactBlameMap(b: GitBlameFull): GitBlameCompact {
   };
 }
 
-/** Compresses sorted line numbers into range strings (e.g., [1,2,3,7,9,10] → "1-3, 7, 9-10"). */
+/** Compresses sorted line numbers into range strings (e.g., [1,2,3,7,9,10] -> "1-3, 7, 9-10"). */
 function compressLineRanges(nums: number[]): string {
   if (nums.length === 0) return "";
   const sorted = [...nums].sort((a, b) => a - b);
@@ -681,10 +700,38 @@ export function formatBisectRun(b: GitBisect): string {
 
 // ── Remote mutate formatter ─────────────────────────────────────────────
 
-/** Formats structured git remote add/remove result into a human-readable summary. */
+/** Formats structured git remote add/remove/rename/set-url/prune/show result into a human-readable summary. */
 export function formatRemoteMutate(r: GitRemoteMutate): string {
   if (r.action === "add") {
     return `Remote '${r.name}' added${r.url ? ` → ${r.url}` : ""}`;
+  }
+  if (r.action === "rename") {
+    return `Remote '${r.oldName}' renamed to '${r.newName}'`;
+  }
+  if (r.action === "set-url") {
+    return `Remote '${r.name}' URL set to ${r.url}`;
+  }
+  if (r.action === "prune") {
+    const pruned =
+      r.prunedBranches && r.prunedBranches.length > 0
+        ? `: ${r.prunedBranches.join(", ")}`
+        : " (nothing to prune)";
+    return `Pruned remote '${r.name}'${pruned}`;
+  }
+  if (r.action === "show") {
+    const parts = [`Remote '${r.name}':`];
+    if (r.showDetails) {
+      if (r.showDetails.fetchUrl) parts.push(`  Fetch URL: ${r.showDetails.fetchUrl}`);
+      if (r.showDetails.pushUrl) parts.push(`  Push URL: ${r.showDetails.pushUrl}`);
+      if (r.showDetails.headBranch) parts.push(`  HEAD branch: ${r.showDetails.headBranch}`);
+      if (r.showDetails.remoteBranches && r.showDetails.remoteBranches.length > 0) {
+        parts.push(`  Remote branches: ${r.showDetails.remoteBranches.join(", ")}`);
+      }
+      if (r.showDetails.localBranches && r.showDetails.localBranches.length > 0) {
+        parts.push(`  Local branches: ${r.showDetails.localBranches.join(", ")}`);
+      }
+    }
+    return parts.join("\n");
   }
   return `Remote '${r.name}' removed`;
 }

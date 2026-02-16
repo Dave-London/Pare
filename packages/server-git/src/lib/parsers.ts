@@ -124,11 +124,42 @@ function parseBranchFromPorcelain(line: string): {
   };
 }
 
-/** Parses custom-formatted `git log` output (delimited by `@@`) into structured commit entries. */
+/** Parses custom-formatted `git log` output (NUL-delimited with SOH record separator) into structured commit entries. */
 export function parseLog(stdout: string): GitLog {
-  // Format: hash|hashShort|author|date|refs|message
+  // New format: fields delimited by NUL (\x00), records terminated by SOH (\x01).
+  // Format: hash\x00hashShort\x00author\x00date\x00refs\x00subject\x00body\x01
+  // Legacy format (@@-delimited per line) is also supported for backward compatibility.
+  const NUL = "\x00";
+  const SOH = "\x01";
+  const trimmed = stdout.trim();
+
+  // Detect which format is in use
+  const usesNul = trimmed.includes(NUL);
+
+  if (usesNul) {
+    // Split on record separator (SOH), then parse each record
+    const records = trimmed.split(SOH).filter((r) => r.trim().length > 0);
+    const commits = records.map((record) => {
+      // Remove leading newline that git adds between records
+      const rec = record.replace(/^\n+/, "");
+      const [hash, hashShort, author, date, refs, subject, ...bodyParts] = rec.split(NUL);
+      const body = bodyParts.join(NUL).trim();
+      return {
+        hash,
+        hashShort,
+        author,
+        date,
+        message: subject,
+        ...(body ? { fullMessage: `${subject}\n\n${body}` } : {}),
+        ...(refs ? { refs } : {}),
+      };
+    });
+    return { commits, total: commits.length };
+  }
+
+  // Legacy @@-delimited format (one commit per line)
   const DELIMITER = "@@";
-  const lines = stdout.trim().split("\n").filter(Boolean);
+  const lines = trimmed.split("\n").filter(Boolean);
   const commits = lines.map((line) => {
     const [hash, hashShort, author, date, refs, ...messageParts] = line.split(DELIMITER);
     return {
@@ -209,12 +240,31 @@ export function parseBranch(stdout: string): GitBranchFull {
   return { branches, current };
 }
 
-/** Parses custom-formatted `git show` output and `--numstat` diff into structured commit details. */
+/** Parses custom-formatted `git show` output (NUL-delimited) and `--numstat` diff into structured commit details. */
 export function parseShow(stdout: string, diffStdout: string): GitShow {
   // stdout is the formatted commit info, diffStdout is the numstat
-  const DELIMITER = "@@";
-  const parts = stdout.trim().split(DELIMITER);
-  const [hash, author, date, ...messageParts] = parts;
+  // Detect NUL-delimited format vs legacy @@-delimited format
+  const usesNul = stdout.includes("\x00");
+
+  let hash: string;
+  let author: string;
+  let date: string;
+  let message: string;
+
+  if (usesNul) {
+    const parts = stdout.trim().split("\x00");
+    hash = parts[0];
+    author = parts[1];
+    date = parts[2];
+    message = parts.slice(3).join("\x00");
+  } else {
+    // Legacy @@ delimiter
+    const DELIMITER = "@@";
+    const parts = stdout.trim().split(DELIMITER);
+    [hash, author, date] = parts;
+    message = parts.slice(3).join(DELIMITER);
+  }
+
   const diff = parseDiffStat(diffStdout);
 
   return {
@@ -222,7 +272,7 @@ export function parseShow(stdout: string, diffStdout: string): GitShow {
     hashShort: hash.slice(0, 7),
     author,
     date,
-    message: messageParts.join(DELIMITER),
+    message,
     diff,
   };
 }
@@ -233,8 +283,9 @@ const ADD_STATUS_MAP: Record<string, "added" | "modified" | "deleted"> = {
   D: "deleted",
 };
 
-/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files with per-file status. */
-export function parseAdd(statusStdout: string): GitAdd {
+/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files with per-file status.
+ *  When previousStagedFiles is provided, computes newlyStaged count. */
+export function parseAdd(statusStdout: string, previousStagedFiles?: Set<string>): GitAdd {
   const lines = statusStdout.split("\n").filter(Boolean);
   const files: Array<{ file: string; status: "added" | "modified" | "deleted" }> = [];
 
@@ -250,7 +301,17 @@ export function parseAdd(statusStdout: string): GitAdd {
     }
   }
 
-  return { staged: files.length, files };
+  // Compute newlyStaged if we have the previous state
+  let newlyStaged: number | undefined;
+  if (previousStagedFiles !== undefined) {
+    newlyStaged = files.filter((f) => !previousStagedFiles.has(f.file)).length;
+  }
+
+  return {
+    staged: files.length,
+    files,
+    ...(newlyStaged !== undefined ? { newlyStaged } : {}),
+  };
 }
 
 /** Parses `git commit` output into structured commit data with hash, message, and change statistics. */
@@ -258,7 +319,11 @@ export function parseCommit(stdout: string): GitCommit {
   // Example output:
   // "[main abc1234] Fix the bug\n 1 file changed, 2 insertions(+), 1 deletion(-)"
   // "[main (root-commit) abc1234] Initial commit\n 1 file changed, 1 insertion(+)"
-  const headerMatch = stdout.match(/\[[\w/.-]+\s+(?:\(root-commit\)\s+)?([a-f0-9]+)\]\s+(.+)/);
+  // "[feature/@scope/name abc1234] Some commit\n 1 file changed, 1 insertion(+)"
+  // "[fix+hotfix abc1234] Some commit\n 1 file changed, 1 insertion(+)"
+  // The branch name can contain @, +, /, -, ., and other special characters.
+  // Use a more robust regex that matches the hash after any branch-like prefix:
+  const headerMatch = stdout.match(/\[.+?\s+(?:\(root-commit\)\s+)?([a-f0-9]+)\]\s+(.+)/);
 
   const hash = headerMatch?.[1] ?? "";
   const message = headerMatch?.[2] ?? "";
@@ -364,6 +429,40 @@ export function parsePushError(
   };
 }
 
+/** Parses pull diffstat lines like " src/index.ts | 10 +++++++---" into changed file entries. */
+function parsePullChangedFiles(
+  combined: string,
+): Array<{ file: string; insertions?: number; deletions?: number }> {
+  const changedFiles: Array<{ file: string; insertions?: number; deletions?: number }> = [];
+
+  // Match lines like " src/index.ts | 10 +++++++---"
+  // or " src/index.ts | Bin 0 -> 1234 bytes"
+  // Use \s* instead of \s+ to handle cases where leading spaces may have been trimmed
+  const fileStatPattern = /^\s*(\S.*?)\s+\|\s+(\d+)\s*([+-]*)/gm;
+  let match;
+  while ((match = fileStatPattern.exec(combined)) !== null) {
+    const file = match[1].trim();
+    const totalChanges = parseInt(match[2], 10);
+    const changeChars = match[3] || "";
+    const plusCount = (changeChars.match(/\+/g) || []).length;
+    const minusCount = (changeChars.match(/-/g) || []).length;
+
+    // If we have +/- markers, use their ratio to split total changes
+    if (plusCount + minusCount > 0) {
+      const ratio = totalChanges / (plusCount + minusCount);
+      changedFiles.push({
+        file,
+        insertions: Math.round(plusCount * ratio),
+        deletions: Math.round(minusCount * ratio),
+      });
+    } else {
+      changedFiles.push({ file });
+    }
+  }
+
+  return changedFiles;
+}
+
 /** Parses `git pull` output into structured pull result data with change stats and conflict detection. */
 export function parsePull(stdout: string, stderr: string): GitPull {
   const combined = `${stdout}\n${stderr}`.trim();
@@ -387,6 +486,12 @@ export function parsePull(stdout: string, stderr: string): GitPull {
   // Detect fast-forward
   const fastForward = /Fast-forward|fast-forward/i.test(combined);
 
+  // Parse changed files from diffstat
+  const changedFiles = parsePullChangedFiles(combined);
+
+  // Build conflictFiles array (distinct from conflicts which has context)
+  const conflictFiles = conflicts.length > 0 ? [...conflicts] : undefined;
+
   let summary: string;
   if (conflicts.length > 0) {
     summary = `Pull completed with ${conflicts.length} conflict(s)`;
@@ -403,6 +508,8 @@ export function parsePull(stdout: string, stderr: string): GitPull {
     insertions: insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0,
     deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
     conflicts,
+    ...(conflictFiles ? { conflictFiles } : {}),
+    ...(changedFiles.length > 0 ? { changedFiles } : {}),
     ...(alreadyUpToDate ? { upToDate: true } : {}),
     ...(fastForward ? { fastForward: true } : {}),
   };
@@ -530,13 +637,18 @@ export function parseStashListOutput(stdout: string): GitStashListFull {
   return { stashes, total: stashes.length };
 }
 
-/** Parses `git stash push/pop/apply/drop/clear` output into structured stash result data. */
+/** Parses `git stash push/pop/apply/drop/clear/show` output into structured stash result data. */
 export function parseStashOutput(
   stdout: string,
   stderr: string,
-  action: "push" | "pop" | "apply" | "drop" | "clear",
+  action: "push" | "pop" | "apply" | "drop" | "clear" | "show",
 ): GitStash {
   const combined = `${stdout}\n${stderr}`.trim();
+
+  // Handle show action
+  if (action === "show") {
+    return parseStashShowOutput(stdout, stderr);
+  }
 
   // Extract stash reference from push output (e.g., "Saved working directory and index state WIP on main: abc1234 msg")
   let stashRef: string | undefined;
@@ -558,11 +670,70 @@ export function parseStashOutput(
   };
 }
 
+/** Parses `git stash show` output into structured stash diff data. */
+export function parseStashShowOutput(stdout: string, stderr: string): GitStash {
+  // Preserve leading whitespace so file stat lines starting with spaces can be parsed
+  const combined = `${stdout}\n${stderr}`.replace(/\s+$/, "");
+
+  // Parse diffstat from --stat output
+  // Example:
+  //  src/index.ts | 10 +++++++---
+  //  2 files changed, 7 insertions(+), 3 deletions(-)
+  const filesMatch = combined.match(/(\d+)\s+files?\s+changed/);
+  const insertionsMatch = combined.match(/(\d+)\s+insertions?\(\+\)/);
+  const deletionsMatch = combined.match(/(\d+)\s+deletions?\(-\)/);
+
+  // Parse per-file stats
+  const files: Array<{ file: string; insertions?: number; deletions?: number }> = [];
+  const fileStatPattern = /^\s+(\S.*?)\s+\|\s+(\d+)\s*([+-]*)/gm;
+  let match;
+  while ((match = fileStatPattern.exec(combined)) !== null) {
+    const file = match[1].trim();
+    const totalChanges = parseInt(match[2], 10);
+    const changeChars = match[3] || "";
+    const plusCount = (changeChars.match(/\+/g) || []).length;
+    const minusCount = (changeChars.match(/-/g) || []).length;
+
+    if (plusCount + minusCount > 0) {
+      const ratio = totalChanges / (plusCount + minusCount);
+      files.push({
+        file,
+        insertions: Math.round(plusCount * ratio),
+        deletions: Math.round(minusCount * ratio),
+      });
+    } else {
+      files.push({ file });
+    }
+  }
+
+  // Check if patch content is present (lines starting with diff/---/+++/@@ or +/-)
+  let patch: string | undefined;
+  const patchMatch = combined.match(/(^diff --git .+)/ms);
+  if (patchMatch) {
+    patch = patchMatch[0];
+  }
+
+  const diffStat = {
+    filesChanged: filesMatch ? parseInt(filesMatch[1], 10) : 0,
+    insertions: insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0,
+    deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
+    ...(files.length > 0 ? { files } : {}),
+  };
+
+  return {
+    action: "show" as const,
+    success: true,
+    message: combined || "Stash show completed",
+    diffStat,
+    ...(patch ? { patch } : {}),
+  };
+}
+
 /** Parses a failed `git stash` into structured stash error data. */
 export function parseStashError(
   stdout: string,
   stderr: string,
-  action: "push" | "pop" | "apply" | "drop" | "clear",
+  action: "push" | "pop" | "apply" | "drop" | "clear" | "show",
 ): GitStash {
   const combined = `${stdout}\n${stderr}`.trim();
 
@@ -667,7 +838,90 @@ export function parseRemoteOutput(stdout: string): GitRemoteFull {
   return { remotes, total: remotes.length };
 }
 
-/** Parses `git blame --porcelain` output into structured blame data grouped by commit. */
+/** Parses `git remote show <name>` output into structured data. */
+export function parseRemoteShow(stdout: string): {
+  fetchUrl?: string;
+  pushUrl?: string;
+  headBranch?: string;
+  remoteBranches?: string[];
+  localBranches?: string[];
+} {
+  const fetchUrlMatch = stdout.match(/Fetch URL:\s+(.+)/);
+  const pushUrlMatch = stdout.match(/Push\s+URL:\s+(.+)/);
+  const headMatch = stdout.match(/HEAD branch:\s+(.+)/);
+
+  // Split output into lines for section-based parsing
+  const lines = stdout.split("\n");
+
+  // Parse remote branches section
+  const remoteBranches: string[] = [];
+  let inRemoteBranches = false;
+  // Parse local branches section
+  const localBranches: string[] = [];
+  let inLocalBranches = false;
+
+  for (const line of lines) {
+    // Detect section headers (non-indented lines with a colon)
+    if (/^\s{2}\S/.test(line) && line.includes(":") && !line.startsWith("    ")) {
+      // This is a section header like "  Remote branches:" or "  Local branches configured..."
+      if (/Remote branch/i.test(line)) {
+        inRemoteBranches = true;
+        inLocalBranches = false;
+        continue;
+      } else if (/Local branch.*configured for.*git pull/i.test(line)) {
+        inRemoteBranches = false;
+        inLocalBranches = true;
+        continue;
+      } else {
+        // Any other section header ends current section
+        inRemoteBranches = false;
+        inLocalBranches = false;
+        continue;
+      }
+    }
+
+    // Indented lines within a section (4+ spaces)
+    if (/^\s{4,}/.test(line) && line.trim()) {
+      const branchName = line.trim().split(/\s+/)[0];
+      if (branchName) {
+        if (inRemoteBranches) remoteBranches.push(branchName);
+        else if (inLocalBranches) localBranches.push(branchName);
+      }
+    } else if (line.trim() === "" || /^\*/.test(line)) {
+      // Blank line or top-level header — don't change section state
+    } else if (!/^\s/.test(line) && line.trim()) {
+      // Non-indented non-empty line — end any section
+      inRemoteBranches = false;
+      inLocalBranches = false;
+    }
+  }
+
+  return {
+    ...(fetchUrlMatch ? { fetchUrl: fetchUrlMatch[1].trim() } : {}),
+    ...(pushUrlMatch ? { pushUrl: pushUrlMatch[1].trim() } : {}),
+    ...(headMatch ? { headBranch: headMatch[1].trim() } : {}),
+    ...(remoteBranches.length > 0 ? { remoteBranches } : {}),
+    ...(localBranches.length > 0 ? { localBranches } : {}),
+  };
+}
+
+/** Parses `git remote prune` output into list of pruned branches. */
+export function parseRemotePrune(stdout: string, stderr: string): string[] {
+  const combined = `${stdout}\n${stderr}`.trim();
+  const prunedBranches: string[] = [];
+
+  // Pattern: " * [pruned] origin/feature-branch"
+  const prunePattern = /\*\s+\[pruned\]\s+(\S+)/g;
+  let match;
+  while ((match = prunePattern.exec(combined)) !== null) {
+    prunedBranches.push(match[1]);
+  }
+
+  return prunedBranches;
+}
+
+/** Parses `git blame --porcelain` output into structured blame data grouped by commit.
+ *  Uses full 40-character hashes for collision safety. */
 export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   const rawLines = stdout.split("\n");
 
@@ -681,7 +935,7 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   // Track commit info we've seen (porcelain only shows full info once per commit)
   const commitInfo = new Map<string, { author: string; email?: string; date: string }>();
 
-  // Build commit groups in encounter order (keyed by short hash)
+  // Build commit groups in encounter order (keyed by full 40-char hash)
   const commitOrder: string[] = [];
   const commitGroups = new Map<
     string,
@@ -747,8 +1001,9 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
         });
       }
 
-      const shortHash = currentHash.slice(0, 8);
-      let group = commitGroups.get(shortHash);
+      // Use full 40-char hash for collision safety (Gap #127)
+      const fullHash = currentHash;
+      let group = commitGroups.get(fullHash);
       if (!group) {
         group = {
           author: currentAuthor,
@@ -756,8 +1011,8 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
           ...(currentEmail ? { email: currentEmail } : {}),
           lines: [],
         };
-        commitGroups.set(shortHash, group);
-        commitOrder.push(shortHash);
+        commitGroups.set(fullHash, group);
+        commitOrder.push(fullHash);
       }
       group.lines.push({ lineNumber: currentLineNumber, content: line.slice(1) });
       totalLines++;
@@ -826,6 +1081,23 @@ export function parseReset(
     ...(newRef ? { newRef } : {}),
     filesAffected,
   };
+}
+
+/** Validates that reset files+mode combination is valid.
+ *  --hard/--soft/--mixed + specific files is invalid in git.
+ *  Returns an error message if invalid, undefined if valid. */
+export function validateResetArgs(
+  mode: string | undefined,
+  files: string[] | undefined,
+): string | undefined {
+  if (files && files.length > 0 && mode && ["hard", "soft", "merge", "keep"].includes(mode)) {
+    return (
+      `Cannot use --${mode} with specific files. Only --mixed (or no mode) supports file-level reset. ` +
+      `To reset specific files, omit the mode or use mode='mixed'. ` +
+      `To reset the entire branch, omit the files parameter.`
+    );
+  }
+  return undefined;
 }
 
 /** Parses `git cherry-pick` output into structured cherry-pick result data. */
@@ -1018,6 +1290,14 @@ export function parseRebase(
   };
 }
 
+/** Parses refs string like "HEAD -> main, origin/main, tag: v1.0" into array of individual refs. */
+function parseRefsString(refs: string): string[] {
+  return refs
+    .split(",")
+    .map((r) => r.trim())
+    .filter(Boolean);
+}
+
 /** Parses `git log --graph --oneline --decorate` output into structured log-graph data.
  *  Each line is split into graph characters (the ASCII art prefix) and the commit info. */
 export function parseLogGraph(stdout: string): GitLogGraphFull {
@@ -1037,9 +1317,11 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
 
       // Extract refs from decoration: (HEAD -> main, origin/main, tag: v1.0)
       let refs: string | undefined;
+      let parsedRefs: string[] | undefined;
       const refsMatch = rest.match(/^\(([^)]+)\)\s*/);
       if (refsMatch) {
         refs = refsMatch[1];
+        parsedRefs = parseRefsString(refs);
         rest = rest.slice(refsMatch[0].length);
       }
 
@@ -1052,6 +1334,7 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
         hashShort,
         message: rest,
         ...(refs ? { refs } : {}),
+        ...(parsedRefs ? { parsedRefs } : {}),
         ...(isMerge ? { isMerge: true } : {}),
       });
     } else {
