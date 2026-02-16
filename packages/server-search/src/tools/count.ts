@@ -34,6 +34,29 @@ export function registerCountTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Case-sensitive search (default: true)"),
+        countMatches: z
+          .boolean()
+          .optional()
+          .describe("Count per-occurrence matches instead of per-line counts (--count-matches)"),
+        fixedStrings: z
+          .boolean()
+          .optional()
+          .describe("Treat pattern as a literal string instead of regex (--fixed-strings)"),
+        wordRegexp: z.boolean().optional().describe("Only match whole words (--word-regexp)"),
+        invertMatch: z
+          .boolean()
+          .optional()
+          .describe("Count non-matching lines instead of matching lines (--invert-match)"),
+        hidden: z.boolean().optional().describe("Search hidden files and directories (--hidden)"),
+        includeZero: z
+          .boolean()
+          .optional()
+          .describe("Show files with zero matches (--include-zero)"),
+        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        noIgnore: z
+          .boolean()
+          .optional()
+          .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
         compact: z
           .boolean()
           .optional()
@@ -44,16 +67,58 @@ export function registerCountTool(server: McpServer) {
       },
       outputSchema: CountResultSchema,
     },
-    async ({ pattern, path, glob, caseSensitive, compact }) => {
+    async ({
+      pattern,
+      path,
+      glob,
+      caseSensitive,
+      countMatches,
+      fixedStrings,
+      wordRegexp,
+      invertMatch,
+      hidden,
+      includeZero,
+      maxDepth,
+      noIgnore,
+      compact,
+    }) => {
       assertNoFlagInjection(pattern, "pattern");
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
 
       const cwd = path || process.cwd();
-      const args = ["--count"];
+      const args = countMatches ? ["--count-matches"] : ["--count"];
 
       if (!caseSensitive) {
         args.push("--ignore-case");
+      }
+
+      if (fixedStrings) {
+        args.push("--fixed-strings");
+      }
+
+      if (wordRegexp) {
+        args.push("--word-regexp");
+      }
+
+      if (invertMatch) {
+        args.push("--invert-match");
+      }
+
+      if (hidden) {
+        args.push("--hidden");
+      }
+
+      if (includeZero) {
+        args.push("--include-zero");
+      }
+
+      if (maxDepth !== undefined) {
+        args.push("--max-depth", String(maxDepth));
+      }
+
+      if (noIgnore) {
+        args.push("--no-ignore");
       }
 
       if (glob) {
