@@ -32,6 +32,17 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default("auto")
           .describe('Task runner to use: "auto" detects from files, or force "make"/"just"'),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe(
+            "Path to a non-default makefile or justfile (maps to make -f FILE / just --justfile FILE)",
+          ),
+        env: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe("Environment variables to pass to the target execution (key-value pairs)"),
         dryRun: z
           .boolean()
           .optional()
@@ -75,6 +86,8 @@ export function registerRunTool(server: McpServer) {
       args,
       path,
       tool,
+      file,
+      env,
       dryRun,
       jobs,
       silent,
@@ -87,6 +100,7 @@ export function registerRunTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(target, "target");
+      if (file) assertNoFlagInjection(file, "file");
       for (const a of args ?? []) {
         assertNoFlagInjection(a, "args");
       }
@@ -96,11 +110,13 @@ export function registerRunTool(server: McpServer) {
       // Build flags before the target
       const flags: string[] = [];
       if (resolved === "just") {
+        if (file) flags.push("--justfile", file);
         if (dryRun) flags.push("--dry-run");
         if (silent) flags.push("--quiet");
         if (verbose) flags.push("--verbose");
       } else {
         // make
+        if (file) flags.push("-f", file);
         if (dryRun) flags.push("-n");
         if (jobs !== undefined) flags.push("-j", String(jobs));
         if (silent) flags.push("-s");
@@ -110,7 +126,17 @@ export function registerRunTool(server: McpServer) {
         if (question) flags.push("-q");
       }
 
-      const cmdArgs = [...flags, target, ...(args || [])];
+      // Build environment variable arguments
+      // For make: pass as VAR=VALUE positional args
+      // For just: pass as VAR=VALUE positional args (just supports env var overrides this way)
+      const envArgs: string[] = [];
+      if (env) {
+        for (const [key, value] of Object.entries(env)) {
+          envArgs.push(`${key}=${value}`);
+        }
+      }
+
+      const cmdArgs = [...flags, target, ...(args || []), ...envArgs];
 
       const start = Date.now();
       const result =
