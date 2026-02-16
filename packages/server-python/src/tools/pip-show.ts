@@ -22,6 +22,11 @@ export function registerPipShowTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Working directory (default: cwd)"),
+        files: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("List installed files for the package (-f, --files)"),
         compact: z
           .boolean()
           .optional()
@@ -35,11 +40,15 @@ export function registerPipShowTool(server: McpServer) {
     async (input) => {
       const pkg = input["package"];
       const path = input["path"] as string | undefined;
+      const files = input["files"] as boolean | undefined;
       const compact = input["compact"] as boolean | undefined;
       const cwd = path || process.cwd();
       assertNoFlagInjection(pkg as string, "package");
 
-      const result = await pip(["show", pkg as string], cwd);
+      const args = ["show"];
+      if (files) args.push("--files");
+      args.push(pkg as string);
+      const result = await pip(args, cwd);
       const data = parsePipShowOutput(result.stdout);
       return compactDualOutput(
         data,

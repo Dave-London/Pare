@@ -38,6 +38,26 @@ export function registerUvInstallTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be installed without actually installing (--dry-run)"),
+        verifyHashes: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Verify package hashes for supply-chain security (--verify-hashes)"),
+        upgrade: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Upgrade already-installed packages to the newest version (--upgrade)"),
+        noDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Do not install package dependencies (--no-deps)"),
+        reinstall: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Force reinstall of all packages even if already installed (--reinstall)"),
         compact: z
           .boolean()
           .optional()
@@ -48,7 +68,17 @@ export function registerUvInstallTool(server: McpServer) {
       },
       outputSchema: UvInstallSchema,
     },
-    async ({ path, packages, requirements, dryRun, compact }) => {
+    async ({
+      path,
+      packages,
+      requirements,
+      dryRun,
+      verifyHashes,
+      upgrade,
+      noDeps,
+      reinstall,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
@@ -57,6 +87,10 @@ export function registerUvInstallTool(server: McpServer) {
 
       const args = ["pip", "install"];
       if (dryRun) args.push("--dry-run");
+      if (verifyHashes) args.push("--verify-hashes");
+      if (upgrade) args.push("--upgrade");
+      if (noDeps) args.push("--no-deps");
+      if (reinstall) args.push("--reinstall");
 
       if (requirements) {
         args.push("-r", requirements);
