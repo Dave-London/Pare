@@ -14,6 +14,7 @@ import {
   parseCondaInfoJson,
   parseCondaEnvListJson,
   parsePoetryOutput,
+  parsePyenvOutput,
 } from "../src/lib/parsers.js";
 
 describe("parsePipInstall", () => {
@@ -1002,5 +1003,86 @@ describe("parsePoetryOutput — remove", () => {
     expect(result.success).toBe(false);
     expect(result.action).toBe("remove");
     expect(result.total).toBe(0);
+  });
+});
+
+// ── pip-list outdated parser tests ───────────────────────────────────
+
+describe("parsePipListJson with outdated", () => {
+  it("parses outdated JSON with latestVersion and latestFiletype", () => {
+    const stdout = JSON.stringify([
+      { name: "requests", version: "2.28.0", latest_version: "2.31.0", latest_filetype: "wheel" },
+      { name: "flask", version: "2.2.0", latest_version: "3.0.0", latest_filetype: "sdist" },
+    ]);
+    const result = parsePipListJson(stdout, 0, true);
+
+    expect(result.success).toBe(true);
+    expect(result.total).toBe(2);
+    expect(result.packages![0].latestVersion).toBe("2.31.0");
+    expect(result.packages![0].latestFiletype).toBe("wheel");
+    expect(result.packages![1].latestVersion).toBe("3.0.0");
+    expect(result.packages![1].latestFiletype).toBe("sdist");
+  });
+
+  it("does not include latestVersion when outdated is false", () => {
+    const stdout = JSON.stringify([
+      { name: "requests", version: "2.28.0", latest_version: "2.31.0", latest_filetype: "wheel" },
+    ]);
+    const result = parsePipListJson(stdout, 0, false);
+
+    expect(result.packages![0].latestVersion).toBeUndefined();
+    expect(result.packages![0].latestFiletype).toBeUndefined();
+  });
+
+  it("does not include latestVersion when outdated is not provided", () => {
+    const stdout = JSON.stringify([
+      { name: "requests", version: "2.28.0", latest_version: "2.31.0" },
+    ]);
+    const result = parsePipListJson(stdout, 0);
+
+    expect(result.packages![0].latestVersion).toBeUndefined();
+  });
+
+  it("handles outdated JSON without latest fields", () => {
+    const stdout = JSON.stringify([{ name: "requests", version: "2.28.0" }]);
+    const result = parsePipListJson(stdout, 0, true);
+
+    expect(result.packages![0].latestVersion).toBeUndefined();
+    expect(result.packages![0].latestFiletype).toBeUndefined();
+  });
+});
+
+// ── pyenv installList parser tests ───────────────────────────────────
+
+describe("parsePyenvOutput installList action", () => {
+  it("parses available versions list", () => {
+    const stdout = "Available versions:\n  2.7.18\n  3.10.13\n  3.11.7\n  3.12.0\n  3.13.0a2\n";
+    const result = parsePyenvOutput(stdout, "", 0, "installList");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("installList");
+    expect(result.availableVersions).toEqual(["2.7.18", "3.10.13", "3.11.7", "3.12.0", "3.13.0a2"]);
+  });
+
+  it("parses plain version list without header", () => {
+    const stdout = "  3.11.7\n  3.12.0\n";
+    const result = parsePyenvOutput(stdout, "", 0, "installList");
+
+    expect(result.success).toBe(true);
+    expect(result.availableVersions).toEqual(["3.11.7", "3.12.0"]);
+  });
+
+  it("handles empty output", () => {
+    const result = parsePyenvOutput("", "", 0, "installList");
+
+    expect(result.success).toBe(true);
+    expect(result.availableVersions).toEqual([]);
+  });
+
+  it("handles failure", () => {
+    const result = parsePyenvOutput("", "pyenv: command not found", 127, "installList");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("command not found");
   });
 });

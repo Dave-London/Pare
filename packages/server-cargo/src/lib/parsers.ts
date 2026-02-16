@@ -180,18 +180,42 @@ export function parseCargoClippyJson(stdout: string, exitCode: number): CargoCli
 /**
  * Parses `cargo run` output.
  * Returns exit code, stdout, stderr, and success flag.
+ * Optionally truncates stdout/stderr to maxOutputSize bytes.
  */
 export function parseCargoRunOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  maxOutputSize?: number,
 ): CargoRunResult {
-  return {
+  const limit = maxOutputSize ?? 0;
+  let stdoutTruncated = false;
+  let stderrTruncated = false;
+  let finalStdout = stdout;
+  let finalStderr = stderr;
+
+  if (limit > 0) {
+    if (stdout.length > limit) {
+      finalStdout = stdout.slice(0, limit);
+      stdoutTruncated = true;
+    }
+    if (stderr.length > limit) {
+      finalStderr = stderr.slice(0, limit);
+      stderrTruncated = true;
+    }
+  }
+
+  const result: CargoRunResult = {
     exitCode,
-    stdout,
-    stderr,
+    stdout: finalStdout,
+    stderr: finalStderr,
     success: exitCode === 0,
   };
+
+  if (stdoutTruncated) result.stdoutTruncated = true;
+  if (stderrTruncated) result.stderrTruncated = true;
+
+  return result;
 }
 
 /**

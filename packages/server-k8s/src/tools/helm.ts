@@ -6,12 +6,16 @@ import {
   parseHelmStatusOutput,
   parseHelmInstallOutput,
   parseHelmUpgradeOutput,
+  parseHelmUninstallOutput,
+  parseHelmRollbackOutput,
 } from "../lib/parsers.js";
 import {
   formatHelmList,
   formatHelmStatus,
   formatHelmInstall,
   formatHelmUpgrade,
+  formatHelmUninstall,
+  formatHelmRollback,
   compactHelmListMap,
   formatHelmListCompact,
   compactHelmStatusMap,
@@ -20,12 +24,18 @@ import {
   formatHelmInstallCompact,
   compactHelmUpgradeMap,
   formatHelmUpgradeCompact,
+  compactHelmUninstallMap,
+  formatHelmUninstallCompact,
+  compactHelmRollbackMap,
+  formatHelmRollbackCompact,
 } from "../lib/formatters.js";
 import {
   HelmListResultSchema,
   HelmStatusResultSchema,
   HelmInstallResultSchema,
   HelmUpgradeResultSchema,
+  HelmUninstallResultSchema,
+  HelmRollbackResultSchema,
 } from "../schemas/index.js";
 
 /** Registers the `helm` tool on the given MCP server. */
@@ -37,7 +47,9 @@ export function registerHelmTool(server: McpServer) {
       description:
         "Manages Helm releases (install, upgrade, list, status). Returns structured JSON output. Use instead of running `helm` in the terminal.",
       inputSchema: {
-        action: z.enum(["list", "status", "install", "upgrade"]).describe("Helm action to perform"),
+        action: z
+          .enum(["list", "status", "install", "upgrade", "uninstall", "rollback"])
+          .describe("Helm action to perform"),
         release: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -77,10 +89,18 @@ export function registerHelmTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Simulate install/upgrade without making changes (--dry-run)"),
+        keepHistory: z
+          .boolean()
+          .optional()
+          .describe("Keep release history after uninstall (--keep-history, uninstall action only)"),
+        revision: z
+          .number()
+          .optional()
+          .describe("Revision number to rollback to (rollback action only)"),
         wait: z
           .boolean()
           .optional()
-          .describe("Wait until resources are ready after install/upgrade (--wait)"),
+          .describe("Wait until resources are ready after install/upgrade/rollback (--wait)"),
         waitTimeout: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -150,6 +170,8 @@ export function registerHelmTool(server: McpServer) {
         HelmStatusResultSchema,
         HelmInstallResultSchema,
         HelmUpgradeResultSchema,
+        HelmUninstallResultSchema,
+        HelmRollbackResultSchema,
       ]),
     },
     async ({
@@ -161,6 +183,8 @@ export function registerHelmTool(server: McpServer) {
       values,
       version,
       dryRun,
+      keepHistory,
+      revision,
       wait,
       waitTimeout,
       atomic,
@@ -339,6 +363,67 @@ export function registerHelmTool(server: McpServer) {
             formatHelmUpgrade,
             compactHelmUpgradeMap,
             formatHelmUpgradeCompact,
+            compact === false,
+          );
+        }
+
+        case "uninstall": {
+          if (!release) throw new Error("release is required for uninstall action");
+
+          const args = ["uninstall", release];
+          if (namespace) args.push("-n", namespace);
+          if (keepHistory) args.push("--keep-history");
+          if (dryRun) args.push("--dry-run");
+          if (noHooks) args.push("--no-hooks");
+          if (description) args.push("--description", description);
+
+          const result = await run("helm", args, { timeout: 180_000 });
+          const data = parseHelmUninstallOutput(
+            result.stdout,
+            result.stderr,
+            result.exitCode,
+            release,
+            namespace,
+          );
+          const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+
+          return compactDualOutput(
+            data,
+            rawOutput,
+            formatHelmUninstall,
+            compactHelmUninstallMap,
+            formatHelmUninstallCompact,
+            compact === false,
+          );
+        }
+
+        case "rollback": {
+          if (!release) throw new Error("release is required for rollback action");
+
+          const args = ["rollback", release];
+          if (revision !== undefined) args.push(String(revision));
+          if (namespace) args.push("-n", namespace);
+          if (wait) args.push("--wait");
+          if (waitTimeout) args.push("--timeout", waitTimeout);
+          if (noHooks) args.push("--no-hooks");
+
+          const result = await run("helm", args, { timeout: 180_000 });
+          const data = parseHelmRollbackOutput(
+            result.stdout,
+            result.stderr,
+            result.exitCode,
+            release,
+            revision,
+            namespace,
+          );
+          const rawOutput = (result.stdout + "\n" + result.stderr).trim();
+
+          return compactDualOutput(
+            data,
+            rawOutput,
+            formatHelmRollback,
+            compactHelmRollbackMap,
+            formatHelmRollbackCompact,
             compact === false,
           );
         }

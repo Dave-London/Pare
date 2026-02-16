@@ -662,6 +662,15 @@ export function formatPyenv(data: PyenvResult): string {
     }
     case "version":
       return data.current ? `pyenv: current version is ${data.current}` : "pyenv: no version set.";
+    case "installList": {
+      const avail = data.availableVersions ?? [];
+      if (avail.length === 0) return "pyenv: no versions available.";
+      const lines = [`${avail.length} versions available for installation:`];
+      for (const v of avail) {
+        lines.push(`  ${v}`);
+      }
+      return lines.join("\n");
+    }
     case "install":
       return data.installed
         ? `pyenv: installed Python ${data.installed}`

@@ -751,3 +751,61 @@ describe("parseHelmUpgradeOutput", () => {
     expect(result.error).toContain("Failed to parse helm JSON output");
   });
 });
+
+// ── Helm uninstall/rollback parser tests ─────────────────────────────
+
+import { parseHelmUninstallOutput, parseHelmRollbackOutput } from "../src/lib/parsers.js";
+
+describe("parseHelmUninstallOutput", () => {
+  it("parses successful uninstall", () => {
+    const stdout = 'release "my-release" uninstalled\n';
+    const result = parseHelmUninstallOutput(stdout, "", 0, "my-release", "default");
+
+    expect(result.action).toBe("uninstall");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.namespace).toBe("default");
+    expect(result.status).toBe("uninstalled");
+  });
+
+  it("parses failed uninstall", () => {
+    const stderr = "Error: uninstall: Release not loaded: my-release: release: not found";
+    const result = parseHelmUninstallOutput("", stderr, 1, "my-release");
+
+    expect(result.action).toBe("uninstall");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("not found");
+  });
+});
+
+describe("parseHelmRollbackOutput", () => {
+  it("parses successful rollback", () => {
+    const stdout = "Rollback was a success! Happy Helming!\n";
+    const result = parseHelmRollbackOutput(stdout, "", 0, "my-release", 2, "default");
+
+    expect(result.action).toBe("rollback");
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("my-release");
+    expect(result.namespace).toBe("default");
+    expect(result.revision).toBe("2");
+    expect(result.status).toBe("success");
+  });
+
+  it("parses rollback without revision", () => {
+    const stdout = "Rollback was a success! Happy Helming!\n";
+    const result = parseHelmRollbackOutput(stdout, "", 0, "my-release");
+
+    expect(result.success).toBe(true);
+    expect(result.revision).toBeUndefined();
+  });
+
+  it("parses failed rollback", () => {
+    const stderr = "Error: release: not found";
+    const result = parseHelmRollbackOutput("", stderr, 1, "my-release", 1);
+
+    expect(result.action).toBe("rollback");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("not found");
+    expect(result.revision).toBe("1");
+  });
+});

@@ -46,6 +46,13 @@ export function registerPipListTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Exclude editable packages from the list (--exclude-editable)"),
+        outdated: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Only list outdated packages with their latest available versions (--outdated)",
+          ),
         exclude: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -61,13 +68,24 @@ export function registerPipListTool(server: McpServer) {
       },
       outputSchema: PipListSchema,
     },
-    async ({ path, local, user, notRequired, editable, excludeEditable, exclude, compact }) => {
+    async ({
+      path,
+      local,
+      user,
+      notRequired,
+      editable,
+      excludeEditable,
+      outdated,
+      exclude,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       for (const e of exclude ?? []) {
         assertNoFlagInjection(e, "exclude");
       }
 
       const args = ["list", "--format", "json"];
+      if (outdated) args.push("--outdated");
       if (local) args.push("--local");
       if (user) args.push("--user");
       if (notRequired) args.push("--not-required");
@@ -78,7 +96,7 @@ export function registerPipListTool(server: McpServer) {
       }
 
       const result = await pip(args, cwd);
-      const data = parsePipListJson(result.stdout, result.exitCode);
+      const data = parsePipListJson(result.stdout, result.exitCode, outdated);
       return compactDualOutput(
         data,
         result.stdout,

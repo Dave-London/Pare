@@ -107,7 +107,9 @@ export function registerUvRunTool(server: McpServer) {
       }
       if (python) args.push("-p", python);
       if (envFile) args.push("--env-file", envFile);
-      args.push(...command);
+      // Use "--" separator to isolate uv flags from command arguments,
+      // preventing command args from being interpreted as uv options.
+      args.push("--", ...command);
 
       const start = Date.now();
       const result = await uv(args, cwd);

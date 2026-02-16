@@ -58,6 +58,14 @@ export const CargoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   success: z.boolean(),
+  stdoutTruncated: z
+    .boolean()
+    .optional()
+    .describe("True when stdout exceeded maxOutputSize and was truncated"),
+  stderrTruncated: z
+    .boolean()
+    .optional()
+    .describe("True when stderr exceeded maxOutputSize and was truncated"),
 });
 
 export type CargoRunResult = z.infer<typeof CargoRunResultSchema>;

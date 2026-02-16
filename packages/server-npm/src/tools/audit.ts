@@ -45,6 +45,13 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Workspace to audit (maps to --workspace for npm)"),
+        fix: z
+          .boolean()
+          .optional()
+          .describe(
+            "When true, run `npm audit fix` (or `pnpm audit --fix`) to automatically fix vulnerabilities. " +
+              "Returns counts of fixed and remaining vulnerabilities.",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -60,7 +67,17 @@ export function registerAuditTool(server: McpServer) {
       },
       outputSchema: NpmAuditSchema,
     },
-    async ({ path, level, production, omit, workspace, args, packageLockOnly, packageManager }) => {
+    async ({
+      path,
+      level,
+      production,
+      omit,
+      workspace,
+      fix,
+      args,
+      packageLockOnly,
+      packageManager,
+    }) => {
       const cwd = path || process.cwd();
       if (workspace) assertNoFlagInjection(workspace, "workspace");
       for (const a of args ?? []) {
@@ -68,7 +85,16 @@ export function registerAuditTool(server: McpServer) {
       }
       const pm = await detectPackageManager(cwd, packageManager);
 
-      const pmArgs = ["audit", "--json"];
+      const pmArgs: string[] = [];
+      if (fix) {
+        pmArgs.push("audit");
+        if (pm === "npm") pmArgs.push("fix");
+        else if (pm === "pnpm") pmArgs.push("--fix");
+        else if (pm === "yarn") pmArgs.push("fix");
+        pmArgs.push("--json");
+      } else {
+        pmArgs.push("audit", "--json");
+      }
       if (packageLockOnly && pm === "npm") pmArgs.push("--package-lock-only");
       if (level) {
         if (pm === "npm" || pm === "pnpm") pmArgs.push(`--audit-level=${level}`);

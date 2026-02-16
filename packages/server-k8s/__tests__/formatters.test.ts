@@ -982,3 +982,160 @@ describe("formatHelmResult", () => {
     expect(formatHelmResult(data)).toContain("helm upgrade nginx");
   });
 });
+
+// ── Helm uninstall/rollback formatter tests ─────────────────────────
+
+import {
+  formatHelmUninstall,
+  formatHelmRollback,
+  compactHelmUninstallMap,
+  compactHelmRollbackMap,
+  formatHelmUninstallCompact,
+  formatHelmRollbackCompact,
+} from "../src/lib/formatters.js";
+import type { HelmUninstallResult, HelmRollbackResult } from "../src/schemas/index.js";
+
+describe("formatHelmUninstall", () => {
+  it("formats successful uninstall", () => {
+    const data: HelmUninstallResult = {
+      action: "uninstall",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      status: "uninstalled",
+      exitCode: 0,
+    };
+    expect(formatHelmUninstall(data)).toBe("helm uninstall my-release: uninstalled");
+  });
+
+  it("formats failed uninstall", () => {
+    const data: HelmUninstallResult = {
+      action: "uninstall",
+      success: false,
+      name: "my-release",
+      exitCode: 1,
+      error: "release not found",
+    };
+    const output = formatHelmUninstall(data);
+    expect(output).toContain("helm uninstall my-release: failed");
+    expect(output).toContain("release not found");
+  });
+});
+
+describe("formatHelmRollback", () => {
+  it("formats successful rollback", () => {
+    const data: HelmRollbackResult = {
+      action: "rollback",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      revision: "2",
+      status: "success",
+      exitCode: 0,
+    };
+    expect(formatHelmRollback(data)).toBe("helm rollback my-release to revision 2: success");
+  });
+
+  it("formats rollback without revision", () => {
+    const data: HelmRollbackResult = {
+      action: "rollback",
+      success: true,
+      name: "my-release",
+      status: "success",
+      exitCode: 0,
+    };
+    expect(formatHelmRollback(data)).toBe("helm rollback my-release: success");
+  });
+
+  it("formats failed rollback", () => {
+    const data: HelmRollbackResult = {
+      action: "rollback",
+      success: false,
+      name: "my-release",
+      exitCode: 1,
+      error: "release not found",
+    };
+    const output = formatHelmRollback(data);
+    expect(output).toContain("helm rollback my-release: failed");
+  });
+});
+
+describe("compactHelmUninstallMap", () => {
+  it("maps uninstall result to compact form", () => {
+    const data: HelmUninstallResult = {
+      action: "uninstall",
+      success: true,
+      name: "my-release",
+      namespace: "default",
+      status: "uninstalled",
+      exitCode: 0,
+    };
+    const compact = compactHelmUninstallMap(data);
+    expect(compact.action).toBe("uninstall");
+    expect(compact.success).toBe(true);
+    expect(compact.name).toBe("my-release");
+  });
+});
+
+describe("compactHelmRollbackMap", () => {
+  it("maps rollback result to compact form", () => {
+    const data: HelmRollbackResult = {
+      action: "rollback",
+      success: true,
+      name: "my-release",
+      revision: "2",
+      status: "success",
+      exitCode: 0,
+    };
+    const compact = compactHelmRollbackMap(data);
+    expect(compact.action).toBe("rollback");
+    expect(compact.revision).toBe("2");
+  });
+});
+
+describe("formatHelmUninstallCompact", () => {
+  it("formats compact success", () => {
+    expect(
+      formatHelmUninstallCompact({
+        action: "uninstall",
+        success: true,
+        name: "my-release",
+        status: "uninstalled",
+      }),
+    ).toBe("helm uninstall my-release: uninstalled");
+  });
+
+  it("formats compact failure", () => {
+    expect(
+      formatHelmUninstallCompact({
+        action: "uninstall",
+        success: false,
+        name: "my-release",
+      }),
+    ).toBe("helm uninstall my-release: failed");
+  });
+});
+
+describe("formatHelmRollbackCompact", () => {
+  it("formats compact success with revision", () => {
+    expect(
+      formatHelmRollbackCompact({
+        action: "rollback",
+        success: true,
+        name: "my-release",
+        revision: "3",
+        status: "success",
+      }),
+    ).toBe("helm rollback my-release to revision 3: success");
+  });
+
+  it("formats compact failure", () => {
+    expect(
+      formatHelmRollbackCompact({
+        action: "rollback",
+        success: false,
+        name: "my-release",
+      }),
+    ).toBe("helm rollback my-release: failed");
+  });
+});

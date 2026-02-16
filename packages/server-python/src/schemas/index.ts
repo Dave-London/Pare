@@ -157,6 +157,14 @@ export const PipListPackageSchema = z.object({
   version: z.string(),
   location: z.string().optional(),
   editableProject: z.boolean().optional(),
+  latestVersion: z
+    .string()
+    .optional()
+    .describe("Latest available version (only when outdated=true)"),
+  latestFiletype: z
+    .string()
+    .optional()
+    .describe("File type of the latest version (only when outdated=true)"),
 });
 
 /** Zod schema for structured pip list output with packages, total count, and success status. */
@@ -263,13 +271,17 @@ export type CondaEnvList = CondaResult & {
 
 /** Zod schema for structured pyenv output with action results and version info. */
 export const PyenvResultSchema = z.object({
-  action: z.enum(["versions", "version", "install", "local", "global"]),
+  action: z.enum(["versions", "version", "install", "installList", "local", "global"]),
   success: z.boolean(),
   current: z.string().optional(),
   versions: z.array(z.string()).optional(),
   installed: z.string().optional(),
   localVersion: z.string().optional(),
   globalVersion: z.string().optional(),
+  availableVersions: z
+    .array(z.string())
+    .optional()
+    .describe("Available Python versions for installation (installList action)"),
   error: z.string().optional(),
 });
 

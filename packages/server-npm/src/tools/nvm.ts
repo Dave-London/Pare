@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, run } from "@paretools/shared";
 import { parseNvmOutput } from "../lib/parsers.js";
@@ -21,10 +23,28 @@ export function registerNvmTool(server: McpServer) {
           .describe(
             "Action to perform: 'list' shows all installed versions, 'current' shows the active version",
           ),
+        path: z
+          .string()
+          .optional()
+          .describe("Working directory for .nvmrc detection (default: cwd)"),
       },
       outputSchema: NvmResultSchema,
     },
-    async ({ action }) => {
+    async ({ action, path }) => {
+      const cwd = path || process.cwd();
+
+      // Helper: read .nvmrc from the working directory
+      async function readNvmrc(): Promise<string | undefined> {
+        try {
+          const nvmrcPath = join(cwd, ".nvmrc");
+          const raw = await readFile(nvmrcPath, "utf-8");
+          const trimmed = raw.trim();
+          return trimmed || undefined;
+        } catch {
+          return undefined;
+        }
+      }
+
       if (action === "current") {
         const result = await run("nvm", ["current"], { timeout: 15_000 });
         if (result.exitCode !== 0 && !result.stdout) {
@@ -56,8 +76,16 @@ export function registerNvmTool(server: McpServer) {
           // Not critical
         }
 
+        // Read .nvmrc for the required version
+        const required = await readNvmrc();
+
         return dualOutput(
-          { ...parsed, ...(which ? { which } : {}), ...(arch ? { arch } : {}) },
+          {
+            ...parsed,
+            ...(which ? { which } : {}),
+            ...(arch ? { arch } : {}),
+            ...(required ? { required } : {}),
+          },
           formatNvm,
         );
       }

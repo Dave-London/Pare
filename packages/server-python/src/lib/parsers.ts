@@ -436,8 +436,9 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
   };
 }
 
-/** Parses `pip list --format json` output into structured package list. */
-export function parsePipListJson(stdout: string, exitCode: number): PipList {
+/** Parses `pip list --format json` output into structured package list.
+ *  When outdated=true, also parses latestVersion and latestFiletype fields. */
+export function parsePipListJson(stdout: string, exitCode: number, outdated?: boolean): PipList {
   let entries: PipListJsonEntry[];
   try {
     entries = JSON.parse(stdout);
@@ -454,6 +455,8 @@ export function parsePipListJson(stdout: string, exitCode: number): PipList {
     version: e.version,
     location: e.location || undefined,
     editableProject: e.editable_project != null ? true : undefined,
+    ...(outdated && e.latest_version ? { latestVersion: e.latest_version } : {}),
+    ...(outdated && e.latest_filetype ? { latestFiletype: e.latest_filetype } : {}),
   }));
 
   return { success: exitCode === 0, packages, total: packages.length };
@@ -464,6 +467,8 @@ interface PipListJsonEntry {
   version: string;
   location?: string;
   editable_project?: string;
+  latest_version?: string;
+  latest_filetype?: string;
 }
 
 /** Parses `pip show <package>` key-value output into structured package metadata.
@@ -520,7 +525,7 @@ export function parsePyenvOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  action: "versions" | "version" | "install" | "local" | "global",
+  action: "versions" | "version" | "install" | "installList" | "local" | "global",
 ): PyenvResult {
   const output = stdout + "\n" + stderr;
 
@@ -559,6 +564,16 @@ export function parsePyenvOutput(
         .replace(/\s+\(.*\)$/, "")
         .trim();
       return { action, success: true, current: ver || undefined };
+    }
+    case "installList": {
+      const availableVersions: string[] = [];
+      for (const line of stdout.split("\n")) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith("Available versions:") && !trimmed.startsWith("--")) {
+          availableVersions.push(trimmed);
+        }
+      }
+      return { action, success: true, availableVersions };
     }
     case "install": {
       // pyenv install outputs to stderr typically
