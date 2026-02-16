@@ -35,11 +35,16 @@ export function registerInitTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("npm scope for the package (e.g., '@myorg')"),
+        force: z.boolean().optional().describe("Overwrite existing package.json (maps to --force)"),
+        private: z
+          .boolean()
+          .optional()
+          .describe("Set private: true in package.json (maps to yarn --private)"),
         packageManager: packageManagerInput,
       },
       outputSchema: NpmInitSchema,
     },
-    async ({ path, yes, scope, packageManager }) => {
+    async ({ path, yes, scope, force, private: isPrivate, packageManager }) => {
       const cwd = path || process.cwd();
       if (scope) assertNoFlagInjection(scope, "scope");
       const pm = await detectPackageManager(cwd, packageManager);
@@ -50,6 +55,12 @@ export function registerInitTool(server: McpServer) {
       }
       if (yes !== false) {
         pmArgs.push("-y");
+      }
+      if (force) {
+        pmArgs.push("--force");
+      }
+      if (isPrivate && pm === "yarn") {
+        pmArgs.push("--private");
       }
 
       const result = await runPm(pm, pmArgs, cwd);
