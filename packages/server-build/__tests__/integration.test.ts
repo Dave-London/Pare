@@ -8,7 +8,7 @@ const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
 /** MCP SDK defaults to 60 s request timeout; override for CI where npx + cmd.exe is slow. */
-const CALL_TIMEOUT = { timeout: 120_000 };
+const CALL_TIMEOUT = { timeout: 180_000 };
 
 describe("@paretools/build integration", () => {
   let client: Client;
@@ -304,7 +304,7 @@ describe("@paretools/build integration", () => {
         // MCP SDK may throw (timeout, transport error, etc.) — acceptable
         // since nx may not be installed and npx resolution can fail.
       }
-    }, 120_000);
+    }, 180_000);
 
     it("rejects flag injection in target", async () => {
       const result = await client.callTool({

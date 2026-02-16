@@ -84,7 +84,7 @@ describe("pnpm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "pnpm",
         ["audit", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -94,7 +94,7 @@ describe("pnpm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "pnpm",
         ["outdated", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -104,7 +104,7 @@ describe("pnpm runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "pnpm",
         ["list", "--json", "--depth=0"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
   });

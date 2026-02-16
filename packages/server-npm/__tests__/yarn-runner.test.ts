@@ -84,7 +84,7 @@ describe("yarn runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "yarn",
         ["audit", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -94,7 +94,7 @@ describe("yarn runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "yarn",
         ["outdated", "--json"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
 
@@ -104,7 +104,7 @@ describe("yarn runner", () => {
       expect(mockRun).toHaveBeenCalledWith(
         "yarn",
         ["list", "--json", "--depth=0"],
-        expect.objectContaining({ timeout: 60_000 }),
+        expect.objectContaining({ timeout: 180_000 }),
       );
     });
   });

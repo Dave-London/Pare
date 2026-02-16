@@ -48,16 +48,16 @@ async function runWithInstallHint(
 }
 
 export async function rgCmd(args: string[], cwd?: string): Promise<RunResult> {
-  return runWithInstallHint("rg", args, { cwd, timeout: 120_000 });
+  return runWithInstallHint("rg", args, { cwd, timeout: 180_000 });
 }
 
 export async function fdCmd(args: string[], cwd?: string): Promise<RunResult> {
-  return runWithInstallHint("fd", args, { cwd, timeout: 120_000 });
+  return runWithInstallHint("fd", args, { cwd, timeout: 180_000 });
 }
 
 export async function jqCmd(
   args: string[],
   opts?: { cwd?: string; stdin?: string },
 ): Promise<RunResult> {
-  return runWithInstallHint("jq", args, { cwd: opts?.cwd, stdin: opts?.stdin, timeout: 120_000 });
+  return runWithInstallHint("jq", args, { cwd: opts?.cwd, stdin: opts?.stdin, timeout: 180_000 });
 }

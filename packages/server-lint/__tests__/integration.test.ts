@@ -11,7 +11,7 @@ const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 const FIXTURES_DIR = resolve(__dirname, "fixtures");
 
 /** MCP SDK defaults to 60 s request timeout; override for CI where npx + cmd.exe is slow. */
-const CALL_TIMEOUT = { timeout: 120_000 };
+const CALL_TIMEOUT = { timeout: 180_000 };
 
 // ---------------------------------------------------------------------------
 // Tool listing & schema tests

@@ -96,10 +96,10 @@ describe("gofmtCmd", () => {
     expect(mockRun.mock.calls[0][2]).toMatchObject({ cwd: "/my/project" });
   });
 
-  it("sets timeout to 120 seconds (120_000ms)", async () => {
+  it("sets timeout to 180 seconds (180_000ms)", async () => {
     await gofmtCmd(["-l", "."], "/project");
 
-    expect(mockRun.mock.calls[0][2]).toMatchObject({ timeout: 120_000 });
+    expect(mockRun.mock.calls[0][2]).toMatchObject({ timeout: 180_000 });
   });
 
   it("passes undefined cwd when not provided", async () => {

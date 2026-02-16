@@ -16,15 +16,15 @@ function isLongRunning(args: string[]): boolean {
 }
 
 export async function npm(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npm", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 60_000 });
+  return run("npm", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 180_000 });
 }
 
 export async function pnpm(args: string[], cwd?: string): Promise<RunResult> {
-  return run("pnpm", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 60_000 });
+  return run("pnpm", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 180_000 });
 }
 
 export async function yarn(args: string[], cwd?: string): Promise<RunResult> {
-  return run("yarn", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 60_000 });
+  return run("yarn", args, { cwd, timeout: isLongRunning(args) ? 300_000 : 180_000 });
 }
 
 /** Run a command with the appropriate package manager. */

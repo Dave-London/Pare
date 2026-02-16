@@ -95,7 +95,7 @@ export function registerDescribeTool(server: McpServer) {
       if (context) args.push("--context", context);
       if (kubeconfig) args.push("--kubeconfig", kubeconfig);
 
-      const result = await run("kubectl", args, { timeout: 60_000 });
+      const result = await run("kubectl", args, { timeout: 180_000 });
       const data = parseDescribeOutput(
         result.stdout,
         result.stderr,

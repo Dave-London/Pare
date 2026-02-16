@@ -179,7 +179,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // --- Timeout handling (replaces execFile's timeout) ---
     let timedOut = false;
     let timeoutSignal: string | undefined;
-    const timeoutMs = opts?.timeout ?? 60_000;
+    const timeoutMs = opts?.timeout ?? 180_000;
     const timer = setTimeout(() => {
       timedOut = true;
       timeoutSignal = "SIGTERM";

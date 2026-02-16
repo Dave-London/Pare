@@ -140,7 +140,7 @@ export function registerLogsTool(server: McpServer) {
       if (podRunningTimeout) args.push("--pod-running-timeout", podRunningTimeout);
       if (ignoreErrors) args.push("--ignore-errors");
 
-      const result = await run("kubectl", args, { timeout: 60_000 });
+      const result = await run("kubectl", args, { timeout: 180_000 });
       const data = parseLogsOutput(
         result.stdout,
         result.stderr,

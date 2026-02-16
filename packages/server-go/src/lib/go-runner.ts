@@ -6,7 +6,7 @@ export async function goCmd(args: string[], cwd?: string, timeout?: number): Pro
 }
 
 export async function gofmtCmd(args: string[], cwd?: string): Promise<RunResult> {
-  return run("gofmt", args, { cwd, timeout: 120_000 });
+  return run("gofmt", args, { cwd, timeout: 180_000 });
 }
 
 export async function golangciLintCmd(args: string[], cwd?: string): Promise<RunResult> {

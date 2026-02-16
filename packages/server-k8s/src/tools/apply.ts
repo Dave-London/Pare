@@ -178,7 +178,7 @@ export function registerApplyTool(server: McpServer) {
       }
       args.push("-o", "json");
 
-      const result = await run("kubectl", args, { timeout: 60_000 });
+      const result = await run("kubectl", args, { timeout: 180_000 });
       const data = parseApplyOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 

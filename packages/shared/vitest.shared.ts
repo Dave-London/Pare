@@ -29,7 +29,7 @@ interface VitestConfigOptions {
 }
 
 const defaults = {
-  testTimeout: 120_000,
+  testTimeout: 180_000,
   coverageThresholds: {
     lines: 80,
     functions: 80,

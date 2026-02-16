@@ -1,7 +1,7 @@
 import { run, type RunResult } from "@paretools/shared";
 
 export async function tsc(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["tsc", ...args], { cwd, timeout: 120_000 });
+  return run("npx", ["tsc", ...args], { cwd, timeout: 180_000 });
 }
 
 export async function runBuildCommand(
@@ -15,7 +15,7 @@ export async function runBuildCommand(
 }
 
 export async function esbuildCmd(args: string[], cwd?: string): Promise<RunResult> {
-  return run("npx", ["esbuild", ...args], { cwd, timeout: 120_000 });
+  return run("npx", ["esbuild", ...args], { cwd, timeout: 180_000 });
 }
 
 export async function viteCmd(args: string[], cwd?: string): Promise<RunResult> {
