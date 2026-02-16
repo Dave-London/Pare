@@ -81,7 +81,15 @@ export function formatPrMerge(data: PrMergeResult): string {
         ? " (branch deleted)"
         : " (branch kept)"
       : "";
-  return `Merged PR #${data.number} via ${data.method}: ${data.url}${branchInfo}`;
+  const shaInfo = data.mergeCommitSha ? ` [${data.mergeCommitSha.slice(0, 7)}]` : "";
+
+  if (data.state === "auto-merge-enabled") {
+    return `Auto-merge enabled for PR #${data.number} via ${data.method}: ${data.url}`;
+  }
+  if (data.state === "auto-merge-disabled") {
+    return `Auto-merge disabled for PR #${data.number}: ${data.url}`;
+  }
+  return `Merged PR #${data.number} via ${data.method}${shaInfo}: ${data.url}${branchInfo}`;
 }
 
 /** Formats structured comment result into human-readable text. */
@@ -156,7 +164,12 @@ export function formatPrChecksCompact(data: PrChecksCompact): string {
 
 /** Formats structured PR diff data into a human-readable file change summary. */
 export function formatPrDiff(diff: PrDiffResult): string {
-  const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
+  const files = diff.files
+    .map((f) => {
+      const binaryTag = f.binary ? " (binary)" : "";
+      return `  ${f.file} +${f.additions} -${f.deletions}${binaryTag}`;
+    })
+    .join("\n");
   const truncatedNote = diff.truncated ? " (truncated)" : "";
   return `${diff.totalFiles} files changed, +${diff.totalAdditions} -${diff.totalDeletions}${truncatedNote}\n${files}`;
 }
@@ -229,6 +242,10 @@ export function formatRunView(data: RunViewResult): string {
     `  created: ${data.createdAt}`,
     `  ${data.url}`,
   ];
+  if (data.headSha) lines.push(`  sha: ${data.headSha}`);
+  if (data.event) lines.push(`  event: ${data.event}`);
+  if (data.startedAt) lines.push(`  started: ${data.startedAt}`);
+  if (data.attempt !== undefined) lines.push(`  attempt: ${data.attempt}`);
   if ((data.jobs ?? []).length > 0) {
     lines.push(`  jobs:`);
     for (const j of data.jobs ?? []) {
@@ -555,5 +572,5 @@ export function formatReleaseListCompact(data: ReleaseListCompact): string {
 export function formatApi(data: ApiResult): string {
   const bodyStr = typeof data.body === "string" ? data.body : JSON.stringify(data.body, null, 2);
   const preview = bodyStr.length > 500 ? bodyStr.slice(0, 500) + "..." : bodyStr;
-  return `${data.method} ${data.endpoint} → ${data.status}\n${preview}`;
+  return `${data.method} ${data.endpoint} → ${data.statusCode}\n${preview}`;
 }

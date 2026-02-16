@@ -451,6 +451,29 @@ describe("formatRunView", () => {
     const output = formatRunView(data);
     expect(output).toContain("conclusion: pending");
   });
+
+  it("formats run with headSha, event, startedAt, and attempt", () => {
+    const data: RunViewResult = {
+      id: 999,
+      status: "completed",
+      conclusion: "success",
+      name: "CI",
+      workflowName: "Build",
+      headBranch: "main",
+      jobs: [],
+      url: "https://url",
+      createdAt: "2024-06-01T10:00:00Z",
+      headSha: "abc123",
+      event: "push",
+      startedAt: "2024-06-01T10:00:05Z",
+      attempt: 2,
+    };
+    const output = formatRunView(data);
+    expect(output).toContain("sha: abc123");
+    expect(output).toContain("event: push");
+    expect(output).toContain("started: 2024-06-01T10:00:05Z");
+    expect(output).toContain("attempt: 2");
+  });
 });
 
 describe("compactRunView", () => {

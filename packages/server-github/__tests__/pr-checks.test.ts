@@ -108,6 +108,88 @@ describe("parsePrChecks (exit code 8 — pending checks)", () => {
     // null conclusion maps to undefined via the ?? operator in the parser
     expect(result.checks[0].conclusion).toBeUndefined();
   });
+
+  it("deduplicates checks by name, keeping the most recent run", () => {
+    const json = JSON.stringify([
+      {
+        name: "CI / build",
+        state: "FAILURE",
+        bucket: "fail",
+        description: "Build failed",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/100/job/200",
+        startedAt: "2024-06-01T12:00:00Z",
+        completedAt: "2024-06-01T12:05:00Z",
+      },
+      {
+        name: "CI / build",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Build succeeded",
+        event: "pull_request",
+        workflow: "CI",
+        link: "https://github.com/owner/repo/actions/runs/101/job/201",
+        startedAt: "2024-06-01T13:00:00Z",
+        completedAt: "2024-06-01T13:05:00Z",
+      },
+      {
+        name: "CI / test",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "Tests passed",
+        event: "pull_request",
+        workflow: "CI",
+        link: "",
+        startedAt: "2024-06-01T12:00:00Z",
+        completedAt: "2024-06-01T12:03:00Z",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 99);
+
+    expect(result.checks).toHaveLength(2);
+    expect(result.summary.total).toBe(2);
+    expect(result.summary.passed).toBe(2);
+    expect(result.summary.failed).toBe(0);
+    // The "CI / build" entry should be the later (successful) one
+    const buildCheck = result.checks.find((c) => c.name === "CI / build");
+    expect(buildCheck?.state).toBe("SUCCESS");
+    expect(buildCheck?.bucket).toBe("pass");
+  });
+
+  it("deduplicates checks with equal timestamps, keeping later entry", () => {
+    const json = JSON.stringify([
+      {
+        name: "lint",
+        state: "FAILURE",
+        bucket: "fail",
+        description: "",
+        event: "",
+        workflow: "",
+        link: "",
+        startedAt: "2024-06-01T12:00:00Z",
+        completedAt: "2024-06-01T12:01:00Z",
+      },
+      {
+        name: "lint",
+        state: "SUCCESS",
+        bucket: "pass",
+        description: "",
+        event: "",
+        workflow: "",
+        link: "",
+        startedAt: "2024-06-01T12:00:00Z",
+        completedAt: "2024-06-01T12:01:00Z",
+      },
+    ]);
+
+    const result = parsePrChecks(json, 1);
+
+    expect(result.checks).toHaveLength(1);
+    // Same timestamps → later entry wins (SUCCESS)
+    expect(result.checks[0].state).toBe("SUCCESS");
+  });
 });
 
 // ── Formatter tests ─────────────────────────────────────────────────

@@ -135,12 +135,15 @@ export function parsePrUpdate(stdout: string, number: number): EditResult {
 /**
  * Parses `gh pr merge` output into structured data.
  * The gh CLI prints a confirmation message with the PR URL on success.
+ * Enhanced to detect merge commit SHA, auto-merge state, and merge method.
  */
 export function parsePrMerge(
   stdout: string,
   number: number,
   method: string,
   deleteBranch?: boolean,
+  auto?: boolean,
+  disableAuto?: boolean,
 ): PrMergeResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
@@ -151,7 +154,41 @@ export function parsePrMerge(
         ? true
         : deleteBranch
       : undefined;
-  return { number, merged: true, method, url, branchDeleted };
+
+  // Extract merge commit SHA if present in output
+  // gh pr merge may output lines like "Merge commit SHA: abc123..." or include it in the URL
+  const shaMatch = stdout.match(/\b([0-9a-f]{40})\b/);
+  const mergeCommitSha = shaMatch ? shaMatch[1] : undefined;
+
+  // Determine the merge state
+  let state: "merged" | "auto-merge-enabled" | "auto-merge-disabled";
+  if (disableAuto) {
+    state = "auto-merge-disabled";
+  } else if (auto || /auto-merge/i.test(stdout) || /automatically merge/i.test(stdout)) {
+    state = "auto-merge-enabled";
+  } else {
+    state = "merged";
+  }
+
+  // Detect actual merge method from output text when possible
+  let detectedMethod = method;
+  if (/squashed and merged/i.test(stdout)) {
+    detectedMethod = "squash";
+  } else if (/rebased and merged/i.test(stdout)) {
+    detectedMethod = "rebase";
+  } else if (/merged.*pull request/i.test(stdout) && !/squashed|rebased/i.test(stdout)) {
+    detectedMethod = "merge";
+  }
+
+  return {
+    number,
+    merged: state === "merged",
+    method: detectedMethod,
+    url,
+    branchDeleted,
+    mergeCommitSha,
+    state,
+  };
 }
 
 /**
@@ -207,12 +244,14 @@ export function parsePrReview(
 /**
  * Parses `gh pr checks --json ...` output into structured PR checks data.
  * Computes summary counts by bucket (pass, fail, pending, skipping, cancel).
+ * Deduplicates entries by check name, keeping the most recent run
+ * (determined by completedAt, then startedAt, with later entries winning ties).
  */
 export function parsePrChecks(json: string, pr: number): PrChecksResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
-  const checks = items.map(
+  const allChecks = items.map(
     (c: {
       name?: string;
       state?: string;
@@ -240,6 +279,26 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
       conclusion: c.conclusion ?? undefined,
     }),
   );
+
+  // Deduplicate by check name, keeping the most recent run.
+  // For checks with the same name, prefer the one with the later completedAt
+  // (or startedAt as fallback). If timestamps are equal, keep the later entry
+  // in the array (which is typically the most recent re-run).
+  const deduped = new Map<string, (typeof allChecks)[number]>();
+  for (const check of allChecks) {
+    const existing = deduped.get(check.name);
+    if (!existing) {
+      deduped.set(check.name, check);
+      continue;
+    }
+    // Compare by completedAt first, then startedAt
+    const existingTime = existing.completedAt || existing.startedAt || "";
+    const newTime = check.completedAt || check.startedAt || "";
+    if (newTime >= existingTime) {
+      deduped.set(check.name, check);
+    }
+  }
+  const checks = Array.from(deduped.values());
 
   const summary = {
     total: checks.length,
@@ -373,7 +432,7 @@ export function parseIssueUpdate(stdout: string, number: number): EditResult {
 /**
  * Parses `gh run view --json ...` output into structured run view data.
  * Renames gh field names (e.g., databaseId → id).
- * S-gap: Enhanced to include job steps.
+ * S-gap: Enhanced to include job steps, headSha, event, startedAt, attempt.
  */
 export function parseRunView(json: string): RunViewResult {
   const raw = JSON.parse(json);
@@ -409,6 +468,11 @@ export function parseRunView(json: string): RunViewResult {
     jobs,
     url: raw.url,
     createdAt: raw.createdAt ?? "",
+    // P0 enrichments
+    headSha: raw.headSha ?? undefined,
+    event: raw.event ?? undefined,
+    startedAt: raw.startedAt ?? undefined,
+    attempt: raw.attempt ?? undefined,
   };
 }
 
@@ -534,7 +598,9 @@ export function parseReleaseList(json: string): ReleaseListResult {
 
 /**
  * Parses `gh api` stdout into structured API result data.
- * Attempts to parse stdout as JSON; falls back to raw string body.
+ * When `--include` is used, the output starts with HTTP headers followed by
+ * a blank line and then the response body. We parse the real HTTP status code
+ * from the status line and separate the body.
  */
 export function parseApi(
   stdout: string,
@@ -542,17 +608,47 @@ export function parseApi(
   endpoint: string,
   method: string,
 ): ApiResult {
-  // gh api returns exit code 0 for success. Map to HTTP-like status codes.
+  // Default: infer status from exit code
+  let statusCode = exitCode === 0 ? 200 : 422;
+  let bodyText = stdout;
+
+  // When --include is passed, stdout starts with HTTP headers:
+  // HTTP/2.0 200 OK\r\n...headers...\r\n\r\nbody
+  const headerEndIndex = stdout.indexOf("\r\n\r\n");
+  if (headerEndIndex !== -1) {
+    const headerBlock = stdout.slice(0, headerEndIndex);
+    bodyText = stdout.slice(headerEndIndex + 4);
+
+    // Parse status code from first line: "HTTP/1.1 200 OK" or "HTTP/2.0 200 OK"
+    const statusMatch = headerBlock.match(/^HTTP\/[\d.]+ (\d+)/);
+    if (statusMatch) {
+      statusCode = parseInt(statusMatch[1], 10);
+    }
+  } else {
+    // Also handle \n\n separator (some environments)
+    const headerEndLF = stdout.indexOf("\n\n");
+    if (headerEndLF !== -1 && /^HTTP\/[\d.]+ \d+/.test(stdout)) {
+      const headerBlock = stdout.slice(0, headerEndLF);
+      bodyText = stdout.slice(headerEndLF + 2);
+
+      const statusMatch = headerBlock.match(/^HTTP\/[\d.]+ (\d+)/);
+      if (statusMatch) {
+        statusCode = parseInt(statusMatch[1], 10);
+      }
+    }
+  }
+
+  // Keep legacy `status` as before for backward compat
   const status = exitCode === 0 ? 200 : 422;
 
   let body: unknown;
   try {
-    body = JSON.parse(stdout);
+    body = JSON.parse(bodyText);
   } catch {
-    body = stdout;
+    body = bodyText;
   }
 
-  return { status, body, endpoint, method };
+  return { status, statusCode, body, endpoint, method };
 }
 
 /**

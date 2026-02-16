@@ -16,6 +16,7 @@ describe("parsePrMerge", () => {
     expect(result.merged).toBe(true);
     expect(result.method).toBe("squash");
     expect(result.url).toBe("https://github.com/owner/repo/pull/42");
+    expect(result.state).toBe("merged");
   });
 
   it("parses merge output with rebase method", () => {
@@ -27,6 +28,7 @@ describe("parsePrMerge", () => {
     expect(result.merged).toBe(true);
     expect(result.method).toBe("rebase");
     expect(result.url).toBe("https://github.com/owner/repo/pull/7");
+    expect(result.state).toBe("merged");
   });
 
   it("parses merge output with merge method", () => {
@@ -38,6 +40,7 @@ describe("parsePrMerge", () => {
     expect(result.merged).toBe(true);
     expect(result.method).toBe("merge");
     expect(result.url).toBe("https://github.com/owner/repo/pull/100");
+    expect(result.state).toBe("merged");
   });
 
   it("handles output without URL", () => {
@@ -49,6 +52,7 @@ describe("parsePrMerge", () => {
     expect(result.merged).toBe(true);
     expect(result.method).toBe("squash");
     expect(result.url).toBe("");
+    expect(result.state).toBe("merged");
   });
 
   it("handles delete-branch output with URL", () => {
@@ -60,6 +64,46 @@ describe("parsePrMerge", () => {
     expect(result.number).toBe(3);
     expect(result.merged).toBe(true);
     expect(result.url).toBe("https://github.com/owner/repo/pull/3");
+    expect(result.state).toBe("merged");
+  });
+
+  it("detects auto-merge enabled state", () => {
+    const stdout =
+      "✓ Pull request #10 will be automatically merged via squash when all requirements are met\nhttps://github.com/owner/repo/pull/10\n";
+
+    const result = parsePrMerge(stdout, 10, "squash", false, true);
+
+    expect(result.state).toBe("auto-merge-enabled");
+    expect(result.merged).toBe(false);
+    expect(result.method).toBe("squash");
+  });
+
+  it("detects auto-merge disabled state", () => {
+    const stdout =
+      "✓ Auto-merge disabled for pull request #10\nhttps://github.com/owner/repo/pull/10\n";
+
+    const result = parsePrMerge(stdout, 10, "squash", false, false, true);
+
+    expect(result.state).toBe("auto-merge-disabled");
+    expect(result.merged).toBe(false);
+  });
+
+  it("detects method from output text (squash detected from text)", () => {
+    const stdout =
+      "✓ Squashed and merged pull request #42\nhttps://github.com/owner/repo/pull/42\n";
+
+    // User passes "merge" but text says "Squashed and merged"
+    const result = parsePrMerge(stdout, 42, "merge");
+
+    expect(result.method).toBe("squash");
+  });
+
+  it("detects method from output text (rebase detected from text)", () => {
+    const stdout = "✓ Rebased and merged pull request #7\nhttps://github.com/owner/repo/pull/7\n";
+
+    const result = parsePrMerge(stdout, 7, "squash");
+
+    expect(result.method).toBe("rebase");
   });
 });
 
@@ -72,6 +116,7 @@ describe("formatPrMerge", () => {
       merged: true,
       method: "squash",
       url: "https://github.com/owner/repo/pull/42",
+      state: "merged",
     };
     expect(formatPrMerge(data)).toBe(
       "Merged PR #42 via squash: https://github.com/owner/repo/pull/42",
@@ -84,6 +129,7 @@ describe("formatPrMerge", () => {
       merged: true,
       method: "rebase",
       url: "https://github.com/owner/repo/pull/7",
+      state: "merged",
     };
     expect(formatPrMerge(data)).toBe(
       "Merged PR #7 via rebase: https://github.com/owner/repo/pull/7",
@@ -96,9 +142,50 @@ describe("formatPrMerge", () => {
       merged: true,
       method: "merge",
       url: "https://github.com/owner/repo/pull/100",
+      state: "merged",
     };
     expect(formatPrMerge(data)).toBe(
       "Merged PR #100 via merge: https://github.com/owner/repo/pull/100",
+    );
+  });
+
+  it("formats merge result with merge commit SHA", () => {
+    const data: PrMergeResult = {
+      number: 42,
+      merged: true,
+      method: "squash",
+      url: "https://github.com/owner/repo/pull/42",
+      state: "merged",
+      mergeCommitSha: "abc1234567890def1234567890abcdef12345678",
+    };
+    const output = formatPrMerge(data);
+    expect(output).toContain("[abc1234]");
+    expect(output).toContain("Merged PR #42 via squash");
+  });
+
+  it("formats auto-merge enabled state", () => {
+    const data: PrMergeResult = {
+      number: 10,
+      merged: false,
+      method: "squash",
+      url: "https://github.com/owner/repo/pull/10",
+      state: "auto-merge-enabled",
+    };
+    expect(formatPrMerge(data)).toBe(
+      "Auto-merge enabled for PR #10 via squash: https://github.com/owner/repo/pull/10",
+    );
+  });
+
+  it("formats auto-merge disabled state", () => {
+    const data: PrMergeResult = {
+      number: 10,
+      merged: false,
+      method: "squash",
+      url: "https://github.com/owner/repo/pull/10",
+      state: "auto-merge-disabled",
+    };
+    expect(formatPrMerge(data)).toBe(
+      "Auto-merge disabled for PR #10: https://github.com/owner/repo/pull/10",
     );
   });
 });

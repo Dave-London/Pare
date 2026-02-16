@@ -134,6 +134,12 @@ function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
     const isDeleted = /^deleted file mode/m.test(patch);
     const isRenamed = /^rename from /m.test(patch) || /^similarity index/m.test(patch);
 
+    // Detect binary files from diff markers
+    const isBinary =
+      /^Binary files .* differ$/m.test(patch) ||
+      /^GIT binary patch$/m.test(patch) ||
+      /^Binary file .* has changed$/m.test(patch);
+
     // S-gap: Extract file mode
     const modeMatch = patch.match(/(?:new|old) file mode (\d+)/);
     const mode = modeMatch ? modeMatch[1] : undefined;
@@ -173,6 +179,7 @@ function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
       deletions,
       ...(isRenamed && oldFile !== newFile ? { oldFile } : {}),
       ...(mode ? { mode } : {}),
+      ...(isBinary ? { binary: true } : {}),
     };
   });
 

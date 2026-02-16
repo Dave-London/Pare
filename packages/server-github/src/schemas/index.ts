@@ -78,6 +78,10 @@ export const PrMergeResultSchema = z.object({
   url: z.string(),
   // S-gap: Add branchDeleted field
   branchDeleted: z.boolean().optional(),
+  /** Merge commit SHA when available from the output. */
+  mergeCommitSha: z.string().optional(),
+  /** Distinguishes immediate merge vs auto-merge enabled. */
+  state: z.enum(["merged", "auto-merge-enabled", "auto-merge-disabled"]).optional(),
 });
 
 export type PrMergeResult = z.infer<typeof PrMergeResultSchema>;
@@ -112,6 +116,8 @@ export const PrDiffFileSchema = z.object({
     .optional(),
   // S-gap: Add mode/permissions field
   mode: z.string().optional(),
+  /** True when the file is binary (e.g. images, compiled assets). */
+  binary: z.boolean().optional(),
 });
 
 /** Zod schema for structured pr-diff output. */
@@ -292,6 +298,14 @@ export const RunViewResultSchema = z.object({
   url: z.string(),
   createdAt: z.string().optional(),
   jobsTotal: z.number().optional(),
+  /** The HEAD commit SHA for this run. */
+  headSha: z.string().optional(),
+  /** The event that triggered the run (e.g. push, pull_request). */
+  event: z.string().optional(),
+  /** When the run actually started executing. */
+  startedAt: z.string().optional(),
+  /** The attempt number for re-runs (1 = first attempt). */
+  attempt: z.number().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;
@@ -386,6 +400,8 @@ export type ReleaseListResult = z.infer<typeof ReleaseListResultSchema>;
 /** Zod schema for structured gh api output. */
 export const ApiResultSchema = z.object({
   status: z.number(),
+  /** Real HTTP status code parsed from response headers. */
+  statusCode: z.number(),
   body: z.unknown(),
   endpoint: z.string(),
   method: z.string(),
