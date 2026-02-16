@@ -30,6 +30,18 @@ export function registerDocTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Skip building documentation for dependencies (--no-deps)"),
+        documentPrivateItems: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Include private items in the generated documentation (--document-private-items)",
+          ),
+        workspace: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Generate documentation for all packages in the workspace (--workspace)"),
         compact: z
           .boolean()
           .optional()
@@ -40,11 +52,13 @@ export function registerDocTool(server: McpServer) {
       },
       outputSchema: CargoDocResultSchema,
     },
-    async ({ path, open, noDeps, compact }) => {
+    async ({ path, open, noDeps, documentPrivateItems, workspace, compact }) => {
       const cwd = path || process.cwd();
       const args = ["doc"];
       if (noDeps) args.push("--no-deps");
       if (open) args.push("--open");
+      if (documentPrivateItems) args.push("--document-private-items");
+      if (workspace) args.push("--workspace");
 
       const result = await cargo(args, cwd);
       const data = parseCargoDocOutput(result.stderr, result.exitCode);

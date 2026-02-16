@@ -25,6 +25,16 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check only without modifying files (--check)"),
+        all: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Format all packages in the workspace (--all)"),
+        backup: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Create backup files before formatting (--backup)"),
         compact: z
           .boolean()
           .optional()
@@ -35,10 +45,12 @@ export function registerFmtTool(server: McpServer) {
       },
       outputSchema: CargoFmtResultSchema,
     },
-    async ({ path, check, compact }) => {
+    async ({ path, check, all, backup, compact }) => {
       const cwd = path || process.cwd();
       const args = ["fmt"];
       if (check) args.push("--check");
+      if (all) args.push("--all");
+      if (backup) args.push("--", "--backup");
 
       const result = await cargo(args, cwd);
       const data = parseCargoFmtOutput(result.stdout, result.stderr, result.exitCode, !!check);

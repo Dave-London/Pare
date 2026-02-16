@@ -20,6 +20,21 @@ export function registerClippyTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Project root path (default: cwd)"),
+        noDeps: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run clippy only on the specified package, not its dependencies (--no-deps)"),
+        allTargets: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Check all targets (lib, bins, tests, benches, examples) (--all-targets)"),
+        release: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run clippy in release mode with optimizations (--release)"),
         compact: z
           .boolean()
           .optional()
@@ -30,9 +45,12 @@ export function registerClippyTool(server: McpServer) {
       },
       outputSchema: CargoClippyResultSchema,
     },
-    async ({ path, compact }) => {
+    async ({ path, noDeps, allTargets, release, compact }) => {
       const cwd = path || process.cwd();
       const args = ["clippy", "--message-format=json"];
+      if (noDeps) args.push("--no-deps");
+      if (allTargets) args.push("--all-targets");
+      if (release) args.push("--release");
 
       const result = await cargo(args, cwd);
       const data = parseCargoClippyJson(result.stdout);

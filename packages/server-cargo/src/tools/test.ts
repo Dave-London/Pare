@@ -25,6 +25,39 @@ export function registerTestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test name filter pattern"),
+        noFailFast: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run all tests regardless of failures (--no-fail-fast)"),
+        noRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Compile tests but do not run them (--no-run)"),
+        release: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Test in release mode with optimizations (--release)"),
+        ignored: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run only ignored tests (-- --ignored)"),
+        includeIgnored: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Run both ignored and non-ignored tests (-- --include-ignored)"),
+        doc: z.boolean().optional().default(false).describe("Run only documentation tests (--doc)"),
+        exact: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Exactly match the test name filter instead of substring matching (-- --exact)",
+          ),
         compact: z
           .boolean()
           .optional()
@@ -35,12 +68,34 @@ export function registerTestTool(server: McpServer) {
       },
       outputSchema: CargoTestResultSchema,
     },
-    async ({ path, filter, compact }) => {
+    async ({
+      path,
+      filter,
+      noFailFast,
+      noRun,
+      release,
+      ignored,
+      includeIgnored,
+      doc,
+      exact,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
       if (filter) assertNoFlagInjection(filter, "filter");
 
       const args = ["test"];
+      if (noFailFast) args.push("--no-fail-fast");
+      if (noRun) args.push("--no-run");
+      if (release) args.push("--release");
+      if (doc) args.push("--doc");
       if (filter) args.push(filter);
+
+      // Flags that go after `--` (test binary args)
+      const testArgs: string[] = [];
+      if (ignored) testArgs.push("--ignored");
+      if (includeIgnored) testArgs.push("--include-ignored");
+      if (exact) testArgs.push("--exact");
+      if (testArgs.length > 0) args.push("--", ...testArgs);
 
       const result = await cargo(args, cwd);
       const data = parseCargoTestOutput(result.stdout, result.exitCode);
