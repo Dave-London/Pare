@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePush, parsePushError } from "../src/lib/parsers.js";
+import { parsePush } from "../src/lib/parsers.js";
 import { formatPush } from "../src/lib/formatters.js";
 import type { GitPush } from "../src/schemas/index.js";
 
