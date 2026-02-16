@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.8.3
+
+### Patch Changes
+
+- [#428](https://github.com/Dave-London/Pare/pull/428) [`ac29d96`](https://github.com/Dave-London/Pare/commit/ac29d969a284ce14a67b45e24583cb57f591d210) Thanks [@Dave-London](https://github.com/Dave-London)! - Align shared package version with server packages at 0.8.3
+
 ## 0.8.2
 
 ### Patch Changes
