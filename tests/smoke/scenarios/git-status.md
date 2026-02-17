@@ -27,18 +27,18 @@
 
 ### Happy path / core functionality
 
-| #   | Scenario                                    | Params     | Expected Output                                                                        | Priority | Status |
-| --- | ------------------------------------------- | ---------- | -------------------------------------------------------------------------------------- | -------- | ------ |
-| 1   | Clean repo, no changes                      | `{ path }` | `{ clean: true, staged: [], modified: [], deleted: [], untracked: [], conflicts: [] }` | P0       | mocked |
-| 2   | Staged files (added)                        | `{ path }` | `staged: [{ file, status: "added" }]`, `clean: false`                                  | P0       | mocked |
-| 3   | Staged files (modified)                     | `{ path }` | `staged: [{ file, status: "modified" }]`                                               | P0       | mocked |
-| 4   | Staged files (deleted)                      | `{ path }` | `staged: [{ file, status: "deleted" }]`                                                | P0       | mocked |
-| 5   | Staged rename                               | `{ path }` | `staged: [{ file: "new", status: "renamed", oldFile: "old" }]`                         | P0       | mocked |
-| 6   | Worktree modified files                     | `{ path }` | `modified: ["file.txt"]`, staged empty                                                 | P0       | mocked |
-| 7   | Worktree deleted files                      | `{ path }` | `deleted: ["file.txt"]`                                                                | P0       | mocked |
-| 8   | Untracked files                             | `{ path }` | `untracked: ["new-file.txt"]`                                                          | P0       | mocked |
-| 9   | Mixed state (staged + modified + untracked) | `{ path }` | All arrays populated, `clean: false`                                                   | P0       | mocked |
-| 10  | Both staged and worktree modified (MM)      | `{ path }` | File in both `staged` and `modified`                                                   | P0       | mocked |
+| #   | Scenario                                    | Params     | Expected Output                                                                        | Priority | Status   |
+| --- | ------------------------------------------- | ---------- | -------------------------------------------------------------------------------------- | -------- | -------- |
+| 1   | Clean repo, no changes                      | `{ path }` | `{ clean: true, staged: [], modified: [], deleted: [], untracked: [], conflicts: [] }` | P0       | recorded |
+| 2   | Staged files (added)                        | `{ path }` | `staged: [{ file, status: "added" }]`, `clean: false`                                  | P0       | recorded |
+| 3   | Staged files (modified)                     | `{ path }` | `staged: [{ file, status: "modified" }]`                                               | P0       | recorded |
+| 4   | Staged files (deleted)                      | `{ path }` | `staged: [{ file, status: "deleted" }]`                                                | P0       | recorded |
+| 5   | Staged rename                               | `{ path }` | `staged: [{ file: "new", status: "renamed", oldFile: "old" }]`                         | P0       | recorded |
+| 6   | Worktree modified files                     | `{ path }` | `modified: ["file.txt"]`, staged empty                                                 | P0       | recorded |
+| 7   | Worktree deleted files                      | `{ path }` | `deleted: ["file.txt"]`                                                                | P0       | recorded |
+| 8   | Untracked files                             | `{ path }` | `untracked: ["new-file.txt"]`                                                          | P0       | recorded |
+| 9   | Mixed state (staged + modified + untracked) | `{ path }` | All arrays populated, `clean: false`                                                   | P0       | recorded |
+| 10  | Both staged and worktree modified (MM)      | `{ path }` | File in both `staged` and `modified`                                                   | P0       | recorded |
 
 ### Branch & upstream
 
@@ -54,11 +54,11 @@
 
 ### Conflicts
 
-| #   | Scenario                 | Params     | Expected Output               | Priority | Status |
-| --- | ------------------------ | ---------- | ----------------------------- | -------- | ------ |
-| 18  | Merge conflict (UU)      | `{ path }` | `conflicts: ["file.txt"]`     | P0       | mocked |
-| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | mocked |
-| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | mocked |
+| #   | Scenario                 | Params     | Expected Output               | Priority | Status   |
+| --- | ------------------------ | ---------- | ----------------------------- | -------- | -------- |
+| 18  | Merge conflict (UU)      | `{ path }` | `conflicts: ["file.txt"]`     | P0       | recorded |
+| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | mocked   |
+| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | mocked   |
 
 ### Optional params — untrackedFiles
 
@@ -119,7 +119,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 13     | 13     | 0        | 0        |
+| P0        | 13     | 13     | 11       | 0        |
 | P1        | 16     | 16     | 0        | 0        |
 | P2        | 12     | 12     | 0        | 0        |
-| **Total** | **41** | **41** | **0**    | **0**    |
+| **Total** | **41** | **41** | **11**   | **0**    |

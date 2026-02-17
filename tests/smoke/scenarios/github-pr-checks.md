@@ -22,21 +22,21 @@
 
 ### Happy path / core functionality
 
-| #   | Scenario                | Params              | Expected Output                                                             | Priority | Status |
-| --- | ----------------------- | ------------------- | --------------------------------------------------------------------------- | -------- | ------ |
-| 1   | All checks passing      | `{ number: "123" }` | `checks` array with all `bucket: "pass"`, `summary.passed == summary.total` | P0       | mocked |
-| 2   | Mixed pass/fail/pending | `{ number: "123" }` | `checks` with various buckets, `summary` counts match                       | P0       | mocked |
-| 3   | All checks pending      | `{ number: "123" }` | All `bucket: "pending"`, `summary.pending == summary.total`                 | P0       | mocked |
-| 4   | Single check only       | `{ number: "123" }` | `checks.length == 1`, `summary.total == 1`                                  | P1       | mocked |
-| 5   | Many checks (10+)       | `{ number: "123" }` | All checks parsed, summary computed correctly                               | P1       | mocked |
+| #   | Scenario                | Params              | Expected Output                                                             | Priority | Status   |
+| --- | ----------------------- | ------------------- | --------------------------------------------------------------------------- | -------- | -------- |
+| 1   | All checks passing      | `{ number: "123" }` | `checks` array with all `bucket: "pass"`, `summary.passed == summary.total` | P0       | recorded |
+| 2   | Mixed pass/fail/pending | `{ number: "123" }` | `checks` with various buckets, `summary` counts match                       | P0       | mocked   |
+| 3   | All checks pending      | `{ number: "123" }` | All `bucket: "pending"`, `summary.pending == summary.total`                 | P0       | mocked   |
+| 4   | Single check only       | `{ number: "123" }` | `checks.length == 1`, `summary.total == 1`                                  | P1       | mocked   |
+| 5   | Many checks (10+)       | `{ number: "123" }` | All checks parsed, summary computed correctly                               | P1       | recorded |
 
 ### Empty / no checks — THE BUG (#529)
 
-| #   | Scenario                        | Params              | Expected Output                                                | Priority | Status |
-| --- | ------------------------------- | ------------------- | -------------------------------------------------------------- | -------- | ------ |
-| 6   | PR with no CI checks configured | `{ number: "123" }` | `{ checks: [], summary: { total: 0, ... } }` — NOT a Zod crash | P0       | mocked |
-| 7   | Empty JSON array from gh        | `{ number: "123" }` | Same as #6                                                     | P0       | mocked |
-| 8   | Empty string stdout             | `{ number: "123" }` | Graceful error or empty result                                 | P0       | mocked |
+| #   | Scenario                        | Params              | Expected Output                                                | Priority | Status   |
+| --- | ------------------------------- | ------------------- | -------------------------------------------------------------- | -------- | -------- |
+| 6   | PR with no CI checks configured | `{ number: "123" }` | `{ checks: [], summary: { total: 0, ... } }` — NOT a Zod crash | P0       | recorded |
+| 7   | Empty JSON array from gh        | `{ number: "123" }` | Same as #6                                                     | P0       | mocked   |
+| 8   | Empty string stdout             | `{ number: "123" }` | Graceful error or empty result                                 | P0       | mocked   |
 
 ### Exit code handling
 
@@ -80,10 +80,10 @@
 
 ### Compact output
 
-| #   | Scenario                    | Params                             | Expected Output                        | Priority | Status |
-| --- | --------------------------- | ---------------------------------- | -------------------------------------- | -------- | ------ |
-| 24  | Compact output with checks  | `{ number: "123", compact: true }` | `compactPrChecksMap` applied correctly | P2       | mocked |
-| 25  | Compact output empty checks | `{ number: "123", compact: true }` | Compact output doesn't crash on empty  | P0       | mocked |
+| #   | Scenario                    | Params                             | Expected Output                        | Priority | Status   |
+| --- | --------------------------- | ---------------------------------- | -------------------------------------- | -------- | -------- |
+| 24  | Compact output with checks  | `{ number: "123", compact: true }` | `compactPrChecksMap` applied correctly | P2       | mocked   |
+| 25  | Compact output empty checks | `{ number: "123", compact: true }` | Compact output doesn't crash on empty  | P0       | recorded |
 
 ### Schema validation
 
@@ -103,7 +103,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 12     | 12     | 0        | 0        |
-| P1        | 12     | 12     | 0        | 0        |
+| P0        | 12     | 12     | 3        | 0        |
+| P1        | 12     | 12     | 1        | 0        |
 | P2        | 5      | 5      | 0        | 0        |
-| **Total** | **29** | **29** | **0**    | **0**    |
+| **Total** | **29** | **29** | **4**    | **0**    |
