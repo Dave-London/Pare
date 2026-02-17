@@ -50,6 +50,11 @@ jobs:
       # pool (ENOENT on coverage temp files). Tests still run in build-and-test.
       - run: pnpm turbo run test --filter='!@paretools/git' --continue -- --coverage
 
+      - uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
   lint:
     runs-on: ubuntu-latest
     steps:
