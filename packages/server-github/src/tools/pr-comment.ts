@@ -58,6 +58,7 @@ export function registerPrCommentTool(server: McpServer) {
     async ({ number, body, editLast, deleteLast, createIfNone, repo, path }) => {
       const cwd = path || process.cwd();
 
+      assertNoFlagInjection(body, "body");
       if (repo) assertNoFlagInjection(repo, "repo");
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
