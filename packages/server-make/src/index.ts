@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/make", version: "0.8.1" },
   {
     instructions:
-      "Structured Make/Just task runner operations (run, list). Auto-detects make vs just. Returns typed JSON. Use instead of running make/just in the terminal.",
+      "Structured Make/Just task runner operations (run, list). Auto-detects make vs just. Returns typed JSON.",
   },
 );
 

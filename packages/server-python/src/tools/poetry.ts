@@ -14,16 +14,11 @@ export function registerPoetryTool(server: McpServer) {
       title: "Poetry",
       description:
         "Runs Poetry commands and returns structured output. " +
-        "Supports install, add, remove, show, build, update, lock, check, and export actions. " +
-        "Use instead of running `poetry` in the terminal.",
+        "Supports install, add, remove, show, build, update, lock, check, and export actions.",
       inputSchema: {
         action: z
           .enum(["install", "add", "remove", "show", "build", "update", "lock", "check", "export"])
-          .describe(
-            "Poetry action: install (poetry install), add (poetry add <packages>), " +
-              "remove (poetry remove <packages>), show (poetry show), build (poetry build), " +
-              "update (poetry update), lock (poetry lock), check (poetry check), export (poetry export)",
-          ),
+          .describe("Poetry action to perform"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -53,11 +48,7 @@ export function registerPoetryTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Exclude hashes in exported requirements (--without-hashes)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         dryRun: z
           .boolean()
           .optional()
@@ -78,13 +69,7 @@ export function registerPoetryTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show dependency tree, for show action (--tree)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PoetryResultSchema,
     },

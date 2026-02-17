@@ -13,7 +13,7 @@ export function registerStatsTool(server: McpServer) {
     {
       title: "Docker Stats",
       description:
-        "Returns a snapshot of container resource usage (CPU, memory, network/block I/O, PIDs) as structured data. Use instead of running `docker stats` in the terminal.",
+        "Returns a snapshot of container resource usage (CPU, memory, network/block I/O, PIDs) as structured data.",
       inputSchema: {
         containers: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
@@ -33,14 +33,8 @@ export function registerStatsTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Working directory (default: cwd), consistent with all other Docker tools"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+          .describe("Working directory, consistent with all other Docker tools"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerStatsSchema,
     },

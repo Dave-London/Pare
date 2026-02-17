@@ -12,14 +12,9 @@ export function registerNetworkLsTool(server: McpServer) {
     "network-ls",
     {
       title: "Docker Network LS",
-      description:
-        "Lists Docker networks with structured driver and scope information. Use instead of running `docker network ls` in the terminal.",
+      description: "Lists Docker networks with structured driver and scope information.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         filter: z
           .union([
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -34,13 +29,7 @@ export function registerNetworkLsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate network IDs (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerNetworkLsSchema,
     },

@@ -23,7 +23,7 @@ export function registerReleaseCreateTool(server: McpServer) {
     {
       title: "Release Create",
       description:
-        "Creates a new GitHub release with optional asset uploads. Returns structured data with tag, URL, draft, prerelease status, and assets uploaded count. Use instead of running `gh release create` in the terminal.",
+        "Creates a new GitHub release with optional asset uploads. Returns structured data with tag, URL, draft, prerelease status, and assets uploaded count.",
       inputSchema: {
         tag: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Tag name for the release"),
         title: z
@@ -88,11 +88,7 @@ export function registerReleaseCreateTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Start a release discussion in this category (--discussion-category)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: ReleaseCreateResultSchema,
     },

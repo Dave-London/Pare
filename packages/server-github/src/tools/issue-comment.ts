@@ -23,7 +23,7 @@ export function registerIssueCommentTool(server: McpServer) {
     {
       title: "Issue Comment",
       description:
-        "Adds, edits, or deletes a comment on an issue. Returns structured data with the comment URL, operation type, comment ID, issue number, and body echo. Use instead of running `gh issue comment` in the terminal.",
+        "Adds, edits, or deletes a comment on an issue. Returns structured data with the comment URL, operation type, comment ID, issue number, and body echo.",
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),
@@ -47,11 +47,7 @@ export function registerIssueCommentTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: CommentResultSchema,
     },

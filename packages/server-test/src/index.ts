@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/test", version: "0.8.1" },
   {
     instructions:
-      "Structured test runner operations (run, coverage). Auto-detects pytest, jest, vitest, and mocha. Use instead of running test commands via bash. Returns typed JSON with structured pass/fail results and failure details.",
+      "Structured test runner operations (run, coverage). Auto-detects pytest, jest, vitest, and mocha. Returns typed JSON with structured pass/fail results and failure details.",
   },
 );
 

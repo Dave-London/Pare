@@ -13,13 +13,9 @@ export function registerStatusTool(server: McpServer) {
     {
       title: "Git Status",
       description:
-        "Returns the working tree status as structured data (branch, staged, modified, untracked, conflicts). Use instead of running `git status` in the terminal.",
+        "Returns the working tree status as structured data (branch, staged, modified, untracked, conflicts).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         pathspec: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

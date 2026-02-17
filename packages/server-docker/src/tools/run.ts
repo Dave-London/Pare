@@ -14,7 +14,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Docker Run",
       description:
-        "Runs a Docker container from an image and returns structured container ID and status. Use instead of running `docker run` in the terminal.",
+        "Runs a Docker container from an image and returns structured container ID and status.",
       inputSchema: {
         image: z
           .string()
@@ -114,18 +114,8 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Mount the container root filesystem as read-only (default: false)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerRunSchema,
     },

@@ -22,8 +22,7 @@ export function registerNvmTool(server: McpServer) {
         "Manages Node.js versions via nvm. " +
         "Supports listing installed versions, showing the current version, listing remote versions, " +
         "and executing commands with a specific Node.js version. " +
-        "Supports both Unix nvm and nvm-windows. " +
-        "Use instead of running `nvm` commands in the terminal.",
+        "Supports both Unix nvm and nvm-windows.",
       inputSchema: {
         action: z
           .enum(["list", "current", "ls-remote", "exec", "version"])
@@ -32,10 +31,7 @@ export function registerNvmTool(server: McpServer) {
               "'ls-remote' lists available remote versions, 'exec' runs a command with a specific Node version, " +
               "'version' resolves a version alias/range without installing",
           ),
-        path: z
-          .string()
-          .optional()
-          .describe("Working directory for .nvmrc detection (default: cwd)"),
+        path: z.string().optional().describe("Working directory for .nvmrc detection"),
         version: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

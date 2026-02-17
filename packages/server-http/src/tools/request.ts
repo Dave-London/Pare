@@ -21,7 +21,7 @@ export function registerRequestTool(server: McpServer) {
     {
       title: "HTTP Request",
       description:
-        "Makes an HTTP request via curl and returns structured response data (status, headers, body, timing). Use instead of running `curl` in the terminal.",
+        "Makes an HTTP request via curl and returns structured response data (status, headers, body, timing).",
       inputSchema: {
         url: z
           .string()
@@ -111,18 +111,8 @@ export function registerRequestTool(server: McpServer) {
           .describe(
             "Custom DNS resolution (--resolve). Format: 'host:port:addr' (e.g., 'example.com:443:127.0.0.1')",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
       },
       outputSchema: HttpResponseSchema,
     },

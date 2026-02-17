@@ -12,8 +12,7 @@ export function registerImagesTool(server: McpServer) {
     "images",
     {
       title: "Docker Images",
-      description:
-        "Lists Docker images with structured repository, tag, size, and creation info. Use instead of running `docker images` in the terminal.",
+      description: "Lists Docker images with structured repository, tag, size, and creation info.",
       inputSchema: {
         all: z
           .boolean()
@@ -46,13 +45,7 @@ export function registerImagesTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate image IDs (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerImagesSchema,
     },

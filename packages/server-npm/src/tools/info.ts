@@ -16,17 +16,13 @@ export function registerInfoTool(server: McpServer) {
       title: "Package Info",
       description:
         "Shows detailed package metadata from the npm registry. " +
-        "Works with npm, pnpm, and yarn (all query the same registry). Use instead of running `npm info` or `yarn info` in the terminal.",
+        "Works with npm, pnpm, and yarn (all query the same registry).",
       inputSchema: {
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Package name to look up (e.g. 'express', 'lodash@4.17.21')"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         registry: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -44,13 +40,7 @@ export function registerInfoTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Workspace for scoped queries (maps to --workspace for npm)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
         packageManager: packageManagerInput,
       },
       outputSchema: NpmInfoSchema,

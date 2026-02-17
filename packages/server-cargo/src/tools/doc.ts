@@ -12,14 +12,9 @@ export function registerDocTool(server: McpServer) {
     "doc",
     {
       title: "Cargo Doc",
-      description:
-        "Generates Rust documentation and returns structured output with warning count. Use instead of running `cargo doc` in the terminal.",
+      description: "Generates Rust documentation and returns structured output with warning count.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         open: z
           .boolean()
           .optional()
@@ -82,13 +77,7 @@ export function registerDocTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoDocResultSchema,
     },

@@ -16,8 +16,7 @@ export function registerComposeLogsTool(server: McpServer) {
     "compose-logs",
     {
       title: "Docker Compose Logs",
-      description:
-        "Retrieves Docker Compose service logs as structured entries. Use instead of running `docker compose logs` in the terminal.",
+      description: "Retrieves Docker Compose service logs as structured entries.",
       inputSchema: {
         path: z
           .string()
@@ -81,13 +80,7 @@ export function registerComposeLogsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not prefix log lines with service name (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerComposeLogsSchema,
     },

@@ -13,9 +13,7 @@ export function registerExecTool(server: McpServer) {
     {
       title: "Docker Exec",
       description:
-        "Executes arbitrary commands inside a running Docker container and returns structured output. " +
-        "Use instead of running `docker exec` in the terminal. " +
-        "WARNING: This runs arbitrary commands inside the container. Only use on trusted containers.",
+        "Executes arbitrary commands inside a running Docker container and returns structured output. WARNING: may execute untrusted code.",
       inputSchema: {
         container: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Container name or ID"),
         command: z
@@ -68,18 +66,8 @@ export function registerExecTool(server: McpServer) {
             "Maximum number of characters to return in stdout. " +
               "Output exceeding this limit will be truncated and isTruncated set to true.",
           ),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Host working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Host working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerExecSchema,
     },

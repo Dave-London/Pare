@@ -42,7 +42,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Process Run",
       description:
-        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status). Use instead of running commands directly in the terminal.\n\n" +
+        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status).\n\n" +
         "**Security note**: The `shell` parameter enables shell-mode execution. " +
         "When shell=true, the command string is passed through the system shell " +
         "(e.g., /bin/sh or cmd.exe), enabling features like glob expansion, piping, " +
@@ -59,11 +59,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Arguments to pass to the command"),
-        cwd: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        cwd: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         timeout: z
           .number()
           .int()
@@ -107,13 +103,7 @@ export function registerRunTool(server: McpServer) {
           .enum(VALID_ENCODINGS)
           .optional()
           .describe("Output encoding for commands that produce non-UTF-8 output (default: utf-8)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
         shell: z
           .boolean()
           .optional()

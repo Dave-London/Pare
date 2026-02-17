@@ -18,7 +18,7 @@ export function registerRunViewTool(server: McpServer) {
     {
       title: "Run View",
       description:
-        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs (with steps), and workflow details. Use instead of running `gh run view` in the terminal.",
+        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs (with steps), and workflow details.",
       inputSchema: {
         id: z.number().describe("Workflow run ID"),
         logFailed: z
@@ -43,18 +43,8 @@ export function registerRunViewTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: RunViewResultSchema,
     },

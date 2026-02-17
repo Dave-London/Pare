@@ -13,7 +13,7 @@ export function registerApiTool(server: McpServer) {
     {
       title: "GitHub API",
       description:
-        "Makes arbitrary GitHub API calls via `gh api`. Supports all HTTP methods, request bodies, field parameters, pagination, and jq filtering. Returns structured data with status, parsed JSON body, endpoint, and method. Use instead of running `gh api` in the terminal.",
+        "Makes arbitrary GitHub API calls via `gh api`. Supports all HTTP methods, request bodies, field parameters, pagination, and jq filtering. Returns structured data with status, parsed JSON body, endpoint, and method.",
       inputSchema: {
         endpoint: z
           .string()
@@ -100,11 +100,7 @@ export function registerApiTool(server: McpServer) {
           .record(z.string(), z.unknown())
           .optional()
           .describe("GraphQL variables as key-value pairs. Only used with `query` parameter."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: ApiResultSchema,
     },

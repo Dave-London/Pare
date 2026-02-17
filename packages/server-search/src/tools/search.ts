@@ -13,7 +13,7 @@ export function registerSearchTool(server: McpServer) {
     {
       title: "Code Search",
       description:
-        "Searches file contents using ripgrep with structured JSON output. Returns match locations with file, line, column, matched text, and line content. Use instead of running `rg` or `grep` in the terminal.",
+        "Searches file contents using ripgrep with structured JSON output. Returns match locations with file, line, column, matched text, and line content.",
       inputSchema: {
         pattern: z
           .string()
@@ -23,7 +23,7 @@ export function registerSearchTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory or file to search in (default: cwd)"),
+          .describe("Directory or file to search in"),
         glob: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -72,13 +72,7 @@ export function registerSearchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: SearchResultSchema,
     },

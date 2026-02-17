@@ -13,13 +13,9 @@ export function registerWebpackTool(server: McpServer) {
     {
       title: "webpack",
       description:
-        "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings. Use instead of running `webpack` in the terminal.",
+        "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         config: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -80,13 +76,7 @@ export function registerWebpackTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional webpack flags"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: WebpackResultSchema,
     },

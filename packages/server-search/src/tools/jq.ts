@@ -13,7 +13,7 @@ export function registerJqTool(server: McpServer) {
     {
       title: "JSON Processor",
       description:
-        "Processes and transforms JSON using jq expressions. Accepts JSON from a file path or inline string. Returns the transformed result. Use instead of running `jq` in the terminal.",
+        "Processes and transforms JSON using jq expressions. Accepts JSON from a file path or inline string. Returns the transformed result.",
       inputSchema: {
         expression: z
           .string()
@@ -76,13 +76,7 @@ export function registerJqTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't print newlines between outputs (--join-output)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: JqResultSchema,
     },

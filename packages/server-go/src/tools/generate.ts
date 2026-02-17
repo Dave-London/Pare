@@ -13,13 +13,9 @@ export function registerGenerateTool(server: McpServer) {
     {
       title: "Go Generate",
       description:
-        "Runs go generate directives in Go source files. Use instead of running `go generate` in the terminal. WARNING: `go generate` executes arbitrary commands embedded in //go:generate directives in source files. Only use this tool on trusted code that you have reviewed.",
+        "Runs go generate directives in Go source files. WARNING: may execute untrusted code.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -69,13 +65,7 @@ export function registerGenerateTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Build tags for conditional compilation (-tags)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoGenerateResultSchema,
     },

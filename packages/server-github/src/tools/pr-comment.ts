@@ -23,7 +23,7 @@ export function registerPrCommentTool(server: McpServer) {
     {
       title: "PR Comment",
       description:
-        "Adds, edits, or deletes a comment on a pull request. Returns structured data with the comment URL, operation type, comment ID, and body echo. Use instead of running `gh pr comment` in the terminal.",
+        "Adds, edits, or deletes a comment on a pull request. Returns structured data with the comment URL, operation type, comment ID, and body echo.",
       inputSchema: {
         number: z
           .string()
@@ -47,11 +47,7 @@ export function registerPrCommentTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: CommentResultSchema,
     },

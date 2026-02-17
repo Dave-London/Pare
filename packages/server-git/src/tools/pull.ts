@@ -13,13 +13,9 @@ export function registerPullTool(server: McpServer) {
     {
       title: "Git Pull",
       description:
-        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, conflicts, up-to-date and fast-forward indicators. Use instead of running `git pull` in the terminal.",
+        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, conflicts, up-to-date and fast-forward indicators.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         remote: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

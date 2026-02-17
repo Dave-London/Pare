@@ -13,7 +13,7 @@ export function registerInspectTool(server: McpServer) {
     {
       title: "Docker Inspect",
       description:
-        "Shows detailed container or image information with structured state, image, and platform data. Use instead of running `docker inspect` in the terminal.",
+        "Shows detailed container or image information with structured state, image, and platform data.",
       inputSchema: {
         target: z
           .union([
@@ -32,18 +32,8 @@ export function registerInspectTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Display total file sizes (-s, --size)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerInspectSchema,
     },

@@ -12,14 +12,9 @@ export function registerViteBuildTool(server: McpServer) {
     "vite-build",
     {
       title: "Vite Build",
-      description:
-        "Runs Vite production build and returns structured output files with sizes. Use instead of running `vite build` in the terminal.",
+      description: "Runs Vite production build and returns structured output files with sizes.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         mode: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -80,13 +75,7 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional Vite build flags"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: ViteBuildResultSchema,
     },

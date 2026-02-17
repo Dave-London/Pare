@@ -12,14 +12,9 @@ export function registerRunTool(server: McpServer) {
     "run",
     {
       title: "Go Run",
-      description:
-        "Runs a Go program and returns structured output (stdout, stderr, exit code). Use instead of running `go run` in the terminal.",
+      description: "Runs a Go program and returns structured output (stdout, stderr, exit code).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         file: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -91,13 +86,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(200)
           .describe("When stream is true, keep this many trailing stdout/stderr lines"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoRunResultSchema,
     },

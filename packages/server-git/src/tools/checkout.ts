@@ -13,13 +13,9 @@ export function registerCheckoutTool(server: McpServer) {
     {
       title: "Git Checkout",
       description:
-        "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status. Use instead of running `git checkout` in the terminal.",
+        "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         ref: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

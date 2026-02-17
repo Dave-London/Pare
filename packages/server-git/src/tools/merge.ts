@@ -13,13 +13,9 @@ export function registerMergeTool(server: McpServer) {
     {
       title: "Git Merge",
       description:
-        "Merges a branch into the current branch. Supports abort, continue, and quit actions. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash. Use instead of running `git merge` in the terminal.",
+        "Merges a branch into the current branch. Supports abort, continue, and quit actions. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),
         noFf: z.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),

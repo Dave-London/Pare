@@ -13,13 +13,9 @@ export function registerBlameTool(server: McpServer) {
     {
       title: "Git Blame",
       description:
-        "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, email, date) and their attributed lines. Use instead of running `git blame` in the terminal.",
+        "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, email, date) and their attributed lines.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
         startLine: z.number().optional().describe("Start line number for blame range"),
         endLine: z.number().optional().describe("End line number for blame range"),
@@ -55,13 +51,7 @@ export function registerBlameTool(server: McpServer) {
         ignoreWhitespace: z.boolean().optional().describe("Ignore whitespace changes (-w)"),
         reverse: z.boolean().optional().describe("Find when lines were removed (--reverse)"),
         showStats: z.boolean().optional().describe("Include work-amount statistics (--show-stats)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitBlameSchema,
     },

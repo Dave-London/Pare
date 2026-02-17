@@ -13,13 +13,9 @@ export function registerBiomeCheckTool(server: McpServer) {
     {
       title: "Biome Check",
       description:
-        "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `biome check` in the terminal.",
+        "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -69,13 +65,7 @@ export function registerBiomeCheckTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Rules to skip (maps to --skip)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: LintResultSchema,
     },

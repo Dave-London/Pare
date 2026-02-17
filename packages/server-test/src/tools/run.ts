@@ -250,13 +250,9 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Run Tests",
       description:
-        "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures. Use instead of running pytest/jest/vitest/mocha in the terminal.",
+        "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -341,13 +337,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the test runner"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: TestRunSchema,
     },

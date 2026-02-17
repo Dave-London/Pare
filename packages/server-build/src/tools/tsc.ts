@@ -13,14 +13,10 @@ export function registerTscTool(server: McpServer) {
     {
       title: "TypeScript Check",
       description:
-        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). Use instead of running `tsc` in the terminal. " +
+        "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). " +
         "Note: In compact mode, diagnostics are trimmed to file, line, and code — column and message fields are omitted to save tokens.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         noEmit: z
           .boolean()
           .optional()
@@ -68,13 +64,7 @@ export function registerTscTool(server: McpServer) {
           .describe(
             "Enable or disable pretty-printed output (maps to --pretty). Set false for normalized parser-friendly output.",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: TscResultSchema,
     },

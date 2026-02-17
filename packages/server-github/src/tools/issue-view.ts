@@ -17,7 +17,7 @@ export function registerIssueViewTool(server: McpServer) {
     {
       title: "Issue View",
       description:
-        "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body. Use instead of running `gh issue view` in the terminal.",
+        "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body.",
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comments: z
@@ -30,18 +30,8 @@ export function registerIssueViewTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: IssueViewResultSchema,
     },

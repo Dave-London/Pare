@@ -23,13 +23,9 @@ export function registerRemoteTool(server: McpServer) {
     {
       title: "Git Remote",
       description:
-        "Manages remote repositories. Supports list (default), add, remove, rename, set-url, prune, and show actions. Returns structured remote data. Use instead of running `git remote` in the terminal.",
+        "Manages remote repositories. Supports list (default), add, remove, rename, set-url, prune, and show actions. Returns structured remote data.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["list", "add", "remove", "rename", "set-url", "prune", "show", "update"])
           .optional()
@@ -55,13 +51,7 @@ export function registerRemoteTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("New remote name (required for rename action)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitRemoteSchema,
     },

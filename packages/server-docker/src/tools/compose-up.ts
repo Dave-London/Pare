@@ -12,8 +12,7 @@ export function registerComposeUpTool(server: McpServer) {
     "compose-up",
     {
       title: "Docker Compose Up",
-      description:
-        "Starts Docker Compose services and returns structured status. Use instead of running `docker compose up` in the terminal.",
+      description: "Starts Docker Compose services and returns structured status.",
       inputSchema: {
         path: z
           .string()
@@ -86,13 +85,7 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run in dry-run mode without actually starting services (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerComposeUpSchema,
     },

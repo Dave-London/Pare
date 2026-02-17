@@ -11,8 +11,7 @@ export function registerLogsTool(server: McpServer) {
     "logs",
     {
       title: "Kubectl Logs",
-      description:
-        "Gets logs from a Kubernetes pod. Use instead of running `kubectl logs` in the terminal.",
+      description: "Gets logs from a Kubernetes pod.",
       inputSchema: {
         pod: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pod name"),
         namespace: z
@@ -91,13 +90,7 @@ export function registerLogsTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Attempt to parse each log line as JSON and return `logEntries`"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: KubectlLogsResultSchema,
     },

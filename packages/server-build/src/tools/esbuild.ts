@@ -17,13 +17,9 @@ export function registerEsbuildTool(server: McpServer) {
     {
       title: "esbuild",
       description:
-        "Runs the esbuild bundler and returns structured errors, warnings, and output files. Use instead of running `esbuild` in the terminal.",
+        "Runs the esbuild bundler and returns structured errors, warnings, and output files.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         entryPoints: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -114,13 +110,7 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional esbuild flags"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: EsbuildResultSchema,
     },

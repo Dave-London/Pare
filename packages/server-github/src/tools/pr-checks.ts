@@ -25,7 +25,7 @@ export function registerPrChecksTool(server: McpServer) {
     {
       title: "PR Checks",
       description:
-        "Lists check/status results for a pull request. Returns structured data with check names, states, URLs, and summary counts (passed, failed, pending). Use instead of running `gh pr checks` in the terminal.",
+        "Lists check/status results for a pull request. Returns structured data with check names, states, URLs, and summary counts (passed, failed, pending).",
       inputSchema: {
         number: z
           .string()
@@ -42,13 +42,7 @@ export function registerPrChecksTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to show only required checks (--required)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PrChecksResultSchema,
     },

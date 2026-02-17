@@ -13,13 +13,9 @@ export function registerCheckTool(server: McpServer) {
     {
       title: "Cargo Check",
       description:
-        "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking. Use instead of running `cargo check` in the terminal.",
+        "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -82,13 +78,7 @@ export function registerCheckTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoCheckResultSchema,
     },

@@ -25,14 +25,9 @@ export function registerModTidyTool(server: McpServer) {
     "mod-tidy",
     {
       title: "Go Mod Tidy",
-      description:
-        "Runs go mod tidy to add missing and remove unused module dependencies. Use instead of running `go mod tidy` in the terminal.",
+      description: "Runs go mod tidy to add missing and remove unused module dependencies.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         diff: z
           .boolean()
           .optional()
@@ -62,13 +57,7 @@ export function registerModTidyTool(server: McpServer) {
           .describe(
             "Preserve backward compatibility with the specified Go version (-compat=<version>). Example: '1.20'",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoModTidyResultSchema,
     },

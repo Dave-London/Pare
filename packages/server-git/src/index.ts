@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/git", version: "0.8.1" },
   {
     instructions:
-      "Structured git operations (status, log, diff, branch, show, add, commit, push, pull, checkout). Use instead of running git commands via bash. Returns typed JSON with significantly fewer tokens than raw CLI output.",
+      "Structured git operations (status, log, diff, branch, show, add, commit, push, pull, checkout). Returns typed JSON with significantly fewer tokens than raw CLI output.",
   },
 );
 

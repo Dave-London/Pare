@@ -13,7 +13,7 @@ export function registerCountTool(server: McpServer) {
     {
       title: "Match Count",
       description:
-        "Counts pattern matches per file using ripgrep. Returns per-file match counts and totals. Use instead of running `rg --count` or `grep -c` in the terminal.",
+        "Counts pattern matches per file using ripgrep. Returns per-file match counts and totals.",
       inputSchema: {
         pattern: z
           .string()
@@ -23,7 +23,7 @@ export function registerCountTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory or file to search in (default: cwd)"),
+          .describe("Directory or file to search in"),
         glob: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -74,13 +74,7 @@ export function registerCountTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CountResultSchema,
     },

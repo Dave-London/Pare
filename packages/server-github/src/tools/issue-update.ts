@@ -27,7 +27,7 @@ export function registerIssueUpdateTool(server: McpServer) {
         "All fields except `number` are optional — only supply the fields you want to change. " +
         "For list fields (labels, assignees, projects), use `add*` to append and `remove*` to " +
         "delete specific items without affecting others. " +
-        "Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
+        "Returns structured data with issue number and URL.",
       inputSchema: {
         // ── Target ──────────────────────────────────────────────────
         /** Issue number (integer) or full GitHub issue URL. */
@@ -36,11 +36,7 @@ export function registerIssueUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Issue number or full GitHub issue URL to update"),
         /** Repository path on disk. Defaults to cwd. */
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
 
         // ── Content fields ──────────────────────────────────────────
         /** Replace the issue title entirely. */

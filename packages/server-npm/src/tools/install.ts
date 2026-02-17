@@ -18,16 +18,11 @@ export function registerInstallTool(server: McpServer) {
       title: "Install Packages",
       description:
         "Runs npm/pnpm/yarn install and returns a structured summary of added/removed packages and vulnerabilities. " +
-        "Use instead of running `npm install`, `pnpm install`, or `yarn install` in the terminal. " +
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
         "Lifecycle scripts (preinstall/postinstall) are skipped by default for safety. " +
         "Set ignoreScripts to false if packages need postinstall scripts to work (e.g., esbuild, sharp).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         args: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

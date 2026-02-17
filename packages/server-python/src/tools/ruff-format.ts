@@ -16,9 +16,7 @@ export function registerRuffFormatTool(server: McpServer) {
     "ruff-format",
     {
       title: "ruff Format",
-      description:
-        "Runs ruff format and returns structured results (files changed, file list). " +
-        "Use instead of running `ruff format` in the terminal.",
+      description: "Runs ruff format and returns structured results (files changed, file list).",
       inputSchema: {
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -59,11 +57,7 @@ export function registerRuffFormatTool(server: McpServer) {
           .positive()
           .optional()
           .describe("Override the configured indent width (--indent-width)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         config: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -88,13 +82,7 @@ export function registerRuffFormatTool(server: McpServer) {
           .enum(["single", "double"])
           .optional()
           .describe("Quote style override for formatting"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: RuffFormatResultSchema,
     },

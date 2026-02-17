@@ -14,13 +14,9 @@ export function registerTagTool(server: McpServer) {
     {
       title: "Git Tag",
       description:
-        "Manages git tags. Supports list (default), create, and delete actions. List returns structured tag data with name, date, and message. Create supports lightweight and annotated tags. Use instead of running `git tag` in the terminal.",
+        "Manages git tags. Supports list (default), create, and delete actions. List returns structured tag data with name, date, and message. Create supports lightweight and annotated tags.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["list", "create", "delete"])
           .optional()
@@ -69,13 +65,7 @@ export function registerTagTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to tags not merged into HEAD (--no-merged)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitTagSchema,
     },

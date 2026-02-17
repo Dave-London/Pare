@@ -14,18 +14,13 @@ export function registerGetTool(server: McpServer) {
     "get",
     {
       title: "Go Get",
-      description:
-        "Downloads and installs Go packages and their dependencies. Use instead of running `go get` in the terminal.",
+      description: "Downloads and installs Go packages and their dependencies.",
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Packages to install (e.g., ['github.com/pkg/errors@latest'])"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         update: z
           .enum(["all", "patch"])
           .optional()
@@ -47,13 +42,7 @@ export function registerGetTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Download the named packages but do not install them (-d)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoGetResultSchema,
     },

@@ -13,16 +13,9 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Cargo Add",
       description:
-        "Adds dependencies to a Rust project and returns structured output. " +
-        "Use instead of running `cargo add` in the terminal. " +
-        "WARNING: Adding crates downloads and compiles third-party code which may include build scripts (build.rs). " +
-        "Only add trusted crates. Use dryRun to preview changes before committing.",
+        "Adds dependencies to a Rust project and returns structured output. WARNING: may execute untrusted code.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -104,13 +97,7 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoAddResultSchema,
     },

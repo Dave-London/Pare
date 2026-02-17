@@ -13,7 +13,7 @@ export function registerPullTool(server: McpServer) {
     {
       title: "Docker Pull",
       description:
-        "Pulls a Docker image from a registry and returns structured result with digest info. Use instead of running `docker pull` in the terminal.",
+        "Pulls a Docker image from a registry and returns structured result with digest info.",
       inputSchema: {
         image: z
           .string()
@@ -34,18 +34,8 @@ export function registerPullTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Suppress verbose output (default: false)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerPullSchema,
     },

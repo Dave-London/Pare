@@ -17,13 +17,9 @@ export function registerFormatCheckTool(server: McpServer) {
     {
       title: "Prettier Check",
       description:
-        "Checks if files are formatted and returns a structured list of files needing formatting. Use instead of running `prettier --check` in the terminal.",
+        "Checks if files are formatted and returns a structured list of files needing formatting.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -81,13 +77,7 @@ export function registerFormatCheckTool(server: McpServer) {
           .min(1)
           .optional()
           .describe("The line length where Prettier will try to wrap"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: FormatCheckResultSchema,
     },

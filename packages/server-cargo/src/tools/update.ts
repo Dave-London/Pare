@@ -12,15 +12,9 @@ export function registerUpdateTool(server: McpServer) {
     "update",
     {
       title: "Cargo Update",
-      description:
-        "Updates dependencies in the lock file. Optionally updates a single package. " +
-        "Use instead of running `cargo update` in the terminal.",
+      description: "Updates dependencies in the lock file. Optionally updates a single package.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -71,13 +65,7 @@ export function registerUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to Cargo.toml (--manifest-path <PATH>)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoUpdateResultSchema,
     },

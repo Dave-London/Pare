@@ -12,14 +12,9 @@ export function registerBuildTool(server: McpServer) {
     "build",
     {
       title: "Go Build",
-      description:
-        "Runs go build and returns structured error list (file, line, column, message). Use instead of running `go build` in the terminal.",
+      description: "Runs go build and returns structured error list (file, line, column, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -69,13 +64,7 @@ export function registerBuildTool(server: McpServer) {
           .describe(
             'Arguments to pass to the Go compiler (-gcflags). Example: "-N -l" to disable optimizations.',
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoBuildResultSchema,
     },

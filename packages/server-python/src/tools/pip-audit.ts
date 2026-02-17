@@ -12,14 +12,9 @@ export function registerPipAuditTool(server: McpServer) {
     "pip-audit",
     {
       title: "pip Audit",
-      description:
-        "Runs pip-audit and returns a structured vulnerability report. Use instead of running `pip-audit` in the terminal.",
+      description: "Runs pip-audit and returns a structured vulnerability report.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         requirements: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -69,13 +64,7 @@ export function registerPipAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Custom package index URL for corporate/private registry support"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipAuditResultSchema,
     },

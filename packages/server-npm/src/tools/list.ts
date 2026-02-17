@@ -18,14 +18,9 @@ export function registerListTool(server: McpServer) {
       title: "List Packages",
       description:
         "Lists installed packages as structured dependency data. " +
-        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
-        "Use instead of running `npm list`, `pnpm list`, or `yarn list` in the terminal.",
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         depth: z
           .number()
           .optional()
@@ -46,13 +41,7 @@ export function registerListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Escape-hatch for PM-specific flags not modeled in the schema"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
         production: z
           .boolean()
           .optional()

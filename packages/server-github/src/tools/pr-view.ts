@@ -18,7 +18,7 @@ export function registerPrViewTool(server: McpServer) {
     {
       title: "PR View",
       description:
-        "Views a pull request by number, URL, or branch. Returns structured data with state, checks, review decision, diff stats, author, labels, draft status, assignees, milestone, and timestamps. Use instead of running `gh pr view` in the terminal.",
+        "Views a pull request by number, URL, or branch. Returns structured data with state, checks, review decision, diff stats, author, labels, draft status, assignees, milestone, and timestamps.",
       inputSchema: {
         number: z
           .string()
@@ -31,18 +31,8 @@ export function registerPrViewTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PrViewResultSchema,
     },

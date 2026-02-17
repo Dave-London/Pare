@@ -14,13 +14,9 @@ export function registerStashListTool(server: McpServer) {
     {
       title: "Git Stash List",
       description:
-        "Lists all stash entries with index, message, date, branch, and optional file change summary. Returns structured stash data. Use instead of running `git stash list` in the terminal.",
+        "Lists all stash entries with index, message, date, branch, and optional file change summary. Returns structured stash data.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         maxCount: z.number().optional().describe("Limit number of stash entries (-n/--max-count)"),
         grep: z
           .string()
@@ -44,13 +40,7 @@ export function registerStashListTool(server: McpServer) {
           .describe(
             "Include file count and change summary per stash entry. Runs an additional git stash show per entry.",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitStashListSchema,
     },

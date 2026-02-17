@@ -13,7 +13,7 @@ export function registerPrReviewTool(server: McpServer) {
     {
       title: "PR Review",
       description:
-        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event, URL, and body echo. Use instead of running `gh pr review` in the terminal.",
+        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event, URL, and body echo.",
       inputSchema: {
         number: z
           .string()
@@ -39,11 +39,7 @@ export function registerPrReviewTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Read review body from file (--body-file). Mutually exclusive with body."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: PrReviewResultSchema,
     },

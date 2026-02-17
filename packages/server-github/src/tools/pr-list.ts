@@ -17,7 +17,7 @@ export function registerPrListTool(server: McpServer) {
     {
       title: "PR List",
       description:
-        "Lists pull requests with optional filters. Returns structured list with PR number, state, title, author, branch, labels, draft status, and merge readiness. Use instead of running `gh pr list` in the terminal.",
+        "Lists pull requests with optional filters. Returns structured list with PR number, state, title, author, branch, labels, draft status, and merge readiness.",
       inputSchema: {
         state: z
           .enum(["open", "closed", "merged", "all"])
@@ -78,18 +78,8 @@ export function registerPrListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by GitHub App (--app)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PrListResultSchema,
     },

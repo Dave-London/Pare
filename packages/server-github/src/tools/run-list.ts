@@ -17,7 +17,7 @@ export function registerRunListTool(server: McpServer) {
     {
       title: "Run List",
       description:
-        "Lists workflow runs with optional filters. Returns structured list with run ID, status, conclusion, and workflow details. Use instead of running `gh run list` in the terminal.",
+        "Lists workflow runs with optional filters. Returns structured list with run ID, status, conclusion, and workflow details.",
       inputSchema: {
         limit: z
           .number()
@@ -87,18 +87,8 @@ export function registerRunListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by creation time (--created), e.g. '>2024-01-01'"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: RunListResultSchema,
     },

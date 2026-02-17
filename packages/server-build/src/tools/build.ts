@@ -25,7 +25,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Run Build",
       description:
-        "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal. " +
+        "Runs a build command and returns structured success/failure with errors and warnings. " +
         "Allowed commands: ant, bazel, bun, bunx, cargo, cmake, dotnet, esbuild, go, gradle, gradlew, make, msbuild, mvn, npm, npx, nx, pnpm, rollup, tsc, turbo, vite, webpack, yarn.",
       inputSchema: {
         command: z
@@ -37,11 +37,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .default([])
           .describe("Arguments for the build command (e.g., ['run', 'build'])"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         timeout: z
           .number()
           .int()
@@ -57,13 +53,7 @@ export function registerBuildTool(server: McpServer) {
           .describe(
             "Environment variables to set for the build process (e.g., { NODE_ENV: 'production', CI: 'true' }). Merged with existing environment.",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: BuildResultSchema,
     },

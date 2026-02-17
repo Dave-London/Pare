@@ -23,13 +23,7 @@ export function registerPyenvTool(server: McpServer) {
     "pyenv",
     {
       title: "pyenv",
-      description:
-        "Manages Python versions via pyenv. " +
-        "Actions: `versions` (list installed), `version` (show current), " +
-        "`install` (install a version), `installList` (list available versions), " +
-        "`local` (set local version), `global` (set global version), " +
-        "`uninstall` (remove an installed version). " +
-        "Use instead of running `pyenv` in the terminal.",
+      description: "Manages Python versions via pyenv.",
       inputSchema: {
         action: z.enum(ACTIONS).describe("The pyenv action to perform"),
         version: z
@@ -44,11 +38,7 @@ export function registerPyenvTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Command name for `which` action (e.g. python, pip)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         skipExisting: z
           .boolean()
           .optional()
@@ -64,13 +54,7 @@ export function registerPyenvTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Clear local/global version setting (--unset)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
       outputSchema: z.object({ action: z.string() }).passthrough(),

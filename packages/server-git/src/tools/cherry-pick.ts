@@ -13,13 +13,9 @@ export function registerCherryPickTool(server: McpServer) {
     {
       title: "Git Cherry-Pick",
       description:
-        "Applies specific commits to the current branch. Returns structured data with applied commits, any conflicts, and new commit hash. Use instead of running `git cherry-pick` in the terminal.",
+        "Applies specific commits to the current branch. Returns structured data with applied commits, any conflicts, and new commit hash.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         commits: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

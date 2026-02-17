@@ -18,13 +18,9 @@ export function registerPytestTool(server: McpServer) {
     {
       title: "pytest",
       description:
-        "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures). Use instead of running `pytest` in the terminal.",
+        "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -84,13 +80,7 @@ export function registerPytestTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to pytest config file (-c FILE)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PytestResultSchema,
     },

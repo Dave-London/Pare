@@ -13,13 +13,9 @@ export function registerVolumeLsTool(server: McpServer) {
     {
       title: "Docker Volume LS",
       description:
-        "Lists Docker volumes with structured driver, mountpoint, and scope information. Use instead of running `docker volume ls` in the terminal.",
+        "Lists Docker volumes with structured driver, mountpoint, and scope information.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         filter: z
           .union([
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -34,13 +30,7 @@ export function registerVolumeLsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Display cluster volumes from Docker Swarm (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerVolumeLsSchema,
     },

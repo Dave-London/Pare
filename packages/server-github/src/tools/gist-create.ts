@@ -27,7 +27,7 @@ export function registerGistCreateTool(server: McpServer) {
     {
       title: "Gist Create",
       description:
-        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, visibility, file names, description, and file count. Use instead of running `gh gist create` in the terminal.",
+        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, visibility, file names, description, and file count.",
       inputSchema: {
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -52,11 +52,7 @@ export function registerGistCreateTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Create as public gist (default: secret)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
       },
       outputSchema: GistCreateResultSchema,
     },
