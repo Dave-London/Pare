@@ -5,6 +5,7 @@ import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseShow } from "../lib/parsers.js";
 import { formatShow, compactShowMap, formatShowCompact } from "../lib/formatters.js";
+import type { GitShow } from "../schemas/index.js";
 import { GitShowSchema } from "../schemas/index.js";
 
 // Use NUL byte as field delimiter to prevent corruption when commit messages
@@ -80,7 +81,7 @@ export function registerShowTool(server: McpServer) {
       if (diffFilter) assertNoFlagInjection(diffFilter, "diffFilter");
 
       const typeResult = await git(["cat-file", "-t", commitRef], cwd);
-      const objectType =
+      const objectType: GitShow["objectType"] =
         typeResult.exitCode === 0
           ? (typeResult.stdout.trim() as "commit" | "tag" | "tree" | "blob")
           : "unknown";
@@ -95,8 +96,8 @@ export function registerShowTool(server: McpServer) {
         const objectSize =
           sizeResult.exitCode === 0 ? parseInt(sizeResult.stdout.trim(), 10) : undefined;
         const payload = contentResult.stdout.trimEnd();
-        const show = {
-          objectType: objectType || "unknown",
+        const show: GitShow = {
+          objectType,
           objectName: commitRef,
           ...(Number.isFinite(objectSize) ? { objectSize } : {}),
           message: payload || `${objectType} object`,

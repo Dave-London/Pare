@@ -626,7 +626,10 @@ function extractShellcheckSuggestedFixes(fix: unknown): string[] | undefined {
         ? (entry as { replacement?: unknown }).replacement
         : undefined,
     )
-    .filter((replacement): replacement is string => typeof replacement === "string" && replacement);
+    .filter(
+      (replacement): replacement is string =>
+        typeof replacement === "string" && replacement.length > 0,
+    );
 
   return values.length > 0 ? values : undefined;
 }
