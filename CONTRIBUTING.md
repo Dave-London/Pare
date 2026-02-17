@@ -14,7 +14,7 @@ Pare is a monorepo managed with **pnpm** and **TurboRepo**.
 packages/
   shared/          @paretools/shared    — Dual output helper, command runner, ANSI strip
   server-git/      @paretools/git       — Git operations (24 tools)
-  server-github/   @paretools/github    — GitHub PR/issue/run operations (22 tools)
+  server-github/   @paretools/github    — GitHub PR/issue/run operations (24 tools)
   server-docker/   @paretools/docker    — Docker & Compose operations (16 tools)
   server-python/   @paretools/python    — Python tools (14 tools)
   server-cargo/    @paretools/cargo     — Rust/Cargo tools (12 tools)

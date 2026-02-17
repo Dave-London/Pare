@@ -41,7 +41,7 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (147 tools, 16 packages)
+## Available Servers (149 tools, 16 packages)
 
 | Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -265,7 +265,7 @@ fewer tokens than CLI output.
 ```markdown
 ## MCP Servers
 
-This project uses Pare MCP servers (147 tools) for structured, token-efficient dev tool output.
+This project uses Pare MCP servers (149 tools) for structured, token-efficient dev tool output.
 Prefer Pare MCP tools over raw CLI commands for git, testing, building, linting, npm, docker, python, cargo, and go.
 Pare tools return typed JSON, saving tokens and preventing parsing errors.
 ```
@@ -284,7 +284,7 @@ alwaysApply: true
 
 When Pare MCP tools are available, prefer them over running CLI commands in the
 terminal. Pare tools (pare-git, pare-test, pare-build, pare-lint, pare-npm,
-pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 147 tools total) return
+pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 149 tools total) return
 structured JSON with up to 95% fewer tokens than raw CLI output.
 ```
 

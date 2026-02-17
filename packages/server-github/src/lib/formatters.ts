@@ -19,6 +19,8 @@ import type {
   GistCreateResult,
   ReleaseListResult,
   ApiResult,
+  LabelListResult,
+  LabelCreateResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -579,6 +581,39 @@ export function formatReleaseListCompact(data: ReleaseListCompact): string {
     lines.push(`  ${r.tag} ${r.name}${suffix}`);
   }
   return lines.join("\n");
+}
+
+// ── Label ───────────────────────────────────────────────────────────
+
+/** Formats structured label list data into human-readable text. */
+export function formatLabelList(data: LabelListResult): string {
+  if (data.total === 0) return "No labels found.";
+
+  const lines = [`${data.total} labels:`];
+  for (const l of data.labels) {
+    const desc = l.description ? ` — ${l.description}` : "";
+    const def = l.isDefault ? " (default)" : "";
+    lines.push(`  ${l.name} #${l.color}${def}${desc}`);
+  }
+  return lines.join("\n");
+}
+
+/** Formats structured label create data into human-readable text. */
+export function formatLabelCreate(data: LabelCreateResult): string {
+  const colorPart = data.color ? ` #${data.color}` : "";
+  const descPart = data.description ? ` — ${data.description}` : "";
+  const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
+  return `Created label "${data.name}"${colorPart}${descPart}${errorPart}`;
+}
+
+/** Formats run view with log output. */
+export function formatRunViewLog(data: RunViewResult): string {
+  const header = `Run #${data.id}: ${data.workflowName} (${data.status})`;
+  const logsPreview =
+    data.logs && data.logs.length > 2000
+      ? data.logs.slice(0, 2000) + "\n... (truncated)"
+      : data.logs;
+  return `${header}\n\n${logsPreview ?? ""}`;
 }
 
 // ── API ─────────────────────────────────────────────────────────────

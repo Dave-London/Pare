@@ -646,8 +646,8 @@ describe("formatRunList — expanded fields (P1 #148)", () => {
 
 // ── P1-gap #149: Run rerun attempt tracking ─────────────────────────
 
-import { formatRunRerun } from "../src/lib/formatters.js";
-import type { RunRerunResult } from "../src/schemas/index.js";
+import { formatRunRerun, formatLabelList, formatLabelCreate } from "../src/lib/formatters.js";
+import type { RunRerunResult, LabelListResult, LabelCreateResult } from "../src/schemas/index.js";
 
 describe("formatRunRerun — attempt tracking (P1 #149)", () => {
   it("formats rerun with attempt number", () => {
@@ -687,5 +687,60 @@ describe("formatRunRerun — attempt tracking (P1 #149)", () => {
 
     expect(output).not.toContain("attempt");
     expect(output).toContain("Rerun requested for run #12345");
+  });
+});
+
+// ── Label List ──────────────────────────────────────────────────────
+
+describe("formatLabelList", () => {
+  it("formats label list with all fields", () => {
+    const data: LabelListResult = {
+      labels: [
+        { name: "bug", description: "Something isn't working", color: "d73a4a", isDefault: true },
+        { name: "feature", description: "", color: "a2eeef", isDefault: false },
+      ],
+      total: 2,
+    };
+    const output = formatLabelList(data);
+
+    expect(output).toContain("2 labels:");
+    expect(output).toContain("bug #d73a4a (default)");
+    expect(output).toContain("Something isn't working");
+    expect(output).toContain("feature #a2eeef");
+    expect(output).not.toContain("feature #a2eeef (default)");
+  });
+
+  it("formats empty label list", () => {
+    const data: LabelListResult = { labels: [], total: 0 };
+    expect(formatLabelList(data)).toBe("No labels found.");
+  });
+});
+
+// ── Label Create ────────────────────────────────────────────────────
+
+describe("formatLabelCreate", () => {
+  it("formats label create result", () => {
+    const data: LabelCreateResult = {
+      name: "my-label",
+      description: "A test label",
+      color: "ff0000",
+    };
+    const output = formatLabelCreate(data);
+    expect(output).toBe('Created label "my-label" #ff0000 — A test label');
+  });
+
+  it("formats label create without optional fields", () => {
+    const data: LabelCreateResult = { name: "simple" };
+    expect(formatLabelCreate(data)).toBe('Created label "simple"');
+  });
+
+  it("formats label create with error", () => {
+    const data: LabelCreateResult = {
+      name: "dup",
+      errorType: "already-exists",
+      errorMessage: 'Label "dup" already exists',
+    };
+    const output = formatLabelCreate(data);
+    expect(output).toContain("[error: already-exists]");
   });
 });

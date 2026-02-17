@@ -10,6 +10,8 @@ import {
   parseIssueCreate,
   parseRunView,
   parseRunList,
+  parseLabelList,
+  parseLabelCreate,
 } from "../src/lib/parsers.js";
 
 describe("parsePrView", () => {
@@ -834,5 +836,77 @@ describe("parseRunRerun — attempt tracking (P1 #149)", () => {
 
     expect(result.attempt).toBeUndefined();
     expect(result.newRunUrl).toBeUndefined();
+  });
+});
+
+// ── Label parsers ────────────────────────────────────────────────────
+
+describe("parseLabelList", () => {
+  it("parses label list JSON", () => {
+    const json = JSON.stringify([
+      { name: "bug", description: "Something isn't working", color: "d73a4a", isDefault: true },
+      { name: "enhancement", description: "New feature", color: "a2eeef", isDefault: false },
+    ]);
+
+    const result = parseLabelList(json);
+
+    expect(result.total).toBe(2);
+    expect(result.labels[0]).toEqual({
+      name: "bug",
+      description: "Something isn't working",
+      color: "d73a4a",
+      isDefault: true,
+    });
+    expect(result.labels[1]).toEqual({
+      name: "enhancement",
+      description: "New feature",
+      color: "a2eeef",
+      isDefault: false,
+    });
+  });
+
+  it("handles empty list", () => {
+    const result = parseLabelList("[]");
+    expect(result.total).toBe(0);
+    expect(result.labels).toEqual([]);
+  });
+
+  it("handles missing optional fields", () => {
+    const json = JSON.stringify([{ name: "test" }]);
+
+    const result = parseLabelList(json);
+
+    expect(result.labels[0]).toEqual({
+      name: "test",
+      description: "",
+      color: "",
+      isDefault: false,
+    });
+  });
+});
+
+describe("parseLabelCreate", () => {
+  it("parses label create output with URL", () => {
+    const result = parseLabelCreate(
+      "",
+      '✓ Label "my-label" created in owner/repo\nhttps://github.com/owner/repo/labels/my-label',
+      "my-label",
+      "A description",
+      "ff0000",
+    );
+
+    expect(result.name).toBe("my-label");
+    expect(result.description).toBe("A description");
+    expect(result.color).toBe("ff0000");
+    expect(result.url).toBe("https://github.com/owner/repo/labels/my-label");
+  });
+
+  it("parses label create output without URL", () => {
+    const result = parseLabelCreate("", '✓ Label "my-label" created in owner/repo', "my-label");
+
+    expect(result.name).toBe("my-label");
+    expect(result.description).toBeUndefined();
+    expect(result.color).toBeUndefined();
+    expect(result.url).toBeUndefined();
   });
 });

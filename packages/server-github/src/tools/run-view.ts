@@ -1,9 +1,19 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+} from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunView } from "../lib/parsers.js";
-import { formatRunView, compactRunViewMap, formatRunViewCompact } from "../lib/formatters.js";
+import {
+  formatRunView,
+  formatRunViewLog,
+  compactRunViewMap,
+  formatRunViewCompact,
+} from "../lib/formatters.js";
 import { RunViewResultSchema } from "../schemas/index.js";
 
 // S-gap: Request steps in jobs for step-level detail
@@ -54,7 +64,14 @@ export function registerRunViewTool(server: McpServer) {
       if (job) assertNoFlagInjection(job, "job");
       if (repo) assertNoFlagInjection(repo, "repo");
 
-      const args = ["run", "view", String(id), "--json", RUN_VIEW_FIELDS];
+      const wantsLogs = logFailed || log;
+
+      // --log and --log-failed are mutually exclusive with --json in gh CLI.
+      // When requesting logs, skip --json and return raw log text.
+      const args = ["run", "view", String(id)];
+      if (!wantsLogs) {
+        args.push("--json", RUN_VIEW_FIELDS);
+      }
       if (logFailed) args.push("--log-failed");
       if (log) args.push("--log");
       if (attempt !== undefined) args.push("--attempt", String(attempt));
@@ -65,6 +82,20 @@ export function registerRunViewTool(server: McpServer) {
 
       if (result.exitCode !== 0) {
         throw new Error(`gh run view failed: ${result.stderr}`);
+      }
+
+      // Log mode: return raw logs as text in the logs field
+      if (wantsLogs) {
+        const data: import("../schemas/index.js").RunViewResult = {
+          id,
+          status: "completed",
+          conclusion: null,
+          workflowName: "",
+          headBranch: "",
+          url: "",
+          logs: result.stdout,
+        };
+        return dualOutput(data, formatRunViewLog);
       }
 
       const data = parseRunView(result.stdout);
