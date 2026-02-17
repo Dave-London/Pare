@@ -256,8 +256,8 @@ describe("compactPrChecks", () => {
     expect(compact.passed).toBe(1);
     expect(compact.failed).toBe(0);
     expect(compact.pending).toBe(0);
-    expect(compact).not.toHaveProperty("checks");
-    expect(compact).not.toHaveProperty("summary");
+    expect(compact).toHaveProperty("checks");
+    expect(compact).toHaveProperty("summary");
 
     const text = formatPrChecksCompact(compact);
     expect(text).toContain("PR #42");

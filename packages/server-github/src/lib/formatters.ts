@@ -140,10 +140,12 @@ export function formatPrChecks(data: PrChecksResult): string {
   return lines.join("\n");
 }
 
-/** Compact PR checks: summary only, no individual checks. */
+/** Compact PR checks: summary counts with empty checks array for schema compliance. */
 export interface PrChecksCompact {
   [key: string]: unknown;
   pr: number;
+  checks: PrChecksResult["checks"];
+  summary: PrChecksResult["summary"];
   total: number;
   passed: number;
   failed: number;
@@ -161,10 +163,14 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
   };
   return {
     pr: data.pr,
+    checks: data.checks ?? [],
+    summary,
     total: summary.total,
     passed: summary.passed,
     failed: summary.failed,
     pending: summary.pending,
+    ...(data.errorType ? { errorType: data.errorType } : {}),
+    ...(data.errorMessage ? { errorMessage: data.errorMessage } : {}),
   };
 }
 
