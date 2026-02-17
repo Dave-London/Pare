@@ -71,7 +71,7 @@ describe("@paretools/github integration", () => {
       const result = await client.callTool(
         {
           name: "pr-view",
-          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+          arguments: { number: "999999", repo: "paretools/nonexistent-repo-xyz" },
         },
         undefined,
         { timeout: CALL_TIMEOUT },
@@ -114,7 +114,7 @@ describe("@paretools/github integration", () => {
       const result = await client.callTool(
         {
           name: "pr-checks",
-          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+          arguments: { number: "999999", repo: "paretools/nonexistent-repo-xyz" },
         },
         undefined,
         { timeout: CALL_TIMEOUT },
@@ -132,7 +132,7 @@ describe("@paretools/github integration", () => {
       const result = await client.callTool(
         {
           name: "pr-diff",
-          arguments: { pr: 999999, repo: "paretools/nonexistent-repo-xyz" },
+          arguments: { number: "999999", repo: "paretools/nonexistent-repo-xyz" },
         },
         undefined,
         { timeout: CALL_TIMEOUT },
@@ -332,7 +332,7 @@ describe("@paretools/github integration", () => {
         {
           name: "pr-comment",
           arguments: {
-            pr: 1,
+            number: "1",
             body: "--exec=malicious",
           },
         },
@@ -396,7 +396,7 @@ describe("@paretools/github integration", () => {
         {
           name: "pr-review",
           arguments: {
-            pr: 1,
+            number: "1",
             event: "comment",
             body: "--exec=malicious",
           },
@@ -413,7 +413,7 @@ describe("@paretools/github integration", () => {
         {
           name: "pr-update",
           arguments: {
-            pr: 1,
+            number: "1",
             title: "--exec=malicious",
           },
         },
@@ -429,7 +429,7 @@ describe("@paretools/github integration", () => {
         {
           name: "pr-update",
           arguments: {
-            pr: 1,
+            number: "1",
             addLabels: ["--exec=malicious"],
           },
         },
@@ -507,7 +507,7 @@ describe("@paretools/github integration", () => {
         {
           name: "pr-diff",
           arguments: {
-            pr: 1,
+            number: "1",
             repo: "--exec=malicious",
           },
         },

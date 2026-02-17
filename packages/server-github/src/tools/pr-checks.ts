@@ -6,9 +6,7 @@ import { parsePrChecks } from "../lib/parsers.js";
 import { formatPrChecks, compactPrChecksMap, formatPrChecksCompact } from "../lib/formatters.js";
 import { PrChecksResultSchema } from "../schemas/index.js";
 
-// S-gap P1: Add isRequired and conclusion to checks fields
-const PR_CHECKS_FIELDS =
-  "name,state,bucket,description,event,workflow,link,startedAt,completedAt,isRequired,conclusion";
+const PR_CHECKS_FIELDS = "name,state,bucket,description,event,workflow,link,startedAt,completedAt";
 
 /** Registers the `pr-checks` tool on the given MCP server. */
 export function registerPrChecksTool(server: McpServer) {
@@ -17,9 +15,9 @@ export function registerPrChecksTool(server: McpServer) {
     {
       title: "PR Checks",
       description:
-        "Lists check/status results for a pull request. Returns structured data with check names, states, conclusions, required status, URLs, and summary counts (passed, failed, pending). Use instead of running `gh pr checks` in the terminal.",
+        "Lists check/status results for a pull request. Returns structured data with check names, states, URLs, and summary counts (passed, failed, pending). Use instead of running `gh pr checks` in the terminal.",
       inputSchema: {
-        pr: z
+        number: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
@@ -44,12 +42,12 @@ export function registerPrChecksTool(server: McpServer) {
       },
       outputSchema: PrChecksResultSchema,
     },
-    async ({ pr, repo, watch, required, compact }) => {
+    async ({ number, repo, watch, required, compact }) => {
       if (repo) assertNoFlagInjection(repo, "repo");
-      if (typeof pr === "string") assertNoFlagInjection(pr, "pr");
+      if (typeof number === "string") assertNoFlagInjection(number, "number");
 
-      const selector = String(pr);
-      const prNum = typeof pr === "number" ? pr : 0;
+      const selector = String(number);
+      const prNum = typeof number === "number" ? number : 0;
 
       const args = ["pr", "checks", selector, "--json", PR_CHECKS_FIELDS];
       if (repo) {
