@@ -60,34 +60,34 @@
 | 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | recorded |
 | 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | recorded |
 
-### Optional params — untrackedFiles
+### Optional params — untrackedFiles (arg-only)
 
-| #   | Scenario                           | Params                               | Expected Output                                      | Priority | Status |
-| --- | ---------------------------------- | ------------------------------------ | ---------------------------------------------------- | -------- | ------ |
-| 21  | untrackedFiles: "no"               | `{ path, untrackedFiles: "no" }`     | `untracked: []` even with untracked files present    | P1       | mocked |
-| 22  | untrackedFiles: "all"              | `{ path, untrackedFiles: "all" }`    | Individual files within untracked directories listed | P1       | mocked |
-| 23  | untrackedFiles: "normal" (default) | `{ path, untrackedFiles: "normal" }` | Same as default behavior                             | P2       | mocked |
+| #   | Scenario                           | Params                               | Expected Output                                      | Priority | Status   |
+| --- | ---------------------------------- | ------------------------------------ | ---------------------------------------------------- | -------- | -------- |
+| 21  | untrackedFiles: "no"               | `{ path, untrackedFiles: "no" }`     | `untracked: []` even with untracked files present    | P1       | complete |
+| 22  | untrackedFiles: "all"              | `{ path, untrackedFiles: "all" }`    | Individual files within untracked directories listed | P1       | complete |
+| 23  | untrackedFiles: "normal" (default) | `{ path, untrackedFiles: "normal" }` | Same as default behavior                             | P2       | complete |
 
-### Optional params — pathspec
+### Optional params — pathspec (arg-only)
 
-| #   | Scenario                             | Params                                 | Expected Output                 | Priority | Status |
-| --- | ------------------------------------ | -------------------------------------- | ------------------------------- | -------- | ------ |
-| 24  | Pathspec single dir                  | `{ path, pathspec: ["src/"] }`         | Only files under src/ in output | P1       | mocked |
-| 25  | Pathspec single file                 | `{ path, pathspec: ["file.txt"] }`     | Only that file in output        | P1       | mocked |
-| 26  | Pathspec no matches                  | `{ path, pathspec: ["nonexistent/"] }` | All arrays empty, `clean: true` | P2       | mocked |
-| 27  | Pathspec with flag injection attempt | `{ path, pathspec: ["--exec=evil"] }`  | `assertNoFlagInjection` throws  | P0       | mocked |
+| #   | Scenario                             | Params                                 | Expected Output                 | Priority | Status   |
+| --- | ------------------------------------ | -------------------------------------- | ------------------------------- | -------- | -------- |
+| 24  | Pathspec single dir                  | `{ path, pathspec: ["src/"] }`         | Only files under src/ in output | P1       | complete |
+| 25  | Pathspec single file                 | `{ path, pathspec: ["file.txt"] }`     | Only that file in output        | P1       | complete |
+| 26  | Pathspec no matches                  | `{ path, pathspec: ["nonexistent/"] }` | All arrays empty, `clean: true` | P2       | complete |
+| 27  | Pathspec with flag injection attempt | `{ path, pathspec: ["--exec=evil"] }`  | `assertNoFlagInjection` throws  | P0       | complete |
 
-### Optional params — other flags
+### Optional params — other flags (arg-only)
 
-| #   | Scenario                       | Params                              | Expected Output                                       | Priority | Status |
-| --- | ------------------------------ | ----------------------------------- | ----------------------------------------------------- | -------- | ------ |
-| 28  | showStash: true (with stashes) | `{ path, showStash: true }`         | `stashCount: N > 0` in output (if schema supports it) | P1       | mocked |
-| 29  | showStash: true (no stashes)   | `{ path, showStash: true }`         | `stashCount: 0` or field absent                       | P2       | mocked |
-| 30  | noLockIndex: true              | `{ path, noLockIndex: true }`       | Same output, `--no-lock-index` in args                | P2       | mocked |
-| 31  | showIgnored: true              | `{ path, showIgnored: true }`       | Ignored files included in output                      | P2       | mocked |
-| 32  | renames: true                  | `{ path, renames: true }`           | `--renames` in args                                   | P2       | mocked |
-| 33  | noRenames: true                | `{ path, noRenames: true }`         | `--no-renames` in args, renames not detected          | P2       | mocked |
-| 34  | ignoreSubmodules: "all"        | `{ path, ignoreSubmodules: "all" }` | Submodule changes excluded                            | P2       | mocked |
+| #   | Scenario                       | Params                              | Expected Output                                       | Priority | Status   |
+| --- | ------------------------------ | ----------------------------------- | ----------------------------------------------------- | -------- | -------- |
+| 28  | showStash: true (with stashes) | `{ path, showStash: true }`         | `stashCount: N > 0` in output (if schema supports it) | P1       | complete |
+| 29  | showStash: true (no stashes)   | `{ path, showStash: true }`         | `stashCount: 0` or field absent                       | P2       | complete |
+| 30  | noLockIndex: true              | `{ path, noLockIndex: true }`       | Same output, `--no-lock-index` in args                | P2       | complete |
+| 31  | showIgnored: true              | `{ path, showIgnored: true }`       | Ignored files included in output                      | P2       | complete |
+| 32  | renames: true                  | `{ path, renames: true }`           | `--renames` in args                                   | P2       | complete |
+| 33  | noRenames: true                | `{ path, noRenames: true }`         | `--no-renames` in args, renames not detected          | P2       | complete |
+| 34  | ignoreSubmodules: "all"        | `{ path, ignoreSubmodules: "all" }` | Submodule changes excluded                            | P2       | complete |
 
 ### Porcelain v2
 
@@ -103,13 +103,13 @@
 | #   | Scenario         | Params                         | Expected Output                   | Priority | Status   |
 | --- | ---------------- | ------------------------------ | --------------------------------- | -------- | -------- |
 | 39  | Not a git repo   | `{ path: "/tmp/not-a-repo" }`  | Error thrown: "git status failed" | P0       | recorded |
-| 40  | Nonexistent path | `{ path: "/tmp/nonexistent" }` | Error thrown                      | P1       | mocked   |
+| 40  | Nonexistent path | `{ path: "/tmp/nonexistent" }` | Error thrown                      | P1       | complete |
 
 ### Schema validation
 
-| #   | Scenario                                                | Params | Expected Output    | Priority | Status |
-| --- | ------------------------------------------------------- | ------ | ------------------ | -------- | ------ |
-| 41  | Every scenario output validates against GitStatusSchema | all    | Zod parse succeeds | P0       | mocked |
+| #   | Scenario                                                | Params | Expected Output    | Priority | Status   |
+| --- | ------------------------------------------------------- | ------ | ------------------ | -------- | -------- |
+| 41  | Every scenario output validates against GitStatusSchema | all    | Zod parse succeeds | P0       | complete |
 
 ## Known bugs found during smoke testing
 
@@ -119,7 +119,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 13     | 13     | 13       | 0        |
-| P1        | 16     | 16     | 10       | 0        |
-| P2        | 12     | 12     | 3        | 0        |
-| **Total** | **41** | **41** | **26**   | **0**    |
+| P0        | 13     | 13     | 13       | 2        |
+| P1        | 16     | 16     | 10       | 6        |
+| P2        | 12     | 12     | 2        | 8        |
+| **Total** | **41** | **41** | **25**   | **16**   |

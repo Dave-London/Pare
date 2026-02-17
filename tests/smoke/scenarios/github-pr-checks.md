@@ -89,7 +89,7 @@
 
 | #   | Scenario                                                     | Params | Expected Output    | Priority | Status   |
 | --- | ------------------------------------------------------------ | ------ | ------------------ | -------- | -------- |
-| 26  | Every scenario output validates against PrChecksResultSchema | all    | Zod parse succeeds | P0       | recorded |
+| 26  | Every scenario output validates against PrChecksResultSchema | all    | Zod parse succeeds | P0       | complete |
 
 ### Edge cases
 
@@ -103,7 +103,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 12     | 12     | 12       | 0        |
+| P0        | 12     | 12     | 11       | 1        |
 | P1        | 12     | 12     | 12       | 0        |
 | P2        | 5      | 5      | 5        | 0        |
-| **Total** | **29** | **29** | **29**   | **0**    |
+| **Total** | **29** | **29** | **28**   | **1**    |
