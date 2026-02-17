@@ -13,7 +13,6 @@ import {
   compactCondaResultMap,
   formatCondaResultCompact,
 } from "../lib/formatters.js";
-import { CondaResultSchema } from "../schemas/index.js";
 
 /** Registers the `conda` tool on the given MCP server. */
 export function registerCondaTool(server: McpServer) {
@@ -70,7 +69,8 @@ export function registerCondaTool(server: McpServer) {
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
       },
-      outputSchema: CondaResultSchema,
+      // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
+      outputSchema: z.object({ action: z.string() }).passthrough(),
     },
     async ({ action, name, prefix, packageFilter, packages, all, path, compact }) => {
       const cwd = path || process.cwd();

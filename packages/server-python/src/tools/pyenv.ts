@@ -4,7 +4,6 @@ import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretoo
 import { pyenv } from "../lib/python-runner.js";
 import { parsePyenvOutput } from "../lib/parsers.js";
 import { formatPyenv, compactPyenvMap, formatPyenvCompact } from "../lib/formatters.js";
-import { PyenvResultSchema } from "../schemas/index.js";
 
 const ACTIONS = [
   "versions",
@@ -73,7 +72,8 @@ export function registerPyenvTool(server: McpServer) {
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
       },
-      outputSchema: PyenvResultSchema,
+      // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
+      outputSchema: z.object({ action: z.string() }).passthrough(),
     },
     async ({ action, version, command, path, skipExisting, force, unset, compact }) => {
       const cwd = path || process.cwd();

@@ -44,6 +44,7 @@ export const KubectlGetResultSchema = z.object({
   resource: z.string(),
   namespace: z.string().optional(),
   items: z.array(K8sResourceSchema).optional(),
+  names: z.array(z.string()).optional(),
   total: z.number(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
