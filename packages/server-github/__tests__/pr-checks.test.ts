@@ -85,30 +85,6 @@ describe("parsePrChecks (exit code 8 — pending checks)", () => {
     expect(result.summary.failed).toBe(0);
   });
 
-  it("includes required and conclusion fields when present", () => {
-    const json = JSON.stringify([
-      {
-        name: "required-check",
-        state: "PENDING",
-        bucket: "pending",
-        description: "",
-        event: "pull_request",
-        workflow: "CI",
-        link: "",
-        startedAt: "",
-        completedAt: "",
-        isRequired: true,
-        conclusion: null,
-      },
-    ]);
-
-    const result = parsePrChecks(json, 1);
-
-    expect(result.checks[0].required).toBe(true);
-    // null conclusion maps to undefined via the ?? operator in the parser
-    expect(result.checks[0].conclusion).toBeUndefined();
-  });
-
   it("deduplicates checks by name, keeping the most recent run", () => {
     const json = JSON.stringify([
       {

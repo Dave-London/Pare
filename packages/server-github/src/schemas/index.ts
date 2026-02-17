@@ -254,9 +254,6 @@ export const PrChecksItemSchema = z.object({
   link: z.string(),
   startedAt: z.string(),
   completedAt: z.string(),
-  // S-gap: Add per-check required field and conclusion
-  required: z.boolean().optional(),
-  conclusion: z.string().optional(),
 });
 
 /** Zod schema for summary counts of PR checks. */

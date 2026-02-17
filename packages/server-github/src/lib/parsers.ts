@@ -310,8 +310,6 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
       link?: string;
       startedAt?: string;
       completedAt?: string;
-      isRequired?: boolean;
-      conclusion?: string;
     }) => ({
       name: c.name ?? "",
       state: c.state ?? "",
@@ -322,9 +320,6 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
       link: c.link ?? "",
       startedAt: c.startedAt ?? "",
       completedAt: c.completedAt ?? "",
-      // S-gap fields
-      required: c.isRequired ?? undefined,
-      conclusion: c.conclusion ?? undefined,
     }),
   );
 

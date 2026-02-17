@@ -135,8 +135,7 @@ export function formatPrChecks(data: PrChecksResult): string {
   ];
   for (const c of data.checks ?? []) {
     const workflow = c.workflow ? ` [${c.workflow}]` : "";
-    const required = c.required ? " *required*" : "";
-    lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}${required}`);
+    lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
   }
   return lines.join("\n");
 }

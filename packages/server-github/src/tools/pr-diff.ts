@@ -18,7 +18,7 @@ export function registerPrDiffTool(server: McpServer) {
       description:
         "Returns file-level diff statistics for a pull request. Use full=true for patch content. Use instead of running `gh pr diff` in the terminal.",
       inputSchema: {
-        pr: z
+        number: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
@@ -43,15 +43,15 @@ export function registerPrDiffTool(server: McpServer) {
       },
       outputSchema: PrDiffResultSchema,
     },
-    async ({ pr, repo, full, nameOnly, compact }) => {
+    async ({ number, repo, full, nameOnly, compact }) => {
       if (repo) {
         assertNoFlagInjection(repo, "repo");
       }
-      if (typeof pr === "string") {
-        assertNoFlagInjection(pr, "pr");
+      if (typeof number === "string") {
+        assertNoFlagInjection(number, "number");
       }
 
-      const selector = String(pr);
+      const selector = String(number);
 
       // Get numstat for structured file-level stats
       const numstatArgs = ["pr", "diff", selector, "--patch=false"];
