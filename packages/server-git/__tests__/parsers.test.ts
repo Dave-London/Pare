@@ -244,6 +244,38 @@ describe("parseBranch", () => {
       lastCommit: "1234567",
     });
   });
+
+  it("handles '+' worktree marker without garbling branch names", () => {
+    // Git marks branches checked out in linked worktrees with '+' instead of '*'
+    const stdout = [
+      "* main         abc1234 [origin/main] Latest commit",
+      "+ feat/go-http  def5678 [origin/feat/go-http] Add HTTP support",
+      "  dev           1234567 Fix bug",
+    ].join("\n");
+
+    const result = parseBranch(stdout);
+
+    expect(result.current).toBe("main");
+    expect(result.branches).toHaveLength(3);
+    expect(result.branches[0]).toEqual({
+      name: "main",
+      current: true,
+      upstream: "origin/main",
+      lastCommit: "abc1234",
+    });
+    // The '+' marker must NOT become the branch name
+    expect(result.branches[1]).toEqual({
+      name: "feat/go-http",
+      current: false,
+      upstream: "origin/feat/go-http",
+      lastCommit: "def5678",
+    });
+    expect(result.branches[2]).toEqual({
+      name: "dev",
+      current: false,
+      lastCommit: "1234567",
+    });
+  });
 });
 
 describe("parseShow", () => {
