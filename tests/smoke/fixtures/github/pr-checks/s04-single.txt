@@ -1,0 +1,1 @@
+[{"bucket":"pass","completedAt":"2026-02-17T14:30:54Z","description":"","event":"pull_request","link":"https://github.com/Dave-London/Pare/actions/runs/22102355916/job/63875253197","name":"build-and-test","startedAt":"2026-02-17T14:28:32Z","state":"SUCCESS","workflow":"CI"}]
