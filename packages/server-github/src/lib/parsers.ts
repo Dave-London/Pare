@@ -59,6 +59,13 @@ export function parsePrView(json: string): PrViewResult {
       }))
     : undefined;
 
+  const commits = Array.isArray(raw.commits) ? raw.commits : [];
+  const commitCount = commits.length > 0 ? commits.length : undefined;
+  const latestCommitSha =
+    commits.length > 0
+      ? (commits[commits.length - 1]?.oid ?? commits[commits.length - 1]?.commit?.oid ?? undefined)
+      : undefined;
+
   return {
     number: raw.number,
     state: raw.state,
@@ -88,13 +95,15 @@ export function parsePrView(json: string): PrViewResult {
       : undefined,
     // P1-gap #147
     reviews,
+    commitCount,
+    latestCommitSha,
   };
 }
 
 /**
  * Parses `gh pr list --json ...` output into structured PR list data.
  */
-export function parsePrList(json: string): PrListResult {
+export function parsePrList(json: string, totalAvailable?: number): PrListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -127,28 +136,48 @@ export function parsePrList(json: string): PrListResult {
     }),
   );
 
-  return { prs, total: prs.length };
+  return { prs, total: prs.length, totalAvailable };
 }
 
 /**
  * Parses `gh pr create` output (URL on stdout) into structured data.
  * The gh CLI prints the new PR URL to stdout. We extract the number from it.
  */
-export function parsePrCreate(stdout: string): PrCreateResult {
+export function parsePrCreate(
+  stdout: string,
+  opts?: {
+    title?: string;
+    baseBranch?: string;
+    headBranch?: string;
+    draft?: boolean;
+  },
+): PrCreateResult {
   const url = stdout.trim();
   const match = url.match(/\/pull\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
-  return { number, url };
+  return {
+    number,
+    url,
+    title: opts?.title,
+    baseBranch: opts?.baseBranch,
+    headBranch: opts?.headBranch,
+    draft: opts?.draft,
+  };
 }
 
 /**
  * Parses `gh pr edit` output into structured data.
  * The gh CLI prints the PR URL to stdout on success.
  */
-export function parsePrUpdate(stdout: string, number: number): EditResult {
+export function parsePrUpdate(
+  stdout: string,
+  number: number,
+  updatedFields?: string[],
+  operations?: string[],
+): EditResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
-  return { number, url };
+  return { number, url, updatedFields, operations };
 }
 
 /**
@@ -477,10 +506,15 @@ export function parseIssueClose(
  * Parses `gh issue edit` output into structured data.
  * The gh CLI prints the issue URL to stdout on success.
  */
-export function parseIssueUpdate(stdout: string, number: number): EditResult {
+export function parseIssueUpdate(
+  stdout: string,
+  number: number,
+  updatedFields?: string[],
+  operations?: string[],
+): EditResult {
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/issues\/\d+)/);
   const url = urlMatch ? urlMatch[1] : "";
-  return { number, url };
+  return { number, url, updatedFields, operations };
 }
 
 /**
@@ -512,6 +546,16 @@ export function parseRunView(json: string): RunViewResult {
     }),
   );
 
+  const updatedAt = raw.updatedAt ?? undefined;
+  const startedAt = raw.startedAt ?? undefined;
+  const createdAt = raw.createdAt ?? "";
+  let durationSeconds: number | undefined;
+  const start = startedAt ? Date.parse(startedAt) : createdAt ? Date.parse(createdAt) : NaN;
+  const end = updatedAt ? Date.parse(updatedAt) : NaN;
+  if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+    durationSeconds = Math.round((end - start) / 1000);
+  }
+
   return {
     id: raw.databaseId,
     status: raw.status,
@@ -525,15 +569,17 @@ export function parseRunView(json: string): RunViewResult {
     // P0 enrichments
     headSha: raw.headSha ?? undefined,
     event: raw.event ?? undefined,
-    startedAt: raw.startedAt ?? undefined,
+    startedAt,
+    updatedAt,
     attempt: raw.attempt ?? undefined,
+    durationSeconds,
   };
 }
 
 /**
  * Parses `gh run list --json ...` output into structured run list data.
  */
-export function parseRunList(json: string): RunListResult {
+export function parseRunList(json: string, totalAvailable?: number): RunListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -570,7 +616,7 @@ export function parseRunList(json: string): RunListResult {
     }),
   );
 
-  return { runs, total: runs.length };
+  return { runs, total: runs.length, totalAvailable };
 }
 
 /**
@@ -602,9 +648,11 @@ export function parseRunRerun(
   const allUrls = combined.match(/https:\/\/github\.com\/[^\s]+\/actions\/runs\/\d+/g) ?? [];
   const newRunUrl = allUrls.length > 1 ? allUrls[allUrls.length - 1] : undefined;
 
+  const status = job ? "requested-job" : failedOnly ? "requested-failed" : "requested-full";
+
   return {
     runId,
-    status: "requested",
+    status,
     failedOnly,
     url,
     job: job ?? undefined,
@@ -641,7 +689,7 @@ export function parseReleaseCreate(
  * Parses `gh release list --json ...` output into structured release list data.
  * S-gap: Enhanced to include isLatest and createdAt.
  */
-export function parseReleaseList(json: string): ReleaseListResult {
+export function parseReleaseList(json: string, totalAvailable?: number): ReleaseListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -668,7 +716,7 @@ export function parseReleaseList(json: string): ReleaseListResult {
     }),
   );
 
-  return { releases, total: releases.length };
+  return { releases, total: releases.length, totalAvailable };
 }
 
 /**
@@ -688,12 +736,16 @@ export function parseApi(
   let statusCode = exitCode === 0 ? 200 : 422;
   let bodyText = stdout;
 
+  let responseHeaders: Record<string, string> | undefined;
+  let pagination: ApiResult["pagination"] | undefined;
   // When --include is passed, stdout starts with HTTP headers:
   // HTTP/2.0 200 OK\r\n...headers...\r\n\r\nbody
   const headerEndIndex = stdout.indexOf("\r\n\r\n");
   if (headerEndIndex !== -1) {
     const headerBlock = stdout.slice(0, headerEndIndex);
     bodyText = stdout.slice(headerEndIndex + 4);
+    responseHeaders = parseHeaderBlock(headerBlock);
+    pagination = parsePagination(responseHeaders?.link);
 
     // Parse status code from first line: "HTTP/1.1 200 OK" or "HTTP/2.0 200 OK"
     const statusMatch = headerBlock.match(/^HTTP\/[\d.]+ (\d+)/);
@@ -706,6 +758,8 @@ export function parseApi(
     if (headerEndLF !== -1 && /^HTTP\/[\d.]+ \d+/.test(stdout)) {
       const headerBlock = stdout.slice(0, headerEndLF);
       bodyText = stdout.slice(headerEndLF + 2);
+      responseHeaders = parseHeaderBlock(headerBlock);
+      pagination = parsePagination(responseHeaders?.link);
 
       const statusMatch = headerBlock.match(/^HTTP\/[\d.]+ (\d+)/);
       if (statusMatch) {
@@ -727,7 +781,47 @@ export function parseApi(
   // P1-gap #141: Preserve error body for debugging when request failed
   const errorBody = exitCode !== 0 && stderr ? parseErrorBody(stderr) : undefined;
 
-  return { status, statusCode, body, endpoint, method, errorBody };
+  // GraphQL responses can return 200 with an `errors` array.
+  const graphqlErrors =
+    body && typeof body === "object" && "errors" in (body as Record<string, unknown>)
+      ? (((body as Record<string, unknown>).errors as unknown[]) ?? undefined)
+      : undefined;
+
+  return {
+    status,
+    statusCode,
+    body,
+    endpoint,
+    method,
+    responseHeaders,
+    pagination,
+    graphqlErrors,
+    errorBody,
+  };
+}
+
+function parseHeaderBlock(headerBlock: string): Record<string, string> {
+  const lines = headerBlock.split(/\r?\n/);
+  const headers: Record<string, string> = {};
+  for (const line of lines.slice(1)) {
+    const idx = line.indexOf(":");
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim().toLowerCase();
+    const value = line.slice(idx + 1).trim();
+    headers[key] = value;
+  }
+  return headers;
+}
+
+function parsePagination(linkHeader?: string): ApiResult["pagination"] | undefined {
+  if (!linkHeader) return undefined;
+  const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel=\"next\"/);
+  const lastMatch = linkHeader.match(/<([^>]+)>;\s*rel=\"last\"/);
+  return {
+    hasNext: !!nextMatch,
+    next: nextMatch?.[1],
+    last: lastMatch?.[1],
+  };
 }
 
 /**
@@ -765,7 +859,9 @@ export function parseGistCreate(
   description?: string,
 ): GistCreateResult {
   const url = stdout.trim();
-  const match = url.match(/\/([a-f0-9]+)$/);
+  const match =
+    url.match(/gist\.github\.com\/(?:[^/]+\/)?([a-f0-9]+)/i) ||
+    url.match(/\/([a-f0-9]+)(?:\/?$|[?#])/i);
   const id = match ? match[1] : "";
   return {
     id,

@@ -60,16 +60,10 @@ export function registerPullTool(server: McpServer) {
       args.push(image);
 
       const result = await docker(args, path);
-
-      if (result.exitCode !== 0) {
-        const errorMsg = result.stderr || result.stdout || "Unknown error";
-        throw new Error(`docker pull failed: ${errorMsg.trim()}`);
-      }
-
       const data = parsePullOutput(result.stdout, result.stderr, result.exitCode, image);
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatPull,
         compactPullMap,
         formatPullCompact,

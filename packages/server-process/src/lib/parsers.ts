@@ -26,6 +26,8 @@ export function parseRunOutput(
   signal?: string,
   maxOutputLines?: number,
   truncated?: boolean,
+  userCpuTimeMicros?: number,
+  systemCpuTimeMicros?: number,
 ): ProcessRunResult {
   let finalStdout = stdout.trimEnd() || undefined;
   let finalStderr = stderr.trimEnd() || undefined;
@@ -52,6 +54,8 @@ export function parseRunOutput(
     stdout: finalStdout,
     stderr: finalStderr,
     duration,
+    userCpuTimeMs: userCpuTimeMicros !== undefined ? userCpuTimeMicros / 1000 : undefined,
+    systemCpuTimeMs: systemCpuTimeMicros !== undefined ? systemCpuTimeMicros / 1000 : undefined,
     timedOut,
     truncated: truncated || undefined,
     signal: signal || undefined,

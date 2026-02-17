@@ -39,6 +39,13 @@ export function registerComposeLogsTool(server: McpServer) {
           .number()
           .optional()
           .describe("Number of lines to return per service (passed to --tail)"),
+        limit: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .default(1000)
+          .describe("Maximum number of parsed log entries returned in structured output"),
         since: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -89,6 +96,7 @@ export function registerComposeLogsTool(server: McpServer) {
       services,
       file,
       tail,
+      limit,
       since,
       until,
       timestamps,
@@ -129,7 +137,7 @@ export function registerComposeLogsTool(server: McpServer) {
         throw new Error(`docker compose logs failed: ${errorMsg.trim()}`);
       }
 
-      const data = parseComposeLogsOutput(output);
+      const data = parseComposeLogsOutput(output, limit);
 
       return compactDualOutput(
         data,

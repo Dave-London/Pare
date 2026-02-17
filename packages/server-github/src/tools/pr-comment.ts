@@ -6,6 +6,16 @@ import { parseComment } from "../lib/parsers.js";
 import { formatComment } from "../lib/formatters.js";
 import { CommentResultSchema } from "../schemas/index.js";
 
+function classifyCommentError(
+  stderr: string,
+): "not-found" | "permission-denied" | "validation" | "unknown" {
+  const lower = stderr.toLowerCase();
+  if (/not found|could not resolve|no pull request/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/invalid|required|must provide|body cannot/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `pr-comment` tool on the given MCP server. */
 export function registerPrCommentTool(server: McpServer) {
   server.registerTool(
@@ -48,6 +58,7 @@ export function registerPrCommentTool(server: McpServer) {
     async ({ number, body, editLast, deleteLast, createIfNone, repo, path }) => {
       const cwd = path || process.cwd();
 
+      assertNoFlagInjection(body, "body");
       if (repo) assertNoFlagInjection(repo, "repo");
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
@@ -61,13 +72,20 @@ export function registerPrCommentTool(server: McpServer) {
       if (repo) args.push("--repo", repo);
 
       const result = await ghCmd(args, { cwd, stdin: body });
+      const operation = deleteLast ? "delete" : editLast ? "edit" : "create";
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh pr comment failed: ${result.stderr}`);
+        const data = {
+          operation: operation as "create" | "edit" | "delete",
+          prNumber: prNum,
+          body,
+          errorType: classifyCommentError(result.stderr || result.stdout),
+          errorMessage: (result.stderr || result.stdout || "gh pr comment failed").trim(),
+        };
+        return dualOutput(data, formatComment);
       }
 
       // S-gap: Determine operation type and pass context
-      const operation = deleteLast ? "delete" : editLast ? "edit" : "create";
       const data = parseComment(result.stdout, {
         operation: operation as "create" | "edit" | "delete",
         prNumber: prNum,

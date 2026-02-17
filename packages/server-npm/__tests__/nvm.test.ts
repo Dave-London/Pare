@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { parseNvmOutput, parseNvmLsRemoteOutput, parseNvmExecOutput } from "../src/lib/parsers.js";
-import { formatNvm, formatNvmLsRemote, formatNvmExec } from "../src/lib/formatters.js";
+import {
+  formatNvm,
+  formatNvmLsRemote,
+  formatNvmExec,
+  formatNvmVersion,
+} from "../src/lib/formatters.js";
 import type { NvmResult, NvmLsRemote, NvmExec } from "../src/schemas/index.js";
 
 describe("parseNvmOutput", () => {
@@ -41,6 +46,9 @@ describe("parseNvmOutput", () => {
       { version: "v16.20.2" },
     ]);
     expect(result.default).toBe("v20.11.1");
+    expect(result.aliases).toBeDefined();
+    expect(result.aliases!.default).toBe("v20.11.1");
+    expect(result.aliases!.stable).toBe("v20.11");
   });
 
   it("parses Unix nvm list output with LTS tags", () => {
@@ -148,6 +156,21 @@ describe("formatNvm", () => {
     };
     const output = formatNvm(data);
     expect(output).toContain("Default: v20.11.1");
+  });
+
+  it("formats nvm aliases when present", () => {
+    const data: NvmResult = {
+      current: "v20.11.1",
+      versions: [{ version: "v20.11.1" }],
+      aliases: {
+        default: "v20.11.1",
+        node: "stable",
+      },
+    };
+    const output = formatNvm(data);
+    expect(output).toContain("Aliases:");
+    expect(output).toContain("default -> v20.11.1");
+    expect(output).toContain("node -> stable");
   });
 
   it("formats nvm result with no versions", () => {
@@ -322,5 +345,17 @@ describe("formatNvmExec", () => {
     const output = formatNvmExec(data);
     expect(output).toContain("Command failed (exit code 1) using Node.js v20.11.1");
     expect(output).toContain("Error occurred");
+  });
+});
+
+describe("formatNvmVersion", () => {
+  it("formats resolved version results", () => {
+    const output = formatNvmVersion({
+      current: "none",
+      versions: [],
+      requestedVersion: "lts/*",
+      resolvedVersion: "v20.11.1",
+    });
+    expect(output).toBe('Resolved "lts/*" -> v20.11.1');
   });
 });

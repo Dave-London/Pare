@@ -226,9 +226,23 @@ describe("parseBranch", () => {
     const result = parseBranch(stdout);
 
     expect(result.current).toBe("main");
-    expect(result.branches[0]).toEqual({ name: "dev", current: false, upstream: "origin/dev" });
-    expect(result.branches[1]).toEqual({ name: "main", current: true, upstream: "origin/main" });
-    expect(result.branches[2]).toEqual({ name: "feature/auth", current: false });
+    expect(result.branches[0]).toEqual({
+      name: "dev",
+      current: false,
+      upstream: "origin/dev",
+      lastCommit: "abc1234",
+    });
+    expect(result.branches[1]).toEqual({
+      name: "main",
+      current: true,
+      upstream: "origin/main",
+      lastCommit: "def5678",
+    });
+    expect(result.branches[2]).toEqual({
+      name: "feature/auth",
+      current: false,
+      lastCommit: "1234567",
+    });
   });
 });
 
@@ -863,15 +877,19 @@ describe("parseReflogOutput", () => {
       hash: "abc123full",
       shortHash: "abc1234",
       selector: "HEAD@{0}",
+      selectorIndex: 0,
       action: "checkout",
       rawAction: "checkout",
       description: "moving from main to feature",
+      fromRef: "main",
+      toRef: "feature",
       date: "2024-01-15 10:30:00 +0000",
     });
     expect(result.entries[1]).toEqual({
       hash: "def456full",
       shortHash: "def5678",
       selector: "HEAD@{1}",
+      selectorIndex: 1,
       action: "commit",
       rawAction: "commit",
       description: "fix the bug",

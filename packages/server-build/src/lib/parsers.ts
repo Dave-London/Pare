@@ -19,12 +19,16 @@ import type {
 
 // tsc output format: file(line,col): error TSxxxx: message
 const TSC_DIAGNOSTIC_RE = /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+TS(\d+):\s+(.+)$/;
+const TSC_SUMMARY_RE = /^Found\s+(\d+)\s+errors?\s+in\s+(\d+)\s+files?\./;
+const TSC_EMITTED_FILE_RE = /^TSFILE:\s+(.+)$/;
 
 /** Parses TypeScript compiler (`tsc`) output into structured diagnostics with file, line, and error code. */
 export function parseTscOutput(stdout: string, stderr: string, exitCode: number): TscResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const diagnostics: TscDiagnostic[] = [];
+  const emittedFiles: string[] = [];
+  let totalFiles: number | undefined;
 
   for (const line of lines) {
     const match = line.match(TSC_DIAGNOSTIC_RE);
@@ -37,6 +41,18 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
         severity: match[4] as "error" | "warning",
         message: match[6],
       });
+      continue;
+    }
+
+    const summaryMatch = line.match(TSC_SUMMARY_RE);
+    if (summaryMatch) {
+      totalFiles = Number.parseInt(summaryMatch[2], 10);
+      continue;
+    }
+
+    const emittedMatch = line.match(TSC_EMITTED_FILE_RE);
+    if (emittedMatch) {
+      emittedFiles.push(emittedMatch[1].trim());
     }
   }
 
@@ -47,6 +63,8 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
     success: exitCode === 0,
     diagnostics,
     total: diagnostics.length,
+    totalFiles,
+    emittedFiles: emittedFiles.length > 0 ? emittedFiles : undefined,
     errors,
     warnings,
   };
@@ -180,6 +198,16 @@ const ESBUILD_LOCATION_RE = /^\s+(.+?):(\d+):(\d+):$/;
 // Alternate format from older esbuild / --log-level output
 const ESBUILD_INLINE_RE = /^>\s*(.+?):(\d+):(\d+):\s+(error|warning):\s+(.+)$/;
 
+function isLikelyEsbuildOutputFile(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.includes(" ")) return false;
+  if (trimmed.startsWith("✘") || trimmed.startsWith("▲") || trimmed.startsWith(">")) return false;
+  if (/^\d+\s+(errors?|warnings?)/i.test(trimmed)) return false;
+  // Accept common path patterns and any extension to cover non-standard outputs.
+  return /[\\/]/.test(trimmed) || /\.[A-Za-z0-9_-]+$/.test(trimmed);
+}
+
 /** Parses esbuild stderr/stdout into structured errors, warnings, and output file info. */
 export function parseEsbuildOutput(
   stdout: string,
@@ -191,7 +219,7 @@ export function parseEsbuildOutput(
 ): EsbuildResult {
   const errors: EsbuildError[] = [];
   const warnings: EsbuildWarning[] = [];
-  const outputFiles: string[] = [];
+  const outputFiles = new Set<string>();
 
   const output = stderr + "\n" + stdout;
   const lines = output.split("\n");
@@ -253,22 +281,33 @@ export function parseEsbuildOutput(
   // but with --metafile or verbose mode it may list output files)
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
-    if (trimmed && /\.(js|mjs|cjs|css|map)$/.test(trimmed) && !trimmed.includes(" ")) {
-      outputFiles.push(trimmed);
+    if (isLikelyEsbuildOutputFile(trimmed)) {
+      outputFiles.add(trimmed);
     }
   }
 
   // Parse metafile if provided (Gap #80)
   let metafile: EsbuildMetafile | undefined;
+  let outputFileStats: Array<{ file: string; bytes: number }> | undefined;
   if (metafileContent) {
     metafile = parseEsbuildMetafile(metafileContent);
+    if (metafile) {
+      outputFileStats = Object.entries(metafile.outputs).map(([file, entry]) => ({
+        file,
+        bytes: entry.bytes,
+      }));
+      for (const file of Object.keys(metafile.outputs)) {
+        outputFiles.add(file);
+      }
+    }
   }
 
   return {
     success: exitCode === 0,
     errors,
     warnings,
-    outputFiles: outputFiles.length > 0 ? outputFiles : undefined,
+    outputFiles: outputFiles.size > 0 ? [...outputFiles] : undefined,
+    outputFileStats,
     duration,
     metafile,
   };
@@ -307,7 +346,8 @@ export function parseEsbuildMetafile(content: string): EsbuildMetafile | undefin
 
 // Vite output format: dist/assets/index-abc123.js  12.34 kB │ gzip: 4.56 kB
 // or: dist/index.html                 0.45 kB │ gzip: 0.29 kB
-const VITE_OUTPUT_RE = /^\s*(.+?)\s{2,}(\d+[\d.]*\s*[kKmMgG]?[bB])\s/;
+const VITE_OUTPUT_RE =
+  /^\s*(.+?)\s{2,}(\d+[\d.]*\s*[kKmMgG]?[bB])(?:\s*[|│]\s*gzip:\s*(\d+[\d.]*\s*[kKmMgG]?[bB]))?/;
 
 /** Parses a human-readable size string (e.g. "45.2 kB", "1.5 MB", "320 B") into bytes.
  *  Returns undefined if the string cannot be parsed. */
@@ -350,10 +390,12 @@ export function parseViteBuildOutput(
     if (outputMatch) {
       const file = outputMatch[1].trim();
       const size = outputMatch[2].trim();
+      const gzipSize = outputMatch[3]?.trim();
       // Skip lines that are clearly not file outputs (e.g. header lines)
       if (file && !file.startsWith("vite") && !file.startsWith("building")) {
         const sizeBytes = parseSizeToBytes(size);
-        outputs.push({ file, size, sizeBytes });
+        const gzipBytes = gzipSize ? parseSizeToBytes(gzipSize) : undefined;
+        outputs.push({ file, size, sizeBytes, gzipSize, gzipBytes });
         continue;
       }
     }
@@ -450,6 +492,23 @@ function parseWebpackJson(
     modules = stats.modules.length;
   }
 
+  const rawChunks = Array.isArray(stats.chunks) ? stats.chunks : [];
+  const chunks = rawChunks.map((chunk) => {
+    const c = chunk as Record<string, unknown>;
+    return {
+      id: typeof c.id === "string" || typeof c.id === "number" ? c.id : undefined,
+      names: Array.isArray(c.names)
+        ? c.names.filter((n): n is string => typeof n === "string")
+        : undefined,
+      entry: typeof c.entry === "boolean" ? c.entry : undefined,
+      files: Array.isArray(c.files)
+        ? c.files.filter((f): f is string => typeof f === "string")
+        : undefined,
+    };
+  });
+
+  const errorsCount = typeof stats.errorsCount === "number" ? stats.errorsCount : undefined;
+
   // Parse profile data from modules when --profile is enabled (Gap #85)
   let profile: WebpackProfile | undefined;
   if (profileEnabled && Array.isArray(stats.modules)) {
@@ -457,9 +516,11 @@ function parseWebpackJson(
   }
 
   return {
-    success: exitCode === 0 && errors.length === 0,
+    success:
+      exitCode === 0 && errors.length === 0 && (errorsCount === undefined || errorsCount === 0),
     duration,
     assets,
+    chunks: chunks.length > 0 ? chunks : undefined,
     errors,
     warnings,
     modules,
@@ -521,7 +582,7 @@ function parseWebpackText(
   }
 
   return {
-    success: exitCode === 0,
+    success: exitCode === 0 && errors.length === 0,
     duration,
     assets: [],
     errors,
@@ -585,6 +646,7 @@ export function parseTurboOutput(
   stderr: string,
   exitCode: number,
   duration: number,
+  summaryJsonContent?: string,
 ): TurboResult {
   const tasks: TurboTask[] = [];
   const seenTasks = new Set<string>();
@@ -650,6 +712,17 @@ export function parseTurboOutput(
   const failed = tasks.filter((t) => t.status === "fail").length;
   const cached = tasks.filter((t) => t.cache === "hit").length;
   const totalTasks = summaryTotal || tasks.length;
+  let summary: Record<string, unknown> | undefined;
+  if (summaryJsonContent) {
+    try {
+      const parsed = JSON.parse(summaryJsonContent);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        summary = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Ignore invalid summarize JSON content.
+    }
+  }
 
   return {
     success: exitCode === 0,
@@ -659,6 +732,7 @@ export function parseTurboOutput(
     passed,
     failed,
     cached: summaryCached || cached,
+    summary,
   };
 }
 
@@ -675,6 +749,8 @@ export function parseTurboOutput(
 // Also matches lines without duration or cache indicator.
 const NX_TASK_RE =
   /^\s*[✔✓✗✖]\s+nx run\s+([\w@/.:-]+):([\w-]+)\s*(?:\[([^\]]+)])?\s*(?:\((\d+(?:\.\d+)?)\s*s\))?/i;
+const NX_SKIPPED_TASK_RE = /^\s*(?:-|•|\*)\s+nx run\s+([\w@/.:-]+):([\w-]+).*skipp(?:ed|ing)/i;
+const NX_AFFECTED_PROJECTS_RE = /affected projects?:\s*(.+)$/i;
 
 // Cache hit summary: "N out of N tasks were retrieved from cache"
 // or individual [local cache] / [remote cache] on task lines (handled inline)
@@ -685,11 +761,13 @@ export function parseNxOutput(
   stderr: string,
   exitCode: number,
   duration: number,
+  affectedMode?: boolean,
 ): NxResult {
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
 
   const tasks: NxTask[] = [];
+  const affectedProjects = new Set<string>();
 
   for (const line of lines) {
     const taskMatch = line.match(NX_TASK_RE);
@@ -726,6 +804,37 @@ export function parseNxOutput(
         duration: dur,
         cache,
       });
+      if (affectedMode) {
+        affectedProjects.add(project);
+      }
+      continue;
+    }
+
+    const skippedMatch = line.match(NX_SKIPPED_TASK_RE);
+    if (skippedMatch) {
+      const project = skippedMatch[1];
+      const target = skippedMatch[2];
+      tasks.push({
+        project,
+        target,
+        status: "skipped",
+        cache: "miss",
+      });
+      if (affectedMode) {
+        affectedProjects.add(project);
+      }
+      continue;
+    }
+
+    const affectedMatch = line.match(NX_AFFECTED_PROJECTS_RE);
+    if (affectedMatch) {
+      const projects = affectedMatch[1]
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const project of projects) {
+        affectedProjects.add(project);
+      }
       continue;
     }
   }
@@ -742,5 +851,6 @@ export function parseNxOutput(
     passed,
     failed,
     cached,
+    affectedProjects: affectedProjects.size > 0 ? [...affectedProjects] : undefined,
   };
 }

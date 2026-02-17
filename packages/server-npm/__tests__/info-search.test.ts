@@ -181,6 +181,20 @@ describe("parseSearchJson", () => {
     expect(result.packages[0].date).toBeUndefined();
   });
 
+  it("normalizes date values to ISO-8601", () => {
+    const json = JSON.stringify([
+      {
+        name: "pkg",
+        version: "1.0.0",
+        description: "test",
+        date: "2025-01-02 03:04:05",
+      },
+    ]);
+
+    const result = parseSearchJson(json);
+    expect(result.packages[0].date).toBe(new Date("2025-01-02 03:04:05").toISOString());
+  });
+
   it("defaults missing fields gracefully", () => {
     const json = JSON.stringify([{}]);
     const result = parseSearchJson(json);

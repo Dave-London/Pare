@@ -6,6 +6,17 @@ import { parsePrMerge } from "../lib/parsers.js";
 import { formatPrMerge } from "../lib/formatters.js";
 import { PrMergeResultSchema } from "../schemas/index.js";
 
+function classifyPrMergeError(
+  text: string,
+): "blocked-checks" | "merge-conflict" | "permission-denied" | "already-merged" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/already merged|is already merged/.test(lower)) return "already-merged";
+  if (/merge conflict|conflicts/.test(lower)) return "merge-conflict";
+  if (/checks? (have )?not passed|required status check/.test(lower)) return "blocked-checks";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  return "unknown";
+}
+
 /** Registers the `pr-merge` tool on the given MCP server. */
 export function registerPrMergeTool(server: McpServer) {
   server.registerTool(
@@ -121,7 +132,19 @@ export function registerPrMergeTool(server: McpServer) {
       const result = await ghCmd(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh pr merge failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return dualOutput(
+          {
+            number: prNum,
+            merged: false,
+            method: method!,
+            url: "",
+            state: disableAuto ? "auto-merge-disabled" : auto ? "auto-merge-enabled" : undefined,
+            errorType: classifyPrMergeError(combined),
+            errorMessage: combined || "gh pr merge failed",
+          },
+          formatPrMerge,
+        );
       }
 
       const data = parsePrMerge(result.stdout, prNum, method!, !!deleteBranch, auto, disableAuto);

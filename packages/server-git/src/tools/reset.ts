@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
-import { parseReset, validateResetArgs } from "../lib/parsers.js";
+import { parseReset, parseResetError, validateResetArgs } from "../lib/parsers.js";
 import { formatReset } from "../lib/formatters.js";
 import { GitResetSchema } from "../schemas/index.js";
 
@@ -93,7 +93,8 @@ export function registerResetTool(server: McpServer) {
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`git reset failed: ${result.stderr}`);
+        const resetError = parseResetError(result.stderr, ref, mode);
+        return dualOutput(resetError, formatReset);
       }
 
       // Capture HEAD after reset for newRef

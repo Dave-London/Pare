@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
@@ -136,6 +138,18 @@ export function registerListTool(server: McpServer) {
         list = parsePnpmListJson(result.stdout);
       } else if (pm === "yarn") {
         list = parseYarnListJson(result.stdout);
+        const packageJsonMeta = await readPackageJsonMeta(cwd);
+        if (packageJsonMeta) {
+          list = {
+            ...list,
+            name:
+              list.name === "project" || list.name === "unknown"
+                ? (packageJsonMeta.name ?? list.name)
+                : list.name,
+            version:
+              list.version === "0.0.0" ? (packageJsonMeta.version ?? list.version) : list.version,
+          };
+        }
       } else {
         list = parseListJson(result.stdout);
       }
@@ -151,4 +165,19 @@ export function registerListTool(server: McpServer) {
       );
     },
   );
+}
+
+async function readPackageJsonMeta(
+  cwd: string,
+): Promise<{ name?: string; version?: string } | undefined> {
+  try {
+    const raw = await readFile(join(cwd, "package.json"), "utf-8");
+    const parsed = JSON.parse(raw) as { name?: unknown; version?: unknown };
+    return {
+      ...(typeof parsed.name === "string" ? { name: parsed.name } : {}),
+      ...(typeof parsed.version === "string" ? { version: parsed.version } : {}),
+    };
+  } catch {
+    return undefined;
+  }
 }

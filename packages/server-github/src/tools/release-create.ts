@@ -6,6 +6,16 @@ import { parseReleaseCreate } from "../lib/parsers.js";
 import { formatReleaseCreate } from "../lib/formatters.js";
 import { ReleaseCreateResultSchema } from "../schemas/index.js";
 
+function classifyReleaseCreateError(
+  text: string,
+): "tag-conflict" | "permission-denied" | "no-new-commits" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/already exists|tag .* exists|reference already exists/.test(lower)) return "tag-conflict";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/no commits|no new commits/.test(lower)) return "no-new-commits";
+  return "unknown";
+}
+
 /** Registers the `release-create` tool on the given MCP server. */
 export function registerReleaseCreateTool(server: McpServer) {
   server.registerTool(
@@ -144,7 +154,20 @@ export function registerReleaseCreateTool(server: McpServer) {
       const result = await ghCmd(args, cwd);
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh release create failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return dualOutput(
+          {
+            tag,
+            url: "",
+            draft: !!draft,
+            prerelease: !!prerelease,
+            title: title ?? undefined,
+            assetsUploaded: assets?.length ?? undefined,
+            errorType: classifyReleaseCreateError(combined),
+            errorMessage: combined || "gh release create failed",
+          },
+          formatReleaseCreate,
+        );
       }
 
       // S-gap: Pass title and assets count for echo in output

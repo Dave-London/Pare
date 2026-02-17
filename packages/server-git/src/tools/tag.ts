@@ -169,7 +169,7 @@ export function registerTagTool(server: McpServer) {
         "tag",
         "-l",
         `--sort=${sortFlag}`,
-        "--format=%(refname:short)\t%(creatordate:iso-strict)\t%(subject)",
+        "--format=%(refname:short)\t%(creatordate:iso-strict)\t%(subject)\t%(*objecttype)",
       ];
       if (force) args.push("--force");
       if (sign) args.push("--sign");

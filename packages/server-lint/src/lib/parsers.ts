@@ -136,11 +136,16 @@ export function parsePrettierWrite(
     }
   }
 
-  return {
+  const result: FormatWriteResult = {
     filesChanged: files.length,
     files,
     success: exitCode === 0,
   };
+  if (exitCode !== 0) {
+    result.errorMessage = extractErrorMessage(stderr, stdout);
+  }
+
+  return result;
 }
 
 /**
@@ -168,6 +173,7 @@ export function buildPrettierWriteResult(
   listDiffFiles: string[],
   writeExitCode: number,
   totalFilesProcessed?: number,
+  errorMessage?: string,
 ): FormatWriteResult {
   const result: FormatWriteResult = {
     filesChanged: listDiffFiles.length,
@@ -176,6 +182,9 @@ export function buildPrettierWriteResult(
   };
   if (totalFilesProcessed !== undefined && totalFilesProcessed > 0) {
     result.filesUnchanged = totalFilesProcessed - listDiffFiles.length;
+  }
+  if (writeExitCode !== 0 && errorMessage) {
+    result.errorMessage = errorMessage;
   }
   return result;
 }
@@ -234,6 +243,9 @@ export function parseBiomeJson(stdout: string): LintResult {
       rule,
       message,
     };
+    if (Array.isArray(diag.tags) && diag.tags.length > 0) {
+      diagnostic.tags = diag.tags.filter((tag): tag is string => typeof tag === "string");
+    }
 
     // Extract column: try new format first, then old format
     const col = extractBiomeColumnNumber(diag.location);
@@ -380,6 +392,8 @@ export function parseStylelintJson(stdout: string): LintResult {
   }
 
   const diagnostics: LintDiagnostic[] = [];
+  const deprecations: Array<{ text: string; reference?: string }> = [];
+  const seenDeprecations = new Set<string>();
 
   for (const file of files) {
     for (const warn of file.warnings) {
@@ -395,18 +409,33 @@ export function parseStylelintJson(stdout: string): LintResult {
       }
       diagnostics.push(diag);
     }
+
+    for (const dep of file.deprecations ?? []) {
+      const text = typeof dep.text === "string" ? dep.text : "";
+      if (!text) continue;
+      const reference = typeof dep.reference === "string" ? dep.reference : undefined;
+      const key = `${text}::${reference ?? ""}`;
+      if (seenDeprecations.has(key)) continue;
+      seenDeprecations.add(key);
+      deprecations.push(reference ? { text, reference } : { text });
+    }
   }
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
-  return {
+  const result: LintResult = {
     diagnostics,
     total: diagnostics.length,
     errors,
     warnings,
     filesChecked: files.length,
   };
+  if (deprecations.length > 0) {
+    result.deprecations = deprecations;
+  }
+
+  return result;
 }
 
 interface StylelintJsonEntry {
@@ -418,7 +447,10 @@ interface StylelintJsonEntry {
     severity: string;
     text?: string;
   }[];
-  deprecations?: unknown[];
+  deprecations?: {
+    text?: string;
+    reference?: string;
+  }[];
   invalidOptionWarnings?: unknown[];
 }
 
@@ -537,6 +569,10 @@ export function parseShellcheckJson(stdout: string): LintResult {
     if (finding.column !== undefined && finding.column !== null) {
       diag.column = finding.column;
     }
+    const suggestedFixes = extractShellcheckSuggestedFixes(finding.fix);
+    if (suggestedFixes) {
+      diag.suggestedFixes = suggestedFixes;
+    }
     diagnostics.push(diag);
   }
 
@@ -576,6 +612,26 @@ interface ShellcheckJsonEntry {
   code?: number;
   message?: string;
   fix?: unknown;
+}
+
+function extractShellcheckSuggestedFixes(fix: unknown): string[] | undefined {
+  if (!fix || typeof fix !== "object") return undefined;
+
+  const replacements = (fix as { replacements?: unknown }).replacements;
+  if (!Array.isArray(replacements)) return undefined;
+
+  const values = replacements
+    .map((entry) =>
+      typeof entry === "object" && entry && "replacement" in entry
+        ? (entry as { replacement?: unknown }).replacement
+        : undefined,
+    )
+    .filter(
+      (replacement): replacement is string =>
+        typeof replacement === "string" && replacement.length > 0,
+    );
+
+  return values.length > 0 ? values : undefined;
 }
 
 /**
@@ -678,7 +734,13 @@ export function parseBiomeFormat(
 ): FormatWriteResult {
   // Try JSON parse first (when --reporter=json is used)
   const jsonResult = parseBiomeFormatJson(stdout);
-  if (jsonResult) return { ...jsonResult, success: exitCode === 0 };
+  if (jsonResult) {
+    const result: FormatWriteResult = { ...jsonResult, success: exitCode === 0 };
+    if (exitCode !== 0) {
+      result.errorMessage = extractErrorMessage(stderr, stdout);
+    }
+    return result;
+  }
 
   // Fall back to text-based parsing
   return parseBiomeFormatText(stdout, stderr, exitCode);
@@ -775,8 +837,26 @@ function parseBiomeFormatText(stdout: string, stderr: string, exitCode: number):
       result.filesUnchanged = unchanged;
     }
   }
+  if (exitCode !== 0) {
+    result.errorMessage = extractErrorMessage(stderr, stdout);
+  }
 
   return result;
+}
+
+function extractErrorMessage(primary: string, fallback: string): string | undefined {
+  const preferred = primary.trim();
+  if (preferred) {
+    return preferred
+      .split("\n")
+      .find((line) => line.trim())
+      ?.trim();
+  }
+
+  return fallback
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.length > 0 && !/\.\w+$/.test(line));
 }
 
 /** Shell script file extensions for directory expansion. */

@@ -44,6 +44,9 @@ export const PrViewResultSchema = z.object({
   projectItems: z.array(z.string()).optional(),
   // P1-gap #147: Add multi-reviewer visibility
   reviews: z.array(PrReviewItemSchema).optional(),
+  /** Summary of commits in the PR (count + latest SHA). */
+  commitCount: z.number().optional(),
+  latestCommitSha: z.string().optional(),
 });
 
 export type PrViewResult = z.infer<typeof PrViewResultSchema>;
@@ -68,6 +71,7 @@ export const PrListItemSchema = z.object({
 export const PrListResultSchema = z.object({
   prs: z.array(PrListItemSchema),
   total: z.number(),
+  totalAvailable: z.number().optional(),
 });
 
 export type PrListResult = z.infer<typeof PrListResultSchema>;
@@ -76,6 +80,14 @@ export type PrListResult = z.infer<typeof PrListResultSchema>;
 export const PrCreateResultSchema = z.object({
   number: z.number(),
   url: z.string(),
+  title: z.string().optional(),
+  baseBranch: z.string().optional(),
+  headBranch: z.string().optional(),
+  draft: z.boolean().optional(),
+  errorType: z
+    .enum(["base-branch-missing", "no-commits", "permission-denied", "validation", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type PrCreateResult = z.infer<typeof PrCreateResultSchema>;
@@ -92,6 +104,10 @@ export const PrMergeResultSchema = z.object({
   mergeCommitSha: z.string().optional(),
   /** Distinguishes immediate merge vs auto-merge enabled. */
   state: z.enum(["merged", "auto-merge-enabled", "auto-merge-disabled"]).optional(),
+  errorType: z
+    .enum(["blocked-checks", "merge-conflict", "permission-denied", "already-merged", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type PrMergeResult = z.infer<typeof PrMergeResultSchema>;
@@ -189,6 +205,8 @@ export const IssueListItemSchema = z.object({
 export const IssueListResultSchema = z.object({
   issues: z.array(IssueListItemSchema),
   total: z.number(),
+  hasMore: z.boolean().optional(),
+  totalAvailable: z.number().optional(),
 });
 
 export type IssueListResult = z.infer<typeof IssueListResultSchema>;
@@ -199,6 +217,9 @@ export const IssueCreateResultSchema = z.object({
   url: z.string(),
   // S-gap: Add labelsApplied confirmation
   labelsApplied: z.array(z.string()).optional(),
+  partial: z.boolean().optional(),
+  errorType: z.enum(["validation", "permission-denied", "partial-created", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type IssueCreateResult = z.infer<typeof IssueCreateResultSchema>;
@@ -213,6 +234,8 @@ export const IssueCloseResultSchema = z.object({
   commentUrl: z.string().optional(),
   // P1-gap #144: Detect already-closed issues
   alreadyClosed: z.boolean().optional(),
+  errorType: z.enum(["not-found", "permission-denied", "already-closed", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
@@ -229,6 +252,8 @@ export const CommentResultSchema = z.object({
   issueNumber: z.number().optional(),
   prNumber: z.number().optional(),
   body: z.string().optional(),
+  errorType: z.enum(["not-found", "permission-denied", "validation", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type CommentResult = z.infer<typeof CommentResultSchema>;
@@ -237,6 +262,10 @@ export type CommentResult = z.infer<typeof CommentResultSchema>;
 export const EditResultSchema = z.object({
   number: z.number(),
   url: z.string(),
+  updatedFields: z.array(z.string()).optional(),
+  operations: z.array(z.string()).optional(),
+  errorType: z.enum(["not-found", "permission-denied", "validation", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type EditResult = z.infer<typeof EditResultSchema>;
@@ -275,6 +304,8 @@ export const PrChecksResultSchema = z.object({
   passed: z.number().optional(),
   failed: z.number().optional(),
   pending: z.number().optional(),
+  errorType: z.enum(["not-found", "permission-denied", "in-progress", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type PrChecksItem = z.infer<typeof PrChecksItemSchema>;
@@ -317,8 +348,12 @@ export const RunViewResultSchema = z.object({
   event: z.string().optional(),
   /** When the run actually started executing. */
   startedAt: z.string().optional(),
+  /** Last update timestamp for the run. */
+  updatedAt: z.string().optional(),
   /** The attempt number for re-runs (1 = first attempt). */
   attempt: z.number().optional(),
+  /** Derived duration in seconds when timestamps are available. */
+  durationSeconds: z.number().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;
@@ -344,6 +379,7 @@ export const RunListItemSchema = z.object({
 export const RunListResultSchema = z.object({
   runs: z.array(RunListItemSchema),
   total: z.number(),
+  totalAvailable: z.number().optional(),
 });
 
 export type RunListResult = z.infer<typeof RunListResultSchema>;
@@ -351,7 +387,7 @@ export type RunListResult = z.infer<typeof RunListResultSchema>;
 /** Zod schema for structured run-rerun output. */
 export const RunRerunResultSchema = z.object({
   runId: z.number(),
-  status: z.string(),
+  status: z.enum(["requested-full", "requested-failed", "requested-job", "error"]),
   failedOnly: z.boolean(),
   url: z.string(),
   // S-gap: Add job field when rerunning a specific job
@@ -359,6 +395,8 @@ export const RunRerunResultSchema = z.object({
   // P1-gap #149: Track rerun attempt number and new run URL
   attempt: z.number().optional(),
   newRunUrl: z.string().optional(),
+  errorType: z.enum(["not-found", "permission-denied", "in-progress", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type RunRerunResult = z.infer<typeof RunRerunResultSchema>;
@@ -376,6 +414,8 @@ export const ReleaseCreateResultSchema = z.object({
   title: z.string().optional(),
   isLatest: z.boolean().optional(),
   assetsUploaded: z.number().optional(),
+  errorType: z.enum(["tag-conflict", "permission-denied", "no-new-commits", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type ReleaseCreateResult = z.infer<typeof ReleaseCreateResultSchema>;
@@ -391,6 +431,8 @@ export const GistCreateResultSchema = z.object({
   files: z.array(z.string()).optional(),
   description: z.string().optional(),
   fileCount: z.number().optional(),
+  errorType: z.enum(["validation", "permission-denied", "rate-limit", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type GistCreateResult = z.infer<typeof GistCreateResultSchema>;
@@ -412,6 +454,7 @@ export const ReleaseListItemSchema = z.object({
 export const ReleaseListResultSchema = z.object({
   releases: z.array(ReleaseListItemSchema),
   total: z.number(),
+  totalAvailable: z.number().optional(),
 });
 
 export type ReleaseListResult = z.infer<typeof ReleaseListResultSchema>;
@@ -426,6 +469,15 @@ export const ApiResultSchema = z.object({
   body: z.unknown(),
   endpoint: z.string(),
   method: z.string(),
+  responseHeaders: z.record(z.string(), z.string()).optional(),
+  pagination: z
+    .object({
+      hasNext: z.boolean(),
+      next: z.string().optional(),
+      last: z.string().optional(),
+    })
+    .optional(),
+  graphqlErrors: z.array(z.unknown()).optional(),
   // P1-gap #141: Preserve API error body for debugging
   errorBody: z.unknown().optional(),
 });

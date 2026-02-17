@@ -8,6 +8,16 @@ import { PrChecksResultSchema } from "../schemas/index.js";
 
 const PR_CHECKS_FIELDS = "name,state,bucket,description,event,workflow,link,startedAt,completedAt";
 
+function classifyPrChecksError(
+  stderr: string,
+): "not-found" | "permission-denied" | "in-progress" | "unknown" {
+  const lower = stderr.toLowerCase();
+  if (/not found|could not resolve|no pull request/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/pending|in progress|checks are still running/.test(lower)) return "in-progress";
+  return "unknown";
+}
+
 /** Registers the `pr-checks` tool on the given MCP server. */
 export function registerPrChecksTool(server: McpServer) {
   server.registerTool(
@@ -59,7 +69,21 @@ export function registerPrChecksTool(server: McpServer) {
 
       // Exit code 8 means checks are still pending — gh still returns valid JSON
       if (result.exitCode !== 0 && result.exitCode !== 8) {
-        throw new Error(`gh pr checks failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return compactDualOutput(
+          {
+            pr: prNum,
+            checks: [],
+            summary: { total: 0, passed: 0, failed: 0, pending: 0, skipped: 0, cancelled: 0 },
+            errorType: classifyPrChecksError(combined),
+            errorMessage: combined || "gh pr checks failed",
+          },
+          result.stdout,
+          formatPrChecks,
+          compactPrChecksMap,
+          formatPrChecksCompact,
+          compact === false,
+        );
       }
 
       const data = parsePrChecks(result.stdout, prNum);

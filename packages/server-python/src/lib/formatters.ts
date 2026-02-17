@@ -13,6 +13,9 @@ import type {
   CondaList,
   CondaInfo,
   CondaEnvList,
+  CondaCreate,
+  CondaRemove,
+  CondaUpdate,
   CondaResult,
   PyenvResult,
   PoetryResult,
@@ -48,7 +51,8 @@ export function formatMypy(data: MypyResult): string {
 export function formatRuff(data: RuffResult): string {
   if (data.total === 0) return "ruff: no issues found.";
 
-  const lines = [`ruff: ${data.total} issues (${data.fixable} fixable)`];
+  const fixedPart = data.fixedCount !== undefined ? `, ${data.fixedCount} fixed` : "";
+  const lines = [`ruff: ${data.total} issues (${data.fixable} fixable${fixedPart})`];
   for (const d of data.diagnostics ?? []) {
     const fixInfo = d.fixApplicability ? ` [fix: ${d.fixApplicability}]` : "";
     lines.push(`  ${d.file}:${d.line}:${d.column} ${d.code}: ${d.message}${fixInfo}`);
@@ -104,7 +108,7 @@ export function formatUvInstall(data: UvInstall): string {
     }
     return lines.join("\n");
   }
-  if (data.total === 0) return "All requirements already satisfied.";
+  if (data.alreadySatisfied || data.total === 0) return "All requirements already satisfied.";
 
   const lines = [`Installed ${data.total} packages in ${data.duration}s:`];
   for (const pkg of data.installed ?? []) {
@@ -118,11 +122,21 @@ export function formatUvRun(data: UvRun): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
   const lines = [`uv run ${status} in ${data.duration}s`];
 
+  if (data.uvDiagnostics && data.uvDiagnostics.length > 0) {
+    lines.push("uv diagnostics:");
+    for (const d of data.uvDiagnostics) {
+      lines.push(`  ${d}`);
+    }
+  }
   if (data.stdout?.trim()) {
     lines.push("stdout:", data.stdout.trim());
   }
-  if (data.stderr?.trim()) {
-    lines.push("stderr:", data.stderr.trim());
+  const commandErr = data.commandStderr ?? data.stderr;
+  if (commandErr?.trim()) {
+    lines.push("stderr:", commandErr.trim());
+  }
+  if (data.truncated) {
+    lines.push("output truncated");
   }
 
   return lines.join("\n");
@@ -131,6 +145,11 @@ export function formatUvRun(data: UvRun): string {
 /** Formats structured Black formatter results into a human-readable summary. */
 export function formatBlack(data: BlackResult): string {
   if (data.errorType === "internal_error") {
+    if (data.diagnostics && data.diagnostics.length > 0) {
+      const first = data.diagnostics[0];
+      const col = first.column !== undefined ? `:${first.column}` : "";
+      return `black: internal error (exit 123). ${first.file}:${first.line}${col} ${first.message}`;
+    }
     return "black: internal error (exit 123). Check for syntax errors.";
   }
 
@@ -234,6 +253,7 @@ export interface RuffResultCompact {
   success: boolean;
   total: number;
   fixable: number;
+  fixedCount?: number;
 }
 
 export function compactRuffMap(data: RuffResult): RuffResultCompact {
@@ -241,12 +261,14 @@ export function compactRuffMap(data: RuffResult): RuffResultCompact {
     success: data.success,
     total: data.total,
     fixable: data.fixable,
+    fixedCount: data.fixedCount,
   };
 }
 
 export function formatRuffCompact(data: RuffResultCompact): string {
   if (data.total === 0) return "ruff: no issues found.";
-  return `ruff: ${data.total} issues (${data.fixable} fixable)`;
+  const fixedPart = data.fixedCount !== undefined ? `, ${data.fixedCount} fixed` : "";
+  return `ruff: ${data.total} issues (${data.fixable} fixable${fixedPart})`;
 }
 
 /** Compact black: success + changed/unchanged counts + errorType. Drop individual file lists. */
@@ -328,6 +350,7 @@ export interface UvInstallCompact {
   success: boolean;
   total: number;
   duration: number;
+  alreadySatisfied?: boolean;
   error?: string;
   resolutionConflicts?: { package: string; constraint: string }[];
 }
@@ -337,6 +360,7 @@ export function compactUvInstallMap(data: UvInstall): UvInstallCompact {
     success: data.success,
     total: data.total,
     duration: data.duration,
+    alreadySatisfied: data.alreadySatisfied,
     error: data.error,
     resolutionConflicts: data.resolutionConflicts,
   };
@@ -349,7 +373,7 @@ export function formatUvInstallCompact(data: UvInstallCompact): string {
     }
     return "uv install failed.";
   }
-  if (data.total === 0) return "All requirements already satisfied.";
+  if (data.alreadySatisfied || data.total === 0) return "All requirements already satisfied.";
   return `Installed ${data.total} packages in ${data.duration}s.`;
 }
 
@@ -359,6 +383,7 @@ export interface UvRunCompact {
   exitCode: number;
   success: boolean;
   duration: number;
+  truncated?: boolean;
 }
 
 export function compactUvRunMap(data: UvRun): UvRunCompact {
@@ -366,12 +391,14 @@ export function compactUvRunMap(data: UvRun): UvRunCompact {
     exitCode: data.exitCode,
     success: data.success,
     duration: data.duration,
+    truncated: data.truncated,
   };
 }
 
 export function formatUvRunCompact(data: UvRunCompact): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
-  return `uv run ${status} in ${data.duration}s`;
+  const truncated = data.truncated ? " (truncated)" : "";
+  return `uv run ${status} in ${data.duration}s${truncated}`;
 }
 
 // ── pip-list formatters ──────────────────────────────────────────────
@@ -544,6 +571,7 @@ export function formatRuffFormatCompact(data: RuffFormatResultCompact): string {
 
 /** Formats structured conda list results into a human-readable package listing. */
 export function formatCondaList(data: CondaList): string {
+  if (data.parseError) return `conda list parse error: ${data.parseError}`;
   if (data.total === 0) return "conda: no packages found.";
 
   const env = data.environment ? ` (env: ${data.environment})` : "";
@@ -556,6 +584,7 @@ export function formatCondaList(data: CondaList): string {
 
 /** Formats structured conda info results into a human-readable summary. */
 export function formatCondaInfo(data: CondaInfo): string {
+  if (data.parseError) return `conda info parse error: ${data.parseError}`;
   const lines = [
     `conda ${data.condaVersion}`,
     `  platform: ${data.platform}`,
@@ -573,6 +602,7 @@ export function formatCondaInfo(data: CondaInfo): string {
 
 /** Formats structured conda env list results into a human-readable listing. */
 export function formatCondaEnvList(data: CondaEnvList): string {
+  if (data.parseError) return `conda env list parse error: ${data.parseError}`;
   if (data.total === 0) return "conda: no environments found.";
 
   const lines = [`conda environments: ${data.total}`];
@@ -581,6 +611,36 @@ export function formatCondaEnvList(data: CondaEnvList): string {
     lines.push(`  ${env.name}${marker}: ${env.path}`);
   }
   return lines.join("\n");
+}
+
+function formatCondaCreate(data: CondaCreate): string {
+  if (!data.success) return `conda create failed: ${data.error || "unknown error"}`;
+  const target = data.environment
+    ? ` (${data.environment})`
+    : data.prefix
+      ? ` (${data.prefix})`
+      : "";
+  return `conda create${target}: ${data.totalAdded} packages added.`;
+}
+
+function formatCondaRemove(data: CondaRemove): string {
+  if (!data.success) return `conda remove failed: ${data.error || "unknown error"}`;
+  const target = data.environment
+    ? ` (${data.environment})`
+    : data.prefix
+      ? ` (${data.prefix})`
+      : "";
+  return `conda remove${target}: ${data.totalRemoved} packages removed.`;
+}
+
+function formatCondaUpdate(data: CondaUpdate): string {
+  if (!data.success) return `conda update failed: ${data.error || "unknown error"}`;
+  const target = data.environment
+    ? ` (${data.environment})`
+    : data.prefix
+      ? ` (${data.prefix})`
+      : "";
+  return `conda update${target}: ${data.totalUpdated} packages changed.`;
 }
 
 /** Formats any CondaResult variant into human-readable text. */
@@ -592,6 +652,12 @@ export function formatCondaResult(data: CondaResult): string {
       return formatCondaInfo(data as CondaInfo);
     case "env-list":
       return formatCondaEnvList(data as CondaEnvList);
+    case "create":
+      return formatCondaCreate(data as CondaCreate);
+    case "remove":
+      return formatCondaRemove(data as CondaRemove);
+    case "update":
+      return formatCondaUpdate(data as CondaUpdate);
     default:
       return "conda: unknown action.";
   }
@@ -605,6 +671,7 @@ export interface CondaListCompact {
   action: "list";
   total: number;
   environment?: string;
+  parseError?: string;
 }
 
 export function compactCondaListMap(data: CondaList): CondaListCompact {
@@ -612,10 +679,12 @@ export function compactCondaListMap(data: CondaList): CondaListCompact {
     action: "list",
     total: data.total,
     environment: data.environment,
+    parseError: data.parseError,
   };
 }
 
 export function formatCondaListCompact(data: CondaListCompact): string {
+  if (data.parseError) return `conda list parse error: ${data.parseError}`;
   if (data.total === 0) return "conda: no packages found.";
   const env = data.environment ? ` (env: ${data.environment})` : "";
   return `conda list${env}: ${data.total} packages.`;
@@ -628,6 +697,7 @@ export interface CondaInfoCompact {
   condaVersion: string;
   platform: string;
   pythonVersion: string;
+  parseError?: string;
 }
 
 export function compactCondaInfoMap(data: CondaInfo): CondaInfoCompact {
@@ -636,10 +706,12 @@ export function compactCondaInfoMap(data: CondaInfo): CondaInfoCompact {
     condaVersion: data.condaVersion,
     platform: data.platform,
     pythonVersion: data.pythonVersion,
+    parseError: data.parseError,
   };
 }
 
 export function formatCondaInfoCompact(data: CondaInfoCompact): string {
+  if (data.parseError) return `conda info parse error: ${data.parseError}`;
   return `conda ${data.condaVersion} (${data.platform}, python ${data.pythonVersion})`;
 }
 
@@ -648,21 +720,97 @@ export interface CondaEnvListCompact {
   [key: string]: unknown;
   action: "env-list";
   total: number;
+  parseError?: string;
 }
 
 export function compactCondaEnvListMap(data: CondaEnvList): CondaEnvListCompact {
   return {
     action: "env-list",
     total: data.total,
+    parseError: data.parseError,
   };
 }
 
 export function formatCondaEnvListCompact(data: CondaEnvListCompact): string {
+  if (data.parseError) return `conda env list parse error: ${data.parseError}`;
   if (data.total === 0) return "conda: no environments found.";
   return `conda: ${data.total} environments.`;
 }
 
-export type CondaResultCompact = CondaListCompact | CondaInfoCompact | CondaEnvListCompact;
+/** Compact conda create/remove/update: success + count summary. */
+export interface CondaCreateCompact {
+  [key: string]: unknown;
+  action: "create";
+  success: boolean;
+  totalAdded: number;
+  error?: string;
+}
+
+export interface CondaRemoveCompact {
+  [key: string]: unknown;
+  action: "remove";
+  success: boolean;
+  totalRemoved: number;
+  error?: string;
+}
+
+export interface CondaUpdateCompact {
+  [key: string]: unknown;
+  action: "update";
+  success: boolean;
+  totalUpdated: number;
+  error?: string;
+}
+
+function compactCondaCreateMap(data: CondaCreate): CondaCreateCompact {
+  return {
+    action: "create",
+    success: data.success,
+    totalAdded: data.totalAdded,
+    error: data.error,
+  };
+}
+
+function compactCondaRemoveMap(data: CondaRemove): CondaRemoveCompact {
+  return {
+    action: "remove",
+    success: data.success,
+    totalRemoved: data.totalRemoved,
+    error: data.error,
+  };
+}
+
+function compactCondaUpdateMap(data: CondaUpdate): CondaUpdateCompact {
+  return {
+    action: "update",
+    success: data.success,
+    totalUpdated: data.totalUpdated,
+    error: data.error,
+  };
+}
+
+function formatCondaCreateCompact(data: CondaCreateCompact): string {
+  if (!data.success) return "conda create failed.";
+  return `conda create: ${data.totalAdded} packages added.`;
+}
+
+function formatCondaRemoveCompact(data: CondaRemoveCompact): string {
+  if (!data.success) return "conda remove failed.";
+  return `conda remove: ${data.totalRemoved} packages removed.`;
+}
+
+function formatCondaUpdateCompact(data: CondaUpdateCompact): string {
+  if (!data.success) return "conda update failed.";
+  return `conda update: ${data.totalUpdated} packages changed.`;
+}
+
+export type CondaResultCompact =
+  | CondaListCompact
+  | CondaInfoCompact
+  | CondaEnvListCompact
+  | CondaCreateCompact
+  | CondaRemoveCompact
+  | CondaUpdateCompact;
 
 export function compactCondaResultMap(data: CondaResult): CondaResultCompact {
   switch (data.action) {
@@ -672,6 +820,12 @@ export function compactCondaResultMap(data: CondaResult): CondaResultCompact {
       return compactCondaInfoMap(data as CondaInfo);
     case "env-list":
       return compactCondaEnvListMap(data as CondaEnvList);
+    case "create":
+      return compactCondaCreateMap(data as CondaCreate);
+    case "remove":
+      return compactCondaRemoveMap(data as CondaRemove);
+    case "update":
+      return compactCondaUpdateMap(data as CondaUpdate);
     default:
       return { action: "list", total: 0 };
   }
@@ -685,6 +839,12 @@ export function formatCondaResultCompact(data: CondaResultCompact): string {
       return formatCondaInfoCompact(data as CondaInfoCompact);
     case "env-list":
       return formatCondaEnvListCompact(data as CondaEnvListCompact);
+    case "create":
+      return formatCondaCreateCompact(data as CondaCreateCompact);
+    case "remove":
+      return formatCondaRemoveCompact(data as CondaRemoveCompact);
+    case "update":
+      return formatCondaUpdateCompact(data as CondaUpdateCompact);
   }
 }
 
@@ -731,6 +891,12 @@ export function formatPyenv(data: PyenvResult): string {
       return data.globalVersion
         ? `pyenv: global version set to ${data.globalVersion}`
         : "pyenv: global version set.";
+    case "which":
+      return data.commandPath
+        ? `pyenv: resolved command path ${data.commandPath}`
+        : "pyenv: command path not found.";
+    case "rehash":
+      return "pyenv: shims rehashed.";
   }
 }
 
@@ -739,17 +905,27 @@ export interface PyenvResultCompact {
   [key: string]: unknown;
   action: string;
   success: boolean;
+  keyValue?: string;
 }
 
 export function compactPyenvMap(data: PyenvResult): PyenvResultCompact {
+  let keyValue: string | undefined;
+  if (data.action === "version") keyValue = data.current;
+  if (data.action === "local") keyValue = data.localVersion;
+  if (data.action === "global") keyValue = data.globalVersion;
+  if (data.action === "install") keyValue = data.installed;
+  if (data.action === "uninstall") keyValue = data.uninstalled;
+  if (data.action === "which") keyValue = data.commandPath;
   return {
     action: data.action,
     success: data.success,
+    keyValue,
   };
 }
 
 export function formatPyenvCompact(data: PyenvResultCompact): string {
   if (!data.success) return `pyenv ${data.action} failed.`;
+  if (data.keyValue) return `pyenv ${data.action}: ${data.keyValue}`;
   return `pyenv ${data.action}: success.`;
 }
 
@@ -780,7 +956,17 @@ export function formatPoetry(data: PoetryResult): string {
     return lines.join("\n");
   }
 
-  // install, add, remove
+  if (data.action === "check" || data.action === "lock" || data.action === "export") {
+    const msgs = data.messages ?? [];
+    if (msgs.length === 0) return `poetry ${data.action}: success.`;
+    const lines = [`poetry ${data.action}:`];
+    for (const m of msgs) {
+      lines.push(`  ${m}`);
+    }
+    return lines.join("\n");
+  }
+
+  // install, add, remove, update
   const pkgs = data.packages ?? [];
   if (pkgs.length === 0) return `poetry ${data.action}: no changes.`;
   const lines = [`poetry ${data.action}: ${pkgs.length} packages:`];
@@ -817,6 +1003,10 @@ export function formatPoetryCompact(data: PoetryResultCompact): string {
   if (data.action === "build") {
     if (data.total === 0) return "poetry build: no artifacts produced.";
     return `Built ${data.total} artifacts.`;
+  }
+
+  if (data.action === "check" || data.action === "lock" || data.action === "export") {
+    return `poetry ${data.action}: success.`;
   }
 
   if (data.total === 0) return `poetry ${data.action}: no changes.`;

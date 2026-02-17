@@ -203,7 +203,7 @@ describe("formatNx", () => {
       cached: 1,
     };
     const output = formatNx(data);
-    expect(output).toContain("nx: 2 passed, 0 failed, 1 cached (5.4s)");
+    expect(output).toContain("nx: 2 passed, 0 failed, 0 skipped, 1 cached (5.4s)");
     expect(output).toContain("✔ app:build [local] (1.2s)");
     expect(output).toContain("✔ lib:build (3.4s)");
   });
@@ -238,7 +238,7 @@ describe("formatNx", () => {
       cached: 1,
     };
     const output = formatNx(data);
-    expect(output).toContain("1 passed, 1 failed, 1 cached");
+    expect(output).toContain("1 passed, 1 failed, 0 skipped, 1 cached");
     expect(output).toContain("✖ app:build (2.1s)");
   });
 
@@ -253,7 +253,7 @@ describe("formatNx", () => {
       cached: 0,
     };
     const output = formatNx(data);
-    expect(output).toBe("nx: 0 passed, 0 failed, 0 cached (0.1s)");
+    expect(output).toBe("nx: 0 passed, 0 failed, 0 skipped, 0 cached (0.1s)");
   });
 
   it("formats tasks without duration", () => {

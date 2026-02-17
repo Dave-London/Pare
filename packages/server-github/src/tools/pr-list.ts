@@ -148,7 +148,29 @@ export function registerPrListTool(server: McpServer) {
         throw new Error(`gh pr list failed: ${result.stderr}`);
       }
 
-      const data = parsePrList(result.stdout);
+      let totalAvailable: number | undefined;
+      if (limit < 1000) {
+        const countArgs = ["pr", "list", "--json", PR_LIST_FIELDS, "--limit", "1000"];
+        if (state) countArgs.push("--state", state);
+        if (author) countArgs.push("--author", author);
+        if (label) countArgs.push("--label", label);
+        if (labels && labels.length > 0) {
+          for (const l of labels) countArgs.push("--label", l);
+        }
+        if (draft) countArgs.push("--draft");
+        if (base) countArgs.push("--base", base);
+        if (head) countArgs.push("--head", head);
+        if (assignee) countArgs.push("--assignee", assignee);
+        if (search) countArgs.push("--search", search);
+        if (repo) countArgs.push("--repo", repo);
+        if (app) countArgs.push("--app", app);
+        const countResult = await ghCmd(countArgs, cwd);
+        if (countResult.exitCode === 0) {
+          totalAvailable = parsePrList(countResult.stdout).total;
+        }
+      }
+
+      const data = parsePrList(result.stdout, totalAvailable);
       return compactDualOutput(
         data,
         result.stdout,

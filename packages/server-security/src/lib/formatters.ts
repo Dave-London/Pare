@@ -19,7 +19,10 @@ export function formatTrivyScan(data: TrivyScanResult): string {
     for (const v of data.vulnerabilities ?? []) {
       const fixed = v.fixedVersion ? ` -> ${v.fixedVersion}` : "";
       const title = v.title ? ` - ${v.title}` : "";
-      lines.push(`  [${v.severity}] ${v.id}: ${v.package}@${v.installedVersion}${fixed}${title}`);
+      const cvss = v.cvssScore !== undefined ? ` (CVSS ${v.cvssScore})` : "";
+      lines.push(
+        `  [${v.severity}] ${v.id}: ${v.package}@${v.installedVersion}${fixed}${cvss}${title}`,
+      );
     }
   }
 
@@ -77,8 +80,19 @@ export function formatSemgrepScan(data: SemgrepScanResult): string {
     lines.push("");
     for (const f of data.findings ?? []) {
       const category = f.category ? ` [${f.category}]` : "";
+      const cwe = (f.cwe ?? []).length > 0 ? ` CWE: ${(f.cwe ?? []).join(",")}` : "";
       lines.push(`  [${f.severity}] ${f.ruleId}: ${f.path}:${f.startLine}-${f.endLine}${category}`);
-      lines.push(`    ${f.message}`);
+      lines.push(`    ${f.message}${cwe}`);
+    }
+  }
+
+  if ((data.errors ?? []).length > 0) {
+    lines.push("");
+    lines.push(`Errors: ${data.errors?.length ?? 0}`);
+    for (const err of data.errors ?? []) {
+      const type = err.type ? `[${err.type}] ` : "";
+      const path = err.path ? ` (${err.path})` : "";
+      lines.push(`  ${type}${err.message}${path}`);
     }
   }
 
@@ -123,6 +137,13 @@ export function formatGitleaksScan(data: GitleaksScanResult): string {
 
   lines.push(`Gitleaks secret detection scan`);
   lines.push(`Found ${data.totalFindings} secret(s)`);
+  if (data.summary?.ruleCounts && Object.keys(data.summary.ruleCounts).length > 0) {
+    lines.push(
+      `Rule counts: ${Object.entries(data.summary.ruleCounts)
+        .map(([rule, count]) => `${rule}=${count}`)
+        .join(", ")}`,
+    );
+  }
 
   if ((data.findings ?? []).length > 0) {
     lines.push("");

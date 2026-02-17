@@ -17,6 +17,8 @@ export const TscResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(TscDiagnosticSchema),
   total: z.number().optional(),
+  totalFiles: z.number().optional(),
+  emittedFiles: z.array(z.string()).optional(),
   errors: z.number(),
   warnings: z.number(),
 });
@@ -38,6 +40,8 @@ export interface TscResult {
   success: boolean;
   diagnostics: TscDiagnostic[];
   total: number;
+  totalFiles?: number;
+  emittedFiles?: string[];
   errors: number;
   warnings: number;
 }
@@ -105,6 +109,14 @@ export const EsbuildResultSchema = z.object({
   errors: z.array(EsbuildErrorSchema).optional(),
   warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
+  outputFileStats: z
+    .array(
+      z.object({
+        file: z.string(),
+        bytes: z.number(),
+      }),
+    )
+    .optional(),
   duration: z.number(),
   metafile: EsbuildMetafileSchema.optional(),
 });
@@ -144,6 +156,7 @@ export interface EsbuildResult {
   errors?: EsbuildError[];
   warnings?: EsbuildWarning[];
   outputFiles?: string[];
+  outputFileStats?: Array<{ file: string; bytes: number }>;
   duration: number;
   metafile?: EsbuildMetafile;
 }
@@ -157,6 +170,8 @@ export const ViteOutputFileSchema = z.object({
   file: z.string(),
   size: z.string(),
   sizeBytes: z.number().optional(),
+  gzipSize: z.string().optional(),
+  gzipBytes: z.number().optional(),
 });
 
 /** Zod schema for structured Vite production build output with files, sizes, and duration.
@@ -175,6 +190,8 @@ export interface ViteOutputFile {
   file: string;
   size: string;
   sizeBytes?: number;
+  gzipSize?: string;
+  gzipBytes?: number;
 }
 
 /** Full Vite build result -- always returned by the parser. */
@@ -197,6 +214,14 @@ export const WebpackAssetSchema = z.object({
   size: z.number(),
 });
 
+/** Zod schema for a single webpack chunk entry. */
+export const WebpackChunkSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
+  names: z.array(z.string()).optional(),
+  entry: z.boolean().optional(),
+  files: z.array(z.string()).optional(),
+});
+
 /** Zod schema for a webpack profile module entry with name and timing. */
 export const WebpackProfileModuleSchema = z.object({
   name: z.string(),
@@ -214,6 +239,7 @@ export const WebpackResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
   assets: z.array(WebpackAssetSchema).optional(),
+  chunks: z.array(WebpackChunkSchema).optional(),
   errors: z.array(z.string()).optional(),
   warnings: z.array(z.string()).optional(),
   modules: z.number().optional(),
@@ -244,6 +270,12 @@ export interface WebpackResult {
   success: boolean;
   duration: number;
   assets?: WebpackAsset[];
+  chunks?: Array<{
+    id?: string | number;
+    names?: string[];
+    entry?: boolean;
+    files?: string[];
+  }>;
   errors?: string[];
   warnings?: string[];
   modules?: number;
@@ -274,6 +306,7 @@ export const TurboResultSchema = z.object({
   passed: z.number(),
   failed: z.number(),
   cached: z.number(),
+  summary: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** Full turbo task entry. */
@@ -297,6 +330,7 @@ export interface TurboResult {
   passed: number;
   failed: number;
   cached: number;
+  summary?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +359,7 @@ export const NxResultSchema = z.object({
   passed: z.number(),
   failed: z.number(),
   cached: z.number(),
+  affectedProjects: z.array(z.string()).optional(),
 });
 
 /** Full Nx task entry. */
@@ -347,4 +382,5 @@ export interface NxResult {
   passed: number;
   failed: number;
   cached: number;
+  affectedProjects?: string[];
 }

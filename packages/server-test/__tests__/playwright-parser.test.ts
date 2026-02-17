@@ -21,6 +21,7 @@ describe("parsePlaywrightJson", () => {
     expect(result.suites).toHaveLength(2);
     expect(result.suites[0].title).toBe("auth.spec.ts");
     expect(result.suites[0].tests).toHaveLength(3);
+    expect(result.suites[0].tests[0].projectName).toBe("chromium");
     expect(result.suites[1].title).toBe("dashboard.spec.ts");
     expect(result.suites[1].tests).toHaveLength(3);
 

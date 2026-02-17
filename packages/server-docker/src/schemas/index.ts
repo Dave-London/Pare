@@ -48,6 +48,16 @@ export const DockerBuildSchema = z.object({
   imageId: z.string().optional(),
   duration: z.number(),
   steps: z.number().optional(),
+  cacheHits: z.number().optional(),
+  cacheMisses: z.number().optional(),
+  cacheByStep: z
+    .array(
+      z.object({
+        step: z.string(),
+        cached: z.boolean(),
+      }),
+    )
+    .optional(),
   /** #97: Structured error objects with optional line numbers and Dockerfile context. */
   errors: z.array(BuildErrorSchema).optional(),
   errorCount: z.number().optional(),
@@ -59,6 +69,14 @@ export type DockerBuild = z.infer<typeof DockerBuildSchema>;
 export const DockerLogsSchema = z.object({
   container: z.string(),
   lines: z.array(z.string()).optional(),
+  entries: z
+    .array(
+      z.object({
+        timestamp: z.string().optional(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
   total: z.number(),
   isTruncated: z.boolean().optional(),
   totalLines: z.number().optional(),
@@ -78,10 +96,12 @@ export const ImageSchema = z.object({
   repository: z.string(),
   tag: z.string(),
   size: z.string(),
+  sizeBytes: z.number().optional(),
   digest: z.string().optional(),
   created: z.string().optional(),
   /** #110: ISO 8601 timestamp for machine-readable creation dates. */
   createdAt: z.string().optional(),
+  labels: z.record(z.string(), z.string()).optional(),
 });
 
 /** Zod schema for structured docker images output with image list and total count. */
@@ -121,6 +141,9 @@ export const DockerExecSchema = z.object({
   duration: z.number().optional(),
   /** #108: Whether the output was truncated to the limit. */
   isTruncated: z.boolean().optional(),
+  timedOut: z.boolean().optional(),
+  json: z.unknown().optional(),
+  parseJsonError: z.string().optional(),
 });
 
 export type DockerExec = z.infer<typeof DockerExecSchema>;
@@ -138,6 +161,8 @@ export const DockerComposeUpSchema = z.object({
   started: z.number(),
   /** #107: Per-service state details. */
   serviceStates: z.array(ComposeUpServiceStateSchema).optional(),
+  networksCreated: z.number().optional(),
+  volumesCreated: z.number().optional(),
 });
 
 export type DockerComposeUp = z.infer<typeof DockerComposeUpSchema>;
@@ -172,6 +197,8 @@ export const DockerPullSchema = z.object({
   success: z.boolean(),
   /** #120: Size parsed from pull output summary line. */
   size: z.string().optional(),
+  errorType: z.enum(["auth", "not-found", "network-timeout", "rate-limit", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type DockerPull = z.infer<typeof DockerPullSchema>;
@@ -210,7 +237,7 @@ export const DockerInspectSchema = z.object({
   id: z.string(),
   name: z.string(),
   /** Discriminates between container and image inspect results. */
-  inspectType: z.enum(["container", "image"]).optional(),
+  inspectType: z.enum(["container", "image", "volume", "network"]).optional(),
   state: z
     .object({
       status: z.string(),
@@ -241,6 +268,21 @@ export const DockerInspectSchema = z.object({
   networkSettings: NetworkSettingsSchema.optional(),
   /** #112: Mount/volume information. */
   mounts: z.array(MountSchema).optional(),
+  // Network/volume inspect fields
+  driver: z.string().optional(),
+  scope: z.string().optional(),
+  mountpoint: z.string().optional(),
+  labels: z.record(z.string(), z.string()).optional(),
+  relatedTargets: z
+    .array(
+      z.object({
+        target: z.string(),
+        id: z.string(),
+        name: z.string(),
+        inspectType: z.enum(["container", "image", "volume", "network"]).optional(),
+      }),
+    )
+    .optional(),
 });
 
 export type DockerInspect = z.infer<typeof DockerInspectSchema>;
@@ -276,6 +318,7 @@ export const VolumeSchema = z.object({
   driver: z.string(),
   mountpoint: z.string().optional(),
   scope: z.string().optional(),
+  status: z.string().optional(),
   createdAt: z.string().optional(),
   /** #125: Volume labels for compose-project identification. */
   labels: z.record(z.string(), z.string()).optional(),
@@ -307,6 +350,7 @@ export const ComposeServiceSchema = z.object({
   ports: z.array(ComposeServicePortSchema).optional(),
   /** #105: Health status from compose ps JSON output. */
   health: z.string().optional(),
+  exitCode: z.number().optional(),
 });
 
 /** Zod schema for structured docker compose ps output. */
@@ -367,6 +411,8 @@ export const ComposeBuildServiceSchema = z.object({
   success: z.boolean(),
   duration: z.number().optional(),
   error: z.string().optional(),
+  imageId: z.string().optional(),
+  image: z.string().optional(),
 });
 
 /** Zod schema for structured docker compose build output with per-service build status. */
@@ -384,6 +430,7 @@ export type DockerComposeBuild = z.infer<typeof DockerComposeBuildSchema>;
 export const ContainerStatsSchema = z.object({
   id: z.string(),
   name: z.string(),
+  state: z.string().optional(),
   cpuPercent: z.number(),
   memoryUsage: z.string().optional(),
   memoryLimit: z.string().optional(),

@@ -10,7 +10,7 @@ describe("parseCargoDocOutput", () => {
       " Documenting myapp v0.1.0 (/home/user/myapp)",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
     expect(result.warnings).toBe(0);
@@ -36,7 +36,7 @@ describe("parseCargoDocOutput", () => {
       "warning: 2 warnings emitted",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
     expect(result.warnings).toBe(2);
@@ -60,13 +60,13 @@ describe("parseCargoDocOutput", () => {
       "  --> src/main.rs:5:10",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 101);
+    const result = parseCargoDocOutput("", stderr, 101);
 
     expect(result.success).toBe(false);
   });
 
   it("parses empty stderr", () => {
-    const result = parseCargoDocOutput("", 0);
+    const result = parseCargoDocOutput("", "", 0);
 
     expect(result.success).toBe(true);
     expect(result.warnings).toBe(0);
@@ -76,7 +76,7 @@ describe("parseCargoDocOutput", () => {
   it("parses warning with code bracket format and extracts details", () => {
     const stderr = ["warning[E0599]: no method named `foo`", "  --> src/main.rs:5:10"].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.warnings).toBe(1);
     expect(result.warningDetails).toHaveLength(1);
@@ -90,7 +90,7 @@ describe("parseCargoDocOutput", () => {
   it("handles warnings without location info", () => {
     const stderr = "warning: some general warning without a file location";
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.warnings).toBe(1);
     expect(result.warningDetails).toHaveLength(1);
@@ -106,13 +106,13 @@ describe("parseCargoDocOutput", () => {
       "   Generated /home/user/myapp/target/doc/myapp/index.html",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.warnings).toBe(0);
   });
 
   it("sets outputDir when cwd is provided", () => {
-    const result = parseCargoDocOutput("", 0, "/home/user/myapp");
+    const result = parseCargoDocOutput("", "", 0, "/home/user/myapp");
 
     expect(result.outputDir).toBe("/home/user/myapp/target/doc");
   });

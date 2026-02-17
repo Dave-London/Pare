@@ -61,9 +61,10 @@ export function registerFmtTool(server: McpServer) {
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      // In fix mode, pass both -l and -w so gofmt lists changed files AND rewrites them.
+      // In fix mode, pass -l -w -d so gofmt lists changed files, rewrites them,
+      // and emits per-file diffs for structured `changes` output.
       // In check mode, only pass -l to list files that need formatting.
-      const args = check ? ["-l"] : ["-l", "-w"];
+      const args = check ? ["-l"] : ["-l", "-w", "-d"];
       if (diff) args.push("-d");
       if (simplify) args.push("-s");
       if (allErrors) args.push("-e");

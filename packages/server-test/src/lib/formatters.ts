@@ -19,6 +19,8 @@ export function formatTestRun(r: TestRun): string {
 export function formatCoverage(c: Coverage): string {
   const parts = [`Coverage (${c.framework}): ${c.summary.lines}% lines`];
 
+  if (c.summary.statements !== undefined) parts[0] += `, ${c.summary.statements}% statements`;
+
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
@@ -78,6 +80,7 @@ export interface CoverageCompact {
   [key: string]: unknown;
   framework: string;
   summary: {
+    statements?: number;
     lines: number;
     branches?: number;
     functions?: number;
@@ -97,6 +100,8 @@ export function compactCoverageMap(c: Coverage): CoverageCompact {
 
 export function formatCoverageCompact(c: CoverageCompact): string {
   const parts = [`Coverage (${c.framework}): ${c.summary.lines}% lines`];
+
+  if (c.summary.statements !== undefined) parts[0] += `, ${c.summary.statements}% statements`;
 
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;

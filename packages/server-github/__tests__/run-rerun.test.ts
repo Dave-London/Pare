@@ -10,7 +10,7 @@ describe("parseRunRerun", () => {
     const result = parseRunRerun("", "✓ Requested rerun of run 12345\n", 12345, false);
 
     expect(result.runId).toBe(12345);
-    expect(result.status).toBe("requested");
+    expect(result.status).toBe("requested-full");
     expect(result.failedOnly).toBe(false);
     expect(result.url).toBe("");
   });
@@ -19,7 +19,7 @@ describe("parseRunRerun", () => {
     const result = parseRunRerun("", "✓ Requested rerun (failed jobs) of run 99\n", 99, true);
 
     expect(result.runId).toBe(99);
-    expect(result.status).toBe("requested");
+    expect(result.status).toBe("requested-failed");
     expect(result.failedOnly).toBe(true);
     expect(result.url).toBe("");
   });
@@ -51,7 +51,7 @@ describe("parseRunRerun", () => {
     const result = parseRunRerun("", "", 1, false);
 
     expect(result.runId).toBe(1);
-    expect(result.status).toBe("requested");
+    expect(result.status).toBe("requested-full");
     expect(result.failedOnly).toBe(false);
     expect(result.url).toBe("");
   });
@@ -63,7 +63,7 @@ describe("formatRunRerun", () => {
   it("formats rerun result for all jobs", () => {
     const data: RunRerunResult = {
       runId: 12345,
-      status: "requested",
+      status: "requested-full",
       failedOnly: false,
       url: "https://github.com/owner/repo/actions/runs/12345",
     };
@@ -75,7 +75,7 @@ describe("formatRunRerun", () => {
   it("formats rerun result for failed jobs only", () => {
     const data: RunRerunResult = {
       runId: 99,
-      status: "requested",
+      status: "requested-failed",
       failedOnly: true,
       url: "https://github.com/owner/repo/actions/runs/99",
     };
@@ -87,7 +87,7 @@ describe("formatRunRerun", () => {
   it("formats rerun result without URL", () => {
     const data: RunRerunResult = {
       runId: 1,
-      status: "requested",
+      status: "requested-full",
       failedOnly: false,
       url: "",
     };

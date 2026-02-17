@@ -6,6 +6,16 @@ import { parseIssueClose } from "../lib/parsers.js";
 import { formatIssueClose } from "../lib/formatters.js";
 import { IssueCloseResultSchema } from "../schemas/index.js";
 
+function classifyIssueCloseError(
+  text: string,
+): "not-found" | "permission-denied" | "already-closed" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/already closed|already been closed/.test(lower)) return "already-closed";
+  if (/not found|could not resolve|no issue/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  return "unknown";
+}
+
 /** Registers the `issue-close` tool on the given MCP server. */
 export function registerIssueCloseTool(server: McpServer) {
   server.registerTool(
@@ -70,10 +80,23 @@ export function registerIssueCloseTool(server: McpServer) {
 
         if (isAlreadyClosed) {
           // Return structured output with alreadyClosed flag
-          const data = parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr);
+          const data = {
+            ...parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr),
+            errorType: "already-closed" as const,
+            errorMessage: combined.trim(),
+          };
           return dualOutput(data, formatIssueClose);
         }
-        throw new Error(`gh issue close failed: ${result.stderr}`);
+        const data = {
+          number: issueNum,
+          state: "open",
+          url: "",
+          reason: reason ?? undefined,
+          commentUrl: undefined,
+          errorType: classifyIssueCloseError(combined),
+          errorMessage: combined.trim(),
+        };
+        return dualOutput(data, formatIssueClose);
       }
 
       // S-gap: Pass reason, comment, and stderr for echo in output

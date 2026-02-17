@@ -2,9 +2,9 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
-import { parseCargoBuildJson } from "../lib/parsers.js";
+import { parseCargoCheckJson } from "../lib/parsers.js";
 import { formatCargoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
-import { CargoBuildResultSchema } from "../schemas/index.js";
+import { CargoCheckResultSchema } from "../schemas/index.js";
 
 /** Registers the `check` tool on the given MCP server. */
 export function registerCheckTool(server: McpServer) {
@@ -90,7 +90,7 @@ export function registerCheckTool(server: McpServer) {
             "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
           ),
       },
-      outputSchema: CargoBuildResultSchema,
+      outputSchema: CargoCheckResultSchema,
     },
     async ({
       path,
@@ -132,10 +132,10 @@ export function registerCheckTool(server: McpServer) {
       if (offline) args.push("--offline");
 
       const result = await cargo(args, cwd);
-      const data = parseCargoBuildJson(result.stdout, result.exitCode);
+      const data = parseCargoCheckJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatCargoBuild,
         compactBuildMap,
         formatBuildCompact,

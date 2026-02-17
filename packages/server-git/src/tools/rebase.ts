@@ -87,6 +87,18 @@ export function registerRebaseTool(server: McpServer) {
       const cont = params.continue;
       const skip = params.skip;
       const quit = params.quit;
+      const verifyResult = async (result: ReturnType<typeof parseRebase>) => {
+        if (!branch || !result.success || result.state !== "completed") return result;
+        const verify = await git(["merge-base", "--is-ancestor", branch, "HEAD"], cwd);
+        if (verify.exitCode === 0) {
+          return { ...result, verified: true };
+        }
+        return {
+          ...result,
+          verified: false,
+          verificationError: (verify.stderr || verify.stdout || "verification failed").trim(),
+        };
+      };
 
       // Get current branch before rebase
       const currentResult = await git(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
@@ -109,12 +121,12 @@ export function registerRebaseTool(server: McpServer) {
           const combined = `${result.stdout}\n${result.stderr}`;
           if (/CONFLICT/.test(combined) || /could not apply/.test(combined)) {
             const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
-            return dualOutput(rebaseResult, formatRebase);
+            return dualOutput(await verifyResult(rebaseResult), formatRebase);
           }
           throw new Error(`git rebase --skip failed: ${result.stderr}`);
         }
         const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
-        return dualOutput(rebaseResult, formatRebase);
+        return dualOutput(await verifyResult(rebaseResult), formatRebase);
       }
 
       // Handle quit
@@ -136,13 +148,13 @@ export function registerRebaseTool(server: McpServer) {
           const combined = `${result.stdout}\n${result.stderr}`;
           if (/CONFLICT/.test(combined) || /could not apply/.test(combined)) {
             const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
-            return dualOutput(rebaseResult, formatRebase);
+            return dualOutput(await verifyResult(rebaseResult), formatRebase);
           }
           throw new Error(`git rebase --continue failed: ${result.stderr}`);
         }
 
         const rebaseResult = parseRebase(result.stdout, result.stderr, branch || "", current);
-        return dualOutput(rebaseResult, formatRebase);
+        return dualOutput(await verifyResult(rebaseResult), formatRebase);
       }
 
       // Normal rebase — branch is required
@@ -191,7 +203,7 @@ export function registerRebaseTool(server: McpServer) {
           if (commitCount !== undefined) {
             rebaseResult.rebasedCommits = commitCount;
           }
-          return dualOutput(rebaseResult, formatRebase);
+          return dualOutput(await verifyResult(rebaseResult), formatRebase);
         }
         throw new Error(`git rebase failed: ${result.stderr}`);
       }
@@ -201,7 +213,7 @@ export function registerRebaseTool(server: McpServer) {
       if (commitCount !== undefined) {
         rebaseResult.rebasedCommits = commitCount;
       }
-      return dualOutput(rebaseResult, formatRebase);
+      return dualOutput(await verifyResult(rebaseResult), formatRebase);
     },
   );
 }

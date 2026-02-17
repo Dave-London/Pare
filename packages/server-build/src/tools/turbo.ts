@@ -5,6 +5,8 @@ import { turboCmd } from "../lib/build-runner.js";
 import { parseTurboOutput } from "../lib/parsers.js";
 import { formatTurbo, compactTurboMap, formatTurboCompact } from "../lib/formatters.js";
 import { TurboResultSchema } from "../schemas/index.js";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 /** Registers the `turbo` tool on the given MCP server. */
 export function registerTurboTool(server: McpServer) {
@@ -18,7 +20,13 @@ export function registerTurboTool(server: McpServer) {
         task: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
-          .describe("Turbo task to run (e.g., 'build', 'test', 'lint')"),
+          .optional()
+          .describe("Turbo task to run (e.g., 'build', 'test', 'lint')."),
+        tasks: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Multiple Turbo tasks to run in one invocation (e.g., ['build','test'])"),
         filter: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -57,6 +65,12 @@ export function registerTurboTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Generate a performance profile (maps to --profile)"),
+        summarize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Generate Turbo run summary metadata and parse it into structured `summary` when available (maps to --summarize)",
+          ),
         outputLogs: z
           .enum(["full", "hash-only", "new-only", "errors-only", "none"])
           .optional()
@@ -87,6 +101,7 @@ export function registerTurboTool(server: McpServer) {
     },
     async ({
       task,
+      tasks,
       filter,
       concurrency,
       force,
@@ -96,17 +111,24 @@ export function registerTurboTool(server: McpServer) {
       graph,
       logOrder,
       profile,
+      summarize,
       outputLogs,
       args,
       path,
       compact,
     }) => {
       const cwd = path || process.cwd();
-      assertNoFlagInjection(task, "task");
+      const taskList = tasks && tasks.length > 0 ? tasks : task ? [task] : [];
+      if (taskList.length === 0) {
+        throw new Error("Either task or tasks must be provided.");
+      }
+      for (const selectedTask of taskList) {
+        assertNoFlagInjection(selectedTask, "tasks");
+      }
       if (filter) assertNoFlagInjection(filter, "filter");
 
       const outputLogsValue = outputLogs ?? "new-only";
-      const cliArgs: string[] = ["run", task, `--output-logs=${outputLogsValue}`];
+      const cliArgs: string[] = ["run", ...taskList, `--output-logs=${outputLogsValue}`];
 
       if (filter) cliArgs.push("--filter", filter);
       if (concurrency !== undefined) cliArgs.push("--concurrency", String(concurrency));
@@ -117,6 +139,7 @@ export function registerTurboTool(server: McpServer) {
       if (graph) cliArgs.push("--graph");
       if (logOrder) cliArgs.push(`--log-order=${logOrder}`);
       if (profile) cliArgs.push("--profile");
+      if (summarize) cliArgs.push("--summarize");
 
       if (args) {
         for (const a of args) {
@@ -130,7 +153,30 @@ export function registerTurboTool(server: McpServer) {
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 
-      const data = parseTurboOutput(result.stdout, result.stderr, result.exitCode, duration);
+      let summaryJsonContent: string | undefined;
+      if (summarize) {
+        const combined = `${result.stdout}\n${result.stderr}`;
+        const summaryPathMatch = combined.match(/(\S*\.turbo\S*\.json)/);
+        const summaryPath = summaryPathMatch?.[1];
+        if (summaryPath) {
+          try {
+            const resolvedPath = summaryPath.startsWith("/")
+              ? summaryPath
+              : resolve(cwd, summaryPath);
+            summaryJsonContent = await readFile(resolvedPath, "utf8");
+          } catch {
+            // Summary file is optional; ignore read/parse failures.
+          }
+        }
+      }
+
+      const data = parseTurboOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        duration,
+        summaryJsonContent,
+      );
       return compactDualOutput(
         data,
         rawOutput,

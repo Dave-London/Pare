@@ -65,21 +65,29 @@ describe("parseViteBuildOutput", () => {
       file: "dist/index.html",
       size: "0.45 kB",
       sizeBytes: 450,
+      gzipSize: "0.29 kB",
+      gzipBytes: 290,
     });
     expect(result.outputs[1]).toEqual({
       file: "dist/assets/index-abc123.css",
       size: "8.12 kB",
       sizeBytes: 8120,
+      gzipSize: "2.34 kB",
+      gzipBytes: 2340,
     });
     expect(result.outputs[2]).toEqual({
       file: "dist/assets/index-def456.js",
       size: "52.31 kB",
       sizeBytes: 52310,
+      gzipSize: "16.89 kB",
+      gzipBytes: 16890,
     });
     expect(result.outputs[3]).toEqual({
       file: "dist/assets/vendor-ghi789.js",
       size: "142.05 kB",
       sizeBytes: 142050,
+      gzipSize: "45.12 kB",
+      gzipBytes: 45120,
     });
   });
 

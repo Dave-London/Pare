@@ -116,7 +116,8 @@ function parsePorts(
       const arrowParts = p.split("->");
 
       if (arrowParts.length === 2) {
-        const hostPort = arrowParts[0].split(":").pop();
+        const hostPortMatch = arrowParts[0].match(/:(\d+)$/);
+        const hostPort = hostPortMatch?.[1] ?? arrowParts[0].split(":").pop();
         const containerPort = arrowParts[1].replace(/\/(tcp|udp)/, "");
         return {
           host: parseInt(hostPort ?? "0", 10),
@@ -137,6 +138,38 @@ interface BuildError {
   message: string;
   line?: number;
   dockerfile?: string;
+}
+
+function parseBuildCache(
+  stdout: string,
+  stderr: string,
+): {
+  cacheHits: number;
+  cacheMisses: number;
+  cacheByStep: Array<{ step: string; cached: boolean }>;
+} {
+  const combined = `${stdout}\n${stderr}`;
+  const lines = combined.split("\n");
+  const cacheByStep: Array<{ step: string; cached: boolean }> = [];
+  const seen = new Set<string>();
+
+  for (const line of lines) {
+    const stepMatch = line.match(/^#\d+\s+\[([^\]]+)\]\s*(.*)$/);
+    if (!stepMatch) continue;
+
+    const step = stepMatch[1].trim();
+    if (step.toLowerCase() === "internal") continue;
+    if (seen.has(step)) continue;
+
+    const tail = stepMatch[2]?.toUpperCase() ?? "";
+    const cached = tail.includes("CACHED");
+    cacheByStep.push({ step, cached });
+    seen.add(step);
+  }
+
+  const cacheHits = cacheByStep.filter((s) => s.cached).length;
+  const cacheMisses = cacheByStep.filter((s) => !s.cached).length;
+  return { cacheHits, cacheMisses, cacheByStep };
 }
 
 /** #97: Parses build errors from output, extracting line numbers and Dockerfile context. */
@@ -216,12 +249,20 @@ export function parseBuildOutput(
 
   const stepMatch = stdout.match(/#(\d+) /g);
   const steps = stepMatch ? new Set(stepMatch).size : undefined;
+  const cache = parseBuildCache(stdout, stderr);
 
   return {
     success: exitCode === 0,
     imageId: imageIdMatch?.[1]?.slice(0, 12),
     duration,
     ...(steps ? { steps } : {}),
+    ...(cache.cacheByStep.length > 0
+      ? {
+          cacheHits: cache.cacheHits,
+          cacheMisses: cache.cacheMisses,
+          cacheByStep: cache.cacheByStep,
+        }
+      : {}),
     ...(errors && errors.length > 0 ? { errors, errorCount } : {}),
   };
 }
@@ -241,6 +282,14 @@ export function parseLogsOutput(
   const totalLines = allLines.length;
   const isTruncated = limit != null && totalLines > limit;
   const lines = isTruncated ? allLines.slice(0, limit) : allLines;
+  const tsRe = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)\s+(.*)$/;
+  const entries = lines.map((line) => {
+    const tsMatch = line.match(tsRe);
+    if (tsMatch) {
+      return { timestamp: tsMatch[1], message: tsMatch[2] };
+    }
+    return { message: line };
+  });
 
   // #113: Separate stdout and stderr lines
   const stdoutLines = stdout ? stdout.split("\n").filter(Boolean) : undefined;
@@ -249,6 +298,7 @@ export function parseLogsOutput(
   return {
     container,
     lines,
+    ...(entries.length > 0 ? { entries } : {}),
     total: lines.length,
     ...(isTruncated ? { isTruncated: true, totalLines } : {}),
     ...(stdoutLines && stdoutLines.length > 0 ? { stdoutLines } : {}),
@@ -266,15 +316,20 @@ export function parseImagesJson(stdout: string): DockerImages {
 
     // #110: Parse CreatedAt as ISO timestamp
     const createdAt = img.CreatedAt ? normalizeTimestamp(img.CreatedAt) : undefined;
+    const labels = parseLabelsField(img.Labels);
+    const size = img.Size ?? "";
+    const sizeBytes = size ? parseSizeToBytes(size) : undefined;
 
     return {
       id: (img.ID ?? "").slice(0, 12),
       repository: img.Repository ?? "",
       tag: img.Tag ?? "",
-      size: img.Size ?? "",
+      size,
+      ...(sizeBytes != null ? { sizeBytes } : {}),
       ...(img.Digest && img.Digest !== "<none>" ? { digest: img.Digest } : {}),
       created: img.CreatedSince ?? img.CreatedAt ?? "",
       ...(createdAt ? { createdAt } : {}),
+      ...(labels && Object.keys(labels).length > 0 ? { labels } : {}),
     };
   });
 
@@ -380,8 +435,10 @@ export function parseExecOutput(
   exitCode: number,
   duration?: number,
   limit?: number,
+  opts?: { timedOut?: boolean; parseJson?: boolean },
 ): DockerExec {
   let truncatedStdout = stdout;
+  let truncatedStderr = stderr;
   let isTruncated = false;
 
   // #108: Truncate output if limit is specified (in bytes/characters)
@@ -390,15 +447,32 @@ export function parseExecOutput(
       truncatedStdout = stdout.slice(0, limit);
       isTruncated = true;
     }
+    if (stderr.length > limit) {
+      truncatedStderr = stderr.slice(0, limit);
+      isTruncated = true;
+    }
+  }
+
+  let parsedJson: unknown;
+  let parseJsonError: string | undefined;
+  if (opts?.parseJson) {
+    try {
+      parsedJson = JSON.parse(truncatedStdout.trim());
+    } catch (err) {
+      parseJsonError = err instanceof Error ? err.message : "Invalid JSON output";
+    }
   }
 
   return {
     exitCode,
     stdout: truncatedStdout,
-    stderr,
+    stderr: truncatedStderr,
     success: exitCode === 0,
     ...(duration != null ? { duration } : {}),
     ...(isTruncated ? { isTruncated: true } : {}),
+    ...(opts?.timedOut ? { timedOut: true } : {}),
+    ...(opts?.parseJson && parsedJson !== undefined ? { json: parsedJson } : {}),
+    ...(opts?.parseJson && parseJsonError ? { parseJsonError } : {}),
   };
 }
 
@@ -415,6 +489,8 @@ export function parseComposeUpOutput(
   const serviceSet = new Set<string>();
   const serviceStates: Array<{ name: string; action: string }> = [];
   const seenStates = new Set<string>(); // Deduplicate "name:action" pairs
+  const networksCreated = (combined.match(/Network\s+\S+\s+Created/g) ?? []).length;
+  const volumesCreated = (combined.match(/Volume\s+\S+\s+Created/g) ?? []).length;
 
   // Match "Container <name>  <Action>" patterns
   const containerPattern =
@@ -441,6 +517,8 @@ export function parseComposeUpOutput(
     services,
     started: services.length,
     ...(serviceStates.length > 0 ? { serviceStates } : {}),
+    ...(networksCreated > 0 ? { networksCreated } : {}),
+    ...(volumesCreated > 0 ? { volumesCreated } : {}),
   };
 }
 
@@ -453,6 +531,7 @@ export function parseComposeDownOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  opts?: { trackVolumes?: boolean; trackNetworks?: boolean },
 ): DockerComposeDown {
   const combined = stdout + "\n" + stderr;
   let stopped = 0;
@@ -495,8 +574,8 @@ export function parseComposeDownOutput(
     stopped,
     removed,
     ...(containers.length > 0 ? { containers } : {}),
-    ...(volumesRemoved > 0 ? { volumesRemoved } : {}),
-    ...(networksRemoved > 0 ? { networksRemoved } : {}),
+    ...(volumesRemoved > 0 || opts?.trackVolumes ? { volumesRemoved } : {}),
+    ...(networksRemoved > 0 || opts?.trackNetworks ? { networksRemoved } : {}),
   };
 }
 
@@ -564,7 +643,45 @@ export function parsePullOutput(
     status,
     success: exitCode === 0,
     ...(size ? { size } : {}),
+    ...(exitCode !== 0
+      ? {
+          errorType: categorizePullError(combined),
+          errorMessage: (stderr || stdout).trim() || "Unknown pull error",
+        }
+      : {}),
   };
+}
+
+function categorizePullError(
+  text: string,
+): "auth" | "not-found" | "network-timeout" | "rate-limit" | "unknown" {
+  const lower = text.toLowerCase();
+  if (
+    lower.includes("unauthorized") ||
+    lower.includes("authentication required") ||
+    lower.includes("access denied")
+  ) {
+    return "auth";
+  }
+  if (
+    lower.includes("manifest unknown") ||
+    lower.includes("not found") ||
+    lower.includes("no such")
+  ) {
+    return "not-found";
+  }
+  if (
+    lower.includes("timed out") ||
+    lower.includes("request canceled") ||
+    lower.includes("connection reset") ||
+    lower.includes("i/o timeout")
+  ) {
+    return "network-timeout";
+  }
+  if (lower.includes("toomanyrequests") || lower.includes("rate limit")) {
+    return "rate-limit";
+  }
+  return "unknown";
 }
 
 // ── #111/#112: Inspect with networkSettings and mounts ───────────────
@@ -578,18 +695,39 @@ function isImageInspect(obj: Record<string, unknown>): boolean {
   return !("State" in obj) && ("RepoTags" in obj || "RootFS" in obj);
 }
 
+function isVolumeInspect(obj: Record<string, unknown>): boolean {
+  return "Mountpoint" in obj && "Driver" in obj && !("State" in obj);
+}
+
+function isNetworkInspect(obj: Record<string, unknown>): boolean {
+  return "IPAM" in obj && "Driver" in obj && ("Scope" in obj || "Containers" in obj);
+}
+
 /** Parses `docker inspect --format json` output into structured inspect data with healthStatus, env, and restartPolicy.
  *  Handles both container and image inspect output. */
 export function parseInspectJson(stdout: string): DockerInspect {
+  const items = parseInspectJsonAll(stdout);
+  return items[0];
+}
+
+/** Parses `docker inspect --format json` output and returns all objects. */
+export function parseInspectJsonAll(stdout: string): DockerInspect[] {
   // docker inspect --format json returns a JSON array with one element
   const parsed = JSON.parse(stdout);
-  const obj = Array.isArray(parsed) ? parsed[0] : parsed;
+  const objects = (Array.isArray(parsed) ? parsed : [parsed]) as Record<string, unknown>[];
 
-  if (isImageInspect(obj)) {
-    return parseImageInspect(obj);
-  }
-
-  return parseContainerInspect(obj);
+  return objects.map((obj) => {
+    if (isImageInspect(obj)) {
+      return parseImageInspect(obj);
+    }
+    if (isVolumeInspect(obj)) {
+      return parseVolumeInspect(obj);
+    }
+    if (isNetworkInspect(obj)) {
+      return parseNetworkInspect(obj);
+    }
+    return parseContainerInspect(obj);
+  });
 }
 
 /** Parses container-type inspect JSON into DockerInspect. */
@@ -642,6 +780,9 @@ function parseContainerInspect(obj: Record<string, unknown>): DockerInspect {
     ...(healthStatus ? { healthStatus } : {}),
     ...(envArr ? { env: envArr } : {}),
     ...(restartPolicy && restartPolicy !== "" ? { restartPolicy } : {}),
+    ...(parseLabelsField(obj.ConfigLabels ?? obj.Labels)
+      ? { labels: parseLabelsField(obj.ConfigLabels ?? obj.Labels) }
+      : {}),
     ...(networkSettings ? { networkSettings } : {}),
     ...(mounts && mounts.length > 0 ? { mounts } : {}),
   };
@@ -739,6 +880,34 @@ function parseImageInspect(obj: Record<string, unknown>): DockerInspect {
     ...(envArr ? { env: envArr } : {}),
     ...(cmd ? { cmd } : {}),
     ...(entrypoint ? { entrypoint } : {}),
+    ...(parseLabelsField(config.Labels) ? { labels: parseLabelsField(config.Labels) } : {}),
+  };
+}
+
+function parseVolumeInspect(obj: Record<string, unknown>): DockerInspect {
+  return {
+    id: ((obj.Name as string) ?? "").slice(0, 12),
+    name: (obj.Name as string) ?? "",
+    inspectType: "volume",
+    image: "",
+    ...(obj.Driver ? { driver: obj.Driver as string } : {}),
+    ...(obj.Scope ? { scope: obj.Scope as string } : {}),
+    ...(obj.Mountpoint ? { mountpoint: obj.Mountpoint as string } : {}),
+    ...(parseLabelsField(obj.Labels) ? { labels: parseLabelsField(obj.Labels) } : {}),
+    ...(obj.CreatedAt ? { created: obj.CreatedAt as string } : {}),
+  };
+}
+
+function parseNetworkInspect(obj: Record<string, unknown>): DockerInspect {
+  return {
+    id: ((obj.Id as string) ?? "").slice(0, 12),
+    name: (obj.Name as string) ?? "",
+    inspectType: "network",
+    image: "",
+    ...(obj.Driver ? { driver: obj.Driver as string } : {}),
+    ...(obj.Scope ? { scope: obj.Scope as string } : {}),
+    ...(parseLabelsField(obj.Labels) ? { labels: parseLabelsField(obj.Labels) } : {}),
+    ...(obj.Created ? { created: obj.Created as string } : {}),
   };
 }
 
@@ -796,6 +965,7 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
       driver: v.Driver ?? "",
       mountpoint: v.Mountpoint ?? "",
       scope: v.Scope ?? "",
+      ...(v.Status ? { status: String(v.Status) } : {}),
       ...(v.CreatedAt ? { createdAt: v.CreatedAt } : {}),
       ...(labels && Object.keys(labels).length > 0 ? { labels } : {}),
     };
@@ -817,14 +987,18 @@ export function parseComposePsJson(stdout: string): DockerComposePs {
 
     // #105: Parse health field
     const health = s.Health ?? s.health ?? undefined;
+    const statusText = s.Status ?? "";
+    const exitMatch =
+      typeof statusText === "string" ? statusText.match(/Exited\s*\((\d+)\)/i) : null;
 
     return {
       name: s.Name ?? "",
       service: s.Service ?? "",
       state: (s.State ?? "unknown").toLowerCase(),
-      status: s.Status ?? "",
+      status: statusText,
       ...(ports.length > 0 ? { ports } : {}),
       ...(health && health !== "" ? { health } : {}),
+      ...(exitMatch ? { exitCode: parseInt(exitMatch[1], 10) } : {}),
     };
   });
 
@@ -1011,7 +1185,10 @@ export function parseComposeBuildOutput(
   duration: number,
 ): DockerComposeBuild {
   const combined = stdout + "\n" + stderr;
-  const serviceMap = new Map<string, { success: boolean; error?: string; startTime?: number }>();
+  const serviceMap = new Map<
+    string,
+    { success: boolean; error?: string; startTime?: number; imageId?: string; image?: string }
+  >();
 
   // #99: Track per-service build timing from "Building <service>" lines
   const buildStartTimes = new Map<string, number>();
@@ -1057,6 +1234,32 @@ export function parseComposeBuildOutput(
     }
   }
 
+  // Infer per-service image IDs/names from BuildKit export lines.
+  let activeService: string | undefined;
+  for (const line of combined.split("\n")) {
+    const stepServiceMatch = line.match(/\[([^\]\s]+)[^\]]*\]/);
+    if (stepServiceMatch && stepServiceMatch[1] !== "internal") {
+      activeService = stepServiceMatch[1];
+      if (!serviceMap.has(activeService)) {
+        serviceMap.set(activeService, { success: exitCode === 0 });
+      }
+    }
+
+    if (!activeService) continue;
+
+    const imageIdMatch = line.match(/writing image sha256:([a-f0-9]+)/i);
+    if (imageIdMatch) {
+      const prev = serviceMap.get(activeService) ?? { success: exitCode === 0 };
+      serviceMap.set(activeService, { ...prev, imageId: imageIdMatch[1].slice(0, 12) });
+    }
+
+    const imageNameMatch = line.match(/naming to (\S+)/i);
+    if (imageNameMatch) {
+      const prev = serviceMap.get(activeService) ?? { success: exitCode === 0 };
+      serviceMap.set(activeService, { ...prev, image: imageNameMatch[1] });
+    }
+  }
+
   // #99: Calculate per-service duration
   // If we have timing info, distribute based on build order;
   // otherwise, divide total duration proportionally
@@ -1079,6 +1282,8 @@ export function parseComposeBuildOutput(
       success: status.success,
       ...(status.error ? { error: status.error } : {}),
       ...(serviceDuration != null ? { duration: serviceDuration } : {}),
+      ...(status.imageId ? { imageId: status.imageId } : {}),
+      ...(status.image ? { image: status.image } : {}),
     };
   });
 
@@ -1160,6 +1365,7 @@ export function parseStatsJson(stdout: string): DockerStats {
     return {
       id: (s.Container ?? s.ID ?? "").slice(0, 12),
       name: (s.Name ?? "").replace(/^\//, ""),
+      ...(s.State ? { state: String(s.State).toLowerCase() } : {}),
       cpuPercent: parsePercent(s.CPUPerc ?? "0%"),
       memoryUsage,
       memoryLimit,

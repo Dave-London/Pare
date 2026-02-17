@@ -84,6 +84,7 @@ export function registerModTidyTool(server: McpServer) {
         hashFile(goModPath),
         hashFile(goSumPath),
       ]);
+      const goModBefore = await readGoMod(goModPath);
 
       const args = ["mod", "tidy"];
       if (diff) args.push("-diff");
@@ -98,6 +99,8 @@ export function registerModTidyTool(server: McpServer) {
         hashFile(goModPath),
         hashFile(goSumPath),
       ]);
+      const goModAfter = await readGoMod(goModPath);
+      const { addedModules, removedModules } = diffGoModRequirements(goModBefore, goModAfter);
 
       const data = parseGoModTidyOutput(
         result.stdout,
@@ -107,6 +110,8 @@ export function registerModTidyTool(server: McpServer) {
         goModHashAfter,
         goSumHashBefore,
         goSumHashAfter,
+        addedModules,
+        removedModules,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
@@ -119,4 +124,56 @@ export function registerModTidyTool(server: McpServer) {
       );
     },
   );
+}
+
+async function readGoMod(goModPath: string): Promise<string | undefined> {
+  try {
+    return await readFile(goModPath, "utf-8");
+  } catch {
+    return undefined;
+  }
+}
+
+function diffGoModRequirements(
+  before: string | undefined,
+  after: string | undefined,
+): { addedModules: string[]; removedModules: string[] } {
+  if (before === undefined || after === undefined) {
+    return { addedModules: [], removedModules: [] };
+  }
+  const beforeSet = parseRequireSet(before);
+  const afterSet = parseRequireSet(after);
+  return {
+    addedModules: [...afterSet].filter((r) => !beforeSet.has(r)).sort(),
+    removedModules: [...beforeSet].filter((r) => !afterSet.has(r)).sort(),
+  };
+}
+
+function parseRequireSet(goMod: string): Set<string> {
+  const result = new Set<string>();
+  let inBlock = false;
+
+  for (const rawLine of goMod.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("//")) continue;
+
+    if (line.startsWith("require (")) {
+      inBlock = true;
+      continue;
+    }
+    if (inBlock && line === ")") {
+      inBlock = false;
+      continue;
+    }
+
+    const target = inBlock
+      ? line
+      : line.startsWith("require ")
+        ? line.slice("require ".length)
+        : "";
+    if (!target) continue;
+    const cleaned = target.replace(/\s+\/\/.*$/, "").trim();
+    if (cleaned) result.add(cleaned);
+  }
+  return result;
 }

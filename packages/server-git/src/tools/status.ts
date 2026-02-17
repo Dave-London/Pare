@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parseStatus } from "../lib/parsers.js";
+import { parseStatus, parseStatusV2 } from "../lib/parsers.js";
 import { formatStatus } from "../lib/formatters.js";
 import { GitStatusSchema } from "../schemas/index.js";
 
@@ -41,6 +41,11 @@ export function registerStatusTool(server: McpServer) {
         noRenames: z.boolean().optional().describe("Disable rename detection (--no-renames)"),
         noLockIndex: z.boolean().optional().describe("Do not lock the index (--no-lock-index)"),
         showIgnored: z.boolean().optional().describe("Show ignored files (--ignored)"),
+        porcelainVersion: z
+          .enum(["v1", "v2"])
+          .optional()
+          .default("v1")
+          .describe("Porcelain output version (--porcelain=v1|v2)"),
       },
       outputSchema: GitStatusSchema,
     },
@@ -54,9 +59,11 @@ export function registerStatusTool(server: McpServer) {
       noRenames,
       noLockIndex,
       showIgnored,
+      porcelainVersion,
     }) => {
       const cwd = path || process.cwd();
-      const statusArgs = ["status", "--porcelain=v1", "--branch"];
+      const porcelain = porcelainVersion || "v1";
+      const statusArgs = ["status", `--porcelain=${porcelain}`, "--branch"];
       if (showStash) statusArgs.push("--show-stash");
       if (renames) statusArgs.push("--renames");
       if (noRenames) statusArgs.push("--no-renames");
@@ -74,6 +81,11 @@ export function registerStatusTool(server: McpServer) {
 
       if (result.exitCode !== 0) {
         throw new Error(`git status failed: ${result.stderr}`);
+      }
+
+      if (porcelain === "v2") {
+        const status = parseStatusV2(result.stdout);
+        return dualOutput(status, formatStatus);
       }
 
       const lines = result.stdout.split("\n").filter(Boolean);

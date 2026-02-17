@@ -112,7 +112,7 @@ export function registerDocTool(server: McpServer) {
       if (pkg) assertNoFlagInjection(pkg, "package");
       if (target) assertNoFlagInjection(target, "target");
 
-      const args = ["doc"];
+      const args = ["doc", "--message-format=json"];
       if (noDeps) args.push("--no-deps");
       if (open) args.push("--open");
       if (documentPrivateItems) args.push("--document-private-items");
@@ -132,10 +132,10 @@ export function registerDocTool(server: McpServer) {
       if (offline) args.push("--offline");
 
       const result = await cargo(args, cwd);
-      const data = parseCargoDocOutput(result.stderr, result.exitCode, cwd);
+      const data = parseCargoDocOutput(result.stdout, result.stderr, result.exitCode, cwd);
       return compactDualOutput(
         data,
-        result.stderr,
+        result.stdout + result.stderr,
         formatCargoDoc,
         compactDocMap,
         formatDocCompact,

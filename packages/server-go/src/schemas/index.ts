@@ -14,6 +14,14 @@ export const GoBuildResultSchema = z.object({
   errors: z.array(GoBuildErrorSchema).optional(),
   /** Non-file errors (package-level, linker, build constraint) that don't match file:line:col format. */
   rawErrors: z.array(z.string()).optional(),
+  buildCache: z
+    .object({
+      estimatedHits: z.number(),
+      estimatedMisses: z.number(),
+      totalPackages: z.number(),
+    })
+    .optional()
+    .describe("Best-effort build cache estimate derived from go list stale metadata"),
   total: z.number(),
 });
 
@@ -23,6 +31,10 @@ export type GoBuildResult = z.infer<typeof GoBuildResultSchema>;
 export const GoTestCaseSchema = z.object({
   package: z.string(),
   name: z.string(),
+  parent: z
+    .string()
+    .optional()
+    .describe("Parent test name for subtests (e.g., parent of TestA/Sub1 is TestA)"),
   status: z.enum(["pass", "fail", "skip"]),
   elapsed: z.number().optional(),
   output: z.string().optional(),
@@ -62,6 +74,8 @@ export const GoVetDiagnosticSchema = z.object({
 export const GoVetResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(GoVetDiagnosticSchema).optional(),
+  /** Compilation/build errors encountered while running go vet (separate from vet diagnostics). */
+  compilationErrors: z.array(z.string()).optional(),
   total: z.number(),
 });
 
@@ -72,6 +86,8 @@ export const GoRunResultSchema = z.object({
   exitCode: z.number(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
+  timedOut: z.boolean().optional(),
+  signal: z.string().optional(),
   /** Whether stdout was truncated due to maxOutput limit. */
   stdoutTruncated: z.boolean().optional(),
   /** Whether stderr was truncated due to maxOutput limit. */
@@ -85,6 +101,9 @@ export type GoRunResult = z.infer<typeof GoRunResultSchema>;
 export const GoModTidyResultSchema = z.object({
   success: z.boolean(),
   summary: z.string().optional(),
+  addedModules: z.array(z.string()).optional(),
+  removedModules: z.array(z.string()).optional(),
+  errorType: z.enum(["network", "checksum", "syntax", "unknown"]).optional(),
   /** Whether go mod tidy actually changed go.mod/go.sum (true) or they were already tidy (false). */
   madeChanges: z.boolean().optional(),
 });
@@ -104,6 +123,15 @@ export const GoFmtResultSchema = z.object({
   success: z.boolean(),
   filesChanged: z.number(),
   files: z.array(z.string()).optional(),
+  changes: z
+    .array(
+      z.object({
+        file: z.string(),
+        diff: z.string(),
+      }),
+    )
+    .optional()
+    .describe("Per-file diff snippets when -d output is available"),
   /** Parse errors reported on stderr (e.g., syntax errors in Go files). */
   parseErrors: z.array(GoFmtParseErrorSchema).optional(),
 });
@@ -122,6 +150,7 @@ export const GoGenerateDirectiveSchema = z.object({
 export const GoGenerateResultSchema = z.object({
   success: z.boolean(),
   output: z.string().optional(),
+  timedOut: z.boolean().optional(),
   /** Parsed per-directive status from -v or -x output. */
   directives: z.array(GoGenerateDirectiveSchema).optional(),
 });
@@ -137,6 +166,7 @@ export const GoEnvResultSchema = z.object({
   goversion: z.string(),
   goos: z.string(),
   goarch: z.string(),
+  cgoEnabled: z.boolean().optional(),
 });
 
 export type GoEnvResult = z.infer<typeof GoEnvResultSchema>;
@@ -149,6 +179,14 @@ export const GoListPackageSchema = z.object({
   goFiles: z.array(z.string()).optional(),
   testGoFiles: z.array(z.string()).optional(),
   imports: z.array(z.string()).optional(),
+  standard: z.boolean().optional(),
+  stale: z.boolean().optional(),
+  module: z
+    .object({
+      path: z.string().optional(),
+      version: z.string().optional(),
+    })
+    .optional(),
   /** Error information when the package has issues (e.g., missing imports, build errors). */
   error: z.object({ err: z.string() }).optional(),
 });
@@ -183,6 +221,7 @@ export const GoGetPackageStatusSchema = z.object({
   version: z.string().optional(),
   /** Error message if this package failed. */
   error: z.string().optional(),
+  errorType: z.enum(["timeout", "dns", "authentication", "network", "unknown"]).optional(),
 });
 
 /** Zod schema for a resolved package from go get output. */
@@ -203,6 +242,12 @@ export const GoGetResultSchema = z.object({
   resolvedPackages: z.array(GoGetResolvedPackageSchema).optional(),
   /** Per-package status showing success/failure for each requested package. */
   packages: z.array(GoGetPackageStatusSchema).optional(),
+  goModChanges: z
+    .object({
+      added: z.array(z.string()),
+      removed: z.array(z.string()),
+    })
+    .optional(),
 });
 
 export type GoGetResult = z.infer<typeof GoGetResultSchema>;
@@ -226,6 +271,9 @@ export const GolangciLintDiagnosticSchema = z.object({
   line: z.number(),
   column: z.number().optional(),
   linter: z.string(),
+  category: z
+    .enum(["bug-risk", "style", "performance", "security", "complexity", "other"])
+    .optional(),
   severity: z.enum(["error", "warning", "info"]),
   message: z.string(),
   sourceLine: z.string().optional(),

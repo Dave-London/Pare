@@ -13,7 +13,7 @@ export function registerBisectTool(server: McpServer) {
     {
       title: "Git Bisect",
       description:
-        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, skip, and run actions. The 'run' action automates bisection with a test script. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
+        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, skip, replay, and run actions. The 'run' action automates bisection with a test script. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
       inputSchema: {
         path: z
           .string()
@@ -21,8 +21,13 @@ export function registerBisectTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["start", "good", "bad", "reset", "status", "skip", "run"])
+          .enum(["start", "good", "bad", "reset", "status", "skip", "run", "replay"])
           .describe("Bisect action to perform"),
+        replayFile: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to bisect log file used by replay action"),
         bad: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -74,6 +79,25 @@ export function registerBisectTool(server: McpServer) {
       const cwd = params.path || process.cwd();
       const action = params.action;
 
+      const enrichFilesChanged = async (result: ReturnType<typeof parseBisect>) => {
+        const typed = result as Awaited<ReturnType<typeof parseBisect>>;
+        if (!typed.result?.hash) return typed;
+        const show = await git(["show", "--pretty=format:", "--name-only", typed.result.hash], cwd);
+        if (show.exitCode !== 0) return typed;
+        const filesChanged = show.stdout
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        if (filesChanged.length === 0) return typed;
+        return {
+          ...typed,
+          result: {
+            ...typed.result,
+            filesChanged,
+          },
+        };
+      };
+
       if (action === "run") {
         const command = params.command;
         if (!command) {
@@ -96,8 +120,26 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect run failed: ${result.stderr || result.stdout}`);
         }
 
-        const bisectRunResult = parseBisectRun(result.stdout, result.stderr);
+        const bisectRunResult = await enrichFilesChanged(
+          parseBisectRun(result.stdout, result.stderr),
+        );
         return dualOutput(bisectRunResult, formatBisectRun);
+      }
+
+      if (action === "replay") {
+        const replayFile = params.replayFile;
+        if (!replayFile) {
+          throw new Error("The 'replayFile' parameter is required for bisect replay");
+        }
+        assertNoFlagInjection(replayFile, "replayFile");
+        const result = await git(["bisect", "replay", replayFile], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git bisect replay failed: ${result.stderr || result.stdout}`);
+        }
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(result.stdout, result.stderr, "replay"),
+        );
+        return dualOutput(bisectResult, formatBisect);
       }
 
       if (action === "start") {
@@ -154,7 +196,9 @@ export function registerBisectTool(server: McpServer) {
           }
         }
 
-        const bisectResult = parseBisect(lastGoodResult.stdout, lastGoodResult.stderr, "start");
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(lastGoodResult.stdout, lastGoodResult.stderr, "start"),
+        );
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -164,7 +208,9 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect good failed: ${result.stderr}`);
         }
 
-        const bisectResult = parseBisect(result.stdout, result.stderr, "good");
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(result.stdout, result.stderr, "good"),
+        );
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -174,7 +220,9 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect bad failed: ${result.stderr}`);
         }
 
-        const bisectResult = parseBisect(result.stdout, result.stderr, "bad");
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(result.stdout, result.stderr, "bad"),
+        );
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -184,7 +232,9 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect skip failed: ${result.stderr}`);
         }
 
-        const bisectResult = parseBisect(result.stdout, result.stderr, "skip");
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(result.stdout, result.stderr, "skip"),
+        );
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -194,7 +244,9 @@ export function registerBisectTool(server: McpServer) {
           throw new Error(`git bisect reset failed: ${result.stderr}`);
         }
 
-        const bisectResult = parseBisect(result.stdout, result.stderr, "reset");
+        const bisectResult = await enrichFilesChanged(
+          parseBisect(result.stdout, result.stderr, "reset"),
+        );
         return dualOutput(bisectResult, formatBisect);
       }
 
@@ -204,7 +256,9 @@ export function registerBisectTool(server: McpServer) {
         throw new Error(`git bisect log failed: ${result.stderr}`);
       }
 
-      const bisectResult = parseBisect(result.stdout, result.stderr, "status");
+      const bisectResult = await enrichFilesChanged(
+        parseBisect(result.stdout, result.stderr, "status"),
+      );
       return dualOutput(bisectResult, formatBisect);
     },
   );

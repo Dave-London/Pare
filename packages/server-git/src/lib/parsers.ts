@@ -93,6 +93,100 @@ export function parseStatus(stdout: string, branchLine: string): GitStatus {
   };
 }
 
+/** Parses `git status --porcelain=v2 --branch` output into structured status data. */
+export function parseStatusV2(stdout: string): GitStatus {
+  const lines = stdout.split("\n").filter(Boolean);
+  const staged: GitStatus["staged"] = [];
+  const modified: string[] = [];
+  const deleted: string[] = [];
+  const untracked: string[] = [];
+  const conflicts: string[] = [];
+
+  let branch = "unknown";
+  let upstream: string | undefined;
+  let ahead: number | undefined;
+  let behind: number | undefined;
+
+  for (const line of lines) {
+    if (line.startsWith("# ")) {
+      const meta = line.slice(2);
+      if (meta.startsWith("branch.head ")) {
+        branch = meta.slice("branch.head ".length).trim();
+      } else if (meta.startsWith("branch.upstream ")) {
+        upstream = meta.slice("branch.upstream ".length).trim();
+      } else if (meta.startsWith("branch.ab ")) {
+        const ab = meta.slice("branch.ab ".length).trim();
+        const m = ab.match(/^\+(\d+)\s+-(\d+)$/);
+        if (m) {
+          ahead = parseInt(m[1], 10);
+          behind = parseInt(m[2], 10);
+        }
+      }
+      continue;
+    }
+
+    if (line.startsWith("? ")) {
+      untracked.push(line.slice(2).trim());
+      continue;
+    }
+
+    if (line.startsWith("u ")) {
+      const parts = line.split(" ");
+      const file = parts.slice(10).join(" ").trim();
+      conflicts.push(file);
+      continue;
+    }
+
+    if (line.startsWith("1 ") || line.startsWith("2 ")) {
+      const renamed = line.startsWith("2 ");
+      const splitByTab = line.split("\t");
+      const meta = splitByTab[0];
+      const xy = meta.split(" ")[1] ?? "  ";
+      const index = xy[0] ?? " ";
+      const worktree = xy[1] ?? " ";
+      const file = renamed
+        ? (splitByTab[2] ?? splitByTab[1] ?? "").trim()
+        : (splitByTab[1] ?? "").trim();
+      const oldFile = renamed ? (splitByTab[1] ?? "").trim() : undefined;
+
+      if (index === "U" || worktree === "U" || (index === "A" && worktree === "A")) {
+        conflicts.push(file);
+        continue;
+      }
+
+      if (index && index !== " " && index !== "?") {
+        staged.push({
+          file,
+          status: STATUS_MAP[index] ?? (renamed ? "renamed" : "modified"),
+          ...(oldFile ? { oldFile } : {}),
+        });
+      }
+
+      if (worktree === "M") modified.push(file);
+      else if (worktree === "D") deleted.push(file);
+    }
+  }
+
+  return {
+    branch,
+    porcelainVersion: "v2",
+    upstream,
+    ahead,
+    behind,
+    staged,
+    modified,
+    deleted,
+    untracked,
+    conflicts,
+    clean:
+      staged.length === 0 &&
+      modified.length === 0 &&
+      deleted.length === 0 &&
+      untracked.length === 0 &&
+      conflicts.length === 0,
+  };
+}
+
 function parseBranchFromPorcelain(line: string): {
   name: string;
   upstream?: string;
@@ -225,6 +319,9 @@ export function parseBranch(stdout: string): GitBranchFull {
     const name = stripped.split(/\s+/)[0];
     if (isCurrent) current = name;
 
+    const lastCommitMatch = stripped.match(/^[^\s]+\s+([a-f0-9]{7,40})\s+/);
+    const lastCommit = lastCommitMatch?.[1];
+
     // Parse upstream from -vv output: "branch hash [upstream/branch] message"
     // or "branch hash [upstream/branch: ahead N, behind M] message"
     const upstreamMatch = stripped.match(/\s+[a-f0-9]+\s+\[([^\]:]+?)(?:[:\]])/);
@@ -234,6 +331,7 @@ export function parseBranch(stdout: string): GitBranchFull {
       name,
       current: isCurrent,
       ...(upstream ? { upstream } : {}),
+      ...(lastCommit ? { lastCommit } : {}),
     };
   });
 
@@ -385,6 +483,22 @@ function classifyPushError(combined: string): Pick<GitPush, "errorType" | "rejec
   return { errorType: "unknown" };
 }
 
+function parsePushObjectStats(combined: string): GitPush["objectStats"] | undefined {
+  const totalMatch = combined.match(
+    /Total\s+(\d+)\s+\(delta\s+(\d+)\),\s+reused\s+(\d+)\s+\(delta\s+\d+\),\s+pack-reused\s+(\d+)/i,
+  );
+  const bytesMatch = combined.match(/Writing objects:\s+\d+%\s+\(\d+\/\d+\),\s+(\d+)\s+bytes/i);
+  if (!totalMatch && !bytesMatch) return undefined;
+
+  return {
+    ...(totalMatch ? { total: parseInt(totalMatch[1], 10) } : {}),
+    ...(totalMatch ? { delta: parseInt(totalMatch[2], 10) } : {}),
+    ...(totalMatch ? { reused: parseInt(totalMatch[3], 10) } : {}),
+    ...(totalMatch ? { packReused: parseInt(totalMatch[4], 10) } : {}),
+    ...(bytesMatch ? { bytes: parseInt(bytesMatch[1], 10) } : {}),
+  };
+}
+
 /** Parses `git push` output into structured push result data. */
 export function parsePush(stdout: string, stderr: string, remote: string, branch: string): GitPush {
   // Git push output goes to stderr typically
@@ -398,6 +512,7 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
 
   // Detect if the remote branch was newly created
   const created = /\[new branch\]|\[new tag\]/.test(combined);
+  const objectStats = parsePushObjectStats(combined);
 
   return {
     success: true,
@@ -405,6 +520,7 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
     branch: resolvedBranch,
     summary: combined || "Push completed successfully",
     ...(created ? { created } : {}),
+    ...(objectStats ? { objectStats } : {}),
   };
 }
 
@@ -419,6 +535,7 @@ export function parsePushError(
   const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
   const resolvedBranch = branch || branchMatch?.[1] || "unknown";
   const errorInfo = classifyPushError(combined);
+  const objectStats = parsePushObjectStats(combined);
 
   return {
     success: false,
@@ -426,6 +543,7 @@ export function parsePushError(
     branch: resolvedBranch,
     summary: combined || "Push failed",
     ...errorInfo,
+    ...(objectStats ? { objectStats } : {}),
   };
 }
 
@@ -522,6 +640,7 @@ export function parseCheckout(
   ref: string,
   previousRef: string,
   created: boolean,
+  modifiedFiles?: string[],
 ): GitCheckout {
   const combined = `${stdout}\n${stderr}`.trim();
   // Detect detached HEAD state
@@ -536,6 +655,7 @@ export function parseCheckout(
     previousRef,
     created,
     ...(detached ? { detached: true } : {}),
+    ...(modifiedFiles && modifiedFiles.length > 0 ? { modifiedFiles } : {}),
   };
 }
 
@@ -605,13 +725,20 @@ export function parseCheckoutError(
 
 /** Parses `git tag -l --sort=-creatordate --format='%(refname:short)\t%(creatordate:iso-strict)\t%(subject)'` output into structured tag data. */
 export function parseTagOutput(stdout: string): GitTagFull {
-  const lines = stdout.trim().split("\n").filter(Boolean);
+  const lines = stdout.split("\n").filter((line) => line.trim().length > 0);
   const tags = lines.map((line) => {
-    const [name, date, ...messageParts] = line.split("\t");
+    const parts = line.split("\t");
+    const [name, date, message, peeledObjectType] = parts;
+    const hasTypeField = parts.length >= 4;
     return {
       name: name || "",
       ...(date ? { date } : {}),
-      ...(messageParts.join("\t") ? { message: messageParts.join("\t") } : {}),
+      ...(message ? { message } : {}),
+      ...(hasTypeField
+        ? peeledObjectType
+          ? { tagType: "annotated" as const }
+          : { tagType: "lightweight" as const }
+        : {}),
     };
   });
 
@@ -641,7 +768,7 @@ export function parseStashListOutput(stdout: string): GitStashListFull {
 export function parseStashOutput(
   stdout: string,
   stderr: string,
-  action: "push" | "pop" | "apply" | "drop" | "clear" | "show",
+  action: "push" | "pop" | "apply" | "drop" | "clear" | "show" | "branch",
 ): GitStash {
   const combined = `${stdout}\n${stderr}`.trim();
 
@@ -733,7 +860,7 @@ export function parseStashShowOutput(stdout: string, stderr: string): GitStash {
 export function parseStashError(
   stdout: string,
   stderr: string,
-  action: "push" | "pop" | "apply" | "drop" | "clear" | "show",
+  action: "push" | "pop" | "apply" | "drop" | "clear" | "show" | "branch",
 ): GitStash {
   const combined = `${stdout}\n${stderr}`.trim();
 
@@ -1055,6 +1182,30 @@ export function parseRestore(
   };
 }
 
+/** Parses a failed `git restore` command into structured error output. */
+export function parseRestoreError(
+  stderr: string,
+  files: string[],
+  source: string,
+  staged: boolean,
+): GitRestore {
+  const combined = stderr.trim();
+  let errorType: GitRestore["errorType"] = "unknown";
+  if (/pathspec .* did not match/i.test(combined)) errorType = "pathspec";
+  else if (/unmerged/i.test(combined) || /is unmerged/i.test(combined)) errorType = "unmerged";
+  else if (/invalid object name|bad revision|unknown revision/i.test(combined))
+    errorType = "invalid-source";
+
+  return {
+    success: false,
+    restored: [],
+    source,
+    staged,
+    errorType,
+    errorMessage: combined,
+  };
+}
+
 /** Parses `git reset` output into structured reset data with the ref, mode, and list of affected files. */
 export function parseReset(
   stdout: string,
@@ -1080,6 +1231,24 @@ export function parseReset(
     ...(previousRef ? { previousRef } : {}),
     ...(newRef ? { newRef } : {}),
     filesAffected,
+  };
+}
+
+/** Parses a failed `git reset` command into structured error output. */
+export function parseResetError(stderr: string, ref: string, mode?: string): GitReset {
+  const combined = stderr.trim();
+  let errorType: GitReset["errorType"] = "unknown";
+  if (/unknown revision|ambiguous argument|bad revision/i.test(combined)) errorType = "invalid-ref";
+  else if (/pathspec .* did not match/i.test(combined)) errorType = "pathspec";
+  else if (/cannot .* with paths|Cannot use --/i.test(combined)) errorType = "incompatible-args";
+
+  return {
+    success: false,
+    ref,
+    ...(mode ? { mode: mode as GitReset["mode"] } : {}),
+    filesAffected: [],
+    errorType,
+    errorMessage: combined,
   };
 }
 
@@ -1159,8 +1328,25 @@ export function parseCherryPick(
   };
 }
 
+function classifyMergeError(combined: string): GitMerge["errorType"] {
+  if (/CONFLICT/i.test(combined)) return "conflict";
+  if (
+    /local changes.*would be overwritten|Please commit your changes or stash them/i.test(combined)
+  )
+    return "local-changes";
+  if (/refusing to merge unrelated histories/i.test(combined)) return "unrelated-histories";
+  if (/not something we can merge|not something to merge|is not a valid object/i.test(combined))
+    return "invalid-branch";
+  return "unknown";
+}
+
 /** Parses `git merge` output into structured merge result data with conflict detection. */
-export function parseMerge(stdout: string, stderr: string, branch: string): GitMerge {
+export function parseMerge(
+  stdout: string,
+  stderr: string,
+  branch: string,
+  mergeBase?: string,
+): GitMerge {
   const combined = `${stdout}\n${stderr}`.trim();
 
   // Check for "Already up to date"
@@ -1180,7 +1366,10 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
       state: "conflict",
       fastForward: false,
       branch,
+      ...(mergeBase ? { mergeBase } : {}),
       conflicts: mergeConflicts,
+      errorType: "conflict",
+      errorMessage: combined,
     };
   }
 
@@ -1190,6 +1379,7 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
       state: "already-up-to-date",
       fastForward: false,
       branch,
+      ...(mergeBase ? { mergeBase } : {}),
       conflicts: [],
     };
   }
@@ -1201,11 +1391,29 @@ export function parseMerge(stdout: string, stderr: string, branch: string): GitM
   const hashMatch = combined.match(/([a-f0-9]{7,40})\.\.[a-f0-9]{7,40}/);
   const commitHash = hashMatch ? hashMatch[0].split("..")[1] : undefined;
 
+  // Non-conflict errors should be returned as structured failures.
+  const hasError =
+    /error:|fatal:/i.test(combined) &&
+    !/Already up to date|Fast-forward|Merge made by|Automatic merge/i.test(combined);
+  if (hasError) {
+    return {
+      merged: false,
+      state: "failed",
+      fastForward: false,
+      branch,
+      ...(mergeBase ? { mergeBase } : {}),
+      conflicts: [],
+      errorType: classifyMergeError(combined),
+      errorMessage: combined,
+    };
+  }
+
   return {
     merged: true,
     state: fastForward ? "fast-forward" : "completed",
     fastForward,
     branch,
+    ...(mergeBase ? { mergeBase } : {}),
     conflicts: [],
     ...(commitHash ? { commitHash } : {}),
   };
@@ -1309,11 +1517,21 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
     // The commit marker is '*'. Lines without '*' are pure graph continuation lines;
     // we still include them to preserve topology.
     // Pattern: graph chars end where the short hash begins (first hex word after graph art).
-    const commitMatch = line.match(/^([|/\\\s*_.-]+?)\s([a-f0-9]{7,12})\s(.+)$/);
+    const commitMatch = line.match(/^([|/\\\s*_.-]+?)\s([a-f0-9]{7,40})\s?(.*)$/);
     if (commitMatch) {
       const graph = commitMatch[1];
       const hashShort = commitMatch[2];
-      let rest = commitMatch[3];
+      let rest = commitMatch[3] ?? "";
+
+      // Parents are emitted when log-graph uses `%p` in pretty format.
+      // Parse consecutive hash-like tokens immediately after the commit hash.
+      const parents: string[] = [];
+      while (true) {
+        const parentMatch = rest.match(/^([a-f0-9]{7,40})\s+(.*)$/);
+        if (!parentMatch) break;
+        parents.push(parentMatch[1]);
+        rest = parentMatch[2];
+      }
 
       // Extract refs from decoration: (HEAD -> main, origin/main, tag: v1.0)
       let refs: string | undefined;
@@ -1325,14 +1543,13 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
         rest = rest.slice(refsMatch[0].length);
       }
 
-      // Detect merge commit: graph line has a merge marker (two parent lines converging)
-      // Common pattern: "*   " with extra space or "|\  " before the merge marker
-      const isMerge = /Merge\s/.test(rest) || /^\*\s{2,}/.test(graph);
+      const isMerge = parents.length > 1 || /Merge\s/.test(rest) || /^\*\s{2,}/.test(graph);
 
       commits.push({
         graph,
         hashShort,
         message: rest,
+        ...(parents.length > 0 ? { parents } : {}),
         ...(refs ? { refs } : {}),
         ...(parsedRefs ? { parsedRefs } : {}),
         ...(isMerge ? { isMerge: true } : {}),
@@ -1426,14 +1643,19 @@ export function parseReflogOutput(stdout: string): GitReflogFull {
     const rawAction = colonIdx >= 0 ? (subject || "").slice(0, colonIdx) : subject || "";
     const description = colonIdx >= 0 ? (subject || "").slice(colonIdx + 2) : "";
     const action = normalizeReflogAction(rawAction);
+    const selectorIndexMatch = (selector || "").match(/@\{(\d+)\}/);
+    const selectorIndex = selectorIndexMatch ? parseInt(selectorIndexMatch[1], 10) : undefined;
+    const moveMatch = description.match(/moving from (\S+) to (\S+)/i);
 
     return {
       hash: hash || "",
       shortHash: shortHash || "",
       selector: selector || "",
+      ...(selectorIndex !== undefined ? { selectorIndex } : {}),
       action,
       rawAction,
       description,
+      ...(moveMatch ? { fromRef: moveMatch[1], toRef: moveMatch[2] } : {}),
       date: date || "",
     };
   });
@@ -1471,11 +1693,22 @@ export function parseBisect(
     };
   }
 
-  // Parse "Bisecting: N revisions left to test after this (roughly M steps)"
+  // Parse remaining work from bisect progress.
+  // Prefer git's "roughly N steps"; fallback to log2 estimate from revisions left.
   const bisectingMatch = combined.match(
-    /Bisecting:\s+(\d+)\s+revisions?\s+left.*roughly\s+(\d+)\s+steps?/,
+    /Bisecting:\s+(\d+)\s+revisions?\s+left(?:\s+to test)?(?:.*roughly\s+(\d+)\s+steps?)?/i,
   );
-  const remaining = bisectingMatch ? parseInt(bisectingMatch[2], 10) : undefined;
+  let remaining: number | undefined;
+  if (bisectingMatch) {
+    const revisionsLeft = parseInt(bisectingMatch[1], 10);
+    const roughSteps = bisectingMatch[2] ? parseInt(bisectingMatch[2], 10) : undefined;
+    remaining =
+      roughSteps !== undefined
+        ? roughSteps
+        : revisionsLeft > 0
+          ? Math.max(1, Math.ceil(Math.log2(revisionsLeft + 1)))
+          : 0;
+  }
 
   // Parse current commit: "[<hash>] message" on the last line
   const commitMatch = combined.match(/\[([a-f0-9]{7,40})\]\s+(.+)/);

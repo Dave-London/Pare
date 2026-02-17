@@ -378,7 +378,7 @@ describe("formatRunCompact", () => {
 });
 
 describe("compactExecMap", () => {
-  it("drops stdout and stderr", () => {
+  it("keeps compact previews for stdout/stderr", () => {
     const data: DockerExec = {
       exitCode: 0,
       stdout: "some output",
@@ -388,7 +388,7 @@ describe("compactExecMap", () => {
 
     const compact = compactExecMap(data);
 
-    expect(compact).toEqual({ exitCode: 0, success: true });
+    expect(compact).toEqual({ exitCode: 0, success: true, stdoutPreview: "some output" });
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });

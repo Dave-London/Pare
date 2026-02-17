@@ -16,6 +16,7 @@ describe("parseVitestCoverage", () => {
     const result = parseVitestCoverage(stdout);
 
     expect(result.framework).toBe("vitest");
+    expect(result.summary.statements).toBe(90);
     expect(result.summary.lines).toBe(92.5);
     expect(result.summary.branches).toBe(80);
     expect(result.summary.functions).toBe(85);
@@ -23,6 +24,7 @@ describe("parseVitestCoverage", () => {
 
     expect(result.files[0]).toEqual({
       file: "index.ts",
+      statements: 100,
       lines: 100,
       branches: 100,
       functions: 100,
@@ -30,6 +32,7 @@ describe("parseVitestCoverage", () => {
 
     expect(result.files[1]).toEqual({
       file: "utils.ts",
+      statements: 80,
       lines: 85,
       branches: 60,
       functions: 70,
@@ -40,7 +43,7 @@ describe("parseVitestCoverage", () => {
     const result = parseVitestCoverage("");
 
     expect(result.framework).toBe("vitest");
-    expect(result.summary).toEqual({ lines: 0, branches: 0, functions: 0 });
+    expect(result.summary).toEqual({ statements: 0, lines: 0, branches: 0, functions: 0 });
     expect(result.files).toHaveLength(0);
   });
 

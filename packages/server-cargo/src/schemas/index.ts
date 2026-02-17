@@ -18,9 +18,24 @@ export const CargoBuildResultSchema = z.object({
   total: z.number(),
   errors: z.number(),
   warnings: z.number(),
+  timings: z
+    .object({
+      generated: z.boolean(),
+      format: z.enum(["html", "json", "unknown"]).optional(),
+      reportPath: z.string().optional(),
+    })
+    .optional()
+    .describe("Structured cargo --timings metadata when timing report generation is enabled"),
 });
 
 export type CargoBuildResult = z.infer<typeof CargoBuildResultSchema>;
+
+/** Zod schema for cargo check output, split from build for future check-specific fields. */
+export const CargoCheckResultSchema = CargoBuildResultSchema.extend({
+  mode: z.literal("check"),
+});
+
+export type CargoCheckResult = z.infer<typeof CargoCheckResultSchema>;
 
 /** Zod schema for a single cargo test case with name, status (ok/FAILED/ignored), optional duration, and optional failure output. */
 export const CargoTestCaseSchema = z.object({
@@ -38,6 +53,7 @@ export const CargoTestResultSchema = z.object({
   passed: z.number(),
   failed: z.number(),
   ignored: z.number(),
+  duration: z.string().optional().describe("Total test suite duration from summary line"),
   compilationDiagnostics: z
     .array(CargoDiagnosticSchema)
     .optional()
@@ -63,6 +79,7 @@ export const CargoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   success: z.boolean(),
+  signal: z.string().optional().describe("Detected termination signal (for example SIGSEGV)"),
   failureType: z
     .enum(["compilation", "runtime", "timeout"])
     .optional()
@@ -83,6 +100,10 @@ export type CargoRunResult = z.infer<typeof CargoRunResultSchema>;
 export const CargoAddedPackageSchema = z.object({
   name: z.string(),
   version: z.string(),
+  featuresActivated: z
+    .array(z.string())
+    .optional()
+    .describe("Features activated for this package by cargo add"),
 });
 
 /** Zod schema for structured cargo add output with added packages list and optional error message. */
@@ -108,6 +129,14 @@ export const CargoRemoveResultSchema = z.object({
   success: z.boolean(),
   removed: z.array(z.string()),
   total: z.number(),
+  partialSuccess: z
+    .boolean()
+    .optional()
+    .describe("True when at least one package was removed but one or more removals failed"),
+  failedPackages: z
+    .array(z.string())
+    .optional()
+    .describe("Package names that failed to remove in a multi-package remove operation"),
   dependencyType: z
     .enum(["normal", "dev", "build"])
     .optional()
@@ -127,6 +156,10 @@ export const CargoFmtResultSchema = z.object({
     ),
   filesChanged: z.number(),
   files: z.array(z.string()).optional(),
+  diff: z
+    .string()
+    .optional()
+    .describe("Unified diff content captured in check mode when available"),
 });
 
 export type CargoFmtResult = z.infer<typeof CargoFmtResultSchema>;
@@ -211,6 +244,11 @@ export const CargoAuditVulnSchema = z.object({
 /** Zod schema for structured cargo audit output with vulnerability list, success flag, and severity summary. */
 export const CargoAuditResultSchema = z.object({
   success: z.boolean(),
+  mode: z
+    .enum(["deps", "bin"])
+    .optional()
+    .describe("Audit mode: dependency tree (deps) or compiled binary (bin)"),
+  auditedBinary: z.string().optional().describe("Audited binary path when mode=bin"),
   vulnerabilities: z.array(CargoAuditVulnSchema).optional(),
   summary: z
     .object({

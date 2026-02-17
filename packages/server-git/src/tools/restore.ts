@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
-import { parseRestore } from "../lib/parsers.js";
+import { parseRestore, parseRestoreError } from "../lib/parsers.js";
 import { formatRestore } from "../lib/formatters.js";
 import { GitRestoreSchema } from "../schemas/index.js";
 
@@ -105,9 +105,11 @@ export function registerRestoreTool(server: McpServer) {
       args.push("--", ...resolvedFiles);
 
       const result = await git(args, cwd);
+      const resolvedSource = source || "HEAD";
 
       if (result.exitCode !== 0) {
-        throw new Error(`git restore failed: ${result.stderr}`);
+        const restoreError = parseRestoreError(result.stderr, files, resolvedSource, staged);
+        return dualOutput(restoreError, formatRestore);
       }
 
       // Post-restore verification: check file status to verify restoration
@@ -142,7 +144,6 @@ export function registerRestoreTool(server: McpServer) {
         }));
       }
 
-      const resolvedSource = source || "HEAD";
       const restoreResult = parseRestore(files, resolvedSource, staged, verifiedFiles);
       return dualOutput(restoreResult, formatRestore);
     },

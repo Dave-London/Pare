@@ -64,6 +64,31 @@ export function registerAddTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Registry to use (--registry <NAME>)"),
+        sourcePath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Use a local crate path source (--path <PATH>)"),
+        git: z
+          .string()
+          .max(INPUT_LIMITS.STRING_MAX)
+          .optional()
+          .describe("Use a git source URL (--git <URL>)"),
+        branch: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Git branch to use with --git (--branch <BRANCH>)"),
+        tag: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Git tag to use with --git (--tag <TAG>)"),
+        rev: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Git revision to use with --git (--rev <REV>)"),
         locked: z
           .boolean()
           .optional()
@@ -101,6 +126,11 @@ export function registerAddTool(server: McpServer) {
       package: pkg,
       rename,
       registry,
+      sourcePath,
+      git,
+      branch,
+      tag,
+      rev,
       locked,
       frozen,
       offline,
@@ -117,6 +147,18 @@ export function registerAddTool(server: McpServer) {
       if (pkg) assertNoFlagInjection(pkg, "package");
       if (rename) assertNoFlagInjection(rename, "rename");
       if (registry) assertNoFlagInjection(registry, "registry");
+      if (sourcePath) assertNoFlagInjection(sourcePath, "sourcePath");
+      if (git) assertNoFlagInjection(git, "git");
+      if (branch) assertNoFlagInjection(branch, "branch");
+      if (tag) assertNoFlagInjection(tag, "tag");
+      if (rev) assertNoFlagInjection(rev, "rev");
+
+      if (sourcePath && git) {
+        throw new Error("sourcePath (--path) and git (--git) are mutually exclusive");
+      }
+      if ((branch || tag || rev) && !git) {
+        throw new Error("branch/tag/rev require git source (--git)");
+      }
 
       const args = ["add", ...packages];
       if (dev) args.push("--dev");
@@ -130,6 +172,11 @@ export function registerAddTool(server: McpServer) {
       if (pkg) args.push("-p", pkg);
       if (rename) args.push("--rename", rename);
       if (registry) args.push("--registry", registry);
+      if (sourcePath) args.push("--path", sourcePath);
+      if (git) args.push("--git", git);
+      if (branch) args.push("--branch", branch);
+      if (tag) args.push("--tag", tag);
+      if (rev) args.push("--rev", rev);
       if (locked) args.push("--locked");
       if (frozen) args.push("--frozen");
       if (offline) args.push("--offline");

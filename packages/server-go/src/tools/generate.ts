@@ -57,6 +57,13 @@ export function registerGenerateTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Print commands as they are executed (-x)"),
+        timeout: z
+          .number()
+          .int()
+          .min(1000)
+          .max(600000)
+          .optional()
+          .describe("Execution timeout in milliseconds for go generate"),
         tags: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -72,7 +79,18 @@ export function registerGenerateTool(server: McpServer) {
       },
       outputSchema: GoGenerateResultSchema,
     },
-    async ({ path, patterns, dryRun, run: runFilter, skip, verbose, commands, tags, compact }) => {
+    async ({
+      path,
+      patterns,
+      dryRun,
+      run: runFilter,
+      skip,
+      verbose,
+      commands,
+      timeout,
+      tags,
+      compact,
+    }) => {
       for (const p of patterns || []) {
         assertNoFlagInjection(p, "patterns");
       }
@@ -92,8 +110,21 @@ export function registerGenerateTool(server: McpServer) {
         args.push("-tags", tags.join(","));
       }
       args.push(...(patterns || ["./..."]));
-      const result = await goCmd(args, cwd);
-      const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode);
+      let timedOut = false;
+      let result: { stdout: string; stderr: string; exitCode: number };
+      try {
+        result = await goCmd(args, cwd, timeout);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("timed out")) {
+          timedOut = true;
+          result = { stdout: "", stderr: msg, exitCode: 124 };
+        } else {
+          throw err;
+        }
+      }
+
+      const data = parseGoGenerateOutput(result.stdout, result.stderr, result.exitCode, timedOut);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,

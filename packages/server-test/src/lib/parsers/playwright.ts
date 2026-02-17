@@ -112,6 +112,7 @@ export function parsePlaywrightJson(jsonStr: string): PlaywrightResult {
           title: spec.title,
           file: spec.file || suiteFile,
           line: spec.line,
+          projectName: test.projectName,
           status,
           duration,
           ...(errorMsg ? { error: errorMsg } : {}),
