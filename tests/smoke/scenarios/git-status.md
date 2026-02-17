@@ -42,23 +42,23 @@
 
 ### Branch & upstream
 
-| #   | Scenario                         | Params     | Expected Output                                                | Priority | Status |
-| --- | -------------------------------- | ---------- | -------------------------------------------------------------- | -------- | ------ |
-| 11  | On branch with upstream tracking | `{ path }` | `branch: "main"`, `upstream: "origin/main"`                    | P0       | mocked |
-| 12  | Ahead of upstream                | `{ path }` | `ahead: N > 0`                                                 | P0       | mocked |
-| 13  | Behind upstream                  | `{ path }` | `behind: N > 0`                                                | P0       | mocked |
-| 14  | Ahead and behind                 | `{ path }` | Both `ahead` and `behind` > 0                                  | P1       | mocked |
-| 15  | Detached HEAD                    | `{ path }` | `branch` is HEAD sha or "(HEAD detached at ...)"`              | P1       | mocked |
-| 16  | No upstream configured           | `{ path }` | `upstream: undefined`, `ahead: undefined`, `behind: undefined` | P1       | mocked |
-| 17  | New branch, no commits           | `{ path }` | `branch: "new-branch"`, no upstream                            | P2       | mocked |
+| #   | Scenario                         | Params     | Expected Output                                                | Priority | Status   |
+| --- | -------------------------------- | ---------- | -------------------------------------------------------------- | -------- | -------- |
+| 11  | On branch with upstream tracking | `{ path }` | `branch: "main"`, `upstream: "origin/main"`                    | P0       | recorded |
+| 12  | Ahead of upstream                | `{ path }` | `ahead: N > 0`                                                 | P0       | recorded |
+| 13  | Behind upstream                  | `{ path }` | `behind: N > 0`                                                | P0       | recorded |
+| 14  | Ahead and behind                 | `{ path }` | Both `ahead` and `behind` > 0                                  | P1       | recorded |
+| 15  | Detached HEAD                    | `{ path }` | `branch` is HEAD sha or "(HEAD detached at ...)"`              | P1       | recorded |
+| 16  | No upstream configured           | `{ path }` | `upstream: undefined`, `ahead: undefined`, `behind: undefined` | P1       | recorded |
+| 17  | New branch, no commits           | `{ path }` | `branch: "new-branch"`, no upstream                            | P2       | recorded |
 
 ### Conflicts
 
 | #   | Scenario                 | Params     | Expected Output               | Priority | Status   |
 | --- | ------------------------ | ---------- | ----------------------------- | -------- | -------- |
 | 18  | Merge conflict (UU)      | `{ path }` | `conflicts: ["file.txt"]`     | P0       | recorded |
-| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | mocked   |
-| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | mocked   |
+| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | recorded |
+| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | recorded |
 
 ### Optional params — untrackedFiles
 
@@ -91,19 +91,19 @@
 
 ### Porcelain v2
 
-| #   | Scenario                              | Params                             | Expected Output                               | Priority | Status |
-| --- | ------------------------------------- | ---------------------------------- | --------------------------------------------- | -------- | ------ |
-| 35  | porcelainVersion: "v2" clean repo     | `{ path, porcelainVersion: "v2" }` | Same schema shape, parsed from v2 format      | P1       | mocked |
-| 36  | porcelainVersion: "v2" with changes   | `{ path, porcelainVersion: "v2" }` | staged/modified/etc populated from v2 format  | P1       | mocked |
-| 37  | porcelainVersion: "v2" with conflicts | `{ path, porcelainVersion: "v2" }` | Conflicts detected from `u ` prefix lines     | P1       | mocked |
-| 38  | porcelainVersion: "v2" with renames   | `{ path, porcelainVersion: "v2" }` | Rename with oldFile from tab-separated fields | P2       | mocked |
+| #   | Scenario                              | Params                             | Expected Output                               | Priority | Status   |
+| --- | ------------------------------------- | ---------------------------------- | --------------------------------------------- | -------- | -------- |
+| 35  | porcelainVersion: "v2" clean repo     | `{ path, porcelainVersion: "v2" }` | Same schema shape, parsed from v2 format      | P1       | recorded |
+| 36  | porcelainVersion: "v2" with changes   | `{ path, porcelainVersion: "v2" }` | staged/modified/etc populated from v2 format  | P1       | recorded |
+| 37  | porcelainVersion: "v2" with conflicts | `{ path, porcelainVersion: "v2" }` | Conflicts detected from `u ` prefix lines     | P1       | recorded |
+| 38  | porcelainVersion: "v2" with renames   | `{ path, porcelainVersion: "v2" }` | Rename with oldFile from tab-separated fields | P2       | recorded |
 
 ### Error paths
 
-| #   | Scenario         | Params                         | Expected Output                   | Priority | Status |
-| --- | ---------------- | ------------------------------ | --------------------------------- | -------- | ------ |
-| 39  | Not a git repo   | `{ path: "/tmp/not-a-repo" }`  | Error thrown: "git status failed" | P0       | mocked |
-| 40  | Nonexistent path | `{ path: "/tmp/nonexistent" }` | Error thrown                      | P1       | mocked |
+| #   | Scenario         | Params                         | Expected Output                   | Priority | Status   |
+| --- | ---------------- | ------------------------------ | --------------------------------- | -------- | -------- |
+| 39  | Not a git repo   | `{ path: "/tmp/not-a-repo" }`  | Error thrown: "git status failed" | P0       | recorded |
+| 40  | Nonexistent path | `{ path: "/tmp/nonexistent" }` | Error thrown                      | P1       | mocked   |
 
 ### Schema validation
 
@@ -119,7 +119,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 13     | 13     | 11       | 0        |
-| P1        | 16     | 16     | 0        | 0        |
-| P2        | 12     | 12     | 0        | 0        |
-| **Total** | **41** | **41** | **11**   | **0**    |
+| P0        | 13     | 13     | 13       | 0        |
+| P1        | 16     | 16     | 10       | 0        |
+| P2        | 12     | 12     | 3        | 0        |
+| **Total** | **41** | **41** | **26**   | **0**    |

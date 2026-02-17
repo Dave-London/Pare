@@ -1,9 +1,9 @@
 /**
  * Smoke tests: git.status — Phase 3 (recorded)
  *
- * Feeds REAL `git status --porcelain=v1 --branch` output captured from
- * actual git repos through the tool handler. Validates that the parser,
- * formatter, and schema chain works with genuine CLI output.
+ * Feeds REAL `git status` output captured from actual git repos through
+ * the tool handler. Validates that the parser, formatter, and schema
+ * chain works with genuine CLI output.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readFileSync } from "fs";
@@ -38,11 +38,11 @@ function loadFixture(name: string): string {
   return readFileSync(resolve(FIXTURE_DIR, name), "utf-8");
 }
 
-function mockGitWithFixture(name: string) {
+function mockGitWithFixture(name: string, stderr = "", exitCode = 0) {
   vi.mocked(git).mockResolvedValueOnce({
     stdout: loadFixture(name),
-    stderr: "",
-    exitCode: 0,
+    stderr,
+    exitCode,
   });
 }
 
@@ -64,7 +64,10 @@ describe("Recorded: git.status", () => {
     return { result, parsed };
   }
 
-  // ── S1: Clean repo (recorded) ──────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════
+  // Happy path / core functionality (S1–S10)
+  // ═══════════════════════════════════════════════════════════════════
+
   it("S1 [recorded] clean repo", async () => {
     mockGitWithFixture("s01-clean.txt");
     const { parsed } = await callAndValidate({});
@@ -75,7 +78,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.branch).toBe("main");
   });
 
-  // ── S2: Staged added (recorded) ───────────────────────────────────
   it("S2 [recorded] staged added file", async () => {
     mockGitWithFixture("s02-staged-added.txt");
     const { parsed } = await callAndValidate({});
@@ -85,7 +87,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.clean).toBe(false);
   });
 
-  // ── S3: Staged modified (recorded) ────────────────────────────────
   it("S3 [recorded] staged modified file", async () => {
     mockGitWithFixture("s03-staged-modified.txt");
     const { parsed } = await callAndValidate({});
@@ -94,7 +95,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.staged[0].file).toBe("src-index.ts");
   });
 
-  // ── S4: Staged deleted (recorded) ─────────────────────────────────
   it("S4 [recorded] staged deleted file", async () => {
     mockGitWithFixture("s04-staged-deleted.txt");
     const { parsed } = await callAndValidate({});
@@ -103,7 +103,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.staged[0].file).toBe("old-file.ts");
   });
 
-  // ── S5: Staged rename (recorded) ──────────────────────────────────
   it("S5 [recorded] staged rename with oldFile", async () => {
     mockGitWithFixture("s05-staged-rename.txt");
     const { parsed } = await callAndValidate({});
@@ -113,7 +112,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.staged[0].oldFile).toBe("old-name.ts");
   });
 
-  // ── S6: Worktree modified (recorded) ──────────────────────────────
   it("S6 [recorded] worktree modified", async () => {
     mockGitWithFixture("s06-wt-modified.txt");
     const { parsed } = await callAndValidate({});
@@ -121,14 +119,12 @@ describe("Recorded: git.status", () => {
     expect(parsed.staged).toEqual([]);
   });
 
-  // ── S7: Worktree deleted (recorded) ───────────────────────────────
   it("S7 [recorded] worktree deleted", async () => {
     mockGitWithFixture("s07-wt-deleted.txt");
     const { parsed } = await callAndValidate({});
     expect(parsed.deleted).toEqual(["removed.ts"]);
   });
 
-  // ── S8: Untracked (recorded) ──────────────────────────────────────
   it("S8 [recorded] untracked files", async () => {
     mockGitWithFixture("s08-untracked.txt");
     const { parsed } = await callAndValidate({});
@@ -137,7 +133,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.untracked.length).toBe(2);
   });
 
-  // ── S9: Mixed state (recorded) ────────────────────────────────────
   it("S9 [recorded] mixed state", async () => {
     mockGitWithFixture("s09-mixed.txt");
     const { parsed } = await callAndValidate({});
@@ -146,7 +141,6 @@ describe("Recorded: git.status", () => {
     expect(parsed.clean).toBe(false);
   });
 
-  // ── S10: MM — both staged and worktree modified (recorded) ────────
   it("S10 [recorded] both staged and worktree modified (MM)", async () => {
     mockGitWithFixture("s10-mm.txt");
     const { parsed } = await callAndValidate({});
@@ -155,10 +149,129 @@ describe("Recorded: git.status", () => {
     expect(parsed.modified).toContain("src-index.ts");
   });
 
-  // ── S18: Merge conflict UU (recorded) ─────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════
+  // Branch & upstream (S11–S17)
+  // ═══════════════════════════════════════════════════════════════════
+
+  it("S11 [recorded] branch with upstream tracking", async () => {
+    mockGitWithFixture("s11-upstream.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.branch).toBe("main");
+    expect(parsed.upstream).toBe("origin/main");
+  });
+
+  it("S12 [recorded] ahead of upstream", async () => {
+    mockGitWithFixture("s12-ahead.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.ahead).toBe(3);
+    expect(parsed.branch).toBe("main");
+  });
+
+  it("S13 [recorded] behind upstream", async () => {
+    mockGitWithFixture("s13-behind.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.behind).toBe(2);
+    expect(parsed.branch).toBe("main");
+  });
+
+  it("S14 [recorded] ahead and behind upstream", async () => {
+    mockGitWithFixture("s14-ahead-behind.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.ahead).toBe(3);
+    expect(parsed.behind).toBe(2);
+  });
+
+  it("S15 [recorded] detached HEAD", async () => {
+    mockGitWithFixture("s15-detached.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.branch).toBeDefined();
+    expect(parsed.upstream).toBeUndefined();
+  });
+
+  it("S16 [recorded] branch without upstream", async () => {
+    mockGitWithFixture("s16-no-upstream.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.branch).toBe("feature-branch");
+    expect(parsed.upstream).toBeUndefined();
+    expect(parsed.ahead).toBeUndefined();
+    expect(parsed.behind).toBeUndefined();
+  });
+
+  it("S17 [recorded] new branch with no commits", async () => {
+    mockGitWithFixture("s17-new-branch.txt");
+    const { parsed } = await callAndValidate({});
+    // "## No commits yet on new-branch" — parser should extract branch name
+    expect(parsed.branch).toBeDefined();
+    expect(parsed.upstream).toBeUndefined();
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Conflicts (S18–S20)
+  // ═══════════════════════════════════════════════════════════════════
+
   it("S18 [recorded] merge conflict UU", async () => {
     mockGitWithFixture("s18-conflict-uu.txt");
     const { parsed } = await callAndValidate({});
     expect(parsed.conflicts).toContain("conflicted.ts");
+  });
+
+  it("S19 [recorded] both added conflict AA", async () => {
+    mockGitWithFixture("s19-aa-conflict.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.conflicts).toContain("both-added.ts");
+  });
+
+  it("S20 [recorded] multiple conflicts", async () => {
+    mockGitWithFixture("s20-multi-conflict.txt");
+    const { parsed } = await callAndValidate({});
+    expect(parsed.conflicts).toContain("file1.ts");
+    expect(parsed.conflicts).toContain("file2.ts");
+    expect(parsed.conflicts).toContain("file3.ts");
+    expect(parsed.conflicts.length).toBe(3);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Porcelain v2 (S35–S38)
+  // ═══════════════════════════════════════════════════════════════════
+
+  it("S35 [recorded] porcelain v2 clean repo", async () => {
+    mockGitWithFixture("s35-v2-clean.txt");
+    const { parsed } = await callAndValidate({ porcelainVersion: "v2" });
+    expect(parsed.branch).toBe("main");
+    expect(parsed.clean).toBe(true);
+  });
+
+  it("S36 [recorded] porcelain v2 with staged change", async () => {
+    mockGitWithFixture("s36-v2-staged.txt");
+    const { parsed } = await callAndValidate({ porcelainVersion: "v2" });
+    expect(parsed.staged.length).toBeGreaterThan(0);
+    expect(parsed.clean).toBe(false);
+  });
+
+  it("S37 [recorded] porcelain v2 with conflicts", async () => {
+    mockGitWithFixture("s37-v2-conflict.txt");
+    const { parsed } = await callAndValidate({ porcelainVersion: "v2" });
+    expect(parsed.conflicts.length).toBe(3);
+  });
+
+  it("S38 [recorded] porcelain v2 with rename", async () => {
+    mockGitWithFixture("s38-v2-rename.txt");
+    const { parsed } = await callAndValidate({ porcelainVersion: "v2" });
+    expect(parsed.staged.length).toBeGreaterThan(0);
+    expect(parsed.staged[0].status).toBe("renamed");
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Error paths (S39)
+  // ═══════════════════════════════════════════════════════════════════
+
+  it("S39 [recorded] not a git repo throws error", async () => {
+    const stderr = loadFixture("s39-not-repo-stderr.txt");
+    vi.mocked(git).mockResolvedValueOnce({
+      stdout: "",
+      stderr,
+      exitCode: 128,
+    });
+    await expect(callAndValidate({ path: "/tmp/not-a-repo" })).rejects.toThrow("git status failed");
   });
 });
