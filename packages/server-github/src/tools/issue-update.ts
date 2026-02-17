@@ -6,6 +6,16 @@ import { parseIssueUpdate } from "../lib/parsers.js";
 import { formatIssueUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
+function classifyIssueUpdateError(
+  stderr: string,
+): "not-found" | "permission-denied" | "validation" | "unknown" {
+  const lower = stderr.toLowerCase();
+  if (/not found|could not resolve|no issue/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/validation|invalid|required|unprocessable/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `issue-update` tool on the given MCP server. */
 export function registerIssueUpdateTool(server: McpServer) {
   server.registerTool(
@@ -165,6 +175,28 @@ export function registerIssueUpdateTool(server: McpServer) {
 
       const selector = String(number);
       const issueNum = typeof number === "number" ? number : 0;
+      const updatedFields = [
+        title ? "title" : undefined,
+        body ? "body" : undefined,
+        addLabels && addLabels.length > 0 ? "labels" : undefined,
+        removeLabels && removeLabels.length > 0 ? "labels" : undefined,
+        addAssignees && addAssignees.length > 0 ? "assignees" : undefined,
+        removeAssignees && removeAssignees.length > 0 ? "assignees" : undefined,
+        milestone ? "milestone" : undefined,
+        removeMilestone ? "milestone" : undefined,
+        addProjects && addProjects.length > 0 ? "projects" : undefined,
+        removeProjects && removeProjects.length > 0 ? "projects" : undefined,
+      ].filter(Boolean) as string[];
+      const operations = [
+        addLabels && addLabels.length > 0 ? "add-label" : undefined,
+        removeLabels && removeLabels.length > 0 ? "remove-label" : undefined,
+        addAssignees && addAssignees.length > 0 ? "add-assignee" : undefined,
+        removeAssignees && removeAssignees.length > 0 ? "remove-assignee" : undefined,
+        addProjects && addProjects.length > 0 ? "add-project" : undefined,
+        removeProjects && removeProjects.length > 0 ? "remove-project" : undefined,
+        milestone ? "set-milestone" : undefined,
+        removeMilestone ? "remove-milestone" : undefined,
+      ].filter(Boolean) as string[];
 
       const args = ["issue", "edit", selector];
       if (title) args.push("--title", title);
@@ -210,10 +242,21 @@ export function registerIssueUpdateTool(server: McpServer) {
       const result = await ghCmd(args, body ? { cwd, stdin: body } : { cwd });
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh issue edit failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return dualOutput(
+          {
+            number: issueNum,
+            url: "",
+            updatedFields,
+            operations,
+            errorType: classifyIssueUpdateError(combined),
+            errorMessage: combined || "gh issue edit failed",
+          },
+          formatIssueUpdate,
+        );
       }
 
-      const data = parseIssueUpdate(result.stdout, issueNum);
+      const data = parseIssueUpdate(result.stdout, issueNum, updatedFields, operations);
       return dualOutput(data, formatIssueUpdate);
     },
   );

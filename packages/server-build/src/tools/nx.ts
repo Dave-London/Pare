@@ -170,7 +170,7 @@ export function registerNxTool(server: McpServer) {
       const duration = Math.round((Date.now() - start) / 100) / 10;
       const rawOutput = result.stdout + "\n" + result.stderr;
 
-      const data = parseNxOutput(result.stdout, result.stderr, result.exitCode, duration);
+      const data = parseNxOutput(result.stdout, result.stderr, result.exitCode, duration, affected);
       return compactDualOutput(
         data,
         rawOutput,

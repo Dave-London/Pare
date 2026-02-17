@@ -24,6 +24,10 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Specific services to start (default: all)"),
+        scale: z
+          .record(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX), z.number().int().min(0))
+          .optional()
+          .describe("Per-service scale map, mapped to repeated --scale service=num"),
         detach: z.boolean().optional().default(true).describe("Run in background (default: true)"),
         build: z
           .boolean()
@@ -88,6 +92,7 @@ export function registerComposeUpTool(server: McpServer) {
     async ({
       path,
       services,
+      scale,
       detach,
       build,
       file,
@@ -109,6 +114,14 @@ export function registerComposeUpTool(server: McpServer) {
           assertNoFlagInjection(s, "services");
         }
       }
+      if (scale) {
+        for (const [svc, count] of Object.entries(scale)) {
+          assertNoFlagInjection(svc, "scale service");
+          if (!Number.isInteger(count) || count < 0) {
+            throw new Error("scale values must be non-negative integers");
+          }
+        }
+      }
 
       const args = ["compose"];
       if (file) args.push("-f", file);
@@ -125,6 +138,11 @@ export function registerComposeUpTool(server: McpServer) {
       if (waitTimeout != null) args.push("--wait-timeout", String(waitTimeout));
       if (renewAnonVolumes) args.push("--renew-anon-volumes");
       if (dryRun) args.push("--dry-run");
+      if (scale) {
+        for (const [svc, count] of Object.entries(scale)) {
+          args.push("--scale", `${svc}=${count}`);
+        }
+      }
       if (services && services.length > 0) {
         args.push(...services);
       }
@@ -139,7 +157,7 @@ export function registerComposeUpTool(server: McpServer) {
 
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatComposeUp,
         compactComposeUpMap,
         formatComposeUpCompact,

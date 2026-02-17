@@ -846,7 +846,11 @@ describe("parseCargoAddOutput dry-run", () => {
     expect(result.success).toBe(true);
     expect(result.dryRun).toBe(true);
     expect(result.total).toBe(1);
-    expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
+    expect(result.added[0]).toEqual({
+      name: "serde",
+      version: "1.0.217",
+      featuresActivated: ["derive", "std"],
+    });
   });
 
   it("filters dry-run warning from error lines on failure", () => {

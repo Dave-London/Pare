@@ -4,7 +4,6 @@ import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretoo
 import { pyenv } from "../lib/python-runner.js";
 import { parsePyenvOutput } from "../lib/parsers.js";
 import { formatPyenv, compactPyenvMap, formatPyenvCompact } from "../lib/formatters.js";
-import { PyenvResultSchema } from "../schemas/index.js";
 
 const ACTIONS = [
   "versions",
@@ -14,6 +13,8 @@ const ACTIONS = [
   "local",
   "global",
   "uninstall",
+  "which",
+  "rehash",
 ] as const;
 
 /** Registers the `pyenv` tool on the given MCP server. */
@@ -32,6 +33,11 @@ export function registerPyenvTool(server: McpServer) {
           .describe(
             "Python version string (required for install/uninstall/local/global, e.g. '3.12.0')",
           ),
+        command: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Command name for `which` action (e.g. python, pip)"),
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         skipExisting: z
           .boolean()
@@ -50,11 +56,13 @@ export function registerPyenvTool(server: McpServer) {
           .describe("Clear local/global version setting (--unset)"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
-      outputSchema: PyenvResultSchema,
+      // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
+      outputSchema: z.object({ action: z.string() }).passthrough(),
     },
-    async ({ action, version, path, skipExisting, force, unset, compact }) => {
+    async ({ action, version, command, path, skipExisting, force, unset, compact }) => {
       const cwd = path || process.cwd();
       if (version) assertNoFlagInjection(version, "version");
+      if (command) assertNoFlagInjection(command, "command");
 
       const args: string[] = [];
 
@@ -117,6 +125,20 @@ export function registerPyenvTool(server: McpServer) {
           } else {
             args.push("global", version);
           }
+          break;
+        case "which":
+          if (!command) {
+            return {
+              content: [
+                { type: "text" as const, text: "Error: command is required for which action" },
+              ],
+              isError: true,
+            };
+          }
+          args.push("which", command);
+          break;
+        case "rehash":
+          args.push("rehash");
           break;
       }
 

@@ -9,7 +9,7 @@ import { RunViewResultSchema } from "../schemas/index.js";
 // S-gap: Request steps in jobs for step-level detail
 // P0: Added headSha, event, startedAt, attempt for richer run metadata
 const RUN_VIEW_FIELDS =
-  "databaseId,status,conclusion,name,workflowName,headBranch,jobs,url,createdAt,headSha,event,startedAt,attempt";
+  "databaseId,status,conclusion,name,workflowName,headBranch,jobs,url,createdAt,headSha,event,startedAt,updatedAt,attempt";
 
 /** Registers the `run-view` tool on the given MCP server. */
 export function registerRunViewTool(server: McpServer) {

@@ -56,6 +56,12 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Build with a custom profile (--profile <NAME>)"),
+        timings: z
+          .union([z.boolean(), z.enum(["html", "json"])])
+          .optional()
+          .describe(
+            "Enable cargo timing report generation (--timings[=html|json]) and expose timing metadata in output.",
+          ),
         locked: z
           .boolean()
           .optional()
@@ -90,6 +96,7 @@ export function registerBuildTool(server: McpServer) {
       noDefaultFeatures,
       target,
       profile,
+      timings,
       locked,
       frozen,
       offline,
@@ -116,16 +123,18 @@ export function registerBuildTool(server: McpServer) {
       if (noDefaultFeatures) args.push("--no-default-features");
       if (target) args.push("--target", target);
       if (profile) args.push("--profile", profile);
+      if (timings === true) args.push("--timings");
+      if (timings === "html" || timings === "json") args.push(`--timings=${timings}`);
       if (locked) args.push("--locked");
       if (frozen) args.push("--frozen");
       if (offline) args.push("--offline");
       if (manifestPath) args.push("--manifest-path", manifestPath);
 
       const result = await cargo(args, cwd);
-      const data = parseCargoBuildJson(result.stdout, result.exitCode);
+      const data = parseCargoBuildJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatCargoBuild,
         compactBuildMap,
         formatBuildCompact,

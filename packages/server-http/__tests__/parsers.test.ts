@@ -51,6 +51,7 @@ describe("parseHttpBlock", () => {
 
     expect(result.status).toBe(201);
     expect(result.statusText).toBe("Created");
+    expect(result.httpVersion).toBe("2");
   });
 
   it("handles response with no body (HEAD)", () => {
@@ -302,6 +303,49 @@ describe("parseCurlOutput", () => {
     expect(result.timing.total).toBeCloseTo(0.1);
     expect(result.timing.details).toBeUndefined();
   });
+
+  it("parses extended curl write-out metadata fields", () => {
+    const stdout = [
+      "HTTP/2 200 OK\r\n",
+      "Content-Type: application/json\r\n",
+      "\r\n",
+      '{"ok":true}',
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.410 11 128 0.003 0.020 0.090 0.095 0.300 2 1 https://example.com/final https 0",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.httpVersion).toBe("2");
+    expect(result.uploadSize).toBe(128);
+    expect(result.finalUrl).toBe("https://example.com/final");
+    expect(result.scheme).toBe("https");
+    expect(result.tlsVerifyResult).toBe(0);
+  });
+
+  it("captures redirect chain from intermediate response blocks", () => {
+    const stdout = [
+      "HTTP/1.1 302 Found\r\n",
+      "Location: https://example.com/step-2\r\n",
+      "\r\n",
+      "HTTP/1.1 301 Moved Permanently\r\n",
+      "Location: https://example.com/final\r\n",
+      "\r\n",
+      "HTTP/2 200 OK\r\n",
+      "Content-Type: text/plain\r\n",
+      "\r\n",
+      "done",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.520 4 0 0.003 0.020 0.090 0.095 0.300 2 2 https://example.com/final https 0",
+    ].join("");
+
+    const result = parseCurlOutput(stdout, "", 0);
+
+    expect(result.redirectChain).toEqual([
+      { status: 302, location: "https://example.com/step-2" },
+      { status: 301, location: "https://example.com/final" },
+    ]);
+  });
 });
 
 describe("parseCurlHeadOutput", () => {
@@ -399,5 +443,27 @@ describe("parseCurlHeadOutput", () => {
     expect(result.timing.details!.namelookup).toBeCloseTo(0.008);
     expect(result.timing.details!.connect).toBeCloseTo(0.04);
     expect(result.timing.details!.appconnect).toBeCloseTo(0.11);
+  });
+
+  it("includes http version, redirect chain, and TLS metadata for HEAD responses", () => {
+    const stdout = [
+      "HTTP/1.1 302 Found\r\n",
+      "Location: https://example.com/final\r\n",
+      "\r\n",
+      "HTTP/2 200 OK\r\n",
+      "Content-Type: text/html\r\n",
+      "Content-Length: 123\r\n",
+      "\r\n",
+      `\n${PARE_META_SEPARATOR}\n`,
+      "0.200 0 0 0.008 0.040 0.110 0.115 0.190 2 1 https://example.com/final https 0",
+    ].join("");
+
+    const result = parseCurlHeadOutput(stdout, "", 0);
+
+    expect(result.httpVersion).toBe("2");
+    expect(result.redirectChain).toEqual([{ status: 302, location: "https://example.com/final" }]);
+    expect(result.finalUrl).toBe("https://example.com/final");
+    expect(result.scheme).toBe("https");
+    expect(result.tlsVerifyResult).toBe(0);
   });
 });

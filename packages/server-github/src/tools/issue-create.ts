@@ -6,6 +6,15 @@ import { parseIssueCreate } from "../lib/parsers.js";
 import { formatIssueCreate } from "../lib/formatters.js";
 import { IssueCreateResultSchema } from "../schemas/index.js";
 
+function classifyIssueCreateError(
+  text: string,
+): "validation" | "permission-denied" | "partial-created" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/validation|invalid|required|unprocessable/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `issue-create` tool on the given MCP server. */
 export function registerIssueCreateTool(server: McpServer) {
   server.registerTool(
@@ -101,7 +110,31 @@ export function registerIssueCreateTool(server: McpServer) {
       const result = await ghCmd(args, { cwd, stdin: body });
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh issue create failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        const partial = /https:\/\/github\.com\/[^\s]+\/issues\/\d+/.test(result.stdout);
+        if (partial) {
+          const partialData = parseIssueCreate(result.stdout, labels);
+          return dualOutput(
+            {
+              ...partialData,
+              partial: true,
+              errorType: "partial-created" as const,
+              errorMessage: combined,
+            },
+            formatIssueCreate,
+          );
+        }
+        return dualOutput(
+          {
+            number: 0,
+            url: "",
+            labelsApplied: labels && labels.length > 0 ? labels : undefined,
+            partial: false,
+            errorType: classifyIssueCreateError(combined),
+            errorMessage: combined || "gh issue create failed",
+          },
+          formatIssueCreate,
+        );
       }
 
       // S-gap: Pass labels for echo in output

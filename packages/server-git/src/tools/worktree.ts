@@ -27,7 +27,7 @@ export function registerWorktreeTool(server: McpServer) {
       inputSchema: {
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
-          .enum(["list", "add", "remove", "lock", "unlock", "prune"])
+          .enum(["list", "add", "remove", "lock", "unlock", "prune", "move", "repair"])
           .optional()
           .default("list")
           .describe("Worktree action to perform (default: list)"),
@@ -76,6 +76,16 @@ export function registerWorktreeTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Reason for locking the worktree (--reason, used with lock)"),
+        newPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Target path for worktree move (used with action=move)"),
+        repairPaths: z
+          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Optional worktree paths to repair (used with action=repair)"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: z.union([GitWorktreeListSchema, GitWorktreeSchema]),
@@ -152,6 +162,7 @@ export function registerWorktreeTool(server: McpServer) {
           worktreePath,
           branch,
         );
+        worktreeResult.action = "add";
         return dualOutput(worktreeResult, formatWorktree);
       }
 
@@ -175,6 +186,7 @@ export function registerWorktreeTool(server: McpServer) {
         }
 
         const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+        worktreeResult.action = "lock";
         return dualOutput(worktreeResult, formatWorktree);
       }
 
@@ -191,6 +203,7 @@ export function registerWorktreeTool(server: McpServer) {
         }
 
         const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+        worktreeResult.action = "unlock";
         return dualOutput(worktreeResult, formatWorktree);
       }
 
@@ -202,6 +215,42 @@ export function registerWorktreeTool(server: McpServer) {
         }
 
         const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, "", "");
+        worktreeResult.action = "prune";
+        return dualOutput(worktreeResult, formatWorktree);
+      }
+
+      if (action === "move") {
+        const worktreePath = params.worktreePath;
+        const newPath = params.newPath;
+        if (!worktreePath || !newPath) {
+          throw new Error("'worktreePath' and 'newPath' are required for worktree move");
+        }
+        assertNoFlagInjection(worktreePath, "worktreePath");
+        assertNoFlagInjection(newPath, "newPath");
+        const result = await git(["worktree", "move", worktreePath, newPath], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git worktree move failed: ${result.stderr}`);
+        }
+        const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, newPath, "");
+        worktreeResult.action = "move";
+        worktreeResult.targetPath = newPath;
+        return dualOutput(worktreeResult, formatWorktree);
+      }
+
+      if (action === "repair") {
+        const args = ["worktree", "repair"];
+        if (params.repairPaths && params.repairPaths.length > 0) {
+          for (const p of params.repairPaths) {
+            assertNoFlagInjection(p, "repairPaths");
+          }
+          args.push(...params.repairPaths);
+        }
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git worktree repair failed: ${result.stderr}`);
+        }
+        const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, "", "");
+        worktreeResult.action = "repair";
         return dualOutput(worktreeResult, formatWorktree);
       }
 
@@ -226,6 +275,7 @@ export function registerWorktreeTool(server: McpServer) {
       }
 
       const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+      worktreeResult.action = "remove";
       return dualOutput(worktreeResult, formatWorktree);
     },
   );

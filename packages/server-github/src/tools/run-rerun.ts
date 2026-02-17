@@ -6,6 +6,16 @@ import { parseRunRerun } from "../lib/parsers.js";
 import { formatRunRerun } from "../lib/formatters.js";
 import { RunRerunResultSchema } from "../schemas/index.js";
 
+function classifyRunRerunError(
+  text: string,
+): "not-found" | "permission-denied" | "in-progress" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/not found|could not resolve|no workflow run/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/in progress|already running|cannot rerun while/.test(lower)) return "in-progress";
+  return "unknown";
+}
+
 /** Registers the `run-rerun` tool on the given MCP server. */
 export function registerRunRerunTool(server: McpServer) {
   server.registerTool(
@@ -52,13 +62,20 @@ export function registerRunRerunTool(server: McpServer) {
       if (job) args.push("--job", job);
 
       const result = await ghCmd(args, cwd);
-
+      const rerun = parseRunRerun(result.stdout, result.stderr, runId, failedOnly ?? false, job);
       if (result.exitCode !== 0) {
-        throw new Error(`gh run rerun failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        const data = {
+          ...rerun,
+          status: "error" as const,
+          errorType: classifyRunRerunError(combined),
+          errorMessage: combined || "gh run rerun failed",
+        };
+        return dualOutput(data, formatRunRerun);
       }
 
       // S-gap: Pass job for echo in output
-      const data = parseRunRerun(result.stdout, result.stderr, runId, failedOnly ?? false, job);
+      const data = rerun;
       return dualOutput(data, formatRunRerun);
     },
   );

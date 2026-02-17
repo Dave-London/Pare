@@ -1,6 +1,41 @@
 import type { MakeRunResult, MakeListResult } from "../schemas/index.js";
 import type { MakeTool } from "./make-runner.js";
 
+function detectRunErrorType(
+  tool: MakeTool,
+  stdout: string,
+  stderr: string,
+): "missing-target" | "recipe-failure" | "parse-error" | undefined {
+  const text = `${stderr}\n${stdout}`.toLowerCase();
+
+  if (
+    text.includes("no rule to make target") ||
+    text.includes("justfile does not contain recipe") ||
+    text.includes("unknown recipe")
+  ) {
+    return "missing-target";
+  }
+
+  if (
+    text.includes("missing separator") ||
+    text.includes("makefile parse error") ||
+    text.includes("error parsing")
+  ) {
+    return "parse-error";
+  }
+
+  if (
+    text.includes("recipe for target") ||
+    text.includes("error ") ||
+    text.includes("recipe failed") ||
+    (tool === "just" && text.includes("exited with status code"))
+  ) {
+    return "recipe-failure";
+  }
+
+  return undefined;
+}
+
 /**
  * Parses the output of a `make` or `just` run into structured result data.
  */
@@ -13,15 +48,17 @@ export function parseRunOutput(
   tool: MakeTool,
   timedOut: boolean = false,
 ): MakeRunResult {
+  const success = exitCode === 0 && !timedOut;
   return {
     target,
-    success: exitCode === 0 && !timedOut,
+    success,
     exitCode,
     stdout: stdout.trimEnd() || undefined,
     stderr: stderr.trimEnd() || undefined,
     duration,
     tool,
     timedOut,
+    errorType: !success ? detectRunErrorType(tool, stdout, stderr) : undefined,
   };
 }
 
@@ -78,8 +115,17 @@ export interface JustDump {
  * The JSON dump includes recipe names, parameters, dependencies, and docs.
  * All just recipes are inherently phony (no file targets).
  */
-export function parseJustDumpJson(jsonOutput: string): {
-  targets: { name: string; description?: string; isPhony?: boolean; dependencies?: string[] }[];
+export function parseJustDumpJson(
+  jsonOutput: string,
+  opts?: { showRecipe?: boolean },
+): {
+  targets: {
+    name: string;
+    description?: string;
+    isPhony?: boolean;
+    dependencies?: string[];
+    recipe?: string[];
+  }[];
   total: number;
 } {
   const dump: JustDump = JSON.parse(jsonOutput);
@@ -88,6 +134,7 @@ export function parseJustDumpJson(jsonOutput: string): {
     description?: string;
     isPhony?: boolean;
     dependencies?: string[];
+    recipe?: string[];
   }[] = [];
 
   if (dump.recipes) {
@@ -108,6 +155,10 @@ export function parseJustDumpJson(jsonOutput: string): {
         description: recipe.doc?.trim() || undefined,
         isPhony: true,
         dependencies: deps.length > 0 ? deps : undefined,
+        recipe:
+          opts?.showRecipe && Array.isArray(recipe.body)
+            ? recipe.body.filter((line): line is string => typeof line === "string")
+            : undefined,
       });
     }
   }
@@ -214,7 +265,13 @@ export function parsePhonyTargets(makefileSource: string): Set<string> {
  * @returns The same targets array, mutated with `isPhony` fields where applicable
  */
 export function enrichPhonyFlags(
-  targets: { name: string; description?: string; isPhony?: boolean; dependencies?: string[] }[],
+  targets: {
+    name: string;
+    description?: string;
+    isPhony?: boolean;
+    dependencies?: string[];
+    recipe?: string[];
+  }[],
   phonySet: Set<string>,
 ): void {
   for (const target of targets) {
@@ -236,9 +293,9 @@ export function enrichPhonyFlags(
  * @returns The same targets array, mutated with `description` fields where found
  */
 export function enrichMakeTargetDescriptions(
-  targets: { name: string; description?: string }[],
+  targets: { name: string; description?: string; recipe?: string[] }[],
   makefileSource: string,
-): { name: string; description?: string }[] {
+): { name: string; description?: string; recipe?: string[] }[] {
   // Build a map of target name → description from lines matching: target: ... ## desc
   const descMap = new Map<string, string>();
   // Match: targetname: [anything] ## description
@@ -294,6 +351,114 @@ export function parseMakeDependencies(makefileSource: string): Map<string, strin
 }
 
 /**
+ * Parses explicit target recipe bodies from Makefile source.
+ *
+ * Captures tab-indented command lines that immediately follow target rules.
+ * Pattern rules (`%.o: %.c`) are excluded here and returned via parsePatternRules.
+ */
+export function parseMakeRecipes(makefileSource: string): Map<string, string[]> {
+  const recipeMap = new Map<string, string[]>();
+  const lines = makefileSource.split("\n");
+  const targetRe = /^([a-zA-Z0-9_][a-zA-Z0-9_.\-/]*):\s*([^#\n]*)/;
+
+  let currentTarget: string | undefined;
+  for (const line of lines) {
+    const match = line.match(targetRe);
+    if (match && !line.trimStart().startsWith(".PHONY")) {
+      currentTarget = match[1];
+      if (!recipeMap.has(currentTarget)) {
+        recipeMap.set(currentTarget, []);
+      }
+      continue;
+    }
+
+    if (line.startsWith("\t") && currentTarget) {
+      const cmd = line.trim();
+      if (cmd.length > 0) {
+        recipeMap.get(currentTarget)?.push(cmd);
+      }
+      continue;
+    }
+
+    if (line.trim().length > 0) {
+      currentTarget = undefined;
+    }
+  }
+
+  for (const [target, recipe] of recipeMap.entries()) {
+    if (recipe.length === 0) {
+      recipeMap.delete(target);
+    }
+  }
+
+  return recipeMap;
+}
+
+/**
+ * Parses Makefile pattern rules (e.g., `%.o: %.c`) with optional recipes.
+ */
+export function parsePatternRules(makefileSource: string): {
+  pattern: string;
+  dependencies?: string[];
+  recipe?: string[];
+}[] {
+  const lines = makefileSource.split("\n");
+  const patternRe = /^([^\s:#]*%[^\s:#]*):\s*([^#\n]*)/;
+  const rules: { pattern: string; dependencies?: string[]; recipe?: string[] }[] = [];
+
+  let currentRule: { pattern: string; dependencies?: string[]; recipe?: string[] } | undefined;
+  for (const line of lines) {
+    const match = line.match(patternRe);
+    if (match) {
+      const depsStr = match[2].trim();
+      const deps = depsStr ? stripOrderOnlyDeps(depsStr.split(/\s+/)) : [];
+      currentRule = {
+        pattern: match[1],
+        dependencies: deps.length > 0 ? deps : undefined,
+        recipe: [],
+      };
+      rules.push(currentRule);
+      continue;
+    }
+
+    if (line.startsWith("\t") && currentRule) {
+      const cmd = line.trim();
+      if (cmd.length > 0) {
+        currentRule.recipe?.push(cmd);
+      }
+      continue;
+    }
+
+    if (line.trim().length > 0) {
+      currentRule = undefined;
+    }
+  }
+
+  for (const rule of rules) {
+    if ((rule.recipe ?? []).length === 0) {
+      delete rule.recipe;
+    }
+  }
+
+  return rules;
+}
+
+/**
+ * Adds parsed recipe bodies to already-discovered make targets.
+ */
+export function enrichTargetRecipes(
+  targets: { name: string; recipe?: string[] }[],
+  recipeMap: Map<string, string[]>,
+): void {
+  for (const target of targets) {
+    const recipe = recipeMap.get(target.name);
+    if (recipe && recipe.length > 0) {
+      target.recipe = recipe;
+    }
+  }
+}
+
+/**
  * Builds a full MakeListResult from parsed target data and the detected tool.
  */
 export function buildListResult(
@@ -303,7 +468,9 @@ export function buildListResult(
       description?: string;
       isPhony?: boolean;
       dependencies?: string[];
+      recipe?: string[];
     }[];
+    patternRules?: { pattern: string; dependencies?: string[]; recipe?: string[] }[];
     total: number;
   },
   tool: MakeTool,
@@ -312,5 +479,6 @@ export function buildListResult(
     targets: parsed.targets,
     total: parsed.total,
     tool,
+    ...(parsed.patternRules ? { patternRules: parsed.patternRules } : {}),
   };
 }

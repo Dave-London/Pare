@@ -678,6 +678,7 @@ describe("Gap #182: formatTest with testResults", () => {
       stdout: "All tests passed",
       stderr: "",
       success: true,
+      timedOut: false,
       duration: 3.5,
       testResults: { passed: 42, failed: 0, skipped: 2, total: 44 },
     };
@@ -691,6 +692,7 @@ describe("Gap #182: formatTest with testResults", () => {
       stdout: "OK",
       stderr: "",
       success: true,
+      timedOut: false,
       duration: 1.0,
     };
     const output = formatTest(data);

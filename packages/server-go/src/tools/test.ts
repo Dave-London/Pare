@@ -27,6 +27,21 @@ export function registerTestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Test name filter regex"),
+        bench: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Benchmark name filter regex (-bench)"),
+        benchtime: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Benchmark run duration or count (-benchtime), e.g. '3s' or '100x'"),
+        benchmem: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Print memory allocation stats for benchmarks (-benchmem)"),
         failfast: z
           .boolean()
           .optional()
@@ -102,6 +117,9 @@ export function registerTestTool(server: McpServer) {
       path,
       packages,
       run: runFilter,
+      bench,
+      benchtime,
+      benchmem,
       failfast,
       short,
       race,
@@ -119,6 +137,8 @@ export function registerTestTool(server: McpServer) {
         assertNoFlagInjection(p, "packages");
       }
       if (runFilter) assertNoFlagInjection(runFilter, "run");
+      if (bench) assertNoFlagInjection(bench, "bench");
+      if (benchtime) assertNoFlagInjection(benchtime, "benchtime");
       if (timeout) assertNoFlagInjection(timeout, "timeout");
       if (coverprofile) assertNoFlagInjection(coverprofile, "coverprofile");
 
@@ -128,6 +148,9 @@ export function registerTestTool(server: McpServer) {
       if (race) args.push("-race");
       if (timeout) args.push("-timeout", timeout);
       if (count !== undefined) args.push("-count", String(count));
+      if (bench) args.push("-bench", bench);
+      if (benchtime) args.push("-benchtime", benchtime);
+      if (benchmem) args.push("-benchmem");
       if (coverprofile) {
         args.push("-coverprofile", coverprofile);
       } else if (cover) {

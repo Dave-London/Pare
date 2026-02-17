@@ -21,6 +21,10 @@ export const NpmInstallSchema = z.object({
   changed: z.number(),
   duration: z.number(),
   packages: z.number().describe("Total packages after install"),
+  lockfileChanged: z
+    .boolean()
+    .optional()
+    .describe("Whether the package manager lockfile changed during install"),
   packageDetails: z
     .array(NpmInstallPackageSchema)
     .optional()
@@ -76,6 +80,7 @@ export const NpmOutdatedEntrySchema = z.object({
   latest: z.string(),
   location: z.string().optional(),
   type: z.string().optional(),
+  homepage: z.string().optional(),
 });
 
 /** Zod schema for structured npm outdated output with a list of packages needing updates. */
@@ -118,6 +123,10 @@ export const NpmListSchema = z.object({
   name: z.string(),
   version: z.string(),
   dependencies: z.record(z.string(), NpmListDepSchema).optional(),
+  problems: z
+    .array(z.string())
+    .optional()
+    .describe("Problems reported by npm ls (e.g., missing/extraneous/invalid deps)"),
   total: z.number(),
 });
 
@@ -152,6 +161,7 @@ export const NpmTestSchema = z.object({
   stdout: z.string().describe("Standard output from the test run"),
   stderr: z.string().describe("Standard error from the test run"),
   success: z.boolean().describe("Whether tests passed (exit code 0)"),
+  timedOut: z.boolean().describe("Whether the test run timed out"),
   duration: z.number().describe("Execution duration in seconds"),
   testResults: TestResultsSchema.optional().describe(
     "Parsed test counts from known frameworks (jest, vitest, mocha) — best-effort",
@@ -260,6 +270,18 @@ export const NvmResultSchema = z.object({
   versions: z
     .array(NvmVersionEntrySchema)
     .describe("List of installed Node.js versions with optional LTS tags"),
+  aliases: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("NVM aliases mapped to their target (e.g., default -> v20.11.1)"),
+  resolvedVersion: z
+    .string()
+    .optional()
+    .describe("Resolved version for `action: version` (e.g., v20.11.1)"),
+  requestedVersion: z
+    .string()
+    .optional()
+    .describe("Requested version identifier used in `action: version`"),
   default: z.string().optional().describe("Default Node.js version (alias default)"),
   which: z.string().optional().describe("Filesystem path to the active Node.js binary"),
   arch: z.string().optional().describe("Architecture of the active Node.js (e.g., x64, arm64)"),

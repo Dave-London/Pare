@@ -63,6 +63,20 @@ describe("compactLintMap", () => {
     expect(compact.filesChecked).toBe(25);
     expect(compact).not.toHaveProperty("diagnostics");
   });
+
+  it("includes deprecationCount when present", () => {
+    const data: LintResult = {
+      diagnostics: [],
+      total: 0,
+      errors: 0,
+      warnings: 0,
+      filesChecked: 1,
+      deprecations: [{ text: "Deprecated option" }],
+    };
+
+    const compact = compactLintMap(data);
+    expect(compact.deprecationCount).toBe(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -78,6 +92,13 @@ describe("formatLintCompact", () => {
   it("formats lint result with counts", () => {
     const compact = { total: 5, errors: 2, warnings: 3, filesChecked: 10 };
     expect(formatLintCompact(compact)).toBe("Lint: 2 errors, 3 warnings across 10 files.");
+  });
+
+  it("formats lint result with deprecation count", () => {
+    const compact = { total: 1, errors: 0, warnings: 1, filesChecked: 2, deprecationCount: 3 };
+    expect(formatLintCompact(compact)).toBe(
+      "Lint: 0 errors, 1 warnings across 2 files (3 deprecations).",
+    );
   });
 });
 
@@ -244,6 +265,18 @@ describe("compactFormatWriteMap", () => {
     expect(compact).not.toHaveProperty("files");
   });
 
+  it("keeps errorMessage for failed writes", () => {
+    const data: FormatWriteResult = {
+      filesChanged: 0,
+      files: [],
+      success: false,
+      errorMessage: "No parser could be inferred",
+    };
+
+    const compact = compactFormatWriteMap(data);
+    expect(compact.errorMessage).toBe("No parser could be inferred");
+  });
+
   it("handles zero files changed (already formatted)", () => {
     const data: FormatWriteResult = {
       filesChanged: 0,
@@ -267,6 +300,15 @@ describe("formatFormatWriteCompact", () => {
   it("formats failure", () => {
     const compact = { success: false, filesChanged: 0 };
     expect(formatFormatWriteCompact(compact)).toBe("Format failed.");
+  });
+
+  it("formats failure with errorMessage", () => {
+    const compact = {
+      success: false,
+      filesChanged: 0,
+      errorMessage: "No parser could be inferred",
+    };
+    expect(formatFormatWriteCompact(compact)).toBe("Format failed: No parser could be inferred");
   });
 
   it("formats zero files changed", () => {

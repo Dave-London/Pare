@@ -147,7 +147,13 @@ export function registerRunTool(server: McpServer) {
       let timedOut = false;
       let truncated = false;
       let signal: string | undefined;
-      let result: { exitCode: number; stdout: string; stderr: string };
+      let result: {
+        exitCode: number;
+        stdout: string;
+        stderr: string;
+        userCpuTimeMicros?: number;
+        systemCpuTimeMicros?: number;
+      };
 
       // Build the environment for the child process
       let childEnv: Record<string, string> | undefined;
@@ -223,6 +229,8 @@ export function registerRunTool(server: McpServer) {
         signal,
         maxOutputLines,
         truncated,
+        result.userCpuTimeMicros,
+        result.systemCpuTimeMicros,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(

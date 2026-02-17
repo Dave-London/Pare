@@ -46,6 +46,18 @@ export function registerExecTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run command in the background (default: false)"),
+        timeout: z
+          .number()
+          .int()
+          .min(1000)
+          .max(600000)
+          .optional()
+          .describe("Command timeout in milliseconds (min 1000, max 600000)"),
+        parseJson: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Parse stdout as JSON and return it in `json` when valid"),
         /** #108: Add output truncation with limit param. */
         limit: z
           .number()
@@ -59,7 +71,20 @@ export function registerExecTool(server: McpServer) {
       },
       outputSchema: DockerExecSchema,
     },
-    async ({ container, command, workdir, user, env, envFile, detach, limit, path, compact }) => {
+    async ({
+      container,
+      command,
+      workdir,
+      user,
+      env,
+      envFile,
+      detach,
+      timeout,
+      parseJson,
+      limit,
+      path,
+      compact,
+    }) => {
       if (!command || command.length === 0) {
         throw new Error("command array must not be empty");
       }
@@ -83,14 +108,29 @@ export function registerExecTool(server: McpServer) {
       args.push(container, ...command);
 
       const start = Date.now();
-      const result = await docker(args, path);
-      const duration = Math.round((Date.now() - start) / 100) / 10;
+      let data;
+      let rawOutput = "";
+      try {
+        const result = await docker(args, path, timeout);
+        const duration = Math.round((Date.now() - start) / 100) / 10;
 
-      // #108: Pass limit to parseExecOutput for output truncation
-      const data = parseExecOutput(result.stdout, result.stderr, result.exitCode, duration, limit);
+        // #108: Pass limit to parseExecOutput for output truncation
+        data = parseExecOutput(result.stdout, result.stderr, result.exitCode, duration, limit, {
+          parseJson,
+        });
+        rawOutput = `${result.stdout}\n${result.stderr}`;
+      } catch (err) {
+        const duration = Math.round((Date.now() - start) / 100) / 10;
+        const message = err instanceof Error ? err.message : String(err);
+        if (!/timed out/i.test(message)) {
+          throw err;
+        }
+        data = parseExecOutput("", message, 124, duration, limit, { timedOut: true, parseJson });
+        rawOutput = message;
+      }
       return compactDualOutput(
         data,
-        result.stdout,
+        rawOutput,
         formatExec,
         compactExecMap,
         formatExecCompact,

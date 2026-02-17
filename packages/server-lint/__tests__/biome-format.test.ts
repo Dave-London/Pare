@@ -81,6 +81,7 @@ describe("parseBiomeFormat", () => {
 
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(0);
+    expect(result.errorMessage).toBe("biome not found");
   });
 
   it("parses text summary with Fixed count", () => {

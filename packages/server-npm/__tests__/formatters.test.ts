@@ -147,6 +147,23 @@ describe("formatOutdated", () => {
     expect(output).toContain("express: 4.17.1 → 4.18.2 (latest: 5.0.0)");
     expect(output).toContain("lodash: 4.17.20 → 4.17.21 (latest: 4.17.21)");
   });
+
+  it("formats outdated entries with homepage when present", () => {
+    const data: NpmOutdated = {
+      packages: [
+        {
+          name: "typescript",
+          current: "5.3.0",
+          wanted: "5.7.0",
+          latest: "5.7.0",
+          homepage: "https://www.typescriptlang.org/",
+        },
+      ],
+      total: 1,
+    };
+    const output = formatOutdated(data);
+    expect(output).toContain("https://www.typescriptlang.org/");
+  });
 });
 
 describe("formatList", () => {
@@ -164,6 +181,21 @@ describe("formatList", () => {
     expect(output).toContain("my-app@1.0.0 (2 dependencies)");
     expect(output).toContain("express@4.18.2");
     expect(output).toContain("lodash@4.17.21");
+  });
+
+  it("formats npm list problems when present", () => {
+    const data: NpmList = {
+      name: "my-app",
+      version: "1.0.0",
+      dependencies: {
+        express: { version: "4.18.2" },
+      },
+      problems: ["missing: zod@^3.0.0, required by my-app@1.0.0"],
+      total: 1,
+    };
+    const output = formatList(data);
+    expect(output).toContain("Problems (1):");
+    expect(output).toContain("missing: zod@^3.0.0, required by my-app@1.0.0");
   });
 
   it("formats empty dependency list", () => {
@@ -218,6 +250,7 @@ describe("formatTest", () => {
       stdout: "All tests passed",
       stderr: "",
       success: true,
+      timedOut: false,
       duration: 4.0,
     };
     const output = formatTest(data);
@@ -232,11 +265,26 @@ describe("formatTest", () => {
       stdout: "",
       stderr: "2 tests failed",
       success: false,
+      timedOut: false,
       duration: 3.1,
     };
     const output = formatTest(data);
     expect(output).toContain("Tests failed (exit code 1) in 3.1s");
     expect(output).toContain("2 tests failed");
+  });
+
+  it("formats timed out tests", () => {
+    const data: NpmTest = {
+      packageManager: "npm",
+      exitCode: 124,
+      stdout: "",
+      stderr: "Command timed out",
+      success: false,
+      timedOut: true,
+      duration: 300,
+    };
+    const output = formatTest(data);
+    expect(output).toContain("Tests timed out in 300s");
   });
 });
 

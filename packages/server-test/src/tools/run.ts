@@ -17,6 +17,7 @@ import { TestRunSchema } from "../schemas/index.js";
 export function getRunCommand(
   framework: Framework,
   args: string[],
+  opts?: { coverage?: boolean },
 ): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
@@ -26,7 +27,20 @@ export function getRunCommand(
     case "vitest":
       return { cmd: "npx", cmdArgs: ["vitest", "run", "--reporter=json", ...args] };
     case "mocha":
-      return { cmd: "npx", cmdArgs: ["mocha", "--reporter", "json", ...args] };
+      return opts?.coverage
+        ? {
+            cmd: "npx",
+            cmdArgs: [
+              "nyc",
+              "--reporter=text",
+              "--reporter=json-summary",
+              "mocha",
+              "--reporter",
+              "json",
+              ...args,
+            ],
+          }
+        : { cmd: "npx", cmdArgs: ["mocha", "--reporter", "json", ...args] };
   }
 }
 
@@ -386,7 +400,7 @@ export function registerRunTool(server: McpServer) {
       const useOutputFile = detected === "jest" || detected === "vitest";
       const tempPath = useOutputFile ? join(tmpdir(), `pare-test-${randomUUID()}.json`) : "";
 
-      const { cmd, cmdArgs } = getRunCommand(detected, extraArgs);
+      const { cmd, cmdArgs } = getRunCommand(detected, extraArgs, { coverage });
 
       if (useOutputFile) {
         cmdArgs.push(`--outputFile=${tempPath}`);

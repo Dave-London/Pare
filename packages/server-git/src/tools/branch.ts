@@ -66,6 +66,11 @@ export function registerBranchTool(server: McpServer) {
         remotes: z.boolean().optional().describe("List remote branches only (-r)"),
         verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
         force: z.boolean().optional().describe("Force branch creation even if it exists (-f)"),
+        switchAfterCreate: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Switch to the created branch after creation (uses git switch)"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitBranchSchema,
@@ -87,6 +92,7 @@ export function registerBranchTool(server: McpServer) {
       remotes,
       verbose,
       force,
+      switchAfterCreate,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -114,17 +120,21 @@ export function registerBranchTool(server: McpServer) {
       if (create) {
         assertNoFlagInjection(create, "branch name");
         if (startPoint) assertNoFlagInjection(startPoint, "start point");
-        const createArgs = ["checkout"];
-        if (force) {
-          createArgs.push("-B");
-        } else {
-          createArgs.push("-b");
-        }
+        const createArgs = ["branch"];
+        if (force) createArgs.push("-f");
         createArgs.push(create);
         if (startPoint) createArgs.push(startPoint);
         const result = await git(createArgs, cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to create branch: ${result.stderr}`);
+        }
+
+        // Keep create and switch as separate operations; switch only when explicitly requested.
+        if (switchAfterCreate) {
+          const switchResult = await git(["switch", create], cwd);
+          if (switchResult.exitCode !== 0) {
+            throw new Error(`Branch created but failed to switch: ${switchResult.stderr}`);
+          }
         }
       }
 

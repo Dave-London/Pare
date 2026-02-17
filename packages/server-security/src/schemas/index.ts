@@ -8,6 +8,7 @@ export const TrivyVulnerabilitySchema = z.object({
   installedVersion: z.string(),
   fixedVersion: z.string().optional(),
   title: z.string().optional(),
+  cvssScore: z.number().optional(),
 });
 
 export type TrivyVulnerability = z.infer<typeof TrivyVulnerabilitySchema>;
@@ -45,6 +46,7 @@ export const SemgrepFindingSchema = z.object({
   message: z.string(),
   severity: z.string(),
   category: z.string().optional(),
+  cwe: z.array(z.string()).optional(),
 });
 
 export type SemgrepFinding = z.infer<typeof SemgrepFindingSchema>;
@@ -62,6 +64,15 @@ export type SemgrepSeveritySummary = z.infer<typeof SemgrepSeveritySummarySchema
 export const SemgrepScanResultSchema = z.object({
   totalFindings: z.number(),
   findings: z.array(SemgrepFindingSchema).optional(),
+  errors: z
+    .array(
+      z.object({
+        type: z.string().optional(),
+        message: z.string(),
+        path: z.string().optional(),
+      }),
+    )
+    .optional(),
   summary: SemgrepSeveritySummarySchema,
   config: z.string(),
 });
@@ -89,6 +100,7 @@ export type GitleaksFinding = z.infer<typeof GitleaksFindingSchema>;
 /** Zod schema for Gitleaks summary. */
 export const GitleaksSummarySchema = z.object({
   totalFindings: z.number(),
+  ruleCounts: z.record(z.string(), z.number()).optional(),
 });
 
 export type GitleaksSummary = z.infer<typeof GitleaksSummarySchema>;

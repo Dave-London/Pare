@@ -101,6 +101,7 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
     {
       package: string;
       name: string;
+      parent?: string;
       status: "pass" | "fail" | "skip";
       elapsed?: number;
       output?: string;
@@ -130,9 +131,11 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
       }
 
       if (event.Action === "pass" || event.Action === "fail" || event.Action === "skip") {
+        const parent = deriveParentTestName(event.Test);
         testMap.set(key, {
           package: event.Package,
           name: event.Test,
+          ...(parent ? { parent } : {}),
           status: event.Action,
           elapsed: event.Elapsed,
         });
@@ -207,6 +210,12 @@ interface GoTestEvent {
   Output?: string;
 }
 
+function deriveParentTestName(testName: string): string | undefined {
+  const idx = testName.lastIndexOf("/");
+  if (idx <= 0) return undefined;
+  return testName.slice(0, idx);
+}
+
 /**
  * Parses `go vet -json` output into structured diagnostics.
  *
@@ -227,14 +236,21 @@ interface GoTestEvent {
  * Falls back to text parsing if JSON parsing fails (e.g., older Go versions).
  */
 export function parseGoVetOutput(stdout: string, stderr: string, exitCode: number): GoVetResult {
+  const compilationErrors = extractVetCompilationErrors(stdout, stderr);
+
   // Try JSON parsing first (go vet -json)
   const jsonResult = tryParseGoVetJson(stdout, stderr);
   if (jsonResult) {
-    return { ...jsonResult, success: exitCode === 0 };
+    return {
+      ...jsonResult,
+      success: exitCode === 0,
+      compilationErrors: compilationErrors.length > 0 ? compilationErrors : undefined,
+      total: jsonResult.total,
+    };
   }
 
   // Fallback: text parsing
-  return parseGoVetText(stdout, stderr, exitCode);
+  return parseGoVetText(stdout, stderr, exitCode, compilationErrors);
 }
 
 /**
@@ -329,13 +345,28 @@ function parseVetPosn(posn: string): { file: string; line: number; column?: numb
 }
 
 /** Fallback text parser for go vet output (non-JSON mode). */
-function parseGoVetText(stdout: string, stderr: string, exitCode: number): GoVetResult {
+function parseGoVetText(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  knownCompilationErrors: string[] = [],
+): GoVetResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
   const diagnostics: { file: string; line: number; column?: number; message: string }[] = [];
+  const compilationErrors = [...knownCompilationErrors];
 
   for (const line of lines) {
-    const match = line.match(GO_ERROR_RE);
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (isCompilationErrorLine(trimmed)) {
+      if (!compilationErrors.includes(trimmed)) {
+        compilationErrors.push(trimmed);
+      }
+      continue;
+    }
+
+    const match = trimmed.match(GO_ERROR_RE);
     if (match) {
       diagnostics.push({
         file: match[1],
@@ -346,16 +377,56 @@ function parseGoVetText(stdout: string, stderr: string, exitCode: number): GoVet
     }
   }
 
-  return { success: exitCode === 0, diagnostics, total: diagnostics.length };
+  return {
+    success: exitCode === 0,
+    diagnostics,
+    compilationErrors: compilationErrors.length > 0 ? compilationErrors : undefined,
+    total: diagnostics.length,
+  };
+}
+
+function extractVetCompilationErrors(stdout: string, stderr: string): string[] {
+  const lines = (stdout + "\n" + stderr)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const errors: string[] = [];
+  for (const line of lines) {
+    if (isCompilationErrorLine(line) && !seen.has(line)) {
+      seen.add(line);
+      errors.push(line);
+    }
+  }
+  return errors;
+}
+
+function isCompilationErrorLine(line: string): boolean {
+  return (
+    line.startsWith("# ") ||
+    line.includes("undefined:") ||
+    line.includes("could not import") ||
+    line.includes("build constraints exclude") ||
+    (line.includes("package ") && line.includes(" is not in ")) ||
+    line.includes("cannot find package")
+  );
 }
 
 /** Parses `go run` output into structured result with stdout, stderr, and exit code. */
-export function parseGoRunOutput(stdout: string, stderr: string, exitCode: number): GoRunResult {
+export function parseGoRunOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  timedOut: boolean = false,
+  signal?: string,
+): GoRunResult {
   return {
     exitCode,
     stdout: stdout.trimEnd(),
     stderr: stderr.trimEnd(),
-    success: exitCode === 0,
+    ...(timedOut ? { timedOut: true } : {}),
+    ...(signal ? { signal } : {}),
+    success: exitCode === 0 && !timedOut,
   };
 }
 
@@ -376,6 +447,8 @@ export function parseGoModTidyOutput(
   goModHashAfter?: string,
   goSumHashBefore?: string,
   goSumHashAfter?: string,
+  addedModules: string[] = [],
+  removedModules: string[] = [],
 ): GoModTidyResult {
   if (exitCode === 0) {
     const combined = (stdout + "\n" + stderr).trim();
@@ -400,15 +473,38 @@ export function parseGoModTidyOutput(
     return {
       success: true,
       summary: combined || "go.mod and go.sum are already tidy.",
+      ...(addedModules.length > 0 ? { addedModules } : {}),
+      ...(removedModules.length > 0 ? { removedModules } : {}),
       madeChanges,
     };
   }
 
   const combined = (stderr + "\n" + stdout).trim();
+  const errorType = categorizeGoModTidyError(combined);
   return {
     success: false,
     summary: combined || "go mod tidy failed.",
+    errorType,
   };
+}
+
+function categorizeGoModTidyError(message: string): "network" | "checksum" | "syntax" | "unknown" {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("dial tcp") ||
+    lower.includes("i/o timeout") ||
+    lower.includes("connection refused") ||
+    lower.includes("no such host")
+  ) {
+    return "network";
+  }
+  if (lower.includes("checksum mismatch") || lower.includes("sumdb")) {
+    return "checksum";
+  }
+  if (lower.includes("syntax error") || lower.includes("invalid go version")) {
+    return "syntax";
+  }
+  return "unknown";
 }
 
 /**
@@ -425,12 +521,14 @@ export function parseGoFmtOutput(
   checkMode: boolean,
 ): GoFmtResult {
   // Both check mode (-l) and fix mode (-l -w) list changed files on stdout.
-  // The -l flag causes gofmt to print filenames, -w causes it to also rewrite them.
-  // stderr may contain error messages.
-  const files = stdout
+  // With -d enabled, stdout may contain unified diffs.
+  const changes = parseGofmtChanges(stdout);
+  const filesFromDiff = changes.map((c) => c.file);
+  const filesFromList = stdout
     .split("\n")
     .map((f) => f.trim())
-    .filter(Boolean);
+    .filter((f) => !!f && !f.startsWith("diff ") && !f.startsWith("--- ") && !f.startsWith("+++ "));
+  const files = filesFromDiff.length > 0 ? Array.from(new Set(filesFromDiff)) : filesFromList;
 
   const hasErrors = exitCode !== 0 || (checkMode && files.length > 0);
 
@@ -457,8 +555,31 @@ export function parseGoFmtOutput(
     success: !hasErrors,
     filesChanged: files.length,
     files,
+    changes: changes.length > 0 ? changes : undefined,
     parseErrors: parseErrors.length > 0 ? parseErrors : undefined,
   };
+}
+
+function parseGofmtChanges(stdout: string): Array<{ file: string; diff: string }> {
+  if (!stdout.includes("\ndiff ") && !stdout.startsWith("diff ")) {
+    return [];
+  }
+
+  const blocks = stdout
+    .split(/^diff /m)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  const changes: Array<{ file: string; diff: string }> = [];
+  for (const block of blocks) {
+    const diffText = `diff ${block}`;
+    const firstLine = diffText.split("\n")[0] ?? "";
+    const fileMatch = firstLine.match(/^diff\s+\S+\s+(\S+)/);
+    const file = fileMatch?.[1];
+    if (!file) continue;
+    changes.push({ file, diff: diffText });
+  }
+  return changes;
 }
 
 /**
@@ -482,6 +603,7 @@ export function parseGoGenerateOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
+  timedOut: boolean = false,
 ): GoGenerateResult {
   const combined = (stdout + "\n" + stderr).trim();
 
@@ -532,8 +654,9 @@ export function parseGoGenerateOutput(
   }
 
   return {
-    success: exitCode === 0,
+    success: exitCode === 0 && !timedOut,
     output: combined,
+    ...(timedOut ? { timedOut: true } : {}),
     directives: directives.length > 0 ? directives : undefined,
   };
 }
@@ -544,9 +667,9 @@ export function parseGoGenerateOutput(
  * The queriedVars parameter is used to ensure compact mode includes the queried variables.
  */
 export function parseGoEnvOutput(stdout: string, _queriedVars?: string[]): GoEnvResult {
-  let vars: Record<string, string>;
+  let allVars: Record<string, string>;
   try {
-    vars = JSON.parse(stdout || "{}");
+    allVars = JSON.parse(stdout || "{}");
   } catch {
     return {
       success: false,
@@ -558,14 +681,21 @@ export function parseGoEnvOutput(stdout: string, _queriedVars?: string[]): GoEnv
       goarch: "",
     };
   }
+  const queriedVars = _queriedVars ?? [];
+  const includeVars = _queriedVars === undefined ? true : queriedVars.length > 0;
+  const vars = includeVars ? allVars : undefined;
+
+  const cgoRaw = allVars.CGO_ENABLED;
+  const cgoEnabled = cgoRaw !== undefined ? cgoRaw === "1" : undefined;
   return {
     success: true,
     vars,
-    goroot: vars.GOROOT ?? "",
-    gopath: vars.GOPATH ?? "",
-    goversion: vars.GOVERSION ?? "",
-    goos: vars.GOOS ?? "",
-    goarch: vars.GOARCH ?? "",
+    goroot: allVars.GOROOT ?? "",
+    gopath: allVars.GOPATH ?? "",
+    goversion: allVars.GOVERSION ?? "",
+    goos: allVars.GOOS ?? "",
+    goarch: allVars.GOARCH ?? "",
+    ...(cgoEnabled !== undefined ? { cgoEnabled } : {}),
     // Store queriedVars for compact mode usage (handled in formatter)
   };
 }
@@ -582,6 +712,9 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
     goFiles?: string[];
     testGoFiles?: string[];
     imports?: string[];
+    standard?: boolean;
+    stale?: boolean;
+    module?: { path?: string; version?: string };
     error?: { err: string };
   }[] = [];
 
@@ -603,6 +736,9 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
         goFiles?: string[];
         testGoFiles?: string[];
         imports?: string[];
+        standard?: boolean;
+        stale?: boolean;
+        module?: { path?: string; version?: string };
         error?: { err: string };
       } = {
         dir: pkg.Dir ?? "",
@@ -611,6 +747,15 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
         goFiles: pkg.GoFiles,
         testGoFiles: pkg.TestGoFiles,
         imports: pkg.Imports,
+        standard: typeof pkg.Standard === "boolean" ? pkg.Standard : undefined,
+        stale: typeof pkg.Stale === "boolean" ? pkg.Stale : undefined,
+        module:
+          pkg.Module && typeof pkg.Module === "object"
+            ? {
+                path: typeof pkg.Module.Path === "string" ? pkg.Module.Path : undefined,
+                version: typeof pkg.Module.Version === "string" ? pkg.Module.Version : undefined,
+              }
+            : undefined,
       };
 
       // Capture Error field (Gap #155)
@@ -718,6 +863,7 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
       line: issue.Pos?.Line ?? 0,
       column: issue.Pos?.Column || undefined,
       linter: issue.FromLinter ?? "",
+      category: classifyLinter(issue.FromLinter ?? ""),
       severity,
       message: issue.Text ?? "",
       sourceLine: issue.SourceLines?.[0] || undefined,
@@ -784,6 +930,22 @@ function mapSeverity(severity?: string): "error" | "warning" | "info" {
   return "warning";
 }
 
+function classifyLinter(
+  linter: string,
+): "bug-risk" | "style" | "performance" | "security" | "complexity" | "other" {
+  const name = linter.toLowerCase();
+  if (["gosec"].includes(name)) return "security";
+  if (["govet", "staticcheck", "typecheck", "errcheck", "ineffassign", "nilerr"].includes(name)) {
+    return "bug-risk";
+  }
+  if (["gocyclo", "cyclop", "funlen", "nestif", "maintidx"].includes(name)) return "complexity";
+  if (["prealloc", "perfsprint", "makezero", "unconvert"].includes(name)) return "performance";
+  if (["gofmt", "goimports", "revive", "stylecheck", "whitespace", "misspell"].includes(name)) {
+    return "style";
+  }
+  return "other";
+}
+
 interface GolangciLintJsonOutput {
   Issues?: Array<{
     FromLinter?: string;
@@ -840,7 +1002,15 @@ export function parseGoGetOutput(
   }[] = [];
 
   // Per-package status tracking (Gap #153)
-  const packageStatuses = new Map<string, { path: string; version?: string; error?: string }>();
+  const packageStatuses = new Map<
+    string,
+    {
+      path: string;
+      version?: string;
+      error?: string;
+      errorType?: "timeout" | "dns" | "authentication" | "network" | "unknown";
+    }
+  >();
 
   const lines = combined.split("\n");
   for (const line of lines) {
@@ -882,10 +1052,12 @@ export function parseGoGetOutput(
       const errMsg = errorMatch[3];
       // Skip "downloading" lines which are progress, not errors
       if (!errMsg.startsWith("downloading ")) {
+        const errorType = categorizeGoGetError(errMsg);
         packageStatuses.set(pkgPath, {
           path: pkgPath,
           version: errorMatch[2] || undefined,
           error: errMsg,
+          errorType,
         });
       }
     }
@@ -913,4 +1085,29 @@ export function parseGoGetOutput(
     resolvedPackages: resolvedPackages.length > 0 ? resolvedPackages : undefined,
     packages,
   };
+}
+
+function categorizeGoGetError(
+  message: string,
+): "timeout" | "dns" | "authentication" | "network" | "unknown" {
+  const lower = message.toLowerCase();
+  if (lower.includes("timeout") || lower.includes("context deadline exceeded")) {
+    return "timeout";
+  }
+  if (lower.includes("no such host") || lower.includes("lookup ")) {
+    return "dns";
+  }
+  if (
+    lower.includes("authentication required") ||
+    lower.includes("permission denied") ||
+    lower.includes("access denied") ||
+    lower.includes("401") ||
+    lower.includes("403")
+  ) {
+    return "authentication";
+  }
+  if (lower.includes("dial tcp") || lower.includes("connection refused") || lower.includes("tls")) {
+    return "network";
+  }
+  return "unknown";
 }

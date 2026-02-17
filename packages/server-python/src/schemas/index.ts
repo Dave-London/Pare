@@ -12,6 +12,7 @@ export const PipInstallSchema = z.object({
     )
     .optional(),
   alreadySatisfied: z.boolean(),
+  warnings: z.array(z.string()).optional(),
   dryRun: z.boolean().optional(),
   total: z.number(),
 });
@@ -63,6 +64,7 @@ export const RuffResultSchema = z.object({
   diagnostics: z.array(RuffDiagnosticSchema).optional(),
   total: z.number(),
   fixable: z.number(),
+  fixedCount: z.number().optional(),
 });
 
 export type RuffResult = z.infer<typeof RuffResultSchema>;
@@ -87,6 +89,23 @@ export const PipAuditVulnSchema = z.object({
 export const PipAuditResultSchema = z.object({
   success: z.boolean(),
   vulnerabilities: z.array(PipAuditVulnSchema).optional(),
+  byPackage: z
+    .array(
+      z.object({
+        name: z.string(),
+        version: z.string(),
+        vulnerabilities: z.array(PipAuditVulnSchema),
+      }),
+    )
+    .optional(),
+  skipped: z
+    .array(
+      z.object({
+        name: z.string(),
+        reason: z.string().optional(),
+      }),
+    )
+    .optional(),
   total: z.number(),
 });
 
@@ -132,6 +151,7 @@ export const UvInstallSchema = z.object({
     .optional(),
   total: z.number(),
   duration: z.number(),
+  alreadySatisfied: z.boolean().optional(),
   error: z.string().optional(),
   resolutionConflicts: z.array(UvResolutionConflictSchema).optional(),
 });
@@ -143,11 +163,21 @@ export const UvRunSchema = z.object({
   exitCode: z.number(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
+  commandStderr: z.string().optional(),
+  uvDiagnostics: z.array(z.string()).optional(),
+  truncated: z.boolean().optional(),
   success: z.boolean(),
   duration: z.number(),
 });
 
 export type UvRun = z.infer<typeof UvRunSchema>;
+
+export const BlackDiagnosticSchema = z.object({
+  file: z.string(),
+  line: z.number(),
+  column: z.number().optional(),
+  message: z.string(),
+});
 
 /** Zod schema for structured Black formatter output with file counts and reformat list.
  *  errorType distinguishes "check_failed" (exit 1, files need reformatting) from
@@ -159,6 +189,7 @@ export const BlackResultSchema = z.object({
   success: z.boolean(),
   exitCode: z.number().optional(),
   errorType: z.enum(["check_failed", "internal_error"]).optional(),
+  diagnostics: z.array(BlackDiagnosticSchema).optional(),
   wouldReformat: z.array(z.string()).optional(),
 });
 
@@ -256,69 +287,182 @@ export const CondaEnvSchema = z.object({
 });
 
 /** Zod schema for structured conda output covering list, info, and env-list actions. */
-export const CondaResultSchema = z.object({
-  action: z.enum(["list", "info", "env-list"]),
-  // list fields
-  packages: z.array(CondaPackageSchema).optional(),
-  total: z.number().optional(),
-  environment: z.string().optional(),
-  // info fields
-  condaVersion: z.string().optional(),
-  platform: z.string().optional(),
-  pythonVersion: z.string().optional(),
-  defaultPrefix: z.string().optional(),
-  activePrefix: z.string().optional(),
-  channels: z.array(z.string()).optional(),
-  envsDirs: z.array(z.string()).optional(),
-  pkgsDirs: z.array(z.string()).optional(),
-  // env-list fields
-  environments: z.array(CondaEnvSchema).optional(),
+const CondaMutationPackageSchema = z.object({
+  name: z.string(),
+  version: z.string().optional(),
+  channel: z.string().optional(),
+  buildString: z.string().optional(),
 });
+
+export const CondaListResultSchema = z
+  .object({
+    action: z.literal("list"),
+    packages: z.array(CondaPackageSchema),
+    total: z.number(),
+    environment: z.string().optional(),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaInfoResultSchema = z
+  .object({
+    action: z.literal("info"),
+    condaVersion: z.string(),
+    platform: z.string(),
+    pythonVersion: z.string(),
+    defaultPrefix: z.string(),
+    activePrefix: z.string().optional(),
+    channels: z.array(z.string()),
+    envsDirs: z.array(z.string()),
+    pkgsDirs: z.array(z.string()),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaEnvListResultSchema = z
+  .object({
+    action: z.literal("env-list"),
+    environments: z.array(CondaEnvSchema),
+    total: z.number(),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaCreateResultSchema = z
+  .object({
+    action: z.literal("create"),
+    success: z.boolean(),
+    environment: z.string().optional(),
+    prefix: z.string().optional(),
+    addedPackages: z.array(CondaMutationPackageSchema).optional(),
+    totalAdded: z.number(),
+    error: z.string().optional(),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaRemoveResultSchema = z
+  .object({
+    action: z.literal("remove"),
+    success: z.boolean(),
+    environment: z.string().optional(),
+    prefix: z.string().optional(),
+    removedPackages: z.array(CondaMutationPackageSchema).optional(),
+    totalRemoved: z.number(),
+    error: z.string().optional(),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaUpdateResultSchema = z
+  .object({
+    action: z.literal("update"),
+    success: z.boolean(),
+    environment: z.string().optional(),
+    prefix: z.string().optional(),
+    updatedPackages: z.array(CondaMutationPackageSchema).optional(),
+    addedPackages: z.array(CondaMutationPackageSchema).optional(),
+    removedPackages: z.array(CondaMutationPackageSchema).optional(),
+    totalUpdated: z.number(),
+    error: z.string().optional(),
+    parseError: z.string().optional(),
+  })
+  .strict();
+
+export const CondaResultSchema = z.discriminatedUnion("action", [
+  CondaListResultSchema,
+  CondaInfoResultSchema,
+  CondaEnvListResultSchema,
+  CondaCreateResultSchema,
+  CondaRemoveResultSchema,
+  CondaUpdateResultSchema,
+]);
 
 export type CondaResult = z.infer<typeof CondaResultSchema>;
-
-/** Narrowed type for conda list action. */
-export type CondaList = CondaResult & {
-  action: "list";
-  packages: { name: string; version: string; channel: string; buildString?: string }[];
-  total: number;
-};
-
-/** Narrowed type for conda info action. */
-export type CondaInfo = CondaResult & {
-  action: "info";
-  condaVersion: string;
-  platform: string;
-  pythonVersion: string;
-  defaultPrefix: string;
-  channels: string[];
-  envsDirs: string[];
-  pkgsDirs: string[];
-};
-
-/** Narrowed type for conda env-list action. */
-export type CondaEnvList = CondaResult & {
-  action: "env-list";
-  environments: { name: string; path: string; active: boolean }[];
-  total: number;
-};
+export type CondaList = z.infer<typeof CondaListResultSchema>;
+export type CondaInfo = z.infer<typeof CondaInfoResultSchema>;
+export type CondaEnvList = z.infer<typeof CondaEnvListResultSchema>;
+export type CondaCreate = z.infer<typeof CondaCreateResultSchema>;
+export type CondaRemove = z.infer<typeof CondaRemoveResultSchema>;
+export type CondaUpdate = z.infer<typeof CondaUpdateResultSchema>;
 
 /** Zod schema for structured pyenv output with action results and version info. */
-export const PyenvResultSchema = z.object({
-  action: z.enum(["versions", "version", "install", "installList", "local", "global", "uninstall"]),
+const PyenvBaseSchema = z.object({
   success: z.boolean(),
-  current: z.string().optional(),
-  versions: z.array(z.string()).optional(),
-  installed: z.string().optional(),
-  uninstalled: z.string().optional().describe("Version that was uninstalled (uninstall action)"),
-  localVersion: z.string().optional(),
-  globalVersion: z.string().optional(),
-  availableVersions: z
-    .array(z.string())
-    .optional()
-    .describe("Available Python versions for installation (installList action)"),
   error: z.string().optional(),
 });
+
+export const PyenvResultSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("versions"),
+      versions: z.array(z.string()).optional(),
+      current: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("version"),
+      current: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("install"),
+      installed: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("installList"),
+      availableVersions: z
+        .array(z.string())
+        .optional()
+        .describe("Available Python versions for installation (installList action)"),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("local"),
+      localVersion: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("global"),
+      globalVersion: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("uninstall"),
+      uninstalled: z
+        .string()
+        .optional()
+        .describe("Version that was uninstalled (uninstall action)"),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("which"),
+      commandPath: z.string().optional(),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+  z
+    .object({
+      action: z.literal("rehash"),
+    })
+    .merge(PyenvBaseSchema)
+    .strict(),
+]);
 
 export type PyenvResult = z.infer<typeof PyenvResultSchema>;
 /** Zod schema for a single package entry from poetry show. */
@@ -336,9 +480,20 @@ export const PoetryArtifactSchema = z.object({
 /** Zod schema for structured poetry output covering install/add/remove/show/build actions. */
 export const PoetryResultSchema = z.object({
   success: z.boolean(),
-  action: z.enum(["install", "add", "remove", "show", "build"]),
+  action: z.enum([
+    "install",
+    "add",
+    "remove",
+    "show",
+    "build",
+    "update",
+    "lock",
+    "check",
+    "export",
+  ]),
   packages: z.array(PoetryPackageSchema).optional(),
   artifacts: z.array(PoetryArtifactSchema).optional(),
+  messages: z.array(z.string()).optional(),
   total: z.number(),
 });
 

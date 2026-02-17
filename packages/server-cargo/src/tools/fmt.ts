@@ -20,6 +20,11 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check only without modifying files (--check)"),
+        includeDiff: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("In check mode, preserve rustfmt unified diff output in response"),
         all: z
           .boolean()
           .optional()
@@ -60,6 +65,7 @@ export function registerFmtTool(server: McpServer) {
     async ({
       path,
       check,
+      includeDiff,
       all,
       backup,
       package: pkg,
@@ -87,10 +93,12 @@ export function registerFmtTool(server: McpServer) {
       if (emit) rustfmtArgs.push("--emit", emit);
       // Gap #92: In check mode, use --files-with-diff for more reliable file detection
       // In non-check mode, pass -l (--files-with-diff) to get list of reformatted files
-      if (check) {
+      if (check && !includeDiff) {
         rustfmtArgs.push("--files-with-diff");
       } else {
-        rustfmtArgs.push("-l");
+        if (!check) {
+          rustfmtArgs.push("-l");
+        }
       }
       if (rustfmtArgs.length > 0) {
         args.push("--", ...rustfmtArgs);

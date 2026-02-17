@@ -118,15 +118,32 @@ export function registerPrDiffTool(server: McpServer) {
 function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
   const filePatches = patchOutput.split(/^diff --git /m).filter(Boolean);
   const files = filePatches.map((patch) => {
-    // Extract file path from "a/path b/path" header
-    const headerMatch = patch.match(/^a\/(.+?) b\/(.+?)\n/);
-    const oldFile = headerMatch?.[1] ?? "";
-    const newFile = headerMatch?.[2] ?? "";
+    // Extract file paths from the diff header, handling quoted paths with spaces.
+    const headerLine = patch.split("\n", 1)[0] ?? "";
+    let oldFile = "";
+    let newFile = "";
+    const quotedHeader = headerLine.match(/^"a\/(.+)" "b\/(.+)"$/);
+    if (quotedHeader) {
+      oldFile = quotedHeader[1];
+      newFile = quotedHeader[2];
+    } else {
+      const plainHeader = headerLine.match(/^a\/(.+?) b\/(.+)$/);
+      if (plainHeader) {
+        oldFile = plainHeader[1];
+        newFile = plainHeader[2];
+      }
+    }
+
+    // Rename metadata is more reliable than the header for rename edge-cases.
+    const renameFromMatch = patch.match(/^rename from (.+)$/m);
+    const renameToMatch = patch.match(/^rename to (.+)$/m);
+    if (renameFromMatch) oldFile = renameFromMatch[1];
+    if (renameToMatch) newFile = renameToMatch[1];
 
     // Detect status from diff headers
     const isNew = /^new file mode/m.test(patch);
     const isDeleted = /^deleted file mode/m.test(patch);
-    const isRenamed = /^rename from /m.test(patch) || /^similarity index/m.test(patch);
+    const isRenamed = !!renameFromMatch || !!renameToMatch || /^similarity index/m.test(patch);
 
     // Detect binary files from diff markers
     const isBinary =
@@ -167,7 +184,7 @@ function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
           : "modified";
 
     return {
-      file: newFile,
+      file: newFile || oldFile,
       status,
       additions,
       deletions,

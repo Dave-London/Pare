@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
-import { parsePrettierCheck } from "../lib/parsers.js";
+import { parsePrettierListDifferent } from "../lib/parsers.js";
 import {
   formatFormatCheck,
   compactFormatCheckMap,
@@ -57,6 +57,26 @@ export function registerFormatCheckTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Force a specific parser for ambiguous file types (maps to --parser)"),
+        tabWidth: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Number of spaces per indentation level (maps to --tab-width)"),
+        singleQuote: z
+          .boolean()
+          .optional()
+          .describe("Use single quotes instead of double quotes where possible"),
+        trailingComma: z
+          .enum(["all", "es5", "none"])
+          .optional()
+          .describe("Print trailing commas wherever possible"),
+        printWidth: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("The line length where Prettier will try to wrap"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: FormatCheckResultSchema,
@@ -71,13 +91,17 @@ export function registerFormatCheckTool(server: McpServer) {
       config,
       ignorePath,
       parser,
+      tabWidth,
+      singleQuote,
+      trailingComma,
+      printWidth,
       compact,
     }) => {
       const cwd = path || process.cwd();
       for (const p of patterns ?? []) {
         assertNoFlagInjection(p, "patterns");
       }
-      const args = ["--check"];
+      const args = ["--list-different"];
       if (ignoreUnknown) args.push("--ignore-unknown");
       if (cache) args.push("--cache");
       if (noConfig) args.push("--no-config");
@@ -94,10 +118,19 @@ export function registerFormatCheckTool(server: McpServer) {
         assertNoFlagInjection(parser, "parser");
         args.push(`--parser=${parser}`);
       }
+      if (tabWidth !== undefined) args.push(`--tab-width=${tabWidth}`);
+      if (singleQuote !== undefined) args.push(`--single-quote=${singleQuote}`);
+      if (trailingComma) args.push(`--trailing-comma=${trailingComma}`);
+      if (printWidth !== undefined) args.push(`--print-width=${printWidth}`);
       args.push(...(patterns || ["."]));
 
       const result = await prettier(args, cwd);
-      const data = parsePrettierCheck(result.stdout, result.stderr, result.exitCode);
+      const files = parsePrettierListDifferent(result.stdout);
+      const data = {
+        formatted: result.exitCode === 0,
+        files,
+        total: files.length,
+      };
       return compactDualOutput(
         data,
         result.stdout,

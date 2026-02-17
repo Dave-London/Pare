@@ -91,6 +91,12 @@ export function registerEsbuildTool(server: McpServer) {
             "Compile-time constant replacements (e.g., { 'process.env.NODE_ENV': '\"production\"' }). " +
               "Maps to --define:KEY=VALUE for each entry.",
           ),
+        loader: z
+          .record(z.string().max(INPUT_LIMITS.STRING_MAX), z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "Custom file loaders by extension (e.g., { '.png': 'dataurl', '.wasm': 'binary' }). Maps to --loader:.ext=type.",
+          ),
         metafile: z
           .boolean()
           .optional()
@@ -126,6 +132,7 @@ export function registerEsbuildTool(server: McpServer) {
       legalComments,
       logLevel,
       define,
+      loader,
       metafile,
       args,
       compact,
@@ -182,6 +189,16 @@ export function registerEsbuildTool(server: McpServer) {
           assertNoFlagInjection(String(key), "define key");
           assertNoFlagInjection(String(value), "define value");
           cliArgs.push(`--define:${key}=${value}`);
+        }
+      }
+
+      const loaderRecord = loader as Record<string, string> | undefined;
+      if (loaderRecord) {
+        for (const [extKey, loaderType] of Object.entries(loaderRecord)) {
+          assertNoFlagInjection(String(extKey), "loader key");
+          assertNoFlagInjection(String(loaderType), "loader value");
+          const normalizedExt = extKey.startsWith(".") ? extKey : `.${extKey}`;
+          cliArgs.push(`--loader:${normalizedExt}=${loaderType}`);
         }
       }
 

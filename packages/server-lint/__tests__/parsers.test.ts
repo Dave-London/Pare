@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseEslintJson,
   parsePrettierCheck,
+  parsePrettierWrite,
   parseStylelintJson,
   parseOxlintJson,
   parseShellcheckJson,
@@ -199,6 +200,15 @@ describe("parsePrettierCheck", () => {
   });
 });
 
+describe("parsePrettierWrite", () => {
+  it("captures an error message when prettier write fails", () => {
+    const result = parsePrettierWrite("", "No parser could be inferred for file", 2);
+
+    expect(result.success).toBe(false);
+    expect(result.errorMessage).toBe("No parser could be inferred for file");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // parseStylelintJson
 // ---------------------------------------------------------------------------
@@ -292,6 +302,29 @@ describe("parseStylelintJson", () => {
     const result = parseStylelintJson(json);
     expect(result.diagnostics[0].file).toBe("unknown");
     expect(result.diagnostics[0].column).toBe(1);
+  });
+
+  it("surfaces deprecation warnings", () => {
+    const json = JSON.stringify([
+      {
+        source: "/project/src/styles.css",
+        warnings: [],
+        deprecations: [
+          {
+            text: "The old color function is deprecated.",
+            reference: "https://stylelint.io/user-guide/rules",
+          },
+        ],
+      },
+    ]);
+
+    const result = parseStylelintJson(json);
+    expect(result.deprecations).toEqual([
+      {
+        text: "The old color function is deprecated.",
+        reference: "https://stylelint.io/user-guide/rules",
+      },
+    ]);
   });
 });
 
@@ -524,6 +557,29 @@ describe("parseShellcheckJson", () => {
     const result = parseShellcheckJson(json);
     expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+  });
+
+  it("surfaces suggested fixes from shellcheck fix metadata", () => {
+    const json = JSON.stringify([
+      {
+        file: "deploy.sh",
+        line: 5,
+        column: 3,
+        level: "error",
+        code: 2086,
+        message: "Double quote to prevent globbing and word splitting.",
+        fix: {
+          replacements: [
+            {
+              replacement: '"$var"',
+            },
+          ],
+        },
+      },
+    ]);
+
+    const result = parseShellcheckJson(json);
+    expect(result.diagnostics[0].suggestedFixes).toEqual(['"$var"']);
   });
 });
 

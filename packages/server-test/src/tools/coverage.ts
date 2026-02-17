@@ -2,36 +2,84 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
-import { parsePytestCoverage } from "../lib/parsers/pytest.js";
-import { parseJestCoverage } from "../lib/parsers/jest.js";
-import { parseVitestCoverage } from "../lib/parsers/vitest.js";
-import { parseMochaCoverage } from "../lib/parsers/mocha.js";
+import { parsePytestCoverage, parsePytestCoverageJson } from "../lib/parsers/pytest.js";
+import { parseJestCoverage, parseJestCoverageJson } from "../lib/parsers/jest.js";
+import { parseVitestCoverage, parseVitestCoverageJson } from "../lib/parsers/vitest.js";
+import { parseMochaCoverage, parseMochaCoverageJson } from "../lib/parsers/mocha.js";
 import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../lib/formatters.js";
 import { CoverageSchema } from "../schemas/index.js";
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
 
 /** Exported for unit testing. */
 export function getCoverageCommand(
   framework: Framework,
   extraArgs: string[],
+  coverageJsonPath?: string,
 ): { cmd: string; cmdArgs: string[] } {
   switch (framework) {
     case "pytest":
       return {
         cmd: "python",
-        cmdArgs: ["-m", "pytest", "--cov", "--cov-report=term-missing", "-q", ...extraArgs],
+        cmdArgs: [
+          "-m",
+          "pytest",
+          "--cov",
+          "--cov-report=term-missing",
+          ...(coverageJsonPath ? [`--cov-report=json:${coverageJsonPath}`] : []),
+          "-q",
+          ...extraArgs,
+        ],
       };
     case "jest":
       return {
         cmd: "npx",
-        cmdArgs: ["jest", "--coverage", "--coverageReporters=text", ...extraArgs],
+        cmdArgs: [
+          "jest",
+          "--coverage",
+          "--coverageReporters=text",
+          ...(coverageJsonPath
+            ? [
+                "--coverageReporters=json-summary",
+                `--coverageDirectory=${dirname(coverageJsonPath)}`,
+              ]
+            : []),
+          ...extraArgs,
+        ],
       };
     case "vitest":
       return {
         cmd: "npx",
-        cmdArgs: ["vitest", "run", "--coverage", "--reporter=default", ...extraArgs],
+        cmdArgs: [
+          "vitest",
+          "run",
+          "--coverage",
+          "--reporter=default",
+          ...(coverageJsonPath
+            ? [
+                "--coverage.reporter=text",
+                "--coverage.reporter=json-summary",
+                `--coverage.reportsDirectory=${dirname(coverageJsonPath)}`,
+              ]
+            : []),
+          ...extraArgs,
+        ],
       };
     case "mocha":
-      return { cmd: "npx", cmdArgs: ["nyc", "--reporter=text", ...extraArgs, "mocha"] };
+      return {
+        cmd: "npx",
+        cmdArgs: [
+          "nyc",
+          "--reporter=text",
+          ...(coverageJsonPath
+            ? ["--reporter=json-summary", `--report-dir=${dirname(coverageJsonPath)}`]
+            : []),
+          ...extraArgs,
+          "mocha",
+        ],
+      };
   }
 }
 
@@ -229,26 +277,52 @@ export function registerCoverageTool(server: McpServer) {
         args,
       });
 
-      const { cmd, cmdArgs } = getCoverageCommand(detected, extraArgs);
+      const tempDir = join(tmpdir(), `pare-coverage-${randomUUID()}`);
+      const coverageJsonPath =
+        detected === "pytest"
+          ? join(tempDir, "coverage.json")
+          : join(tempDir, "coverage-summary.json");
+      await mkdir(tempDir, { recursive: true });
 
+      const { cmd, cmdArgs } = getCoverageCommand(detected, extraArgs, coverageJsonPath);
       const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
-
       const output = result.stdout + "\n" + result.stderr;
 
       let coverage;
-      switch (detected) {
-        case "pytest":
-          coverage = parsePytestCoverage(output);
-          break;
-        case "jest":
-          coverage = parseJestCoverage(output);
-          break;
-        case "vitest":
-          coverage = parseVitestCoverage(output);
-          break;
-        case "mocha":
-          coverage = parseMochaCoverage(output);
-          break;
+      try {
+        const jsonCoverage = await readFile(coverageJsonPath, "utf-8");
+        switch (detected) {
+          case "pytest":
+            coverage = parsePytestCoverageJson(jsonCoverage);
+            break;
+          case "jest":
+            coverage = parseJestCoverageJson(jsonCoverage);
+            break;
+          case "vitest":
+            coverage = parseVitestCoverageJson(jsonCoverage);
+            break;
+          case "mocha":
+            coverage = parseMochaCoverageJson(jsonCoverage);
+            break;
+        }
+      } catch {
+        // Fallback when the runner didn't emit JSON coverage output.
+        switch (detected) {
+          case "pytest":
+            coverage = parsePytestCoverage(output);
+            break;
+          case "jest":
+            coverage = parseJestCoverage(output);
+            break;
+          case "vitest":
+            coverage = parseVitestCoverage(output);
+            break;
+          case "mocha":
+            coverage = parseMochaCoverage(output);
+            break;
+        }
+      } finally {
+        await rm(tempDir, { recursive: true, force: true });
       }
 
       // Add meetsThreshold when failUnder is specified

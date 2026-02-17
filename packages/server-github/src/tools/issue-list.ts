@@ -28,6 +28,11 @@ export function registerIssueListTool(server: McpServer) {
           .optional()
           .default(30)
           .describe("Maximum number of issues to return (default: 30)"),
+        paginate: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Fetch a larger paginated set (up to 1000 issues)"),
         label: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Filter by label"),
         labels: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
@@ -83,6 +88,7 @@ export function registerIssueListTool(server: McpServer) {
     async ({
       state,
       limit,
+      paginate,
       label,
       labels,
       assignee,
@@ -111,7 +117,15 @@ export function registerIssueListTool(server: McpServer) {
       if (app) assertNoFlagInjection(app, "app");
       if (repo) assertNoFlagInjection(repo, "repo");
 
-      const args = ["issue", "list", "--json", ISSUE_LIST_FIELDS, "--limit", String(limit)];
+      const requestedLimit = paginate ? 1000 : limit;
+      const args = [
+        "issue",
+        "list",
+        "--json",
+        ISSUE_LIST_FIELDS,
+        "--limit",
+        String(requestedLimit),
+      ];
       if (state) args.push("--state", state);
       if (label) args.push("--label", label);
       if (labels && labels.length > 0) {
@@ -134,6 +148,42 @@ export function registerIssueListTool(server: McpServer) {
       }
 
       const data = parseIssueList(result.stdout);
+      if (!paginate) {
+        const probeArgs = [
+          "issue",
+          "list",
+          "--json",
+          ISSUE_LIST_FIELDS,
+          "--limit",
+          String(limit + 1),
+        ];
+        if (state) probeArgs.push("--state", state);
+        if (label) probeArgs.push("--label", label);
+        if (labels && labels.length > 0) {
+          for (const l of labels) probeArgs.push("--label", l);
+        }
+        if (assignee) probeArgs.push("--assignee", assignee);
+        if (search) probeArgs.push("--search", search);
+        if (author) probeArgs.push("--author", author);
+        if (milestone) probeArgs.push("--milestone", milestone);
+        if (mention) probeArgs.push("--mention", mention);
+        if (app) probeArgs.push("--app", app);
+        if (repo) probeArgs.push("--repo", repo);
+        const probeResult = await ghCmd(probeArgs, cwd);
+        if (probeResult.exitCode === 0) {
+          const probe = parseIssueList(probeResult.stdout);
+          const hasMore = probe.total > limit;
+          data.hasMore = hasMore;
+          data.totalAvailable = hasMore ? limit + 1 : data.total;
+          if (hasMore) {
+            data.issues = data.issues.slice(0, limit);
+            data.total = data.issues.length;
+          }
+        }
+      } else {
+        data.hasMore = false;
+        data.totalAvailable = data.total;
+      }
       return compactDualOutput(
         data,
         result.stdout,

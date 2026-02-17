@@ -17,6 +17,7 @@ interface TrivyJsonVuln {
   InstalledVersion?: string;
   FixedVersion?: string;
   Title?: string;
+  CVSS?: Record<string, { V3Score?: number; Score?: number }>;
 }
 
 /** Raw Trivy JSON result shape (one per target/layer). */
@@ -72,6 +73,7 @@ export function parseTrivyJson(
       // Handle regular vulnerabilities
       if (result.Vulnerabilities) {
         for (const v of result.Vulnerabilities) {
+          const cvssScore = extractCvssScore(v);
           vulnerabilities.push({
             id: v.VulnerabilityID || "UNKNOWN",
             severity: normalizeSeverity(v.Severity),
@@ -79,6 +81,7 @@ export function parseTrivyJson(
             installedVersion: v.InstalledVersion || "unknown",
             fixedVersion: v.FixedVersion || undefined,
             title: v.Title || undefined,
+            ...(cvssScore !== undefined ? { cvssScore } : {}),
           });
         }
       }
@@ -116,6 +119,21 @@ function normalizeSeverity(severity: string | undefined): string {
   const upper = severity.toUpperCase();
   if (["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"].includes(upper)) return upper;
   return upper;
+}
+
+/** Extracts the highest CVSS score available from Trivy vulnerability metadata. */
+function extractCvssScore(vuln: TrivyJsonVuln): number | undefined {
+  const cvss = vuln.CVSS;
+  if (!cvss) return undefined;
+  const scores: number[] = [];
+  for (const source of Object.values(cvss)) {
+    if (typeof source.V3Score === "number" && Number.isFinite(source.V3Score)) {
+      scores.push(source.V3Score);
+    } else if (typeof source.Score === "number" && Number.isFinite(source.Score)) {
+      scores.push(source.Score);
+    }
+  }
+  return scores.length > 0 ? Math.max(...scores) : undefined;
 }
 
 /** Computes severity summary counts from a list of vulnerabilities. */
@@ -156,6 +174,7 @@ interface SemgrepJsonFinding {
     severity?: string;
     metadata?: {
       category?: string;
+      cwe?: string | string[];
       [key: string]: unknown;
     };
     [key: string]: unknown;
@@ -165,7 +184,12 @@ interface SemgrepJsonFinding {
 /** Top-level Semgrep JSON output. */
 interface SemgrepJsonOutput {
   results?: SemgrepJsonFinding[] | null;
-  errors?: unknown[];
+  errors?: Array<{
+    type?: string;
+    message?: string;
+    path?: string;
+    [key: string]: unknown;
+  }>;
 }
 
 /**
@@ -191,6 +215,7 @@ export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanRe
 
   if (parsed.results) {
     for (const r of parsed.results) {
+      const cwe = normalizeCwe(r.extra?.metadata?.cwe);
       findings.push({
         ruleId: r.check_id || "unknown",
         path: r.path || "unknown",
@@ -199,15 +224,25 @@ export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanRe
         message: r.extra?.message || "",
         severity: normalizeSemgrepSeverity(r.extra?.severity),
         category: r.extra?.metadata?.category || undefined,
+        ...(cwe ? { cwe } : {}),
       });
     }
   }
 
   const summary = computeSemgrepSummary(findings);
 
+  const errors = (parsed.errors ?? [])
+    .map((err) => ({
+      type: err.type,
+      message: err.message || "Unknown semgrep error",
+      path: err.path,
+    }))
+    .filter((err) => err.message.length > 0);
+
   return {
     totalFindings: findings.length,
     findings,
+    ...(errors.length > 0 ? { errors } : {}),
     summary,
     config,
   };
@@ -219,6 +254,22 @@ function normalizeSemgrepSeverity(severity: string | undefined): string {
   const upper = severity.toUpperCase();
   if (["ERROR", "WARNING", "INFO"].includes(upper)) return upper;
   return upper;
+}
+
+/** Normalizes Semgrep CWE metadata to a string array. */
+function normalizeCwe(metadataCwe: string | string[] | undefined): string[] | undefined {
+  if (Array.isArray(metadataCwe)) {
+    const values = metadataCwe.map((x) => String(x).trim()).filter((x) => x.length > 0);
+    return values.length > 0 ? values : undefined;
+  }
+  if (typeof metadataCwe === "string") {
+    const values = metadataCwe
+      .split(/[,\s]+/)
+      .map((x) => x.trim())
+      .filter((x) => x.length > 0);
+    return values.length > 0 ? values : undefined;
+  }
+  return undefined;
 }
 
 /** Computes severity summary counts from a list of Semgrep findings. */
@@ -290,10 +341,12 @@ export function parseGitleaksJson(jsonStr: string): GitleaksScanResult {
   }
 
   const findings: GitleaksFinding[] = [];
+  const ruleCounts: Record<string, number> = {};
 
   for (const f of parsed) {
+    const ruleID = f.RuleID || "unknown";
     findings.push({
-      ruleID: f.RuleID || "unknown",
+      ruleID,
       description: f.Description || "",
       match: f.Match || "",
       secret: redactSecret(f.Secret || ""),
@@ -304,11 +357,15 @@ export function parseGitleaksJson(jsonStr: string): GitleaksScanResult {
       author: f.Author || "",
       date: f.Date || "",
     });
+    ruleCounts[ruleID] = (ruleCounts[ruleID] ?? 0) + 1;
   }
 
   return {
     totalFindings: findings.length,
     findings,
-    summary: { totalFindings: findings.length },
+    summary: {
+      totalFindings: findings.length,
+      ...(Object.keys(ruleCounts).length > 0 ? { ruleCounts } : {}),
+    },
   };
 }

@@ -50,6 +50,26 @@ export function registerPrettierFormatTool(server: McpServer) {
           .enum(["lf", "crlf", "cr", "auto"])
           .optional()
           .describe("Line ending style override"),
+        tabWidth: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Number of spaces per indentation level (maps to --tab-width)"),
+        singleQuote: z
+          .boolean()
+          .optional()
+          .describe("Use single quotes instead of double quotes where possible"),
+        trailingComma: z
+          .enum(["all", "es5", "none"])
+          .optional()
+          .describe("Print trailing commas wherever possible"),
+        printWidth: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("The line length where Prettier will try to wrap"),
         config: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -67,6 +87,10 @@ export function registerPrettierFormatTool(server: McpServer) {
       noConfig,
       logLevel,
       endOfLine,
+      tabWidth,
+      singleQuote,
+      trailingComma,
+      printWidth,
       config,
       compact,
     }) => {
@@ -82,6 +106,10 @@ export function registerPrettierFormatTool(server: McpServer) {
       if (noConfig) sharedArgs.push("--no-config");
       if (logLevel) sharedArgs.push(`--log-level=${logLevel}`);
       if (endOfLine) sharedArgs.push(`--end-of-line=${endOfLine}`);
+      if (tabWidth !== undefined) sharedArgs.push(`--tab-width=${tabWidth}`);
+      if (singleQuote !== undefined) sharedArgs.push(`--single-quote=${singleQuote}`);
+      if (trailingComma) sharedArgs.push(`--trailing-comma=${trailingComma}`);
+      if (printWidth !== undefined) sharedArgs.push(`--print-width=${printWidth}`);
       if (config) {
         assertNoFlagInjection(config, "config");
         sharedArgs.push(`--config=${config}`);
@@ -111,7 +139,12 @@ export function registerPrettierFormatTool(server: McpServer) {
         // Count total files processed from --write output for filesUnchanged calculation
         const writeData = parsePrettierWrite(writeResult.stdout, writeResult.stderr, 0);
         const totalProcessed = writeData.files?.length ?? 0;
-        data = buildPrettierWriteResult(listDiffFiles, writeResult.exitCode, totalProcessed);
+        data = buildPrettierWriteResult(
+          listDiffFiles,
+          writeResult.exitCode,
+          totalProcessed,
+          writeResult.stderr.trim() || undefined,
+        );
       } else {
         // Fall back to simple --write parsing if --list-different produced no results
         data = parsePrettierWrite(writeResult.stdout, writeResult.stderr, writeResult.exitCode);

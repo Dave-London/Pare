@@ -14,9 +14,19 @@ import type {
 
 /** Formats structured go build results into a human-readable error summary. */
 export function formatGoBuild(data: GoBuildResult): string {
-  if (data.success) return "go build: success.";
+  if (data.success) {
+    if (data.buildCache) {
+      return `go build: success. cache hits=${data.buildCache.estimatedHits}, misses=${data.buildCache.estimatedMisses}`;
+    }
+    return "go build: success.";
+  }
 
   const lines = [`go build: ${data.total} errors`];
+  if (data.buildCache) {
+    lines.push(
+      `  cache hits=${data.buildCache.estimatedHits}, misses=${data.buildCache.estimatedMisses}`,
+    );
+  }
   for (const e of data.errors ?? []) {
     const col = e.column ? `:${e.column}` : "";
     lines.push(`  ${e.file}:${e.line}${col}: ${e.message}`);
@@ -62,6 +72,12 @@ export function formatGoVet(data: GoVetResult): string {
   if (data.total === 0) return "go vet: no issues found.";
 
   const lines = [`go vet: ${data.total} issues`];
+  if (data.compilationErrors && data.compilationErrors.length > 0) {
+    lines.push("Compilation errors:");
+    for (const err of data.compilationErrors) {
+      lines.push(`  ${err}`);
+    }
+  }
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
     const analyzer = d.analyzer ? ` (${d.analyzer})` : "";
@@ -73,7 +89,10 @@ export function formatGoVet(data: GoVetResult): string {
 /** Formats structured go run results into a human-readable output summary. */
 export function formatGoRun(data: GoRunResult): string {
   const lines: string[] = [];
-  if (data.success) {
+  if (data.timedOut) {
+    const signal = data.signal ? ` (${data.signal})` : "";
+    lines.push(`go run: timed out${signal}.`);
+  } else if (data.success) {
     lines.push("go run: success.");
   } else {
     lines.push(`go run: exit code ${data.exitCode}.`);
@@ -104,9 +123,17 @@ export function formatGoModTidy(data: GoModTidyResult): string {
         : data.madeChanges === false
           ? " (already tidy)"
           : "";
-    return `go mod tidy: ${data.summary}${changesNote}`;
+    const lines = [`go mod tidy: ${data.summary}${changesNote}`];
+    if (data.addedModules && data.addedModules.length > 0) {
+      lines.push(`  added modules: ${data.addedModules.length}`);
+    }
+    if (data.removedModules && data.removedModules.length > 0) {
+      lines.push(`  removed modules: ${data.removedModules.length}`);
+    }
+    return lines.join("\n");
   }
-  return `go mod tidy: FAIL\n  ${data.summary}`;
+  const errorType = data.errorType ? ` [${data.errorType}]` : "";
+  return `go mod tidy: FAIL${errorType}\n  ${data.summary}`;
 }
 
 /** Formats structured gofmt results into a human-readable file listing. */
@@ -121,6 +148,13 @@ export function formatGoFmt(data: GoFmtResult): string {
     lines.push(`gofmt: ${data.filesChanged} files`);
     for (const f of data.files ?? []) {
       lines.push(`  ${f}`);
+    }
+  }
+
+  if (data.changes && data.changes.length > 0) {
+    lines.push("Diffs:");
+    for (const change of data.changes) {
+      lines.push(`  ${change.file}`);
     }
   }
 
@@ -145,7 +179,9 @@ export function formatGoFmt(data: GoFmtResult): string {
 export function formatGoGenerate(data: GoGenerateResult): string {
   const lines: string[] = [];
 
-  if (data.success) {
+  if (data.timedOut) {
+    lines.push("go generate: timed out");
+  } else if (data.success) {
     lines.push("go generate: success.");
   } else {
     lines.push("go generate: FAIL");
@@ -172,6 +208,7 @@ export interface GoBuildCompact {
   success: boolean;
   errors?: GoBuildResult["errors"];
   rawErrors?: string[];
+  buildCache?: GoBuildResult["buildCache"];
   total: number;
 }
 
@@ -182,11 +219,17 @@ export function compactBuildMap(data: GoBuildResult): GoBuildCompact {
   };
   if (data.errors?.length) compact.errors = data.errors;
   if (data.rawErrors?.length) compact.rawErrors = data.rawErrors;
+  if (data.buildCache) compact.buildCache = data.buildCache;
   return compact;
 }
 
 export function formatBuildCompact(data: GoBuildCompact): string {
-  if (data.success) return "go build: success.";
+  if (data.success) {
+    if (data.buildCache) {
+      return `go build: success (cache ${data.buildCache.estimatedHits}/${data.buildCache.totalPackages} hits)`;
+    }
+    return "go build: success.";
+  }
   return `go build: ${data.total} errors`;
 }
 
@@ -266,6 +309,8 @@ export interface GoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
+  timedOut?: boolean;
+  signal?: string;
   stdoutTruncated?: boolean;
   stderrTruncated?: boolean;
 }
@@ -275,12 +320,15 @@ export function compactRunMap(data: GoRunResult): GoRunCompact {
     exitCode: data.exitCode,
     success: data.success,
   };
+  if (data.timedOut) compact.timedOut = true;
+  if (data.signal) compact.signal = data.signal;
   if (data.stdoutTruncated) compact.stdoutTruncated = true;
   if (data.stderrTruncated) compact.stderrTruncated = true;
   return compact;
 }
 
 export function formatRunCompact(data: GoRunCompact): string {
+  if (data.timedOut) return "go run: timed out.";
   if (data.success) return "go run: success.";
   return `go run: exit code ${data.exitCode}.`;
 }
@@ -289,6 +337,7 @@ export function formatRunCompact(data: GoRunCompact): string {
 export interface GoGenerateCompact {
   [key: string]: unknown;
   success: boolean;
+  timedOut?: boolean;
   output?: string;
   directiveCount?: number;
 }
@@ -297,12 +346,14 @@ export function compactGenerateMap(data: GoGenerateResult): GoGenerateCompact {
   const compact: GoGenerateCompact = {
     success: data.success,
   };
+  if (data.timedOut) compact.timedOut = true;
   if (data.output) compact.output = data.output;
   if (data.directives?.length) compact.directiveCount = data.directives.length;
   return compact;
 }
 
 export function formatGenerateCompact(data: GoGenerateCompact): string {
+  if (data.timedOut) return "go generate: timed out.";
   if (data.success) return "go generate: success.";
   return "go generate: FAIL";
 }
@@ -313,6 +364,9 @@ export interface GoModTidyCompact {
   success: boolean;
   summary?: string;
   madeChanges?: boolean;
+  addedModules?: number;
+  removedModules?: number;
+  errorType?: GoModTidyResult["errorType"];
 }
 
 export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
@@ -321,6 +375,9 @@ export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
   };
   if (data.summary) compact.summary = data.summary;
   if (data.madeChanges !== undefined) compact.madeChanges = data.madeChanges;
+  if (data.addedModules?.length) compact.addedModules = data.addedModules.length;
+  if (data.removedModules?.length) compact.removedModules = data.removedModules.length;
+  if (data.errorType) compact.errorType = data.errorType;
   return compact;
 }
 
@@ -346,6 +403,9 @@ export function formatGoEnv(data: GoEnvResult): string {
     `GOOS=${data.goos}`,
     `GOARCH=${data.goarch}`,
   ];
+  if (data.cgoEnabled !== undefined) {
+    lines.push(`CGO_ENABLED=${data.cgoEnabled ? "1" : "0"}`);
+  }
   const vars = data.vars ?? {};
   const otherKeys = Object.keys(vars).filter(
     (k) => !["GOROOT", "GOPATH", "GOVERSION", "GOOS", "GOARCH"].includes(k),
@@ -365,6 +425,7 @@ export interface GoEnvCompact {
   goversion: string;
   goos: string;
   goarch: string;
+  cgoEnabled?: boolean;
 }
 
 /**
@@ -380,6 +441,9 @@ export function compactEnvMap(data: GoEnvResult, queriedVars?: string[]): GoEnvC
     goos: data.goos,
     goarch: data.goarch,
   };
+  if (data.cgoEnabled !== undefined) {
+    compact.cgoEnabled = data.cgoEnabled;
+  }
 
   // Include queried variables in compact mode (Gap #150)
   if (queriedVars && queriedVars.length > 0 && data.vars) {
@@ -427,7 +491,14 @@ export function formatGoList(data: GoListResult): string {
     const importsCount = pkg.imports?.length ?? 0;
     const importsSuffix = importsCount > 0 ? ` [${importsCount} imports]` : "";
     const errorSuffix = pkg.error ? ` ERROR: ${pkg.error.err}` : "";
-    lines.push(`  ${pkg.importPath} (${pkg.name})${importsSuffix}${errorSuffix}`);
+    const standardSuffix = pkg.standard ? " [std]" : "";
+    const staleSuffix = pkg.stale ? " [stale]" : "";
+    const moduleSuffix = pkg.module?.path
+      ? ` [module: ${pkg.module.path}${pkg.module.version ? `@${pkg.module.version}` : ""}]`
+      : "";
+    lines.push(
+      `  ${pkg.importPath} (${pkg.name})${importsSuffix}${standardSuffix}${staleSuffix}${moduleSuffix}${errorSuffix}`,
+    );
   }
   return lines.join("\n");
 }
@@ -472,8 +543,17 @@ export function formatGoGet(data: GoGetResult): string {
     if (data.packages) {
       for (const pkg of data.packages) {
         if (pkg.error) {
-          lines.push(`  ${pkg.path}: ${pkg.error}`);
+          const type = pkg.errorType ? ` [${pkg.errorType}]` : "";
+          lines.push(`  ${pkg.path}${type}: ${pkg.error}`);
         }
+      }
+    }
+    if (data.goModChanges) {
+      if (data.goModChanges.added.length > 0) {
+        lines.push(`  go.mod added: ${data.goModChanges.added.length}`);
+      }
+      if (data.goModChanges.removed.length > 0) {
+        lines.push(`  go.mod removed: ${data.goModChanges.removed.length}`);
       }
     }
     return lines.join("\n");
@@ -483,7 +563,8 @@ export function formatGoGet(data: GoGetResult): string {
   if (data.packages) {
     for (const pkg of data.packages) {
       if (pkg.error) {
-        lines.push(`  ${pkg.path}: ${pkg.error}`);
+        const type = pkg.errorType ? ` [${pkg.errorType}]` : "";
+        lines.push(`  ${pkg.path}${type}: ${pkg.error}`);
       }
     }
   }
@@ -535,7 +616,8 @@ export function formatGolangciLint(data: GolangciLintResult): string {
   for (const d of data.diagnostics ?? []) {
     const col = d.column ? `:${d.column}` : "";
     const fixNote = d.fix ? " [fix available]" : "";
-    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})${fixNote}`);
+    const category = d.category ? ` [${d.category}]` : "";
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})${category}${fixNote}`);
   }
 
   if (data.byLinter && data.byLinter.length > 0) {

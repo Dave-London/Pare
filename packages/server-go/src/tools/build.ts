@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
-import { parseGoBuildOutput } from "../lib/parsers.js";
+import { parseGoBuildOutput, parseGoListOutput } from "../lib/parsers.js";
 import { formatGoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { GoBuildResultSchema } from "../schemas/index.js";
 
@@ -101,8 +101,12 @@ export function registerBuildTool(server: McpServer) {
       if (buildmode) args.push(`-buildmode=${buildmode}`);
       if (gcflags) args.push("-gcflags", gcflags);
       args.push(...(packages || ["./..."]));
+      const cacheEstimate = await estimateBuildCache(cwd, packages || ["./..."], tags);
       const result = await goCmd(args, cwd);
       const data = parseGoBuildOutput(result.stdout, result.stderr, result.exitCode);
+      if (cacheEstimate) {
+        data.buildCache = cacheEstimate;
+      }
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,
@@ -114,4 +118,37 @@ export function registerBuildTool(server: McpServer) {
       );
     },
   );
+}
+
+async function estimateBuildCache(
+  cwd: string,
+  packages: string[],
+  tags?: string[],
+): Promise<{ estimatedHits: number; estimatedMisses: number; totalPackages: number } | undefined> {
+  const args = ["list", "-json", "-deps"];
+  if (tags && tags.length > 0) {
+    args.push("-tags", tags.join(","));
+  }
+  args.push(...packages);
+
+  try {
+    const result = await goCmd(args, cwd);
+    const listed = parseGoListOutput(result.stdout, result.exitCode);
+    const pkgs = listed.packages ?? [];
+    if (pkgs.length === 0) return undefined;
+
+    let estimatedHits = 0;
+    let estimatedMisses = 0;
+    for (const pkg of pkgs) {
+      if (pkg.stale === true) estimatedMisses++;
+      else if (pkg.stale === false) estimatedHits++;
+    }
+    return {
+      estimatedHits,
+      estimatedMisses,
+      totalPackages: pkgs.length,
+    };
+  } catch {
+    return undefined;
+  }
 }

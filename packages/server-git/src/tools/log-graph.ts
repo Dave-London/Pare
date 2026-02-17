@@ -74,7 +74,12 @@ export function registerLogGraphTool(server: McpServer) {
       compact,
     }) => {
       const cwd = path || process.cwd();
-      const args = ["log", "--graph", "--oneline", "--decorate", `--max-count=${maxCount ?? 20}`];
+      const args = [
+        "log",
+        "--graph",
+        "--pretty=format:%h %p %d %s",
+        `--max-count=${maxCount ?? 20}`,
+      ];
 
       if (all) {
         args.push("--all");

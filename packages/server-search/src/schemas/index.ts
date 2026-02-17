@@ -11,9 +11,16 @@ export const SearchMatchSchema = z.object({
   lineContent: z.string(),
 });
 
+/** Zod schema for per-file search match counts. */
+export const SearchFileSummarySchema = z.object({
+  file: z.string(),
+  matchCount: z.number(),
+});
+
 /** Zod schema for structured ripgrep search output with match list and totals. */
 export const SearchResultSchema = z.object({
   matches: z.array(SearchMatchSchema).optional(),
+  files: z.array(SearchFileSummarySchema).optional(),
   totalMatches: z.number(),
   filesSearched: z.number(),
 });
@@ -27,6 +34,7 @@ export const FindFileSchema = z.object({
   path: z.string(),
   name: z.string(),
   ext: z.string(),
+  type: z.enum(["file", "directory", "symlink", "other"]),
 });
 
 /** Zod schema for structured fd output with file list and total count. */
@@ -59,6 +67,7 @@ export type CountResult = z.infer<typeof CountResultSchema>;
 /** Zod schema for structured jq output with the transformed result. */
 export const JqResultSchema = z.object({
   output: z.string(),
+  result: z.unknown().optional(),
   exitCode: z.number(),
 });
 

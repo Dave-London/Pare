@@ -8,6 +8,9 @@ import {
   parsePhonyTargets,
   enrichPhonyFlags,
   parseMakeDependencies,
+  parseMakeRecipes,
+  parsePatternRules,
+  enrichTargetRecipes,
   buildListResult,
 } from "../src/lib/parsers.js";
 
@@ -87,6 +90,30 @@ describe("parseRunOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.timedOut).toBe(true);
+  });
+
+  it("classifies missing target failures", () => {
+    const result = parseRunOutput(
+      "nope",
+      "",
+      "make: *** No rule to make target 'nope'. Stop.",
+      2,
+      12,
+      "make",
+    );
+    expect(result.errorType).toBe("missing-target");
+  });
+
+  it("classifies parse errors", () => {
+    const result = parseRunOutput(
+      "build",
+      "",
+      "Makefile:12: *** missing separator.",
+      2,
+      20,
+      "make",
+    );
+    expect(result.errorType).toBe("parse-error");
   });
 });
 
@@ -276,6 +303,16 @@ describe("parseJustDumpJson", () => {
 
     expect(result.targets[0].description).toBeUndefined();
   });
+
+  it("includes recipe body when showRecipe=true", () => {
+    const json = JSON.stringify({
+      recipes: {
+        build: { doc: "Build", dependencies: [], body: ["echo build", "npm run build"] },
+      },
+    });
+    const result = parseJustDumpJson(json, { showRecipe: true });
+    expect(result.targets[0].recipe).toEqual(["echo build", "npm run build"]);
+  });
 });
 
 describe("parseMakeTargets", () => {
@@ -390,6 +427,41 @@ describe("parseMakeTargets", () => {
     const result = parseMakeTargets(stdout);
 
     expect(result.targets[0].dependencies).toEqual(["src/main.c"]);
+  });
+});
+
+describe("parseMakeRecipes / parsePatternRules", () => {
+  it("extracts explicit target recipes", () => {
+    const src = ["build: ## Build", "\techo build", "test: build", "\tpytest -q", ""].join("\n");
+    const recipes = parseMakeRecipes(src);
+    expect(recipes.get("build")).toEqual(["echo build"]);
+    expect(recipes.get("test")).toEqual(["pytest -q"]);
+  });
+
+  it("extracts pattern rules separately", () => {
+    const src = [
+      "%.o: %.c",
+      "\t$(CC) -c $< -o $@",
+      "build: main.o",
+      "\t$(CC) main.o -o app",
+      "",
+    ].join("\n");
+    const rules = parsePatternRules(src);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].pattern).toBe("%.o");
+    expect(rules[0].dependencies).toEqual(["%.c"]);
+    expect(rules[0].recipe).toEqual(["$(CC) -c $< -o $@"]);
+  });
+
+  it("enriches targets with recipes from recipe map", () => {
+    const targets = [{ name: "build" }, { name: "test" }];
+    const recipes = new Map<string, string[]>([
+      ["build", ["echo build"]],
+      ["test", ["pytest -q"]],
+    ]);
+    enrichTargetRecipes(targets, recipes);
+    expect(targets[0].recipe).toEqual(["echo build"]);
+    expect(targets[1].recipe).toEqual(["pytest -q"]);
   });
 });
 

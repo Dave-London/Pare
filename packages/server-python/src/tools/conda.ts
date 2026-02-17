@@ -2,13 +2,17 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { conda } from "../lib/python-runner.js";
-import { parseCondaListJson, parseCondaInfoJson, parseCondaEnvListJson } from "../lib/parsers.js";
+import {
+  parseCondaListJson,
+  parseCondaInfoJson,
+  parseCondaEnvListJson,
+  parseCondaMutationJson,
+} from "../lib/parsers.js";
 import {
   formatCondaResult,
   compactCondaResultMap,
   formatCondaResultCompact,
 } from "../lib/formatters.js";
-import { CondaResultSchema } from "../schemas/index.js";
 
 /** Registers the `conda` tool on the given MCP server. */
 export function registerCondaTool(server: McpServer) {
@@ -16,9 +20,12 @@ export function registerCondaTool(server: McpServer) {
     "conda",
     {
       title: "Conda",
-      description: "Runs conda commands (list, info, env-list) and returns structured JSON output.",
+      description:
+        "Runs conda commands (list, info, env-list, create, remove, update) and returns structured JSON output.",
       inputSchema: {
-        action: z.enum(["list", "info", "env-list"]).describe("Conda action to perform"),
+        action: z
+          .enum(["list", "info", "env-list", "create", "remove", "update"])
+          .describe("Conda action to perform"),
         name: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -36,16 +43,30 @@ export function registerCondaTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Regex filter for conda list to show only matching packages"),
+        packages: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe("Packages used by create/remove/update actions"),
+        all: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("For update action, update all installed packages (--all)"),
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
-      outputSchema: CondaResultSchema,
+      // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
+      outputSchema: z.object({ action: z.string() }).passthrough(),
     },
-    async ({ action, name, prefix, packageFilter, path, compact }) => {
+    async ({ action, name, prefix, packageFilter, packages, all, path, compact }) => {
       const cwd = path || process.cwd();
       if (name) assertNoFlagInjection(name, "name");
       if (prefix) assertNoFlagInjection(prefix, "prefix");
       if (packageFilter) assertNoFlagInjection(packageFilter, "packageFilter");
+      for (const p of packages ?? []) {
+        assertNoFlagInjection(p, "packages");
+      }
 
       switch (action) {
         case "list": {
@@ -93,6 +114,55 @@ export function registerCondaTool(server: McpServer) {
           return compactDualOutput(
             data,
             envResult.stdout,
+            formatCondaResult,
+            compactCondaResultMap,
+            formatCondaResultCompact,
+            compact === false,
+          );
+        }
+        case "create": {
+          const args = ["create", "--json", "-y"];
+          if (name) args.push("--name", name);
+          else if (prefix) args.push("--prefix", prefix);
+          args.push(...(packages ?? []));
+          const result = await conda(args, cwd);
+          const data = parseCondaMutationJson(result.stdout, result.stderr, "create", name, prefix);
+          return compactDualOutput(
+            data,
+            `${result.stdout}\n${result.stderr}`,
+            formatCondaResult,
+            compactCondaResultMap,
+            formatCondaResultCompact,
+            compact === false,
+          );
+        }
+        case "remove": {
+          const args = ["remove", "--json", "-y"];
+          if (name) args.push("--name", name);
+          else if (prefix) args.push("--prefix", prefix);
+          args.push(...(packages ?? []));
+          const result = await conda(args, cwd);
+          const data = parseCondaMutationJson(result.stdout, result.stderr, "remove", name, prefix);
+          return compactDualOutput(
+            data,
+            `${result.stdout}\n${result.stderr}`,
+            formatCondaResult,
+            compactCondaResultMap,
+            formatCondaResultCompact,
+            compact === false,
+          );
+        }
+        case "update": {
+          const args = ["update", "--json", "-y"];
+          if (name) args.push("--name", name);
+          else if (prefix) args.push("--prefix", prefix);
+          if (all) args.push("--all");
+          args.push(...(packages ?? []));
+          const result = await conda(args, cwd);
+          const data = parseCondaMutationJson(result.stdout, result.stderr, "update", name, prefix);
+          return compactDualOutput(
+            data,
+            `${result.stdout}\n${result.stderr}`,
             formatCondaResult,
             compactCondaResultMap,
             formatCondaResultCompact,

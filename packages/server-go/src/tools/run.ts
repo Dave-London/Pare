@@ -71,6 +71,21 @@ export function registerRunTool(server: McpServer) {
             "Maximum length in characters for stdout/stderr output. Output exceeding this limit will be truncated. " +
               "Default: no limit. Max: 1048576 (1MB).",
           ),
+        stream: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Return tail-focused output for long-running programs. This is a streaming-like mode that keeps recent lines.",
+          ),
+        tailLines: z
+          .number()
+          .int()
+          .min(10)
+          .max(5000)
+          .optional()
+          .default(200)
+          .describe("When stream is true, keep this many trailing stdout/stderr lines"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoRunResultSchema,
@@ -85,6 +100,8 @@ export function registerRunTool(server: McpServer) {
       timeout,
       exec: execWrapper,
       maxOutput,
+      stream,
+      tailLines,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -107,8 +124,36 @@ export function registerRunTool(server: McpServer) {
       if (programArgs.length > 0) {
         cmdArgs.push("--", ...programArgs);
       }
-      const result = await goCmd(cmdArgs, cwd, timeout);
-      const data = parseGoRunOutput(result.stdout, result.stderr, result.exitCode);
+      let timedOut = false;
+      let signal: string | undefined;
+      let result: { stdout: string; stderr: string; exitCode: number };
+      try {
+        const runResult = await goCmd(cmdArgs, cwd, timeout);
+        result = runResult;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("timed out")) {
+          timedOut = true;
+          signal = extractSignal(msg);
+          result = { stdout: "", stderr: msg, exitCode: 124 };
+        } else {
+          throw err;
+        }
+      }
+
+      const data = parseGoRunOutput(
+        result.stdout,
+        result.stderr,
+        result.exitCode,
+        timedOut,
+        signal,
+      );
+
+      if (stream) {
+        const lineCap = tailLines ?? 200;
+        if (data.stdout) data.stdout = tailOutput(data.stdout, lineCap);
+        if (data.stderr) data.stderr = tailOutput(data.stderr, lineCap);
+      }
 
       // Apply maxOutput truncation with truncation flag tracking
       if (maxOutput) {
@@ -133,4 +178,15 @@ export function registerRunTool(server: McpServer) {
       );
     },
   );
+}
+
+function tailOutput(text: string, lineCount: number): string {
+  const lines = text.split("\n");
+  if (lines.length <= lineCount) return text;
+  return lines.slice(-lineCount).join("\n");
+}
+
+function extractSignal(message: string): string | undefined {
+  const match = message.match(/\((SIG[A-Z0-9]+)\)/);
+  return match?.[1];
 }

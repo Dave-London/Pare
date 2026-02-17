@@ -9,6 +9,7 @@ describe("parseTestOutput", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.success).toBe(true);
+    expect(result.timedOut).toBe(false);
     expect(result.stdout).toContain("42 passed");
     expect(result.stderr).toBe("");
     expect(result.duration).toBe(3.5);
@@ -24,6 +25,7 @@ describe("parseTestOutput", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.success).toBe(false);
+    expect(result.timedOut).toBe(false);
     expect(result.stdout).toContain("3 failed");
     expect(result.stderr).toContain("FAIL");
     expect(result.duration).toBe(4.2);
@@ -39,6 +41,7 @@ describe("parseTestOutput", () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.success).toBe(false);
+    expect(result.timedOut).toBe(false);
     expect(result.stderr).toContain("Missing script");
     expect(result.stdout).toBe("");
   });
@@ -59,6 +62,7 @@ describe("parseTestOutput", () => {
     );
 
     expect(result.success).toBe(true);
+    expect(result.timedOut).toBe(false);
     expect(result.stdout).toContain("10 passed");
     expect(result.stderr).toContain("experimental coverage");
   });
@@ -68,6 +72,7 @@ describe("parseTestOutput", () => {
 
     expect(result.exitCode).toBe(2);
     expect(result.success).toBe(false);
+    expect(result.timedOut).toBe(false);
   });
 });
 
@@ -78,6 +83,7 @@ describe("formatTest", () => {
       stdout: "Tests: 42 passed",
       stderr: "",
       success: true,
+      timedOut: false,
       duration: 3.5,
     };
     const output = formatTest(data);
@@ -93,6 +99,7 @@ describe("formatTest", () => {
       stdout: "Tests: 1 failed",
       stderr: "AssertionError: expected true to be false",
       success: false,
+      timedOut: false,
       duration: 4.2,
     };
     const output = formatTest(data);
@@ -107,6 +114,7 @@ describe("formatTest", () => {
       stdout: "",
       stderr: "",
       success: true,
+      timedOut: false,
       duration: 0.5,
     };
     const output = formatTest(data);
@@ -119,6 +127,7 @@ describe("formatTest", () => {
       stdout: "All tests passed",
       stderr: "Deprecation warning",
       success: true,
+      timedOut: false,
       duration: 2.0,
     };
     const output = formatTest(data);
@@ -140,6 +149,7 @@ describe("parseTestOutput error paths", () => {
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
+    expect(result.timedOut).toBe(false);
     expect(result.stderr).toContain("EACCES");
     expect(result.stderr).toContain("permission denied");
   });
@@ -149,6 +159,7 @@ describe("parseTestOutput error paths", () => {
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
+    expect(result.timedOut).toBe(false);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
     expect(result.duration).toBe(300.0);
@@ -159,6 +170,7 @@ describe("parseTestOutput error paths", () => {
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(143);
+    expect(result.timedOut).toBe(false);
     expect(result.stderr).toBe("SIGTERM");
   });
 
@@ -172,7 +184,14 @@ describe("parseTestOutput error paths", () => {
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(134);
+    expect(result.timedOut).toBe(false);
     expect(result.stderr).toContain("heap limit");
     expect(result.stderr).toContain("out of memory");
+  });
+
+  it("marks timedOut true when explicitly passed", () => {
+    const result = parseTestOutput(124, "", "Command timed out", 300.0, true);
+    expect(result.timedOut).toBe(true);
+    expect(result.success).toBe(false);
   });
 });

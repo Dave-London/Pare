@@ -71,6 +71,25 @@ describe("parseRunOutput", () => {
 
     expect(result.signal).toBeUndefined();
   });
+
+  it("maps cpu resource usage from microseconds to milliseconds", () => {
+    const result = parseRunOutput(
+      "node",
+      "ok",
+      "",
+      0,
+      100,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      12500,
+      3400,
+    );
+
+    expect(result.userCpuTimeMs).toBe(12.5);
+    expect(result.systemCpuTimeMs).toBe(3.4);
+  });
 });
 
 describe("parseRunOutput — maxOutputLines truncation", () => {

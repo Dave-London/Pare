@@ -3,6 +3,7 @@ import { z } from "zod";
 /** Zod schema for structured git status output including branch, staged, modified, and untracked files. */
 export const GitStatusSchema = z.object({
   branch: z.string(),
+  porcelainVersion: z.enum(["v1", "v2"]).optional(),
   upstream: z.string().optional(),
   ahead: z.number().optional(),
   behind: z.number().optional(),
@@ -97,6 +98,9 @@ export const GitShowSchema = z.object({
   hashShort: z.string().optional(),
   author: z.string().optional(),
   date: z.string().optional(),
+  objectType: z.enum(["commit", "tag", "tree", "blob", "unknown"]).optional(),
+  objectName: z.string().optional(),
+  objectSize: z.number().optional(),
   message: z.string(),
   diff: z
     .object({
@@ -144,6 +148,15 @@ export const GitPushSchema = z.object({
   branch: z.string(),
   summary: z.string(),
   created: z.boolean().optional(),
+  objectStats: z
+    .object({
+      total: z.number().optional(),
+      delta: z.number().optional(),
+      reused: z.number().optional(),
+      packReused: z.number().optional(),
+      bytes: z.number().optional(),
+    })
+    .optional(),
   errorType: z
     .enum([
       "rejected",
@@ -190,6 +203,7 @@ export const GitCheckoutSchema = z.object({
   previousRef: z.string(),
   created: z.boolean(),
   detached: z.boolean().optional(),
+  modifiedFiles: z.array(z.string()).optional(),
   errorType: z
     .enum(["dirty-tree", "conflict", "invalid-ref", "already-exists", "unknown"])
     .optional(),
@@ -204,6 +218,7 @@ export const GitTagEntrySchema = z.object({
   name: z.string(),
   date: z.string().optional(),
   message: z.string().optional(),
+  tagType: z.enum(["lightweight", "annotated"]).optional(),
 });
 
 /** Zod schema for structured git tag output with tag list and total count, plus create/delete support. */
@@ -226,7 +241,12 @@ export const GitTagSchema = z.object({
 
 /** Full tag data (always returned by parser, before compact projection). */
 export type GitTagFull = {
-  tags: Array<{ name: string; date?: string; message?: string }>;
+  tags: Array<{
+    name: string;
+    date?: string;
+    message?: string;
+    tagType?: "lightweight" | "annotated";
+  }>;
   total: number;
 };
 
@@ -265,10 +285,11 @@ export type GitStashList = z.infer<typeof GitStashListSchema>;
 
 /** Zod schema for structured git stash push/pop/apply/drop/clear/show output. */
 export const GitStashSchema = z.object({
-  action: z.enum(["push", "pop", "apply", "drop", "clear", "show"]),
+  action: z.enum(["push", "pop", "apply", "drop", "clear", "show", "branch"]),
   success: z.boolean(),
   message: z.string(),
   stashRef: z.string().optional(),
+  branchName: z.string().optional(),
   reason: z.string().optional(),
   conflictFiles: z.array(z.string()).optional(),
   diffStat: z
@@ -298,6 +319,7 @@ export const GitRemoteEntrySchema = z.object({
   fetchUrl: z.string(),
   pushUrl: z.string(),
   protocol: z.enum(["ssh", "https", "http", "git", "file", "unknown"]).optional(),
+  trackedBranches: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured git remote output with remote list and total count, plus add/remove/rename/set-url/prune/show support. */
@@ -307,7 +329,7 @@ export const GitRemoteSchema = z.object({
   /** Present for mutate actions. */
   success: z.boolean().optional(),
   /** Action performed (only present for mutate operations). */
-  action: z.enum(["add", "remove", "rename", "set-url", "prune", "show"]).optional(),
+  action: z.enum(["add", "remove", "rename", "set-url", "prune", "show", "update"]).optional(),
   /** Remote name (only present for mutate operations). */
   name: z.string().optional(),
   /** Remote URL (only present for add/set-url actions). */
@@ -339,6 +361,7 @@ export type GitRemoteFull = {
     fetchUrl: string;
     pushUrl: string;
     protocol?: "ssh" | "https" | "http" | "git" | "file" | "unknown";
+    trackedBranches?: string[];
   }>;
   total: number;
 };
@@ -381,9 +404,12 @@ export type GitBlame = z.infer<typeof GitBlameSchema>;
 
 /** Zod schema for structured git restore output with restored files, source ref, and staged flag. */
 export const GitRestoreSchema = z.object({
+  success: z.boolean().optional(),
   restored: z.array(z.string()),
   source: z.string(),
   staged: z.boolean(),
+  errorType: z.enum(["pathspec", "unmerged", "invalid-source", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
   verified: z.boolean().optional(),
   verifiedFiles: z
     .array(
@@ -399,11 +425,14 @@ export type GitRestore = z.infer<typeof GitRestoreSchema>;
 
 /** Zod schema for structured git reset output with ref, mode, and list of unstaged files. */
 export const GitResetSchema = z.object({
+  success: z.boolean().optional(),
   ref: z.string(),
   mode: z.enum(["soft", "mixed", "hard", "merge", "keep"]).optional(),
   previousRef: z.string().optional(),
   newRef: z.string().optional(),
   filesAffected: z.array(z.string()),
+  errorType: z.enum(["invalid-ref", "pathspec", "incompatible-args", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type GitReset = z.infer<typeof GitResetSchema>;
@@ -422,11 +451,16 @@ export type GitCherryPick = z.infer<typeof GitCherryPickSchema>;
 /** Zod schema for structured git merge output with merge status, conflicts, and optional commit hash. */
 export const GitMergeSchema = z.object({
   merged: z.boolean(),
-  state: z.enum(["completed", "conflict", "already-up-to-date", "fast-forward"]),
+  state: z.enum(["completed", "conflict", "already-up-to-date", "fast-forward", "failed"]),
   fastForward: z.boolean(),
   branch: z.string(),
+  mergeBase: z.string().optional(),
   conflicts: z.array(z.string()),
   commitHash: z.string().optional(),
+  errorType: z
+    .enum(["conflict", "local-changes", "unrelated-histories", "invalid-branch", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
 });
 
 export type GitMerge = z.infer<typeof GitMergeSchema>;
@@ -439,6 +473,8 @@ export const GitRebaseSchema = z.object({
   current: z.string(),
   conflicts: z.array(z.string()),
   rebasedCommits: z.number().optional(),
+  verified: z.boolean().optional(),
+  verificationError: z.string().optional(),
 });
 
 export type GitRebase = z.infer<typeof GitRebaseSchema>;
@@ -448,6 +484,7 @@ export const GitLogGraphEntrySchema = z.object({
   graph: z.string(),
   hashShort: z.string(),
   message: z.string(),
+  parents: z.array(z.string()).optional(),
   refs: z.string().optional(),
   parsedRefs: z.array(z.string()).optional(),
   isMerge: z.boolean().optional(),
@@ -473,6 +510,7 @@ export type GitLogGraphFull = {
     graph: string;
     hashShort: string;
     message: string;
+    parents?: string[];
     refs?: string;
     parsedRefs?: string[];
     isMerge?: boolean;
@@ -513,9 +551,12 @@ export const GitReflogEntrySchema = z.object({
   hash: z.string(),
   shortHash: z.string(),
   selector: z.string(),
+  selectorIndex: z.number().optional(),
   action: z.enum(REFLOG_ACTIONS),
   rawAction: z.string(),
   description: z.string(),
+  fromRef: z.string().optional(),
+  toRef: z.string().optional(),
   date: z.string(),
 });
 
@@ -532,9 +573,12 @@ export type GitReflogFull = {
     hash: string;
     shortHash: string;
     selector: string;
+    selectorIndex?: number;
     action: ReflogAction;
     rawAction: string;
     description: string;
+    fromRef?: string;
+    toRef?: string;
     date: string;
   }>;
   total: number;
@@ -545,7 +589,7 @@ export type GitReflog = z.infer<typeof GitReflogSchema>;
 
 /** Zod schema for structured git bisect output with action, current commit, remaining steps, and result. */
 export const GitBisectSchema = z.object({
-  action: z.enum(["start", "good", "bad", "reset", "status", "skip", "run"]),
+  action: z.enum(["start", "good", "bad", "reset", "status", "skip", "run", "replay"]),
   current: z.string().optional(),
   remaining: z.number().optional(),
   result: z
@@ -554,6 +598,7 @@ export const GitBisectSchema = z.object({
       message: z.string(),
       author: z.string().optional(),
       date: z.string().optional(),
+      filesChanged: z.array(z.string()).optional(),
     })
     .optional(),
   message: z.string(),
@@ -601,7 +646,9 @@ export type GitWorktreeList = z.infer<typeof GitWorktreeListSchema>;
 /** Zod schema for structured git worktree add/remove output. */
 export const GitWorktreeSchema = z.object({
   success: z.boolean(),
+  action: z.enum(["add", "remove", "lock", "unlock", "prune", "move", "repair"]).optional(),
   path: z.string(),
+  targetPath: z.string().optional(),
   branch: z.string(),
   head: z.string().optional(),
 });
@@ -611,7 +658,7 @@ export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
 /** Type alias for remote mutate results (uses unified GitRemoteSchema). */
 export type GitRemoteMutate = {
   success: boolean;
-  action: "add" | "remove" | "rename" | "set-url" | "prune" | "show";
+  action: "add" | "remove" | "rename" | "set-url" | "prune" | "show" | "update";
   name: string;
   url?: string;
   message: string;

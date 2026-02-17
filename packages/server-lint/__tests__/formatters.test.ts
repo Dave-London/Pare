@@ -349,4 +349,44 @@ describe("formatFormatWrite edge cases", () => {
 
     expect(formatFormatWrite(data)).toBe("Format failed.");
   });
+
+  it("formats failure with explicit error message", () => {
+    const data: FormatWriteResult = {
+      filesChanged: 0,
+      files: [],
+      success: false,
+      errorMessage: "No parser could be inferred for file",
+    };
+
+    expect(formatFormatWrite(data)).toBe("Format failed: No parser could be inferred for file");
+  });
+});
+
+describe("formatLint metadata sections", () => {
+  it("includes tags, suggested fixes, and deprecations", () => {
+    const data: LintResult = {
+      diagnostics: [
+        {
+          file: "deploy.sh",
+          line: 5,
+          severity: "warning",
+          rule: "SC2086",
+          message: "Double quote to prevent globbing and word splitting.",
+          tags: ["fixable"],
+          suggestedFixes: ['"$var"'],
+        },
+      ],
+      total: 1,
+      errors: 0,
+      warnings: 1,
+      filesChecked: 1,
+      deprecations: [{ text: "Deprecated rule used", reference: "https://example.com" }],
+    };
+
+    const output = formatLint(data);
+    expect(output).toContain("tags: fixable");
+    expect(output).toContain('suggestedFixes: "$var"');
+    expect(output).toContain("Deprecations:");
+    expect(output).toContain("Deprecated rule used (https://example.com)");
+  });
 });

@@ -635,7 +635,7 @@ describe("formatCondaResult", () => {
   });
 
   it("returns unknown action for unrecognised action", () => {
-    const data = { action: "create" } as unknown as CondaList;
+    const data = { action: "bogus" } as unknown as CondaList;
     expect(formatCondaResult(data)).toBe("conda: unknown action.");
   });
 });
@@ -737,7 +737,7 @@ describe("formatCondaResultCompact", () => {
   });
 
   it("falls back for unknown action", () => {
-    const data = compactCondaResultMap({ action: "create" } as unknown as CondaList);
+    const data = compactCondaResultMap({ action: "bogus" } as unknown as CondaList);
     expect(formatCondaResultCompact(data)).toBe("conda: no packages found.");
   });
 });

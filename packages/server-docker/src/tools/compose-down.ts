@@ -81,7 +81,10 @@ export function registerComposeDownTool(server: McpServer) {
       }
 
       const result = await docker(args, path);
-      const data = parseComposeDownOutput(result.stdout, result.stderr, result.exitCode);
+      const data = parseComposeDownOutput(result.stdout, result.stderr, result.exitCode, {
+        trackVolumes: !!volumes,
+        trackNetworks: true,
+      });
 
       if (result.exitCode !== 0 && data.stopped === 0 && data.removed === 0) {
         const errorMsg = result.stderr || result.stdout || "Unknown error";
@@ -90,7 +93,7 @@ export function registerComposeDownTool(server: McpServer) {
 
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatComposeDown,
         compactComposeDownMap,
         formatComposeDownCompact,

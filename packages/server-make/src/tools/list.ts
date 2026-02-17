@@ -9,6 +9,9 @@ import {
   enrichMakeTargetDescriptions,
   parsePhonyTargets,
   enrichPhonyFlags,
+  parseMakeRecipes,
+  enrichTargetRecipes,
+  parsePatternRules,
   buildListResult,
 } from "../lib/parsers.js";
 import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
@@ -20,12 +23,14 @@ import { join } from "node:path";
 async function tryJustJsonDump(
   cwd: string,
   file?: string,
+  showRecipe?: boolean,
 ): Promise<{
   targets: {
     name: string;
     description?: string;
     isPhony?: boolean;
     dependencies?: string[];
+    recipe?: string[];
   }[];
   total: number;
 } | null> {
@@ -34,7 +39,7 @@ async function tryJustJsonDump(
     if (file) jsonArgs.push("--justfile", file);
     const jsonResult = await justCmd(jsonArgs, cwd);
     if (jsonResult.exitCode === 0 && jsonResult.stdout.trim()) {
-      return parseJustDumpJson(jsonResult.stdout);
+      return parseJustDumpJson(jsonResult.stdout, { showRecipe });
     }
   } catch {
     // JSON dump not supported or failed — fall back
@@ -81,11 +86,17 @@ export function registerListTool(server: McpServer) {
           .describe(
             "List targets in definition order instead of alphabetical (just --unsorted, just only)",
           ),
+        showRecipe: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include recipe command bodies per target where available (from just JSON dump or Makefile source)",
+          ),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: MakeListResultSchema,
     },
-    async ({ path, tool, file, filter, includeSubmodules, unsorted, compact }) => {
+    async ({ path, tool, file, filter, includeSubmodules, unsorted, showRecipe, compact }) => {
       if (file) assertNoFlagInjection(file, "file");
       if (filter) assertNoFlagInjection(filter, "filter");
 
@@ -98,14 +109,16 @@ export function registerListTool(server: McpServer) {
           description?: string;
           isPhony?: boolean;
           dependencies?: string[];
+          recipe?: string[];
         }[];
+        patternRules?: { pattern: string; dependencies?: string[]; recipe?: string[] }[];
         total: number;
       };
       let rawOutput: string;
 
       if (resolved === "just") {
         // Try JSON dump first for more reliable parsing (Gap #171)
-        const jsonParsed = await tryJustJsonDump(cwd, file);
+        const jsonParsed = await tryJustJsonDump(cwd, file, showRecipe);
 
         if (jsonParsed) {
           parsed = jsonParsed;
@@ -167,6 +180,16 @@ export function registerListTool(server: McpServer) {
           // Gap #172: Extract .PHONY declarations
           const phonySet = parsePhonyTargets(makefileSource);
           enrichPhonyFlags(parsed.targets, phonySet);
+
+          if (showRecipe) {
+            const recipes = parseMakeRecipes(makefileSource);
+            enrichTargetRecipes(parsed.targets, recipes);
+          }
+
+          parsed = {
+            ...parsed,
+            patternRules: parsePatternRules(makefileSource),
+          };
         } catch {
           // Makefile not readable (e.g. generated targets only) — skip enrichment
         }

@@ -1,5 +1,6 @@
 import type { SearchResult, FindResult, CountResult, JqResult } from "../schemas/index.js";
 import * as path from "node:path";
+import { lstatSync } from "node:fs";
 
 // ── rg --json parser ────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ type RgJsonLine = RgJsonMatch | RgJsonSummary | { type: string };
 export function parseRgJsonOutput(stdout: string, maxResults: number): SearchResult {
   const lines = stdout.split("\n").filter(Boolean);
   const matches: SearchResult["matches"] = [];
+  const fileMatchCounts = new Map<string, number>();
   let filesSearched = 0;
   const seenFiles = new Set<string>();
 
@@ -59,6 +61,7 @@ export function parseRgJsonOutput(stdout: string, maxResults: number): SearchRes
       const data = (parsed as RgJsonMatch).data;
       const file = data.path.text;
       seenFiles.add(file);
+      fileMatchCounts.set(file, (fileMatchCounts.get(file) ?? 0) + 1);
 
       if (matches.length < maxResults) {
         const submatch = data.submatches[0];
@@ -83,6 +86,10 @@ export function parseRgJsonOutput(stdout: string, maxResults: number): SearchRes
 
   return {
     matches,
+    files: Array.from(fileMatchCounts.entries()).map(([file, matchCount]) => ({
+      file,
+      matchCount,
+    })),
     totalMatches: matches.length,
     filesSearched,
   };
@@ -103,7 +110,7 @@ function normalizeExt(ext: string): string {
  * Parses `fd` output (one file path per line) into a structured FindResult.
  * Extracts basename and extension for each entry.
  */
-export function parseFdOutput(stdout: string, maxResults: number): FindResult {
+export function parseFdOutput(stdout: string, maxResults: number, cwd: string): FindResult {
   const lines = stdout.split("\n").filter(Boolean);
   const files: FindResult["files"] = [];
 
@@ -115,11 +122,26 @@ export function parseFdOutput(stdout: string, maxResults: number): FindResult {
 
     const name = path.basename(filePath);
     const ext = normalizeExt(path.extname(filePath));
+    const resolvedPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+    let type: "file" | "directory" | "symlink" | "other" = "other";
+    try {
+      const stat = lstatSync(resolvedPath);
+      if (stat.isSymbolicLink()) {
+        type = "symlink";
+      } else if (stat.isDirectory()) {
+        type = "directory";
+      } else if (stat.isFile()) {
+        type = "file";
+      }
+    } catch {
+      // Entry might disappear between fd output and stat. Keep type as "other".
+    }
 
     files.push({
       path: filePath,
       name,
       ext,
+      type,
     });
   }
 
@@ -177,8 +199,40 @@ export function parseJqOutput(stdout: string, stderr: string, exitCode: number):
     };
   }
 
+  const textOutput = stdout.trimEnd();
+  const trimmed = textOutput.trim();
+  if (trimmed.length === 0) {
+    return { output: textOutput, exitCode };
+  }
+
+  // Try parsing as a single JSON document first.
+  try {
+    return {
+      output: textOutput,
+      result: JSON.parse(trimmed),
+      exitCode,
+    };
+  } catch {
+    // Fall through to JSONL parsing.
+  }
+
+  // Best-effort for multiple JSON outputs (one JSON value per line).
+  const jsonLines = trimmed.split("\n").filter((line) => line.trim().length > 0);
+  const parsedLines: unknown[] = [];
+  for (const line of jsonLines) {
+    try {
+      parsedLines.push(JSON.parse(line));
+    } catch {
+      return {
+        output: textOutput,
+        exitCode,
+      };
+    }
+  }
+
   return {
-    output: stdout.trimEnd(),
+    output: textOutput,
+    result: parsedLines.length > 0 ? parsedLines : undefined,
     exitCode,
   };
 }

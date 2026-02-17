@@ -27,7 +27,7 @@ export function registerRemoteTool(server: McpServer) {
       inputSchema: {
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
-          .enum(["list", "add", "remove", "rename", "set-url", "prune", "show"])
+          .enum(["list", "add", "remove", "rename", "set-url", "prune", "show", "update"])
           .optional()
           .default("list")
           .describe("Remote action to perform (default: list)"),
@@ -214,6 +214,27 @@ export function registerRemoteTool(server: McpServer) {
         );
       }
 
+      if (action === "update") {
+        const args = ["remote", "update"];
+        if (name) {
+          assertNoFlagInjection(name, "name");
+          args.push(name);
+        }
+        const result = await git(args, cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git remote update failed: ${result.stderr}`);
+        }
+        return dualOutput(
+          {
+            success: true,
+            action: "update" as const,
+            name: name || "all",
+            message: name ? `Remote '${name}' updated` : "All remotes updated",
+          },
+          formatRemoteMutate,
+        );
+      }
+
       // Default: list
       const args = ["remote", "-v"];
       const result = await git(args, cwd);
@@ -223,6 +244,14 @@ export function registerRemoteTool(server: McpServer) {
       }
 
       const remotes = parseRemoteOutput(result.stdout);
+      for (const remote of remotes.remotes) {
+        const showResult = await git(["remote", "show", remote.name], cwd);
+        if (showResult.exitCode !== 0) continue;
+        const showDetails = parseRemoteShow(showResult.stdout);
+        if (showDetails.localBranches && showDetails.localBranches.length > 0) {
+          remote.trackedBranches = showDetails.localBranches;
+        }
+      }
       return compactDualOutput(
         remotes,
         result.stdout,

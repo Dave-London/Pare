@@ -21,6 +21,12 @@ export function formatRun(data: ProcessRunResult): string {
   }
 
   if (data.stdout) lines.push(data.stdout);
+  if (data.userCpuTimeMs !== undefined || data.systemCpuTimeMs !== undefined) {
+    const user = data.userCpuTimeMs !== undefined ? `${data.userCpuTimeMs.toFixed(2)}ms` : "n/a";
+    const system =
+      data.systemCpuTimeMs !== undefined ? `${data.systemCpuTimeMs.toFixed(2)}ms` : "n/a";
+    lines.push(`  cpu: user=${user}, system=${system}`);
+  }
   if (data.stdoutTruncatedLines) {
     lines.push(`  ... ${data.stdoutTruncatedLines} stdout lines truncated`);
   }
@@ -43,6 +49,8 @@ export interface ProcessRunCompact {
   timedOut: boolean;
   truncated?: boolean;
   signal?: string;
+  userCpuTimeMs?: number;
+  systemCpuTimeMs?: number;
   stdoutTruncatedLines?: number;
   stderrTruncatedLines?: number;
 }
@@ -56,6 +64,8 @@ export function compactRunMap(data: ProcessRunResult): ProcessRunCompact {
     timedOut: data.timedOut,
     truncated: data.truncated,
     signal: data.signal,
+    userCpuTimeMs: data.userCpuTimeMs,
+    systemCpuTimeMs: data.systemCpuTimeMs,
     stdoutTruncatedLines: data.stdoutTruncatedLines,
     stderrTruncatedLines: data.stderrTruncatedLines,
   };
@@ -76,6 +86,12 @@ export function formatRunCompact(data: ProcessRunCompact): string {
 
   if (data.truncated) {
     parts.push("  [output truncated: maxBuffer exceeded]");
+  }
+  if (data.userCpuTimeMs !== undefined || data.systemCpuTimeMs !== undefined) {
+    const user = data.userCpuTimeMs !== undefined ? `${data.userCpuTimeMs.toFixed(2)}ms` : "n/a";
+    const system =
+      data.systemCpuTimeMs !== undefined ? `${data.systemCpuTimeMs.toFixed(2)}ms` : "n/a";
+    parts.push(`  cpu: user=${user}, system=${system}`);
   }
 
   return parts.join("\n");

@@ -31,6 +31,7 @@ describe("parsePrettierWrite", () => {
 
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(0);
+    expect(result.errorMessage).toBe("error: no parser found");
   });
 
   it("filters out non-file-path lines", () => {

@@ -42,6 +42,20 @@ describe("formatRun", () => {
     expect(output).toContain("make: *** [test] Error 2");
   });
 
+  it("includes errorType when present", () => {
+    const data: MakeRunResult = {
+      target: "missing",
+      success: false,
+      exitCode: 2,
+      duration: 120,
+      tool: "make",
+      timedOut: false,
+      errorType: "missing-target",
+    };
+    const output = formatRun(data);
+    expect(output).toContain("errorType: missing-target");
+  });
+
   it("formats just run", () => {
     const data: MakeRunResult = {
       target: "deploy",
@@ -181,6 +195,20 @@ describe("formatList", () => {
     const output = formatList(data);
     expect(output).toContain("deploy [phony] -> build, test # Deploy to prod");
   });
+
+  it("formats target recipes and pattern rules", () => {
+    const data: MakeListResult = {
+      targets: [{ name: "build", recipe: ["echo build"] }],
+      patternRules: [{ pattern: "%.o", dependencies: ["%.c"], recipe: ["$(CC) -c $< -o $@"] }],
+      total: 1,
+      tool: "make",
+    };
+    const output = formatList(data);
+    expect(output).toContain("build");
+    expect(output).toContain("$ echo build");
+    expect(output).toContain("pattern rules: 1");
+    expect(output).toContain("%.o -> %.c");
+  });
 });
 
 // ── Compact mappers and formatters ───────────────────────────────────
@@ -273,6 +301,20 @@ describe("formatRunCompact", () => {
     ).toBe("just test: exit code 2 (500ms).");
   });
 
+  it("formats failed run with error type", () => {
+    expect(
+      formatRunCompact({
+        target: "missing",
+        exitCode: 2,
+        success: false,
+        duration: 10,
+        tool: "make",
+        timedOut: false,
+        errorType: "missing-target",
+      }),
+    ).toBe("make missing: exit code 2 (10ms) [missing-target].");
+  });
+
   it("formats timed out run", () => {
     const output = formatRunCompact({
       target: "build",
@@ -303,6 +345,7 @@ describe("compactListMap", () => {
 
     expect(compact.total).toBe(3);
     expect(compact.tool).toBe("just");
+    expect(compact.patternRuleCount).toBe(0);
     expect(compact).not.toHaveProperty("targets");
   });
 
@@ -317,15 +360,20 @@ describe("compactListMap", () => {
 
     expect(compact.total).toBe(0);
     expect(compact.tool).toBe("make");
+    expect(compact.patternRuleCount).toBe(0);
   });
 });
 
 describe("formatListCompact", () => {
   it("formats no targets found", () => {
-    expect(formatListCompact({ total: 0, tool: "make" })).toBe("make: no targets found.");
+    expect(formatListCompact({ total: 0, patternRuleCount: 0, tool: "make" })).toBe(
+      "make: no targets found.",
+    );
   });
 
   it("formats target count", () => {
-    expect(formatListCompact({ total: 5, tool: "just" })).toBe("just: 5 targets");
+    expect(formatListCompact({ total: 5, patternRuleCount: 2, tool: "just" })).toBe(
+      "just: 5 targets (2 pattern rules)",
+    );
   });
 });

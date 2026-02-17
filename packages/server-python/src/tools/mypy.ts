@@ -72,6 +72,52 @@ export function registerMypyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Auto-install missing type stubs (--install-types --non-interactive)"),
+        disallowUntypedDefs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Disallow defining functions without type annotations (--disallow-untyped-defs)",
+          ),
+        disallowIncompleteDefs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disallow partially typed function definitions (--disallow-incomplete-defs)"),
+        disallowUntypedCalls: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Disallow calling untyped functions from typed contexts (--disallow-untyped-calls)",
+          ),
+        disallowAnyGenerics: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Disallow usage of generic types without explicit parameters (--disallow-any-generics)",
+          ),
+        warnReturnAny: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Warn about returning values of type Any (--warn-return-any)"),
+        warnUnusedIgnores: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Warn about unnecessary # type: ignore comments (--warn-unused-ignores)"),
+        warnRedundantCasts: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Warn about redundant type casts (--warn-redundant-casts)"),
+        warnUnreachable: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Warn about statically unreachable code (--warn-unreachable)"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: MypyResultSchema,
@@ -89,6 +135,14 @@ export function registerMypyTool(server: McpServer) {
       const mod = input["module"] as string | undefined;
       const pkg = input["package"] as string | undefined;
       const installTypes = input["installTypes"] as boolean | undefined;
+      const disallowUntypedDefs = input["disallowUntypedDefs"] as boolean | undefined;
+      const disallowIncompleteDefs = input["disallowIncompleteDefs"] as boolean | undefined;
+      const disallowUntypedCalls = input["disallowUntypedCalls"] as boolean | undefined;
+      const disallowAnyGenerics = input["disallowAnyGenerics"] as boolean | undefined;
+      const warnReturnAny = input["warnReturnAny"] as boolean | undefined;
+      const warnUnusedIgnores = input["warnUnusedIgnores"] as boolean | undefined;
+      const warnRedundantCasts = input["warnRedundantCasts"] as boolean | undefined;
+      const warnUnreachable = input["warnUnreachable"] as boolean | undefined;
       const compact = input["compact"] as boolean | undefined;
 
       const cwd = path || process.cwd();
@@ -113,6 +167,14 @@ export function registerMypyTool(server: McpServer) {
       if (strict) args.push("--strict");
       if (ignoreMissingImports) args.push("--ignore-missing-imports");
       if (noIncremental) args.push("--no-incremental");
+      if (disallowUntypedDefs) args.push("--disallow-untyped-defs");
+      if (disallowIncompleteDefs) args.push("--disallow-incomplete-defs");
+      if (disallowUntypedCalls) args.push("--disallow-untyped-calls");
+      if (disallowAnyGenerics) args.push("--disallow-any-generics");
+      if (warnReturnAny) args.push("--warn-return-any");
+      if (warnUnusedIgnores) args.push("--warn-unused-ignores");
+      if (warnRedundantCasts) args.push("--warn-redundant-casts");
+      if (warnUnreachable) args.push("--warn-unreachable");
 
       // Target selection: module > package > file targets
       if (mod) {

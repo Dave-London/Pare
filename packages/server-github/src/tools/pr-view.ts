@@ -9,7 +9,7 @@ import { PrViewResultSchema } from "../schemas/index.js";
 // S-gap: Add author, labels, isDraft, assignees, createdAt, updatedAt, milestone, projectItems
 // P1-gap #147: Added reviews to field list
 const PR_VIEW_FIELDS =
-  "number,state,title,body,mergeable,reviewDecision,statusCheckRollup,url,headRefName,baseRefName,additions,deletions,changedFiles,author,labels,isDraft,assignees,createdAt,updatedAt,milestone,projectItems,reviews";
+  "number,state,title,body,mergeable,reviewDecision,statusCheckRollup,url,headRefName,baseRefName,additions,deletions,changedFiles,author,labels,isDraft,assignees,createdAt,updatedAt,milestone,projectItems,reviews,commits";
 
 /** Registers the `pr-view` tool on the given MCP server. */
 export function registerPrViewTool(server: McpServer) {

@@ -90,15 +90,10 @@ export function registerMergeTool(server: McpServer) {
       // Handle --continue
       if (cont) {
         const result = await git(["merge", "--continue"], cwd);
-        if (result.exitCode !== 0) {
-          const combined = `${result.stdout}\n${result.stderr}`;
-          if (/CONFLICT/.test(combined)) {
-            const mergeResult = parseMerge(result.stdout, result.stderr, branch);
-            return dualOutput(mergeResult, formatMerge);
-          }
+        const mergeResult = parseMerge(result.stdout, result.stderr, branch);
+        if (result.exitCode !== 0 && mergeResult.merged) {
           throw new Error(`git merge --continue failed: ${result.stderr}`);
         }
-        const mergeResult = parseMerge(result.stdout, result.stderr, branch);
         return dualOutput(mergeResult, formatMerge);
       }
 
@@ -119,6 +114,9 @@ export function registerMergeTool(server: McpServer) {
       if (strategy) assertNoFlagInjection(strategy, "strategy");
       if (strategyOption) assertNoFlagInjection(strategyOption, "strategyOption");
 
+      const mergeBaseResult = await git(["merge-base", "HEAD", branch], cwd);
+      const mergeBase = mergeBaseResult.exitCode === 0 ? mergeBaseResult.stdout.trim() : undefined;
+
       // Build merge args
       const args = ["merge"];
       if (noFf) args.push("--no-ff");
@@ -136,17 +134,10 @@ export function registerMergeTool(server: McpServer) {
 
       const result = await git(args, cwd);
 
-      // Merge can exit non-zero for conflicts but still produce useful output
-      if (result.exitCode !== 0) {
-        const combined = `${result.stdout}\n${result.stderr}`;
-        if (/CONFLICT/.test(combined)) {
-          const mergeResult = parseMerge(result.stdout, result.stderr, branch);
-          return dualOutput(mergeResult, formatMerge);
-        }
+      const mergeResult = parseMerge(result.stdout, result.stderr, branch, mergeBase);
+      if (result.exitCode !== 0 && mergeResult.merged) {
         throw new Error(`git merge failed: ${result.stderr}`);
       }
-
-      const mergeResult = parseMerge(result.stdout, result.stderr, branch);
       return dualOutput(mergeResult, formatMerge);
     },
   );

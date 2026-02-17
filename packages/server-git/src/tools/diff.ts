@@ -38,6 +38,13 @@ export function registerDiffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
+        atomicFull: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "When full=true, use a single git invocation to fetch stats+patch together (reduced drift between calls)",
+          ),
         diffFilter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -75,6 +82,7 @@ export function registerDiffTool(server: McpServer) {
       file,
       files,
       full,
+      atomicFull,
       diffFilter,
       algorithm,
       findRenames,
@@ -132,13 +140,56 @@ export function registerDiffTool(server: McpServer) {
         args.push("--", ...pathArgs);
       }
 
+      if (full && atomicFull) {
+        const atomicArgs = [...args, "--patch"];
+        const atomicResult = await git(atomicArgs, cwd);
+        if (atomicResult.exitCode !== 0) {
+          throw new Error(`git diff failed: ${atomicResult.stderr}`);
+        }
+
+        const numstatOnly = atomicResult.stdout
+          .split("\n")
+          .filter((line) => /^(-|\d+)\t(-|\d+)\t/.test(line))
+          .join("\n");
+        const diff = parseDiffStat(numstatOnly);
+
+        const filePatches = atomicResult.stdout.split(/^diff --git /m).filter(Boolean);
+        for (const patch of filePatches) {
+          const fileMatch = patch.match(/b\/(.+)\n/);
+          if (!fileMatch) continue;
+          const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
+          if (!matchedFile) continue;
+          if (/Binary files .* differ/.test(patch)) {
+            matchedFile.binary = true;
+          } else {
+            const chunks = patch.split(/^@@/m).slice(1);
+            matchedFile.chunks = chunks.map((chunk) => {
+              const headerEnd = chunk.indexOf("\n");
+              return {
+                header: `@@${chunk.slice(0, headerEnd)}`,
+                lines: chunk.slice(headerEnd + 1),
+              };
+            });
+          }
+        }
+
+        return compactDualOutput(
+          diff,
+          atomicResult.stdout,
+          formatDiff,
+          compactDiffMap,
+          formatDiffCompact,
+          compact === false,
+        );
+      }
+
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
         throw new Error(`git diff failed: ${result.stderr}`);
       }
 
-      const diff = parseDiffStat(result.stdout);
+      let diff = parseDiffStat(result.stdout);
 
       // If full patch requested, get the actual diff content per file
       if (full && diff.files.length > 0) {
@@ -159,8 +210,18 @@ export function registerDiffTool(server: McpServer) {
           patchArgs.push("--", ...pathArgs);
         }
 
+        if (atomicFull) patchArgs.push("--numstat");
         const patchResult = await git(patchArgs, cwd);
         if (patchResult.exitCode === 0) {
+          if (atomicFull) {
+            const numstatOnly = patchResult.stdout
+              .split("\n")
+              .filter((line) => /^(-|\d+)\t(-|\d+)\t/.test(line))
+              .join("\n");
+            if (numstatOnly.trim()) {
+              diff = parseDiffStat(numstatOnly);
+            }
+          }
           // Split patch into per-file chunks
           const filePatches = patchResult.stdout.split(/^diff --git /m).filter(Boolean);
           for (const patch of filePatches) {

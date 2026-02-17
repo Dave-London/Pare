@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   parseRgJsonOutput,
   parseFdOutput,
@@ -44,6 +47,10 @@ describe("parseRgJsonOutput", () => {
 
     expect(result.totalMatches).toBe(2);
     expect(result.filesSearched).toBe(2);
+    expect(result.files).toEqual([
+      { file: "src/foo.ts", matchCount: 1 },
+      { file: "src/bar.ts", matchCount: 1 },
+    ]);
     expect(result.matches).toHaveLength(2);
     expect(result.matches[0]).toEqual({
       file: "src/foo.ts",
@@ -185,61 +192,62 @@ describe("parseFdOutput", () => {
   it("parses fd output with file paths and normalized extensions", () => {
     const stdout = ["src/index.ts", "src/lib/parsers.ts", "README.md"].join("\n");
 
-    const result = parseFdOutput(stdout, 1000);
+    const cwd = process.cwd();
+    const result = parseFdOutput(stdout, 1000, cwd);
 
     expect(result.total).toBe(3);
     expect(result.files).toHaveLength(3);
-    expect(result.files[0]).toEqual({
-      path: "src/index.ts",
-      name: "index.ts",
-      ext: "ts",
-    });
-    expect(result.files[1]).toEqual({
-      path: "src/lib/parsers.ts",
-      name: "parsers.ts",
-      ext: "ts",
-    });
-    expect(result.files[2]).toEqual({
-      path: "README.md",
-      name: "README.md",
-      ext: "md",
-    });
+    expect(result.files[0].path).toBe("src/index.ts");
+    expect(result.files[0].name).toBe("index.ts");
+    expect(result.files[0].ext).toBe("ts");
+    expect(["file", "other"]).toContain(result.files[0].type);
+    expect(result.files[1].path).toBe("src/lib/parsers.ts");
+    expect(result.files[1].name).toBe("parsers.ts");
+    expect(result.files[1].ext).toBe("ts");
+    expect(["file", "other"]).toContain(result.files[1].type);
+    expect(result.files[2].path).toBe("README.md");
+    expect(result.files[2].name).toBe("README.md");
+    expect(result.files[2].ext).toBe("md");
+    expect(["file", "other"]).toContain(result.files[2].type);
   });
 
   it("handles files without extensions", () => {
     const stdout = ["Makefile", "Dockerfile", ".gitignore"].join("\n");
 
-    const result = parseFdOutput(stdout, 1000);
+    const result = parseFdOutput(stdout, 1000, process.cwd());
 
     expect(result.total).toBe(3);
     expect(result.files[0]).toEqual({
       path: "Makefile",
       name: "Makefile",
       ext: "",
+      type: "other",
     });
     expect(result.files[1]).toEqual({
       path: "Dockerfile",
       name: "Dockerfile",
       ext: "",
+      type: "other",
     });
     expect(result.files[2]).toEqual({
       path: ".gitignore",
       name: ".gitignore",
       ext: "",
+      type: "other",
     });
   });
 
   it("respects maxResults limit", () => {
     const stdout = ["a.ts", "b.ts", "c.ts", "d.ts", "e.ts"].join("\n");
 
-    const result = parseFdOutput(stdout, 3);
+    const result = parseFdOutput(stdout, 3, process.cwd());
 
     expect(result.total).toBe(3);
     expect(result.files).toHaveLength(3);
   });
 
   it("handles empty output", () => {
-    const result = parseFdOutput("", 1000);
+    const result = parseFdOutput("", 1000, process.cwd());
 
     expect(result.total).toBe(0);
     expect(result.files).toHaveLength(0);
@@ -248,11 +256,27 @@ describe("parseFdOutput", () => {
   it("handles trailing newlines and blank lines", () => {
     const stdout = "src/index.ts\n\nsrc/lib/foo.ts\n\n";
 
-    const result = parseFdOutput(stdout, 1000);
+    const result = parseFdOutput(stdout, 1000, process.cwd());
 
     expect(result.total).toBe(2);
     expect(result.files[0].path).toBe("src/index.ts");
     expect(result.files[1].path).toBe("src/lib/foo.ts");
+  });
+
+  it("detects file vs directory types when entries exist on disk", () => {
+    const root = mkdtempSync(join(tmpdir(), "pare-search-find-"));
+    const filePath = join(root, "a.ts");
+    const dirPath = join(root, "nested");
+    writeFileSync(filePath, "const a = 1;\n");
+    mkdirSync(dirPath);
+
+    const stdout = ["a.ts", "nested"].join("\n");
+    const result = parseFdOutput(stdout, 1000, root);
+
+    expect(result.files).toEqual([
+      { path: "a.ts", name: "a.ts", ext: "ts", type: "file" },
+      { path: "nested", name: "nested", ext: "", type: "directory" },
+    ]);
   });
 });
 
@@ -313,6 +337,7 @@ describe("parseJqOutput", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe('{"name":"Alice","age":30}');
+    expect(result.result).toEqual({ name: "Alice", age: 30 });
   });
 
   it("returns stderr on failure", () => {
@@ -334,6 +359,7 @@ describe("parseJqOutput", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe("");
+    expect(result.result).toBeUndefined();
   });
 
   it("trims trailing whitespace from successful output", () => {
@@ -341,6 +367,7 @@ describe("parseJqOutput", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe('"hello"');
+    expect(result.result).toBe("hello");
   });
 
   it("handles multi-line output", () => {
@@ -349,5 +376,17 @@ describe("parseJqOutput", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe("[\n  1,\n  2,\n  3\n]");
+    expect(result.result).toEqual([1, 2, 3]);
+  });
+
+  it("parses JSONL output into an array result", () => {
+    const result = parseJqOutput('{"a":1}\n{"b":2}\n', "", 0);
+    expect(result.result).toEqual([{ a: 1 }, { b: 2 }]);
+  });
+
+  it("keeps raw output when stdout is not valid JSON", () => {
+    const result = parseJqOutput("plain text output\n", "", 0);
+    expect(result.output).toBe("plain text output");
+    expect(result.result).toBeUndefined();
   });
 });

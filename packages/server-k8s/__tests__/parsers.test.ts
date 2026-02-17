@@ -603,6 +603,84 @@ describe("parseDescribeOutput", () => {
     expect(result.conditions).toBeUndefined();
     expect(result.events).toBeUndefined();
   });
+
+  it("extracts labels, annotations, and pod-specific details", () => {
+    const stdout = [
+      "Name:               nginx-abc",
+      "Namespace:          default",
+      "Labels:             app=nginx",
+      "                    tier=frontend",
+      "Annotations:        checksum/config: abc123",
+      "                    prometheus.io/scrape: true",
+      "Node:               node-1/10.0.0.1",
+      "IP:                 10.244.0.12",
+      "Service Account:    default",
+      "QoS Class:          Burstable",
+      "Containers:",
+      "  nginx:",
+      "    Image: nginx:latest",
+      "  sidecar:",
+      "    Image: busybox:latest",
+    ].join("\n");
+
+    const result = parseDescribeOutput(stdout, "", 0, "pod", "nginx-abc", "default");
+
+    expect(result.labels).toEqual({ app: "nginx", tier: "frontend" });
+    expect(result.annotations).toEqual({
+      "checksum/config": "abc123",
+      "prometheus.io/scrape": "true",
+    });
+    expect(result.resourceDetails?.pod?.node).toBe("node-1/10.0.0.1");
+    expect(result.resourceDetails?.pod?.ip).toBe("10.244.0.12");
+    expect(result.resourceDetails?.pod?.serviceAccount).toBe("default");
+    expect(result.resourceDetails?.pod?.qosClass).toBe("Burstable");
+    expect(result.resourceDetails?.pod?.containers).toEqual(["nginx", "sidecar"]);
+  });
+
+  it("extracts service details", () => {
+    const stdout = [
+      "Name:              my-service",
+      "Namespace:         default",
+      "Type:              ClusterIP",
+      "IP:                10.96.0.10",
+      "Port:              http  80/TCP",
+      "TargetPort:        8080/TCP",
+      "Port:              metrics  9090/TCP",
+      "TargetPort:        9090/TCP",
+    ].join("\n");
+
+    const result = parseDescribeOutput(stdout, "", 0, "service", "my-service", "default");
+
+    expect(result.resourceDetails?.service?.type).toBe("ClusterIP");
+    expect(result.resourceDetails?.service?.clusterIP).toBe("10.96.0.10");
+    expect(result.resourceDetails?.service?.ports).toHaveLength(2);
+    expect(result.resourceDetails?.service?.ports?.[0]).toEqual({
+      name: "http",
+      port: "80",
+      protocol: "TCP",
+      targetPort: "8080/TCP",
+    });
+  });
+
+  it("extracts deployment details", () => {
+    const stdout = [
+      "Name:                   web",
+      "Namespace:              default",
+      "StrategyType:           RollingUpdate",
+      "Replicas:               3 desired | 3 updated | 3 total | 2 available | 1 unavailable",
+    ].join("\n");
+
+    const result = parseDescribeOutput(stdout, "", 0, "deployment", "web", "default");
+
+    expect(result.resourceDetails?.deployment?.strategy).toBe("RollingUpdate");
+    expect(result.resourceDetails?.deployment?.replicas).toEqual({
+      desired: 3,
+      updated: 3,
+      total: 3,
+      available: 2,
+      unavailable: 1,
+    });
+  });
 });
 
 describe("parseLogsOutput", () => {
@@ -641,6 +719,32 @@ describe("parseLogsOutput", () => {
     const result = parseLogsOutput("log line\n", "", 0, "my-pod");
 
     expect(result.container).toBeUndefined();
+  });
+
+  it("sets truncated=true when tail limit likely truncated output", () => {
+    const stdout = ["line-1", "line-2", "line-3"].join("\n");
+    const result = parseLogsOutput(stdout, "", 0, "my-pod", "default", undefined, 3);
+
+    expect(result.truncated).toBe(true);
+  });
+
+  it("parses JSON logs when enabled", () => {
+    const stdout = ['{"level":"info","msg":"ready"}', "not-json"].join("\n");
+    const result = parseLogsOutput(
+      stdout,
+      "",
+      0,
+      "my-pod",
+      "default",
+      undefined,
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(result.logEntries).toHaveLength(2);
+    expect(result.logEntries?.[0].json).toEqual({ level: "info", msg: "ready" });
+    expect(result.logEntries?.[1].json).toBeUndefined();
   });
 });
 
@@ -889,6 +993,13 @@ describe("parseHelmInstallOutput", () => {
       info: {
         status: "deployed",
       },
+      chart: {
+        metadata: {
+          name: "nginx",
+          version: "18.1.0",
+          appVersion: "1.27.0",
+        },
+      },
     });
 
     const result = parseHelmInstallOutput(stdout, "", 0, "my-release", "default");
@@ -899,6 +1010,8 @@ describe("parseHelmInstallOutput", () => {
     expect(result.namespace).toBe("default");
     expect(result.revision).toBe("1");
     expect(result.status).toBe("deployed");
+    expect(result.chart).toBe("nginx-18.1.0");
+    expect(result.appVersion).toBe("1.27.0");
     expect(result.exitCode).toBe(0);
     expect(result.error).toBeUndefined();
   });
@@ -935,6 +1048,13 @@ describe("parseHelmUpgradeOutput", () => {
       info: {
         status: "deployed",
       },
+      chart: {
+        metadata: {
+          name: "nginx",
+          version: "18.2.0",
+          appVersion: "1.27.1",
+        },
+      },
     });
 
     const result = parseHelmUpgradeOutput(stdout, "", 0, "my-release", "default");
@@ -944,6 +1064,8 @@ describe("parseHelmUpgradeOutput", () => {
     expect(result.name).toBe("my-release");
     expect(result.revision).toBe("3");
     expect(result.status).toBe("deployed");
+    expect(result.chart).toBe("nginx-18.2.0");
+    expect(result.appVersion).toBe("1.27.1");
     expect(result.exitCode).toBe(0);
   });
 

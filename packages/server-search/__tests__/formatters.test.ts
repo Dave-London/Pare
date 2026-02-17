@@ -49,8 +49,8 @@ describe("formatFind", () => {
   it("formats file listing", () => {
     const data: FindResult = {
       files: [
-        { path: "src/index.ts", name: "index.ts", ext: "ts" },
-        { path: "README.md", name: "README.md", ext: "md" },
+        { path: "src/index.ts", name: "index.ts", ext: "ts", type: "file" },
+        { path: "README.md", name: "README.md", ext: "md", type: "file" },
       ],
       total: 2,
     };
@@ -108,7 +108,7 @@ describe("compactSearchMap", () => {
 describe("compactFindMap", () => {
   it("drops individual file entries, keeps total", () => {
     const data: FindResult = {
-      files: [{ path: "a.ts", name: "a.ts", ext: "ts" }],
+      files: [{ path: "a.ts", name: "a.ts", ext: "ts", type: "file" }],
       total: 1,
     };
     const compact = compactFindMap(data);

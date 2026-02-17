@@ -10,6 +10,16 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+function classifyGistCreateError(
+  stderr: string,
+): "validation" | "permission-denied" | "rate-limit" | "unknown" {
+  const lower = stderr.toLowerCase();
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/rate limit|secondary rate limit|429/.test(lower)) return "rate-limit";
+  if (/invalid|missing|must|required/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `gist-create` tool on the given MCP server. */
 export function registerGistCreateTool(server: McpServer) {
   server.registerTool(
@@ -95,7 +105,20 @@ export function registerGistCreateTool(server: McpServer) {
         const result = await ghCmd(args, cwd);
 
         if (result.exitCode !== 0) {
-          throw new Error(`gh gist create failed: ${result.stderr}`);
+          const outputFiles = hasContent ? Object.keys(contentMap!) : (files ?? []);
+          return dualOutput(
+            {
+              id: "",
+              url: "",
+              public: !!isPublic,
+              files: outputFiles.length > 0 ? outputFiles : undefined,
+              description: description ?? undefined,
+              fileCount: outputFiles.length > 0 ? outputFiles.length : undefined,
+              errorType: classifyGistCreateError(result.stderr || result.stdout),
+              errorMessage: (result.stderr || result.stdout || "gh gist create failed").trim(),
+            },
+            formatGistCreate,
+          );
         }
 
         // Build file list for output (use original filenames for content-based gists)

@@ -33,13 +33,31 @@ function formatTimingLine(timing: HttpTiming): string {
 export function formatHttpResponse(data: HttpResponse): string {
   const lines: string[] = [];
 
-  lines.push(`HTTP ${data.status} ${data.statusText}`);
+  const version = data.httpVersion ? `/${data.httpVersion}` : "";
+  lines.push(`HTTP${version} ${data.status} ${data.statusText}`);
 
   if (data.contentType) {
     lines.push(`Content-Type: ${data.contentType}`);
   }
 
-  lines.push(`Size: ${data.size} bytes | ${formatTimingLine(data.timing)}`);
+  const upload = data.uploadSize !== undefined ? ` | uploaded ${data.uploadSize} bytes` : "";
+  lines.push(`Size: ${data.size} bytes${upload} | ${formatTimingLine(data.timing)}`);
+
+  if (data.redirectChain && data.redirectChain.length > 0) {
+    lines.push(`Redirects: ${data.redirectChain.length}`);
+    for (const hop of data.redirectChain) {
+      lines.push(`  ${hop.status} -> ${hop.location}`);
+    }
+  }
+  if (data.finalUrl) {
+    lines.push(`Final URL: ${data.finalUrl}`);
+  }
+  if (data.scheme) {
+    lines.push(`Scheme: ${data.scheme}`);
+  }
+  if (data.tlsVerifyResult !== undefined) {
+    lines.push(`TLS verify result: ${data.tlsVerifyResult}`);
+  }
 
   const headers = data.headers ?? {};
   const headerCount = Object.keys(headers).length;
@@ -62,7 +80,8 @@ export function formatHttpResponse(data: HttpResponse): string {
 export function formatHttpHeadResponse(data: HttpHeadResponse): string {
   const lines: string[] = [];
 
-  lines.push(`HTTP ${data.status} ${data.statusText}`);
+  const version = data.httpVersion ? `/${data.httpVersion}` : "";
+  lines.push(`HTTP${version} ${data.status} ${data.statusText}`);
 
   if (data.contentType) {
     lines.push(`Content-Type: ${data.contentType}`);
@@ -73,6 +92,22 @@ export function formatHttpHeadResponse(data: HttpHeadResponse): string {
   }
 
   lines.push(formatTimingLine(data.timing));
+
+  if (data.redirectChain && data.redirectChain.length > 0) {
+    lines.push(`Redirects: ${data.redirectChain.length}`);
+    for (const hop of data.redirectChain) {
+      lines.push(`  ${hop.status} -> ${hop.location}`);
+    }
+  }
+  if (data.finalUrl) {
+    lines.push(`Final URL: ${data.finalUrl}`);
+  }
+  if (data.scheme) {
+    lines.push(`Scheme: ${data.scheme}`);
+  }
+  if (data.tlsVerifyResult !== undefined) {
+    lines.push(`TLS verify result: ${data.tlsVerifyResult}`);
+  }
 
   const headers = data.headers ?? {};
   const headerCount = Object.keys(headers).length;
@@ -92,6 +127,7 @@ export function compactResponseMap(data: HttpResponse): HttpResponseCompact {
   return {
     status: data.status,
     statusText: data.statusText,
+    httpVersion: data.httpVersion,
     contentType: data.contentType,
     size: data.size,
     timing: data.timing,
@@ -100,8 +136,9 @@ export function compactResponseMap(data: HttpResponse): HttpResponseCompact {
 
 /** Formats compact HTTP response. */
 export function formatResponseCompact(data: HttpResponseCompact): string {
+  const version = data.httpVersion ? `/${data.httpVersion}` : "";
   const ct = data.contentType ? ` (${data.contentType})` : "";
-  return `HTTP ${data.status} ${data.statusText}${ct} | ${data.size} bytes | ${data.timing.total.toFixed(3)}s`;
+  return `HTTP${version} ${data.status} ${data.statusText}${ct} | ${data.size} bytes | ${data.timing.total.toFixed(3)}s`;
 }
 
 /**
@@ -122,6 +159,7 @@ export function compactHeadResponseMap(data: HttpHeadResponse): HttpHeadResponse
   return {
     status: data.status,
     statusText: data.statusText,
+    httpVersion: data.httpVersion,
     contentType: data.contentType,
     contentLength: data.contentLength,
     timing: data.timing,
@@ -131,9 +169,10 @@ export function compactHeadResponseMap(data: HttpHeadResponse): HttpHeadResponse
 
 /** Formats compact HEAD response. */
 export function formatHeadResponseCompact(data: HttpHeadResponseCompact): string {
+  const version = data.httpVersion ? `/${data.httpVersion}` : "";
   const ct = data.contentType ? ` (${data.contentType})` : "";
   const cl = data.contentLength !== undefined ? ` | ${data.contentLength} bytes` : "";
-  let line = `HTTP ${data.status} ${data.statusText}${ct}${cl} | ${data.timing.total.toFixed(3)}s`;
+  let line = `HTTP${version} ${data.status} ${data.statusText}${ct}${cl} | ${data.timing.total.toFixed(3)}s`;
 
   if (data.essentialHeaders && Object.keys(data.essentialHeaders).length > 0) {
     const headerParts: string[] = [];

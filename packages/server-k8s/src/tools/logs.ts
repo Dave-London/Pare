@@ -86,6 +86,10 @@ export function registerLogsTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Continue on errors fetching logs from containers (--ignore-errors)"),
+        parseJsonLogs: z
+          .boolean()
+          .optional()
+          .describe("Attempt to parse each log line as JSON and return `logEntries`"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: KubectlLogsResultSchema,
@@ -106,6 +110,7 @@ export function registerLogsTool(server: McpServer) {
       context,
       podRunningTimeout,
       ignoreErrors,
+      parseJsonLogs,
       compact,
     }) => {
       assertNoFlagInjection(pod, "pod");
@@ -141,6 +146,9 @@ export function registerLogsTool(server: McpServer) {
         pod,
         namespace,
         container,
+        tail,
+        limitBytes,
+        parseJsonLogs,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 

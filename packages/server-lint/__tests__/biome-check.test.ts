@@ -112,6 +112,7 @@ describe("parseBiomeJson", () => {
       severity: "error",
       rule: "lint/suspicious/noDoubleEquals",
       message: "Use === instead of ==.",
+      tags: ["fixable"],
     });
 
     expect(result.diagnostics[1]).toEqual({

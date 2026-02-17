@@ -23,6 +23,16 @@ export function registerAuditTool(server: McpServer) {
             "Automatically apply fixes for vulnerable dependencies (cargo audit fix). " +
               "Updates Cargo.toml to use patched versions where available.",
           ),
+        mode: z
+          .enum(["deps", "bin"])
+          .optional()
+          .default("deps")
+          .describe("Audit dependency tree (deps) or a compiled binary (bin)"),
+        binPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Path to compiled binary when mode=bin"),
         noFetch: z
           .boolean()
           .optional()
@@ -74,6 +84,8 @@ export function registerAuditTool(server: McpServer) {
     async ({
       path,
       fix,
+      mode,
+      binPath,
       noFetch,
       ignore,
       deny,
@@ -90,9 +102,23 @@ export function registerAuditTool(server: McpServer) {
       if (targetOs) assertNoFlagInjection(targetOs, "targetOs");
       if (file) assertNoFlagInjection(file, "file");
       if (db) assertNoFlagInjection(db, "db");
+      if (binPath) assertNoFlagInjection(binPath, "binPath");
+      if (mode === "bin" && !binPath) {
+        throw new Error("binPath is required when mode is 'bin'");
+      }
+      if (mode === "bin" && fix) {
+        throw new Error("fix mode is not supported with mode='bin'");
+      }
+      if (mode === "deps" && fix && binPath) {
+        throw new Error("binPath is only valid when mode is 'bin'");
+      }
 
-      // Gap #87: Support cargo audit fix
-      const args = fix ? ["audit", "fix", "--json"] : ["audit", "--json"];
+      const args =
+        mode === "bin"
+          ? ["audit", "bin", "--json", ...(binPath ? [binPath] : [])]
+          : fix
+            ? ["audit", "fix", "--json"]
+            : ["audit", "--json"];
       if (noFetch) args.push("--no-fetch");
       if (ignore && ignore.length > 0) {
         for (const id of ignore) {
@@ -111,7 +137,7 @@ export function registerAuditTool(server: McpServer) {
 
       // cargo audit returns exit code 1 when vulnerabilities are found, which is expected
       const output = result.stdout || result.stderr;
-      const data = parseCargoAuditJson(output, result.exitCode, !!fix);
+      const data = parseCargoAuditJson(output, result.exitCode, !!fix, mode, binPath);
       return compactDualOutput(
         data,
         output,
