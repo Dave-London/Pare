@@ -18,7 +18,7 @@ export function registerStashTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         action: z.enum(["push", "pop", "apply", "drop"]).describe("Stash action to perform"),
         message: z
           .string()

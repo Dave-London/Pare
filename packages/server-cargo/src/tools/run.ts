@@ -18,7 +18,7 @@ export function registerRunTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

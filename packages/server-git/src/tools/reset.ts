@@ -18,7 +18,7 @@ export function registerResetTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

@@ -23,7 +23,7 @@ export function registerFindTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory to search in (default: cwd)"),
+          .describe("Directory to search in"),
         type: z
           .enum(["file", "directory", "symlink"])
           .optional()

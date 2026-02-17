@@ -19,7 +19,7 @@ export function registerDiffTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
         ref: z
           .string()

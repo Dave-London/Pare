@@ -18,7 +18,7 @@ export function registerBlameTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
         startLine: z.number().optional().describe("Start line number for blame range"),
         endLine: z.number().optional().describe("End line number for blame range"),

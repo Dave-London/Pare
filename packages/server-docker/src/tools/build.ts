@@ -18,7 +18,7 @@ export function registerBuildTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Build context path (default: cwd)"),
+          .describe("Build context path"),
         tag: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

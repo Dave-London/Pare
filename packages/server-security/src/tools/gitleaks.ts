@@ -21,7 +21,7 @@ export function registerGitleaksTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path to scan (default: cwd)"),
+          .describe("Repository path to scan"),
         noGit: z
           .boolean()
           .optional()

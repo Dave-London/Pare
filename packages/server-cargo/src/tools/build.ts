@@ -18,7 +18,7 @@ export function registerBuildTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),
         compact: z
           .boolean()

@@ -45,7 +45,7 @@ export function registerSemgrepTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Working directory (default: cwd)"),
+          .describe("Working directory"),
         compact: z
           .boolean()
           .optional()

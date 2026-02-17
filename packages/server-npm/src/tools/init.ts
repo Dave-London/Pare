@@ -23,7 +23,7 @@ export function registerInitTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory to initialize (default: cwd)"),
+          .describe("Directory to initialize"),
         yes: z
           .boolean()
           .optional()

@@ -18,7 +18,7 @@ export function registerBisectTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         action: z
           .enum(["start", "good", "bad", "reset", "status"])
           .describe("Bisect action to perform"),

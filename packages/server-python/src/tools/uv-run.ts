@@ -18,7 +18,7 @@ export function registerUvRunTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Working directory (default: cwd)"),
+          .describe("Working directory"),
         command: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

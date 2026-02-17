@@ -18,7 +18,7 @@ export function registerComposePsTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory containing docker-compose.yml (default: cwd)"),
+          .describe("Directory containing docker-compose.yml"),
         compact: z
           .boolean()
           .optional()

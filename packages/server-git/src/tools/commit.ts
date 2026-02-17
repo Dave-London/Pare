@@ -18,7 +18,7 @@ export function registerCommitTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         message: z.string().max(INPUT_LIMITS.MESSAGE_MAX).describe("Commit message"),
         amend: z.boolean().optional().default(false).describe("Amend the previous commit"),
       },

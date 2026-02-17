@@ -18,7 +18,7 @@ export function registerMergeTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),
         noFf: z.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),

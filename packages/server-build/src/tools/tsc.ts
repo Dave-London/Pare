@@ -18,7 +18,7 @@ export function registerTscTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         noEmit: z
           .boolean()
           .optional()

@@ -21,7 +21,7 @@ export function registerOutdatedTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },

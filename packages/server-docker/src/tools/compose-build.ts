@@ -22,7 +22,7 @@ export function registerComposeBuildTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory containing docker-compose.yml (default: cwd)"),
+          .describe("Directory containing docker-compose.yml"),
         services: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

@@ -18,7 +18,7 @@ export function registerTreeTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         depth: z.number().optional().describe("Maximum depth of the dependency tree to display"),
         package: z
           .string()

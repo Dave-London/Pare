@@ -19,7 +19,7 @@ export function registerIssueUpdateTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("New issue title"),
         body: z
           .string()

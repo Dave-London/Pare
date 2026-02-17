@@ -35,7 +35,7 @@ export function registerExecTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Host working directory (default: cwd)"),
+          .describe("Host working directory"),
         compact: z
           .boolean()
           .optional()

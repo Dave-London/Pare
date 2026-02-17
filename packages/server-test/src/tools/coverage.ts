@@ -38,7 +38,7 @@ export function registerCoverageTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()

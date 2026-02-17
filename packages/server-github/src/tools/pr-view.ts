@@ -22,7 +22,7 @@ export function registerPrViewTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Repository path (default: cwd)"),
+          .describe("Repository path"),
         compact: z
           .boolean()
           .optional()

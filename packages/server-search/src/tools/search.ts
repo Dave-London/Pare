@@ -22,7 +22,7 @@ export function registerSearchTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory or file to search in (default: cwd)"),
+          .describe("Directory or file to search in"),
         glob: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

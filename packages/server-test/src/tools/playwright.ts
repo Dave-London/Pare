@@ -25,7 +25,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Project root path (default: cwd)"),
+          .describe("Project root path"),
         filter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
