@@ -128,7 +128,13 @@ export function registerReleaseCreateTool(server: McpServer) {
 
       const args = ["release", "create", tag];
       if (title) args.push("--title", title);
-      if (notes !== undefined) args.push("--notes", notes);
+      // Pass notes via stdin (--notes-file -) to avoid shell escaping issues
+      // with backticks, pipes, parentheses, and other special characters
+      let stdin: string | undefined;
+      if (notes !== undefined && !notesFile) {
+        args.push("--notes-file", "-");
+        stdin = notes;
+      }
       if (draft) args.push("--draft");
       if (prerelease) args.push("--prerelease");
       if (target) args.push("--target", target);
@@ -147,7 +153,7 @@ export function registerReleaseCreateTool(server: McpServer) {
         args.push(...assets);
       }
 
-      const result = await ghCmd(args, cwd);
+      const result = await ghCmd(args, stdin ? { cwd, stdin } : { cwd });
 
       if (result.exitCode !== 0) {
         const combined = `${result.stdout}\n${result.stderr}`.trim();
