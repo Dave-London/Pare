@@ -12,21 +12,11 @@ export function registerPipShowTool(server: McpServer) {
     {
       title: "pip Show",
       description:
-        "Runs pip show and returns structured package metadata (name, version, summary, dependencies). ",
+        "Runs pip show and returns structured package metadata (name, version, summary, dependencies).",
       inputSchema: {
         package: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Package name to show"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipShowSchema,
     },

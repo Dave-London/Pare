@@ -11,21 +11,10 @@ export function registerPipListTool(server: McpServer) {
     "pip-list",
     {
       title: "pip List",
-      description:
-        "Runs pip list and returns a structured list of installed packages. ",
+      description: "Runs pip list and returns a structured list of installed packages.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipListSchema,
     },

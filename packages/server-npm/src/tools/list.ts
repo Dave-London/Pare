@@ -15,25 +15,15 @@ export function registerListTool(server: McpServer) {
       title: "List Packages",
       description:
         "Lists installed packages as structured dependency data. " +
-        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). ",
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         depth: z
           .number()
           .optional()
           .default(0)
           .describe("Dependency tree depth (default: 0, top-level only)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
         packageManager: packageManagerInput,
         filter: filterInput,
       },

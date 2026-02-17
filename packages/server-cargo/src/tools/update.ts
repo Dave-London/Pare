@@ -11,26 +11,15 @@ export function registerUpdateTool(server: McpServer) {
     "update",
     {
       title: "Cargo Update",
-      description:
-        "Updates dependencies in the lock file. Optionally updates a single package. ",
+      description: "Updates dependencies in the lock file. Optionally updates a single package.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Specific package to update (e.g. 'serde'). Omit to update all."),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoUpdateResultSchema,
     },

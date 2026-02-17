@@ -11,27 +11,16 @@ export function registerTreeTool(server: McpServer) {
     "tree",
     {
       title: "Cargo Tree",
-      description:
-        "Displays the dependency tree for a Rust project. ",
+      description: "Displays the dependency tree for a Rust project.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         depth: z.number().optional().describe("Maximum depth of the dependency tree to display"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Focus on a specific package in the tree"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoTreeResultSchema,
     },

@@ -15,8 +15,7 @@ export function registerRuffFormatTool(server: McpServer) {
     "ruff-format",
     {
       title: "ruff Format",
-      description:
-        "Runs ruff format and returns structured results (files changed, file list). ",
+      description: "Runs ruff format and returns structured results (files changed, file list).",
       inputSchema: {
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -29,18 +28,8 @@ export function registerRuffFormatTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Check mode (report without modifying files)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Prefer compact output",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: RuffFormatResultSchema,
     },
