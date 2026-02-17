@@ -25,9 +25,38 @@ PARE_GIT_TOOLS=status,log,diff
 PARE_NPM_TOOLS=install,run,test
 ```
 
-`PARE_TOOLS` (global) takes precedence over per-server variables when both are set.
+`PARE_TOOLS` (global) takes precedence over profiles and per-server variables when both are set.
 
 When neither is set, all tools are enabled (default).
+
+---
+
+## Tool Profiles (`PARE_PROFILE`)
+
+Activate a preset collection of tools for common workflows instead of listing individual tools.
+
+```bash
+PARE_PROFILE=python
+```
+
+| Profile   | Tools | Description                                      |
+| --------- | ----- | ------------------------------------------------ |
+| `minimal` | 18    | Core git, build, test, search, and GitHub basics |
+| `web`     | ~65   | Full-stack web dev: npm, build, lint, test, HTTP |
+| `python`  | ~48   | Python ecosystem: pip, ruff, mypy, pytest, uv    |
+| `devops`  | ~59   | Docker, K8s, security scanning, CI/CD, releases  |
+| `rust`    | ~44   | Cargo toolchain: build, test, clippy, audit      |
+| `go`      | ~44   | Go toolchain: build, test, vet, lint             |
+| `full`    | all   | No filtering (default when unset)                |
+
+### Precedence
+
+1. `PARE_TOOLS` — highest priority (explicit tool list)
+2. `PARE_PROFILE` — preset profile
+3. `PARE_{SERVER}_TOOLS` — per-server filter
+4. No env vars — all tools enabled
+
+`PARE_PROFILE` overrides per-server variables but is itself overridden by `PARE_TOOLS`. Profile names are case-insensitive.
 
 ---
 
@@ -130,6 +159,7 @@ Server names in env vars use uppercase with hyphens replaced by underscores:
 | Variable                         | Type              | Default      | Description                          |
 | -------------------------------- | ----------------- | ------------ | ------------------------------------ |
 | `PARE_TOOLS`                     | `server:tool,...` | all enabled  | Global tool filter                   |
+| `PARE_PROFILE`                   | profile name      | `full`       | Preset tool profile                  |
 | `PARE_{SERVER}_TOOLS`            | `tool,...`        | all enabled  | Per-server tool filter               |
 | `PARE_ALLOWED_COMMANDS`          | `cmd,...`         | unrestricted | Global command allowlist             |
 | `PARE_{SERVER}_ALLOWED_COMMANDS` | `cmd,...`         | unrestricted | Per-server command allowlist         |

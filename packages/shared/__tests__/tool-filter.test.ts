@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { shouldRegisterTool } from "../src/tool-filter.js";
+import { shouldRegisterTool, _resetProfileCache } from "../src/tool-filter.js";
 
 describe("shouldRegisterTool", () => {
   const savedEnv: Record<string, string | undefined> = {};
@@ -7,14 +7,17 @@ describe("shouldRegisterTool", () => {
   beforeEach(() => {
     // Save current env vars
     savedEnv.PARE_TOOLS = process.env.PARE_TOOLS;
+    savedEnv.PARE_PROFILE = process.env.PARE_PROFILE;
     savedEnv.PARE_GIT_TOOLS = process.env.PARE_GIT_TOOLS;
     savedEnv.PARE_NPM_TOOLS = process.env.PARE_NPM_TOOLS;
     savedEnv.PARE_DOCKER_TOOLS = process.env.PARE_DOCKER_TOOLS;
     // Clean slate
     delete process.env.PARE_TOOLS;
+    delete process.env.PARE_PROFILE;
     delete process.env.PARE_GIT_TOOLS;
     delete process.env.PARE_NPM_TOOLS;
     delete process.env.PARE_DOCKER_TOOLS;
+    _resetProfileCache();
   });
 
   afterEach(() => {
@@ -26,6 +29,7 @@ describe("shouldRegisterTool", () => {
         process.env[key] = val;
       }
     }
+    _resetProfileCache();
   });
 
   describe("default behavior (no env vars)", () => {

@@ -4,7 +4,9 @@ export { stripAnsi } from "./ansi.js";
 export { assertNoFlagInjection, assertAllowedCommand } from "./validation.js";
 export { INPUT_LIMITS } from "./limits.js";
 export { sanitizeErrorOutput } from "./sanitize.js";
-export { shouldRegisterTool } from "./tool-filter.js";
+export { shouldRegisterTool, _resetProfileCache } from "./tool-filter.js";
+export { PROFILES, resolveProfile } from "./profiles.js";
+export type { ProfileName } from "./profiles.js";
 export {
   assertAllowedByPolicy,
   assertAllowedRoot,
