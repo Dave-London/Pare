@@ -315,7 +315,9 @@ export function parseBranch(stdout: string): GitBranchFull {
   let current = "";
   const branches = lines.map((line) => {
     const isCurrent = line.startsWith("* ");
-    const stripped = line.replace(/^\*?\s+/, "");
+    // Git uses '*' for the current branch and '+' for branches checked out
+    // in linked worktrees. Strip both markers before parsing the name.
+    const stripped = line.replace(/^[*+]?\s+/, "");
     const name = stripped.split(/\s+/)[0];
     if (isCurrent) current = name;
 
