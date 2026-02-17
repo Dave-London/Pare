@@ -16,9 +16,7 @@ export function registerPipInstallTool(server: McpServer) {
     {
       title: "pip Install",
       description:
-        "Runs pip install and returns a structured summary of installed packages. " +
-        "WARNING: Installing packages may execute arbitrary setup.py code. " +
-        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
+        "Runs pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

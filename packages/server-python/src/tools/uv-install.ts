@@ -12,9 +12,7 @@ export function registerUvInstallTool(server: McpServer) {
     {
       title: "uv Install",
       description:
-        "Runs uv pip install and returns a structured summary of installed packages. " +
-        "WARNING: Installing packages may execute arbitrary setup.py code during build. " +
-        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
+        "Runs uv pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
       inputSchema: {
         path: z
           .string()
