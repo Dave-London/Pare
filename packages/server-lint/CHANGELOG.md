@@ -1,5 +1,43 @@
 # @paretools/lint
 
+## 0.9.0
+
+### Minor Changes
+
+- [#497](https://github.com/Dave-London/Pare/pull/497) [`2ec20a0`](https://github.com/Dave-London/Pare/commit/2ec20a023476ecd525a41611d79f9bad9d3578af) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(lint): improve biome, prettier, and shellcheck parsers (P1)
+  - Improve biome-check line number extraction from JSON output (support both v2+ start/end format and legacy sourceCode format)
+  - Improve biome-format parser to use --reporter=json for accurate changed/unchanged file counts
+  - Use --list-different for more accurate prettier-format change counting
+  - Validate shellcheck file patterns and automatically expand directories to shell script files
+
+- [#458](https://github.com/Dave-London/Pare/pull/458) [`58e1520`](https://github.com/Dave-London/Pare/commit/58e1520b65f1ddff8859543193c6e03603cbef07) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap params and output schema enhancements across all lint tools:
+  - biome-check: since, configPath, linterEnabled/formatterEnabled, maxDiagnostics, skip
+  - biome-format: since, configPath
+  - format-check: config, ignorePath, parser
+  - hadolint: config, requireLabel, shell, errorRules/warningRules/infoRules severity overrides
+  - lint (eslint): maxWarnings, config, fixType, rule
+  - oxlint: config, deny/warn/allow, plugins, tsconfig, ignorePath
+  - prettier-format: config
+  - shellcheck: exclude, enable, include, rcfile, sourcePath
+  - stylelint: maxWarnings, config, ignorePath
+  - Output schema: column in diagnostics (eslint, stylelint, oxlint, shellcheck, hadolint, biome), fixableErrorCount/fixableWarningCount (eslint), wikiUrl for hadolint DL rules
+
+- [#453](https://github.com/Dave-London/Pare/pull/453) [`21dfa99`](https://github.com/Dave-London/Pare/commit/21dfa99862afa575360eca1eb1dda71f767a349f) Thanks [@Dave-London](https://github.com/Dave-London)! - Add XS-complexity gap items across all lint tools:
+  - biome-check: Add `apply`, `applyUnsafe`, `diagnosticLevel`, `changed`, and `staged` params
+  - biome-format: Add `changed`, `staged`, `indentStyle`, `lineWidth`, `quoteStyle`, `semicolons`, and `lineEnding` params
+  - format-check: Add `ignoreUnknown`, `cache`, `noConfig`, and `logLevel` params
+  - hadolint: Add `failureThreshold`, `noFail`, `strictLabels`, and `verbose` params
+  - lint (eslint): Add `quiet`, `noIgnore`, `cache`, and `fixDryRun` params
+  - oxlint: Add `fix`, `quiet`, `fixSuggestions`, `threads`, and `noIgnore` params
+  - prettier-format: Add `ignoreUnknown`, `cache`, `noConfig`, `logLevel`, and `endOfLine` params
+  - shellcheck: Add `shell`, `externalSources`, `checkSourced`, and `norc` params
+  - stylelint: Add `quiet`, `allowEmptyInput`, `cache`, `reportNeedlessDisables`, and `ignoreDisables` params
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

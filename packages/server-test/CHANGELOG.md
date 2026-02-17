@@ -1,5 +1,37 @@
 # @paretools/test
 
+## 0.9.0
+
+### Minor Changes
+
+- [#485](https://github.com/Dave-London/Pare/pull/485) [`4a28353`](https://github.com/Dave-London/Pare/commit/4a283534680f6a3c6362ff329e5785464b4f3527) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(test): add bail, testNamePattern, workers params to run and failUnder to coverage
+
+- [#494](https://github.com/Dave-London/Pare/pull/494) [`6b292bb`](https://github.com/Dave-London/Pare/commit/6b292bbee33ed85e4311361f23d7847b05ce58c1) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(test): add meetsThreshold, playwright flaky detection, and timeout param (P1)
+  - Add `meetsThreshold` boolean to coverage output when `failUnder` is specified
+  - Add `flaky` count to Playwright test results from JSON stats
+  - Add `timeout` parameter to test run tool with per-framework mapping
+
+- [#469](https://github.com/Dave-London/Pare/pull/469) [`5b0090f`](https://github.com/Dave-London/Pare/commit/5b0090f38625a8b0366eb80e516f603bc6356a30) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for test tools
+  - coverage: Add args, source, exclude, filter params with per-framework flag mapping
+  - playwright: Add grep, browser, shard, trace (enum), config params
+  - run: Add shard, config params with per-framework flag mapping
+
+- [#455](https://github.com/Dave-London/Pare/pull/455) [`0b94417`](https://github.com/Dave-London/Pare/commit/0b94417c988376c93204acd54e9108b7416610b3) Thanks [@Dave-London](https://github.com/Dave-London)! - Add XS-complexity missing flags across all test tools:
+  - **playwright**: `workers` (--workers), `retries` (--retries), `maxFailures` (--max-failures), `timeout` (--timeout), `lastFailed` (--last-failed), `onlyChanged` (--only-changed), `forbidOnly` (--forbid-only), `passWithNoTests` (--pass-with-no-tests)
+  - **run**: `onlyChanged` (--lf / --onlyChanged / --changed), `exitFirst` (-x / --bail=1 / -b), `passWithNoTests` (--passWithNoTests)
+  - **coverage**: `branch` (--cov-branch), `all` (--coverage.all / --all)
+
+### Patch Changes
+
+- [#440](https://github.com/Dave-London/Pare/pull/440) [`d64e6fd`](https://github.com/Dave-London/Pare/commit/d64e6fd423439b18b2f285bdad160041eb3ca5a7) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix tool bugs found while dogfooding:
+  - Add `admin` option to pr-merge for bypassing branch protection
+  - Fix pull tool divergent branches by always passing explicit merge strategy
+  - Fix push tool setUpstream by auto-detecting current branch name
+  - Add `coverage` boolean to test run tool for running tests with coverage
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

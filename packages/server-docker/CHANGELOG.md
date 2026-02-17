@@ -1,5 +1,72 @@
 # @paretools/docker
 
+## 0.9.0
+
+### Minor Changes
+
+- [#502](https://github.com/Dave-London/Pare/pull/502) [`303bc5d`](https://github.com/Dave-London/Pare/commit/303bc5d5580a8ab97bc68959efbebffa494a5640) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(docker): expand output schemas, improve parsers and error handling across tools (P1)
+  - #97: Improve build error parsing with structured errors (line numbers, Dockerfile context)
+  - #98: Support multiple tags — `tag` accepts `string | string[]` for multiple `-t` flags
+  - #99: Populate per-service `duration` in compose-build output
+  - #100: Enrich compose-down with per-container `{name, action}` details
+  - #101: Separate volume/network removal counts from container counts
+  - #102: Add `follow` param mapping to `-f` for bounded log streaming
+  - #103: Improve timestamp parsing for timezone offsets and nanoseconds
+  - #104: Add log level extraction from common patterns (bracket, level=, prefix)
+  - #105: Parse `Health` field and add `health` to compose-ps schema
+  - #106: Add `running`/`stopped` count fields to compose-ps
+  - #107: Enrich compose-up with per-service state details
+  - #108: Add output truncation with `limit` param and `isTruncated` to exec
+  - #109: Rename `filter` to `reference` in images tool to avoid confusion
+  - #110: Parse `CreatedAt` as ISO timestamp in images output
+  - #111: Add `networkSettings` (IP, ports) to inspect schema
+  - #112: Add `mounts` field to inspect schema
+  - #113: Separate stdout/stderr capture in logs output
+  - #114: Clarify tail vs limit dual-truncation in logs docs
+  - #115: Add `labels` field to network-ls schema
+  - #116: Add `ipv6`, `internal`, `attachable` booleans to network-ls
+  - #117: Capture `labels` as `Record<string, string>` in ps
+  - #118: Capture `networks` as `string[]` in ps
+  - #119: Fix digest-only pull parsing — set `tag` to digest ref
+  - #120: Add `size` output field from pull summary
+  - #121: Return structured error with `exitCode`, `stderr`, `errorCategory` in run
+  - #122: Capture stdout/stderr for non-detached runs
+  - #123: Add `memoryUsageBytes` and `memoryLimitBytes` numeric fields to stats
+  - #124: Add structured I/O fields: `netIn`, `netOut`, `blockRead`, `blockWrite` to stats
+  - #125: Add `labels` field to volume-ls schema
+
+- [#459](https://github.com/Dave-London/Pare/pull/459) [`20b6c8f`](https://github.com/Dave-London/Pare/commit/20b6c8f98e08852a4cccfd9e0109a280951490fc) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for Docker tools
+  - build: Add buildArgs, target, platform, label, cacheFrom, cacheTo, secret, ssh params
+  - compose-build: Add file, ssh, builder params
+  - compose-down: Add rmi enum param, services positional args
+  - compose-logs: Add until param, file param for compose file targeting
+  - compose-ps: Add file, services, status, filter params; state field changed to enum
+  - compose-up: Add pull enum param (always/missing/never)
+  - exec: Add user, envFile params; add duration to output schema
+  - images: Add digest field to output schema
+  - inspect: Add type enum, size param; add healthStatus, env, restartPolicy to output
+  - logs: Add until param for time-bounded queries
+  - network-ls: Add filter param (string or string[]); add createdAt to output; preserve id in compact
+  - ps: Add filter param; preserve full container ID (no truncation)
+  - pull: Preserve digest in compact output
+  - run: Add workdir, network, platform, entrypoint, user, restart, memory, hostname, shmSize, pull, envFile params
+  - stats: Add path param; preserve memoryUsage in compact output
+  - volume-ls: Add filter param (string or string[]); add createdAt to output; preserve mountpoint in compact
+  - compose-logs compact: Preserve timestamps in head/tail entries
+
+- [#447](https://github.com/Dave-London/Pare/pull/447) [`32e14af`](https://github.com/Dave-London/Pare/commit/32e14af1b7fa41da945517aa71496d427c206e97) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters across all Docker tools (XS complexity gaps)
+
+- [#486](https://github.com/Dave-London/Pare/pull/486) [`982d087`](https://github.com/Dave-London/Pare/commit/982d0877fecb03d2aa1bed95b45426a44d719623) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(github,docker): add gist path validation, issue-create body stdin, docker/images filter, docker/inspect image support
+
+- [#483](https://github.com/Dave-London/Pare/pull/483) [`6ad0dbf`](https://github.com/Dave-London/Pare/commit/6ad0dbf01d65d87bc3f8b383025d792fb0ab3ad2) Thanks [@Dave-London](https://github.com/Dave-London)! - Enrich output schemas for docker/compose-ps (structured ports), docker/pull (status enum), go/list (imports field), and python/ruff-format (filesUnchanged count)
+
+### Patch Changes
+
+- [#504](https://github.com/Dave-London/Pare/pull/504) [`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173) Thanks [@Dave-London](https://github.com/Dave-London)! - fix CI: add docker formatter tests for branch coverage, skip Windows symlink tests, remove unused eslint-disable
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

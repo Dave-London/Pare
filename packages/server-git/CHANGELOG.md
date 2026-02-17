@@ -1,5 +1,57 @@
 # @paretools/git
 
+## 0.9.0
+
+### Minor Changes
+
+- [#470](https://github.com/Dave-London/Pare/pull/470) [`449e4e8`](https://github.com/Dave-London/Pare/commit/449e4e8fb80a285226f04d61be5801d03d5c0162) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): implement S-complexity gaps — add validated params, enums, and output schema enhancements
+
+- [#484](https://github.com/Dave-London/Pare/pull/484) [`02f25c1`](https://github.com/Dave-London/Pare/commit/02f25c15f341f0e6f9c239f6cba98e356543b33c) Thanks [@Dave-London](https://github.com/Dave-London)! - Enrich output schemas for 10 git tools with structured fields:
+  - git/add: `files` now returns `Array<{file, status}>` instead of `string[]`
+  - git/branch: populate `upstream` field from `-vv` output
+  - git/cherry-pick: add `state` field ("completed", "conflict", "in-progress")
+  - git/diff: add `binary: boolean` field for binary file detection
+  - git/merge: add `state` field ("completed", "conflict", "already-up-to-date", "fast-forward")
+  - git/rebase: add `state` field ("completed", "conflict", "in-progress")
+  - git/reflog: add `totalAvailable` field for total entry count
+  - git/reset: add `previousRef`/`newRef` fields
+  - git/restore: add post-restore verification (`verified`, `verifiedFiles`)
+  - git/worktree: add `locked`/`prunable` fields
+
+- [#478](https://github.com/Dave-London/Pare/pull/478) [`86d7b94`](https://github.com/Dave-London/Pare/commit/86d7b9474a7b700809ff0bd8fdbbca1e4f4bf12e) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): add P0 parser bug fixes and error handling improvements
+  - Normalize reflog action field values across git versions
+  - Add structured error output for checkout conflicts/failures
+  - Add structured error output for push failures (rejected, non-fast-forward)
+  - Handle nothing-to-stash gracefully with clear reason field
+  - Handle stash pop/apply conflicts with structured conflict info
+
+- [#489](https://github.com/Dave-London/Pare/pull/489) [`3128b43`](https://github.com/Dave-London/Pare/commit/3128b437a12158c573fef7fcc563ea365e29673c) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): add bisect/run, remote/add, remote/remove, tag/create, tag/delete actions and reset --hard safety guard
+
+- [#503](https://github.com/Dave-London/Pare/pull/503) [`79585b3`](https://github.com/Dave-London/Pare/commit/79585b37aa1c310d8a44b21a1b2518a06d0a567c) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): improve add, blame, commit, log, pull, remote, reset, show, stash output (P1)
+  - Add newlyStaged count to add output
+  - Use full 40-char hashes in blame
+  - Improve commit hash extraction for special branch names
+  - Add fullMessage field to log output
+  - Add parsed refs to log-graph entries
+  - Add conflict and changed file parsing to pull
+  - Add remote rename, set-url, prune, show subcommands
+  - Add files+mode validation to reset
+  - Guard against @@ delimiter corruption in show
+  - Add stash show action and stash-list content summary
+
+- [#450](https://github.com/Dave-London/Pare/pull/450) [`a7ed64b`](https://github.com/Dave-London/Pare/commit/a7ed64b6c70aa475d36b9e372f2ecf817e93df6c) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters across all git tools (XS complexity gaps)
+
+### Patch Changes
+
+- [#440](https://github.com/Dave-London/Pare/pull/440) [`d64e6fd`](https://github.com/Dave-London/Pare/commit/d64e6fd423439b18b2f285bdad160041eb3ca5a7) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix tool bugs found while dogfooding:
+  - Add `admin` option to pr-merge for bypassing branch protection
+  - Fix pull tool divergent branches by always passing explicit merge strategy
+  - Fix push tool setUpstream by auto-detecting current branch name
+  - Add `coverage` boolean to test run tool for running tests with coverage
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

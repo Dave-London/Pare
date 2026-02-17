@@ -1,5 +1,48 @@
 # @paretools/python
 
+## 0.9.0
+
+### Minor Changes
+
+- [#487](https://github.com/Dave-London/Pare/pull/487) [`48cd9c5`](https://github.com/Dave-London/Pare/commit/48cd9c51b89be6f001979cb0de16b43c91229347) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo,k8s,python,npm): add output truncation, helm uninstall/rollback, pip-list outdated, pyenv installList, uv-run flag isolation, npm audit fix, nvm .nvmrc
+
+- [#483](https://github.com/Dave-London/Pare/pull/483) [`6ad0dbf`](https://github.com/Dave-London/Pare/commit/6ad0dbf01d65d87bc3f8b383025d792fb0ab3ad2) Thanks [@Dave-London](https://github.com/Dave-London)! - Enrich output schemas for docker/compose-ps (structured ports), docker/pull (status enum), go/list (imports field), and python/ruff-format (filesUnchanged count)
+
+- [#477](https://github.com/Dave-London/Pare/pull/477) [`1101a13`](https://github.com/Dave-London/Pare/commit/1101a1366e87f9e1d0f484c5bb218adde2718607) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(python): fix pip-audit redundant arg, pip-install dry-run parsing, pyenv current detection, ruff-format check mode parsing, black exit code distinction, and uv-install resolution error parsing
+
+- [#501](https://github.com/Dave-London/Pare/pull/501) [`15f7c52`](https://github.com/Dave-London/Pare/commit/15f7c52b5f984f5fb6004284baa9cad036545742) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(python): improve mypy, pip, poetry, pyenv, pytest, ruff output (P1)
+  - Switch mypy to JSON output for reliable parsing
+  - Separate notes from warnings in mypy output
+  - Add severity/aliases to pip-audit vulnerabilities
+  - Surface pip-list parse errors
+  - Support multiple packages in pip-show
+  - Tighten poetry show regex
+  - Add pyenv uninstall action
+  - Add warnings count to pytest output
+  - Capture ruff-check fix applicability
+
+- [#461](https://github.com/Dave-London/Pare/pull/461) [`5e6cee4`](https://github.com/Dave-London/Pare/commit/5e6cee45b7f740ffa7851ee0d4ac29f4792d9c8f) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap implementations for Python tools:
+  - pip-audit: Add `success` output field, `ignoreVuln`, `vulnerabilityService`, and `indexUrl` params
+  - pip-list: Add `success` output field, `location` and `editableProject` per-package fields, `exclude` param
+  - pip-show: Add `success`, `requiredBy`, `authorEmail`, `metadataVersion`, `classifiers` output fields; fix key-value parser to split on first `: ` only
+  - pip-install: Add `constraint`, `editable`, `indexUrl`, `extraIndexUrl`, `target`, `report` params
+  - pytest: Add `keyword`, `tracebackStyle`, `coverage`, `parallel`, `configFile` params
+  - ruff-check: Add `success` and `url` output fields, `select`, `ignore`, `config`, `targetVersion`, `exclude` params
+  - ruff-format: Add `config`, `targetVersion`, `exclude`, `range`, `quoteStyle` params
+  - mypy: Add `configFile`, `pythonVersion`, `exclude`, `followImports`, `module`, `package`, `installTypes` params
+  - black: Add `config` param
+  - conda: Add `prefix` and `packageFilter` params
+  - poetry: Add `description` to show output, `group` and `format` params
+  - uv-install: Add `editable`, `constraint`, `indexUrl`, `python`, `extras` params
+  - uv-run: Add `withPackages`, `python`, `envFile` params
+
+- [#448](https://github.com/Dave-London/Pare/pull/448) [`2a0c827`](https://github.com/Dave-London/Pare/commit/2a0c82706c7917f490affd3ed89945f5c2aa9532) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters across all Python tools (XS complexity gaps)
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

@@ -1,5 +1,48 @@
 # @paretools/cargo
 
+## 0.9.0
+
+### Minor Changes
+
+- [#482](https://github.com/Dave-London/Pare/pull/482) [`edad7f1`](https://github.com/Dave-London/Pare/commit/edad7f15e190a5f64c0a8e466f553fe698ec2623) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo): add structured warnings to doc, clarify fmt success semantics, capture test failure output, parse tree and update into structured data
+
+- [#479](https://github.com/Dave-London/Pare/pull/479) [`e5fb487`](https://github.com/Dave-London/Pare/commit/e5fb487f577ef0434787f7e1ea3fab51f988e867) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(cargo): fix dry-run output parsing, CVSS severity extraction, and fmt file change detection
+
+- [#499](https://github.com/Dave-London/Pare/pull/499) [`fedc800`](https://github.com/Dave-London/Pare/commit/fedc800db713a73f357a21927e5f21475cc6d0f4) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo): improve add/audit/build/clippy/fmt/remove/run/test/update output (P1)
+  - Add dependency type to add and remove output
+  - Add cargo audit fix support
+  - Include CVSS score/vector in audit vulnerabilities
+  - Use build-finished event for authoritative success
+  - Capture clippy suggestion text from JSON children
+  - Add lint level configuration to clippy
+  - Use --files-with-diff for more reliable fmt check
+  - Distinguish compilation vs runtime failure in run
+  - Add JSON message format for test compilation diagnostics
+  - Improve update compact mode with update count
+
+- [#487](https://github.com/Dave-London/Pare/pull/487) [`48cd9c5`](https://github.com/Dave-London/Pare/commit/48cd9c51b89be6f001979cb0de16b43c91229347) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo,k8s,python,npm): add output truncation, helm uninstall/rollback, pip-list outdated, pyenv installList, uv-run flag isolation, npm audit fix, nvm .nvmrc
+
+- [#471](https://github.com/Dave-London/Pare/pull/471) [`47bd066`](https://github.com/Dave-London/Pare/commit/47bd066438916ade8a0f8d3a73f136471dbc604d) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap implementations for Cargo tools:
+  - add: add package, rename, registry, locked/frozen/offline params; add error message to output schema
+  - audit: add success field, ignore, deny, targetArch/Os, file, db/url params; add advisory date; compact preserves informational/unknown counts
+  - build: add package, features, allFeatures, noDefaultFeatures, target, profile, locked/frozen/offline, manifestPath params
+  - check: add features, allFeatures, noDefaultFeatures, target, locked/frozen/offline params
+  - clippy: add success field, package, fix (with allow-dirty), features, locked/frozen/offline params
+  - doc: add package, features, target, locked/frozen/offline params; add outputDir to schema
+  - fmt: add package, edition, config, configPath, emit params
+  - remove: add dryRun, package, locked/frozen/offline, manifestPath params; add error message to output schema
+  - run: add bin, example, features, timeout, profile, target, locked/frozen/offline params
+  - test: add package, features, testArgs, locked/frozen/offline params
+  - tree: add success field (return error instead of throwing), invert, edges, features, format, target, locked/frozen/offline params
+  - update: add precise, locked/frozen/offline, manifestPath params
+
+- [#443](https://github.com/Dave-London/Pare/pull/443) [`142ffca`](https://github.com/Dave-London/Pare/commit/142ffca66886535308e8e0a5e5d7827a01c94bb1) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters across all Cargo tools (XS complexity gaps)
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

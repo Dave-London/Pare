@@ -1,5 +1,37 @@
 # @paretools/k8s
 
+## 0.9.0
+
+### Minor Changes
+
+- [#487](https://github.com/Dave-London/Pare/pull/487) [`48cd9c5`](https://github.com/Dave-London/Pare/commit/48cd9c51b89be6f001979cb0de16b43c91229347) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo,k8s,python,npm): add output truncation, helm uninstall/rollback, pip-list outdated, pyenv installList, uv-run flag isolation, npm audit fix, nvm .nvmrc
+
+- [#481](https://github.com/Dave-London/Pare/pull/481) [`9251407`](https://github.com/Dave-London/Pare/commit/9251407ad98f72d8ecc772cc5ec34a0c4d97f961) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(k8s): parse apply output into structured resources, parse describe Events and Conditions into structured arrays
+
+- [#492](https://github.com/Dave-London/Pare/pull/492) [`99490d9`](https://github.com/Dave-London/Pare/commit/99490d9fc1515a33b130253062397ad38756e97a) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(k8s): expand resource metadata, add helm history and template actions (P1)
+  - Add annotations, ownerReferences, finalizers, resourceVersion, uid to K8sResourceSchema
+  - Add helm `history` action for release revision history
+  - Add helm `template` action for local chart template rendering
+
+- [#463](https://github.com/Dave-London/Pare/pull/463) [`ca57bb6`](https://github.com/Dave-London/Pare/commit/ca57bb6af44d3b2d540f5266b64339086402a9e8) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap parameters to K8s tools:
+  - **get**: `fieldSelector`, `context`, `kubeconfig`, `sortBy`, `filename`, `subresource`
+  - **describe**: Make `name` optional, add `selector`, `context`, `kubeconfig`
+  - **apply**: Multi-file support (`string | string[]`), `validate` enum, `waitTimeout`, `fieldManager`, `context`, `selector`, `cascade` enum
+  - **helm**: `version`, `waitTimeout`, multi-values (`string | string[]`), `filter`, `statusRevision`, `repo`, `description`
+  - **logs**: `sinceTime`, `selector`, `context`, `podRunningTimeout`
+
+- [#451](https://github.com/Dave-London/Pare/pull/451) [`1d0ee7b`](https://github.com/Dave-London/Pare/commit/1d0ee7b1b608b7ed0eb9c79e2979bdcfe65c79f8) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters from XS-complexity audit gaps
+  - apply: serverSide, wait, recursive, kustomize, prune, force, forceConflicts
+  - describe: allNamespaces, showEvents
+  - get: ignoreNotFound, chunkSize
+  - helm: dryRun, wait, atomic, createNamespace, installOnUpgrade, reuseValues, allNamespaces, showResources, noHooks, skipCrds
+  - logs: timestamps, allContainers, limitBytes, prefix, ignoreErrors
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes
