@@ -6,7 +6,7 @@ If you discover a security vulnerability in any `@paretools` package, please rep
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email: **hello@os4us.org**
+Report via **GitHub Private Vulnerability Reporting** — go to the [Security tab](https://github.com/Dave-London/Pare/security/advisories/new) and click "Report a vulnerability".
 
 Include:
 
