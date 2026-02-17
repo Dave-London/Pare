@@ -182,20 +182,17 @@ describe("@paretools/git integration", () => {
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
 
-      // worktree tool uses z.union for outputSchema which may not return
-      // structuredContent via MCP SDK; verify text content instead
       const textContent = result.content as Array<{ type: string; text: string }>;
       expect(textContent.length).toBeGreaterThan(0);
       expect(textContent[0].type).toBe("text");
       // The text output should contain at least one worktree path
       expect(textContent[0].text.length).toBeGreaterThan(0);
 
-      // If structuredContent is available, verify its shape
-      if (result.structuredContent) {
-        const sc = result.structuredContent as Record<string, unknown>;
-        expect(Array.isArray(sc.worktrees)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
-      }
+      // structuredContent is now always returned (unified output schema)
+      expect(result.structuredContent).toBeDefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(Array.isArray(sc.worktrees)).toBe(true);
+      expect(sc.total).toEqual(expect.any(Number));
     });
   });
 

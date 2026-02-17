@@ -14,7 +14,7 @@ import {
   formatWorktreeListCompact,
   formatWorktree,
 } from "../lib/formatters.js";
-import { GitWorktreeListSchema, GitWorktreeSchema } from "../schemas/index.js";
+import { GitWorktreeOutputSchema } from "../schemas/index.js";
 
 /** Registers the `worktree` tool on the given MCP server. */
 export function registerWorktreeTool(server: McpServer) {
@@ -88,7 +88,7 @@ export function registerWorktreeTool(server: McpServer) {
           .describe("Optional worktree paths to repair (used with action=repair)"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
-      outputSchema: z.union([GitWorktreeListSchema, GitWorktreeSchema]),
+      outputSchema: GitWorktreeOutputSchema,
     },
     async (params) => {
       const cwd = params.path || process.cwd();

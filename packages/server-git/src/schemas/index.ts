@@ -655,6 +655,28 @@ export const GitWorktreeSchema = z.object({
 
 export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
 
+/** Unified Zod schema for all worktree tool output (list + mutate actions).
+ *  Uses a single z.object() with optional fields instead of z.union(),
+ *  which is not supported by the MCP SDK for outputSchema. */
+export const GitWorktreeOutputSchema = z.object({
+  /** Present for list action. */
+  worktrees: z.union([z.array(GitWorktreeEntrySchema), z.array(z.string())]).optional(),
+  /** Present for list action. */
+  total: z.number().optional(),
+  /** Present for mutate actions. */
+  success: z.boolean().optional(),
+  /** Action performed (only present for mutate operations). */
+  action: z.enum(["add", "remove", "lock", "unlock", "prune", "move", "repair"]).optional(),
+  /** Worktree path (present for mutate actions). */
+  path: z.string().optional(),
+  /** Target path (only present for move action). */
+  targetPath: z.string().optional(),
+  /** Branch name (present for mutate actions). */
+  branch: z.string().optional(),
+  /** HEAD commit (present for mutate actions). */
+  head: z.string().optional(),
+});
+
 /** Type alias for remote mutate results (uses unified GitRemoteSchema). */
 export type GitRemoteMutate = {
   success: boolean;
