@@ -226,8 +226,11 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
 
       let userCpuTimeMicros: number | undefined;
       let systemCpuTimeMicros: number | undefined;
-      if (typeof child.resourceUsage === "function") {
-        const usage = child.resourceUsage();
+      const childWithUsage = child as typeof child & {
+        resourceUsage?: () => NodeJS.ResourceUsage;
+      };
+      if (typeof childWithUsage.resourceUsage === "function") {
+        const usage = childWithUsage.resourceUsage();
         userCpuTimeMicros = usage.userCPUTime;
         systemCpuTimeMicros = usage.systemCPUTime;
       }
