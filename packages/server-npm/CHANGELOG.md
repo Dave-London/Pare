@@ -1,5 +1,60 @@
 # @paretools/npm
 
+## 0.9.0
+
+### Minor Changes
+
+- [#487](https://github.com/Dave-London/Pare/pull/487) [`48cd9c5`](https://github.com/Dave-London/Pare/commit/48cd9c51b89be6f001979cb0de16b43c91229347) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(cargo,k8s,python,npm): add output truncation, helm uninstall/rollback, pip-list outdated, pyenv installList, uv-run flag isolation, npm audit fix, nvm .nvmrc
+
+- [#475](https://github.com/Dave-London/Pare/pull/475) [`f94ec73`](https://github.com/Dave-London/Pare/commit/f94ec730e6adcd0a77774e1e849dd82b8404d201) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(npm): add stderr to init output schema for error visibility
+  fix(make): parse make target descriptions from ## comment convention
+
+- [#498](https://github.com/Dave-London/Pare/pull/498) [`e78ddea`](https://github.com/Dave-London/Pare/commit/e78ddeab1679fbd767251da9e6346ebda318d4ce) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(npm): improve install/list output, add nvm modes, add timeout detection (P1)
+  - Improve install output with specific package details (best-effort parsing)
+  - Fix pnpm workspace array handling in list tool (merges all workspace projects)
+  - Add dependency type field to list output (dependency/devDependency/optionalDependency)
+  - Add nvm ls-remote and exec actions
+  - Add LTS tagging to nvm version output
+  - Add timeout detection to run tool
+  - Add best-effort test result parsing to test tool (jest/vitest/mocha/tap)
+
+- [#465](https://github.com/Dave-London/Pare/pull/465) [`8be4ff2`](https://github.com/Dave-London/Pare/commit/8be4ff272de5657041e2d1927c8a33f171ea4745) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for npm tools:
+
+  **audit**: Add `level` (severity enum), `production` (boolean), `omit` (array), `workspace`, and `args` params. Add `cve`/`cwe` fields to vulnerability output schema.
+
+  **info**: Add `registry`, `field`, and `workspace` params. Add `engines`, `peerDependencies`, `deprecated`, `repository`, `keywords`, `versions`, and `dist.integrity` to output schema.
+
+  **init**: Add `license`, `authorName`, `authorEmail`, `authorUrl`, `version`, `module`, and `workspace` params.
+
+  **install**: Add `global` and `registry` params.
+
+  **list**: Add `packages` (string[]), `workspace`, and `args` params.
+
+  **nvm**: Add `which` (Node.js binary path) and `arch` (architecture) to output schema.
+
+  **outdated**: Add `packages` (string[]), `workspace`, and `args` params.
+
+  **run**: Add `workspace` (string or string[]) and `scriptShell` params.
+
+  **search**: Add `exclude`, `registry`, and `searchopts` params. Add `keywords`, `score`, `links`, `scope`, and `registryTotal` to output schema.
+
+  **test**: Add `workspace` (string or string[]) param.
+
+- [#444](https://github.com/Dave-London/Pare/pull/444) [`10583b5`](https://github.com/Dave-London/Pare/commit/10583b55d936c426d71b986f2895d1d0171191b2) Thanks [@Dave-London](https://github.com/Dave-London)! - Add XS-complexity missing flags and security fixes across all npm tools:
+  - **init**: `force` (--force), `private` (yarn --private)
+  - **install**: `saveDev` (--save-dev), `frozenLockfile` (--frozen-lockfile / npm ci), `dryRun` (--dry-run), `production` (--omit=dev / --prod / --production), `legacyPeerDeps` (--legacy-peer-deps), `force` (--force), `noAudit` (--no-audit), `exact` (--save-exact)
+  - **list**: `production` (--omit=dev / --prod), `all` (--all), `long` (--long), `global` (--global), security fix for `filter` param
+  - **outdated**: `production` (--omit=dev / --prod), `all` (--all), `long` (--long), `compatible` (--compatible), `devOnly` (--dev), security fix for `filter` param
+  - **run**: `ifPresent` (--if-present), `recursive` (--recursive / --workspaces), `ignoreScripts` (--ignore-scripts), `silent` (--silent), `parallel` (--parallel), `stream` (--stream)
+  - **test**: `ifPresent` (--if-present), `recursive` (--recursive / --workspaces), `ignoreScripts` (--ignore-scripts), `silent` (--silent), `parallel` (--parallel), `stream` (--stream)
+  - **search**: `preferOnline` (--prefer-online)
+  - **audit**: `packageLockOnly` (--package-lock-only)
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

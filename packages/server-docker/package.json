@@ -1,6 +1,6 @@
 {
   "name": "@paretools/docker",
-  "version": "0.8.5",
+  "version": "0.9.0",
   "mcpName": "io.github.Dave-London/pare-docker",
   "description": "MCP server for Docker with structured, token-efficient output",
   "license": "MIT",

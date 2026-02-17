@@ -1,5 +1,24 @@
 # @paretools/security
 
+## 0.9.0
+
+### Minor Changes
+
+- [#472](https://github.com/Dave-London/Pare/pull/472) [`2df220c`](https://github.com/Dave-London/Pare/commit/2df220c53ccb367442e58ffb6464321ad9baec62) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for security tools
+  - gitleaks: Add redact (default: true), config, baselinePath, logOpts, enableRule params
+  - semgrep: Change config to accept string | string[] for repeatable --config; add exclude, include, excludeRule, baselineCommit params
+  - trivy: Change severity to accept single value or array/CSV; add scanners, vulnType, skipDirs, skipFiles, platform, ignorefile params
+
+- [#454](https://github.com/Dave-London/Pare/pull/454) [`537e0d6`](https://github.com/Dave-London/Pare/commit/537e0d6708ae1197aaaedcb8ca2d22f8e28b1d0d) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters from XS-complexity audit gaps
+  - trivy: assertNoFlagInjection on target, exitCode, skipDbUpdate
+  - semgrep: dataflowTraces, autofix, dryrun, maxTargetBytes, jobs
+  - gitleaks: followSymlinks, maxTargetMegabytes, logLevel, exitCode
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

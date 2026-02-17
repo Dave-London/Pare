@@ -1,5 +1,30 @@
 # @paretools/search
 
+## 0.9.0
+
+### Minor Changes
+
+- [#467](https://github.com/Dave-London/Pare/pull/467) [`fc131b3`](https://github.com/Dave-London/Pare/commit/fc131b3cd1d5248f143e62bc2eb6efcaf04bad3b) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for search tools:
+
+  **count**: Add `maxResults` param for per-file list truncation. Add `type` param (maps to `--type`) for file type filtering. Add `sort` param (`path` or `count`) for client-side result sorting.
+
+  **find**: Add `exclude` param (maps to `--exclude`) for pattern exclusion. Add `size` param (maps to `--size`) for file size filtering. Add `changedWithin` param (maps to `--changed-within`) for recent file discovery. Extend `type` enum with `executable` and `empty`. Normalize `ext` output to strip leading dot (matches input format).
+
+  **search**: Add `type` param (maps to `--type`) for file type filtering. Add `sort` param (maps to `--sort`) for rg-native result sorting.
+
+  **jq**: Add `arg` param (maps to `--arg`) for named string variables. Add `argjson` param (maps to `--argjson`) for named JSON variables.
+
+- [#442](https://github.com/Dave-London/Pare/pull/442) [`cd736d4`](https://github.com/Dave-London/Pare/commit/cd736d4d1039e849dd40f424f246b50aa07efd3e) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters from XS-complexity audit gaps
+  - count: countMatches, fixedStrings, wordRegexp, invertMatch, hidden, includeZero, maxDepth, noIgnore
+  - find: maxDepth, hidden, absolutePath, fullPath, glob, noIgnore, follow
+  - jq: nullInput, slurp, compactOutput, rawInput, exitStatus, indent, joinOutput, assertNoFlagInjection on expression
+  - search: maxCount, fixedStrings, wordRegexp, invertMatch, multiline, hidden, maxDepth, followSymlinks, noIgnore
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

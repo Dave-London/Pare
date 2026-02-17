@@ -1,5 +1,27 @@
 # @paretools/process
 
+## 0.9.0
+
+### Minor Changes
+
+- [#490](https://github.com/Dave-London/Pare/pull/490) [`0cee3e2`](https://github.com/Dave-London/Pare/commit/0cee3e2c9052ceb9167cfd121c4a8065ff1fe665) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(process): add truncated detection, shell mode, and stripEnv options (P1)
+  - Add `truncated` boolean to output schema for maxBuffer detection
+  - Add `shell` parameter for shell-mode execution with security warnings
+  - Add `stripEnv` parameter for minimal environment isolation
+
+- [#464](https://github.com/Dave-London/Pare/pull/464) [`d0083a0`](https://github.com/Dave-London/Pare/commit/d0083a04c0118bcd7cc821b59d370d7d7f0bb16b) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap implementations for the process run tool:
+  - Add `stdin` param for piping input data to commands (e.g., jq, grep)
+  - Add `maxBuffer` param to control maximum stdout+stderr buffer size
+  - Add `killSignal` param (enum) to control signal sent on timeout
+  - Add `maxOutputLines` param to truncate output by line count (agent-friendly)
+  - Add `encoding` param (enum) for non-UTF-8 output support
+  - Add `stdoutTruncatedLines` and `stderrTruncatedLines` output fields
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

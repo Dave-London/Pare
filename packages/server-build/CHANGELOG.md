@@ -1,5 +1,41 @@
 # @paretools/build
 
+## 0.9.0
+
+### Minor Changes
+
+- [#500](https://github.com/Dave-London/Pare/pull/500) [`0880b7e`](https://github.com/Dave-London/Pare/commit/0880b7e0b8ee60bfa353626fa19c5ce506a66f8d) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(build): add env params, improve parsers, normalize output fields (P1)
+  - Add `env` parameter to build and webpack tools
+  - Improve error/warning detection heuristics
+  - Add `define` and `metafile` params to esbuild
+  - Distinguish local vs remote cache in Nx output
+  - Normalize duration to milliseconds in Turbo output
+  - Normalize file sizes to bytes in Vite output
+  - Add `profile` param to webpack
+
+- [#468](https://github.com/Dave-London/Pare/pull/468) [`27ecc7d`](https://github.com/Dave-London/Pare/commit/27ecc7de8d77bb82a95ae016b0992d1581d5b32b) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap params and output schema enhancements across all build tools:
+  - build: exitCode in output schema, timeout param, stdout/stderr/outputLines in schema
+  - esbuild: target, external, sourcemap enum expansion, tsconfig, drop
+  - nx: configuration, head, projects, exclude
+  - tsc: declaration/declarationDir, pretty (--pretty false for parser normalization)
+  - turbo: args with assertNoFlagInjection, outputLogs enum
+  - vite-build: outDir, config, sourcemap, base, ssr
+  - webpack: entry, target, devtool, analyze
+
+- [#445](https://github.com/Dave-London/Pare/pull/445) [`fffa56f`](https://github.com/Dave-London/Pare/commit/fffa56f85a13d6434604a52e93a219eac2c6d170) Thanks [@Dave-London](https://github.com/Dave-London)! - Add XS-complexity gap items across all build tools:
+  - build: Add `assertNoFlagInjection` on `args[]` elements; document command allowlist in description
+  - esbuild: Add `splitting`, `legalComments`, and `logLevel` params
+  - nx: Add `parallel`, `skipNxCache`, `nxBail`, `verbose`, `dryRun`, `outputStyle`, and `graph` params
+  - tsc: Add `incremental`, `skipLibCheck`, and `emitDeclarationOnly` params; document compact-mode field loss
+  - turbo: Add `force`, `continue`, `dryRun`, `affected`, `graph`, `logOrder`, and `profile` params
+  - vite-build: Add `manifest`, `minify`, `logLevel`, `emptyOutDir`, and `reportCompressedSize` params
+  - webpack: Add `bail` and `cache` params; append `--no-color` to prevent ANSI in text fallback
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

@@ -1,5 +1,33 @@
 # @paretools/make
 
+## 0.9.0
+
+### Minor Changes
+
+- [#491](https://github.com/Dave-London/Pare/pull/491) [`6645090`](https://github.com/Dave-London/Pare/commit/66450909dde407c74341ff352c84a23e0e1d0668) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(make): add just JSON dump, phony targets, dependencies, and timeout detection (P1)
+  - Use `just --dump-format json` for more reliable recipe parsing
+  - Extract `.PHONY` targets and add `isPhony` field to target entries
+  - Add `dependencies` field to target entries
+  - Add `timedOut` detection to run tool output
+
+- [#466](https://github.com/Dave-London/Pare/pull/466) [`7699f73`](https://github.com/Dave-London/Pare/commit/7699f730bf2e4e5edb16fa9f529db018edd91685) Thanks [@Dave-London](https://github.com/Dave-London)! - Implement S-complexity gaps for make tools:
+
+  **list**: Add `file` param (maps to `make -f` / `just --justfile`) for non-default makefiles/justfiles. Add `filter` param for client-side regex filtering on target names.
+
+  **run**: Add `file` param (maps to `make -f` / `just --justfile`) for non-default makefiles/justfiles. Add `env` param (Record<string, string>) for environment variable passthrough to target execution.
+
+- [#456](https://github.com/Dave-London/Pare/pull/456) [`c2474af`](https://github.com/Dave-London/Pare/commit/c2474af3659a57685c1324e621be7c4fdbab64bc) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters from XS-complexity audit gaps
+  - run: dryRun, jobs, silent, keepGoing, alwaysMake, verbose, trace, question
+  - list: includeSubmodules, unsorted
+
+- [#475](https://github.com/Dave-London/Pare/pull/475) [`f94ec73`](https://github.com/Dave-London/Pare/commit/f94ec730e6adcd0a77774e1e849dd82b8404d201) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(npm): add stderr to init output schema for error visibility
+  fix(make): parse make target descriptions from ## comment convention
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

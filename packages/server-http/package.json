@@ -1,6 +1,6 @@
 {
   "name": "@paretools/http",
-  "version": "0.8.5",
+  "version": "0.9.0",
   "mcpName": "io.github.Dave-London/pare-http",
   "description": "MCP server for HTTP requests (curl) with structured, token-efficient output",
   "license": "MIT",

@@ -1,5 +1,44 @@
 # @paretools/go
 
+## 0.9.0
+
+### Minor Changes
+
+- [#476](https://github.com/Dave-London/Pare/pull/476) [`37908b5`](https://github.com/Dave-London/Pare/commit/37908b587d75dd234ac81be96774ccb982460d40) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(go): capture non-file build errors, fix fmt files-changed detection, populate test failure output, surface package-level test failures
+
+- [#488](https://github.com/Dave-London/Pare/pull/488) [`c7be01b`](https://github.com/Dave-London/Pare/commit/c7be01bdad905c115533b9292f118a7bbbba7615) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(go): add go/get version resolution, go/list modules mode, go/run output limits, go/vet JSON parsing
+
+- [#495](https://github.com/Dave-London/Pare/pull/495) [`811edb3`](https://github.com/Dave-London/Pare/commit/811edb3dfcf7eb24b721c0cb118bd40e87d6c286) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(go): improve env, fmt, generate, get, list, vet, golangci-lint, mod-tidy output (P1)
+  - Improve env compact mode for filtered queries
+  - Capture fmt stderr parse errors
+  - Parse generate per-directive output
+  - Add per-package status to get output
+  - Capture golangci-lint Replacement/fix data
+  - Capture list Error field per package
+  - Distinguish mod-tidy "already tidy" from "made changes"
+  - Add analyzer name to vet diagnostics
+
+- [#460](https://github.com/Dave-London/Pare/pull/460) [`e314903`](https://github.com/Dave-London/Pare/commit/e314903cfd90724224b6ca39468867895f09e7e7) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap implementations for Go tools:
+  - build: add tags, ldflags, output, buildmode, gcflags params
+  - env: add JSON parse error handling with success field, fix filtered vars mode
+  - generate: add run, skip, tags params
+  - get: add update enum param (all | patch)
+  - golangci-lint: add newFromRev, enable/disable, timeout, buildTags, concurrency, maxIssuesPerLinter, maxSameIssues, presets params; add resultsTruncated schema field
+  - list: add success field to schema, tags param, testGoFiles to package schema
+  - mod-tidy: add goVersion, compat params
+  - run: add tags, timeout, exec, maxOutput params; clarify buildArgs interaction with assertNoFlagInjection
+  - test: add timeout, count, cover, coverprofile, tags, parallel, shuffle params
+  - vet: add success field to schema, analyzers, tags, contextLines, vettool params
+
+- [#452](https://github.com/Dave-London/Pare/pull/452) [`6878a0f`](https://github.com/Dave-London/Pare/commit/6878a0f4facb838648e062c4aea9170e7b674782) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters across all Go tools (XS complexity gaps)
+
+- [#483](https://github.com/Dave-London/Pare/pull/483) [`6ad0dbf`](https://github.com/Dave-London/Pare/commit/6ad0dbf01d65d87bc3f8b383025d792fb0ab3ad2) Thanks [@Dave-London](https://github.com/Dave-London)! - Enrich output schemas for docker/compose-ps (structured ports), docker/pull (status enum), go/list (imports field), and python/ruff-format (filesUnchanged count)
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

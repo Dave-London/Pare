@@ -1,5 +1,32 @@
 # @paretools/http
 
+## 0.9.0
+
+### Minor Changes
+
+- [#493](https://github.com/Dave-London/Pare/pull/493) [`6fd4b65`](https://github.com/Dave-London/Pare/commit/6fd4b6517c0acfe14c32c558801b5a96f6cf91c0) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(http): add expanded timing, HEAD compact mode, and POST form param (P1)
+  - Add detailed timing breakdown (namelookup, connect, starttransfer, etc.) to all HTTP tools
+  - Preserve key headers in HEAD compact mode (content-length, cache-control, etag, etc.)
+  - Add `form` parameter to POST for multipart form data uploads
+
+- [#457](https://github.com/Dave-London/Pare/pull/457) [`8e7238d`](https://github.com/Dave-London/Pare/commit/8e7238d30493d14b102421930613e105613f4338) Thanks [@Dave-London](https://github.com/Dave-London)! - Add S-complexity gap parameters to HTTP tools:
+  - **All tools**: `connectTimeout` (--connect-timeout), `basicAuth` (-u), `proxy` (-x)
+  - **get**: `queryParams` (URL-encoded query convenience), `httpVersion`, `resolve` (--resolve)
+  - **head**: Switch from `-X HEAD` to `-I` for correct HEAD behavior, `httpVersion`, `resolve`, `contentLength` parsed output field
+  - **post**: `preserveMethodOnRedirect` (--post301/302/303), `dataUrlencode` (--data-urlencode), `httpVersion`
+  - **request**: `httpVersion` (--http1.0/1.1/2), `cookie` (-b), `resolve` (--resolve)
+
+- [#446](https://github.com/Dave-London/Pare/pull/446) [`228e3ff`](https://github.com/Dave-London/Pare/commit/228e3fff075175b40691dd8502799fa7290db64a) Thanks [@Dave-London](https://github.com/Dave-London)! - Add missing CLI flag parameters from XS-complexity audit gaps
+  - get: insecure, retry, compressed
+  - head: insecure, retry
+  - post: insecure, accept, compressed
+  - request: insecure, retry, compressed
+
+### Patch Changes
+
+- Updated dependencies [[`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173), [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915)]:
+  - @paretools/shared@0.9.0
+
 ## 0.8.5
 
 ### Patch Changes

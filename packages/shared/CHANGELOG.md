@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.9.0
+
+### Patch Changes
+
+- [#504](https://github.com/Dave-London/Pare/pull/504) [`e69ccda`](https://github.com/Dave-London/Pare/commit/e69ccdaefb391d90a2616e9cf32fde5697df1173) Thanks [@Dave-London](https://github.com/Dave-London)! - fix CI: add docker formatter tests for branch coverage, skip Windows symlink tests, remove unused eslint-disable
+
+- [#473](https://github.com/Dave-London/Pare/pull/473) [`0042862`](https://github.com/Dave-London/Pare/commit/0042862ddb9c6cd0b677244efffb5a7e18b3e915) Thanks [@Dave-London](https://github.com/Dave-London)! - Raise default runner and test timeouts from 60s/120s to 180s to fix Windows CI flakiness
+
 ## 0.8.5
 
 ### Patch Changes
