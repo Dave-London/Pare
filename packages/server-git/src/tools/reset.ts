@@ -12,7 +12,7 @@ export function registerResetTool(server: McpServer) {
     {
       title: "Git Reset",
       description:
-        "Unstages files by resetting them to a ref (default: HEAD). Returns structured data with the ref and list of unstaged files. Use instead of running `git reset` in the terminal.",
+        "Unstages files by resetting them to a ref (default: HEAD). Returns structured data with the ref and list of unstaged files.",
       inputSchema: {
         path: z
           .string()

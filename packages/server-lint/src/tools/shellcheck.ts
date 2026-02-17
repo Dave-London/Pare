@@ -12,7 +12,7 @@ export function registerShellcheckTool(server: McpServer) {
     {
       title: "ShellCheck",
       description:
-        "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `shellcheck` in the terminal.",
+        "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
         path: z
           .string()

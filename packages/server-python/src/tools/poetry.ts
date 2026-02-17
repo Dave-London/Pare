@@ -13,8 +13,7 @@ export function registerPoetryTool(server: McpServer) {
       title: "Poetry",
       description:
         "Runs Poetry commands and returns structured output. " +
-        "Supports install, add, remove, show, and build actions. " +
-        "Use instead of running `poetry` in the terminal.",
+        "Supports install, add, remove, show, and build actions. ",
       inputSchema: {
         action: z
           .enum(["install", "add", "remove", "show", "build"])

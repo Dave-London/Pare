@@ -12,7 +12,7 @@ export function registerHadolintTool(server: McpServer) {
     {
       title: "Hadolint",
       description:
-        "Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `hadolint` in the terminal.",
+        "Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
         path: z
           .string()

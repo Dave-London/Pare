@@ -12,7 +12,7 @@ export function registerGenerateTool(server: McpServer) {
     {
       title: "Go Generate",
       description:
-        "Runs go generate directives in Go source files. Use instead of running `go generate` in the terminal. WARNING: `go generate` executes arbitrary commands embedded in //go:generate directives in source files. Only use this tool on trusted code that you have reviewed.",
+        "Runs go generate directives in Go source files. WARNING: `go generate` executes arbitrary commands embedded in //go:generate directives in source files. Only use this tool on trusted code that you have reviewed.",
       inputSchema: {
         path: z
           .string()

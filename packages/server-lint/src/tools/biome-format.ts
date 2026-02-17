@@ -16,7 +16,7 @@ export function registerBiomeFormatTool(server: McpServer) {
     {
       title: "Biome Format",
       description:
-        "Formats files with Biome (format --write) and returns a structured list of changed files. Use instead of running `biome format --write` in the terminal.",
+        "Formats files with Biome (format --write) and returns a structured list of changed files.",
       inputSchema: {
         path: z
           .string()

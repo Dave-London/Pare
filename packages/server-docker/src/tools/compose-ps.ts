@@ -12,7 +12,7 @@ export function registerComposePsTool(server: McpServer) {
     {
       title: "Docker Compose PS",
       description:
-        "Lists Docker Compose services with structured state and status information. Use instead of running `docker compose ps` in the terminal.",
+        "Lists Docker Compose services with structured state and status information.",
       inputSchema: {
         path: z
           .string()

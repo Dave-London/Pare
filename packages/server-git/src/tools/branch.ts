@@ -13,7 +13,7 @@ export function registerBranchTool(server: McpServer) {
     {
       title: "Git Branch",
       description:
-        "Lists, creates, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
+        "Lists, creates, or deletes branches. Returns structured branch data.",
       inputSchema: {
         path: z
           .string()

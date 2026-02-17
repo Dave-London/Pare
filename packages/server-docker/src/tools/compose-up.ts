@@ -12,7 +12,7 @@ export function registerComposeUpTool(server: McpServer) {
     {
       title: "Docker Compose Up",
       description:
-        "Starts Docker Compose services and returns structured status. Use instead of running `docker compose up` in the terminal.",
+        "Starts Docker Compose services and returns structured status.",
       inputSchema: {
         path: z
           .string()

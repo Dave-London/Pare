@@ -12,7 +12,7 @@ export function registerPrMergeTool(server: McpServer) {
     {
       title: "PR Merge",
       description:
-        "Merges a pull request by number. Returns structured data with merge status, method, and URL. Use instead of running `gh pr merge` in the terminal.",
+        "Merges a pull request by number. Returns structured data with merge status, method, and URL.",
       inputSchema: {
         number: z.number().describe("Pull request number"),
         method: z

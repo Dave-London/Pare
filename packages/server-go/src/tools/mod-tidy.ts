@@ -12,7 +12,7 @@ export function registerModTidyTool(server: McpServer) {
     {
       title: "Go Mod Tidy",
       description:
-        "Runs go mod tidy to add missing and remove unused module dependencies. Use instead of running `go mod tidy` in the terminal.",
+        "Runs go mod tidy to add missing and remove unused module dependencies.",
       inputSchema: {
         path: z
           .string()

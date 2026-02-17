@@ -12,7 +12,7 @@ export function registerListTool(server: McpServer) {
     {
       title: "Go List",
       description:
-        "Lists Go packages and returns structured package information (dir, importPath, name, goFiles). Use instead of running `go list` in the terminal.",
+        "Lists Go packages and returns structured package information (dir, importPath, name, goFiles).",
       inputSchema: {
         path: z
           .string()

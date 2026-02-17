@@ -21,7 +21,7 @@ export function registerSemgrepTool(server: McpServer) {
     {
       title: "Semgrep Static Analysis",
       description:
-        "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary. Use instead of running `semgrep` in the terminal.",
+        "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary.",
       inputSchema: {
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))

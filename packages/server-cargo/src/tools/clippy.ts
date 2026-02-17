@@ -12,7 +12,7 @@ export function registerClippyTool(server: McpServer) {
     {
       title: "Cargo Clippy",
       description:
-        "Runs cargo clippy and returns structured lint diagnostics. Use instead of running `cargo clippy` in the terminal.",
+        "Runs cargo clippy and returns structured lint diagnostics.",
       inputSchema: {
         path: z
           .string()

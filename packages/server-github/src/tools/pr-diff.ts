@@ -13,7 +13,7 @@ export function registerPrDiffTool(server: McpServer) {
     {
       title: "PR Diff",
       description:
-        "Returns file-level diff statistics for a pull request. Use full=true for patch content. Use instead of running `gh pr diff` in the terminal.",
+        "Returns file-level diff statistics for a pull request. Use full=true for patch content.",
       inputSchema: {
         pr: z.number().describe("Pull request number"),
         repo: z

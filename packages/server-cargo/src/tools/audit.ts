@@ -12,7 +12,7 @@ export function registerAuditTool(server: McpServer) {
     {
       title: "Cargo Audit",
       description:
-        "Runs cargo audit and returns structured vulnerability data. Use instead of running `cargo audit` in the terminal.",
+        "Runs cargo audit and returns structured vulnerability data.",
       inputSchema: {
         path: z
           .string()

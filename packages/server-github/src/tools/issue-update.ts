@@ -12,7 +12,7 @@ export function registerIssueUpdateTool(server: McpServer) {
     {
       title: "Issue Update",
       description:
-        "Updates issue metadata (title, body, labels, assignees). Returns structured data with issue number and URL. Use instead of running `gh issue edit` in the terminal.",
+        "Updates issue metadata (title, body, labels, assignees). Returns structured data with issue number and URL.",
       inputSchema: {
         number: z.number().describe("Issue number"),
         path: z

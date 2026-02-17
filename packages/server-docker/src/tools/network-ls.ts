@@ -12,7 +12,7 @@ export function registerNetworkLsTool(server: McpServer) {
     {
       title: "Docker Network LS",
       description:
-        "Lists Docker networks with structured driver and scope information. Use instead of running `docker network ls` in the terminal.",
+        "Lists Docker networks with structured driver and scope information.",
       inputSchema: {
         path: z
           .string()

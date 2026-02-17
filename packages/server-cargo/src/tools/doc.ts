@@ -12,7 +12,7 @@ export function registerDocTool(server: McpServer) {
     {
       title: "Cargo Doc",
       description:
-        "Generates Rust documentation and returns structured output with warning count. Use instead of running `cargo doc` in the terminal.",
+        "Generates Rust documentation and returns structured output with warning count.",
       inputSchema: {
         path: z
           .string()

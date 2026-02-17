@@ -12,7 +12,7 @@ export function registerSearchTool(server: McpServer) {
     {
       title: "Code Search",
       description:
-        "Searches file contents using ripgrep with structured JSON output. Returns match locations with file, line, column, matched text, and line content. Use instead of running `rg` or `grep` in the terminal.",
+        "Searches file contents using ripgrep with structured JSON output. Returns match locations with file, line, column, matched text, and line content.",
       inputSchema: {
         pattern: z
           .string()

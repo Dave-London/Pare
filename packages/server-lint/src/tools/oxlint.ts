@@ -12,7 +12,7 @@ export function registerOxlintTool(server: McpServer) {
     {
       title: "Oxlint Check",
       description:
-        "Runs Oxlint and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `oxlint` in the terminal.",
+        "Runs Oxlint and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
         path: z
           .string()

@@ -12,7 +12,7 @@ export function registerStashTool(server: McpServer) {
     {
       title: "Git Stash",
       description:
-        "Pushes, pops, applies, or drops stash entries. Returns structured result with action, success, and message. Use instead of running `git stash` in the terminal.",
+        "Pushes, pops, applies, or drops stash entries. Returns structured result with action, success, and message.",
       inputSchema: {
         path: z
           .string()

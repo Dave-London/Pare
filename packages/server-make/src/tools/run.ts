@@ -12,7 +12,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Make/Just Run",
       description:
-        "Runs a make or just target and returns structured output (stdout, stderr, exit code, duration). Auto-detects make vs just. Use instead of running `make` or `just` in the terminal.",
+        "Runs a make or just target and returns structured output (stdout, stderr, exit code, duration). Auto-detects make vs just.",
       inputSchema: {
         target: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Target to run"),
         args: z

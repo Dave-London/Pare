@@ -11,7 +11,7 @@ export function registerTrivyTool(server: McpServer) {
     {
       title: "Trivy Security Scanner",
       description:
-        "Runs Trivy vulnerability/misconfiguration scanner on container images, filesystems, or IaC configs. Returns structured vulnerability data with severity summary. Use instead of running `trivy` in the terminal.",
+        "Runs Trivy vulnerability/misconfiguration scanner on container images, filesystems, or IaC configs. Returns structured vulnerability data with severity summary.",
       inputSchema: {
         target: z
           .string()

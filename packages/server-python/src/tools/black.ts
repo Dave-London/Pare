@@ -12,7 +12,7 @@ export function registerBlackTool(server: McpServer) {
     {
       title: "Black Formatter",
       description:
-        "Runs Black code formatter and returns structured results (files changed, unchanged, would reformat). Use instead of running `black` in the terminal.",
+        "Runs Black code formatter and returns structured results (files changed, unchanged, would reformat).",
       inputSchema: {
         path: z
           .string()

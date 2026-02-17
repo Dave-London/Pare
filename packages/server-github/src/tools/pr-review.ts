@@ -12,7 +12,7 @@ export function registerPrReviewTool(server: McpServer) {
     {
       title: "PR Review",
       description:
-        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event and URL. Use instead of running `gh pr review` in the terminal.",
+        "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event and URL.",
       inputSchema: {
         number: z.number().describe("Pull request number"),
         event: z

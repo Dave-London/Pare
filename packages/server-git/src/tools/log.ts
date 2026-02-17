@@ -16,7 +16,7 @@ export function registerLogTool(server: McpServer) {
     {
       title: "Git Log",
       description:
-        "Returns commit history as structured data. Use instead of running `git log` in the terminal.",
+        "Returns commit history as structured data.",
       inputSchema: {
         path: z
           .string()

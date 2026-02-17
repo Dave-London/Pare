@@ -11,7 +11,7 @@ export function registerDescribeTool(server: McpServer) {
     {
       title: "Kubectl Describe",
       description:
-        "Describes a Kubernetes resource with detailed information. Use instead of running `kubectl describe` in the terminal.",
+        "Describes a Kubernetes resource with detailed information.",
       inputSchema: {
         resource: z
           .string()

@@ -13,7 +13,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Docker Run",
       description:
-        "Runs a Docker container from an image and returns structured container ID and status. Use instead of running `docker run` in the terminal.",
+        "Runs a Docker container from an image and returns structured container ID and status.",
       inputSchema: {
         image: z
           .string()

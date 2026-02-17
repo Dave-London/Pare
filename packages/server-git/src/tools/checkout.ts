@@ -12,7 +12,7 @@ export function registerCheckoutTool(server: McpServer) {
     {
       title: "Git Checkout",
       description:
-        "Switches branches or restores files. Returns structured data with ref, previous ref, and whether a new branch was created. Use instead of running `git checkout` in the terminal.",
+        "Switches branches or restores files. Returns structured data with ref, previous ref, and whether a new branch was created.",
       inputSchema: {
         path: z
           .string()

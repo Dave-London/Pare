@@ -14,7 +14,7 @@ export function registerPrChecksTool(server: McpServer) {
     {
       title: "PR Checks",
       description:
-        "Lists check/status results for a pull request. Returns structured data with check names, states, conclusions, URLs, and summary counts (passed, failed, pending). Use instead of running `gh pr checks` in the terminal.",
+        "Lists check/status results for a pull request. Returns structured data with check names, states, conclusions, URLs, and summary counts (passed, failed, pending).",
       inputSchema: {
         pr: z.number().describe("Pull request number"),
         repo: z

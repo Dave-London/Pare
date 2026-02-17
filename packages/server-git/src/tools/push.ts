@@ -12,7 +12,7 @@ export function registerPushTool(server: McpServer) {
     {
       title: "Git Push",
       description:
-        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, and summary. Use instead of running `git push` in the terminal.",
+        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, and summary.",
       inputSchema: {
         path: z
           .string()

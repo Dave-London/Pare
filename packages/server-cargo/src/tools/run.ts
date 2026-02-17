@@ -12,7 +12,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Cargo Run",
       description:
-        "Runs a cargo binary and returns structured output (exit code, stdout, stderr). Use instead of running `cargo run` in the terminal.",
+        "Runs a cargo binary and returns structured output (exit code, stdout, stderr).",
       inputSchema: {
         path: z
           .string()

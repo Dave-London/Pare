@@ -12,7 +12,7 @@ export function registerEsbuildTool(server: McpServer) {
     {
       title: "esbuild",
       description:
-        "Runs the esbuild bundler and returns structured errors, warnings, and output files. Use instead of running `esbuild` in the terminal.",
+        "Runs the esbuild bundler and returns structured errors, warnings, and output files.",
       inputSchema: {
         path: z
           .string()

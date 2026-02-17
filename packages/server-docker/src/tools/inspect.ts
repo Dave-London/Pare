@@ -12,7 +12,7 @@ export function registerInspectTool(server: McpServer) {
     {
       title: "Docker Inspect",
       description:
-        "Shows detailed container or image information with structured state, image, and platform data. Use instead of running `docker inspect` in the terminal.",
+        "Shows detailed container or image information with structured state, image, and platform data.",
       inputSchema: {
         target: z
           .string()

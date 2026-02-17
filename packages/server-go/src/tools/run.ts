@@ -12,7 +12,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Go Run",
       description:
-        "Runs a Go program and returns structured output (stdout, stderr, exit code). Use instead of running `go run` in the terminal.",
+        "Runs a Go program and returns structured output (stdout, stderr, exit code).",
       inputSchema: {
         path: z
           .string()

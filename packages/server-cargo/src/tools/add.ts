@@ -13,7 +13,6 @@ export function registerAddTool(server: McpServer) {
       title: "Cargo Add",
       description:
         "Adds dependencies to a Rust project and returns structured output. " +
-        "Use instead of running `cargo add` in the terminal. " +
         "WARNING: Adding crates downloads and compiles third-party code which may include build scripts (build.rs). " +
         "Only add trusted crates. Use dryRun to preview changes before committing.",
       inputSchema: {

@@ -12,8 +12,7 @@ export function registerNvmTool(server: McpServer) {
       title: "Node Version Manager",
       description:
         "Lists installed Node.js versions and shows the current version via nvm. " +
-        "Supports both Unix nvm and nvm-windows. " +
-        "Use instead of running `nvm list` or `nvm current` in the terminal.",
+        "Supports both Unix nvm and nvm-windows. ",
       inputSchema: {
         action: z
           .enum(["list", "current"])

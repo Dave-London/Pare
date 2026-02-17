@@ -12,7 +12,7 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Git Add",
       description:
-        "Stages files for commit. Returns structured data with count and list of staged files. Use instead of running `git add` in the terminal.",
+        "Stages files for commit. Returns structured data with count and list of staged files.",
       inputSchema: {
         path: z
           .string()

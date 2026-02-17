@@ -17,7 +17,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Process Run",
       description:
-        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status). Use instead of running commands directly in the terminal.",
+        "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status).",
       inputSchema: {
         command: z
           .string()

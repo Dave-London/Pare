@@ -12,7 +12,7 @@ export function registerFmtTool(server: McpServer) {
     {
       title: "Go Fmt",
       description:
-        "Checks or fixes Go source formatting using gofmt. In check mode (-l), lists unformatted files. In fix mode (-w), rewrites files. Use instead of running `gofmt` in the terminal.",
+        "Checks or fixes Go source formatting using gofmt. In check mode (-l), lists unformatted files. In fix mode (-w), rewrites files.",
       inputSchema: {
         path: z
           .string()

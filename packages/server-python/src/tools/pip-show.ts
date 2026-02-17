@@ -12,8 +12,7 @@ export function registerPipShowTool(server: McpServer) {
     {
       title: "pip Show",
       description:
-        "Runs pip show and returns structured package metadata (name, version, summary, dependencies). " +
-        "Use instead of running `pip show` in the terminal.",
+        "Runs pip show and returns structured package metadata (name, version, summary, dependencies). ",
       inputSchema: {
         package: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Package name to show"),
         path: z

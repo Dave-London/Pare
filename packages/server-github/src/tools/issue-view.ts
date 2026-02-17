@@ -14,7 +14,7 @@ export function registerIssueViewTool(server: McpServer) {
     {
       title: "Issue View",
       description:
-        "Views an issue by number. Returns structured data with state, labels, assignees, and body. Use instead of running `gh issue view` in the terminal.",
+        "Views an issue by number. Returns structured data with state, labels, assignees, and body.",
       inputSchema: {
         number: z.number().describe("Issue number"),
         path: z

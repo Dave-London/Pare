@@ -12,7 +12,7 @@ export function registerPullTool(server: McpServer) {
     {
       title: "Docker Pull",
       description:
-        "Pulls a Docker image from a registry and returns structured result with digest info. Use instead of running `docker pull` in the terminal.",
+        "Pulls a Docker image from a registry and returns structured result with digest info.",
       inputSchema: {
         image: z
           .string()

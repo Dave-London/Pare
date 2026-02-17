@@ -16,7 +16,7 @@ export function registerComposeBuildTool(server: McpServer) {
     {
       title: "Docker Compose Build",
       description:
-        "Builds Docker Compose service images and returns structured per-service build status. Use instead of running `docker compose build` in the terminal.",
+        "Builds Docker Compose service images and returns structured per-service build status.",
       inputSchema: {
         path: z
           .string()

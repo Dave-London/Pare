@@ -15,7 +15,7 @@ export function registerInfoTool(server: McpServer) {
       title: "Package Info",
       description:
         "Shows detailed package metadata from the npm registry. " +
-        "Works with npm, pnpm, and yarn (all query the same registry). Use instead of running `npm info` or `yarn info` in the terminal.",
+        "Works with npm, pnpm, and yarn (all query the same registry).",
       inputSchema: {
         package: z
           .string()

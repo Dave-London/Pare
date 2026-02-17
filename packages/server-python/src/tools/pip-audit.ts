@@ -11,7 +11,7 @@ export function registerPipAuditTool(server: McpServer) {
     {
       title: "pip Audit",
       description:
-        "Runs pip-audit and returns a structured vulnerability report. Use instead of running `pip-audit` in the terminal.",
+        "Runs pip-audit and returns a structured vulnerability report.",
       inputSchema: {
         path: z
           .string()

@@ -12,7 +12,7 @@ export function registerTagTool(server: McpServer) {
     {
       title: "Git Tag",
       description:
-        "Lists tags sorted by creation date. Returns structured tag data with name, date, and message. Use instead of running `git tag` in the terminal.",
+        "Lists tags sorted by creation date. Returns structured tag data with name, date, and message.",
       inputSchema: {
         path: z
           .string()

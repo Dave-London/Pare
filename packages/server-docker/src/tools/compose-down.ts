@@ -16,7 +16,7 @@ export function registerComposeDownTool(server: McpServer) {
     {
       title: "Docker Compose Down",
       description:
-        "Stops Docker Compose services and returns structured status. Use instead of running `docker compose down` in the terminal.",
+        "Stops Docker Compose services and returns structured status.",
       inputSchema: {
         path: z
           .string()

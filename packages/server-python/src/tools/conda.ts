@@ -16,8 +16,7 @@ export function registerCondaTool(server: McpServer) {
     {
       title: "Conda",
       description:
-        "Runs conda commands (list, info, env-list) and returns structured JSON output. " +
-        "Use instead of running `conda` in the terminal.",
+        "Runs conda commands (list, info, env-list) and returns structured JSON output. ",
       inputSchema: {
         action: z
           .enum(["list", "info", "env-list"])

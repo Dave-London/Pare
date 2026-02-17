@@ -11,7 +11,7 @@ export function registerLogsTool(server: McpServer) {
     {
       title: "Kubectl Logs",
       description:
-        "Gets logs from a Kubernetes pod. Use instead of running `kubectl logs` in the terminal.",
+        "Gets logs from a Kubernetes pod.",
       inputSchema: {
         pod: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pod name"),
         namespace: z

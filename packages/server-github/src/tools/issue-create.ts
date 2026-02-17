@@ -12,7 +12,7 @@ export function registerIssueCreateTool(server: McpServer) {
     {
       title: "Issue Create",
       description:
-        "Creates a new issue. Returns structured data with issue number and URL. Use instead of running `gh issue create` in the terminal.",
+        "Creates a new issue. Returns structured data with issue number and URL.",
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Issue title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue body/description"),

@@ -18,7 +18,7 @@ export function registerReleaseListTool(server: McpServer) {
     {
       title: "Release List",
       description:
-        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease status, publish date, and URL. Use instead of running `gh release list` in the terminal.",
+        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease status, publish date, and URL.",
       inputSchema: {
         limit: z
           .number()

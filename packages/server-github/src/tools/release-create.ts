@@ -12,7 +12,7 @@ export function registerReleaseCreateTool(server: McpServer) {
     {
       title: "Release Create",
       description:
-        "Creates a new GitHub release. Returns structured data with tag, URL, draft, and prerelease status. Use instead of running `gh release create` in the terminal.",
+        "Creates a new GitHub release. Returns structured data with tag, URL, draft, and prerelease status.",
       inputSchema: {
         tag: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Tag name for the release"),
         title: z

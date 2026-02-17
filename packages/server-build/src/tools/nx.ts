@@ -12,7 +12,7 @@ export function registerNxTool(server: McpServer) {
     {
       title: "nx",
       description:
-        "Runs Nx workspace commands and returns structured per-project task results with cache status. Use instead of running `nx` in the terminal.",
+        "Runs Nx workspace commands and returns structured per-project task results with cache status.",
       inputSchema: {
         target: z
           .string()

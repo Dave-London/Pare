@@ -12,7 +12,7 @@ export function registerMypyTool(server: McpServer) {
     {
       title: "mypy Type Check",
       description:
-        "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code). Use instead of running `mypy` in the terminal.",
+        "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code).",
       inputSchema: {
         path: z
           .string()

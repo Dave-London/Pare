@@ -12,7 +12,7 @@ export function registerBiomeCheckTool(server: McpServer) {
     {
       title: "Biome Check",
       description:
-        "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `biome check` in the terminal.",
+        "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
         path: z
           .string()

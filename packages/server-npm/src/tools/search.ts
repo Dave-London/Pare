@@ -12,7 +12,7 @@ export function registerSearchTool(server: McpServer) {
     {
       title: "Search npm Registry",
       description:
-        "Searches the npm registry for packages matching a query. Use instead of running `npm search` in the terminal. " +
+        "Searches the npm registry for packages matching a query. " +
         "Note: pnpm and yarn do not have a search command, so this always uses npm.",
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Search query string"),

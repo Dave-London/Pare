@@ -13,7 +13,7 @@ export function registerLogGraphTool(server: McpServer) {
     {
       title: "Git Log Graph",
       description:
-        "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`. Use instead of running `git log --graph` in the terminal.",
+        "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`.",
       inputSchema: {
         path: z
           .string()

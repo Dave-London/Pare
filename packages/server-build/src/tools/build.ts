@@ -18,7 +18,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Run Build",
       description:
-        "Runs a build command and returns structured success/failure with errors and warnings. Use instead of running build commands in the terminal.",
+        "Runs a build command and returns structured success/failure with errors and warnings.",
       inputSchema: {
         command: z
           .string()

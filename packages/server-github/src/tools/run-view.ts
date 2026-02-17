@@ -15,7 +15,7 @@ export function registerRunViewTool(server: McpServer) {
     {
       title: "Run View",
       description:
-        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs, and workflow details. Use instead of running `gh run view` in the terminal.",
+        "Views a workflow run by ID. Returns structured data with status, conclusion, jobs, and workflow details.",
       inputSchema: {
         id: z.number().describe("Workflow run ID"),
         path: z

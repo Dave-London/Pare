@@ -12,7 +12,7 @@ export function registerJqTool(server: McpServer) {
     {
       title: "JSON Processor",
       description:
-        "Processes and transforms JSON using jq expressions. Accepts JSON from a file path or inline string. Returns the transformed result. Use instead of running `jq` in the terminal.",
+        "Processes and transforms JSON using jq expressions. Accepts JSON from a file path or inline string. Returns the transformed result.",
       inputSchema: {
         expression: z
           .string()

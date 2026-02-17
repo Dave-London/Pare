@@ -12,7 +12,7 @@ export function registerRebaseTool(server: McpServer) {
     {
       title: "Git Rebase",
       description:
-        "Rebases the current branch onto a target branch. Supports abort and continue for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count. Use instead of running `git rebase` in the terminal.",
+        "Rebases the current branch onto a target branch. Supports abort and continue for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count.",
       inputSchema: {
         path: z
           .string()

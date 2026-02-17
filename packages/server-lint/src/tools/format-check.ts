@@ -16,7 +16,7 @@ export function registerFormatCheckTool(server: McpServer) {
     {
       title: "Prettier Check",
       description:
-        "Checks if files are formatted and returns a structured list of files needing formatting. Use instead of running `prettier --check` in the terminal.",
+        "Checks if files are formatted and returns a structured list of files needing formatting.",
       inputSchema: {
         path: z
           .string()

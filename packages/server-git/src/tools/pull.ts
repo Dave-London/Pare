@@ -12,7 +12,7 @@ export function registerPullTool(server: McpServer) {
     {
       title: "Git Pull",
       description:
-        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, and any conflicts. Use instead of running `git pull` in the terminal.",
+        "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, and any conflicts.",
       inputSchema: {
         path: z
           .string()

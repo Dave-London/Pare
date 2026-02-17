@@ -12,7 +12,7 @@ export function registerUvRunTool(server: McpServer) {
     {
       title: "uv Run",
       description:
-        "Runs a command in a uv-managed environment and returns structured output. Use instead of running `uv run` in the terminal.",
+        "Runs a command in a uv-managed environment and returns structured output.",
       inputSchema: {
         path: z
           .string()

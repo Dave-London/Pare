@@ -16,7 +16,7 @@ export function registerPrettierFormatTool(server: McpServer) {
     {
       title: "Prettier Format",
       description:
-        "Formats files with Prettier (--write) and returns a structured list of changed files. Use instead of running `prettier --write` in the terminal.",
+        "Formats files with Prettier (--write) and returns a structured list of changed files.",
       inputSchema: {
         path: z
           .string()

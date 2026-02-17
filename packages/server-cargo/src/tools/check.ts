@@ -12,7 +12,7 @@ export function registerCheckTool(server: McpServer) {
     {
       title: "Cargo Check",
       description:
-        "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking. Use instead of running `cargo check` in the terminal.",
+        "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking.",
       inputSchema: {
         path: z
           .string()

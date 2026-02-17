@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/github", version: "0.8.1" },
   {
     instructions:
-      "Structured GitHub operations (PRs, issues, actions runs) via gh CLI. Returns typed JSON. Use instead of running gh commands via bash.",
+      "Structured GitHub operations (PRs, issues, actions runs) via gh CLI. Returns typed JSON.",
   },
 );
 

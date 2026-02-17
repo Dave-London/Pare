@@ -12,7 +12,7 @@ export function registerTestTool(server: McpServer) {
     {
       title: "Cargo Test",
       description:
-        "Runs cargo test and returns structured test results (name, status, pass/fail counts). Use instead of running `cargo test` in the terminal.",
+        "Runs cargo test and returns structured test results (name, status, pass/fail counts).",
       inputSchema: {
         path: z
           .string()

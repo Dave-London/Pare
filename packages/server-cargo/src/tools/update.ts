@@ -12,8 +12,7 @@ export function registerUpdateTool(server: McpServer) {
     {
       title: "Cargo Update",
       description:
-        "Updates dependencies in the lock file. Optionally updates a single package. " +
-        "Use instead of running `cargo update` in the terminal.",
+        "Updates dependencies in the lock file. Optionally updates a single package. ",
       inputSchema: {
         path: z
           .string()

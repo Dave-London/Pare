@@ -12,7 +12,7 @@ export function registerCommitTool(server: McpServer) {
     {
       title: "Git Commit",
       description:
-        "Creates a commit with the given message. Returns structured data with hash, message, and change statistics. Use instead of running `git commit` in the terminal.",
+        "Creates a commit with the given message. Returns structured data with hash, message, and change statistics.",
       inputSchema: {
         path: z
           .string()

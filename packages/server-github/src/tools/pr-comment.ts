@@ -12,7 +12,7 @@ export function registerPrCommentTool(server: McpServer) {
     {
       title: "PR Comment",
       description:
-        "Adds a comment to a pull request. Returns structured data with the comment URL. Use instead of running `gh pr comment` in the terminal.",
+        "Adds a comment to a pull request. Returns structured data with the comment URL.",
       inputSchema: {
         number: z.number().describe("Pull request number"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),

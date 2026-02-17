@@ -12,7 +12,7 @@ export function registerGistCreateTool(server: McpServer) {
     {
       title: "Gist Create",
       description:
-        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, and visibility. Use instead of running `gh gist create` in the terminal.",
+        "Creates a new GitHub gist from one or more files. Returns structured data with gist ID, URL, and visibility.",
       inputSchema: {
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))

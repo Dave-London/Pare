@@ -15,7 +15,7 @@ export function registerPrViewTool(server: McpServer) {
     {
       title: "PR View",
       description:
-        "Views a pull request by number. Returns structured data with state, checks, review decision, and diff stats. Use instead of running `gh pr view` in the terminal.",
+        "Views a pull request by number. Returns structured data with state, checks, review decision, and diff stats.",
       inputSchema: {
         number: z.number().describe("Pull request number"),
         path: z

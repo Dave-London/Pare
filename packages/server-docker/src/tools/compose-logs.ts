@@ -16,7 +16,7 @@ export function registerComposeLogsTool(server: McpServer) {
     {
       title: "Docker Compose Logs",
       description:
-        "Retrieves Docker Compose service logs as structured entries. Use instead of running `docker compose logs` in the terminal.",
+        "Retrieves Docker Compose service logs as structured entries.",
       inputSchema: {
         path: z
           .string()

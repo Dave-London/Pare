@@ -12,7 +12,7 @@ export function registerViteBuildTool(server: McpServer) {
     {
       title: "Vite Build",
       description:
-        "Runs Vite production build and returns structured output files with sizes. Use instead of running `vite build` in the terminal.",
+        "Runs Vite production build and returns structured output files with sizes.",
       inputSchema: {
         path: z
           .string()

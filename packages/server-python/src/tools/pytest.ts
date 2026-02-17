@@ -12,7 +12,7 @@ export function registerPytestTool(server: McpServer) {
     {
       title: "pytest",
       description:
-        "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures). Use instead of running `pytest` in the terminal.",
+        "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures).",
       inputSchema: {
         path: z
           .string()

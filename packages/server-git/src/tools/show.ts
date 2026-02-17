@@ -16,7 +16,7 @@ export function registerShowTool(server: McpServer) {
     {
       title: "Git Show",
       description:
-        "Shows commit details and diff statistics for a given ref. Use instead of running `git show` in the terminal.",
+        "Shows commit details and diff statistics for a given ref.",
       inputSchema: {
         path: z
           .string()

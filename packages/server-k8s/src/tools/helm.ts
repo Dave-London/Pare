@@ -34,7 +34,7 @@ export function registerHelmTool(server: McpServer) {
     {
       title: "Helm",
       description:
-        "Manages Helm releases (install, upgrade, list, status). Returns structured JSON output. Use instead of running `helm` in the terminal.",
+        "Manages Helm releases (install, upgrade, list, status). Returns structured JSON output.",
       inputSchema: {
         action: z.enum(["list", "status", "install", "upgrade"]).describe("Helm action to perform"),
         release: z

@@ -12,7 +12,7 @@ export function registerIssueCommentTool(server: McpServer) {
     {
       title: "Issue Comment",
       description:
-        "Adds a comment to an issue. Returns structured data with the comment URL. Use instead of running `gh issue comment` in the terminal.",
+        "Adds a comment to an issue. Returns structured data with the comment URL.",
       inputSchema: {
         number: z.number().describe("Issue number"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),

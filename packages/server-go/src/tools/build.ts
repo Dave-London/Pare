@@ -12,7 +12,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Go Build",
       description:
-        "Runs go build and returns structured error list (file, line, column, message). Use instead of running `go build` in the terminal.",
+        "Runs go build and returns structured error list (file, line, column, message).",
       inputSchema: {
         path: z
           .string()

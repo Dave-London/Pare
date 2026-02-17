@@ -12,8 +12,7 @@ export function registerTreeTool(server: McpServer) {
     {
       title: "Cargo Tree",
       description:
-        "Displays the dependency tree for a Rust project. " +
-        "Use instead of running `cargo tree` in the terminal.",
+        "Displays the dependency tree for a Rust project. ",
       inputSchema: {
         path: z
           .string()

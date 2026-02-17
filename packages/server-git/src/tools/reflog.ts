@@ -15,7 +15,7 @@ export function registerReflogTool(server: McpServer) {
     {
       title: "Git Reflog",
       description:
-        "Returns reference log entries as structured data, useful for recovery operations. Use instead of running `git reflog` in the terminal.",
+        "Returns reference log entries as structured data, useful for recovery operations.",
       inputSchema: {
         path: z
           .string()

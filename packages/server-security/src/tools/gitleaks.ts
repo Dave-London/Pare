@@ -15,7 +15,7 @@ export function registerGitleaksTool(server: McpServer) {
     {
       title: "Gitleaks Secret Detection",
       description:
-        "Runs Gitleaks to detect hardcoded secrets in git repositories. Returns structured finding data with redacted secrets. Use instead of running `gitleaks` in the terminal.",
+        "Runs Gitleaks to detect hardcoded secrets in git repositories. Returns structured finding data with redacted secrets.",
       inputSchema: {
         path: z
           .string()

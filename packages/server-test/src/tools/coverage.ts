@@ -32,7 +32,7 @@ export function registerCoverageTool(server: McpServer) {
     {
       title: "Test Coverage",
       description:
-        "Runs tests with coverage and returns structured coverage summary per file. Use instead of running test coverage commands in the terminal.",
+        "Runs tests with coverage and returns structured coverage summary per file.",
       inputSchema: {
         path: z
           .string()

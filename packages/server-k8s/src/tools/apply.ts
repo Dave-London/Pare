@@ -11,7 +11,7 @@ export function registerApplyTool(server: McpServer) {
     {
       title: "Kubectl Apply",
       description:
-        "Applies a Kubernetes manifest file. Use instead of running `kubectl apply` in the terminal.",
+        "Applies a Kubernetes manifest file.",
       inputSchema: {
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("Path to the manifest file to apply"),
         namespace: z

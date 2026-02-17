@@ -22,7 +22,7 @@ export function registerWorktreeTool(server: McpServer) {
     {
       title: "Git Worktree",
       description:
-        "Lists, adds, or removes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits. Use instead of running `git worktree` in the terminal.",
+        "Lists, adds, or removes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits.",
       inputSchema: {
         path: z
           .string()

@@ -12,7 +12,7 @@ export function registerRemoteTool(server: McpServer) {
     {
       title: "Git Remote",
       description:
-        "Lists remote repositories with fetch and push URLs. Returns structured remote data. Use instead of running `git remote -v` in the terminal.",
+        "Lists remote repositories with fetch and push URLs. Returns structured remote data.",
       inputSchema: {
         path: z
           .string()

@@ -12,7 +12,7 @@ export function registerPrCreateTool(server: McpServer) {
     {
       title: "PR Create",
       description:
-        "Creates a new pull request. Returns structured data with PR number and URL. Use instead of running `gh pr create` in the terminal.",
+        "Creates a new pull request. Returns structured data with PR number and URL.",
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pull request title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Pull request body/description"),

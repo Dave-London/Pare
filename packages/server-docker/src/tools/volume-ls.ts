@@ -12,7 +12,7 @@ export function registerVolumeLsTool(server: McpServer) {
     {
       title: "Docker Volume LS",
       description:
-        "Lists Docker volumes with structured driver, mountpoint, and scope information. Use instead of running `docker volume ls` in the terminal.",
+        "Lists Docker volumes with structured driver, mountpoint, and scope information.",
       inputSchema: {
         path: z
           .string()

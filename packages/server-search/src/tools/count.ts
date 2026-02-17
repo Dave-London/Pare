@@ -12,7 +12,7 @@ export function registerCountTool(server: McpServer) {
     {
       title: "Match Count",
       description:
-        "Counts pattern matches per file using ripgrep. Returns per-file match counts and totals. Use instead of running `rg --count` or `grep -c` in the terminal.",
+        "Counts pattern matches per file using ripgrep. Returns per-file match counts and totals.",
       inputSchema: {
         pattern: z
           .string()

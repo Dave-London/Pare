@@ -12,7 +12,7 @@ export function registerPsTool(server: McpServer) {
     {
       title: "Docker PS",
       description:
-        "Lists Docker containers with structured status, ports, and state information. Use instead of running `docker ps` in the terminal.",
+        "Lists Docker containers with structured status, ports, and state information.",
       inputSchema: {
         all: z
           .boolean()

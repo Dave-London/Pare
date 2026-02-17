@@ -12,7 +12,7 @@ export function registerWebpackTool(server: McpServer) {
     {
       title: "webpack",
       description:
-        "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings. Use instead of running `webpack` in the terminal.",
+        "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings.",
       inputSchema: {
         path: z
           .string()

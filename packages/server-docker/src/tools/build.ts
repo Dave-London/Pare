@@ -12,7 +12,7 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Docker Build",
       description:
-        "Builds a Docker image and returns structured build results including image ID, duration, and errors. Use instead of running `docker build` in the terminal.",
+        "Builds a Docker image and returns structured build results including image ID, duration, and errors.",
       inputSchema: {
         path: z
           .string()

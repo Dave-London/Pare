@@ -12,7 +12,7 @@ export function registerMergeTool(server: McpServer) {
     {
       title: "Git Merge",
       description:
-        "Merges a branch into the current branch. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash. Use instead of running `git merge` in the terminal.",
+        "Merges a branch into the current branch. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash.",
       inputSchema: {
         path: z
           .string()

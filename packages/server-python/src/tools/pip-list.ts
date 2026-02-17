@@ -12,8 +12,7 @@ export function registerPipListTool(server: McpServer) {
     {
       title: "pip List",
       description:
-        "Runs pip list and returns a structured list of installed packages. " +
-        "Use instead of running `pip list` in the terminal.",
+        "Runs pip list and returns a structured list of installed packages. ",
       inputSchema: {
         path: z
           .string()

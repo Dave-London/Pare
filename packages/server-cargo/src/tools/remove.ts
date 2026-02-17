@@ -12,7 +12,7 @@ export function registerRemoveTool(server: McpServer) {
     {
       title: "Cargo Remove",
       description:
-        "Removes dependencies from a Rust project and returns structured output. Use instead of running `cargo remove` in the terminal.",
+        "Removes dependencies from a Rust project and returns structured output.",
       inputSchema: {
         path: z
           .string()

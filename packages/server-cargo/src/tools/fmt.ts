@@ -12,7 +12,7 @@ export function registerFmtTool(server: McpServer) {
     {
       title: "Cargo Fmt",
       description:
-        "Checks or fixes Rust formatting and returns structured output. Use instead of running `cargo fmt` in the terminal.",
+        "Checks or fixes Rust formatting and returns structured output.",
       inputSchema: {
         path: z
           .string()

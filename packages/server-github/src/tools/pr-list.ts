@@ -14,7 +14,7 @@ export function registerPrListTool(server: McpServer) {
     {
       title: "PR List",
       description:
-        "Lists pull requests with optional filters. Returns structured list with PR number, state, title, author, and branch. Use instead of running `gh pr list` in the terminal.",
+        "Lists pull requests with optional filters. Returns structured list with PR number, state, title, author, and branch.",
       inputSchema: {
         state: z
           .enum(["open", "closed", "merged", "all"])

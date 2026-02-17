@@ -11,7 +11,7 @@ export function registerGetTool(server: McpServer) {
     {
       title: "Kubectl Get",
       description:
-        "Gets Kubernetes resources and returns structured JSON output. Use instead of running `kubectl get` in the terminal.",
+        "Gets Kubernetes resources and returns structured JSON output.",
       inputSchema: {
         resource: z
           .string()

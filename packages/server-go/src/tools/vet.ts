@@ -12,7 +12,7 @@ export function registerVetTool(server: McpServer) {
     {
       title: "Go Vet",
       description:
-        "Runs go vet and returns structured static analysis diagnostics. Use instead of running `go vet` in the terminal.",
+        "Runs go vet and returns structured static analysis diagnostics.",
       inputSchema: {
         path: z
           .string()

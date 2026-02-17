@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/process", version: "0.8.1" },
   {
     instructions:
-      "Structured process execution (run). Runs commands with timeout, environment, and signal support. Returns typed JSON with exit code, stdout, stderr, duration, and timeout status. Use instead of running arbitrary commands in the terminal.",
+      "Structured process execution (run). Runs commands with timeout, environment, and signal support. Returns typed JSON with exit code, stdout, stderr, duration, and timeout status.",
   },
 );
 

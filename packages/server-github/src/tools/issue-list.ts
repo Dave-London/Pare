@@ -14,7 +14,7 @@ export function registerIssueListTool(server: McpServer) {
     {
       title: "Issue List",
       description:
-        "Lists issues with optional filters. Returns structured list with issue number, state, title, labels, and assignees. Use instead of running `gh issue list` in the terminal.",
+        "Lists issues with optional filters. Returns structured list with issue number, state, title, labels, and assignees.",
       inputSchema: {
         state: z
           .enum(["open", "closed", "all"])

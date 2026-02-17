@@ -12,7 +12,7 @@ export function registerEnvTool(server: McpServer) {
     {
       title: "Go Env",
       description:
-        "Returns Go environment variables as structured JSON. Optionally request specific variables. Use instead of running `go env` in the terminal.",
+        "Returns Go environment variables as structured JSON. Optionally request specific variables.",
       inputSchema: {
         path: z
           .string()

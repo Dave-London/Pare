@@ -12,7 +12,7 @@ export function registerListTool(server: McpServer) {
     {
       title: "Make/Just List Targets",
       description:
-        "Lists available make or just targets with optional descriptions. Auto-detects make vs just. Use instead of running `make` or `just --list` in the terminal.",
+        "Lists available make or just targets with optional descriptions. Auto-detects make vs just.",
       inputSchema: {
         path: z
           .string()

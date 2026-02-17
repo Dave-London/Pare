@@ -12,7 +12,7 @@ export function registerCherryPickTool(server: McpServer) {
     {
       title: "Git Cherry-Pick",
       description:
-        "Applies specific commits to the current branch. Returns structured data with applied commits and any conflicts. Use instead of running `git cherry-pick` in the terminal.",
+        "Applies specific commits to the current branch. Returns structured data with applied commits and any conflicts.",
       inputSchema: {
         path: z
           .string()

@@ -12,7 +12,7 @@ export function registerStashListTool(server: McpServer) {
     {
       title: "Git Stash List",
       description:
-        "Lists all stash entries with index, message, and date. Returns structured stash data. Use instead of running `git stash list` in the terminal.",
+        "Lists all stash entries with index, message, and date. Returns structured stash data.",
       inputSchema: {
         path: z
           .string()
