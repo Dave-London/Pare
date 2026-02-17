@@ -14,9 +14,7 @@ export function registerPyenvTool(server: McpServer) {
     {
       title: "pyenv",
       description:
-        "Manages Python versions via pyenv. " +
-        "Actions: `versions` (list installed), `version` (show current), " +
-        "`install` (install a version), `local` (set local version), `global` (set global version). ",
+        "Manages Python versions via pyenv.",
       inputSchema: {
         action: z.enum(ACTIONS).describe("The pyenv action to perform"),
         version: z

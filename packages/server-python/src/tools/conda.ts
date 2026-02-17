@@ -16,11 +16,11 @@ export function registerCondaTool(server: McpServer) {
     {
       title: "Conda",
       description:
-        "Runs conda commands (list, info, env-list) and returns structured JSON output. ",
+        "Runs conda commands and returns structured JSON output.",
       inputSchema: {
         action: z
           .enum(["list", "info", "env-list"])
-          .describe("Conda action to perform: list packages, show info, or list environments"),
+          .describe("Conda action to perform"),
         name: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)

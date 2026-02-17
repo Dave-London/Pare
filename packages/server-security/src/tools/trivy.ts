@@ -21,9 +21,7 @@ export function registerTrivyTool(server: McpServer) {
           .enum(["image", "fs", "config"])
           .optional()
           .default("image")
-          .describe(
-            'Scan type: "image" for container images, "fs" for filesystem, "config" for IaC misconfigurations',
-          ),
+          .describe("Scan type"),
         severity: z
           .enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"])
           .optional()

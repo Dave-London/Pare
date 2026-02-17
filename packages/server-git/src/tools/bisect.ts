@@ -12,7 +12,7 @@ export function registerBisectTool(server: McpServer) {
     {
       title: "Git Bisect",
       description:
-        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, and status actions. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found.",
+        "Binary search for the commit that introduced a bug. Returns structured data with action taken, current commit, remaining steps estimate, and result when found.",
       inputSchema: {
         path: z
           .string()

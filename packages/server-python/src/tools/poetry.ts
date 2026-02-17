@@ -12,15 +12,11 @@ export function registerPoetryTool(server: McpServer) {
     {
       title: "Poetry",
       description:
-        "Runs Poetry commands and returns structured output. " +
-        "Supports install, add, remove, show, and build actions. ",
+        "Runs Poetry commands and returns structured output.",
       inputSchema: {
         action: z
           .enum(["install", "add", "remove", "show", "build"])
-          .describe(
-            "Poetry action: install (poetry install), add (poetry add <packages>), " +
-              "remove (poetry remove <packages>), show (poetry show), build (poetry build)",
-          ),
+          .describe("Poetry action to perform"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
