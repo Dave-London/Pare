@@ -34,7 +34,7 @@ export function registerTurboTool(server: McpServer) {
           .optional()
           .default(true)
           .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
+            "Prefer compact output",
           ),
       },
       outputSchema: TurboResultSchema,
