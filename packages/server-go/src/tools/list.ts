@@ -13,13 +13,9 @@ export function registerListTool(server: McpServer) {
     {
       title: "Go List",
       description:
-        "Lists Go packages or modules and returns structured information. When `modules` is true, lists modules (with path, version, dir); otherwise lists packages (with dir, importPath, name, goFiles, testGoFiles). Use instead of running `go list` in the terminal.",
+        "Lists Go packages or modules and returns structured information. When `modules` is true, lists modules (with path, version, dir); otherwise lists packages (with dir, importPath, name, goFiles, testGoFiles).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -74,13 +70,7 @@ export function registerListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Build tags that may affect which packages are listed (-tags)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoListResultSchema,
     },

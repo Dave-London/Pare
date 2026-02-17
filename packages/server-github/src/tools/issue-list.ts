@@ -16,7 +16,7 @@ export function registerIssueListTool(server: McpServer) {
     {
       title: "Issue List",
       description:
-        "Lists issues with optional filters. Returns structured list with issue number, state, title, labels, assignees, author, creation date, and milestone. Use instead of running `gh issue list` in the terminal.",
+        "Lists issues with optional filters. Returns structured list with issue number, state, title, labels, assignees, author, creation date, and milestone.",
       inputSchema: {
         state: z
           .enum(["open", "closed", "all"])
@@ -75,18 +75,8 @@ export function registerIssueListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: IssueListResultSchema,
     },

@@ -12,14 +12,9 @@ export function registerFmtTool(server: McpServer) {
     "fmt",
     {
       title: "Cargo Fmt",
-      description:
-        "Checks or fixes Rust formatting and returns structured output. Use instead of running `cargo fmt` in the terminal.",
+      description: "Checks or fixes Rust formatting and returns structured output.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         check: z
           .boolean()
           .optional()
@@ -58,13 +53,7 @@ export function registerFmtTool(server: McpServer) {
           .enum(["files", "stdout"])
           .optional()
           .describe("Output mode for rustfmt (-- --emit <MODE>)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoFmtResultSchema,
     },

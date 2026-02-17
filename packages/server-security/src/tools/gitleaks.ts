@@ -22,13 +22,9 @@ export function registerGitleaksTool(server: McpServer) {
     {
       title: "Gitleaks Secret Detection",
       description:
-        "Runs Gitleaks to detect hardcoded secrets in git repositories. Returns structured finding data with redacted secrets. Use instead of running `gitleaks` in the terminal.",
+        "Runs Gitleaks to detect hardcoded secrets in git repositories. Returns structured finding data with redacted secrets.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path to scan (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path to scan"),
         redact: z
           .boolean()
           .optional()
@@ -90,13 +86,7 @@ export function registerGitleaksTool(server: McpServer) {
           .number()
           .optional()
           .describe("Exit code when findings are detected (--exit-code)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitleaksScanResultSchema,
     },

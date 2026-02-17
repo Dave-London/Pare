@@ -115,18 +115,8 @@ export function registerPostTool(server: McpServer) {
           .enum(HTTP_VERSIONS)
           .optional()
           .describe("HTTP version to use: '1.0', '1.1', or '2' (--http1.0/--http1.1/--http2)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
       },
       outputSchema: HttpResponseSchema,
     },

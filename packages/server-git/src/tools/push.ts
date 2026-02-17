@@ -13,13 +13,9 @@ export function registerPushTool(server: McpServer) {
     {
       title: "Git Push",
       description:
-        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, summary, and whether the remote branch was newly created. Use instead of running `git push` in the terminal.",
+        "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, summary, and whether the remote branch was newly created.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         remote: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

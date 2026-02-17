@@ -13,13 +13,9 @@ export function registerHadolintTool(server: McpServer) {
     {
       title: "Hadolint",
       description:
-        "Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line, rule, severity, message). Use instead of running `hadolint` in the terminal.",
+        "Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -83,13 +79,7 @@ export function registerHadolintTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Rule codes to treat as info (maps to --info)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: LintResultSchema,
     },

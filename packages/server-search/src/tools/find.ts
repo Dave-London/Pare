@@ -13,18 +13,14 @@ export function registerFindTool(server: McpServer) {
     {
       title: "Find Files",
       description:
-        "Finds files and directories using fd with structured output. Returns file paths, names, and extensions. Use instead of running `fd` or `find` in the terminal.",
+        "Finds files and directories using fd with structured output. Returns file paths, names, and extensions.",
       inputSchema: {
         pattern: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Regex pattern to match file/directory names"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Directory to search in (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Directory to search in"),
         type: z
           .enum(["file", "directory", "symlink", "executable", "empty"])
           .optional()
@@ -79,13 +75,7 @@ export function registerFindTool(server: McpServer) {
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
         follow: z.boolean().optional().describe("Follow symbolic links (--follow)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: FindResultSchema,
     },

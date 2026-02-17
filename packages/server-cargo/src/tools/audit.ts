@@ -12,14 +12,9 @@ export function registerAuditTool(server: McpServer) {
     "audit",
     {
       title: "Cargo Audit",
-      description:
-        "Runs cargo audit and returns structured vulnerability data. Use instead of running `cargo audit` in the terminal.",
+      description: "Runs cargo audit and returns structured vulnerability data.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         fix: z
           .boolean()
           .optional()
@@ -72,13 +67,7 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("URL for advisory database (--url <URL>)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoAuditResultSchema,
     },

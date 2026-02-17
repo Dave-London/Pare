@@ -14,13 +14,9 @@ export function registerLogGraphTool(server: McpServer) {
     {
       title: "Git Log Graph",
       description:
-        "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`. Use instead of running `git log --graph` in the terminal.",
+        "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         maxCount: z
           .number()
           .optional()
@@ -58,13 +54,7 @@ export function registerLogGraphTool(server: McpServer) {
           .describe("Show only decorated commits (--simplify-by-decoration)"),
         branches: z.boolean().optional().describe("Show all branches (--branches)"),
         remotes: z.boolean().optional().describe("Show remote branches (--remotes)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitLogGraphSchema,
     },

@@ -12,8 +12,7 @@ export function registerPsTool(server: McpServer) {
     "ps",
     {
       title: "Docker PS",
-      description:
-        "Lists Docker containers with structured status, ports, and state information. Use instead of running `docker ps` in the terminal.",
+      description: "Lists Docker containers with structured status, ports, and state information.",
       inputSchema: {
         all: z
           .boolean()
@@ -31,13 +30,7 @@ export function registerPsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by status, name, label, network (--filter)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerPsSchema,
     },

@@ -14,13 +14,9 @@ export function registerDiffTool(server: McpServer) {
     {
       title: "Git Diff",
       description:
-        "Returns file-level diff statistics as structured data. Use full=true for patch content. Use instead of running `git diff` in the terminal.",
+        "Returns file-level diff statistics as structured data. Use full=true for patch content.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
         ref: z
           .string()
@@ -68,13 +64,7 @@ export function registerDiffTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Ignore blank line changes (--ignore-blank-lines)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitDiffSchema,
     },

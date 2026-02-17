@@ -20,11 +20,7 @@ export function registerInitTool(server: McpServer) {
         "Initializes a new package.json in the target directory. " +
         "Works with npm, pnpm, and yarn. Returns structured output with the package name, version, and path.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Directory to initialize (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Directory to initialize"),
         yes: z
           .boolean()
           .optional()

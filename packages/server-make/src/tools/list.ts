@@ -49,13 +49,9 @@ export function registerListTool(server: McpServer) {
     {
       title: "Make/Just List Targets",
       description:
-        "Lists available make or just targets with optional descriptions. Auto-detects make vs just. Use instead of running `make` or `just --list` in the terminal.",
+        "Lists available make or just targets with optional descriptions. Auto-detects make vs just.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         tool: z
           .enum(["auto", "make", "just"])
           .optional()
@@ -85,13 +81,7 @@ export function registerListTool(server: McpServer) {
           .describe(
             "List targets in definition order instead of alphabetical (just --unsorted, just only)",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: MakeListResultSchema,
     },

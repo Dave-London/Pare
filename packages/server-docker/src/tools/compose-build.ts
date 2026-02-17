@@ -17,13 +17,13 @@ export function registerComposeBuildTool(server: McpServer) {
     {
       title: "Docker Compose Build",
       description:
-        "Builds Docker Compose service images and returns structured per-service build status. Use instead of running `docker compose build` in the terminal.",
+        "Builds Docker Compose service images and returns structured per-service build status.",
       inputSchema: {
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory containing docker-compose.yml (default: cwd)"),
+          .describe("Directory containing docker-compose.yml"),
         services: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -85,13 +85,7 @@ export function registerComposeBuildTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Validate build config without building (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerComposeBuildSchema,
     },

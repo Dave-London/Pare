@@ -11,8 +11,7 @@ export function registerGetTool(server: McpServer) {
     "get",
     {
       title: "Kubectl Get",
-      description:
-        "Gets Kubernetes resources and returns structured JSON output. Use instead of running `kubectl get` in the terminal.",
+      description: "Gets Kubernetes resources and returns structured JSON output.",
       inputSchema: {
         resource: z
           .string()
@@ -83,13 +82,7 @@ export function registerGetTool(server: McpServer) {
           .describe(
             "Subresource to access (--subresource). E.g., 'status' or 'scale' for status/scale subresource.",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: KubectlGetResultSchema,
     },

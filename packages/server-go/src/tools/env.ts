@@ -14,13 +14,9 @@ export function registerEnvTool(server: McpServer) {
     {
       title: "Go Env",
       description:
-        "Returns Go environment variables as structured JSON. Optionally request specific variables. Use instead of running `go env` in the terminal.",
+        "Returns Go environment variables as structured JSON. Optionally request specific variables.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         vars: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -33,13 +29,7 @@ export function registerEnvTool(server: McpServer) {
           .describe(
             "Show only variables whose effective value differs from the default (-changed)",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoEnvResultSchema,
     },

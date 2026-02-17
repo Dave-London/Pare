@@ -17,13 +17,9 @@ export function registerGolangciLintTool(server: McpServer) {
     {
       title: "golangci-lint",
       description:
-        "Runs golangci-lint and returns structured lint diagnostics (file, line, linter, severity, message). Use instead of running `golangci-lint` in the terminal.",
+        "Runs golangci-lint and returns structured lint diagnostics (file, line, linter, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -130,13 +126,7 @@ export function registerGolangciLintTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Sort lint results for consistent output (--sort-results)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GolangciLintResultSchema,
     },

@@ -13,7 +13,7 @@ export function registerRunTool(server: McpServer) {
     {
       title: "Make/Just Run",
       description:
-        "Runs a make or just target and returns structured output (stdout, stderr, exit code, duration). Auto-detects make vs just. Use instead of running `make` or `just` in the terminal.",
+        "Runs a make or just target and returns structured output (stdout, stderr, exit code, duration). Auto-detects make vs just.",
       inputSchema: {
         target: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Target to run"),
         args: z
@@ -22,11 +22,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the target"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         tool: z
           .enum(["auto", "make", "just"])
           .optional()
@@ -71,13 +67,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Check if target is up to date without executing (make -q, make only). Exit code 0 = up to date.",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: MakeRunResultSchema,
     },

@@ -12,14 +12,9 @@ export function registerUvRunTool(server: McpServer) {
     "uv-run",
     {
       title: "uv Run",
-      description:
-        "Runs a command in a uv-managed environment and returns structured output. Use instead of running `uv run` in the terminal.",
+      description: "Runs a command in a uv-managed environment and returns structured output.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         command: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -65,13 +60,7 @@ export function registerUvRunTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to environment file (--env-file FILE)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: UvRunSchema,
     },

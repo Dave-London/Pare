@@ -55,7 +55,7 @@ export function registerHelmTool(server: McpServer) {
     {
       title: "Helm",
       description:
-        "Manages Helm releases (install, upgrade, list, status, history, template). Returns structured JSON output. Use instead of running `helm` in the terminal.",
+        "Manages Helm releases (install, upgrade, list, status, history, template). Returns structured JSON output.",
       inputSchema: {
         action: z
           .enum([
@@ -178,13 +178,7 @@ export function registerHelmTool(server: McpServer) {
           ),
         noHooks: z.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
         skipCrds: z.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: z.union([
         HelmListResultSchema,

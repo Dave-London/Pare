@@ -11,8 +11,7 @@ export function registerDescribeTool(server: McpServer) {
     "describe",
     {
       title: "Kubectl Describe",
-      description:
-        "Describes a Kubernetes resource with detailed information. Use instead of running `kubectl describe` in the terminal.",
+      description: "Describes a Kubernetes resource with detailed information.",
       inputSchema: {
         resource: z
           .string()
@@ -53,13 +52,7 @@ export function registerDescribeTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to kubeconfig file (--kubeconfig)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: KubectlDescribeResultSchema,
     },

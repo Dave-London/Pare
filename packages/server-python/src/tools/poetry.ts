@@ -14,15 +14,11 @@ export function registerPoetryTool(server: McpServer) {
       title: "Poetry",
       description:
         "Runs Poetry commands and returns structured output. " +
-        "Supports install, add, remove, show, and build actions. " +
-        "Use instead of running `poetry` in the terminal.",
+        "Supports install, add, remove, show, and build actions.",
       inputSchema: {
         action: z
           .enum(["install", "add", "remove", "show", "build"])
-          .describe(
-            "Poetry action: install (poetry install), add (poetry add <packages>), " +
-              "remove (poetry remove <packages>), show (poetry show), build (poetry build)",
-          ),
+          .describe("Poetry action to perform"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -37,11 +33,7 @@ export function registerPoetryTool(server: McpServer) {
           .enum(["sdist", "wheel"])
           .optional()
           .describe("Build output format for build action"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         dryRun: z
           .boolean()
           .optional()
@@ -62,13 +54,7 @@ export function registerPoetryTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show dependency tree, for show action (--tree)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PoetryResultSchema,
     },

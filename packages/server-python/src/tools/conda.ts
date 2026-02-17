@@ -16,13 +16,9 @@ export function registerCondaTool(server: McpServer) {
     "conda",
     {
       title: "Conda",
-      description:
-        "Runs conda commands (list, info, env-list) and returns structured JSON output. " +
-        "Use instead of running `conda` in the terminal.",
+      description: "Runs conda commands (list, info, env-list) and returns structured JSON output.",
       inputSchema: {
-        action: z
-          .enum(["list", "info", "env-list"])
-          .describe("Conda action to perform: list packages, show info, or list environments"),
+        action: z.enum(["list", "info", "env-list"]).describe("Conda action to perform"),
         name: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -40,18 +36,8 @@ export function registerCondaTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Regex filter for conda list to show only matching packages"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CondaResultSchema,
     },

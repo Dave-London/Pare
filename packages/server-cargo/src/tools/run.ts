@@ -12,14 +12,9 @@ export function registerRunTool(server: McpServer) {
     "run",
     {
       title: "Cargo Run",
-      description:
-        "Runs a cargo binary and returns structured output (exit code, stdout, stderr). Use instead of running `cargo run` in the terminal.",
+      description: "Runs a cargo binary and returns structured output (exit code, stdout, stderr).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -101,13 +96,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Maximum size in bytes for stdout/stderr before truncation. Default: 1048576 (1MB). Min: 1024, Max: 10485760 (10MB).",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoRunResultSchema,
     },

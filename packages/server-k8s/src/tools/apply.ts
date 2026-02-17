@@ -11,8 +11,7 @@ export function registerApplyTool(server: McpServer) {
     "apply",
     {
       title: "Kubectl Apply",
-      description:
-        "Applies a Kubernetes manifest file. Use instead of running `kubectl apply` in the terminal.",
+      description: "Applies a Kubernetes manifest file.",
       inputSchema: {
         file: z
           .union([
@@ -88,13 +87,7 @@ export function registerApplyTool(server: McpServer) {
           .describe(
             "Cascade mode for deletion of dependents: 'background' (default), 'orphan', or 'foreground'",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: KubectlApplyResultSchema,
     },

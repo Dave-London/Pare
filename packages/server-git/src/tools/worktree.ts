@@ -23,13 +23,9 @@ export function registerWorktreeTool(server: McpServer) {
     {
       title: "Git Worktree",
       description:
-        "Lists, adds, removes, locks, unlocks, or prunes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits. Use instead of running `git worktree` in the terminal.",
+        "Lists, adds, removes, locks, unlocks, or prunes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["list", "add", "remove", "lock", "unlock", "prune"])
           .optional()
@@ -80,13 +76,7 @@ export function registerWorktreeTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Reason for locking the worktree (--reason, used with lock)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: z.union([GitWorktreeListSchema, GitWorktreeSchema]),
     },

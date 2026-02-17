@@ -13,7 +13,7 @@ export function registerTurboTool(server: McpServer) {
     {
       title: "turbo",
       description:
-        "Runs Turborepo tasks and returns structured per-package results with cache hit/miss info. Use instead of running `turbo` in the terminal.",
+        "Runs Turborepo tasks and returns structured per-package results with cache hit/miss info.",
       inputSchema: {
         task: z
           .string()
@@ -70,18 +70,8 @@ export function registerTurboTool(server: McpServer) {
           .describe(
             "Additional turbo flags (e.g., ['--env-mode=strict']). Each arg is validated with assertNoFlagInjection.",
           ),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: TurboResultSchema,
     },

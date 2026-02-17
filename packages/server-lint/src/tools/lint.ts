@@ -13,13 +13,9 @@ export function registerLintTool(server: McpServer) {
     {
       title: "ESLint Check",
       description:
-        "Runs ESLint and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `eslint` in the terminal.",
+        "Runs ESLint and returns structured diagnostics (file, line, column, rule, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -68,13 +64,7 @@ export function registerLintTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Ad-hoc rule overrides, e.g. ['no-console: error'] (maps to --rule)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: LintResultSchema,
     },

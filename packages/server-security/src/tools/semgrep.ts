@@ -22,7 +22,7 @@ export function registerSemgrepTool(server: McpServer) {
     {
       title: "Semgrep Static Analysis",
       description:
-        "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary. Use instead of running `semgrep` in the terminal.",
+        "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary.",
       inputSchema: {
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
@@ -83,18 +83,8 @@ export function registerSemgrepTool(server: McpServer) {
           .optional()
           .describe("Maximum file size in bytes to scan, skip larger files (--max-target-bytes)"),
         jobs: z.number().optional().describe("Number of parallel jobs for scanning (--jobs)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: SemgrepScanResultSchema,
     },

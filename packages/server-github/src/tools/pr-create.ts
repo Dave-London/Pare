@@ -12,8 +12,7 @@ export function registerPrCreateTool(server: McpServer) {
     "pr-create",
     {
       title: "PR Create",
-      description:
-        "Creates a new pull request. Returns structured data with PR number and URL. Use instead of running `gh pr create` in the terminal.",
+      description: "Creates a new pull request. Returns structured data with PR number and URL.",
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pull request title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Pull request body/description"),
@@ -87,11 +86,7 @@ export function registerPrCreateTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Use PR template file (--template)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: PrCreateResultSchema,
     },

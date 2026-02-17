@@ -16,13 +16,9 @@ export function registerReflogTool(server: McpServer) {
     {
       title: "Git Reflog",
       description:
-        "Returns reference log entries as structured data, useful for recovery operations. Also supports checking if a reflog exists. Use instead of running `git reflog` in the terminal.",
+        "Returns reference log entries as structured data, useful for recovery operations. Also supports checking if a reflog exists.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["show", "exists"])
           .optional()
@@ -56,13 +52,7 @@ export function registerReflogTool(server: McpServer) {
         skip: z.number().optional().describe("Skip N entries for pagination (--skip)"),
         all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
         reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitReflogSchema,
     },

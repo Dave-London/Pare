@@ -12,8 +12,7 @@ export function registerLogsTool(server: McpServer) {
     "logs",
     {
       title: "Docker Logs",
-      description:
-        "Retrieves container logs as structured line arrays. Use instead of running `docker logs` in the terminal.",
+      description: "Retrieves container logs as structured line arrays.",
       inputSchema: {
         container: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Container name or ID"),
         tail: z
@@ -55,13 +54,7 @@ export function registerLogsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show extra details provided to logs (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerLogsSchema,
     },

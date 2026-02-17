@@ -13,7 +13,7 @@ export function registerRunRerunTool(server: McpServer) {
     {
       title: "Run Rerun",
       description:
-        "Re-runs a workflow run by ID. Optionally re-runs only failed jobs or a specific job. Returns structured result with run ID, status, and URL. Use instead of running `gh run rerun` in the terminal.",
+        "Re-runs a workflow run by ID. Optionally re-runs only failed jobs or a specific job. Returns structured result with run ID, status, and URL.",
       inputSchema: {
         runId: z.number().describe("Workflow run ID to re-run"),
         failedOnly: z
@@ -35,11 +35,7 @@ export function registerRunRerunTool(server: McpServer) {
           .describe(
             "Rerun a specific job by its databaseId (-j/--job). Note: requires the job's databaseId, not the job name.",
           ),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: RunRerunResultSchema,
     },

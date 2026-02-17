@@ -17,10 +17,7 @@ export function registerPipInstallTool(server: McpServer) {
     {
       title: "pip Install",
       description:
-        "Runs pip install and returns a structured summary of installed packages. " +
-        "Use instead of running `pip install` in the terminal. " +
-        "WARNING: Installing packages may execute arbitrary setup.py code. " +
-        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
+        "Runs pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
@@ -33,11 +30,7 @@ export function registerPipInstallTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to requirements file"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         dryRun: z
           .boolean()
           .optional()
@@ -95,13 +88,7 @@ export function registerPipInstallTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Write JSON install report to file (--report FILE)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipInstallSchema,
     },

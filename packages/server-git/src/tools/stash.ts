@@ -13,13 +13,9 @@ export function registerStashTool(server: McpServer) {
     {
       title: "Git Stash",
       description:
-        "Pushes, pops, applies, drops, shows, or clears stash entries. Returns structured result with action, success, message, and stash reference. Use instead of running `git stash` in the terminal.",
+        "Pushes, pops, applies, drops, shows, or clears stash entries. Returns structured result with action, success, message, and stash reference.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["push", "pop", "apply", "drop", "clear", "show"])
           .describe("Stash action to perform"),

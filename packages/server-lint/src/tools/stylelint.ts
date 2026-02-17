@@ -13,13 +13,9 @@ export function registerStylelintTool(server: McpServer) {
     {
       title: "Stylelint Check",
       description:
-        "Runs Stylelint and returns structured diagnostics (file, line, column, rule, severity, message). Use instead of running `stylelint` in the terminal.",
+        "Runs Stylelint and returns structured diagnostics (file, line, column, rule, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -67,13 +63,7 @@ export function registerStylelintTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to a custom ignore file (maps to --ignore-path)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: LintResultSchema,
     },

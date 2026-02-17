@@ -12,14 +12,9 @@ export function registerClippyTool(server: McpServer) {
     "clippy",
     {
       title: "Cargo Clippy",
-      description:
-        "Runs cargo clippy and returns structured lint diagnostics. Use instead of running `cargo clippy` in the terminal.",
+      description: "Runs cargo clippy and returns structured lint diagnostics.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         noDeps: z
           .boolean()
           .optional()
@@ -109,13 +104,7 @@ export function registerClippyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoClippyResultSchema,
     },

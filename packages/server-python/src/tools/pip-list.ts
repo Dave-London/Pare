@@ -12,15 +12,9 @@ export function registerPipListTool(server: McpServer) {
     "pip-list",
     {
       title: "pip List",
-      description:
-        "Runs pip list and returns a structured list of installed packages. " +
-        "Use instead of running `pip list` in the terminal.",
+      description: "Runs pip list and returns a structured list of installed packages.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         local: z
           .boolean()
           .optional()
@@ -58,13 +52,7 @@ export function registerPipListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package names to exclude from output"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipListSchema,
     },

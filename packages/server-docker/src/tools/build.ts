@@ -13,13 +13,9 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Docker Build",
       description:
-        "Builds a Docker image and returns structured build results including image ID, duration, and errors. Use instead of running `docker build` in the terminal.",
+        "Builds a Docker image and returns structured build results including image ID, duration, and errors.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Build context path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Build context path"),
         /** #98: Support multiple tags — accepts string or string[] for multiple -t flags. */
         tag: z
           .union([
@@ -101,13 +97,7 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional build arguments"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerBuildSchema,
     },

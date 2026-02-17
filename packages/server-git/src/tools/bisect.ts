@@ -13,13 +13,9 @@ export function registerBisectTool(server: McpServer) {
     {
       title: "Git Bisect",
       description:
-        "Binary search for the commit that introduced a bug. Supports start, good, bad, reset, status, skip, and run actions. The 'run' action automates bisection with a test script. Returns structured data with action taken, current commit, remaining steps estimate, and result when the culprit is found. Use instead of running `git bisect` in the terminal.",
+        "Binary search for the commit that introduced a bug. Returns structured data with action taken, current commit, remaining steps estimate, and result.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         action: z
           .enum(["start", "good", "bad", "reset", "status", "skip", "run"])
           .describe("Bisect action to perform"),

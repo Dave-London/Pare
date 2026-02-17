@@ -13,13 +13,9 @@ export function registerBuildTool(server: McpServer) {
     {
       title: "Cargo Build",
       description:
-        "Runs cargo build and returns structured diagnostics (file, line, code, severity, message). Use instead of running `cargo build` in the terminal.",
+        "Runs cargo build and returns structured diagnostics (file, line, code, severity, message).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         release: z.boolean().optional().default(false).describe("Build in release mode"),
         keepGoing: z
           .boolean()
@@ -80,13 +76,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to Cargo.toml (--manifest-path <PATH>)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoBuildResultSchema,
     },

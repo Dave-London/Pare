@@ -16,14 +16,9 @@ export function registerRunTool(server: McpServer) {
       title: "Run Script",
       description:
         "Runs a package.json script via `npm run <script>`, `pnpm run <script>`, or `yarn run <script>` and returns structured output with exit code, stdout, stderr, and duration. " +
-        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
-        "Use instead of running `npm run`, `pnpm run`, or `yarn run` in the terminal.",
+        "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         script: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

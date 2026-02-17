@@ -13,16 +13,9 @@ export function registerUvInstallTool(server: McpServer) {
     {
       title: "uv Install",
       description:
-        "Runs uv pip install and returns a structured summary of installed packages. " +
-        "Use instead of running `uv pip install` in the terminal. " +
-        "WARNING: Installing packages may execute arbitrary setup.py code during build. " +
-        "Only install trusted packages. Use dryRun to preview what would be installed before committing.",
+        "Runs uv pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -83,13 +76,7 @@ export function registerUvInstallTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package extras to install (--extra NAME)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: UvInstallSchema,
     },

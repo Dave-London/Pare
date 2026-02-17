@@ -13,13 +13,9 @@ export function registerRestoreTool(server: McpServer) {
     {
       title: "Git Restore",
       description:
-        "Discards working tree changes or restores files from a specific commit. Returns structured data with restored files, source ref, and staged flag. Use instead of running `git restore` in the terminal.",
+        "Discards working tree changes or restores files from a specific commit. Returns structured data with restored files, source ref, and staged flag.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

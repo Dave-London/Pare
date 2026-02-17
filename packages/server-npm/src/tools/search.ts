@@ -13,15 +13,11 @@ export function registerSearchTool(server: McpServer) {
     {
       title: "Search npm Registry",
       description:
-        "Searches the npm registry for packages matching a query. Use instead of running `npm search` in the terminal. " +
+        "Searches the npm registry for packages matching a query. " +
         "Note: pnpm and yarn do not have a search command, so this always uses npm.",
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Search query string"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         limit: z
           .number()
           .optional()
@@ -44,13 +40,7 @@ export function registerSearchTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Advanced search filtering options (maps to --searchopts)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
         preferOnline: z
           .boolean()
           .optional()

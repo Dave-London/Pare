@@ -20,7 +20,7 @@ export function registerReleaseListTool(server: McpServer) {
     {
       title: "Release List",
       description:
-        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, creation date, and URL. Use instead of running `gh release list` in the terminal.",
+        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, creation date, and URL.",
       inputSchema: {
         // S-gap P1: Align default limit to CLI default (30)
         limit: z
@@ -43,18 +43,8 @@ export function registerReleaseListTool(server: McpServer) {
           .describe("Exclude pre-releases from the list (--exclude-pre-releases)"),
         // S-gap P1: Add order param
         order: z.enum(["asc", "desc"]).optional().describe("Sort order (--order). Default: desc."),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: ReleaseListResultSchema,
     },

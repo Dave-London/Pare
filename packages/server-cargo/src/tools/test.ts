@@ -13,13 +13,9 @@ export function registerTestTool(server: McpServer) {
     {
       title: "Cargo Test",
       description:
-        "Runs cargo test and returns structured test results (name, status, pass/fail counts). Use instead of running `cargo test` in the terminal.",
+        "Runs cargo test and returns structured test results (name, status, pass/fail counts).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         filter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -84,13 +80,7 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoTestResultSchema,
     },

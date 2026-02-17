@@ -18,7 +18,7 @@ export function registerTrivyTool(server: McpServer) {
     {
       title: "Trivy Security Scanner",
       description:
-        "Runs Trivy vulnerability/misconfiguration scanner on container images, filesystems, or IaC configs. Returns structured vulnerability data with severity summary. Use instead of running `trivy` in the terminal.",
+        "Runs Trivy vulnerability/misconfiguration scanner on container images, filesystems, or IaC configs. Returns structured vulnerability data with severity summary.",
       inputSchema: {
         target: z
           .string()
@@ -28,9 +28,7 @@ export function registerTrivyTool(server: McpServer) {
           .enum(["image", "fs", "config"])
           .optional()
           .default("image")
-          .describe(
-            'Scan type: "image" for container images, "fs" for filesystem, "config" for IaC misconfigurations',
-          ),
+          .describe("Scan type"),
         severity: z
           .union([
             z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]),
@@ -39,25 +37,19 @@ export function registerTrivyTool(server: McpServer) {
               .max(INPUT_LIMITS.ARRAY_MAX),
           ])
           .optional()
-          .describe(
-            'Severity filter. Single value or array for CSV (e.g., ["CRITICAL", "HIGH"]). Default: all severities',
-          ),
+          .describe("Severity filter (single value or array)"),
         scanners: z
           .array(z.enum(["vuln", "misconfig", "secret", "license"]))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe(
-            'Scanner types to enable (--scanners, e.g., ["vuln", "misconfig"]). Default: all',
-          ),
+          .describe("Scanner types to enable (--scanners)"),
         vulnType: z
           .array(z.enum(["os", "library"]))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe(
-            'Vulnerability types to scan (--vuln-type, e.g., ["os", "library"]). Default: all',
-          ),
+          .describe("Vulnerability types to scan (--vuln-type)"),
         skipDirs: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -93,18 +85,8 @@ export function registerTrivyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Skip vulnerability database update for faster scans (--skip-db-update)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: TrivyScanResultSchema,
     },

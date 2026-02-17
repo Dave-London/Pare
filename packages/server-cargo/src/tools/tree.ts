@@ -12,15 +12,9 @@ export function registerTreeTool(server: McpServer) {
     "tree",
     {
       title: "Cargo Tree",
-      description:
-        "Displays the dependency tree for a Rust project. " +
-        "Use instead of running `cargo tree` in the terminal.",
+      description: "Displays the dependency tree for a Rust project.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         depth: z.number().optional().describe("Maximum depth of the dependency tree to display"),
         package: z
           .string()
@@ -114,13 +108,7 @@ export function registerTreeTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CargoTreeResultSchema,
     },

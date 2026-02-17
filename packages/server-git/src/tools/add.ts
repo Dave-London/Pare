@@ -13,13 +13,9 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Git Add",
       description:
-        "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged. Use instead of running `git add` in the terminal.",
+        "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

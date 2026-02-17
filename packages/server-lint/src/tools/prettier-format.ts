@@ -21,13 +21,9 @@ export function registerPrettierFormatTool(server: McpServer) {
     {
       title: "Prettier Format",
       description:
-        "Formats files with Prettier (--write) and returns a structured list of changed files. Use instead of running `prettier --write` in the terminal.",
+        "Formats files with Prettier (--write) and returns a structured list of changed files.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -59,13 +55,7 @@ export function registerPrettierFormatTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to a Prettier configuration file (maps to --config)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: FormatWriteResultSchema,
     },

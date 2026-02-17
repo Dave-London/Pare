@@ -13,13 +13,9 @@ export function registerRebaseTool(server: McpServer) {
     {
       title: "Git Rebase",
       description:
-        "Rebases the current branch onto a target branch. Supports abort, continue, skip, and quit for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count. Use instead of running `git rebase` in the terminal.",
+        "Rebases the current branch onto a target branch. Supports abort, continue, skip, and quit for conflict resolution. Returns structured data with success status, branch info, conflicts, and rebased commit count.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         branch: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

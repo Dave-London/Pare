@@ -12,14 +12,13 @@ export function registerComposePsTool(server: McpServer) {
     "compose-ps",
     {
       title: "Docker Compose PS",
-      description:
-        "Lists Docker Compose services with structured state and status information. Use instead of running `docker compose ps` in the terminal.",
+      description: "Lists Docker Compose services with structured state and status information.",
       inputSchema: {
         path: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
-          .describe("Directory containing docker-compose.yml (default: cwd)"),
+          .describe("Directory containing docker-compose.yml"),
         file: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -52,13 +51,7 @@ export function registerComposePsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate output (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerComposePsSchema,
     },

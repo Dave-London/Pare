@@ -19,14 +19,9 @@ export function registerShowTool(server: McpServer) {
     "show",
     {
       title: "Git Show",
-      description:
-        "Shows commit details and diff statistics for a given ref. Use instead of running `git show` in the terminal.",
+      description: "Shows commit details and diff statistics for a given ref.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         ref: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -51,13 +46,7 @@ export function registerShowTool(server: McpServer) {
           .optional()
           .describe("GPG signature verification (--show-signature)"),
         notes: z.boolean().optional().describe("Include git notes (--notes)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitShowSchema,
     },

@@ -13,13 +13,9 @@ export function registerVetTool(server: McpServer) {
     {
       title: "Go Vet",
       description:
-        "Runs go vet and returns structured static analysis diagnostics with analyzer names. Uses -json flag for native JSON output with automatic text fallback. Use instead of running `go vet` in the terminal.",
+        "Runs go vet and returns structured static analysis diagnostics with analyzer names. Uses -json flag for native JSON output with automatic text fallback.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -50,13 +46,7 @@ export function registerVetTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to a custom analyzer tool binary (-vettool)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoVetResultSchema,
     },

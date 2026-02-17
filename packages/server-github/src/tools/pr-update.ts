@@ -13,17 +13,13 @@ export function registerPrUpdateTool(server: McpServer) {
     {
       title: "PR Update",
       description:
-        "Updates pull request metadata (title, body, labels, assignees, reviewers, milestone, base branch, projects). Returns structured data with PR number and URL. Use instead of running `gh pr edit` in the terminal.",
+        "Updates pull request metadata (title, body, labels, assignees, reviewers, milestone, base branch, projects). Returns structured data with PR number and URL.",
       inputSchema: {
         number: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         title: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

@@ -19,14 +19,9 @@ export function registerLogTool(server: McpServer) {
     "log",
     {
       title: "Git Log",
-      description:
-        "Returns commit history as structured data. Use instead of running `git log` in the terminal.",
+      description: "Returns commit history as structured data.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         maxCount: z
           .number()
           .optional()
@@ -87,13 +82,7 @@ export function registerLogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Search for code changes (-S)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitLogSchema,
     },

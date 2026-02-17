@@ -13,7 +13,7 @@ export function registerIssueCloseTool(server: McpServer) {
     {
       title: "Issue Close",
       description:
-        "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, URL, reason, and comment URL. Use instead of running `gh issue close` in the terminal.",
+        "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, URL, reason, and comment URL.",
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comment: z.string().max(INPUT_LIMITS.STRING_MAX).optional().describe("Closing comment"),
@@ -27,11 +27,7 @@ export function registerIssueCloseTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
       },
       outputSchema: IssueCloseResultSchema,
     },

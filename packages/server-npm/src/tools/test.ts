@@ -20,11 +20,7 @@ export function registerTestTool(server: McpServer) {
         "Shorthand for running the test script defined in package.json. " +
         "Automatically parses test framework output (jest, vitest, mocha, tap) to extract pass/fail/skip counts.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

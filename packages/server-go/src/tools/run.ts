@@ -12,14 +12,9 @@ export function registerRunTool(server: McpServer) {
     "run",
     {
       title: "Go Run",
-      description:
-        "Runs a Go program and returns structured output (stdout, stderr, exit code). Use instead of running `go run` in the terminal.",
+      description: "Runs a Go program and returns structured output (stdout, stderr, exit code).",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         file: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -76,13 +71,7 @@ export function registerRunTool(server: McpServer) {
             "Maximum length in characters for stdout/stderr output. Output exceeding this limit will be truncated. " +
               "Default: no limit. Max: 1048576 (1MB).",
           ),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GoRunResultSchema,
     },

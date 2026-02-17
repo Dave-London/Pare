@@ -13,7 +13,7 @@ export function registerNxTool(server: McpServer) {
     {
       title: "nx",
       description:
-        "Runs Nx workspace commands and returns structured per-project task results with cache status. Use instead of running `nx` in the terminal.",
+        "Runs Nx workspace commands and returns structured per-project task results with cache status.",
       inputSchema: {
         target: z
           .string()
@@ -56,11 +56,7 @@ export function registerNxTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Projects to exclude from run-many (maps to --exclude)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         parallel: z
           .number()
           .optional()
@@ -95,13 +91,7 @@ export function registerNxTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to nx"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: NxResultSchema,
     },

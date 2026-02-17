@@ -14,8 +14,7 @@ export function registerPipShowTool(server: McpServer) {
       title: "pip Show",
       description:
         "Runs pip show and returns structured package metadata (name, version, summary, dependencies). " +
-        "Supports multiple packages in a single call. " +
-        "Use instead of running `pip show` in the terminal.",
+        "Supports multiple packages in a single call.",
       inputSchema: {
         package: z
           .string()
@@ -27,23 +26,13 @@ export function registerPipShowTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package names to show (supports multiple packages)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
         files: z
           .boolean()
           .optional()
           .default(false)
           .describe("List installed files for the package (-f, --files)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PipShowSchema,
     },

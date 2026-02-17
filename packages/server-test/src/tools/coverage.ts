@@ -151,14 +151,9 @@ export function registerCoverageTool(server: McpServer) {
     "coverage",
     {
       title: "Test Coverage",
-      description:
-        "Runs tests with coverage and returns structured coverage summary per file. Use instead of running test coverage commands in the terminal.",
+      description: "Runs tests with coverage and returns structured coverage summary per file.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -206,13 +201,7 @@ export function registerCoverageTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the coverage runner"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: CoverageSchema,
     },

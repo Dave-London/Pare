@@ -16,7 +16,7 @@ export function registerPrDiffTool(server: McpServer) {
     {
       title: "PR Diff",
       description:
-        "Returns file-level diff statistics for a pull request. Use full=true for patch content. Use instead of running `gh pr diff` in the terminal.",
+        "Returns file-level diff statistics for a pull request. Use full=true for patch content.",
       inputSchema: {
         number: z
           .string()
@@ -33,13 +33,7 @@ export function registerPrDiffTool(server: McpServer) {
           .default(false)
           .describe("Include full patch content in chunks"),
         nameOnly: z.boolean().optional().describe("List only changed file names (--name-only)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PrDiffResultSchema,
     },

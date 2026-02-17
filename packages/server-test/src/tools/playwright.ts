@@ -107,13 +107,9 @@ export function registerPlaywrightTool(server: McpServer) {
     {
       title: "Playwright Tests",
       description:
-        "Runs Playwright tests with JSON reporter and returns structured results with pass/fail status, duration, and error messages. Use instead of running `npx playwright test` in the terminal.",
+        "Runs Playwright tests with JSON reporter and returns structured results with pass/fail status, duration, and error messages.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Project root path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         filter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -192,13 +188,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to Playwright test runner"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: PlaywrightResultSchema,
     },

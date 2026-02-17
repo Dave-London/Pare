@@ -13,14 +13,9 @@ export function registerBranchTool(server: McpServer) {
     "branch",
     {
       title: "Git Branch",
-      description:
-        "Lists, creates, renames, or deletes branches. Returns structured branch data. Use instead of running `git branch` in the terminal.",
+      description: "Lists, creates, renames, or deletes branches. Returns structured branch data.",
       inputSchema: {
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Repository path (default: cwd)"),
+        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
         create: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -71,13 +66,7 @@ export function registerBranchTool(server: McpServer) {
         remotes: z.boolean().optional().describe("List remote branches only (-r)"),
         verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
         force: z.boolean().optional().describe("Force branch creation even if it exists (-f)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: GitBranchSchema,
     },

@@ -16,8 +16,7 @@ export function registerComposeDownTool(server: McpServer) {
     "compose-down",
     {
       title: "Docker Compose Down",
-      description:
-        "Stops Docker Compose services and returns structured status. Use instead of running `docker compose down` in the terminal.",
+      description: "Stops Docker Compose services and returns structured status.",
       inputSchema: {
         path: z
           .string()
@@ -57,13 +56,7 @@ export function registerComposeDownTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run in dry-run mode without actually stopping services (default: false)"),
-        compact: z
-          .boolean()
-          .optional()
-          .default(true)
-          .describe(
-            "Auto-compact when structured output exceeds raw CLI tokens. Set false to always get full schema.",
-          ),
+        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
       },
       outputSchema: DockerComposeDownSchema,
     },
