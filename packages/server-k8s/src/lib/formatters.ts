@@ -53,6 +53,47 @@ export function formatDescribe(data: KubectlDescribeResult): string {
   }
   const parts: string[] = [];
   if (data.output) parts.push(data.output);
+  if (data.labels && Object.keys(data.labels).length > 0) {
+    parts.push(`Labels: ${Object.keys(data.labels).length} parsed`);
+  }
+  if (data.annotations && Object.keys(data.annotations).length > 0) {
+    parts.push(`Annotations: ${Object.keys(data.annotations).length} parsed`);
+  }
+  if (data.resourceDetails?.pod) {
+    const pod = data.resourceDetails.pod;
+    const podParts = [
+      pod.node ? `node=${pod.node}` : undefined,
+      pod.ip ? `ip=${pod.ip}` : undefined,
+      pod.qosClass ? `qos=${pod.qosClass}` : undefined,
+      pod.serviceAccount ? `serviceAccount=${pod.serviceAccount}` : undefined,
+      pod.containers ? `containers=${pod.containers.length}` : undefined,
+    ].filter(Boolean);
+    if (podParts.length > 0) parts.push(`Pod details: ${podParts.join(", ")}`);
+  }
+  if (data.resourceDetails?.service) {
+    const svc = data.resourceDetails.service;
+    const svcParts = [
+      svc.type ? `type=${svc.type}` : undefined,
+      svc.clusterIP ? `clusterIP=${svc.clusterIP}` : undefined,
+      svc.ports ? `ports=${svc.ports.length}` : undefined,
+    ].filter(Boolean);
+    if (svcParts.length > 0) parts.push(`Service details: ${svcParts.join(", ")}`);
+  }
+  if (data.resourceDetails?.deployment) {
+    const dep = data.resourceDetails.deployment;
+    const rep = dep.replicas;
+    const replicaSummary = rep
+      ? [rep.desired, rep.updated, rep.total, rep.available, rep.unavailable].some(
+          (v) => v !== undefined,
+        )
+        ? `replicas desired=${rep.desired ?? "?"} updated=${rep.updated ?? "?"} total=${rep.total ?? "?"} available=${rep.available ?? "?"} unavailable=${rep.unavailable ?? "?"}`
+        : undefined
+      : undefined;
+    const depParts = [dep.strategy ? `strategy=${dep.strategy}` : undefined, replicaSummary].filter(
+      Boolean,
+    );
+    if (depParts.length > 0) parts.push(`Deployment details: ${depParts.join(", ")}`);
+  }
   if (data.conditions && data.conditions.length > 0) {
     parts.push(`\nConditions: ${data.conditions.length} parsed`);
   }
@@ -67,7 +108,9 @@ export function formatLogs(data: KubectlLogsResult): string {
   if (!data.success) {
     return `kubectl logs ${data.pod}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
-  const header = `kubectl logs ${data.pod}: ${data.lineCount} line(s)`;
+  const truncated = data.truncated ? " [truncated]" : "";
+  const parsedJson = data.logEntries ? ` (${data.logEntries.length} parsed entries)` : "";
+  const header = `kubectl logs ${data.pod}: ${data.lineCount} line(s)${truncated}${parsedJson}`;
   if (!data.logs) return header;
   return `${header}\n${data.logs}`;
 }
@@ -139,6 +182,9 @@ export interface KubectlDescribeCompact {
   resource: string;
   name: string;
   namespace?: string;
+  labels?: KubectlDescribeResult["labels"];
+  annotations?: KubectlDescribeResult["annotations"];
+  resourceDetails?: KubectlDescribeResult["resourceDetails"];
   conditions?: KubectlDescribeResult["conditions"];
   events?: KubectlDescribeResult["events"];
 }
@@ -150,6 +196,9 @@ export function compactDescribeMap(data: KubectlDescribeResult): KubectlDescribe
     resource: data.resource,
     name: data.name,
     namespace: data.namespace,
+    labels: data.labels,
+    annotations: data.annotations,
+    resourceDetails: data.resourceDetails,
     conditions: data.conditions,
     events: data.events,
   };
@@ -172,6 +221,8 @@ export interface KubectlLogsCompact {
   pod: string;
   namespace?: string;
   lineCount: number;
+  truncated?: boolean;
+  parsedEntries?: number;
 }
 
 export function compactLogsMap(data: KubectlLogsResult): KubectlLogsCompact {
@@ -181,12 +232,16 @@ export function compactLogsMap(data: KubectlLogsResult): KubectlLogsCompact {
     pod: data.pod,
     namespace: data.namespace,
     lineCount: data.lineCount,
+    truncated: data.truncated,
+    parsedEntries: data.logEntries?.length,
   };
 }
 
 export function formatLogsCompact(data: KubectlLogsCompact): string {
   if (!data.success) return `kubectl logs ${data.pod}: failed`;
-  return `kubectl logs ${data.pod}: ${data.lineCount} line(s)`;
+  const truncated = data.truncated ? " [truncated]" : "";
+  const parsed = data.parsedEntries !== undefined ? ` (${data.parsedEntries} parsed entries)` : "";
+  return `kubectl logs ${data.pod}: ${data.lineCount} line(s)${truncated}${parsed}`;
 }
 
 /** Compact apply: success/failure status with resources (no raw output text). */
@@ -248,6 +303,8 @@ export function formatHelmInstall(data: HelmInstallResult): string {
   }
   const parts = [`helm install ${data.name}: ${data.status ?? "success"}`];
   if (data.revision) parts.push(`(revision ${data.revision})`);
+  if (data.chart) parts.push(`chart=${data.chart}`);
+  if (data.appVersion) parts.push(`appVersion=${data.appVersion}`);
   return parts.join(" ");
 }
 
@@ -258,6 +315,8 @@ export function formatHelmUpgrade(data: HelmUpgradeResult): string {
   }
   const parts = [`helm upgrade ${data.name}: ${data.status ?? "success"}`];
   if (data.revision) parts.push(`(revision ${data.revision})`);
+  if (data.chart) parts.push(`chart=${data.chart}`);
+  if (data.appVersion) parts.push(`appVersion=${data.appVersion}`);
   return parts.join(" ");
 }
 

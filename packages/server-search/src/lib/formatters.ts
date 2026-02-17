@@ -7,6 +7,12 @@ export function formatSearch(data: SearchResult): string {
   if (data.totalMatches === 0) return "search: no matches found.";
 
   const lines = [`search: ${data.totalMatches} matches in ${data.filesSearched} files`];
+  if ((data.files ?? []).length > 0) {
+    lines.push("files:");
+    for (const f of data.files ?? []) {
+      lines.push(`  ${f.file}: ${f.matchCount} matches`);
+    }
+  }
   for (const m of data.matches ?? []) {
     lines.push(`  ${m.file}:${m.line}:${m.column}: ${m.lineContent}`);
   }
@@ -19,7 +25,7 @@ export function formatFind(data: FindResult): string {
 
   const lines = [`find: ${data.total} files`];
   for (const f of data.files ?? []) {
-    lines.push(`  ${f.path}`);
+    lines.push(`  ${f.path} [${f.type}]`);
   }
   return lines.join("\n");
 }

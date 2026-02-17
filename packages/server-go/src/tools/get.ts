@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
@@ -67,9 +69,15 @@ export function registerGetTool(server: McpServer) {
       if (verbose) args.push("-v");
       if (downloadOnly) args.push("-d");
       args.push(...packages);
+      const goModBefore = await readGoMod(cwd);
       const result = await goCmd(args, cwd);
+      const goModAfter = await readGoMod(cwd);
       // Pass requestedPackages for per-package status tracking (Gap #153)
       const data = parseGoGetOutput(result.stdout, result.stderr, result.exitCode, packages);
+      const goModChanges = diffGoModRequirements(goModBefore, goModAfter);
+      if (goModChanges) {
+        data.goModChanges = goModChanges;
+      }
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
       return compactDualOutput(
         data,
@@ -81,4 +89,61 @@ export function registerGetTool(server: McpServer) {
       );
     },
   );
+}
+
+async function readGoMod(cwd: string): Promise<string | undefined> {
+  try {
+    return await readFile(join(cwd, "go.mod"), "utf-8");
+  } catch {
+    return undefined;
+  }
+}
+
+function diffGoModRequirements(
+  before: string | undefined,
+  after: string | undefined,
+): { added: string[]; removed: string[] } | undefined {
+  if (before === undefined || after === undefined) {
+    return undefined;
+  }
+
+  const beforeSet = parseRequireSet(before);
+  const afterSet = parseRequireSet(after);
+  const added = [...afterSet].filter((r) => !beforeSet.has(r)).sort();
+  const removed = [...beforeSet].filter((r) => !afterSet.has(r)).sort();
+
+  if (added.length === 0 && removed.length === 0) {
+    return undefined;
+  }
+  return { added, removed };
+}
+
+function parseRequireSet(goMod: string): Set<string> {
+  const result = new Set<string>();
+  let inBlock = false;
+
+  for (const rawLine of goMod.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("//")) continue;
+
+    if (line.startsWith("require (")) {
+      inBlock = true;
+      continue;
+    }
+    if (inBlock && line === ")") {
+      inBlock = false;
+      continue;
+    }
+
+    const target = inBlock
+      ? line
+      : line.startsWith("require ")
+        ? line.slice("require ".length)
+        : "";
+    if (!target) continue;
+    const cleaned = target.replace(/\s+\/\/.*$/, "").trim();
+    if (cleaned) result.add(cleaned);
+  }
+
+  return result;
 }

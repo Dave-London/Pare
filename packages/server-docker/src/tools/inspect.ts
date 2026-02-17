@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
-import { parseInspectJson } from "../lib/parsers.js";
+import { parseInspectJsonAll } from "../lib/parsers.js";
 import { formatInspect, compactInspectMap, formatInspectCompact } from "../lib/formatters.js";
 import { DockerInspectSchema } from "../schemas/index.js";
 
@@ -16,9 +16,11 @@ export function registerInspectTool(server: McpServer) {
         "Shows detailed container or image information with structured state, image, and platform data. Use instead of running `docker inspect` in the terminal.",
       inputSchema: {
         target: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
-          .describe("Container or image name/ID to inspect"),
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          ])
+          .describe("Container/image/network/volume target(s) to inspect"),
         type: z
           .enum(["container", "image", "volume", "network"])
           .optional()
@@ -46,12 +48,15 @@ export function registerInspectTool(server: McpServer) {
       outputSchema: DockerInspectSchema,
     },
     async ({ target, type, size, path, compact }) => {
-      assertNoFlagInjection(target, "target");
+      const targets = Array.isArray(target) ? target : [target];
+      for (const t of targets) {
+        assertNoFlagInjection(t, "target");
+      }
 
       const args = ["inspect", "--format", "json"];
       if (type) args.push("--type", type);
       if (size) args.push("-s");
-      args.push(target);
+      args.push(...targets);
       const result = await docker(args, path);
 
       if (result.exitCode !== 0) {
@@ -59,7 +64,23 @@ export function registerInspectTool(server: McpServer) {
         throw new Error(`docker inspect failed: ${errorMsg.trim()}`);
       }
 
-      const data = parseInspectJson(result.stdout);
+      const items = parseInspectJsonAll(result.stdout);
+      if (items.length === 0) {
+        throw new Error("docker inspect returned no objects");
+      }
+      const data = {
+        ...items[0],
+        ...(items.length > 1
+          ? {
+              relatedTargets: items.map((item, idx) => ({
+                target: targets[idx] ?? item.name,
+                id: item.id,
+                name: item.name,
+                inspectType: item.inspectType,
+              })),
+            }
+          : {}),
+      };
       return compactDualOutput(
         data,
         result.stdout,

@@ -31,15 +31,29 @@ export const HttpTimingSchema = z.object({
 
 export type HttpTiming = z.infer<typeof HttpTimingSchema>;
 
+/** A single redirect hop captured from intermediate HTTP response headers. */
+export const RedirectHopSchema = z.object({
+  status: z.number(),
+  location: z.string(),
+});
+
+export type RedirectHop = z.infer<typeof RedirectHopSchema>;
+
 /** Zod schema for the full HTTP response result (used by request, get, post). */
 export const HttpResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
+  httpVersion: z.string().optional(),
   headers: HttpHeadersSchema.optional(),
   body: z.string().optional(),
   timing: HttpTimingSchema,
   size: z.number(),
+  uploadSize: z.number().optional(),
   contentType: z.string().optional(),
+  redirectChain: z.array(RedirectHopSchema).optional(),
+  finalUrl: z.string().optional(),
+  scheme: z.string().optional(),
+  tlsVerifyResult: z.number().optional(),
 });
 
 export type HttpResponse = z.infer<typeof HttpResponseSchema>;
@@ -48,10 +62,15 @@ export type HttpResponse = z.infer<typeof HttpResponseSchema>;
 export const HttpHeadResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
+  httpVersion: z.string().optional(),
   headers: HttpHeadersSchema.optional(),
   timing: HttpTimingSchema,
   contentType: z.string().optional(),
   contentLength: z.number().optional(),
+  redirectChain: z.array(RedirectHopSchema).optional(),
+  finalUrl: z.string().optional(),
+  scheme: z.string().optional(),
+  tlsVerifyResult: z.number().optional(),
 });
 
 export type HttpHeadResponse = z.infer<typeof HttpHeadResponseSchema>;
@@ -60,6 +79,7 @@ export type HttpHeadResponse = z.infer<typeof HttpHeadResponseSchema>;
 export const HttpResponseCompactSchema = z.object({
   status: z.number(),
   statusText: z.string(),
+  httpVersion: z.string().optional(),
   contentType: z.string().optional(),
   size: z.number(),
   timing: HttpTimingSchema,
@@ -75,6 +95,7 @@ export type HttpResponseCompact = z.infer<typeof HttpResponseCompactSchema>;
 export const HttpHeadResponseCompactSchema = z.object({
   status: z.number(),
   statusText: z.string(),
+  httpVersion: z.string().optional(),
   contentType: z.string().optional(),
   contentLength: z.number().optional(),
   timing: HttpTimingSchema,

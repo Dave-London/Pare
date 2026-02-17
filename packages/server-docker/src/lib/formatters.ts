@@ -43,10 +43,16 @@ export function formatBuild(data: DockerBuild): string {
     const parts = [`Build succeeded in ${data.duration}s`];
     if (data.imageId) parts[0] += ` → ${data.imageId}`;
     if (data.steps) parts.push(`${data.steps} steps`);
+    if (data.cacheHits != null || data.cacheMisses != null) {
+      parts.push(`cache hits=${data.cacheHits ?? 0}, misses=${data.cacheMisses ?? 0}`);
+    }
     return parts.join(", ");
   }
 
   const lines = [`Build failed (${data.duration}s)`];
+  if (data.cacheHits != null || data.cacheMisses != null) {
+    lines.push(`  cache hits=${data.cacheHits ?? 0}, misses=${data.cacheMisses ?? 0}`);
+  }
   for (const err of data.errors ?? []) {
     if (typeof err === "string") {
       lines.push(`  ${err}`);
@@ -74,7 +80,10 @@ export function formatLogs(data: DockerLogs): string {
     data.stdoutLines || data.stderrLines
       ? ` [stdout=${(data.stdoutLines ?? []).length}, stderr=${(data.stderrLines ?? []).length}]`
       : "";
-  return `${header}${streamInfo}\n${(data.lines ?? []).join("\n")}`;
+  const body = data.entries
+    ? data.entries.map((e) => `${e.timestamp ? `${e.timestamp} ` : ""}${e.message}`).join("\n")
+    : (data.lines ?? []).join("\n");
+  return `${header}${streamInfo}\n${body}`;
 }
 
 /** Formats structured Docker image data into a human-readable listing with repository, tag, and size.
@@ -87,7 +96,12 @@ export function formatImages(data: DockerImages): string {
     const tag = img.tag && img.tag !== "<none>" ? `:${img.tag}` : "";
     const digest = img.digest ? ` [${img.digest.slice(0, 19)}...]` : "";
     const createdAt = img.createdAt ? ` (${img.createdAt})` : ` (${img.created})`;
-    lines.push(`  ${img.repository}${tag} (${img.size})${createdAt}${digest}`);
+    const bytes = img.sizeBytes != null ? ` ~${img.sizeBytes}B` : "";
+    const labelCount =
+      img.labels && Object.keys(img.labels).length > 0
+        ? ` labels=${Object.keys(img.labels).length}`
+        : "";
+    lines.push(`  ${img.repository}${tag} (${img.size}${bytes})${createdAt}${digest}${labelCount}`);
   }
   return lines.join("\n");
 }
@@ -114,12 +128,18 @@ export function formatRun(data: DockerRun): string {
 /** Formats structured Docker exec output into a human-readable summary.
  *  #108: Shows truncation indicator. */
 export function formatExec(data: DockerExec): string {
-  const status = data.success ? "succeeded" : `failed (exit code ${data.exitCode})`;
+  const status = data.timedOut
+    ? "timed out"
+    : data.success
+      ? "succeeded"
+      : `failed (exit code ${data.exitCode})`;
   const dur = data.duration != null ? ` in ${data.duration}s` : "";
   const trunc = data.isTruncated ? " [truncated]" : "";
   const lines = [`Exec ${status}${dur}${trunc}`];
   if (data.stdout) lines.push(data.stdout);
   if (data.stderr) lines.push(`stderr: ${data.stderr}`);
+  if (data.json !== undefined) lines.push(`json: ${JSON.stringify(data.json)}`);
+  if (data.parseJsonError) lines.push(`json-parse-error: ${data.parseJsonError}`);
   return lines.join("\n");
 }
 
@@ -136,6 +156,8 @@ export function formatComposeUp(data: DockerComposeUp): string {
       lines.push(`  ${ss.name}: ${ss.action}`);
     }
   }
+  if (data.networksCreated != null) lines.push(`  networks created: ${data.networksCreated}`);
+  if (data.volumesCreated != null) lines.push(`  volumes created: ${data.volumesCreated}`);
   return lines.join("\n");
 }
 
@@ -158,7 +180,11 @@ export function formatComposeDown(data: DockerComposeDown): string {
 /** Formats structured Docker pull output into a human-readable summary.
  *  #120: Shows size when available. */
 export function formatPull(data: DockerPull): string {
-  if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
+  if (!data.success) {
+    const errType = data.errorType ? ` (${data.errorType})` : "";
+    const msg = data.errorMessage ? `: ${data.errorMessage}` : "";
+    return `Pull failed for ${data.image}:${data.tag}${errType}${msg}`;
+  }
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
   const size = data.size ? ` [${data.size}]` : "";
   if (data.status === "up-to-date") return `${data.image}:${data.tag} is up to date${digest}`;
@@ -234,6 +260,8 @@ export interface DockerBuildCompact {
   imageId?: string;
   duration: number;
   errorCount: number;
+  cacheHits?: number;
+  cacheMisses?: number;
 }
 
 export function compactBuildMap(data: DockerBuild): DockerBuildCompact {
@@ -242,15 +270,25 @@ export function compactBuildMap(data: DockerBuild): DockerBuildCompact {
     ...(data.imageId ? { imageId: data.imageId } : {}),
     duration: data.duration,
     errorCount: (data.errors ?? []).length,
+    ...(data.cacheHits != null ? { cacheHits: data.cacheHits } : {}),
+    ...(data.cacheMisses != null ? { cacheMisses: data.cacheMisses } : {}),
   };
 }
 
 export function formatBuildCompact(data: DockerBuildCompact): string {
   if (data.success) {
     const id = data.imageId ? ` → ${data.imageId}` : "";
-    return `Build succeeded in ${data.duration}s${id}`;
+    const cache =
+      data.cacheHits != null || data.cacheMisses != null
+        ? ` [cache h=${data.cacheHits ?? 0} m=${data.cacheMisses ?? 0}]`
+        : "";
+    return `Build succeeded in ${data.duration}s${id}${cache}`;
   }
-  return `Build failed (${data.duration}s, ${data.errorCount} errors)`;
+  const cache =
+    data.cacheHits != null || data.cacheMisses != null
+      ? `, cache h=${data.cacheHits ?? 0} m=${data.cacheMisses ?? 0}`
+      : "";
+  return `Build failed (${data.duration}s, ${data.errorCount} errors${cache})`;
 }
 
 /** Compact logs: container, count, first/last few lines. Drop full lines array if large. */
@@ -293,6 +331,7 @@ export interface DockerPullCompact {
   digest?: string;
   status: "pulled" | "up-to-date" | "error";
   success: boolean;
+  errorType?: "auth" | "not-found" | "network-timeout" | "rate-limit" | "unknown";
 }
 
 export function compactPullMap(data: DockerPull): DockerPullCompact {
@@ -302,11 +341,15 @@ export function compactPullMap(data: DockerPull): DockerPullCompact {
     ...(data.digest ? { digest: data.digest } : {}),
     status: data.status,
     success: data.success,
+    ...(data.errorType ? { errorType: data.errorType } : {}),
   };
 }
 
 export function formatPullCompact(data: DockerPullCompact): string {
-  if (!data.success) return `Pull failed for ${data.image}:${data.tag}`;
+  if (!data.success) {
+    const err = data.errorType ? ` (${data.errorType})` : "";
+    return `Pull failed for ${data.image}:${data.tag}${err}`;
+  }
   const digest = data.digest ? ` (${data.digest.slice(0, 19)}...)` : "";
   if (data.status === "up-to-date") return `${data.image}:${data.tag} is up to date${digest}`;
   return `Pulled ${data.image}:${data.tag}${digest}`;
@@ -339,6 +382,10 @@ export interface DockerExecCompact {
   exitCode: number;
   success: boolean;
   duration?: number;
+  timedOut?: boolean;
+  isTruncated?: boolean;
+  stdoutPreview?: string;
+  stderrPreview?: string;
 }
 
 export function compactExecMap(data: DockerExec): DockerExecCompact {
@@ -346,12 +393,25 @@ export function compactExecMap(data: DockerExec): DockerExecCompact {
     exitCode: data.exitCode,
     success: data.success,
     ...(data.duration != null ? { duration: data.duration } : {}),
+    ...(data.timedOut ? { timedOut: true } : {}),
+    ...(data.isTruncated ? { isTruncated: true } : {}),
+    ...(data.stdout ? { stdoutPreview: data.stdout.slice(0, 200) } : {}),
+    ...(data.stderr ? { stderrPreview: data.stderr.slice(0, 200) } : {}),
   };
 }
 
 export function formatExecCompact(data: DockerExecCompact): string {
   const dur = data.duration != null ? ` in ${data.duration}s` : "";
-  return data.success ? `Exec succeeded${dur}` : `Exec failed (exit code ${data.exitCode})${dur}`;
+  const status = data.timedOut
+    ? "timed out"
+    : data.success
+      ? "succeeded"
+      : `failed (exit code ${data.exitCode})`;
+  const trunc = data.isTruncated ? " [truncated]" : "";
+  const lines = [`Exec ${status}${dur}${trunc}`];
+  if (data.stdoutPreview) lines.push(data.stdoutPreview);
+  if (data.stderrPreview) lines.push(`stderr: ${data.stderrPreview}`);
+  return lines.join("\n");
 }
 
 /** Compact compose up: passthrough (already small). */
@@ -359,18 +419,26 @@ export interface DockerComposeUpCompact {
   [key: string]: unknown;
   success: boolean;
   started: number;
+  networksCreated?: number;
+  volumesCreated?: number;
 }
 
 export function compactComposeUpMap(data: DockerComposeUp): DockerComposeUpCompact {
   return {
     success: data.success,
     started: data.started,
+    ...(data.networksCreated != null ? { networksCreated: data.networksCreated } : {}),
+    ...(data.volumesCreated != null ? { volumesCreated: data.volumesCreated } : {}),
   };
 }
 
 export function formatComposeUpCompact(data: DockerComposeUpCompact): string {
   if (!data.success) return "Compose up failed";
-  return `Compose up: ${data.started} services started`;
+  const infra =
+    data.networksCreated != null || data.volumesCreated != null
+      ? ` (networks=${data.networksCreated ?? 0}, volumes=${data.volumesCreated ?? 0})`
+      : "";
+  return `Compose up: ${data.started} services started${infra}`;
 }
 
 /** Compact compose down: passthrough (already small). */
@@ -401,6 +469,12 @@ export function formatComposeDownCompact(data: DockerComposeDownCompact): string
 export function formatInspect(data: DockerInspect): string {
   if (data.inspectType === "image") {
     return formatImageInspect(data);
+  }
+  if (data.inspectType === "volume") {
+    return formatVolumeInspect(data);
+  }
+  if (data.inspectType === "network") {
+    return formatNetworkInspect(data);
   }
   return formatContainerInspect(data);
 }
@@ -435,6 +509,9 @@ function formatContainerInspect(data: DockerInspect): string {
       lines.push(`    ${m.source} → ${m.destination}${mode}`);
     }
   }
+  if (data.relatedTargets && data.relatedTargets.length > 1) {
+    lines.push(`  Related targets: ${data.relatedTargets.length}`);
+  }
   return lines.join("\n");
 }
 
@@ -461,6 +538,32 @@ function formatImageInspect(data: DockerInspect): string {
   }
   if (data.env && data.env.length > 0) {
     lines.push(`  Env: ${data.env.length} variables`);
+  }
+  if (data.relatedTargets && data.relatedTargets.length > 1) {
+    lines.push(`  Related targets: ${data.relatedTargets.length}`);
+  }
+  return lines.join("\n");
+}
+
+function formatVolumeInspect(data: DockerInspect): string {
+  const lines = [`Volume: ${data.name} (${data.id})`];
+  if (data.driver) lines.push(`  Driver: ${data.driver}`);
+  if (data.scope) lines.push(`  Scope: ${data.scope}`);
+  if (data.mountpoint) lines.push(`  Mountpoint: ${data.mountpoint}`);
+  if (data.created) lines.push(`  Created: ${data.created}`);
+  if (data.labels && Object.keys(data.labels).length > 0) {
+    lines.push(`  Labels: ${Object.keys(data.labels).length}`);
+  }
+  return lines.join("\n");
+}
+
+function formatNetworkInspect(data: DockerInspect): string {
+  const lines = [`Network: ${data.name} (${data.id})`];
+  if (data.driver) lines.push(`  Driver: ${data.driver}`);
+  if (data.scope) lines.push(`  Scope: ${data.scope}`);
+  if (data.created) lines.push(`  Created: ${data.created}`);
+  if (data.labels && Object.keys(data.labels).length > 0) {
+    lines.push(`  Labels: ${Object.keys(data.labels).length}`);
   }
   return lines.join("\n");
 }
@@ -491,6 +594,16 @@ export function compactInspectMap(data: DockerInspect): DockerInspectCompact {
       ...(data.repoTags ? { repoTags: data.repoTags } : {}),
     };
   }
+  if (data.inspectType === "volume" || data.inspectType === "network") {
+    return {
+      id: data.id,
+      name: data.name,
+      inspectType: data.inspectType,
+      status: data.status ?? "n/a",
+      running: false,
+      image: data.image,
+    };
+  }
   return {
     id: data.id,
     name: data.name,
@@ -506,6 +619,12 @@ export function formatInspectCompact(data: DockerInspectCompact): string {
   if (data.inspectType === "image") {
     const tags = data.repoTags ? ` tags=${data.repoTags.join(",")}` : "";
     return `Image ${data.name} (${data.id})${tags}`;
+  }
+  if (data.inspectType === "volume") {
+    return `Volume ${data.name} (${data.id})`;
+  }
+  if (data.inspectType === "network") {
+    return `Network ${data.name} (${data.id})`;
   }
   const health = data.healthStatus ? ` health=${data.healthStatus}` : "";
   return `${data.name} (${data.id}) ${data.status} [${data.running ? "running" : "stopped"}] image=${data.image}${health}`;
@@ -572,9 +691,10 @@ export function formatVolumeLs(data: DockerVolumeLs): string {
   const lines = [`${data.total} volumes:`];
   for (const v of data.volumes) {
     const created = v.createdAt ? ` (${v.createdAt})` : "";
+    const status = v.status ? ` status=${v.status}` : "";
     const labelCount =
       v.labels && Object.keys(v.labels).length > 0 ? ` labels=${Object.keys(v.labels).length}` : "";
-    lines.push(`  ${v.name} (${v.driver}, ${v.scope})${created}${labelCount}`);
+    lines.push(`  ${v.name} (${v.driver}, ${v.scope})${created}${status}${labelCount}`);
   }
   return lines.join("\n");
 }
@@ -625,7 +745,9 @@ export function formatComposeBuild(data: DockerComposeBuild): string {
     const status = s.success ? "built" : "failed";
     const error = s.error ? ` — ${s.error}` : "";
     const dur = s.duration != null ? ` (${s.duration}s)` : "";
-    lines.push(`  ${s.service}: ${status}${dur}${error}`);
+    const imageId = s.imageId ? ` id=${s.imageId}` : "";
+    const image = s.image ? ` image=${s.image}` : "";
+    lines.push(`  ${s.service}: ${status}${dur}${imageId}${image}${error}`);
   }
   return lines.join("\n");
 }
@@ -639,8 +761,9 @@ export function formatStats(data: DockerStats): string {
 
   const lines = [`${data.total} containers:`];
   for (const c of data.containers) {
+    const state = c.state ? ` [${c.state}]` : "";
     lines.push(
-      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem: ${c.memoryUsage}/${c.memoryLimit} (${c.memoryPercent.toFixed(2)}%) Net: ${c.netIO} Block: ${c.blockIO} PIDs: ${c.pids}`,
+      `  ${c.name}${state} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem: ${c.memoryUsage}/${c.memoryLimit} (${c.memoryPercent.toFixed(2)}%) Net: ${c.netIO} Block: ${c.blockIO} PIDs: ${c.pids}`,
     );
   }
   return lines.join("\n");
@@ -677,6 +800,7 @@ export interface DockerStatsCompact {
   containers: Array<{
     id: string;
     name: string;
+    state?: string;
     cpuPercent: number;
     memoryUsage?: string;
     memoryPercent: number;
@@ -690,6 +814,7 @@ export function compactStatsMap(data: DockerStats): DockerStatsCompact {
     containers: data.containers.map((c) => ({
       id: c.id,
       name: c.name,
+      ...(c.state ? { state: c.state } : {}),
       cpuPercent: c.cpuPercent,
       memoryUsage: c.memoryUsage,
       memoryPercent: c.memoryPercent,
@@ -704,8 +829,9 @@ export function formatStatsCompact(data: DockerStatsCompact): string {
   const lines = [`${data.total} containers:`];
   for (const c of data.containers) {
     const mem = c.memoryUsage ? ` ${c.memoryUsage}` : "";
+    const state = c.state ? ` [${c.state}]` : "";
     lines.push(
-      `  ${c.name} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem:${mem} (${c.memoryPercent.toFixed(2)}%) PIDs: ${c.pids}`,
+      `  ${c.name}${state} (${c.id}) CPU: ${c.cpuPercent.toFixed(2)}% Mem:${mem} (${c.memoryPercent.toFixed(2)}%) PIDs: ${c.pids}`,
     );
   }
   return lines.join("\n");
@@ -730,7 +856,10 @@ export function formatComposePs(data: DockerComposePs): string {
       ? ` [${portsArr.map((p) => (p.host ? `${p.host}->${p.container}/${p.protocol}` : `${p.container}/${p.protocol}`)).join(", ")}]`
       : "";
     const health = s.health ? ` health=${s.health}` : "";
-    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}${health}`);
+    const exit = s.exitCode != null ? ` exit=${s.exitCode}` : "";
+    lines.push(
+      `  ${s.state.padEnd(10)} ${s.name} (${s.service}) ${s.status}${ports}${health}${exit}`,
+    );
   }
   return lines.join("\n");
 }
@@ -738,7 +867,7 @@ export function formatComposePs(data: DockerComposePs): string {
 /** Compact compose-ps: name, service, state. Drop status, ports. */
 export interface DockerComposePsCompact {
   [key: string]: unknown;
-  services: Array<{ name: string; service: string; state: string }>;
+  services: Array<{ name: string; service: string; state: string; exitCode?: number }>;
   total: number;
 }
 
@@ -748,6 +877,7 @@ export function compactComposePsMap(data: DockerComposePs): DockerComposePsCompa
       name: s.name,
       service: s.service,
       state: s.state,
+      ...(s.exitCode != null ? { exitCode: s.exitCode } : {}),
     })),
     total: data.total,
   };
@@ -757,7 +887,8 @@ export function formatComposePsCompact(data: DockerComposePsCompact): string {
   if (data.total === 0) return "No compose services found.";
   const lines = [`${data.total} services:`];
   for (const s of data.services) {
-    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service})`);
+    const exit = s.exitCode != null ? ` exit=${s.exitCode}` : "";
+    lines.push(`  ${s.state.padEnd(10)} ${s.name} (${s.service})${exit}`);
   }
   return lines.join("\n");
 }

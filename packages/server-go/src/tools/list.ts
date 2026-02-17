@@ -26,6 +26,13 @@ export function registerListTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Package patterns to list (default: ['./...'])"),
+        jsonFields: z
+          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+          .max(INPUT_LIMITS.ARRAY_MAX)
+          .optional()
+          .describe(
+            "Selective JSON fields for go1.22+ (-json=Field1,Field2). Reduces output volume for large workspaces.",
+          ),
         modules: z
           .boolean()
           .optional()
@@ -93,6 +100,7 @@ export function registerListTool(server: McpServer) {
       tolerateErrors,
       versions,
       find,
+      jsonFields,
       tags,
       compact,
     }) => {
@@ -100,7 +108,13 @@ export function registerListTool(server: McpServer) {
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
-      const args = ["list", "-json"];
+      for (const f of jsonFields ?? []) {
+        assertNoFlagInjection(f, "jsonFields");
+      }
+      const args = [
+        "list",
+        jsonFields && jsonFields.length > 0 ? `-json=${jsonFields.join(",")}` : "-json",
+      ];
       if (tags && tags.length > 0) {
         for (const t of tags) {
           assertNoFlagInjection(t, "tags");

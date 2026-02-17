@@ -12,14 +12,26 @@ import type {
 
 /** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
 export function formatTsc(data: TscResult): string {
-  if (data.success && data.total === 0) return "TypeScript: no errors found.";
+  if (data.success && data.total === 0) {
+    if (data.emittedFiles && data.emittedFiles.length > 0) {
+      return `TypeScript: no errors found. Emitted ${data.emittedFiles.length} files.`;
+    }
+    return "TypeScript: no errors found.";
+  }
 
-  const lines = [`TypeScript: ${data.errors} errors, ${data.warnings} warnings`];
+  const fileSummary = data.totalFiles !== undefined ? ` in ${data.totalFiles} files` : "";
+  const lines = [`TypeScript: ${data.errors} errors, ${data.warnings} warnings${fileSummary}`];
   for (const d of data.diagnostics ?? []) {
     const col = d.column !== undefined ? `:${d.column}` : "";
     const code = d.code !== undefined ? ` TS${d.code}` : "";
     const msg = d.message ? `: ${d.message}` : "";
     lines.push(`  ${d.file}:${d.line}${col} ${d.severity}${code}${msg}`);
+  }
+  if (data.emittedFiles && data.emittedFiles.length > 0) {
+    lines.push(`Emitted files (${data.emittedFiles.length}):`);
+    for (const file of data.emittedFiles) {
+      lines.push(`  ${file}`);
+    }
   }
   return lines.join("\n");
 }
@@ -103,7 +115,11 @@ export function formatViteBuild(data: ViteBuildResult): string {
       lines.push(`  ${outputs.length} output files:`);
       for (const out of outputs) {
         const bytesInfo = out.sizeBytes !== undefined ? ` (${out.sizeBytes} bytes)` : "";
-        lines.push(`    ${out.file}  ${out.size}${bytesInfo}`);
+        const gzipInfo =
+          out.gzipSize !== undefined
+            ? ` | gzip ${out.gzipSize}${out.gzipBytes !== undefined ? ` (${out.gzipBytes} bytes)` : ""}`
+            : "";
+        lines.push(`    ${out.file}  ${out.size}${bytesInfo}${gzipInfo}`);
       }
     }
     if (warnings.length > 0) {
@@ -132,6 +148,7 @@ export function formatWebpack(data: WebpackResult): string {
   if (data.success) {
     const parts = [`webpack: build succeeded in ${data.duration}s`];
     if (assets.length > 0) parts.push(`${assets.length} assets`);
+    if ((data.chunks ?? []).length > 0) parts.push(`${(data.chunks ?? []).length} chunks`);
     if (data.modules !== undefined) parts.push(`${data.modules} modules`);
     if (warnings.length > 0) parts.push(`${warnings.length} warnings`);
 
@@ -139,6 +156,12 @@ export function formatWebpack(data: WebpackResult): string {
     for (const asset of assets) {
       const sizeKB = (asset.size / 1024).toFixed(1);
       lines.push(`  ${asset.name}  ${sizeKB} kB`);
+    }
+    for (const chunk of data.chunks ?? []) {
+      const name = chunk.names?.[0] ?? String(chunk.id ?? "unknown");
+      const files = chunk.files?.join(", ") ?? "no-files";
+      const entry = chunk.entry ? " entry" : "";
+      lines.push(`  chunk ${name}${entry}: ${files}`);
     }
     if (data.profile) {
       lines.push(`  Profile: ${data.profile.modules.length} modules with timing data`);
@@ -344,6 +367,9 @@ export function formatTurbo(data: TurboResult): string {
       const msPart = t.durationMs !== undefined ? ` [${t.durationMs}ms]` : "";
       lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}${msPart}`);
     }
+    if (data.summary) {
+      lines.push(`  summary: ${Object.keys(data.summary).length} field(s)`);
+    }
     return lines.join("\n");
   }
 
@@ -355,6 +381,9 @@ export function formatTurbo(data: TurboResult): string {
     const durationPart = t.duration ? ` (${t.duration})` : "";
     lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
   }
+  if (data.summary) {
+    lines.push(`  summary: ${Object.keys(data.summary).length} field(s)`);
+  }
   return lines.join("\n");
 }
 
@@ -365,13 +394,17 @@ export function formatTurbo(data: TurboResult): string {
 /** Formats structured Nx results into a human-readable summary. */
 export function formatNx(data: NxResult): string {
   const tasks = data.tasks ?? [];
-  const summary = `nx: ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
+  const skipped = tasks.filter((t) => t.status === "skipped").length;
+  const summary = `nx: ${data.passed} passed, ${data.failed} failed, ${skipped} skipped, ${data.cached} cached (${data.duration}s)`;
 
   if (tasks.length === 0) return summary;
 
   const lines = [summary];
+  if (data.affectedProjects && data.affectedProjects.length > 0) {
+    lines.push(`  affected projects: ${data.affectedProjects.join(", ")}`);
+  }
   for (const task of tasks) {
-    const icon = task.status === "success" ? "✔" : "✖";
+    const icon = task.status === "success" ? "✔" : task.status === "skipped" ? "↷" : "✖";
     const cacheTag = task.cache ? ` [${task.cache}]` : "";
     const dur = task.duration !== undefined ? ` (${task.duration}s)` : "";
     lines.push(`  ${icon} ${task.project}:${task.target}${cacheTag}${dur}`);

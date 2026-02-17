@@ -133,6 +133,35 @@ describe("formatDescribe", () => {
     expect(output).toContain("Events: 1 parsed");
   });
 
+  it("includes describe metadata and resource details summaries", () => {
+    const data: KubectlDescribeResult = {
+      action: "describe",
+      success: true,
+      resource: "pod",
+      name: "nginx-abc",
+      namespace: "default",
+      output: "Name: nginx-abc",
+      labels: { app: "nginx" },
+      annotations: { "prometheus.io/scrape": "true" },
+      resourceDetails: {
+        pod: {
+          node: "node-1",
+          ip: "10.0.0.5",
+          qosClass: "Burstable",
+          serviceAccount: "default",
+          containers: ["nginx", "sidecar"],
+        },
+      },
+      exitCode: 0,
+    };
+
+    const output = formatDescribe(data);
+    expect(output).toContain("Labels: 1 parsed");
+    expect(output).toContain("Annotations: 1 parsed");
+    expect(output).toContain("Pod details:");
+    expect(output).toContain("containers=2");
+  });
+
   it("formats failure", () => {
     const data: KubectlDescribeResult = {
       action: "describe",
@@ -174,6 +203,21 @@ describe("formatLogs", () => {
       exitCode: 0,
     };
     expect(formatLogs(data)).toBe("kubectl logs empty-pod: 0 line(s)");
+  });
+
+  it("formats logs with truncation and parsed entry count", () => {
+    const data: KubectlLogsResult = {
+      action: "logs",
+      success: true,
+      pod: "json-pod",
+      logs: '{"msg":"ok"}',
+      lineCount: 1,
+      truncated: true,
+      logEntries: [{ raw: '{"msg":"ok"}', json: { msg: "ok" } }],
+      exitCode: 0,
+    };
+    const output = formatLogs(data);
+    expect(output).toContain("kubectl logs json-pod: 1 line(s) [truncated] (1 parsed entries)");
   });
 
   it("formats failed logs", () => {
@@ -429,6 +473,19 @@ describe("formatLogsCompact", () => {
       formatLogsCompact({ action: "logs", success: false, pod: "missing", lineCount: 0 }),
     ).toBe("kubectl logs missing: failed");
   });
+
+  it("formats compact logs with truncation and parsed entries", () => {
+    expect(
+      formatLogsCompact({
+        action: "logs",
+        success: true,
+        pod: "json-pod",
+        lineCount: 10,
+        truncated: true,
+        parsedEntries: 10,
+      }),
+    ).toBe("kubectl logs json-pod: 10 line(s) [truncated] (10 parsed entries)");
+  });
 });
 
 describe("compactApplyMap", () => {
@@ -625,6 +682,22 @@ describe("formatHelmInstall", () => {
     expect(output).toContain("(revision 1)");
   });
 
+  it("formats install with chart and appVersion", () => {
+    const data: HelmInstallResult = {
+      action: "install",
+      success: true,
+      name: "my-release",
+      revision: "1",
+      status: "deployed",
+      chart: "nginx-18.1.0",
+      appVersion: "1.27.0",
+      exitCode: 0,
+    };
+    const output = formatHelmInstall(data);
+    expect(output).toContain("chart=nginx-18.1.0");
+    expect(output).toContain("appVersion=1.27.0");
+  });
+
   it("formats failed install", () => {
     const data: HelmInstallResult = {
       action: "install",
@@ -652,6 +725,22 @@ describe("formatHelmUpgrade", () => {
     const output = formatHelmUpgrade(data);
     expect(output).toContain("helm upgrade my-release: deployed");
     expect(output).toContain("(revision 3)");
+  });
+
+  it("formats upgrade with chart and appVersion", () => {
+    const data: HelmUpgradeResult = {
+      action: "upgrade",
+      success: true,
+      name: "my-release",
+      revision: "3",
+      status: "deployed",
+      chart: "nginx-18.2.0",
+      appVersion: "1.27.1",
+      exitCode: 0,
+    };
+    const output = formatHelmUpgrade(data);
+    expect(output).toContain("chart=nginx-18.2.0");
+    expect(output).toContain("appVersion=1.27.1");
   });
 
   it("formats failed upgrade", () => {

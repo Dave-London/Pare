@@ -21,7 +21,7 @@ export function registerStashTool(server: McpServer) {
           .optional()
           .describe("Repository path (default: cwd)"),
         action: z
-          .enum(["push", "pop", "apply", "drop", "clear", "show"])
+          .enum(["push", "pop", "apply", "drop", "clear", "show", "branch"])
           .describe("Stash action to perform"),
         message: z
           .string()
@@ -52,6 +52,11 @@ export function registerStashTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include full diff patch in show output (-p/--patch)"),
+        branchName: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe("Branch name used with action=branch (`git stash branch <name>`)"),
       },
       outputSchema: GitStashSchema,
     },
@@ -67,6 +72,7 @@ export function registerStashTool(server: McpServer) {
       all,
       reinstateIndex,
       patch,
+      branchName,
     }) => {
       const cwd = path || process.cwd();
       const args = ["stash"];
@@ -116,7 +122,15 @@ export function registerStashTool(server: McpServer) {
           args.push("--", ...pathspec);
         }
       } else {
-        args.push(action);
+        if (action === "branch") {
+          if (!branchName) {
+            throw new Error("branchName is required when action=branch");
+          }
+          assertNoFlagInjection(branchName, "branchName");
+          args.push("branch", branchName);
+        } else {
+          args.push(action);
+        }
         if ((action === "pop" || action === "apply") && reinstateIndex) {
           args.push("--index");
         }
@@ -133,6 +147,9 @@ export function registerStashTool(server: McpServer) {
       }
 
       const stashResult = parseStashOutput(result.stdout, result.stderr, action);
+      if (action === "branch" && branchName) {
+        stashResult.branchName = branchName;
+      }
       return dualOutput(stashResult, formatStash);
     },
   );

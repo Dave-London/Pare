@@ -181,7 +181,7 @@ export function registerFindTool(server: McpServer) {
       }
 
       const result = await fdCmd(args, cwd);
-      const data = parseFdOutput(result.stdout, maxResults ?? 1000);
+      const data = parseFdOutput(result.stdout, maxResults ?? 1000, cwd);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return compactDualOutput(

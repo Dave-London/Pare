@@ -6,6 +6,18 @@ import { parsePrCreate } from "../lib/parsers.js";
 import { formatPrCreate } from "../lib/formatters.js";
 import { PrCreateResultSchema } from "../schemas/index.js";
 
+function classifyPrCreateError(
+  text: string,
+): "base-branch-missing" | "no-commits" | "permission-denied" | "validation" | "unknown" {
+  const lower = text.toLowerCase();
+  if (/base .* not found|base branch .* does not exist/.test(lower)) return "base-branch-missing";
+  if (/no commits between|must push the branch first|nothing to compare/.test(lower))
+    return "no-commits";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/validation|invalid|required|unprocessable/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `pr-create` tool on the given MCP server. */
 export function registerPrCreateTool(server: McpServer) {
   server.registerTool(
@@ -179,10 +191,28 @@ export function registerPrCreateTool(server: McpServer) {
       const result = await ghCmd(args, { cwd, stdin: body });
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh pr create failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return dualOutput(
+          {
+            number: 0,
+            url: "",
+            title,
+            baseBranch: base,
+            headBranch: head,
+            draft: !!draft,
+            errorType: classifyPrCreateError(combined),
+            errorMessage: combined || "gh pr create failed",
+          },
+          formatPrCreate,
+        );
       }
 
-      const data = parsePrCreate(result.stdout);
+      const data = parsePrCreate(result.stdout, {
+        title,
+        baseBranch: base,
+        headBranch: head,
+        draft: !!draft,
+      });
       return dualOutput(data, formatPrCreate);
     },
   );

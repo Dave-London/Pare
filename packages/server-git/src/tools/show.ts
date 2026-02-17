@@ -79,6 +79,38 @@ export function registerShowTool(server: McpServer) {
       if (dateFormat) assertNoFlagInjection(dateFormat, "dateFormat");
       if (diffFilter) assertNoFlagInjection(diffFilter, "diffFilter");
 
+      const typeResult = await git(["cat-file", "-t", commitRef], cwd);
+      const objectType =
+        typeResult.exitCode === 0
+          ? (typeResult.stdout.trim() as "commit" | "tag" | "tree" | "blob")
+          : "unknown";
+
+      // Support non-commit objects (tag/tree/blob) with structured metadata.
+      if (objectType !== "commit") {
+        const contentResult = await git(["cat-file", "-p", commitRef], cwd);
+        if (contentResult.exitCode !== 0) {
+          throw new Error(`git show failed: ${contentResult.stderr}`);
+        }
+        const sizeResult = await git(["cat-file", "-s", commitRef], cwd);
+        const objectSize =
+          sizeResult.exitCode === 0 ? parseInt(sizeResult.stdout.trim(), 10) : undefined;
+        const payload = contentResult.stdout.trimEnd();
+        const show = {
+          objectType: objectType || "unknown",
+          objectName: commitRef,
+          ...(Number.isFinite(objectSize) ? { objectSize } : {}),
+          message: payload || `${objectType} object`,
+        };
+        return compactDualOutput(
+          show,
+          payload,
+          formatShow,
+          compactShowMap,
+          formatShowCompact,
+          compact === false,
+        );
+      }
+
       // Build format string — use --date if dateFormat specified
       const showFormat = dateFormat ? `%H${NUL}%an <%ae>${NUL}%ad${NUL}%B` : SHOW_FORMAT;
 

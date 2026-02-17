@@ -9,11 +9,17 @@ export const PARE_META_SEPARATOR = "---PARE_HTTP_META---";
 interface CurlMeta {
   time_total: number;
   size_download: number;
+  size_upload: number;
   time_namelookup: number;
   time_connect: number;
   time_appconnect: number;
   time_pretransfer: number;
   time_starttransfer: number;
+  http_version: string;
+  num_redirects: number;
+  url_effective: string;
+  scheme: string;
+  ssl_verify_result: number;
 }
 
 /**
@@ -46,18 +52,30 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
 
   // When following redirects, curl with -i outputs multiple response blocks.
   // Each block starts with HTTP/. We want the LAST one.
-  const blocks = splitHttpBlocks(responsePart);
-  const lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : responsePart;
+  const blocks = splitHttpBlocks(responsePart).map((block) => parseHttpBlock(block));
+  const lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : parseHttpBlock(responsePart);
 
-  const { status, statusText, headers, body } = parseHttpBlock(lastBlock);
+  const { status, statusText, headers, body, httpVersion } = lastBlock;
 
   const contentType = headers["content-type"];
+  const redirectChain = blocks
+    .slice(0, -1)
+    .map((block) => {
+      const location = block.headers["location"];
+      if (!location) return null;
+      return {
+        status: block.status,
+        location,
+      };
+    })
+    .filter((entry): entry is { status: number; location: string } => entry !== null);
 
   const timingDetails = buildTimingDetails(meta);
 
   return {
     status,
     statusText,
+    httpVersion: httpVersion || meta.http_version || undefined,
     headers,
     body: body || undefined,
     timing: {
@@ -65,7 +83,12 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
       ...(timingDetails ? { details: timingDetails } : {}),
     },
     size: meta.size_download,
+    uploadSize: meta.size_upload > 0 ? meta.size_upload : undefined,
     contentType,
+    redirectChain: redirectChain.length > 0 ? redirectChain : undefined,
+    finalUrl: meta.url_effective || undefined,
+    scheme: meta.scheme || undefined,
+    tlsVerifyResult: Number.isFinite(meta.ssl_verify_result) ? meta.ssl_verify_result : undefined,
   };
 }
 
@@ -94,10 +117,15 @@ export function parseCurlHeadOutput(
   return {
     status: full.status,
     statusText: full.statusText,
+    httpVersion: full.httpVersion,
     headers: full.headers,
     timing: full.timing,
     contentType: full.contentType,
     contentLength,
+    redirectChain: full.redirectChain,
+    finalUrl: full.finalUrl,
+    scheme: full.scheme,
+    tlsVerifyResult: full.tlsVerifyResult,
   };
 }
 
@@ -135,6 +163,7 @@ export function splitHttpBlocks(raw: string): string[] {
 export function parseHttpBlock(block: string): {
   status: number;
   statusText: string;
+  httpVersion: string;
   headers: Record<string, string>;
   body: string;
 } {
@@ -159,9 +188,10 @@ export function parseHttpBlock(block: string): {
   const statusLine = lines[0] || "";
 
   // Parse status line: HTTP/1.1 200 OK
-  const statusMatch = statusLine.match(/^HTTP\/[\d.]+\s+(\d+)\s*(.*)/);
-  const status = statusMatch ? parseInt(statusMatch[1], 10) : 0;
-  const statusText = statusMatch ? statusMatch[2].trim() : "";
+  const statusMatch = statusLine.match(/^HTTP\/([\d.]+)\s+(\d+)\s*(.*)/);
+  const status = statusMatch ? parseInt(statusMatch[2], 10) : 0;
+  const statusText = statusMatch ? statusMatch[3].trim() : "";
+  const httpVersion = statusMatch ? statusMatch[1] : "";
 
   // Parse headers
   const headers: Record<string, string> = {};
@@ -178,7 +208,7 @@ export function parseHttpBlock(block: string): {
   // Trim trailing whitespace from body
   body = body.replace(/\n$/, "");
 
-  return { status, statusText, headers, body };
+  return { status, statusText, httpVersion, headers, body };
 }
 
 /**
@@ -217,20 +247,46 @@ function buildTimingDetails(meta: CurlMeta): TimingDetails | undefined {
 
 /**
  * Parses the metadata section appended by curl's -w format string.
- * Format: "<time_total> <size_download> <time_namelookup> <time_connect> <time_appconnect> <time_pretransfer> <time_starttransfer>"
+ * Format: "<time_total> <size_download> <size_upload> <time_namelookup> <time_connect> <time_appconnect> <time_pretransfer> <time_starttransfer> <http_version> <num_redirects> <url_effective> <scheme> <ssl_verify_result>"
  *
  * For backward compatibility, also handles the old 2-field format:
  * "<time_total> <size_download>"
  */
 function parseMetaSection(meta: string): CurlMeta {
   const parts = meta.trim().split(/\s+/);
+  if (parts.length <= 7) {
+    // Backward-compatible parser for previous write-out format:
+    // <time_total> <size_download> <time_namelookup> <time_connect> <time_appconnect> <time_pretransfer> <time_starttransfer>
+    return {
+      time_total: parts[0] ? parseFloat(parts[0]) : 0,
+      size_download: parts[1] ? parseFloat(parts[1]) : 0,
+      size_upload: 0,
+      time_namelookup: parts[2] ? parseFloat(parts[2]) : 0,
+      time_connect: parts[3] ? parseFloat(parts[3]) : 0,
+      time_appconnect: parts[4] ? parseFloat(parts[4]) : 0,
+      time_pretransfer: parts[5] ? parseFloat(parts[5]) : 0,
+      time_starttransfer: parts[6] ? parseFloat(parts[6]) : 0,
+      http_version: "",
+      num_redirects: 0,
+      url_effective: "",
+      scheme: "",
+      ssl_verify_result: 0,
+    };
+  }
+
   return {
     time_total: parts[0] ? parseFloat(parts[0]) : 0,
     size_download: parts[1] ? parseFloat(parts[1]) : 0,
-    time_namelookup: parts[2] ? parseFloat(parts[2]) : 0,
-    time_connect: parts[3] ? parseFloat(parts[3]) : 0,
-    time_appconnect: parts[4] ? parseFloat(parts[4]) : 0,
-    time_pretransfer: parts[5] ? parseFloat(parts[5]) : 0,
-    time_starttransfer: parts[6] ? parseFloat(parts[6]) : 0,
+    size_upload: parts[2] ? parseFloat(parts[2]) : 0,
+    time_namelookup: parts[3] ? parseFloat(parts[3]) : 0,
+    time_connect: parts[4] ? parseFloat(parts[4]) : 0,
+    time_appconnect: parts[5] ? parseFloat(parts[5]) : 0,
+    time_pretransfer: parts[6] ? parseFloat(parts[6]) : 0,
+    time_starttransfer: parts[7] ? parseFloat(parts[7]) : 0,
+    http_version: parts[8] ?? "",
+    num_redirects: parts[9] ? parseInt(parts[9], 10) : 0,
+    url_effective: parts[10] ?? "",
+    scheme: parts[11] ?? "",
+    ssl_verify_result: parts[12] ? parseInt(parts[12], 10) : 0,
   };
 }

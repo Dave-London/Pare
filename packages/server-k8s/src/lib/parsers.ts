@@ -316,6 +316,149 @@ export function parseDescribeEvents(output: string): K8sEvent[] {
   return events;
 }
 
+function parseDescribeMetadataMap(
+  output: string,
+  sectionName: "Labels" | "Annotations",
+): Record<string, string> | undefined {
+  const lines = output.split("\n");
+  const map: Record<string, string> = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const headerMatch = lines[i].match(new RegExp(`^${sectionName}:\\s*(.*)$`));
+    if (!headerMatch) continue;
+
+    const entries: string[] = [];
+    const first = headerMatch[1].trim();
+    if (first && first !== "<none>") entries.push(first);
+
+    for (let j = i + 1; j < lines.length; j++) {
+      const line = lines[j];
+      if (!line.startsWith(" ") && !line.startsWith("\t")) break;
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === "<none>") continue;
+      entries.push(trimmed);
+    }
+
+    for (const entry of entries) {
+      // Handle comma-separated labels on one line.
+      const parts = entry.includes(",") ? entry.split(",") : [entry];
+      for (const part of parts) {
+        const kv = part.trim();
+        if (!kv) continue;
+        const eqIdx = kv.indexOf("=");
+        const colonIdx = kv.indexOf(":");
+        const sepIdx = eqIdx >= 0 ? eqIdx : colonIdx >= 0 ? colonIdx : -1;
+        if (sepIdx < 0) continue;
+
+        const key = kv.slice(0, sepIdx).trim();
+        const value = kv.slice(sepIdx + 1).trim();
+        if (key) map[key] = value;
+      }
+    }
+
+    break;
+  }
+
+  return Object.keys(map).length > 0 ? map : undefined;
+}
+
+function parseDescribeField(output: string, label: string): string | undefined {
+  const match = output.match(new RegExp(`^${label}:\\s*(.+)$`, "m"));
+  if (!match) return undefined;
+  const value = match[1].trim();
+  return value && value !== "<none>" ? value : undefined;
+}
+
+function parsePodDescribeDetails(output: string) {
+  const containersSection = extractSection(output, "Containers");
+  const containers: string[] = [];
+  if (containersSection) {
+    for (const line of containersSection.split("\n")) {
+      const match = line.match(/^\s{2,}([^\s:]+):\s*$/);
+      if (match) containers.push(match[1]);
+    }
+  }
+
+  const details = {
+    node: parseDescribeField(output, "Node"),
+    ip: parseDescribeField(output, "IP"),
+    qosClass: parseDescribeField(output, "QoS Class"),
+    serviceAccount: parseDescribeField(output, "Service Account"),
+    containers: containers.length > 0 ? containers : undefined,
+  };
+
+  return Object.values(details).some((v) => v !== undefined) ? details : undefined;
+}
+
+function parseServiceDescribeDetails(output: string) {
+  const lines = output.split("\n");
+  const ports: Array<{
+    name?: string;
+    port: string;
+    targetPort?: string;
+    protocol?: string;
+  }> = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const portMatch = lines[i].match(/^\s*Port:\s*(.+)$/);
+    if (!portMatch) continue;
+
+    const rawPort = portMatch[1].trim();
+    const parsed = rawPort.match(/^(?:(\S+)\s+)?(\S+)\/(\S+)$/);
+    const current: {
+      name?: string;
+      port: string;
+      targetPort?: string;
+      protocol?: string;
+    } = {
+      port: parsed ? parsed[2] : rawPort,
+      protocol: parsed ? parsed[3] : undefined,
+      name: parsed?.[1],
+    };
+
+    const targetMatch = lines[i + 1]?.match(/^\s*TargetPort:\s*(.+)$/);
+    if (targetMatch) {
+      current.targetPort = targetMatch[1].trim();
+      i += 1;
+    }
+
+    ports.push(current);
+  }
+
+  const details = {
+    type: parseDescribeField(output, "Type"),
+    clusterIP: parseDescribeField(output, "IP") ?? parseDescribeField(output, "IPs"),
+    ports: ports.length > 0 ? ports : undefined,
+  };
+
+  return Object.values(details).some((v) => v !== undefined) ? details : undefined;
+}
+
+function parseDeploymentDescribeDetails(output: string) {
+  const replicasRaw = parseDescribeField(output, "Replicas");
+  const replicas = replicasRaw
+    ? {
+        desired: extractReplicasCount(replicasRaw, "desired"),
+        updated: extractReplicasCount(replicasRaw, "updated"),
+        total: extractReplicasCount(replicasRaw, "total"),
+        available: extractReplicasCount(replicasRaw, "available"),
+        unavailable: extractReplicasCount(replicasRaw, "unavailable"),
+      }
+    : undefined;
+
+  const details = {
+    strategy: parseDescribeField(output, "StrategyType"),
+    replicas,
+  };
+
+  return Object.values(details).some((v) => v !== undefined) ? details : undefined;
+}
+
+function extractReplicasCount(line: string, key: string): number | undefined {
+  const match = line.match(new RegExp(`(\\d+)\\s+${key}`));
+  return match ? Number.parseInt(match[1], 10) : undefined;
+}
+
 /**
  * Parses `kubectl describe` output into a structured describe result.
  */
@@ -330,6 +473,27 @@ export function parseDescribeOutput(
   const output = stdout.trimEnd();
   const conditions = exitCode === 0 ? parseDescribeConditions(output) : [];
   const events = exitCode === 0 ? parseDescribeEvents(output) : [];
+  const labels = exitCode === 0 ? parseDescribeMetadataMap(output, "Labels") : undefined;
+  const annotations = exitCode === 0 ? parseDescribeMetadataMap(output, "Annotations") : undefined;
+
+  const resourceLower = resource.toLowerCase();
+  const resourceDetails =
+    exitCode !== 0
+      ? undefined
+      : {
+          pod:
+            resourceLower.includes("pod") || resourceLower === "po"
+              ? parsePodDescribeDetails(output)
+              : undefined,
+          service:
+            resourceLower.includes("service") || resourceLower === "svc"
+              ? parseServiceDescribeDetails(output)
+              : undefined,
+          deployment:
+            resourceLower.includes("deployment") || resourceLower === "deploy"
+              ? parseDeploymentDescribeDetails(output)
+              : undefined,
+        };
 
   return {
     action: "describe",
@@ -338,6 +502,12 @@ export function parseDescribeOutput(
     name,
     namespace,
     output,
+    labels,
+    annotations,
+    resourceDetails:
+      resourceDetails && Object.values(resourceDetails).some((value) => value !== undefined)
+        ? resourceDetails
+        : undefined,
     conditions: conditions.length > 0 ? conditions : undefined,
     events: events.length > 0 ? events : undefined,
     exitCode,
@@ -355,9 +525,35 @@ export function parseLogsOutput(
   pod: string,
   namespace?: string,
   container?: string,
+  tail?: number,
+  limitBytes?: number,
+  parseJsonLogs?: boolean,
 ): KubectlLogsResult {
   const logs = stdout.trimEnd();
   const lineCount = logs ? logs.split("\n").length : 0;
+  const byteLength = logs ? Buffer.byteLength(logs, "utf8") : 0;
+  const truncatedByTail = tail !== undefined && tail > 0 && lineCount >= tail;
+  const truncatedByBytes = limitBytes !== undefined && limitBytes > 0 && byteLength >= limitBytes;
+  const truncated =
+    tail !== undefined || limitBytes !== undefined
+      ? truncatedByTail || truncatedByBytes
+      : undefined;
+
+  const logEntries =
+    parseJsonLogs && logs
+      ? logs
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => {
+            const entry: { raw: string; json?: unknown } = { raw: line };
+            try {
+              entry.json = JSON.parse(line);
+            } catch {
+              // Leave json undefined when line is not JSON.
+            }
+            return entry;
+          })
+      : undefined;
 
   return {
     action: "logs",
@@ -367,6 +563,8 @@ export function parseLogsOutput(
     container,
     logs,
     lineCount,
+    truncated,
+    logEntries,
     exitCode,
     error: exitCode !== 0 ? stderr.trim() || undefined : undefined,
   };
@@ -559,6 +757,11 @@ export function parseHelmInstallOutput(
   try {
     const parsed = JSON.parse(stdout);
     const info = parsed.info as Record<string, unknown> | undefined;
+    const metadata = (parsed.chart as { metadata?: Record<string, unknown> } | undefined)?.metadata;
+    const chartName = metadata?.name != null ? String(metadata.name) : undefined;
+    const chartVersion = metadata?.version != null ? String(metadata.version) : undefined;
+    const chart = chartName && chartVersion ? `${chartName}-${chartVersion}` : chartName;
+    const appVersion = metadata?.appVersion != null ? String(metadata.appVersion) : undefined;
     return {
       action: "install",
       success: true,
@@ -566,6 +769,8 @@ export function parseHelmInstallOutput(
       namespace: String(parsed.namespace ?? namespace ?? ""),
       revision: parsed.version != null ? String(parsed.version) : undefined,
       status: info?.status != null ? String(info.status) : undefined,
+      chart,
+      appVersion,
       exitCode,
     };
   } catch {
@@ -604,6 +809,11 @@ export function parseHelmUpgradeOutput(
   try {
     const parsed = JSON.parse(stdout);
     const info = parsed.info as Record<string, unknown> | undefined;
+    const metadata = (parsed.chart as { metadata?: Record<string, unknown> } | undefined)?.metadata;
+    const chartName = metadata?.name != null ? String(metadata.name) : undefined;
+    const chartVersion = metadata?.version != null ? String(metadata.version) : undefined;
+    const chart = chartName && chartVersion ? `${chartName}-${chartVersion}` : chartName;
+    const appVersion = metadata?.appVersion != null ? String(metadata.appVersion) : undefined;
     return {
       action: "upgrade",
       success: true,
@@ -611,6 +821,8 @@ export function parseHelmUpgradeOutput(
       namespace: String(parsed.namespace ?? namespace ?? ""),
       revision: parsed.version != null ? String(parsed.version) : undefined,
       status: info?.status != null ? String(info.status) : undefined,
+      chart,
+      appVersion,
       exitCode,
     };
   } catch {

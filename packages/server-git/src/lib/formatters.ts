@@ -32,7 +32,8 @@ import type {
 export function formatStatus(s: GitStatus): string {
   if (s.clean) return `On branch ${s.branch} — clean`;
 
-  const parts = [`On branch ${s.branch}`];
+  const version = s.porcelainVersion ? ` [${s.porcelainVersion}]` : "";
+  const parts = [`On branch ${s.branch}${version}`];
   if (s.upstream) {
     const tracking = [];
     if (s.ahead) tracking.push(`ahead ${s.ahead}`);
@@ -73,6 +74,11 @@ export function formatBranch(b: GitBranchFull): string {
 
 /** Formats structured git show data into a human-readable commit detail view with diff summary. */
 export function formatShow(s: GitShow): string {
+  if (s.objectType && s.objectType !== "commit") {
+    const size = s.objectSize !== undefined ? ` (${s.objectSize} bytes)` : "";
+    const name = s.objectName ? ` ${s.objectName}` : "";
+    return `${s.objectType}${name}${size}\n${s.message}`;
+  }
   const header = `${(s.hash ?? "").slice(0, 8)} ${s.message}\nAuthor: ${s.author ?? ""}\nDate: ${s.date ?? ""}`;
   const diff = s.diff ? formatDiff(s.diff) : "";
   return diff ? `${header}\n\n${diff}` : header;
@@ -101,10 +107,25 @@ export function formatPush(p: GitPush): string {
     if (p.rejectedRef) parts.push(`rejected ref: ${p.rejectedRef}`);
     if (p.hint) parts.push(`hint: ${p.hint}`);
     parts.push(p.summary);
+    if (p.objectStats) {
+      const stats = [
+        p.objectStats.total != null ? `total=${p.objectStats.total}` : undefined,
+        p.objectStats.delta != null ? `delta=${p.objectStats.delta}` : undefined,
+        p.objectStats.reused != null ? `reused=${p.objectStats.reused}` : undefined,
+        p.objectStats.packReused != null ? `packReused=${p.objectStats.packReused}` : undefined,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      if (stats) parts.push(`objects: ${stats}`);
+    }
     return parts.join("\n");
   }
   const created = p.created ? " [new branch]" : "";
-  return `Pushed to ${p.remote}/${p.branch}${created}: ${p.summary}`;
+  const stats =
+    p.objectStats && p.objectStats.total != null
+      ? ` (objects=${p.objectStats.total}${p.objectStats.delta != null ? `, delta=${p.objectStats.delta}` : ""})`
+      : "";
+  return `Pushed to ${p.remote}/${p.branch}${created}${stats}: ${p.summary}`;
 }
 
 /** Formats structured git pull data into a human-readable pull summary. */
@@ -144,11 +165,18 @@ export function formatCheckout(c: GitCheckout): string {
   if (c.created) {
     return `Created and switched to new branch '${c.ref}' (was ${c.previousRef})`;
   }
-  return `Switched to '${c.ref}' (was ${c.previousRef})`;
+  const modified =
+    c.modifiedFiles && c.modifiedFiles.length > 0
+      ? ` [${c.modifiedFiles.length} files changed]`
+      : "";
+  return `Switched to '${c.ref}' (was ${c.previousRef})${modified}`;
 }
 
 /** Formats structured git restore data into a human-readable restore summary. */
 export function formatRestore(r: GitRestore): string {
+  if (r.success === false) {
+    return `Restore failed${r.errorType ? ` [${r.errorType}]` : ""}: ${r.errorMessage || "unknown error"}`;
+  }
   if (r.restored.length === 0) return "No files restored";
   const mode = r.staged ? "staged" : "working tree";
   const src = r.source !== "HEAD" ? ` from ${r.source}` : "";
@@ -159,6 +187,9 @@ export function formatRestore(r: GitRestore): string {
 
 /** Formats structured git reset data into a human-readable reset summary. */
 export function formatReset(r: GitReset): string {
+  if (r.success === false) {
+    return `Reset failed${r.errorType ? ` [${r.errorType}]` : ""}: ${r.errorMessage || "unknown error"}`;
+  }
   const modeStr = r.mode ? ` (${r.mode})` : "";
   const refInfo =
     r.previousRef && r.newRef ? ` [${r.previousRef.slice(0, 7)}..${r.newRef.slice(0, 7)}]` : "";
@@ -273,6 +304,7 @@ export function formatTag(t: GitTagFull): string {
   return t.tags
     .map((tag) => {
       const parts = [tag.name];
+      if (tag.tagType) parts.push(`[${tag.tagType}]`);
       if (tag.date) parts.push(tag.date);
       if (tag.message) parts.push(tag.message);
       return parts.join("  ");
@@ -371,7 +403,11 @@ export function formatRemote(r: GitRemoteFull): string {
   return r.remotes
     .map((remote) => {
       const proto = remote.protocol ? ` [${remote.protocol}]` : "";
-      return `${remote.name}\t${remote.fetchUrl} (fetch)${proto}\n${remote.name}\t${remote.pushUrl} (push)`;
+      const tracked =
+        remote.trackedBranches && remote.trackedBranches.length > 0
+          ? `\n  tracked: ${remote.trackedBranches.join(", ")}`
+          : "";
+      return `${remote.name}\t${remote.fetchUrl} (fetch)${proto}\n${remote.name}\t${remote.pushUrl} (push)${tracked}`;
     })
     .join("\n");
 }
@@ -502,6 +538,13 @@ export function formatRebase(r: GitRebase): string {
   if (r.rebasedCommits !== undefined) {
     parts.push(`${r.rebasedCommits} commit(s) rebased`);
   }
+  if (r.verified !== undefined) {
+    parts.push(
+      r.verified
+        ? "verification: ok"
+        : `verification: failed (${r.verificationError || "unknown"})`,
+    );
+  }
   return parts.join("\n");
 }
 
@@ -509,6 +552,9 @@ export function formatRebase(r: GitRebase): string {
 
 /** Formats structured git merge data into a human-readable merge summary. */
 export function formatMerge(m: GitMerge): string {
+  if (!m.merged && m.state === "failed") {
+    return `Merge failed${m.errorType ? ` [${m.errorType}]` : ""}: ${m.errorMessage || "unknown error"}`;
+  }
   if (m.state === "conflict") {
     return `Merge of '${m.branch}' failed with ${m.conflicts.length} conflict(s) [${m.state}]: ${m.conflicts.join(", ")}`;
   }
@@ -530,6 +576,7 @@ export function formatMerge(m: GitMerge): string {
   if (m.commitHash) {
     parts.push(`(${m.commitHash})`);
   }
+  if (m.mergeBase) parts.push(`[base ${m.mergeBase.slice(0, 8)}]`);
   return parts.join(" ");
 }
 
@@ -543,7 +590,8 @@ export function formatLogGraph(lg: GitLogGraphFull): string {
       if (c.hashShort === "") return c.graph;
       const refs = c.refs ? ` (${c.refs})` : "";
       const merge = c.isMerge ? " [merge]" : "";
-      return `${c.graph} ${c.hashShort} ${c.message}${refs}${merge}`;
+      const parents = c.parents && c.parents.length > 0 ? ` <${c.parents.join(" ")}>` : "";
+      return `${c.graph} ${c.hashShort}${parents} ${c.message}${refs}${merge}`;
     })
     .join("\n");
 }
@@ -582,7 +630,8 @@ export function formatReflog(r: GitReflogFull): string {
   const lines = r.entries
     .map((e) => {
       const desc = e.description ? `: ${e.description}` : "";
-      return `${e.shortHash} ${e.selector} ${e.action}${desc} (${e.date})`;
+      const move = e.fromRef && e.toRef ? ` [${e.fromRef} -> ${e.toRef}]` : "";
+      return `${e.shortHash} ${e.selector} ${e.action}${desc}${move} (${e.date})`;
     })
     .join("\n");
   const available =
@@ -624,6 +673,9 @@ export function formatBisect(b: GitBisect): string {
     const parts = [`Bisect found culprit: ${b.result.hash.slice(0, 8)} ${b.result.message}`];
     if (b.result.author) parts.push(`Author: ${b.result.author}`);
     if (b.result.date) parts.push(`Date: ${b.result.date}`);
+    if (b.result.filesChanged && b.result.filesChanged.length > 0) {
+      parts.push(`Files: ${b.result.filesChanged.join(", ")}`);
+    }
     return parts.join("\n");
   }
 
@@ -673,9 +725,11 @@ export function formatWorktreeListCompact(w: GitWorktreeListCompact): string {
 
 /** Formats structured git worktree add/remove result into a human-readable summary. */
 export function formatWorktree(w: GitWorktree): string {
+  const action = w.action ? `${w.action}: ` : "";
   const branch = w.branch ? ` on branch '${w.branch}'` : "";
   const head = w.head ? ` at ${w.head}` : "";
-  return `Worktree at '${w.path}'${branch}${head}`;
+  const target = w.targetPath ? ` -> '${w.targetPath}'` : "";
+  return `${action}Worktree at '${w.path}'${target}${branch}${head}`;
 }
 
 // ── Bisect run formatter ────────────────────────────────────────────────
@@ -732,6 +786,9 @@ export function formatRemoteMutate(r: GitRemoteMutate): string {
       }
     }
     return parts.join("\n");
+  }
+  if (r.action === "update") {
+    return `Remote update completed for '${r.name}'`;
   }
   return `Remote '${r.name}' removed`;
 }

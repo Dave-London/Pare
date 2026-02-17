@@ -119,6 +119,34 @@ describe("formatHttpResponse", () => {
     expect(output).not.toContain("tls=");
     expect(output).toContain("ttfb=0.200s");
   });
+
+  it("formats version, redirect chain, and TLS metadata when present", () => {
+    const data: HttpResponse = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: {
+        "content-type": "application/json",
+      },
+      timing: { total: 0.2 },
+      size: 10,
+      uploadSize: 128,
+      redirectChain: [{ status: 302, location: "https://example.com/final" }],
+      finalUrl: "https://example.com/final",
+      scheme: "https",
+      tlsVerifyResult: 0,
+    };
+
+    const output = formatHttpResponse(data);
+
+    expect(output).toContain("HTTP/2 200 OK");
+    expect(output).toContain("uploaded 128 bytes");
+    expect(output).toContain("Redirects: 1");
+    expect(output).toContain("302 -> https://example.com/final");
+    expect(output).toContain("Final URL: https://example.com/final");
+    expect(output).toContain("Scheme: https");
+    expect(output).toContain("TLS verify result: 0");
+  });
 });
 
 describe("formatHttpHeadResponse", () => {
@@ -197,6 +225,28 @@ describe("formatHttpHeadResponse", () => {
     expect(output).toContain("tcp=0.040s");
     expect(output).toContain("tls=0.110s");
   });
+
+  it("formats HEAD response with HTTP version and redirect/TLS metadata", () => {
+    const data: HttpHeadResponse = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: {},
+      timing: { total: 0.2 },
+      redirectChain: [{ status: 302, location: "https://example.com/final" }],
+      finalUrl: "https://example.com/final",
+      scheme: "https",
+      tlsVerifyResult: 0,
+    };
+
+    const output = formatHttpHeadResponse(data);
+
+    expect(output).toContain("HTTP/2 200 OK");
+    expect(output).toContain("Redirects: 1");
+    expect(output).toContain("Final URL: https://example.com/final");
+    expect(output).toContain("Scheme: https");
+    expect(output).toContain("TLS verify result: 0");
+  });
 });
 
 describe("compactResponseMap", () => {
@@ -249,6 +299,20 @@ describe("compactResponseMap", () => {
     expect(compact.timing.details!.connect).toBe(0.05);
     expect(compact.timing.details!.starttransfer).toBe(0.4);
   });
+
+  it("preserves httpVersion in compact form", () => {
+    const full: HttpResponse = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: {},
+      timing: { total: 0.1 },
+      size: 1,
+    };
+
+    const compact = compactResponseMap(full);
+    expect(compact.httpVersion).toBe("2");
+  });
 });
 
 describe("formatResponseCompact", () => {
@@ -277,6 +341,20 @@ describe("formatResponseCompact", () => {
     const output = formatResponseCompact(compact);
 
     expect(output).toBe("HTTP 204 No Content | 0 bytes | 0.050s");
+  });
+
+  it("formats compact response with HTTP version", () => {
+    const compact = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      size: 42,
+      timing: { total: 0.123 },
+    };
+
+    const output = formatResponseCompact(compact);
+
+    expect(output).toBe("HTTP/2 200 OK | 42 bytes | 0.123s");
   });
 });
 
@@ -387,6 +465,19 @@ describe("compactHeadResponseMap", () => {
     expect(compact.timing.details!.namelookup).toBe(0.008);
     expect(compact.timing.details!.appconnect).toBe(0.11);
   });
+
+  it("preserves httpVersion in compact HEAD form", () => {
+    const full: HttpHeadResponse = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: {},
+      timing: { total: 0.1 },
+    };
+
+    const compact = compactHeadResponseMap(full);
+    expect(compact.httpVersion).toBe("2");
+  });
 });
 
 describe("formatHeadResponseCompact", () => {
@@ -444,5 +535,18 @@ describe("formatHeadResponseCompact", () => {
     const headerLines = lines.slice(1);
     expect(headerLines.some((l) => l.includes("content-type:"))).toBe(false);
     expect(headerLines.some((l) => l.includes("content-length:"))).toBe(false);
+  });
+
+  it("formats compact HEAD response with HTTP version", () => {
+    const compact = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      timing: { total: 0.1 },
+    };
+
+    const output = formatHeadResponseCompact(compact);
+
+    expect(output).toBe("HTTP/2 200 OK | 0.100s");
   });
 });

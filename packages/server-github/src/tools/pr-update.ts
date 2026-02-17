@@ -6,6 +6,16 @@ import { parsePrUpdate } from "../lib/parsers.js";
 import { formatPrUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
+function classifyPrUpdateError(
+  stderr: string,
+): "not-found" | "permission-denied" | "validation" | "unknown" {
+  const lower = stderr.toLowerCase();
+  if (/not found|could not resolve|no pull request/.test(lower)) return "not-found";
+  if (/forbidden|permission|403/.test(lower)) return "permission-denied";
+  if (/validation|invalid|required|unprocessable/.test(lower)) return "validation";
+  return "unknown";
+}
+
 /** Registers the `pr-update` tool on the given MCP server. */
 export function registerPrUpdateTool(server: McpServer) {
   server.registerTool(
@@ -165,6 +175,34 @@ export function registerPrUpdateTool(server: McpServer) {
 
       const selector = String(number);
       const prNum = typeof number === "number" ? number : 0;
+      const updatedFields = [
+        title ? "title" : undefined,
+        body ? "body" : undefined,
+        addLabels && addLabels.length > 0 ? "labels" : undefined,
+        removeLabels && removeLabels.length > 0 ? "labels" : undefined,
+        addAssignees && addAssignees.length > 0 ? "assignees" : undefined,
+        removeAssignees && removeAssignees.length > 0 ? "assignees" : undefined,
+        addProjects && addProjects.length > 0 ? "projects" : undefined,
+        removeProjects && removeProjects.length > 0 ? "projects" : undefined,
+        addReviewers && addReviewers.length > 0 ? "reviewers" : undefined,
+        removeReviewers && removeReviewers.length > 0 ? "reviewers" : undefined,
+        base ? "base" : undefined,
+        milestone ? "milestone" : undefined,
+        removeMilestone ? "milestone" : undefined,
+      ].filter(Boolean) as string[];
+      const operations = [
+        addLabels && addLabels.length > 0 ? "add-label" : undefined,
+        removeLabels && removeLabels.length > 0 ? "remove-label" : undefined,
+        addAssignees && addAssignees.length > 0 ? "add-assignee" : undefined,
+        removeAssignees && removeAssignees.length > 0 ? "remove-assignee" : undefined,
+        addProjects && addProjects.length > 0 ? "add-project" : undefined,
+        removeProjects && removeProjects.length > 0 ? "remove-project" : undefined,
+        addReviewers && addReviewers.length > 0 ? "add-reviewer" : undefined,
+        removeReviewers && removeReviewers.length > 0 ? "remove-reviewer" : undefined,
+        base ? "set-base" : undefined,
+        milestone ? "set-milestone" : undefined,
+        removeMilestone ? "remove-milestone" : undefined,
+      ].filter(Boolean) as string[];
 
       const args = ["pr", "edit", selector];
       if (title) args.push("--title", title);
@@ -223,10 +261,21 @@ export function registerPrUpdateTool(server: McpServer) {
       const result = await ghCmd(args, body ? { cwd, stdin: body } : { cwd });
 
       if (result.exitCode !== 0) {
-        throw new Error(`gh pr edit failed: ${result.stderr}`);
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return dualOutput(
+          {
+            number: prNum,
+            url: "",
+            updatedFields,
+            operations,
+            errorType: classifyPrUpdateError(combined),
+            errorMessage: combined || "gh pr edit failed",
+          },
+          formatPrUpdate,
+        );
       }
 
-      const data = parsePrUpdate(result.stdout, prNum);
+      const data = parsePrUpdate(result.stdout, prNum, updatedFields, operations);
       return dualOutput(data, formatPrUpdate);
     },
   );

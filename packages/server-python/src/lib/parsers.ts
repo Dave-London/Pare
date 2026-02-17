@@ -14,6 +14,7 @@ import type {
   CondaList,
   CondaInfo,
   CondaEnvList,
+  CondaResult,
   PyenvResult,
   PoetryResult,
 } from "../schemas/index.js";
@@ -25,10 +26,12 @@ type MypyDiagnostic = z.infer<typeof MypyDiagnosticSchema>;
  *  Handles both normal installs ("Successfully installed ...") and dry-run output ("Would install ..."). */
 export function parsePipInstall(stdout: string, stderr: string, exitCode: number): PipInstall {
   const output = stdout + "\n" + stderr;
+  const lines = output.split("\n");
   const alreadySatisfied = output.includes("already satisfied");
   const dryRun = output.includes("Would install") || output.includes("--dry-run");
 
   const installed: { name: string; version: string }[] = [];
+  const warnings: string[] = [];
 
   // Normal mode: "Successfully installed pkg-1.0.0 pkg2-2.0.0"
   const installMatch = output.match(/Successfully installed (.+)/);
@@ -62,10 +65,18 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
     }
   }
 
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^(WARNING|DEPRECATION):/i.test(trimmed)) {
+      warnings.push(trimmed);
+    }
+  }
+
   return {
     success: exitCode === 0,
     installed,
     alreadySatisfied,
+    warnings: warnings.length > 0 ? warnings : undefined,
     dryRun,
     total: installed.length,
   };
@@ -161,7 +172,7 @@ export function parseMypyOutput(stdout: string, exitCode: number): MypyResult {
 }
 
 /** Parses `ruff check --output-format json` output into structured lint diagnostics with fixability info. */
-export function parseRuffJson(stdout: string, exitCode: number): RuffResult {
+export function parseRuffJson(stdout: string, exitCode: number, stderr = ""): RuffResult {
   let entries: RuffJsonEntry[];
   try {
     entries = JSON.parse(stdout);
@@ -183,8 +194,18 @@ export function parseRuffJson(stdout: string, exitCode: number): RuffResult {
   }));
 
   const fixable = diagnostics.filter((d) => d.fixable).length;
+  const fixedMatch =
+    stderr.match(/\bFixed\s+(\d+)\s+(?:errors?|violations?)\b/i) ??
+    stderr.match(/\b(\d+)\s+fixed\b/i);
+  const fixedCount = fixedMatch ? parseInt(fixedMatch[1], 10) : undefined;
 
-  return { success: exitCode === 0, diagnostics, total: diagnostics.length, fixable };
+  return {
+    success: exitCode === 0,
+    diagnostics,
+    total: diagnostics.length,
+    fixable,
+    fixedCount,
+  };
 }
 
 /** Extracts fix applicability from a ruff fix object. */
@@ -226,8 +247,14 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
     return { success: exitCode === 0, vulnerabilities: [], total: 0 };
   }
 
-  const vulnerabilities = (data.dependencies ?? []).flatMap((dep) =>
-    (dep.vulns ?? []).map((v) => ({
+  const byPackage: NonNullable<PipAuditResult["byPackage"]> = [];
+  const skipped: NonNullable<PipAuditResult["skipped"]> = [];
+  const vulnerabilities = (data.dependencies ?? []).flatMap((dep) => {
+    if (dep.skip_reason) {
+      skipped.push({ name: dep.name, reason: dep.skip_reason });
+      return [];
+    }
+    const packageVulns = (dep.vulns ?? []).map((v) => ({
       name: dep.name,
       version: dep.version,
       id: v.id,
@@ -237,16 +264,31 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
       url: v.url || undefined,
       severity: v.severity || undefined,
       cvssScore: v.cvss_score != null ? v.cvss_score : undefined,
-    })),
-  );
+    }));
+    if (packageVulns.length > 0) {
+      byPackage.push({
+        name: dep.name,
+        version: dep.version,
+        vulnerabilities: packageVulns,
+      });
+    }
+    return packageVulns;
+  });
 
-  return { success: exitCode === 0, vulnerabilities, total: vulnerabilities.length };
+  return {
+    success: exitCode === 0,
+    vulnerabilities,
+    byPackage: byPackage.length > 0 ? byPackage : undefined,
+    skipped: skipped.length > 0 ? skipped : undefined,
+    total: vulnerabilities.length,
+  };
 }
 
 interface PipAuditJson {
   dependencies?: {
     name: string;
     version: string;
+    skip_reason?: string;
     vulns?: {
       id: string;
       description?: string;
@@ -426,11 +468,17 @@ export function parseUvInstall(stdout: string, stderr: string, exitCode: number)
     }
   }
 
+  const alreadySatisfied =
+    exitCode === 0 &&
+    installed.length === 0 &&
+    /(already installed|already satisfied|audited \d+ packages|nothing to install)/i.test(output);
+
   return {
     success: exitCode === 0,
     installed,
     total: installed.length,
     duration,
+    alreadySatisfied,
     error,
     resolutionConflicts,
   };
@@ -442,11 +490,45 @@ export function parseUvRun(
   stderr: string,
   exitCode: number,
   durationMs: number,
+  options?: { maxOutputChars?: number },
 ): UvRun {
+  const uvDiagnosticLines: string[] = [];
+  const commandErrLines: string[] = [];
+  for (const line of stderr.split("\n")) {
+    const trimmed = line.trim();
+    if (
+      /^(Resolved|Prepared|Installed|Uninstalled|Audited)\b/.test(trimmed) ||
+      /^Using (?:Python|CPython)\b/.test(trimmed) ||
+      /^Downloading\b/.test(trimmed)
+    ) {
+      if (trimmed) uvDiagnosticLines.push(trimmed);
+    } else {
+      commandErrLines.push(line);
+    }
+  }
+
+  let outputStdout = stdout;
+  let outputStderr = commandErrLines.join("\n");
+  let truncated = false;
+  const maxOutputChars = options?.maxOutputChars ?? 0;
+  if (maxOutputChars > 0) {
+    if (outputStdout.length > maxOutputChars) {
+      outputStdout = outputStdout.slice(0, maxOutputChars) + "…";
+      truncated = true;
+    }
+    if (outputStderr.length > maxOutputChars) {
+      outputStderr = outputStderr.slice(0, maxOutputChars) + "…";
+      truncated = true;
+    }
+  }
+
   return {
     exitCode,
-    stdout,
-    stderr,
+    stdout: outputStdout,
+    stderr: outputStderr,
+    commandStderr: outputStderr || undefined,
+    uvDiagnostics: uvDiagnosticLines.length > 0 ? uvDiagnosticLines : undefined,
+    truncated: truncated || undefined,
     success: exitCode === 0,
     duration: Math.round(durationMs) / 1000,
   };
@@ -464,6 +546,7 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
   const lines = output.split("\n");
 
   const wouldReformat: string[] = [];
+  const diagnostics: NonNullable<BlackResult["diagnostics"]> = [];
   let filesChanged = 0;
   let filesUnchanged = 0;
 
@@ -475,6 +558,15 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
     const reformattedMatch = line.match(BLACK_REFORMATTED_RE);
     if (reformattedMatch) {
       wouldReformat.push(reformattedMatch[1].trim());
+    }
+    const parseDiagMatch = line.match(/cannot format (.+?): Cannot parse: (\d+):(\d+): (.+)$/i);
+    if (parseDiagMatch) {
+      diagnostics.push({
+        file: parseDiagMatch[1],
+        line: parseInt(parseDiagMatch[2], 10),
+        column: parseInt(parseDiagMatch[3], 10),
+        message: parseDiagMatch[4],
+      });
     }
   }
 
@@ -519,6 +611,7 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
     success,
     exitCode: exitCode !== 0 ? exitCode : undefined,
     errorType,
+    diagnostics: diagnostics.length > 0 ? diagnostics : undefined,
     wouldReformat,
   };
 }
@@ -681,7 +774,16 @@ export function parsePyenvOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  action: "versions" | "version" | "install" | "installList" | "local" | "global" | "uninstall",
+  action:
+    | "versions"
+    | "version"
+    | "install"
+    | "installList"
+    | "local"
+    | "global"
+    | "uninstall"
+    | "which"
+    | "rehash",
 ): PyenvResult {
   const output = stdout + "\n" + stderr;
 
@@ -762,6 +864,13 @@ export function parsePyenvOutput(
     case "global": {
       return { action, success: true, globalVersion: stdout.trim() || undefined };
     }
+    case "which": {
+      const commandPath = stdout.trim();
+      return { action, success: true, commandPath: commandPath || undefined };
+    }
+    case "rehash": {
+      return { action, success: true };
+    }
   }
 }
 
@@ -831,12 +940,20 @@ export function parseCondaListJson(stdout: string, envName?: string): CondaList 
   let entries: CondaListJsonEntry[];
   try {
     entries = JSON.parse(stdout);
-  } catch {
-    return { action: "list", packages: [], total: 0, environment: envName };
+  } catch (err) {
+    const parseError =
+      err instanceof Error ? err.message : "Failed to parse conda list JSON output";
+    return { action: "list", packages: [], total: 0, environment: envName, parseError };
   }
 
   if (!Array.isArray(entries)) {
-    return { action: "list", packages: [], total: 0, environment: envName };
+    return {
+      action: "list",
+      packages: [],
+      total: 0,
+      environment: envName,
+      parseError: "conda list output is not a JSON array",
+    };
   }
 
   const packages = entries.map((e) => ({
@@ -866,7 +983,9 @@ export function parseCondaInfoJson(stdout: string): CondaInfo {
   let data: CondaInfoJson;
   try {
     data = JSON.parse(stdout);
-  } catch {
+  } catch (err) {
+    const parseError =
+      err instanceof Error ? err.message : "Failed to parse conda info JSON output";
     return {
       action: "info",
       condaVersion: "",
@@ -876,6 +995,7 @@ export function parseCondaInfoJson(stdout: string): CondaInfo {
       channels: [],
       envsDirs: [],
       pkgsDirs: [],
+      parseError,
     };
   }
 
@@ -901,8 +1021,10 @@ export function parseCondaEnvListJson(stdout: string, activePrefix?: string): Co
   let data: CondaEnvListJson;
   try {
     data = JSON.parse(stdout);
-  } catch {
-    return { action: "env-list", environments: [], total: 0 };
+  } catch (err) {
+    const parseError =
+      err instanceof Error ? err.message : "Failed to parse conda env list JSON output";
+    return { action: "env-list", environments: [], total: 0, parseError };
   }
 
   const envs = (data.envs ?? []).map((envPath) => {
@@ -917,6 +1039,118 @@ export function parseCondaEnvListJson(stdout: string, activePrefix?: string): Co
   });
 
   return { action: "env-list", environments: envs, total: envs.length };
+}
+
+interface CondaMutationJson {
+  success?: boolean;
+  error?: string;
+  prefix?: string;
+  actions?: {
+    LINK?: Array<{ name?: string; version?: string; channel?: string; build_string?: string }>;
+    UNLINK?: Array<{ name?: string; version?: string; channel?: string; build_string?: string }>;
+  };
+}
+
+/** Parses `conda create/remove/update --json` output into structured mutation summaries. */
+export function parseCondaMutationJson(
+  stdout: string,
+  stderr: string,
+  action: "create" | "remove" | "update",
+  environment?: string,
+  prefix?: string,
+): CondaResult {
+  let data: CondaMutationJson;
+  try {
+    data = stdout.trim() ? JSON.parse(stdout) : {};
+  } catch (err) {
+    const parseError =
+      err instanceof Error ? err.message : `Failed to parse conda ${action} JSON output`;
+    if (action === "create") {
+      return {
+        action,
+        success: false,
+        environment,
+        prefix,
+        totalAdded: 0,
+        error: stderr.trim() || undefined,
+        parseError,
+      };
+    }
+    if (action === "remove") {
+      return {
+        action,
+        success: false,
+        environment,
+        prefix,
+        totalRemoved: 0,
+        error: stderr.trim() || undefined,
+        parseError,
+      };
+    }
+    return {
+      action,
+      success: false,
+      environment,
+      prefix,
+      totalUpdated: 0,
+      error: stderr.trim() || undefined,
+      parseError,
+    };
+  }
+
+  const linked = (data.actions?.LINK ?? []).map((p) => ({
+    name: p.name ?? "",
+    version: p.version ?? undefined,
+    channel: p.channel ?? undefined,
+    buildString: p.build_string ?? undefined,
+  }));
+  const unlinked = (data.actions?.UNLINK ?? []).map((p) => ({
+    name: p.name ?? "",
+    version: p.version ?? undefined,
+    channel: p.channel ?? undefined,
+    buildString: p.build_string ?? undefined,
+  }));
+  const success = data.success !== false && !data.error;
+  const outPrefix = data.prefix ?? prefix;
+  const error = data.error ?? (success ? undefined : stderr.trim() || undefined);
+
+  if (action === "create") {
+    return {
+      action,
+      success,
+      environment,
+      prefix: outPrefix,
+      addedPackages: linked.length > 0 ? linked : undefined,
+      totalAdded: linked.length,
+      error,
+    };
+  }
+  if (action === "remove") {
+    return {
+      action,
+      success,
+      environment,
+      prefix: outPrefix,
+      removedPackages: unlinked.length > 0 ? unlinked : undefined,
+      totalRemoved: unlinked.length,
+      error,
+    };
+  }
+
+  const updatedPackages = linked.filter((l) => unlinked.some((u) => u.name === l.name));
+  const addedPackages = linked.filter((l) => !unlinked.some((u) => u.name === l.name));
+  const removedPackages = unlinked.filter((u) => !linked.some((l) => l.name === u.name));
+  return {
+    action,
+    success,
+    environment,
+    prefix: outPrefix,
+    updatedPackages: updatedPackages.length > 0 ? updatedPackages : undefined,
+    addedPackages: addedPackages.length > 0 ? addedPackages : undefined,
+    removedPackages: removedPackages.length > 0 ? removedPackages : undefined,
+    totalUpdated: updatedPackages.length + addedPackages.length + removedPackages.length,
+    error,
+  };
 }
 // ─── poetry parsers ──────────────────────────────────────────────────────────
 
@@ -937,7 +1171,7 @@ export function parsePoetryOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  action: "install" | "add" | "remove" | "show" | "build",
+  action: "install" | "add" | "remove" | "show" | "build" | "update" | "lock" | "check" | "export",
 ): PoetryResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
@@ -981,7 +1215,17 @@ export function parsePoetryOutput(
     };
   }
 
-  // install, add, remove — parse installed/updated/removed packages
+  if (action === "check" || action === "lock" || action === "export") {
+    const messages = lines.map((l) => l.trim()).filter(Boolean);
+    return {
+      success: exitCode === 0,
+      action,
+      messages: messages.length > 0 ? messages : undefined,
+      total: messages.length,
+    };
+  }
+
+  // install, add, remove, update — parse installed/updated/removed packages
   const packages: { name: string; version: string }[] = [];
   for (const line of lines) {
     const match = line.match(POETRY_INSTALL_LINE_RE);

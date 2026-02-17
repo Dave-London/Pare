@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
@@ -140,15 +142,35 @@ export function registerInstallTool(server: McpServer) {
       if (exact) flags.push("--save-exact");
       if (isGlobal) flags.push("--global");
       if (registry) flags.push(`--registry=${registry}`);
+      if (pm === "npm") flags.push("--json");
 
       const subcommand = frozenLockfile && pm === "npm" ? "ci" : "install";
+      const beforeLockfileHash = await getLockfileHash(cwd, pm);
       const start = Date.now();
       const result = await runPm(pm, [subcommand, ...flags, ...(args || [])], cwd);
       const duration = Math.round(((Date.now() - start) / 1000) * 10) / 10;
+      const afterLockfileHash = await getLockfileHash(cwd, pm);
+      const lockfileChanged = beforeLockfileHash !== afterLockfileHash;
 
       const output = result.stdout + "\n" + result.stderr;
       const install = parseInstallOutput(output, duration);
-      return dualOutput({ ...install, packageManager: pm }, formatInstall);
+      return dualOutput({ ...install, packageManager: pm, lockfileChanged }, formatInstall);
     },
   );
+}
+
+async function getLockfileHash(
+  cwd: string,
+  pm: "npm" | "pnpm" | "yarn",
+): Promise<string | undefined> {
+  const lockfileName =
+    pm === "pnpm" ? "pnpm-lock.yaml" : pm === "yarn" ? "yarn.lock" : "package-lock.json";
+  const lockfilePath = `${cwd}/${lockfileName}`;
+
+  try {
+    const content = await readFile(lockfilePath);
+    return createHash("sha256").update(content).digest("hex");
+  } catch {
+    return undefined;
+  }
 }

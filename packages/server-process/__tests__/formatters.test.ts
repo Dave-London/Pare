@@ -71,6 +71,20 @@ describe("formatRun", () => {
     expect(output).toBe("true: success (10ms).");
   });
 
+  it("formats cpu metrics when present", () => {
+    const data: ProcessRunResult = {
+      command: "node",
+      success: true,
+      exitCode: 0,
+      duration: 42,
+      timedOut: false,
+      userCpuTimeMs: 11.234,
+      systemCpuTimeMs: 2.5,
+    };
+    const output = formatRun(data);
+    expect(output).toContain("cpu: user=11.23ms, system=2.50ms");
+  });
+
   it("formats truncated run", () => {
     const data: ProcessRunResult = {
       command: "cat",
@@ -140,6 +154,21 @@ describe("compactRunMap", () => {
 
     expect(compact.timedOut).toBe(true);
     expect(compact.signal).toBe("SIGTERM");
+  });
+
+  it("preserves cpu metrics", () => {
+    const data: ProcessRunResult = {
+      command: "node",
+      success: true,
+      exitCode: 0,
+      duration: 100,
+      timedOut: false,
+      userCpuTimeMs: 8.7,
+      systemCpuTimeMs: 1.2,
+    };
+    const compact = compactRunMap(data);
+    expect(compact.userCpuTimeMs).toBe(8.7);
+    expect(compact.systemCpuTimeMs).toBe(1.2);
   });
 
   it("preserves non-zero exit code", () => {

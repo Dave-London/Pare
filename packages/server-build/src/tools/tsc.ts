@@ -26,6 +26,12 @@ export function registerTscTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Skip emitting output files (default: true)"),
+        listEmittedFiles: z
+          .boolean()
+          .optional()
+          .describe(
+            "List emitted output files when emit is enabled (maps to --listEmittedFiles). Default: true when noEmit=false.",
+          ),
         project: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Path to tsconfig.json"),
         incremental: z
           .boolean()
@@ -75,6 +81,7 @@ export function registerTscTool(server: McpServer) {
     async ({
       path,
       noEmit,
+      listEmittedFiles,
       project,
       incremental,
       skipLibCheck,
@@ -90,6 +97,7 @@ export function registerTscTool(server: McpServer) {
 
       const args: string[] = [];
       if (noEmit !== false) args.push("--noEmit");
+      if (noEmit === false && listEmittedFiles !== false) args.push("--listEmittedFiles");
       if (project) args.push("--project", project);
       if (incremental) args.push("--incremental");
       if (skipLibCheck) args.push("--skipLibCheck");

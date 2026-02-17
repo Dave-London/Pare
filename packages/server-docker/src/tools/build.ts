@@ -196,7 +196,7 @@ export function registerBuildTool(server: McpServer) {
       const data = parseBuildOutput(result.stdout, result.stderr, result.exitCode, duration);
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatBuild,
         compactBuildMap,
         formatBuildCompact,

@@ -40,6 +40,15 @@ export function registerRequestTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Request body (for POST, PUT, PATCH)"),
+        form: z
+          .record(
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.string().max(INPUT_LIMITS.STRING_MAX),
+          )
+          .optional()
+          .describe(
+            "Multipart form data as key-value pairs (-F). Each pair maps to `-F key=value`. For file uploads use `@filepath` as the value.",
+          ),
         timeout: z
           .number()
           .min(1)
@@ -122,6 +131,7 @@ export function registerRequestTool(server: McpServer) {
       method,
       headers,
       body,
+      form,
       timeout,
       connectTimeout,
       followRedirects,
@@ -141,12 +151,18 @@ export function registerRequestTool(server: McpServer) {
       if (proxy) assertNoFlagInjection(proxy, "proxy");
       if (cookie) assertNoFlagInjection(cookie, "cookie");
       if (resolve) assertNoFlagInjection(resolve, "resolve");
+      if (form) {
+        for (const value of Object.values(form)) {
+          assertNoFlagInjection(value, "form value");
+        }
+      }
 
       const args = buildCurlArgs({
         url,
         method: method ?? "GET",
         headers,
-        body,
+        body: form ? undefined : body,
+        form,
         timeout: timeout ?? 30,
         connectTimeout,
         followRedirects: followRedirects ?? true,
@@ -223,11 +239,17 @@ export function buildCurlArgs(opts: BuildCurlArgsOptions): string[] {
     `\n${PARE_META_SEPARATOR}\n`,
     "%{time_total}",
     "%{size_download}",
+    "%{size_upload}",
     "%{time_namelookup}",
     "%{time_connect}",
     "%{time_appconnect}",
     "%{time_pretransfer}",
     "%{time_starttransfer}",
+    "%{http_version}",
+    "%{num_redirects}",
+    "%{url_effective}",
+    "%{scheme}",
+    "%{ssl_verify_result}",
   ].join(" ");
   args.push("-w", writeOut);
 
@@ -271,6 +293,7 @@ export function buildCurlArgs(opts: BuildCurlArgsOptions): string[] {
   // Multipart form data (-F): takes priority over body/data-raw
   if (opts.form && Object.keys(opts.form).length > 0) {
     for (const [key, value] of Object.entries(opts.form)) {
+      assertNoFlagInjection(key, "form key");
       assertNoFlagInjection(value, "form value");
       args.push("-F", `${key}=${value}`);
     }

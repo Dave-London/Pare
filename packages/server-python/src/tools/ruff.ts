@@ -135,7 +135,7 @@ export function registerRuffTool(server: McpServer) {
       }
 
       const result = await ruff(args, cwd);
-      const data = parseRuffJson(result.stdout, result.exitCode);
+      const data = parseRuffJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
         result.stdout,

@@ -16,6 +16,7 @@ interface JestJsonOutput {
       fullName: string;
       status: "passed" | "failed" | "pending";
       failureMessages: string[];
+      duration?: number;
       location?: { line: number; column: number };
     }>;
   }>;
@@ -43,9 +44,17 @@ export function parseJestJson(jsonStr: string): TestRun {
   const duration = (endTime - data.startTime) / 1000;
 
   const failures: TestRun["failures"] = [];
+  const tests: NonNullable<TestRun["tests"]> = [];
 
   for (const suite of data.testResults) {
     for (const test of suite.testResults) {
+      tests.push({
+        name: test.fullName,
+        file: suite.testFilePath,
+        status:
+          test.status === "failed" ? "failed" : test.status === "passed" ? "passed" : "skipped",
+        ...(test.duration !== undefined ? { duration: test.duration / 1000 } : {}),
+      });
       if (test.status === "failed") {
         const message = test.failureMessages.join("\n").trim();
 
@@ -76,6 +85,7 @@ export function parseJestJson(jsonStr: string): TestRun {
       duration: Math.round(duration * 100) / 100,
     },
     failures,
+    ...(tests.length > 0 ? { tests } : {}),
   };
 }
 
@@ -93,7 +103,7 @@ export function parseJestJson(jsonStr: string): TestRun {
 export function parseJestCoverage(stdout: string): Coverage {
   const lines = stdout.split("\n");
   const files: Coverage["files"] = [];
-  let summary = { lines: 0, branches: 0, functions: 0 };
+  let summary = { statements: 0, lines: 0, branches: 0, functions: 0 };
 
   for (const line of lines) {
     // Match coverage table rows: " file | stmts | branch | funcs | lines | uncovered"
@@ -102,12 +112,13 @@ export function parseJestCoverage(stdout: string): Coverage {
     );
     if (!match) continue;
 
-    const [, name, , branch, funcs, linePct] = match;
+    const [, name, stmts, branch, funcs, linePct] = match;
     const trimName = name.trim();
 
     if (trimName === "File" || trimName.match(/^-+$/)) continue;
 
     const entry = {
+      statements: parseFloat(stmts),
       lines: parseFloat(linePct),
       branches: parseFloat(branch),
       functions: parseFloat(funcs),
@@ -124,5 +135,44 @@ export function parseJestCoverage(stdout: string): Coverage {
     framework: "jest",
     summary,
     files,
+  };
+}
+
+/**
+ * Parses Jest JSON summary coverage output (`coverage-summary.json`).
+ */
+export function parseJestCoverageJson(jsonStr: string): Coverage {
+  const parsed = JSON.parse(jsonStr) as Record<
+    string,
+    {
+      statements?: { pct?: number };
+      branches?: { pct?: number };
+      functions?: { pct?: number };
+      lines?: { pct?: number };
+    }
+  >;
+
+  const files: Coverage["files"] = [];
+  let summary = { statements: 0, lines: 0, branches: 0, functions: 0 };
+
+  for (const [file, metrics] of Object.entries(parsed)) {
+    const entry = {
+      statements: metrics.statements?.pct ?? 0,
+      lines: metrics.lines?.pct ?? 0,
+      branches: metrics.branches?.pct ?? 0,
+      functions: metrics.functions?.pct ?? 0,
+    };
+    if (file === "total") {
+      summary = entry;
+    } else {
+      files.push({ file, ...entry });
+    }
+  }
+
+  return {
+    framework: "jest",
+    summary,
+    files,
+    totalFiles: files.length,
   };
 }

@@ -25,6 +25,17 @@ export function parsePytestOutput(stdout: string): TestRun {
 
   // Parse failures from short test summary
   const failures: TestRun["failures"] = [];
+  const tests: NonNullable<TestRun["tests"]> = [];
+
+  for (const line of lines) {
+    const m = line.match(/^(.+?)::(.+?)\s+(PASSED|FAILED|SKIPPED|XFAIL|XPASS)\b/);
+    if (!m) continue;
+    const [, file, name, statusRaw] = m;
+    const status =
+      statusRaw === "FAILED" ? "failed" : statusRaw === "PASSED" ? "passed" : "skipped";
+    tests.push({ file, name, status });
+  }
+
   const summaryStart = lines.findIndex((l) => l.includes("short test summary info"));
   const summaryEnd = lines.findIndex(
     (l, i) => i > summaryStart && summaryStart >= 0 && l.match(/^=+ /),
@@ -71,6 +82,7 @@ export function parsePytestOutput(stdout: string): TestRun {
       duration,
     },
     failures,
+    ...(tests.length > 0 ? { tests } : {}),
   };
 }
 
@@ -108,14 +120,49 @@ export function parsePytestCoverage(stdout: string): Coverage {
       if (file === "TOTAL") {
         totalPct = pct;
       } else {
-        files.push({ file, lines: pct });
+        files.push({ file, statements: pct, lines: pct });
       }
     }
   }
 
   return {
     framework: "pytest",
-    summary: { lines: totalPct },
+    summary: { statements: totalPct, lines: totalPct },
     files,
+  };
+}
+
+/**
+ * Parses coverage.py JSON output (`pytest --cov-report=json:<file>`) into structured data.
+ */
+export function parsePytestCoverageJson(jsonStr: string): Coverage {
+  const data = JSON.parse(jsonStr) as {
+    files?: Record<
+      string,
+      {
+        summary?: { percent_covered?: number };
+        missing_lines?: number[];
+      }
+    >;
+    totals?: { percent_covered?: number };
+  };
+
+  const files: Coverage["files"] = [];
+  for (const [file, info] of Object.entries(data.files ?? {})) {
+    const pct = info.summary?.percent_covered ?? 0;
+    files.push({
+      file,
+      statements: pct,
+      lines: pct,
+      uncoveredLines: info.missing_lines ?? undefined,
+    });
+  }
+
+  const totalPct = data.totals?.percent_covered ?? 0;
+  return {
+    framework: "pytest",
+    summary: { statements: totalPct, lines: totalPct },
+    files,
+    totalFiles: files.length,
   };
 }

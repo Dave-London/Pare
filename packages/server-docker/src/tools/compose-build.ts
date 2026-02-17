@@ -160,7 +160,7 @@ export function registerComposeBuildTool(server: McpServer) {
 
       return compactDualOutput(
         data,
-        result.stdout,
+        result.stdout + result.stderr,
         formatComposeBuild,
         compactComposeBuildMap,
         formatComposeBuildCompact,

@@ -378,6 +378,12 @@ describe("security: buildCurlArgs safety", () => {
     expect(writeOut).toContain("%{time_appconnect}");
     expect(writeOut).toContain("%{time_pretransfer}");
     expect(writeOut).toContain("%{time_starttransfer}");
+    expect(writeOut).toContain("%{size_upload}");
+    expect(writeOut).toContain("%{http_version}");
+    expect(writeOut).toContain("%{num_redirects}");
+    expect(writeOut).toContain("%{url_effective}");
+    expect(writeOut).toContain("%{scheme}");
+    expect(writeOut).toContain("%{ssl_verify_result}");
   });
 
   // ── Form parameter tests ──────────────────────────────────────────

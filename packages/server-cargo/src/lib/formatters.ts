@@ -18,10 +18,12 @@ import type {
 export interface CargoBuildCompact {
   [key: string]: unknown;
   success: boolean;
+  mode?: string;
   diagnostics?: CargoBuildResult["diagnostics"];
   errors: number;
   warnings: number;
   total: number;
+  timings?: CargoBuildResult["timings"];
 }
 
 /** Compact test: summary counts with failed test entries preserved for diagnostics. */
@@ -33,6 +35,7 @@ export interface CargoTestCompact {
   passed: number;
   failed: number;
   ignored: number;
+  duration?: string;
   compilationDiagnostics?: CargoTestResult["compilationDiagnostics"];
 }
 
@@ -51,6 +54,7 @@ export interface CargoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
+  signal?: string;
   failureType?: "compilation" | "runtime" | "timeout";
 }
 
@@ -71,6 +75,8 @@ export interface CargoRemoveCompact {
   success: boolean;
   removed: string[];
   total: number;
+  partialSuccess?: boolean;
+  failedPackages?: string[];
   dependencyType?: "normal" | "dev" | "build";
   error?: string;
 }
@@ -104,17 +110,25 @@ export function formatCargoBuild(data: CargoBuildResult): string {
       lines.push(`    suggestion: ${d.suggestion}`);
     }
   }
+  if (data.timings?.generated) {
+    const timingParts = ["timings generated"];
+    if (data.timings.format) timingParts.push(`format=${data.timings.format}`);
+    if (data.timings.reportPath) timingParts.push(`report=${data.timings.reportPath}`);
+    lines.push(`  ${timingParts.join(", ")}`);
+  }
   return lines.join("\n");
 }
 
 /** Formats structured cargo test results into a human-readable test summary with pass/fail status. */
 export function formatCargoTest(data: CargoTestResult): string {
   const status = data.success ? "ok" : "FAILED";
+  const durationSuffix = data.duration ? `; finished in ${data.duration}` : "";
   const lines = [
-    `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`,
+    `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored${durationSuffix}`,
   ];
   for (const t of data.tests ?? []) {
-    lines.push(`  ${t.status.padEnd(7)} ${t.name}`);
+    const perTestDuration = t.duration ? ` (${t.duration})` : "";
+    lines.push(`  ${t.status.padEnd(7)} ${t.name}${perTestDuration}`);
     if (t.output) {
       // Indent failure output under the test entry
       for (const outputLine of t.output.split("\n")) {
@@ -152,7 +166,8 @@ export function formatCargoClippy(data: CargoClippyResult): string {
 export function formatCargoRun(data: CargoRunResult): string {
   const status = data.success ? "success" : "failed";
   const failType = data.failureType ? ` [${data.failureType}]` : "";
-  const lines = [`cargo run: ${status}${failType} (exit code ${data.exitCode})`];
+  const signalSuffix = data.signal ? ` signal=${data.signal}` : "";
+  const lines = [`cargo run: ${status}${failType} (exit code ${data.exitCode}${signalSuffix})`];
   if (data.stdout) {
     const truncNote = data.stdoutTruncated ? " [truncated]" : "";
     lines.push(`stdout${truncNote}:\n${data.stdout}`);
@@ -189,7 +204,12 @@ export function formatCargoAdd(data: CargoAddResult): string {
 export function formatCargoRemove(data: CargoRemoveResult): string {
   if (!data.success) {
     const err = data.error ? `: ${data.error}` : "";
-    return `cargo remove: failed${err}`;
+    const partial = data.partialSuccess ? " (partial)" : "";
+    const failedPkgs =
+      data.failedPackages && data.failedPackages.length > 0
+        ? `; failed packages: ${data.failedPackages.join(", ")}`
+        : "";
+    return `cargo remove: failed${partial}${err}${failedPkgs}`;
   }
 
   const depTypeSuffix =
@@ -241,7 +261,10 @@ export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
     warnings: data.warnings,
     total: data.total,
   };
+  if ("mode" in data && (data as { mode?: string }).mode)
+    compact.mode = (data as { mode?: string }).mode;
   if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
+  if (data.timings) compact.timings = data.timings;
   return compact;
 }
 
@@ -256,6 +279,7 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
     failed: data.failed,
     ignored: data.ignored,
   };
+  if (data.duration) compact.duration = data.duration;
   // Gap #95: Preserve compilation diagnostics in compact mode
   if (data.compilationDiagnostics?.length) {
     compact.compilationDiagnostics = data.compilationDiagnostics;
@@ -280,6 +304,7 @@ export function compactRunMap(data: CargoRunResult): CargoRunCompact {
     success: data.success,
   };
   if (data.failureType) compact.failureType = data.failureType;
+  if (data.signal) compact.signal = data.signal;
   return compact;
 }
 
@@ -301,6 +326,8 @@ export function compactRemoveMap(data: CargoRemoveResult): CargoRemoveCompact {
     removed: data.removed,
     total: data.total,
   };
+  if (data.partialSuccess) compact.partialSuccess = true;
+  if (data.failedPackages?.length) compact.failedPackages = data.failedPackages;
   if (data.dependencyType) compact.dependencyType = data.dependencyType;
   if (data.error) compact.error = data.error;
   return compact;
@@ -327,12 +354,14 @@ export function compactDocMap(data: CargoDocResult): CargoDocCompact {
 
 export function formatBuildCompact(data: CargoBuildCompact): string {
   const status = data.success ? "success" : "failed";
-  return `cargo build: ${status} (${data.errors} errors, ${data.warnings} warnings)`;
+  const timingSuffix = data.timings?.generated ? " [timings]" : "";
+  return `cargo build: ${status} (${data.errors} errors, ${data.warnings} warnings)${timingSuffix}`;
 }
 
 export function formatTestCompact(data: CargoTestCompact): string {
   const status = data.success ? "ok" : "FAILED";
-  return `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`;
+  const durationSuffix = data.duration ? `; finished in ${data.duration}` : "";
+  return `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored${durationSuffix}`;
 }
 
 export function formatClippyCompact(data: CargoClippyCompact): string {
@@ -343,7 +372,8 @@ export function formatClippyCompact(data: CargoClippyCompact): string {
 export function formatRunCompact(data: CargoRunCompact): string {
   const status = data.success ? "success" : "failed";
   const failType = data.failureType ? ` [${data.failureType}]` : "";
-  return `cargo run: ${status}${failType} (exit code ${data.exitCode})`;
+  const signalSuffix = data.signal ? ` signal=${data.signal}` : "";
+  return `cargo run: ${status}${failType} (exit code ${data.exitCode}${signalSuffix})`;
 }
 
 export function formatAddCompact(data: CargoAddCompact): string {

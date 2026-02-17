@@ -14,6 +14,9 @@ export function formatRun(data: MakeRunResult): string {
   } else {
     lines.push(`${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms).`);
   }
+  if (data.errorType) {
+    lines.push(`errorType: ${data.errorType}`);
+  }
   if (data.stdout) lines.push(data.stdout);
   if (data.stderr) lines.push(data.stderr);
   return lines.join("\n");
@@ -32,6 +35,20 @@ export function formatList(data: MakeListResult): string {
     }
     if (t.description) parts.push(`# ${t.description}`);
     lines.push(parts.join(" "));
+    for (const cmd of t.recipe ?? []) {
+      lines.push(`    $ ${cmd}`);
+    }
+  }
+
+  if ((data.patternRules ?? []).length > 0) {
+    lines.push(`pattern rules: ${data.patternRules?.length ?? 0}`);
+    for (const r of data.patternRules ?? []) {
+      const deps = (r.dependencies ?? []).length > 0 ? ` -> ${r.dependencies?.join(", ")}` : "";
+      lines.push(`  ${r.pattern}${deps}`);
+      for (const cmd of r.recipe ?? []) {
+        lines.push(`    $ ${cmd}`);
+      }
+    }
   }
   return lines.join("\n");
 }
@@ -47,6 +64,7 @@ export interface MakeRunCompact {
   duration: number;
   tool: "make" | "just";
   timedOut: boolean;
+  errorType?: "missing-target" | "recipe-failure" | "parse-error";
 }
 
 export function compactRunMap(data: MakeRunResult): MakeRunCompact {
@@ -57,31 +75,35 @@ export function compactRunMap(data: MakeRunResult): MakeRunCompact {
     duration: data.duration,
     tool: data.tool,
     timedOut: data.timedOut,
+    errorType: data.errorType,
   };
 }
 
 export function formatRunCompact(data: MakeRunCompact): string {
-  if (data.timedOut)
+  if (data.timedOut) {
     return `${data.tool} ${data.target}: TIMED OUT after ${data.duration}ms (exit code ${data.exitCode}).`;
+  }
   if (data.success) return `${data.tool} ${data.target}: success (${data.duration}ms).`;
-  return `${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms).`;
+  return `${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms)${data.errorType ? ` [${data.errorType}]` : ""}.`;
 }
 
 /** Compact list: total and tool. Drop individual target details. */
 export interface MakeListCompact {
   [key: string]: unknown;
   total: number;
+  patternRuleCount: number;
   tool: "make" | "just";
 }
 
 export function compactListMap(data: MakeListResult): MakeListCompact {
   return {
     total: data.total,
+    patternRuleCount: (data.patternRules ?? []).length,
     tool: data.tool,
   };
 }
 
 export function formatListCompact(data: MakeListCompact): string {
   if (data.total === 0) return `${data.tool}: no targets found.`;
-  return `${data.tool}: ${data.total} targets`;
+  return `${data.tool}: ${data.total} targets (${data.patternRuleCount} pattern rules)`;
 }

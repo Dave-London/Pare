@@ -8,6 +8,8 @@ export const ProcessRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   duration: z.number(),
+  userCpuTimeMs: z.number().optional(),
+  systemCpuTimeMs: z.number().optional(),
   timedOut: z.boolean(),
   truncated: z.boolean().optional(),
   signal: z.string().optional(),

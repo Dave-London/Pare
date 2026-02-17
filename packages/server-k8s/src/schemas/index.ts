@@ -45,7 +45,6 @@ export const KubectlGetResultSchema = z.object({
   namespace: z.string().optional(),
   items: z.array(K8sResourceSchema).optional(),
   total: z.number(),
-  names: z.array(z.string()).optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
@@ -83,6 +82,51 @@ export const KubectlDescribeResultSchema = z.object({
   name: z.string(),
   namespace: z.string().optional(),
   output: z.string().optional(),
+  labels: z.record(z.string(), z.string()).optional(),
+  annotations: z.record(z.string(), z.string()).optional(),
+  resourceDetails: z
+    .object({
+      pod: z
+        .object({
+          node: z.string().optional(),
+          ip: z.string().optional(),
+          qosClass: z.string().optional(),
+          serviceAccount: z.string().optional(),
+          containers: z.array(z.string()).optional(),
+        })
+        .optional(),
+      service: z
+        .object({
+          type: z.string().optional(),
+          clusterIP: z.string().optional(),
+          ports: z
+            .array(
+              z.object({
+                name: z.string().optional(),
+                port: z.string(),
+                targetPort: z.string().optional(),
+                protocol: z.string().optional(),
+              }),
+            )
+            .optional(),
+        })
+        .optional(),
+      deployment: z
+        .object({
+          strategy: z.string().optional(),
+          replicas: z
+            .object({
+              desired: z.number().optional(),
+              updated: z.number().optional(),
+              total: z.number().optional(),
+              available: z.number().optional(),
+              unavailable: z.number().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   conditions: z.array(K8sConditionSchema).optional(),
   events: z.array(K8sEventSchema).optional(),
   exitCode: z.number().optional(),
@@ -102,6 +146,15 @@ export const KubectlLogsResultSchema = z.object({
   container: z.string().optional(),
   logs: z.string().optional(),
   lineCount: z.number(),
+  truncated: z.boolean().optional(),
+  logEntries: z
+    .array(
+      z.object({
+        raw: z.string(),
+        json: z.unknown().optional(),
+      }),
+    )
+    .optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
@@ -196,6 +249,8 @@ export const HelmInstallResultSchema = z.object({
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
+  chart: z.string().optional(),
+  appVersion: z.string().optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
@@ -209,6 +264,8 @@ export const HelmUpgradeResultSchema = z.object({
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
+  chart: z.string().optional(),
+  appVersion: z.string().optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });

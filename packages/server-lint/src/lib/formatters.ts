@@ -10,8 +10,20 @@ export function formatLint(data: LintResult): string {
   }
   for (const d of data.diagnostics ?? []) {
     const loc = d.column ? `${d.file}:${d.line}:${d.column}` : `${d.file}:${d.line}`;
-    const extra = d.wikiUrl ? ` (${d.wikiUrl})` : "";
-    lines.push(`  ${loc} ${d.severity} ${d.rule}: ${d.message}${extra}`);
+    const extras: string[] = [];
+    if (d.wikiUrl) extras.push(d.wikiUrl);
+    if (d.tags && d.tags.length > 0) extras.push(`tags: ${d.tags.join(", ")}`);
+    if (d.suggestedFixes && d.suggestedFixes.length > 0) {
+      extras.push(`suggestedFixes: ${d.suggestedFixes.join(" | ")}`);
+    }
+    const extraText = extras.length > 0 ? ` (${extras.join("; ")})` : "";
+    lines.push(`  ${loc} ${d.severity} ${d.rule}: ${d.message}${extraText}`);
+  }
+  if (data.deprecations && data.deprecations.length > 0) {
+    lines.push("Deprecations:");
+    for (const dep of data.deprecations) {
+      lines.push(dep.reference ? `  ${dep.text} (${dep.reference})` : `  ${dep.text}`);
+    }
   }
   return lines.join("\n");
 }
@@ -29,7 +41,9 @@ export function formatFormatCheck(data: FormatCheckResult): string {
 
 /** Formats structured format-write results into a human-readable summary. */
 export function formatFormatWrite(data: FormatWriteResult): string {
-  if (!data.success) return "Format failed.";
+  if (!data.success) {
+    return data.errorMessage ? `Format failed: ${data.errorMessage}` : "Format failed.";
+  }
   if (data.filesChanged === 0) {
     if (data.filesUnchanged !== undefined && data.filesUnchanged > 0) {
       return `All ${data.filesUnchanged} files already formatted.`;
@@ -56,20 +70,29 @@ export interface LintResultCompact {
   errors: number;
   warnings: number;
   filesChecked: number;
+  deprecationCount?: number;
 }
 
 export function compactLintMap(data: LintResult): LintResultCompact {
-  return {
+  const result: LintResultCompact = {
     total: data.total,
     errors: data.errors,
     warnings: data.warnings,
     filesChecked: data.filesChecked,
   };
+  if (data.deprecations && data.deprecations.length > 0) {
+    result.deprecationCount = data.deprecations.length;
+  }
+  return result;
 }
 
 export function formatLintCompact(data: LintResultCompact): string {
   if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
-  return `Lint: ${data.errors} errors, ${data.warnings} warnings across ${data.filesChecked} files.`;
+  const suffix =
+    data.deprecationCount && data.deprecationCount > 0
+      ? ` (${data.deprecationCount} deprecations)`
+      : "";
+  return `Lint: ${data.errors} errors, ${data.warnings} warnings across ${data.filesChecked} files${suffix}.`;
 }
 
 /** Compact format check: counts only, no individual file paths. */
@@ -97,6 +120,7 @@ export interface FormatWriteResultCompact {
   success: boolean;
   filesChanged: number;
   filesUnchanged?: number;
+  errorMessage?: string;
 }
 
 export function compactFormatWriteMap(data: FormatWriteResult): FormatWriteResultCompact {
@@ -107,11 +131,16 @@ export function compactFormatWriteMap(data: FormatWriteResult): FormatWriteResul
   if (data.filesUnchanged !== undefined) {
     result.filesUnchanged = data.filesUnchanged;
   }
+  if (data.errorMessage) {
+    result.errorMessage = data.errorMessage;
+  }
   return result;
 }
 
 export function formatFormatWriteCompact(data: FormatWriteResultCompact): string {
-  if (!data.success) return "Format failed.";
+  if (!data.success) {
+    return data.errorMessage ? `Format failed: ${data.errorMessage}` : "Format failed.";
+  }
   if (data.filesChanged === 0) return "All files already formatted.";
   if (data.filesUnchanged !== undefined && data.filesUnchanged > 0) {
     return `Formatted ${data.filesChanged} files (${data.filesUnchanged} already formatted).`;

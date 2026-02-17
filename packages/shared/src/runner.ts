@@ -54,6 +54,8 @@ export interface RunResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  userCpuTimeMicros?: number;
+  systemCpuTimeMicros?: number;
 }
 
 /**
@@ -222,6 +224,14 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
       if (settled) return;
       settled = true;
 
+      let userCpuTimeMicros: number | undefined;
+      let systemCpuTimeMicros: number | undefined;
+      if (typeof child.resourceUsage === "function") {
+        const usage = child.resourceUsage();
+        userCpuTimeMicros = usage.userCPUTime;
+        systemCpuTimeMicros = usage.systemCPUTime;
+      }
+
       const stdout = stripAnsi(Buffer.concat(stdoutChunks).toString("utf-8"));
       const stderr = sanitizeErrorOutput(stripAnsi(Buffer.concat(stderrChunks).toString("utf-8")));
 
@@ -259,6 +269,8 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
         exitCode: code ?? 1,
         stdout,
         stderr,
+        ...(userCpuTimeMicros !== undefined ? { userCpuTimeMicros } : {}),
+        ...(systemCpuTimeMicros !== undefined ? { systemCpuTimeMicros } : {}),
       });
     });
 

@@ -49,6 +49,36 @@ describe("parseInstallOutput", () => {
     expect(result.changed).toBe(2);
     expect(result.packages).toBe(200);
   });
+
+  it("parses npm install --json output when available", () => {
+    const output = JSON.stringify({
+      added: 2,
+      removed: 1,
+      changed: 3,
+      audited: 250,
+      funding: 12,
+      audit: {
+        vulnerabilities: {
+          total: 4,
+          critical: 1,
+          high: 2,
+          moderate: 1,
+          low: 0,
+          info: 0,
+        },
+      },
+    });
+
+    const result = parseInstallOutput(output, 2.4);
+
+    expect(result.added).toBe(2);
+    expect(result.removed).toBe(1);
+    expect(result.changed).toBe(3);
+    expect(result.packages).toBe(250);
+    expect(result.funding).toBe(12);
+    expect(result.vulnerabilities?.total).toBe(4);
+    expect(result.vulnerabilities?.high).toBe(2);
+  });
 });
 
 describe("parseAuditJson", () => {
@@ -119,6 +149,20 @@ describe("parseOutdatedJson", () => {
     expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
+
+  it("parses homepage when provided by --long output", () => {
+    const json = JSON.stringify({
+      typescript: {
+        current: "5.3.0",
+        wanted: "5.7.0",
+        latest: "5.7.0",
+        homepage: "https://www.typescriptlang.org/",
+      },
+    });
+
+    const result = parseOutdatedJson(json);
+    expect(result.packages[0].homepage).toBe("https://www.typescriptlang.org/");
+  });
 });
 
 describe("parseListJson", () => {
@@ -184,6 +228,20 @@ describe("parseListJson", () => {
     expect(result.dependencies.express.dependencies!.cookie.version).toBe("0.5.0");
     expect(result.dependencies.zod.version).toBe("3.25.0");
     expect(result.dependencies.zod.dependencies).toBeUndefined();
+  });
+
+  it("parses problems array from npm ls output", () => {
+    const json = JSON.stringify({
+      name: "my-project",
+      version: "1.0.0",
+      dependencies: {
+        express: { version: "4.18.2" },
+      },
+      problems: ["missing: zod@^3.0.0, required by my-project@1.0.0"],
+    });
+
+    const result = parseListJson(json);
+    expect(result.problems).toEqual(["missing: zod@^3.0.0, required by my-project@1.0.0"]);
   });
 });
 

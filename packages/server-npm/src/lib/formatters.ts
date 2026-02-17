@@ -37,6 +37,9 @@ export function formatInstall(data: NpmInstall): string {
       lines.push(`  ... and ${data.packageDetails.length - maxShow} more`);
     }
   }
+  if (data.lockfileChanged !== undefined) {
+    lines.push(`Lockfile changed: ${data.lockfileChanged ? "yes" : "no"}`);
+  }
 
   if (data.vulnerabilities && data.vulnerabilities.total > 0) {
     lines.push(
@@ -71,7 +74,8 @@ export function formatOutdated(data: NpmOutdated): string {
 
   const lines = [`${data.total} outdated packages:`];
   for (const p of data.packages) {
-    lines.push(`  ${p.name}: ${p.current} → ${p.wanted} (latest: ${p.latest})`);
+    const homepage = p.homepage ? ` (${p.homepage})` : "";
+    lines.push(`  ${p.name}: ${p.current} → ${p.wanted} (latest: ${p.latest})${homepage}`);
   }
   return lines.join("\n");
 }
@@ -79,6 +83,12 @@ export function formatOutdated(data: NpmOutdated): string {
 /** Formats structured npm list data into a human-readable dependency tree summary. */
 export function formatList(data: NpmList): string {
   const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
+  if (data.problems && data.problems.length > 0) {
+    lines.push(`Problems (${data.problems.length}):`);
+    for (const problem of data.problems) {
+      lines.push(`  - ${problem}`);
+    }
+  }
   function formatDeps(deps: Record<string, NpmListDep>, indent: string) {
     for (const [name, dep] of Object.entries(deps)) {
       const typeTag = dep.type ? ` [${dep.type}]` : "";
@@ -114,7 +124,11 @@ export function formatRun(data: NpmRun): string {
 
 /** Formats structured npm test output into a human-readable test result summary. */
 export function formatTest(data: NpmTest): string {
-  const status = data.success ? "passed" : `failed (exit code ${data.exitCode})`;
+  const status = data.timedOut
+    ? "timed out"
+    : data.success
+      ? "passed"
+      : `failed (exit code ${data.exitCode})`;
   const lines = [`Tests ${status} in ${data.duration}s`];
 
   // Show parsed test results if available
@@ -287,6 +301,10 @@ export function formatSearchCompact(data: NpmSearchCompact): string {
 
 /** Formats structured nvm data into a human-readable version summary. */
 export function formatNvm(data: NvmResult): string {
+  if (data.requestedVersion) {
+    return formatNvmVersion(data);
+  }
+
   const lines = [`Current: ${data.current}`];
   if (data.required) {
     lines.push(`Required (.nvmrc): ${data.required}`);
@@ -300,6 +318,12 @@ export function formatNvm(data: NvmResult): string {
   if (data.arch) {
     lines.push(`Architecture: ${data.arch}`);
   }
+  if (data.aliases && Object.keys(data.aliases).length > 0) {
+    lines.push("Aliases:");
+    for (const [alias, target] of Object.entries(data.aliases)) {
+      lines.push(`  ${alias} -> ${target}`);
+    }
+  }
   if (data.versions.length > 0) {
     lines.push(`Installed (${data.versions.length}):`);
     for (const v of data.versions) {
@@ -311,6 +335,17 @@ export function formatNvm(data: NvmResult): string {
     lines.push("No versions installed.");
   }
   return lines.join("\n");
+}
+
+/** Formats nvm version-resolution output into a human-readable summary. */
+export function formatNvmVersion(data: NvmResult): string {
+  if (!data.requestedVersion) {
+    return "No version query provided.";
+  }
+  if (!data.resolvedVersion || data.resolvedVersion === "N/A") {
+    return `Could not resolve "${data.requestedVersion}"`;
+  }
+  return `Resolved "${data.requestedVersion}" -> ${data.resolvedVersion}`;
 }
 
 /** Formats nvm ls-remote output into a human-readable version list. */

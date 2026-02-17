@@ -9,6 +9,8 @@ export const LintDiagnosticSchema = z.object({
   rule: z.string(),
   message: z.string(),
   wikiUrl: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  suggestedFixes: z.array(z.string()).optional(),
 });
 
 /** Zod schema for structured ESLint output including diagnostics, counts, and files checked. */
@@ -20,6 +22,14 @@ export const LintResultSchema = z.object({
   fixableErrorCount: z.number().optional(),
   fixableWarningCount: z.number().optional(),
   filesChecked: z.number(),
+  deprecations: z
+    .array(
+      z.object({
+        text: z.string(),
+        reference: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export type LintResult = z.infer<typeof LintResultSchema>;
@@ -40,6 +50,7 @@ export const FormatWriteResultSchema = z.object({
   filesUnchanged: z.number().optional(),
   files: z.array(z.string()).optional(),
   success: z.boolean(),
+  errorMessage: z.string().optional(),
 });
 
 export type FormatWriteResult = z.infer<typeof FormatWriteResultSchema>;

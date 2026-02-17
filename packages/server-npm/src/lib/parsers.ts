@@ -49,6 +49,7 @@ interface NpmOutdatedEntry {
   location?: string;
   type?: string;
   dependencyType?: string;
+  homepage?: string;
 }
 
 /** Shape of an npm list dependency entry from `npm list --json`. */
@@ -154,6 +155,36 @@ export function parseInstallPackageDetails(stdout: string): NpmInstall["packageD
 
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
 export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
+  const installJson = parseInstallJsonOutput(stdout);
+  if (installJson) {
+    const vulnerabilitiesFromJson =
+      installJson.audit?.vulnerabilities ?? installJson.vulnerabilities;
+    const vulnerabilities = vulnerabilitiesFromJson
+      ? {
+          total: parseInt(String(vulnerabilitiesFromJson.total ?? 0), 10),
+          critical: parseInt(String(vulnerabilitiesFromJson.critical ?? 0), 10),
+          high: parseInt(String(vulnerabilitiesFromJson.high ?? 0), 10),
+          moderate: parseInt(String(vulnerabilitiesFromJson.moderate ?? 0), 10),
+          low: parseInt(String(vulnerabilitiesFromJson.low ?? 0), 10),
+          info: parseInt(String(vulnerabilitiesFromJson.info ?? 0), 10),
+        }
+      : undefined;
+
+    const packageDetails = parseInstallPackageDetails(stdout);
+    return {
+      added: parseInt(String(installJson.added ?? 0), 10),
+      removed: parseInt(String(installJson.removed ?? 0), 10),
+      changed: parseInt(String(installJson.changed ?? 0), 10),
+      duration,
+      packages: parseInt(String(installJson.audited ?? installJson.packages ?? 0), 10),
+      ...(packageDetails ? { packageDetails } : {}),
+      ...(vulnerabilities ? { vulnerabilities } : {}),
+      ...(installJson.funding !== undefined
+        ? { funding: parseInt(String(installJson.funding), 10) }
+        : {}),
+    };
+  }
+
   // npm install doesn't have a great --json output, so we parse the summary line
   // "added X packages, removed Y packages, changed Z packages in Ns"
   const added = stdout.match(/added (\d+) package/)?.[1];
@@ -195,6 +226,57 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
     ...(vulnerabilities ? { vulnerabilities } : {}),
     ...(fundingMatch ? { funding: parseInt(fundingMatch[1], 10) } : {}),
   };
+}
+
+interface InstallJsonSummary {
+  added?: number;
+  removed?: number;
+  changed?: number;
+  audited?: number;
+  packages?: number;
+  funding?: number;
+  vulnerabilities?: {
+    total?: number;
+    critical?: number;
+    high?: number;
+    moderate?: number;
+    low?: number;
+    info?: number;
+  };
+  audit?: {
+    vulnerabilities?: {
+      total?: number;
+      critical?: number;
+      high?: number;
+      moderate?: number;
+      low?: number;
+      info?: number;
+    };
+  };
+}
+
+function parseInstallJsonOutput(raw: string): InstallJsonSummary | undefined {
+  const candidate = extractLikelyJsonObject(raw);
+  if (!candidate) return undefined;
+  try {
+    const parsed = JSON.parse(candidate) as InstallJsonSummary;
+    const hasInstallShape =
+      parsed.added !== undefined ||
+      parsed.removed !== undefined ||
+      parsed.changed !== undefined ||
+      parsed.audited !== undefined ||
+      parsed.audit?.vulnerabilities !== undefined;
+    return hasInstallShape ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function extractLikelyJsonObject(raw: string): string | undefined {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return undefined;
+  return raw.slice(start, end + 1);
 }
 
 /**
@@ -321,6 +403,7 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
         current: entry.current ?? "N/A",
         wanted: entry.wanted ?? "N/A",
         latest: entry.latest ?? "N/A",
+        ...(entry.homepage ? { homepage: entry.homepage } : {}),
         ...(entry.dependencyType ? { type: entry.dependencyType } : {}),
       };
     });
@@ -336,6 +419,7 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
       wanted: entry.wanted ?? "N/A",
       latest: entry.latest ?? "N/A",
       ...(entry.location ? { location: entry.location } : {}),
+      ...(entry.homepage ? { homepage: entry.homepage } : {}),
       ...(entry.type
         ? { type: entry.type }
         : entry.dependencyType
@@ -423,6 +507,9 @@ export function parseListJson(jsonStr: string): NpmList {
     name: data.name ?? "unknown",
     version: data.version ?? "0.0.0",
     dependencies: allDeps,
+    ...(Array.isArray(data.problems) && data.problems.length > 0
+      ? { problems: data.problems.filter((p: unknown): p is string => typeof p === "string") }
+      : {}),
     total: countDeps(allDeps),
   };
 }
@@ -577,6 +664,7 @@ export function parseTestOutput(
   stdout: string,
   stderr: string,
   duration: number,
+  timedOut: boolean = false,
 ): NpmTest {
   const testResults = parseTestResults(stdout, stderr);
 
@@ -584,7 +672,8 @@ export function parseTestOutput(
     exitCode,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
-    success: exitCode === 0,
+    success: exitCode === 0 && !timedOut,
+    timedOut,
     duration,
     ...(testResults ? { testResults } : {}),
   };
@@ -850,6 +939,7 @@ export function parseYarnOutdatedJson(jsonStr: string): NpmOutdated {
             wanted: row[2] ?? "N/A",
             latest: row[3] ?? "N/A",
             ...(row[4] ? { type: row[4] } : {}),
+            ...(row[5] ? { homepage: row[5] } : {}),
           });
         }
       }
@@ -881,7 +971,10 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
       result.author = p.author;
     }
 
-    if (p.date) result.date = p.date;
+    if (p.date) {
+      const normalizedDate = normalizeIsoDate(p.date);
+      if (normalizedDate) result.date = normalizedDate;
+    }
     if (p.keywords && Array.isArray(p.keywords) && p.keywords.length > 0) {
       result.keywords = p.keywords;
     }
@@ -903,6 +996,14 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
   });
 
   return { packages, total: packages.length };
+}
+
+function normalizeIsoDate(raw: string): string | undefined {
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toISOString();
 }
 
 /**
@@ -930,11 +1031,17 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
   const versions: NvmResult["versions"] = [];
   let current = "";
   let defaultVersion: string | undefined;
+  const aliases: Record<string, string> = {};
 
   // First pass: collect LTS mappings from alias lines
   const ltsMap = new Map<string, string>(); // version -> lts name
   for (const line of listOutput.split("\n")) {
     const trimmed = line.trim();
+    const aliasMatch = trimmed.match(/^([^\s]+)\s+->\s+(.+)$/);
+    if (aliasMatch && aliasMatch[1] !== "->") {
+      aliases[aliasMatch[1]] = normalizeAliasTarget(aliasMatch[2]);
+    }
+
     // Match "lts/hydrogen -> v18.19.0" or "lts/iron -> v20.11.1 (-> v20.11.1)"
     const ltsMatch = trimmed.match(/^lts\/(\w+)\s+->\s+v?([\d.]+)/);
     if (ltsMatch) {
@@ -998,6 +1105,7 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
   return {
     current: current || "none",
     versions,
+    ...(Object.keys(aliases).length > 0 ? { aliases } : {}),
     ...(defaultVersion ? { default: defaultVersion } : {}),
   };
 }
@@ -1080,4 +1188,12 @@ export function parseNvmExecOutput(
 /** Ensures version strings have a "v" prefix. */
 function normalizeVersion(version: string): string {
   return version.startsWith("v") ? version : `v${version}`;
+}
+
+function normalizeAliasTarget(target: string): string {
+  const firstToken = target.trim().split(/\s+/)[0] ?? "";
+  if (/^\d+\.\d+(\.\d+)?$/.test(firstToken) || /^v\d+\.\d+(\.\d+)?$/.test(firstToken)) {
+    return normalizeVersion(firstToken.replace(/^v/, ""));
+  }
+  return firstToken;
 }

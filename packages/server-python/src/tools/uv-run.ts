@@ -65,6 +65,13 @@ export function registerUvRunTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to environment file (--env-file FILE)"),
+        outputLimit: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .default(20000)
+          .describe("Maximum characters to return for stdout/stderr before truncation"),
         compact: z
           .boolean()
           .optional()
@@ -86,6 +93,7 @@ export function registerUvRunTool(server: McpServer) {
       withPackages,
       python,
       envFile,
+      outputLimit,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -115,10 +123,12 @@ export function registerUvRunTool(server: McpServer) {
       const result = await uv(args, cwd);
       const elapsed = Date.now() - start;
 
-      const data = parseUvRun(result.stdout, result.stderr, result.exitCode, elapsed);
+      const data = parseUvRun(result.stdout, result.stderr, result.exitCode, elapsed, {
+        maxOutputChars: outputLimit,
+      });
       return compactDualOutput(
         data,
-        result.stdout,
+        `${result.stdout}\n${result.stderr}`,
         formatUvRun,
         compactUvRunMap,
         formatUvRunCompact,

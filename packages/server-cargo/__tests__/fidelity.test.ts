@@ -669,7 +669,7 @@ describe("fidelity: parseCargoDocOutput", () => {
       "warning: 3 warnings emitted",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
     // The "warning:" lines that match the pattern (colon or bracket after "warning")
@@ -683,7 +683,7 @@ describe("fidelity: parseCargoDocOutput", () => {
       "    Finished `dev` profile in 1.5s",
     ].join("\n");
 
-    const result = parseCargoDocOutput(stderr, 0);
+    const result = parseCargoDocOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
     expect(result.warnings).toBe(0);
@@ -692,7 +692,7 @@ describe("fidelity: parseCargoDocOutput", () => {
   it("failed doc: success is false", () => {
     const stderr = "error[E0308]: mismatched types\n  --> src/main.rs:5:10";
 
-    const result = parseCargoDocOutput(stderr, 101);
+    const result = parseCargoDocOutput("", stderr, 101);
 
     expect(result.success).toBe(false);
   });

@@ -24,6 +24,17 @@ export const TestRunSchema = z.object({
     duration: z.number(),
   }),
   failures: z.array(TestFailureSchema),
+  tests: z
+    .array(
+      z.object({
+        name: z.string(),
+        file: z.string().optional(),
+        status: z.enum(["passed", "failed", "skipped"]),
+        duration: z.number().optional(),
+        retry: z.number().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export type TestRun = z.infer<typeof TestRunSchema>;
@@ -31,6 +42,7 @@ export type TestRun = z.infer<typeof TestRunSchema>;
 /** Zod schema for per-file coverage data including line, branch, and function coverage percentages. */
 export const CoverageFileSchema = z.object({
   file: z.string(),
+  statements: z.number().optional(),
   lines: z.number(),
   branches: z.number().optional(),
   functions: z.number().optional(),
@@ -41,6 +53,7 @@ export const CoverageFileSchema = z.object({
 export const CoverageSchema = z.object({
   framework: z.enum(["pytest", "jest", "vitest", "mocha"]),
   summary: z.object({
+    statements: z.number().optional(),
     lines: z.number(),
     branches: z.number().optional(),
     functions: z.number().optional(),
@@ -57,6 +70,7 @@ export const PlaywrightTestResultSchema = z.object({
   title: z.string(),
   file: z.string().optional(),
   line: z.number().optional(),
+  projectName: z.string().optional(),
   status: z.enum(["passed", "failed", "timedOut", "skipped", "interrupted"]),
   duration: z.number(),
   error: z.string().optional(),

@@ -1,5 +1,6 @@
 import type {
   CargoBuildResult,
+  CargoCheckResult,
   CargoTestResult,
   CargoClippyResult,
   CargoRunResult,
@@ -30,8 +31,13 @@ interface CargoMessage {
  * We care about reason="compiler-message" entries and the "build-finished" event.
  * Gap #89: Uses build-finished event's success field as authoritative success indicator.
  */
-export function parseCargoBuildJson(stdout: string, exitCode: number): CargoBuildResult {
-  const { diagnostics, buildFinishedSuccess } = parseCompilerMessages(stdout);
+export function parseCargoBuildJson(
+  stdout: string,
+  exitCode: number,
+  stderr?: string,
+): CargoBuildResult {
+  const { diagnostics: rawDiagnostics, buildFinishedSuccess } = parseCompilerMessages(stdout);
+  const diagnostics = deduplicateDiagnostics(rawDiagnostics);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
@@ -39,13 +45,28 @@ export function parseCargoBuildJson(stdout: string, exitCode: number): CargoBuil
   // fall back to exit code
   const success = buildFinishedSuccess !== undefined ? buildFinishedSuccess : exitCode === 0;
 
-  return {
+  const result: CargoBuildResult = {
     success,
     diagnostics,
     total: diagnostics.length,
     errors,
     warnings,
   };
+  const timings = parseTimingsMetadata(stdout, stderr ?? "");
+  if (timings) {
+    result.timings = timings;
+  }
+  return result;
+}
+
+/** Parses cargo check output using the build parser, with check-specific mode metadata. */
+export function parseCargoCheckJson(
+  stdout: string,
+  exitCode: number,
+  stderr?: string,
+): CargoCheckResult {
+  const base = parseCargoBuildJson(stdout, exitCode, stderr);
+  return { ...base, mode: "check" };
 }
 
 /**
@@ -72,12 +93,20 @@ export function parseCargoTestOutput(
   }[] = [];
 
   for (const line of lines) {
-    const match = line.match(/^test (.+?) \.\.\. (ok|FAILED|ignored)$/);
+    const match = line.match(/^test (.+?) \.\.\. (ok|FAILED|ignored)(?: \(([^)]+)\))?$/);
     if (match) {
-      tests.push({
+      const entry: {
+        name: string;
+        status: "ok" | "FAILED" | "ignored";
+        duration?: string;
+      } = {
         name: match[1],
         status: match[2] as "ok" | "FAILED" | "ignored",
-      });
+      };
+      if (match[3]) {
+        entry.duration = match[3];
+      }
+      tests.push(entry);
     }
   }
 
@@ -114,6 +143,10 @@ export function parseCargoTestOutput(
     failed,
     ignored,
   };
+  const summaryDurationMatch = stdout.match(/test result: .*?finished in ([0-9.]+s)/);
+  if (summaryDurationMatch) {
+    result.duration = summaryDurationMatch[1];
+  }
 
   // Gap #95: Parse compilation diagnostics from JSON message format output
   if (jsonOutput) {
@@ -241,6 +274,10 @@ export function parseCargoRunOutput(
   // Gap #94: Determine failure type
   if (exitCode !== 0) {
     result.failureType = detectRunFailureType(stderr, exitCode, timedOut);
+    const signal = detectSignalFromExitCode(exitCode, stderr);
+    if (signal) {
+      result.signal = signal;
+    }
   }
 
   if (stdoutTruncated) result.stdoutTruncated = true;
@@ -280,6 +317,33 @@ export function detectRunFailureType(
   return "runtime";
 }
 
+/** Detects signal metadata from conventional Unix-style exit codes or stderr text. */
+export function detectSignalFromExitCode(exitCode: number, stderr: string): string | undefined {
+  const explicitSignalMatch = stderr.match(/\bSIG[A-Z0-9]+\b/);
+  if (explicitSignalMatch) {
+    return explicitSignalMatch[0];
+  }
+
+  // By convention, shell exits with 128 + signal number when terminated by a signal.
+  if (exitCode >= 129 && exitCode <= 255) {
+    const signalNumber = exitCode - 128;
+    const signalByNumber: Record<number, string> = {
+      1: "SIGHUP",
+      2: "SIGINT",
+      3: "SIGQUIT",
+      6: "SIGABRT",
+      9: "SIGKILL",
+      11: "SIGSEGV",
+      13: "SIGPIPE",
+      14: "SIGALRM",
+      15: "SIGTERM",
+    };
+    return signalByNumber[signalNumber] ?? `SIG${signalNumber}`;
+  }
+
+  return undefined;
+}
+
 /**
  * Parses `cargo add` output (including `--dry-run` mode).
  * Lines like: "      Adding serde v1.0.217 to dependencies"
@@ -298,19 +362,44 @@ export function parseCargoAddOutput(
 ): CargoAddResult {
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
-  const added: { name: string; version: string }[] = [];
+  const added: { name: string; version: string; featuresActivated?: string[] }[] = [];
 
   // Detect dry-run mode from the cargo warning message
   const isDryRun = /warning[:\s]*aborting add due to dry run/i.test(combined);
 
   // Gap #86: Detect dependency type from output if not explicitly provided
   let detectedType: "normal" | "dev" | "build" | undefined = depType;
+  let currentPackage: { name: string; version: string; featuresActivated?: string[] } | undefined;
+  let inFeaturesBlock = false;
 
   for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (/^features:/i.test(trimmed)) {
+      inFeaturesBlock = true;
+      continue;
+    }
+
+    if (inFeaturesBlock) {
+      const featureMatch = trimmed.match(/^[+*-]\s+(.+)$/);
+      if (featureMatch && currentPackage) {
+        if (!currentPackage.featuresActivated) {
+          currentPackage.featuresActivated = [];
+        }
+        currentPackage.featuresActivated.push(featureMatch[1].trim());
+        continue;
+      }
+      if (trimmed === "") {
+        continue;
+      }
+      inFeaturesBlock = false;
+    }
+
     // Match both "Adding" (normal and dry-run) and "Updating" lines
     const addMatch = line.match(/Adding\s+(\S+)\s+v(\S+)\s+to\s+(\S+)/);
     if (addMatch) {
-      added.push({ name: addMatch[1], version: addMatch[2] });
+      currentPackage = { name: addMatch[1], version: addMatch[2] };
+      added.push(currentPackage);
       // Detect type from "to dev-dependencies" / "to build-dependencies" / "to dependencies"
       if (!depType) {
         const target = addMatch[3];
@@ -323,7 +412,8 @@ export function parseCargoAddOutput(
     // Some cargo versions use "Updating" in dry-run output when a dep is already present
     const updateMatch = line.match(/Updating\s+(\S+)\s+v\S+\s+->\s+v(\S+)/);
     if (updateMatch) {
-      added.push({ name: updateMatch[1], version: updateMatch[2] });
+      currentPackage = { name: updateMatch[1], version: updateMatch[2] };
+      added.push(currentPackage);
     }
   }
 
@@ -372,6 +462,7 @@ export function parseCargoRemoveOutput(
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
   const removed: string[] = [];
+  const failedPackages = new Set<string>();
 
   // Gap #93: Detect dependency type from output if not explicitly provided
   let detectedType: "normal" | "dev" | "build" | undefined = depType;
@@ -388,6 +479,13 @@ export function parseCargoRemoveOutput(
         else if (target === "dependencies") detectedType = "normal";
       }
     }
+
+    const failedMatch =
+      line.match(/dependency [`'"]([^`'"]+)[`'"] could not be found/i) ??
+      line.match(/package ID specification [`'"]([^`'"]+)[`'"] did not match/i);
+    if (failedMatch) {
+      failedPackages.add(failedMatch[1]);
+    }
   }
 
   const result: CargoRemoveResult = {
@@ -401,6 +499,12 @@ export function parseCargoRemoveOutput(
   }
 
   if (exitCode !== 0) {
+    if (removed.length > 0) {
+      result.partialSuccess = true;
+    }
+    if (failedPackages.size > 0) {
+      result.failedPackages = Array.from(failedPackages);
+    }
     const errorLines = stderr
       .split("\n")
       .map((l) => l.replace(/^\s*error\s*:\s*/i, "").trim())
@@ -427,6 +531,7 @@ export function parseCargoFmtOutput(
   checkMode: boolean,
 ): CargoFmtResult {
   const files: string[] = [];
+  const diffLines: string[] = [];
 
   if (checkMode) {
     // Gap #92: In check mode with --files-with-diff, the output contains
@@ -461,6 +566,18 @@ export function parseCargoFmtOutput(
           files.push(trimmed);
         }
       }
+
+      if (
+        trimmed.startsWith("+") ||
+        trimmed.startsWith("-") ||
+        trimmed.startsWith("@@") ||
+        trimmed.startsWith("--- ") ||
+        trimmed.startsWith("+++ ") ||
+        /^diff --git /.test(trimmed) ||
+        /^Diff in .+ at line /.test(trimmed)
+      ) {
+        diffLines.push(line);
+      }
     }
   } else {
     // In fix mode with -l flag, rustfmt lists reformatted file paths on stdout,
@@ -493,6 +610,7 @@ export function parseCargoFmtOutput(
     needsFormatting,
     filesChanged: files.length,
     files,
+    ...(checkMode && diffLines.length > 0 ? { diff: diffLines.join("\n") } : {}),
   };
 }
 
@@ -504,42 +622,28 @@ export function parseCargoFmtOutput(
  * Optionally extracts the output directory path.
  */
 export function parseCargoDocOutput(
+  stdout: string,
   stderr: string,
   exitCode: number,
   cwd?: string,
 ): CargoDocResult {
-  const lines = stderr.split("\n");
-  let warnings = 0;
-  const warningDetails: { file: string; line: number; message: string }[] = [];
+  const fromJson = parseCompilerMessages(stdout)
+    .diagnostics.filter((d) => d.severity === "warning")
+    .map((d) => ({ file: d.file, line: d.line, message: d.message }));
+  const fromText = parseDocWarningsFromText(stderr);
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.match(/\bwarning\b(\[|:)/) && !line.match(/\d+ warnings? emitted/)) {
-      warnings++;
-
-      // Extract the warning message from the line.
-      // Format: "warning: <message>" or "warning[E0599]: <message>"
-      const msgMatch = line.match(/\bwarning(?:\[[^\]]+\])?\s*:\s*(.+)/);
-      const message = msgMatch ? msgMatch[1].trim() : line.trim();
-
-      // Look ahead for a file location line like "  --> src/lib.rs:10:1"
-      let file = "";
-      let lineNum = 0;
-      if (i + 1 < lines.length) {
-        const locMatch = lines[i + 1].match(/\s*-->\s+([^:]+):(\d+)/);
-        if (locMatch) {
-          file = locMatch[1];
-          lineNum = parseInt(locMatch[2], 10);
-        }
-      }
-
-      warningDetails.push({ file, line: lineNum, message });
+  const merged = new Map<string, { file: string; line: number; message: string }>();
+  for (const w of [...fromJson, ...fromText]) {
+    const key = `${w.file}:${w.line}:${w.message}`;
+    if (!merged.has(key)) {
+      merged.set(key, w);
     }
   }
+  const warningDetails = Array.from(merged.values());
 
   const result: CargoDocResult = {
     success: exitCode === 0,
-    warnings,
+    warnings: warningDetails.length,
   };
 
   if (warningDetails.length > 0) {
@@ -900,6 +1004,8 @@ export function parseCargoAuditJson(
   jsonStr: string,
   exitCode: number,
   fixMode?: boolean,
+  mode: "deps" | "bin" = "deps",
+  auditedBinary?: string,
 ): CargoAuditResult {
   let data: Record<string, unknown>;
   try {
@@ -922,8 +1028,11 @@ export function parseCargoAuditJson(
 
   type Severity = "critical" | "high" | "medium" | "low" | "informational" | "unknown";
 
-  const vulnData = data.vulnerabilities as { list?: Array<Record<string, unknown>> } | undefined;
-  const vulnList = vulnData?.list ?? [];
+  const vulnData = data.vulnerabilities as
+    | { list?: Array<Record<string, unknown>> }
+    | Array<Record<string, unknown>>
+    | undefined;
+  const vulnList = Array.isArray(vulnData) ? vulnData : (vulnData?.list ?? []);
   const vulnerabilities = vulnList.map(
     (v: {
       advisory?: {
@@ -996,6 +1105,8 @@ export function parseCargoAuditJson(
 
   const result: CargoAuditResult = {
     success: exitCode === 0 || vulnerabilities.length === 0,
+    mode,
+    ...(auditedBinary ? { auditedBinary } : {}),
     vulnerabilities,
     summary,
   };
@@ -1009,6 +1120,74 @@ export function parseCargoAuditJson(
   }
 
   return result;
+}
+
+function deduplicateDiagnostics<
+  T extends { file: string; line: number; column: number; severity: string },
+>(diagnostics: T[]): T[] {
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+  for (const d of diagnostics) {
+    const code = "code" in d ? String((d as { code?: string }).code ?? "") : "";
+    const message = "message" in d ? String((d as { message?: string }).message ?? "") : "";
+    const key = `${d.file}:${d.line}:${d.column}:${d.severity}:${code}:${message}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(d);
+    }
+  }
+  return deduped;
+}
+
+function parseTimingsMetadata(
+  stdout: string,
+  stderr: string,
+): { generated: boolean; format?: "html" | "json" | "unknown"; reportPath?: string } | undefined {
+  const combined = `${stdout}\n${stderr}`;
+  const timingPathMatch = combined.match(/([^\s]+timings?[^\s]*\.(html|json))/i);
+  if (timingPathMatch) {
+    const format = timingPathMatch[2]?.toLowerCase();
+    return {
+      generated: true,
+      format: format === "html" || format === "json" ? format : "unknown",
+      reportPath: timingPathMatch[1],
+    };
+  }
+
+  if (/\b--timings\b|timings?/i.test(combined)) {
+    return { generated: true, format: "unknown" };
+  }
+
+  return undefined;
+}
+
+function parseDocWarningsFromText(
+  stderr: string,
+): { file: string; line: number; message: string }[] {
+  const lines = stderr.split("\n");
+  const warningDetails: { file: string; line: number; message: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.match(/\bwarning\b(\[|:)/) && !line.match(/\d+ warnings? emitted/)) {
+      const msgMatch = line.match(/\bwarning(?:\[[^\]]+\])?\s*:\s*(.+)/);
+      const message = msgMatch ? msgMatch[1].trim() : line.trim();
+
+      let file = "";
+      let lineNum = 0;
+      if (i + 1 < lines.length) {
+        const locMatch = lines[i + 1].match(/\s*-->\s+([^:]+):(\d+)/);
+        if (locMatch) {
+          file = locMatch[1];
+          lineNum = parseInt(locMatch[2], 10);
+        }
+      }
+
+      warningDetails.push({ file, line: lineNum, message });
+    }
+  }
+
+  return warningDetails;
 }
 
 /**

@@ -15,6 +15,7 @@ describe("parseTrivyJson", () => {
               InstalledVersion: "3.1.4-r1",
               FixedVersion: "3.1.4-r5",
               Title: "OpenSSL buffer overflow",
+              CVSS: { nvd: { V3Score: 9.8 } },
             },
             {
               VulnerabilityID: "CVE-2024-0002",
@@ -50,6 +51,7 @@ describe("parseTrivyJson", () => {
       installedVersion: "3.1.4-r1",
       fixedVersion: "3.1.4-r5",
       title: "OpenSSL buffer overflow",
+      cvssScore: 9.8,
     });
 
     expect(result.vulnerabilities[2].fixedVersion).toBeUndefined();
@@ -257,7 +259,7 @@ describe("parseSemgrepJson", () => {
           extra: {
             message: "Detected use of exec(). This is dangerous.",
             severity: "ERROR",
-            metadata: { category: "security" },
+            metadata: { category: "security", cwe: ["CWE-78"] },
           },
         },
         {
@@ -298,6 +300,7 @@ describe("parseSemgrepJson", () => {
       message: "Detected use of exec(). This is dangerous.",
       severity: "ERROR",
       category: "security",
+      cwe: ["CWE-78"],
     });
 
     expect(result.findings[2].category).toBeUndefined();
@@ -307,6 +310,17 @@ describe("parseSemgrepJson", () => {
       warning: 1,
       info: 1,
     });
+  });
+
+  it("parses semgrep scan errors", () => {
+    const json = JSON.stringify({
+      results: [],
+      errors: [{ type: "ParseError", message: "invalid syntax", path: "bad.py" }],
+    });
+    const result = parseSemgrepJson(json, "auto");
+    expect(result.errors).toEqual([
+      { type: "ParseError", message: "invalid syntax", path: "bad.py" },
+    ]);
   });
 
   it("handles empty results array", () => {
@@ -456,7 +470,10 @@ describe("parseGitleaksJson", () => {
     // Secret should be redacted
     expect(result.findings[1].secret).toBe("wJa***KEY");
 
-    expect(result.summary).toEqual({ totalFindings: 2 });
+    expect(result.summary).toEqual({
+      totalFindings: 2,
+      ruleCounts: { "generic-api-key": 1, "aws-secret-access-key": 1 },
+    });
   });
 
   it("handles empty array", () => {

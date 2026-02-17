@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseMochaJson, parseMochaCoverage } from "../src/lib/parsers/mocha.js";
+import {
+  parseMochaJson,
+  parseMochaCoverage,
+  parseMochaCoverageJson,
+} from "../src/lib/parsers/mocha.js";
 
 const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf-8");
 
@@ -16,6 +20,7 @@ describe("parseMochaJson", () => {
     expect(result.summary.skipped).toBe(1);
     expect(result.summary.duration).toBe(1.25);
     expect(result.failures).toHaveLength(2);
+    expect((result.tests ?? []).length).toBe(7);
 
     const firstFail = result.failures[0];
     expect(firstFail.name).toBe("Database should delete a record");
@@ -195,12 +200,14 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
     const result = parseMochaCoverage(output);
     expect(result.framework).toBe("mocha");
     expect(result.summary.lines).toBe(82.35);
+    expect(result.summary.statements).toBe(82.35);
     expect(result.summary.branches).toBe(71.43);
     expect(result.summary.functions).toBe(88.89);
     expect(result.files).toHaveLength(3);
 
     expect(result.files[0]).toEqual({
       file: "db.js",
+      statements: 100,
       lines: 100,
       branches: 100,
       functions: 100,
@@ -237,6 +244,7 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
     expect(result.files[0].file).toBe("a.js");
     expect(result.files[0].lines).toBe(100);
     expect(result.files[6].file).toBe("g.js");
+    expect(result.files[6].statements).toBe(85.71);
     expect(result.files[6].lines).toBe(87.5);
     expect(result.files[6].branches).toBe(66.67);
     expect(result.files[6].functions).toBe(83.33);
@@ -291,6 +299,7 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
     const result = parseMochaCoverage(output);
     expect(result.files).toHaveLength(1);
     expect(result.files[0].file).toBe("index.js");
+    expect(result.files[0].statements).toBe(95);
     expect(result.files[0].lines).toBe(95);
     expect(result.files[0].branches).toBe(90);
     expect(result.files[0].functions).toBe(100);
@@ -309,6 +318,7 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
 
     const result = parseMochaCoverage(output);
     expect(result.summary.lines).toBe(100);
+    expect(result.summary.statements).toBe(100);
     expect(result.summary.branches).toBe(100);
     expect(result.summary.functions).toBe(100);
     expect(result.files[0].lines).toBe(100);
@@ -326,10 +336,33 @@ All files |   82.35 |    71.43 |   88.89 |   82.35 |
 
     const result = parseMochaCoverage(output);
     expect(result.summary.lines).toBe(0);
+    expect(result.summary.statements).toBe(0);
     expect(result.summary.branches).toBe(0);
     expect(result.summary.functions).toBe(0);
     expect(result.files[0].lines).toBe(0);
     expect(result.files[0].branches).toBe(0);
     expect(result.files[0].functions).toBe(0);
+  });
+
+  it("parses nyc coverage-summary JSON", () => {
+    const json = JSON.stringify({
+      total: {
+        statements: { pct: 88 },
+        lines: { pct: 89 },
+        branches: { pct: 77 },
+        functions: { pct: 93 },
+      },
+      "src/a.js": {
+        statements: { pct: 100 },
+        lines: { pct: 100 },
+        branches: { pct: 100 },
+        functions: { pct: 100 },
+      },
+    });
+    const result = parseMochaCoverageJson(json);
+    expect(result.summary.statements).toBe(88);
+    expect(result.summary.lines).toBe(89);
+    expect(result.totalFiles).toBe(1);
+    expect(result.files?.[0].file).toBe("src/a.js");
   });
 });
