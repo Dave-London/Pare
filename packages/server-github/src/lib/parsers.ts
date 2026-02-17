@@ -19,6 +19,8 @@ import type {
   GistCreateResult,
   ReleaseListResult,
   ApiResult,
+  LabelListResult,
+  LabelCreateResult,
 } from "../schemas/index.js";
 
 /**
@@ -870,6 +872,51 @@ export function parseGistCreate(
     files: files ?? undefined,
     description: description ?? undefined,
     fileCount: files ? files.length : undefined,
+  };
+}
+
+/**
+ * Parses `gh label list --json ...` output into structured label list data.
+ */
+export function parseLabelList(json: string): LabelListResult {
+  const raw = JSON.parse(json);
+  const items = Array.isArray(raw) ? raw : [];
+
+  const labels = items.map(
+    (l: { name: string; description: string; color: string; isDefault: boolean }) => ({
+      name: l.name ?? "",
+      description: l.description ?? "",
+      color: l.color ?? "",
+      isDefault: l.isDefault ?? false,
+    }),
+  );
+
+  return { labels, total: labels.length };
+}
+
+/**
+ * Parses `gh label create` output into structured label create data.
+ * The gh CLI prints a confirmation message to stderr on success.
+ */
+export function parseLabelCreate(
+  stdout: string,
+  stderr: string,
+  name: string,
+  description?: string,
+  color?: string,
+): LabelCreateResult {
+  // gh label create outputs confirmation to stderr, e.g.:
+  // "✓ Label "my-label" created in owner/repo"
+  // Try to extract a URL if present
+  const combined = `${stdout}\n${stderr}`;
+  const urlMatch = combined.match(/(https:\/\/github\.com\/[^\s]+\/labels\/[^\s]+)/);
+  const url = urlMatch ? urlMatch[1] : undefined;
+
+  return {
+    name,
+    description: description ?? undefined,
+    color: color ?? undefined,
+    url,
   };
 }
 

@@ -22,6 +22,8 @@ import { registerApiTool } from "./api.js";
 import { registerReleaseCreateTool } from "./release-create.js";
 import { registerGistCreateTool } from "./gist-create.js";
 import { registerReleaseListTool } from "./release-list.js";
+import { registerLabelListTool } from "./label-list.js";
+import { registerLabelCreateTool } from "./label-create.js";
 
 /** Registers all GitHub tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
@@ -47,5 +49,7 @@ export function registerAllTools(server: McpServer) {
   if (s("release-create")) registerReleaseCreateTool(server);
   if (s("gist-create")) registerGistCreateTool(server);
   if (s("release-list")) registerReleaseListTool(server);
+  if (s("label-list")) registerLabelListTool(server);
+  if (s("label-create")) registerLabelCreateTool(server);
   if (s("api")) registerApiTool(server);
 }

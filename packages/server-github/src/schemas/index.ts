@@ -354,6 +354,8 @@ export const RunViewResultSchema = z.object({
   attempt: z.number().optional(),
   /** Derived duration in seconds when timestamps are available. */
   durationSeconds: z.number().optional(),
+  /** Raw log output when --log or --log-failed is used. */
+  logs: z.string().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;
@@ -483,3 +485,35 @@ export const ApiResultSchema = z.object({
 });
 
 export type ApiResult = z.infer<typeof ApiResultSchema>;
+
+// ── Label schemas ───────────────────────────────────────────────────
+
+/** Zod schema for a single label item. */
+export const LabelItemSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  color: z.string(),
+  isDefault: z.boolean(),
+});
+
+/** Zod schema for structured label-list output. */
+export const LabelListResultSchema = z.object({
+  labels: z.array(LabelItemSchema),
+  total: z.number(),
+  errorType: z.enum(["not-found", "permission-denied", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type LabelListResult = z.infer<typeof LabelListResultSchema>;
+
+/** Zod schema for structured label-create output. */
+export const LabelCreateResultSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  url: z.string().optional(),
+  errorType: z.enum(["already-exists", "validation", "permission-denied", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type LabelCreateResult = z.infer<typeof LabelCreateResultSchema>;
