@@ -1,0 +1,26 @@
+[
+  {
+    "number": 123,
+    "title": "feat: add structured output for git stash",
+    "state": "OPEN",
+    "author": { "login": "contributor" },
+    "baseRefName": "main",
+    "headRefName": "feat/stash-tool",
+    "isDraft": false,
+    "labels": [{ "name": "enhancement" }],
+    "createdAt": "2026-02-01T09:00:00Z",
+    "updatedAt": "2026-02-15T14:30:00Z"
+  },
+  {
+    "number": 120,
+    "title": "fix: handle empty git log output",
+    "state": "OPEN",
+    "author": { "login": "bugfixer" },
+    "baseRefName": "main",
+    "headRefName": "fix/empty-log",
+    "isDraft": false,
+    "labels": [{ "name": "bug" }],
+    "createdAt": "2026-01-28T11:00:00Z",
+    "updatedAt": "2026-02-10T09:00:00Z"
+  }
+]

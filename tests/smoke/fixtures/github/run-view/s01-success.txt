@@ -1,0 +1,31 @@
+{
+  "databaseId": 12345678,
+  "name": "CI",
+  "displayTitle": "feat: add stash tool",
+  "headBranch": "feat/stash-tool",
+  "headSha": "abc123def456789012345678901234567890abcd",
+  "status": "completed",
+  "conclusion": "success",
+  "event": "push",
+  "workflowName": "CI",
+  "jobs": [
+    {
+      "name": "build-and-test (ubuntu-latest, 22)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-02-15T14:30:15Z",
+      "completedAt": "2026-02-15T14:33:45Z",
+      "steps": [
+        { "name": "Checkout", "status": "completed", "conclusion": "success", "number": 1 },
+        { "name": "Setup pnpm", "status": "completed", "conclusion": "success", "number": 2 },
+        { "name": "Setup Node.js", "status": "completed", "conclusion": "success", "number": 3 },
+        { "name": "Install", "status": "completed", "conclusion": "success", "number": 4 },
+        { "name": "Build", "status": "completed", "conclusion": "success", "number": 5 },
+        { "name": "Test", "status": "completed", "conclusion": "success", "number": 6 }
+      ]
+    }
+  ],
+  "createdAt": "2026-02-15T14:30:00Z",
+  "updatedAt": "2026-02-15T14:35:00Z",
+  "url": "https://github.com/owner/repo/actions/runs/12345678"
+}

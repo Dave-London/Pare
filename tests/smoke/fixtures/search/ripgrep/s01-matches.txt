@@ -1,0 +1,13 @@
+{"type":"begin","data":{"path":{"text":"src/index.ts"}}}
+{"type":"match","data":{"path":{"text":"src/index.ts"},"lines":{"text":"import { dualOutput } from \"@paretools/shared\";\n"},"line_number":5,"absolute_offset":120,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"match","data":{"path":{"text":"src/index.ts"},"lines":{"text":"  return dualOutput(result, formatStatus);\n"},"line_number":12,"absolute_offset":310,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"end","data":{"path":{"text":"src/index.ts"},"stats":{"elapsed":{"secs":0,"nanos":500000},"searches":1,"searches_with_match":1,"bytes_searched":500,"bytes_printed":200,"matched_lines":2,"matches":2}}}
+{"type":"begin","data":{"path":{"text":"src/tools/log.ts"}}}
+{"type":"match","data":{"path":{"text":"src/tools/log.ts"},"lines":{"text":"import { dualOutput } from \"@paretools/shared\";\n"},"line_number":3,"absolute_offset":50,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"match","data":{"path":{"text":"src/tools/log.ts"},"lines":{"text":"  return dualOutput(logData, formatLog);\n"},"line_number":45,"absolute_offset":1200,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"end","data":{"path":{"text":"src/tools/log.ts"},"stats":{"elapsed":{"secs":0,"nanos":300000},"searches":1,"searches_with_match":1,"bytes_searched":1500,"bytes_printed":200,"matched_lines":2,"matches":2}}}
+{"type":"begin","data":{"path":{"text":"src/tools/diff.ts"}}}
+{"type":"match","data":{"path":{"text":"src/tools/diff.ts"},"lines":{"text":"import { dualOutput } from \"@paretools/shared\";\n"},"line_number":3,"absolute_offset":50,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"match","data":{"path":{"text":"src/tools/diff.ts"},"lines":{"text":"  return dualOutput(diffData, formatDiff);\n"},"line_number":52,"absolute_offset":1400,"submatches":[{"match":{"text":"dualOutput"},"start":9,"end":19}]}}
+{"type":"end","data":{"path":{"text":"src/tools/diff.ts"},"stats":{"elapsed":{"secs":0,"nanos":200000},"searches":1,"searches_with_match":1,"bytes_searched":1600,"bytes_printed":200,"matched_lines":2,"matches":2}}}
+{"type":"summary","data":{"elapsed_total":{"human":"0.001s","nanos":1000000},"stats":{"elapsed":{"secs":0,"nanos":1000000},"searches":3,"searches_with_match":3,"bytes_searched":3600,"bytes_printed":600,"matched_lines":6,"matches":6}}}

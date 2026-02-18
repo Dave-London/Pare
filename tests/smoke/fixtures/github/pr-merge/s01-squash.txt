@@ -1,0 +1,1 @@
+✓ Squashed and merged pull request #123 (feat: add structured output for git stash)

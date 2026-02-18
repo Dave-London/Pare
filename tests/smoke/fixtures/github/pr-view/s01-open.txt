@@ -1,0 +1,37 @@
+{
+  "number": 123,
+  "title": "feat: add structured output for git stash",
+  "state": "OPEN",
+  "body": "## Summary\nAdds structured JSON output for `git stash` operations.\n\n## Changes\n- New parser for stash push/pop/apply output\n- Zod schema for stash results\n- Human-readable formatter\n\n## Test plan\n- [x] Unit tests for parser\n- [x] Integration test",
+  "author": {
+    "login": "contributor"
+  },
+  "baseRefName": "main",
+  "headRefName": "feat/stash-tool",
+  "isDraft": false,
+  "mergeable": "MERGEABLE",
+  "additions": 245,
+  "deletions": 12,
+  "changedFiles": 8,
+  "reviewDecision": "APPROVED",
+  "labels": [
+    { "name": "enhancement" }
+  ],
+  "assignees": [
+    { "login": "contributor" }
+  ],
+  "reviewRequests": [],
+  "reviews": [
+    {
+      "author": { "login": "reviewer1" },
+      "state": "APPROVED",
+      "body": "LGTM!"
+    }
+  ],
+  "commits": {
+    "totalCount": 3
+  },
+  "createdAt": "2026-02-01T09:00:00Z",
+  "updatedAt": "2026-02-15T14:30:00Z",
+  "url": "https://github.com/owner/repo/pull/123"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "tagName": "v1.2.0",
+    "name": "v1.2.0",
+    "isDraft": false,
+    "isPrerelease": false,
+    "createdAt": "2026-02-10T12:00:00Z",
+    "publishedAt": "2026-02-10T12:05:00Z",
+    "author": { "login": "maintainer" },
+    "url": "https://github.com/owner/repo/releases/tag/v1.2.0"
+  },
+  {
+    "tagName": "v1.1.0",
+    "name": "v1.1.0",
+    "isDraft": false,
+    "isPrerelease": false,
+    "createdAt": "2026-01-15T10:00:00Z",
+    "publishedAt": "2026-01-15T10:05:00Z",
+    "author": { "login": "maintainer" },
+    "url": "https://github.com/owner/repo/releases/tag/v1.1.0"
+  }
+]

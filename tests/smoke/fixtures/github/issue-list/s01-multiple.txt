@@ -1,0 +1,32 @@
+[
+  {
+    "number": 42,
+    "title": "Fix authentication flow for OAuth tokens",
+    "state": "OPEN",
+    "author": { "login": "testuser" },
+    "labels": [{ "name": "bug" }, { "name": "priority: high" }],
+    "assignees": [{ "login": "devuser" }],
+    "createdAt": "2026-01-15T10:30:00Z",
+    "updatedAt": "2026-02-10T14:22:00Z"
+  },
+  {
+    "number": 41,
+    "title": "Add dark mode support",
+    "state": "OPEN",
+    "author": { "login": "contributor1" },
+    "labels": [{ "name": "enhancement" }],
+    "assignees": [],
+    "createdAt": "2026-01-14T09:00:00Z",
+    "updatedAt": "2026-01-20T11:00:00Z"
+  },
+  {
+    "number": 38,
+    "title": "Update documentation for API v3",
+    "state": "CLOSED",
+    "author": { "login": "docwriter" },
+    "labels": [{ "name": "documentation" }],
+    "assignees": [{ "login": "docwriter" }],
+    "createdAt": "2026-01-10T08:00:00Z",
+    "updatedAt": "2026-01-12T16:00:00Z"
+  }
+]
