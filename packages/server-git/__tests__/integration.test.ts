@@ -9,14 +9,28 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
+const PKG_DIR = resolve(__dirname, "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 const CALL_TIMEOUT = 180_000;
+let built = false;
+
+function ensureBuiltArtifacts() {
+  if (built) return;
+  execFileSync("pnpm", ["build"], {
+    cwd: PKG_DIR,
+    encoding: "utf-8",
+    shell: process.platform === "win32",
+  });
+  built = true;
+}
 
 describe("@paretools/git integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
 
   beforeAll(async () => {
+    ensureBuiltArtifacts();
+
     transport = new StdioClientTransport({
       command: "node",
       args: [SERVER_PATH],
@@ -25,7 +39,7 @@ describe("@paretools/git integration", () => {
 
     client = new Client({ name: "test-client", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 180_000);
 
   afterAll(async () => {
     await transport.close();

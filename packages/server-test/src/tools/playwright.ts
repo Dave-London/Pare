@@ -12,6 +12,7 @@ import {
   formatPlaywrightResultCompact,
 } from "../lib/formatters.js";
 import { PlaywrightResultSchema } from "../schemas/index.js";
+import { TEST_CLI_TIMEOUT_MS } from "../lib/timeouts.js";
 
 /** Build extra CLI args for the `playwright` tool. Exported for unit testing. */
 export function buildPlaywrightExtraArgs(opts: {
@@ -263,7 +264,7 @@ export function registerPlaywrightTool(server: McpServer) {
       // Set PLAYWRIGHT_JSON_OUTPUT_NAME env var to direct JSON to temp file
       const result = await run("npx", cmdArgs, {
         cwd,
-        timeout: 180_000,
+        timeout: TEST_CLI_TIMEOUT_MS,
         env: { PLAYWRIGHT_JSON_OUTPUT_NAME: tempPath },
       });
 

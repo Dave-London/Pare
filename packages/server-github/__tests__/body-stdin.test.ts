@@ -2,7 +2,7 @@
  * Tests that all GitHub tools passing user-provided text (body, notes, comments)
  * use `--body-file -` (or `--notes-file -`) with stdin instead of `--body`/`--notes`
  * CLI args. This prevents shell escaping issues with backticks, pipes, parentheses,
- * and other special characters — especially on Windows where shell: true is used.
+ * and other special characters.
  *
  * See: https://github.com/Dave-London/pare/issues/516
  */

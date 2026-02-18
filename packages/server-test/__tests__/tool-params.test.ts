@@ -7,6 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureBuiltArtifacts } from "./ensure-built.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
@@ -16,6 +17,8 @@ describe("tool parameter handling", () => {
   let transport: StdioClientTransport;
 
   beforeAll(async () => {
+    ensureBuiltArtifacts(__dirname);
+
     transport = new StdioClientTransport({
       command: "node",
       args: [SERVER_PATH],
@@ -24,7 +27,7 @@ describe("tool parameter handling", () => {
 
     client = new Client({ name: "test-client", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 300_000);
 
   afterAll(async () => {
     await transport.close();
@@ -48,7 +51,7 @@ describe("tool parameter handling", () => {
       expect(summary.total).toEqual(expect.any(Number));
       // With a filter, we should get some tests (fewer than the full suite)
       expect(summary.total as number).toBeGreaterThan(0);
-    }, 180_000);
+    }, 300_000);
 
     it("accepts custom args parameter and passes them through", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
@@ -64,7 +67,7 @@ describe("tool parameter handling", () => {
 
       const summary = sc.summary as Record<string, unknown>;
       expect(summary.total).toEqual(expect.any(Number));
-    }, 180_000);
+    }, 300_000);
 
     it("accepts flag-like args (passed through to test runner)", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
@@ -81,7 +84,7 @@ describe("tool parameter handling", () => {
 
       // Should not error — flags are valid args for the test runner
       expect(result.isError).not.toBe(true);
-    }, 180_000);
+    }, 300_000);
 
     it("returns error for nonexistent path", async () => {
       const result = await client.callTool({
