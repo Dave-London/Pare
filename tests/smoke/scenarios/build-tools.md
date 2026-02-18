@@ -21,20 +21,20 @@
 
 ### Scenarios
 
-| #   | Scenario                             | Params                                                                          | Expected Output                       | Priority | Status |
-| --- | ------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------- | -------- | ------ |
-| 1   | Successful build (npm run build)     | `{ command: "npm", args: ["run", "build"], path }`                              | `success: true`, `duration > 0`       | P0       | mocked |
-| 2   | Failed build (syntax error)          | `{ command: "tsc", args: ["--noEmit"], path }`                                  | `success: false`, `errors` populated  | P0       | mocked |
-| 3   | Disallowed command                   | `{ command: "rm", args: ["-rf", "/"] }`                                         | `assertAllowedCommand` throws         | P0       | mocked |
-| 4   | Path-qualified command               | `{ command: "/usr/bin/node", args: [] }`                                        | `assertNoPathQualifiedCommand` throws | P0       | mocked |
-| 5   | Flag injection via args              | `{ command: "npm", args: ["--exec=evil"] }`                                     | `assertNoFlagInjection` throws        | P0       | mocked |
-| 6   | Flag injection via env key           | `{ command: "npm", args: ["run", "build"], env: { "--exec=evil": "val" } }`     | `assertNoFlagInjection` throws        | P0       | mocked |
-| 7   | Flag injection via env value         | `{ command: "npm", args: ["run", "build"], env: { "KEY": "--exec=evil" } }`     | `assertNoFlagInjection` throws        | P0       | mocked |
-| 8   | Path restricted by assertAllowedRoot | `{ command: "npm", args: ["run", "build"], path: "/etc" }`                      | `assertAllowedRoot` throws            | P0       | mocked |
-| 9   | Custom timeout                       | `{ command: "npm", args: ["run", "build"], timeout: 10000 }`                    | Respects timeout                      | P1       | mocked |
-| 10  | env vars passed to process           | `{ command: "npm", args: ["run", "build"], env: { "NODE_ENV": "production" } }` | Env merged                            | P1       | mocked |
-| 11  | compact: false                       | `{ command: "npm", args: ["run", "build"], compact: false }`                    | Full output with stdout/stderr        | P2       | mocked |
-| 12  | Schema validation                    | all                                                                             | Zod parse succeeds                    | P0       | mocked |
+| #   | Scenario                             | Params                                                                          | Expected Output                       | Priority | Status   |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------- | -------- | -------- |
+| 1   | Successful build (npm run build)     | `{ command: "npm", args: ["run", "build"], path }`                              | `success: true`, `duration > 0`       | P0       | complete |
+| 2   | Failed build (syntax error)          | `{ command: "tsc", args: ["--noEmit"], path }`                                  | `success: false`, `errors` populated  | P0       | complete |
+| 3   | Disallowed command                   | `{ command: "rm", args: ["-rf", "/"] }`                                         | `assertAllowedCommand` throws         | P0       | complete |
+| 4   | Path-qualified command               | `{ command: "/usr/bin/node", args: [] }`                                        | `assertNoPathQualifiedCommand` throws | P0       | complete |
+| 5   | Flag injection via args              | `{ command: "npm", args: ["--exec=evil"] }`                                     | `assertNoFlagInjection` throws        | P0       | complete |
+| 6   | Flag injection via env key           | `{ command: "npm", args: ["run", "build"], env: { "--exec=evil": "val" } }`     | `assertNoFlagInjection` throws        | P0       | complete |
+| 7   | Flag injection via env value         | `{ command: "npm", args: ["run", "build"], env: { "KEY": "--exec=evil" } }`     | `assertNoFlagInjection` throws        | P0       | complete |
+| 8   | Path restricted by assertAllowedRoot | `{ command: "npm", args: ["run", "build"], path: "/etc" }`                      | `assertAllowedRoot` throws            | P0       | complete |
+| 9   | Custom timeout                       | `{ command: "npm", args: ["run", "build"], timeout: 10000 }`                    | Respects timeout                      | P1       | complete |
+| 10  | env vars passed to process           | `{ command: "npm", args: ["run", "build"], env: { "NODE_ENV": "production" } }` | Env merged                            | P1       | complete |
+| 11  | compact: false                       | `{ command: "npm", args: ["run", "build"], compact: false }`                    | Full output with stdout/stderr        | P2       | complete |
+| 12  | Schema validation                    | all                                                                             | Zod parse succeeds                    | P0       | complete |
 
 ---
 
@@ -72,24 +72,24 @@
 
 ### Scenarios
 
-| #   | Scenario                        | Params                                                                                    | Expected Output                          | Priority | Status |
-| --- | ------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- | -------- | ------ |
-| 1   | Bundle single entry             | `{ entryPoints: ["src/index.ts"], outdir: "dist", path }`                                 | `success: true`, `duration > 0`          | P0       | mocked |
-| 2   | Build error (missing entry)     | `{ entryPoints: ["nonexistent.ts"], outdir: "dist" }`                                     | `success: false`, `errors` populated     | P0       | mocked |
-| 3   | Flag injection via entryPoints  | `{ entryPoints: ["--exec=evil"], outdir: "dist" }`                                        | `assertNoFlagInjection` throws           | P0       | mocked |
-| 4   | Flag injection via target       | `{ entryPoints: ["src/index.ts"], target: "--exec=evil" }`                                | `assertNoFlagInjection` throws           | P0       | mocked |
-| 5   | Flag injection via external     | `{ entryPoints: ["src/index.ts"], external: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws           | P0       | mocked |
-| 6   | Flag injection via tsconfig     | `{ entryPoints: ["src/index.ts"], tsconfig: "--exec=evil" }`                              | `assertNoFlagInjection` throws           | P0       | mocked |
-| 7   | Flag injection via define key   | `{ entryPoints: ["src/index.ts"], define: { "--exec=evil": "x" } }`                       | `assertNoFlagInjection` throws           | P0       | mocked |
-| 8   | Flag injection via loader key   | `{ entryPoints: ["src/index.ts"], loader: { "--exec=evil": "text" } }`                    | `assertNoFlagInjection` throws           | P0       | mocked |
-| 9   | Flag injection via args         | `{ entryPoints: ["src/index.ts"], args: ["--exec=evil"] }`                                | `assertNoFlagInjection` throws           | P0       | mocked |
-| 10  | format: "esm", platform: "node" | `{ entryPoints: ["src/index.ts"], outdir: "dist", format: "esm", platform: "node" }`      | `success: true`                          | P1       | mocked |
-| 11  | minify: true                    | `{ entryPoints: ["src/index.ts"], outdir: "dist", minify: true }`                         | Smaller output                           | P1       | mocked |
-| 12  | metafile: true                  | `{ entryPoints: ["src/index.ts"], outdir: "dist", metafile: true }`                       | `metafile` populated with inputs/outputs | P1       | mocked |
-| 13  | sourcemap: "inline"             | `{ entryPoints: ["src/index.ts"], outdir: "dist", sourcemap: "inline" }`                  | Source maps inline                       | P1       | mocked |
-| 14  | splitting: true with esm        | `{ entryPoints: ["src/index.ts"], outdir: "dist", format: "esm", splitting: true }`       | Code splitting enabled                   | P2       | mocked |
-| 15  | define: compile-time constants  | `{ entryPoints: ["src/index.ts"], define: { "process.env.NODE_ENV": "\"production\"" } }` | Constants replaced                       | P2       | mocked |
-| 16  | Schema validation               | all                                                                                       | Zod parse succeeds                       | P0       | mocked |
+| #   | Scenario                        | Params                                                                                    | Expected Output                          | Priority | Status   |
+| --- | ------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- | -------- | -------- |
+| 1   | Bundle single entry             | `{ entryPoints: ["src/index.ts"], outdir: "dist", path }`                                 | `success: true`, `duration > 0`          | P0       | complete |
+| 2   | Build error (missing entry)     | `{ entryPoints: ["nonexistent.ts"], outdir: "dist" }`                                     | `success: false`, `errors` populated     | P0       | complete |
+| 3   | Flag injection via entryPoints  | `{ entryPoints: ["--exec=evil"], outdir: "dist" }`                                        | `assertNoFlagInjection` throws           | P0       | complete |
+| 4   | Flag injection via target       | `{ entryPoints: ["src/index.ts"], target: "--exec=evil" }`                                | `assertNoFlagInjection` throws           | P0       | complete |
+| 5   | Flag injection via external     | `{ entryPoints: ["src/index.ts"], external: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws           | P0       | complete |
+| 6   | Flag injection via tsconfig     | `{ entryPoints: ["src/index.ts"], tsconfig: "--exec=evil" }`                              | `assertNoFlagInjection` throws           | P0       | complete |
+| 7   | Flag injection via define key   | `{ entryPoints: ["src/index.ts"], define: { "--exec=evil": "x" } }`                       | `assertNoFlagInjection` throws           | P0       | complete |
+| 8   | Flag injection via loader key   | `{ entryPoints: ["src/index.ts"], loader: { "--exec=evil": "text" } }`                    | `assertNoFlagInjection` throws           | P0       | complete |
+| 9   | Flag injection via args         | `{ entryPoints: ["src/index.ts"], args: ["--exec=evil"] }`                                | `assertNoFlagInjection` throws           | P0       | complete |
+| 10  | format: "esm", platform: "node" | `{ entryPoints: ["src/index.ts"], outdir: "dist", format: "esm", platform: "node" }`      | `success: true`                          | P1       | complete |
+| 11  | minify: true                    | `{ entryPoints: ["src/index.ts"], outdir: "dist", minify: true }`                         | Smaller output                           | P1       | complete |
+| 12  | metafile: true                  | `{ entryPoints: ["src/index.ts"], outdir: "dist", metafile: true }`                       | `metafile` populated with inputs/outputs | P1       | complete |
+| 13  | sourcemap: "inline"             | `{ entryPoints: ["src/index.ts"], outdir: "dist", sourcemap: "inline" }`                  | Source maps inline                       | P1       | complete |
+| 14  | splitting: true with esm        | `{ entryPoints: ["src/index.ts"], outdir: "dist", format: "esm", splitting: true }`       | Code splitting enabled                   | P2       | complete |
+| 15  | define: compile-time constants  | `{ entryPoints: ["src/index.ts"], define: { "process.env.NODE_ENV": "\"production\"" } }` | Constants replaced                       | P2       | complete |
+| 16  | Schema validation               | all                                                                                       | Zod parse succeeds                       | P0       | complete |
 
 ---
 
@@ -122,16 +122,16 @@
 | 1   | Clean project, no errors            | `{ path }`                                 | `success: true`, `errors: 0`, `diagnostics: []`         | P0       | complete |
 | 2   | Project with type errors            | `{ path }`                                 | `success: false`, `errors > 0`, `diagnostics` populated | P0       | complete |
 | 3   | No tsconfig.json                    | `{ path: "/tmp/empty" }`                   | Error thrown or success with no files                   | P0       | complete |
-| 4   | Flag injection via project          | `{ path, project: "--exec=evil" }`         | `assertNoFlagInjection` throws                          | P0       | mocked   |
-| 5   | Flag injection via declarationDir   | `{ path, declarationDir: "--exec=evil" }`  | `assertNoFlagInjection` throws                          | P0       | mocked   |
-| 6   | Diagnostic has file/line/severity   | `{ path }` (with errors)                   | Each diagnostic has `file`, `line`, `severity`          | P1       | mocked   |
-| 7   | noEmit: false with listEmittedFiles | `{ path, noEmit: false }`                  | `emittedFiles` populated                                | P1       | mocked   |
-| 8   | project: custom tsconfig            | `{ path, project: "tsconfig.build.json" }` | Uses specified config                                   | P1       | mocked   |
-| 9   | skipLibCheck: true                  | `{ path, skipLibCheck: true }`             | Faster check, .d.ts errors skipped                      | P1       | mocked   |
-| 10  | compact: false                      | `{ path, compact: false }`                 | Full diagnostics with column/message                    | P2       | mocked   |
-| 11  | incremental: true                   | `{ path, incremental: true }`              | Incremental build state                                 | P2       | mocked   |
-| 12  | pretty: false                       | `{ path, pretty: false }`                  | Normalized parser-friendly output                       | P2       | mocked   |
-| 13  | Schema validation                   | all                                        | Zod parse succeeds                                      | P0       | mocked   |
+| 4   | Flag injection via project          | `{ path, project: "--exec=evil" }`         | `assertNoFlagInjection` throws                          | P0       | complete |
+| 5   | Flag injection via declarationDir   | `{ path, declarationDir: "--exec=evil" }`  | `assertNoFlagInjection` throws                          | P0       | complete |
+| 6   | Diagnostic has file/line/severity   | `{ path }` (with errors)                   | Each diagnostic has `file`, `line`, `severity`          | P1       | complete |
+| 7   | noEmit: false with listEmittedFiles | `{ path, noEmit: false }`                  | `emittedFiles` populated                                | P1       | complete |
+| 8   | project: custom tsconfig            | `{ path, project: "tsconfig.build.json" }` | Uses specified config                                   | P1       | complete |
+| 9   | skipLibCheck: true                  | `{ path, skipLibCheck: true }`             | Faster check, .d.ts errors skipped                      | P1       | complete |
+| 10  | compact: false                      | `{ path, compact: false }`                 | Full diagnostics with column/message                    | P2       | complete |
+| 11  | incremental: true                   | `{ path, incremental: true }`              | Incremental build state                                 | P2       | complete |
+| 12  | pretty: false                       | `{ path, pretty: false }`                  | Normalized parser-friendly output                       | P2       | complete |
+| 13  | Schema validation                   | all                                        | Zod parse succeeds                                      | P0       | complete |
 
 ---
 
@@ -164,22 +164,22 @@
 
 ### Scenarios
 
-| #   | Scenario                   | Params                                       | Expected Output                                 | Priority | Status |
-| --- | -------------------------- | -------------------------------------------- | ----------------------------------------------- | -------- | ------ |
-| 1   | Run build task             | `{ task: "build", path }`                    | `success: true`, `totalTasks > 0`, `passed > 0` | P0       | mocked |
-| 2   | No task or tasks provided  | `{ path }`                                   | Error: "Either task or tasks must be provided"  | P0       | mocked |
-| 3   | Task failure               | `{ task: "failing-task", path }`             | `success: false`, `failed > 0`                  | P0       | mocked |
-| 4   | Flag injection via task    | `{ task: "--exec=evil" }`                    | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 5   | Flag injection via filter  | `{ task: "build", filter: "--exec=evil" }`   | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 6   | Flag injection via args    | `{ task: "build", args: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 7   | Multiple tasks             | `{ tasks: ["build", "test"], path }`         | Both tasks run, `totalTasks` reflects both      | P1       | mocked |
-| 8   | filter by package          | `{ task: "build", filter: "@scope/pkg" }`    | Only filtered package runs                      | P1       | mocked |
-| 9   | force: true bypasses cache | `{ task: "build", force: true }`             | `cached: 0`                                     | P1       | mocked |
-| 10  | Cache hit detection        | `{ task: "build", path }` (2nd run)          | `cached > 0`                                    | P1       | mocked |
-| 11  | dryRun: true               | `{ task: "build", dryRun: true }`            | Preview without execution                       | P1       | mocked |
-| 12  | summarize: true            | `{ task: "build", summarize: true }`         | `summary` populated from JSON                   | P2       | mocked |
-| 13  | continue_on_error: true    | `{ task: "build", continue_on_error: true }` | Continues past failures                         | P2       | mocked |
-| 14  | Schema validation          | all                                          | Zod parse succeeds                              | P0       | mocked |
+| #   | Scenario                   | Params                                       | Expected Output                                 | Priority | Status   |
+| --- | -------------------------- | -------------------------------------------- | ----------------------------------------------- | -------- | -------- |
+| 1   | Run build task             | `{ task: "build", path }`                    | `success: true`, `totalTasks > 0`, `passed > 0` | P0       | complete |
+| 2   | No task or tasks provided  | `{ path }`                                   | Error: "Either task or tasks must be provided"  | P0       | complete |
+| 3   | Task failure               | `{ task: "failing-task", path }`             | `success: false`, `failed > 0`                  | P0       | complete |
+| 4   | Flag injection via task    | `{ task: "--exec=evil" }`                    | `assertNoFlagInjection` throws                  | P0       | complete |
+| 5   | Flag injection via filter  | `{ task: "build", filter: "--exec=evil" }`   | `assertNoFlagInjection` throws                  | P0       | complete |
+| 6   | Flag injection via args    | `{ task: "build", args: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                  | P0       | complete |
+| 7   | Multiple tasks             | `{ tasks: ["build", "test"], path }`         | Both tasks run, `totalTasks` reflects both      | P1       | complete |
+| 8   | filter by package          | `{ task: "build", filter: "@scope/pkg" }`    | Only filtered package runs                      | P1       | complete |
+| 9   | force: true bypasses cache | `{ task: "build", force: true }`             | `cached: 0`                                     | P1       | complete |
+| 10  | Cache hit detection        | `{ task: "build", path }` (2nd run)          | `cached > 0`                                    | P1       | complete |
+| 11  | dryRun: true               | `{ task: "build", dryRun: true }`            | Preview without execution                       | P1       | complete |
+| 12  | summarize: true            | `{ task: "build", summarize: true }`         | `summary` populated from JSON                   | P2       | complete |
+| 13  | continue_on_error: true    | `{ task: "build", continue_on_error: true }` | Continues past failures                         | P2       | complete |
+| 14  | Schema validation          | all                                          | Zod parse succeeds                              | P0       | complete |
 
 ---
 
@@ -210,21 +210,21 @@
 
 ### Scenarios
 
-| #   | Scenario                    | Params                            | Expected Output                                      | Priority | Status |
-| --- | --------------------------- | --------------------------------- | ---------------------------------------------------- | -------- | ------ |
-| 1   | Successful Vite build       | `{ path }`                        | `success: true`, `duration > 0`, `outputs` populated | P0       | mocked |
-| 2   | Build failure (no config)   | `{ path: "/tmp/empty" }`          | `success: false`, `errors` populated                 | P0       | mocked |
-| 3   | Flag injection via mode     | `{ path, mode: "--exec=evil" }`   | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 4   | Flag injection via outDir   | `{ path, outDir: "--exec=evil" }` | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 5   | Flag injection via config   | `{ path, config: "--exec=evil" }` | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 6   | Flag injection via base     | `{ path, base: "--exec=evil" }`   | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 7   | Flag injection via ssr      | `{ path, ssr: "--exec=evil" }`    | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 8   | Flag injection via args     | `{ path, args: ["--exec=evil"] }` | `assertNoFlagInjection` throws                       | P0       | mocked |
-| 9   | Output files have file/size | `{ path }`                        | Each output has `file`, `size`                       | P1       | mocked |
-| 10  | sourcemap: true             | `{ path, sourcemap: true }`       | Source maps generated                                | P1       | mocked |
-| 11  | minify: "false"             | `{ path, minify: "false" }`       | No minification                                      | P1       | mocked |
-| 12  | emptyOutDir: true           | `{ path, emptyOutDir: true }`     | Output dir cleaned first                             | P2       | mocked |
-| 13  | Schema validation           | all                               | Zod parse succeeds                                   | P0       | mocked |
+| #   | Scenario                    | Params                            | Expected Output                                      | Priority | Status   |
+| --- | --------------------------- | --------------------------------- | ---------------------------------------------------- | -------- | -------- |
+| 1   | Successful Vite build       | `{ path }`                        | `success: true`, `duration > 0`, `outputs` populated | P0       | complete |
+| 2   | Build failure (no config)   | `{ path: "/tmp/empty" }`          | `success: false`, `errors` populated                 | P0       | complete |
+| 3   | Flag injection via mode     | `{ path, mode: "--exec=evil" }`   | `assertNoFlagInjection` throws                       | P0       | complete |
+| 4   | Flag injection via outDir   | `{ path, outDir: "--exec=evil" }` | `assertNoFlagInjection` throws                       | P0       | complete |
+| 5   | Flag injection via config   | `{ path, config: "--exec=evil" }` | `assertNoFlagInjection` throws                       | P0       | complete |
+| 6   | Flag injection via base     | `{ path, base: "--exec=evil" }`   | `assertNoFlagInjection` throws                       | P0       | complete |
+| 7   | Flag injection via ssr      | `{ path, ssr: "--exec=evil" }`    | `assertNoFlagInjection` throws                       | P0       | complete |
+| 8   | Flag injection via args     | `{ path, args: ["--exec=evil"] }` | `assertNoFlagInjection` throws                       | P0       | complete |
+| 9   | Output files have file/size | `{ path }`                        | Each output has `file`, `size`                       | P1       | complete |
+| 10  | sourcemap: true             | `{ path, sourcemap: true }`       | Source maps generated                                | P1       | complete |
+| 11  | minify: "false"             | `{ path, minify: "false" }`       | No minification                                      | P1       | complete |
+| 12  | emptyOutDir: true           | `{ path, emptyOutDir: true }`     | Output dir cleaned first                             | P2       | complete |
+| 13  | Schema validation           | all                               | Zod parse succeeds                                   | P0       | complete |
 
 ---
 
@@ -254,24 +254,24 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                    | Expected Output                                     | Priority | Status |
-| --- | ---------------------------- | ----------------------------------------- | --------------------------------------------------- | -------- | ------ |
-| 1   | Successful webpack build     | `{ path }`                                | `success: true`, `duration > 0`, `assets` populated | P0       | mocked |
-| 2   | Build failure                | `{ path }` (broken config)                | `success: false`, `errors` populated                | P0       | mocked |
-| 3   | No webpack config            | `{ path: "/tmp/empty" }`                  | Error or failure                                    | P0       | mocked |
-| 4   | Flag injection via config    | `{ path, config: "--exec=evil" }`         | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 5   | Flag injection via entry     | `{ path, entry: "--exec=evil" }`          | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 6   | Flag injection via target    | `{ path, target: "--exec=evil" }`         | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 7   | Flag injection via devtool   | `{ path, devtool: "--exec=evil" }`        | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 8   | Flag injection via args      | `{ path, args: ["--exec=evil"] }`         | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 9   | Flag injection via env key   | `{ path, env: { "--exec=evil": "val" } }` | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 10  | Flag injection via env value | `{ path, env: { "KEY": "--exec=evil" } }` | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 11  | Assets have name/size        | `{ path }`                                | Each asset has `name`, `size`                       | P1       | mocked |
-| 12  | mode: "production"           | `{ path, mode: "production" }`            | Production optimizations                            | P1       | mocked |
-| 13  | profile: true                | `{ path, profile: true }`                 | `profile` with `modules` timing data                | P1       | mocked |
-| 14  | bail: true                   | `{ path, bail: true }`                    | Stops on first error                                | P2       | mocked |
-| 15  | cache: false                 | `{ path, cache: false }`                  | No caching                                          | P2       | mocked |
-| 16  | Schema validation            | all                                       | Zod parse succeeds                                  | P0       | mocked |
+| #   | Scenario                     | Params                                    | Expected Output                                     | Priority | Status   |
+| --- | ---------------------------- | ----------------------------------------- | --------------------------------------------------- | -------- | -------- |
+| 1   | Successful webpack build     | `{ path }`                                | `success: true`, `duration > 0`, `assets` populated | P0       | complete |
+| 2   | Build failure                | `{ path }` (broken config)                | `success: false`, `errors` populated                | P0       | complete |
+| 3   | No webpack config            | `{ path: "/tmp/empty" }`                  | Error or failure                                    | P0       | complete |
+| 4   | Flag injection via config    | `{ path, config: "--exec=evil" }`         | `assertNoFlagInjection` throws                      | P0       | complete |
+| 5   | Flag injection via entry     | `{ path, entry: "--exec=evil" }`          | `assertNoFlagInjection` throws                      | P0       | complete |
+| 6   | Flag injection via target    | `{ path, target: "--exec=evil" }`         | `assertNoFlagInjection` throws                      | P0       | complete |
+| 7   | Flag injection via devtool   | `{ path, devtool: "--exec=evil" }`        | `assertNoFlagInjection` throws                      | P0       | complete |
+| 8   | Flag injection via args      | `{ path, args: ["--exec=evil"] }`         | `assertNoFlagInjection` throws                      | P0       | complete |
+| 9   | Flag injection via env key   | `{ path, env: { "--exec=evil": "val" } }` | `assertNoFlagInjection` throws                      | P0       | complete |
+| 10  | Flag injection via env value | `{ path, env: { "KEY": "--exec=evil" } }` | `assertNoFlagInjection` throws                      | P0       | complete |
+| 11  | Assets have name/size        | `{ path }`                                | Each asset has `name`, `size`                       | P1       | complete |
+| 12  | mode: "production"           | `{ path, mode: "production" }`            | Production optimizations                            | P1       | complete |
+| 13  | profile: true                | `{ path, profile: true }`                 | `profile` with `modules` timing data                | P1       | complete |
+| 14  | bail: true                   | `{ path, bail: true }`                    | Stops on first error                                | P2       | complete |
+| 15  | cache: false                 | `{ path, cache: false }`                  | No caching                                          | P2       | complete |
+| 16  | Schema validation            | all                                       | Zod parse succeeds                                  | P0       | complete |
 
 ---
 
@@ -306,25 +306,25 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                                     | Expected Output                            | Priority | Status |
-| --- | -------------------------------- | ---------------------------------------------------------- | ------------------------------------------ | -------- | ------ |
-| 1   | Run build for single project     | `{ target: "build", project: "my-app", path }`             | `success: true`, `total > 0`, `passed > 0` | P0       | mocked |
-| 2   | Run-many build                   | `{ target: "build", path }`                                | All projects run, `total > 0`              | P0       | mocked |
-| 3   | Nx not installed                 | `{ target: "build", path: "/tmp/empty" }`                  | Error thrown                               | P0       | mocked |
-| 4   | Flag injection via target        | `{ target: "--exec=evil" }`                                | `assertNoFlagInjection` throws             | P0       | mocked |
-| 5   | Flag injection via project       | `{ target: "build", project: "--exec=evil" }`              | `assertNoFlagInjection` throws             | P0       | mocked |
-| 6   | Flag injection via base          | `{ target: "build", affected: true, base: "--exec=evil" }` | `assertNoFlagInjection` throws             | P0       | mocked |
-| 7   | Flag injection via head          | `{ target: "build", affected: true, head: "--exec=evil" }` | `assertNoFlagInjection` throws             | P0       | mocked |
-| 8   | Flag injection via configuration | `{ target: "build", configuration: "--exec=evil" }`        | `assertNoFlagInjection` throws             | P0       | mocked |
-| 9   | Flag injection via projects      | `{ target: "build", projects: ["--exec=evil"] }`           | `assertNoFlagInjection` throws             | P0       | mocked |
-| 10  | Flag injection via exclude       | `{ target: "build", exclude: ["--exec=evil"] }`            | `assertNoFlagInjection` throws             | P0       | mocked |
-| 11  | Flag injection via args          | `{ target: "build", args: ["--exec=evil"] }`               | `assertNoFlagInjection` throws             | P0       | mocked |
-| 12  | affected: true                   | `{ target: "build", affected: true, path }`                | Only affected projects                     | P1       | mocked |
-| 13  | Task with cache hit              | `{ target: "build", path }` (2nd run)                      | `cached > 0`                               | P1       | mocked |
-| 14  | skipNxCache: true                | `{ target: "build", skipNxCache: true }`                   | `cached: 0`                                | P1       | mocked |
-| 15  | nxBail: true with failure        | `{ target: "build", nxBail: true }`                        | Stops after first failure                  | P1       | mocked |
-| 16  | dryRun: true                     | `{ target: "build", dryRun: true }`                        | Preview without execution                  | P2       | mocked |
-| 17  | Schema validation                | all                                                        | Zod parse succeeds                         | P0       | mocked |
+| #   | Scenario                         | Params                                                     | Expected Output                            | Priority | Status   |
+| --- | -------------------------------- | ---------------------------------------------------------- | ------------------------------------------ | -------- | -------- |
+| 1   | Run build for single project     | `{ target: "build", project: "my-app", path }`             | `success: true`, `total > 0`, `passed > 0` | P0       | complete |
+| 2   | Run-many build                   | `{ target: "build", path }`                                | All projects run, `total > 0`              | P0       | complete |
+| 3   | Nx not installed                 | `{ target: "build", path: "/tmp/empty" }`                  | Error thrown                               | P0       | complete |
+| 4   | Flag injection via target        | `{ target: "--exec=evil" }`                                | `assertNoFlagInjection` throws             | P0       | complete |
+| 5   | Flag injection via project       | `{ target: "build", project: "--exec=evil" }`              | `assertNoFlagInjection` throws             | P0       | complete |
+| 6   | Flag injection via base          | `{ target: "build", affected: true, base: "--exec=evil" }` | `assertNoFlagInjection` throws             | P0       | complete |
+| 7   | Flag injection via head          | `{ target: "build", affected: true, head: "--exec=evil" }` | `assertNoFlagInjection` throws             | P0       | complete |
+| 8   | Flag injection via configuration | `{ target: "build", configuration: "--exec=evil" }`        | `assertNoFlagInjection` throws             | P0       | complete |
+| 9   | Flag injection via projects      | `{ target: "build", projects: ["--exec=evil"] }`           | `assertNoFlagInjection` throws             | P0       | complete |
+| 10  | Flag injection via exclude       | `{ target: "build", exclude: ["--exec=evil"] }`            | `assertNoFlagInjection` throws             | P0       | complete |
+| 11  | Flag injection via args          | `{ target: "build", args: ["--exec=evil"] }`               | `assertNoFlagInjection` throws             | P0       | complete |
+| 12  | affected: true                   | `{ target: "build", affected: true, path }`                | Only affected projects                     | P1       | complete |
+| 13  | Task with cache hit              | `{ target: "build", path }` (2nd run)                      | `cached > 0`                               | P1       | complete |
+| 14  | skipNxCache: true                | `{ target: "build", skipNxCache: true }`                   | `cached: 0`                                | P1       | complete |
+| 15  | nxBail: true with failure        | `{ target: "build", nxBail: true }`                        | Stops after first failure                  | P1       | complete |
+| 16  | dryRun: true                     | `{ target: "build", dryRun: true }`                        | Preview without execution                  | P2       | complete |
+| 17  | Schema validation                | all                                                        | Zod parse succeeds                         | P0       | complete |
 
 ---
 
