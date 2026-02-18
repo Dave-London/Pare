@@ -31,8 +31,8 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                         | Params                                            | Expected Output                                               | Priority | Status   |
 | --- | -------------------------------- | ------------------------------------------------- | ------------------------------------------------------------- | -------- | -------- |
-| 1   | Stage specific files             | `{ path, files: ["a.ts"] }`                       | `staged >= 1`, `files` contains entry with `file: "a.ts"`     | P0       | recorded |
-| 2   | Stage all changes                | `{ path, all: true }`                             | `staged` matches total changed files, `files` array populated | P0       | recorded |
+| 1   | Stage specific files             | `{ path, files: ["a.ts"] }`                       | `staged >= 1`, `files` contains entry with `file: "a.ts"`     | P0       | complete |
+| 2   | Stage all changes                | `{ path, all: true }`                             | `staged` matches total changed files, `files` array populated | P0       | complete |
 | 3   | No files and no all throws error | `{ path }`                                        | Error: "Either 'files' must be provided..."                   | P0       | mocked   |
 | 4   | Flag injection in file path      | `{ path, files: ["--exec=evil"] }`                | `assertNoFlagInjection` throws                                | P0       | mocked   |
 | 5   | Stage multiple files             | `{ path, files: ["a.ts", "b.ts"] }`               | `staged >= 2`, both files in output                           | P0       | mocked   |
@@ -77,11 +77,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                       | Params                                                                                     | Expected Output                                               | Priority | Status   |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | -------- | -------- |
-| 1   | Start bisect with bad and good | `{ path, action: "start", bad: "HEAD", good: "abc123" }`                                   | `action: "start"`, `current` populated, `remaining` estimated | P0       | recorded |
+| 1   | Start bisect with bad and good | `{ path, action: "start", bad: "HEAD", good: "abc123" }`                                   | `action: "start"`, `current` populated, `remaining` estimated | P0       | complete |
 | 2   | Mark commit as good            | `{ path, action: "good" }`                                                                 | `action: "good"`, bisect advances                             | P0       | mocked   |
 | 3   | Mark commit as bad             | `{ path, action: "bad" }`                                                                  | `action: "bad"`, bisect narrows                               | P0       | mocked   |
-| 4   | Reset bisect session           | `{ path, action: "reset" }`                                                                | `action: "reset"`, session cleared                            | P0       | recorded |
-| 5   | Start without bad/good throws  | `{ path, action: "start" }`                                                                | Error: "Both 'bad' and 'good' commit refs are required"       | P0       | recorded |
+| 4   | Reset bisect session           | `{ path, action: "reset" }`                                                                | `action: "reset"`, session cleared                            | P0       | complete |
+| 5   | Start without bad/good throws  | `{ path, action: "start" }`                                                                | Error: "Both 'bad' and 'good' commit refs are required"       | P0       | complete |
 | 6   | Flag injection in bad ref      | `{ path, action: "start", bad: "--exec=evil", good: "abc" }`                               | `assertNoFlagInjection` throws                                | P0       | mocked   |
 | 7   | Bisect run with command        | `{ path, action: "run", command: "npm test" }`                                             | `action: "run"`, result with identified commit                | P1       | mocked   |
 | 8   | Run without command throws     | `{ path, action: "run" }`                                                                  | Error: "'command' parameter is required"                      | P1       | mocked   |
@@ -126,11 +126,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                     | Params                                                      | Expected Output                                          | Priority | Status   |
 | --- | ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- | -------- | -------- |
-| 1   | Blame entire file            | `{ path, file: "src/index.ts" }`                            | `commits` array with grouped lines, `file`, `totalLines` | P0       | recorded |
+| 1   | Blame entire file            | `{ path, file: "src/index.ts" }`                            | `commits` array with grouped lines, `file`, `totalLines` | P0       | complete |
 | 2   | File not found               | `{ path, file: "nonexistent.ts" }`                          | Error: "git blame failed"                                | P0       | mocked   |
 | 3   | Flag injection in file param | `{ path, file: "--exec=evil" }`                             | `assertNoFlagInjection` throws                           | P0       | mocked   |
-| 4   | Line range blame             | `{ path, file: "src/index.ts", startLine: 1, endLine: 10 }` | Only lines 1-10 in output                                | P1       | recorded |
-| 5   | Blame at specific rev        | `{ path, file: "src/index.ts", rev: "HEAD~5" }`             | Blame reflects state at rev                              | P1       | recorded |
+| 4   | Line range blame             | `{ path, file: "src/index.ts", startLine: 1, endLine: 10 }` | Only lines 1-10 in output                                | P1       | complete |
+| 5   | Blame at specific rev        | `{ path, file: "src/index.ts", rev: "HEAD~5" }`             | Blame reflects state at rev                              | P1       | complete |
 | 6   | Flag injection in rev        | `{ path, file: "x.ts", rev: "--exec=evil" }`                | `assertNoFlagInjection` throws                           | P0       | mocked   |
 | 7   | Compact vs full output       | `{ path, file: "x.ts", compact: false }`                    | Full blame with all fields                               | P1       | mocked   |
 | 8   | Ignore whitespace            | `{ path, file: "x.ts", ignoreWhitespace: true }`            | Whitespace-only changes attributed to original author    | P2       | mocked   |
@@ -175,15 +175,15 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                     | Params                                              | Expected Output                                  | Priority | Status   |
 | --- | ---------------------------- | --------------------------------------------------- | ------------------------------------------------ | -------- | -------- |
-| 1   | List branches                | `{ path }`                                          | `branches` array, `current` set to active branch | P0       | recorded |
-| 2   | Create branch                | `{ path, create: "feature-x" }`                     | Branch created, appears in listing               | P0       | recorded |
+| 1   | List branches                | `{ path }`                                          | `branches` array, `current` set to active branch | P0       | complete |
+| 2   | Create branch                | `{ path, create: "feature-x" }`                     | Branch created, appears in listing               | P0       | complete |
 | 3   | Delete branch                | `{ path, delete: "feature-x" }`                     | Branch deleted, removed from listing             | P0       | mocked   |
 | 4   | Flag injection in create     | `{ path, create: "--exec=evil" }`                   | `assertNoFlagInjection` throws                   | P0       | mocked   |
 | 5   | Not a git repo               | `{ path: "/tmp/not-a-repo" }`                       | Error thrown                                     | P0       | mocked   |
 | 6   | Create and switch            | `{ path, create: "feat", switchAfterCreate: true }` | Branch created, `current` now "feat"             | P1       | mocked   |
 | 7   | Create with start point      | `{ path, create: "feat", startPoint: "HEAD~3" }`    | Branch created from specified ref                | P1       | mocked   |
 | 8   | Rename current branch        | `{ path, rename: "new-name" }`                      | Branch renamed, `current` reflects new name      | P1       | mocked   |
-| 9   | List all (including remotes) | `{ path, all: true }`                               | Remote branches included in listing              | P1       | recorded |
+| 9   | List all (including remotes) | `{ path, all: true }`                               | Remote branches included in listing              | P1       | complete |
 | 10  | Filter merged branches       | `{ path, merged: true }`                            | Only merged branches returned                    | P1       | mocked   |
 | 11  | Set upstream                 | `{ path, setUpstream: "origin/main" }`              | Upstream tracking configured                     | P1       | mocked   |
 | 12  | Force delete unmerged        | `{ path, delete: "feat", forceDelete: true }`       | Unmerged branch deleted                          | P2       | mocked   |
@@ -221,9 +221,9 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                           | Params                                                      | Expected Output                                        | Priority | Status   |
 | --- | ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ | -------- | -------- |
-| 1   | Switch to existing branch          | `{ path, ref: "main" }`                                     | `success: true`, `ref: "main"`, `previousRef` set      | P0       | recorded |
-| 2   | Create and switch to new branch    | `{ path, ref: "feat", create: true }`                       | `success: true`, `created: true`, `ref: "feat"`        | P0       | recorded |
-| 3   | Checkout nonexistent ref           | `{ path, ref: "nonexistent" }`                              | `success: false`, `errorType` set                      | P0       | recorded |
+| 1   | Switch to existing branch          | `{ path, ref: "main" }`                                     | `success: true`, `ref: "main"`, `previousRef` set      | P0       | complete |
+| 2   | Create and switch to new branch    | `{ path, ref: "feat", create: true }`                       | `success: true`, `created: true`, `ref: "feat"`        | P0       | complete |
+| 3   | Checkout nonexistent ref           | `{ path, ref: "nonexistent" }`                              | `success: false`, `errorType` set                      | P0       | complete |
 | 4   | Flag injection in ref              | `{ path, ref: "--exec=evil" }`                              | `assertNoFlagInjection` throws                         | P0       | mocked   |
 | 5   | Detach HEAD at commit              | `{ path, ref: "abc123", detach: true }`                     | `success: true`, `detached: true`                      | P1       | mocked   |
 | 6   | Orphan branch creation             | `{ path, ref: "x", orphan: "orphan-branch" }`               | `success: true`, `created: true`                       | P1       | mocked   |
@@ -267,11 +267,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                       | Params                                        | Expected Output                                              | Priority | Status   |
 | --- | ------------------------------ | --------------------------------------------- | ------------------------------------------------------------ | -------- | -------- |
-| 1   | Cherry-pick single commit      | `{ path, commits: ["abc123"] }`               | `success: true`, `applied: ["abc123"]`, `conflicts: []`      | P0       | recorded |
-| 2   | Cherry-pick with conflict      | `{ path, commits: ["conflicting"] }`          | `success: false`, `state: "conflict"`, `conflicts` populated | P0       | recorded |
+| 1   | Cherry-pick single commit      | `{ path, commits: ["abc123"] }`               | `success: true`, `applied: ["abc123"]`, `conflicts: []`      | P0       | complete |
+| 2   | Cherry-pick with conflict      | `{ path, commits: ["conflicting"] }`          | `success: false`, `state: "conflict"`, `conflicts` populated | P0       | complete |
 | 3   | No commits and no action flags | `{ path }`                                    | Error: "commits array is required"                           | P0       | mocked   |
 | 4   | Flag injection in commits      | `{ path, commits: ["--exec=evil"] }`          | `assertNoFlagInjection` throws                               | P0       | mocked   |
-| 5   | Abort cherry-pick              | `{ path, abort: true }`                       | `success: true`, cherry-pick aborted                         | P0       | recorded |
+| 5   | Abort cherry-pick              | `{ path, abort: true }`                       | `success: true`, cherry-pick aborted                         | P0       | complete |
 | 6   | Continue after conflict        | `{ path, continue: true }`                    | Cherry-pick continues                                        | P1       | mocked   |
 | 7   | Skip current commit            | `{ path, skip: true }`                        | Current commit skipped                                       | P1       | mocked   |
 | 8   | No-commit mode                 | `{ path, commits: ["abc"], noCommit: true }`  | Changes applied but not committed                            | P1       | mocked   |
@@ -316,10 +316,10 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                         | Params                                                            | Expected Output                                     | Priority | Status   |
 | --- | -------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------- | -------- | -------- |
-| 1   | Basic commit with staged changes | `{ path, message: "feat: add feature" }`                          | `hash`, `hashShort`, `message`, `filesChanged >= 1` | P0       | recorded |
-| 2   | Commit with nothing staged       | `{ path, message: "empty" }`                                      | Error: "git commit failed" (nothing to commit)      | P0       | recorded |
+| 1   | Basic commit with staged changes | `{ path, message: "feat: add feature" }`                          | `hash`, `hashShort`, `message`, `filesChanged >= 1` | P0       | complete |
+| 2   | Commit with nothing staged       | `{ path, message: "empty" }`                                      | Error: "git commit failed" (nothing to commit)      | P0       | complete |
 | 3   | Flag injection in message        | `{ path, message: "--exec=evil" }`                                | `assertNoFlagInjection` throws                      | P0       | mocked   |
-| 4   | Allow empty commit               | `{ path, message: "empty", allowEmpty: true }`                    | `hash`, `filesChanged: 0`                           | P0       | recorded |
+| 4   | Allow empty commit               | `{ path, message: "empty", allowEmpty: true }`                    | `hash`, `filesChanged: 0`                           | P0       | complete |
 | 5   | Not a git repo                   | `{ path: "/tmp/not-a-repo", message: "x" }`                       | Error thrown                                        | P0       | mocked   |
 | 6   | Amend commit                     | `{ path, message: "amended", amend: true }`                       | Previous commit amended, new hash                   | P1       | mocked   |
 | 7   | Commit all tracked changes       | `{ path, message: "all", all: true }`                             | Modified tracked files auto-staged and committed    | P1       | mocked   |
@@ -368,16 +368,16 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                         | Params                                   | Expected Output                               | Priority | Status   |
 | --- | -------------------------------- | ---------------------------------------- | --------------------------------------------- | -------- | -------- |
-| 1   | Unstaged changes in working tree | `{ path }`                               | `files` array with changes, `totalFiles >= 1` | P0       | recorded |
-| 2   | Staged changes                   | `{ path, staged: true }`                 | `files` reflect staged changes                | P0       | recorded |
-| 3   | No changes (clean)               | `{ path }` (clean repo)                  | `files: []`, `totalFiles: 0`                  | P0       | recorded |
+| 1   | Unstaged changes in working tree | `{ path }`                               | `files` array with changes, `totalFiles >= 1` | P0       | complete |
+| 2   | Staged changes                   | `{ path, staged: true }`                 | `files` reflect staged changes                | P0       | complete |
+| 3   | No changes (clean)               | `{ path }` (clean repo)                  | `files: []`, `totalFiles: 0`                  | P0       | complete |
 | 4   | Flag injection in ref            | `{ path, ref: "--exec=evil" }`           | `assertNoFlagInjection` throws                | P0       | mocked   |
 | 5   | Flag injection in file           | `{ path, file: "--exec=evil" }`          | `assertNoFlagInjection` throws                | P0       | mocked   |
 | 6   | Not a git repo                   | `{ path: "/tmp/not-a-repo" }`            | Error thrown                                  | P0       | mocked   |
-| 7   | Diff against ref                 | `{ path, ref: "main" }`                  | Files changed since ref                       | P1       | recorded |
-| 8   | Single file diff                 | `{ path, file: "src/index.ts" }`         | Only that file in output                      | P1       | recorded |
+| 7   | Diff against ref                 | `{ path, ref: "main" }`                  | Files changed since ref                       | P1       | complete |
+| 8   | Single file diff                 | `{ path, file: "src/index.ts" }`         | Only that file in output                      | P1       | complete |
 | 9   | Multiple file diff               | `{ path, files: ["a.ts", "b.ts"] }`      | Only specified files in output                | P1       | mocked   |
-| 10  | Full patch mode                  | `{ path, full: true }`                   | `chunks` populated with headers and lines     | P1       | recorded |
+| 10  | Full patch mode                  | `{ path, full: true }`                   | `chunks` populated with headers and lines     | P1       | complete |
 | 11  | Atomic full mode                 | `{ path, full: true, atomicFull: true }` | Same result, single git call                  | P1       | mocked   |
 | 12  | Ignore whitespace                | `{ path, ignoreWhitespace: true }`       | Whitespace-only changes excluded              | P1       | mocked   |
 | 13  | Diff filter (added only)         | `{ path, ref: "main", diffFilter: "A" }` | Only added files returned                     | P1       | mocked   |
@@ -426,14 +426,14 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                 | Params                                               | Expected Output                               | Priority | Status   |
 | --- | ------------------------ | ---------------------------------------------------- | --------------------------------------------- | -------- | -------- |
-| 1   | Default log (10 commits) | `{ path }`                                           | `commits` array length <= 10, `total` matches | P0       | recorded |
-| 2   | Custom maxCount          | `{ path, maxCount: 3 }`                              | `commits` length <= 3                         | P0       | recorded |
-| 3   | Empty repo or no commits | `{ path }` (empty repo)                              | `commits: []`, `total: 0`                     | P0       | recorded |
+| 1   | Default log (10 commits) | `{ path }`                                           | `commits` array length <= 10, `total` matches | P0       | complete |
+| 2   | Custom maxCount          | `{ path, maxCount: 3 }`                              | `commits` length <= 3                         | P0       | complete |
+| 3   | Empty repo or no commits | `{ path }` (empty repo)                              | `commits: []`, `total: 0`                     | P0       | complete |
 | 4   | Flag injection in ref    | `{ path, ref: "--exec=evil" }`                       | `assertNoFlagInjection` throws                | P0       | mocked   |
 | 5   | Flag injection in author | `{ path, author: "--exec=evil" }`                    | `assertNoFlagInjection` throws                | P0       | mocked   |
 | 6   | Not a git repo           | `{ path: "/tmp/not-a-repo" }`                        | Error thrown                                  | P0       | mocked   |
-| 7   | Filter by author         | `{ path, author: "dave" }`                           | Only commits by author "dave"                 | P1       | recorded |
-| 8   | Filter by ref            | `{ path, ref: "main" }`                              | Commits from main branch                      | P1       | recorded |
+| 7   | Filter by author         | `{ path, author: "dave" }`                           | Only commits by author "dave"                 | P1       | complete |
+| 8   | Filter by ref            | `{ path, ref: "main" }`                              | Commits from main branch                      | P1       | complete |
 | 9   | Since/until date range   | `{ path, since: "2024-01-01", until: "2024-12-31" }` | Commits within date range                     | P1       | mocked   |
 | 10  | Grep message pattern     | `{ path, grep: "fix:" }`                             | Only commits with "fix:" in message           | P1       | mocked   |
 | 11  | File path filter         | `{ path, filePath: "src/index.ts" }`                 | Only commits affecting that file              | P1       | mocked   |
@@ -478,11 +478,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario               | Params                                 | Expected Output                                             | Priority | Status   |
 | --- | ---------------------- | -------------------------------------- | ----------------------------------------------------------- | -------- | -------- |
-| 1   | Default graph          | `{ path }`                             | `commits` with `graph`, `hashShort`, `message` fields       | P0       | recorded |
-| 2   | Empty repo             | `{ path }` (empty)                     | `commits: []`, `total: 0`                                   | P0       | recorded |
+| 1   | Default graph          | `{ path }`                             | `commits` with `graph`, `hashShort`, `message` fields       | P0       | complete |
+| 2   | Empty repo             | `{ path }` (empty)                     | `commits: []`, `total: 0`                                   | P0       | complete |
 | 3   | Flag injection in ref  | `{ path, ref: "--exec=evil" }`         | `assertNoFlagInjection` throws                              | P0       | mocked   |
 | 4   | Not a git repo         | `{ path: "/tmp/not-a-repo" }`          | Error thrown                                                | P0       | mocked   |
-| 5   | All branches           | `{ path, all: true }`                  | Graph includes all branches                                 | P1       | recorded |
+| 5   | All branches           | `{ path, all: true }`                  | Graph includes all branches                                 | P1       | complete |
 | 6   | Merge commit detection | `{ path }` (with merges)               | `isMerge: true` on merge commits, `parents` with 2+ entries | P1       | mocked   |
 | 7   | Since filter           | `{ path, since: "2024-01-01" }`        | Graph filtered by date                                      | P1       | mocked   |
 | 8   | First parent only      | `{ path, firstParent: true }`          | Simplified linear graph                                     | P2       | mocked   |
@@ -525,11 +525,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                   | Params                                                      | Expected Output                                              | Priority | Status   |
 | --- | -------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | -------- | -------- |
-| 1   | Fast-forward merge         | `{ path, branch: "feature" }`                               | `merged: true`, `state: "fast-forward"`, `fastForward: true` | P0       | recorded |
-| 2   | Merge with conflict        | `{ path, branch: "conflicting" }`                           | `merged: false`, `state: "conflict"`, `conflicts` populated  | P0       | recorded |
-| 3   | Already up to date         | `{ path, branch: "main" }` (on main)                        | `state: "already-up-to-date"`                                | P0       | recorded |
+| 1   | Fast-forward merge         | `{ path, branch: "feature" }`                               | `merged: true`, `state: "fast-forward"`, `fastForward: true` | P0       | complete |
+| 2   | Merge with conflict        | `{ path, branch: "conflicting" }`                           | `merged: false`, `state: "conflict"`, `conflicts` populated  | P0       | complete |
+| 3   | Already up to date         | `{ path, branch: "main" }` (on main)                        | `state: "already-up-to-date"`                                | P0       | complete |
 | 4   | Flag injection in branch   | `{ path, branch: "--exec=evil" }`                           | `assertNoFlagInjection` throws                               | P0       | mocked   |
-| 5   | Abort merge                | `{ path, branch: "x", abort: true }`                        | Merge aborted                                                | P0       | recorded |
+| 5   | Abort merge                | `{ path, branch: "x", abort: true }`                        | Merge aborted                                                | P0       | complete |
 | 6   | No-ff merge                | `{ path, branch: "feature", noFf: true }`                   | `merged: true`, merge commit created even if ff possible     | P1       | mocked   |
 | 7   | Squash merge               | `{ path, branch: "feature", squash: true }`                 | Changes applied but not committed                            | P1       | mocked   |
 | 8   | ff-only with non-ff branch | `{ path, branch: "diverged", ffOnly: true }`                | `merged: false`, `state: "failed"`                           | P1       | mocked   |
@@ -572,9 +572,9 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                    | Params                            | Expected Output                            | Priority | Status   |
 | --- | --------------------------- | --------------------------------- | ------------------------------------------ | -------- | -------- |
-| 1   | Pull with changes available | `{ path }`                        | `success: true`, `filesChanged >= 1`       | P0       | recorded |
-| 2   | Already up to date          | `{ path }`                        | `success: true`, `upToDate: true`          | P0       | recorded |
-| 3   | Pull with conflict          | `{ path }` (conflicting)          | `success: false`, `conflicts` populated    | P0       | recorded |
+| 1   | Pull with changes available | `{ path }`                        | `success: true`, `filesChanged >= 1`       | P0       | complete |
+| 2   | Already up to date          | `{ path }`                        | `success: true`, `upToDate: true`          | P0       | complete |
+| 3   | Pull with conflict          | `{ path }` (conflicting)          | `success: false`, `conflicts` populated    | P0       | complete |
 | 4   | Flag injection in remote    | `{ path, remote: "--exec=evil" }` | `assertNoFlagInjection` throws             | P0       | mocked   |
 | 5   | No remote configured        | `{ path }` (no remote)            | Error thrown                               | P0       | mocked   |
 | 6   | Pull with rebase            | `{ path, rebase: true }`          | `success: true`, rebased instead of merged | P1       | mocked   |
@@ -618,8 +618,8 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                         | Params                                            | Expected Output                                   | Priority | Status   |
 | --- | -------------------------------- | ------------------------------------------------- | ------------------------------------------------- | -------- | -------- |
-| 1   | Push to remote                   | `{ path }`                                        | `success: true`, `remote: "origin"`, `branch` set | P0       | recorded |
-| 2   | Push rejected (non-fast-forward) | `{ path }` (behind remote)                        | `success: false`, `errorType: "rejected"`         | P0       | recorded |
+| 1   | Push to remote                   | `{ path }`                                        | `success: true`, `remote: "origin"`, `branch` set | P0       | complete |
+| 2   | Push rejected (non-fast-forward) | `{ path }` (behind remote)                        | `success: false`, `errorType: "rejected"`         | P0       | complete |
 | 3   | Flag injection in remote         | `{ path, remote: "--exec=evil" }`                 | `assertNoFlagInjection` throws                    | P0       | mocked   |
 | 4   | No remote configured             | `{ path }` (no remote)                            | Error or `success: false`                         | P0       | mocked   |
 | 5   | Set upstream on push             | `{ path, setUpstream: true }`                     | `success: true`, upstream tracking set            | P1       | mocked   |
@@ -668,11 +668,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                      | Params                                         | Expected Output                                              | Priority | Status   |
 | --- | ----------------------------- | ---------------------------------------------- | ------------------------------------------------------------ | -------- | -------- |
-| 1   | Simple rebase onto branch     | `{ path, branch: "main" }`                     | `success: true`, `state: "completed"`, `rebasedCommits` set  | P0       | recorded |
-| 2   | Rebase with conflict          | `{ path, branch: "main" }` (conflicting)       | `success: false`, `state: "conflict"`, `conflicts` populated | P0       | recorded |
+| 1   | Simple rebase onto branch     | `{ path, branch: "main" }`                     | `success: true`, `state: "completed"`, `rebasedCommits` set  | P0       | complete |
+| 2   | Rebase with conflict          | `{ path, branch: "main" }` (conflicting)       | `success: false`, `state: "conflict"`, `conflicts` populated | P0       | complete |
 | 3   | Branch not provided throws    | `{ path }`                                     | Error: "branch is required for rebase"                       | P0       | mocked   |
 | 4   | Flag injection in branch      | `{ path, branch: "--exec=evil" }`              | `assertNoFlagInjection` throws                               | P0       | mocked   |
-| 5   | Abort rebase                  | `{ path, abort: true }`                        | Rebase aborted, state restored                               | P0       | recorded |
+| 5   | Abort rebase                  | `{ path, abort: true }`                        | Rebase aborted, state restored                               | P0       | complete |
 | 6   | Continue after conflict       | `{ path, continue: true }`                     | Rebase continues                                             | P1       | mocked   |
 | 7   | Skip current commit           | `{ path, skip: true }`                         | Commit skipped, rebase advances                              | P1       | mocked   |
 | 8   | Rebase with onto              | `{ path, branch: "main", onto: "develop" }`    | Rebased onto develop                                         | P1       | mocked   |
@@ -713,12 +713,12 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario              | Params                            | Expected Output                            | Priority | Status   |
 | --- | --------------------- | --------------------------------- | ------------------------------------------ | -------- | -------- |
-| 1   | Default reflog (HEAD) | `{ path }`                        | `entries` array, `total`, `totalAvailable` | P0       | recorded |
-| 2   | Empty reflog          | `{ path }` (new repo, no actions) | `entries: []`, `total: 0`                  | P0       | recorded |
+| 1   | Default reflog (HEAD) | `{ path }`                        | `entries` array, `total`, `totalAvailable` | P0       | complete |
+| 2   | Empty reflog          | `{ path }` (new repo, no actions) | `entries: []`, `total: 0`                  | P0       | complete |
 | 3   | Flag injection in ref | `{ path, ref: "--exec=evil" }`    | `assertNoFlagInjection` throws             | P0       | mocked   |
 | 4   | Not a git repo        | `{ path: "/tmp/not-a-repo" }`     | Error thrown                               | P0       | mocked   |
 | 5   | Reflog exists check   | `{ path, action: "exists" }`      | `total: 1` (exists) or `total: 0` (not)    | P1       | mocked   |
-| 6   | Custom maxCount       | `{ path, maxCount: 5 }`           | `entries` length <= 5                      | P1       | recorded |
+| 6   | Custom maxCount       | `{ path, maxCount: 5 }`           | `entries` length <= 5                      | P1       | complete |
 | 7   | Specific ref          | `{ path, ref: "main" }`           | Entries for main branch                    | P1       | mocked   |
 | 8   | Grep filter           | `{ path, grepReflog: "commit" }`  | Only entries matching "commit"             | P1       | mocked   |
 | 9   | Since filter          | `{ path, since: "2024-01-01" }`   | Entries after date                         | P2       | mocked   |
@@ -752,12 +752,12 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                | Params                                                               | Expected Output                                  | Priority | Status   |
 | --- | ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------ | -------- | -------- |
-| 1   | List remotes            | `{ path }`                                                           | `remotes` array, `total >= 1`                    | P0       | recorded |
-| 2   | Add remote              | `{ path, action: "add", name: "upstream", url: "https://..." }`      | `success: true`, `action: "add"`                 | P0       | recorded |
-| 3   | Remove remote           | `{ path, action: "remove", name: "upstream" }`                       | `success: true`, `action: "remove"`              | P0       | recorded |
+| 1   | List remotes            | `{ path }`                                                           | `remotes` array, `total >= 1`                    | P0       | complete |
+| 2   | Add remote              | `{ path, action: "add", name: "upstream", url: "https://..." }`      | `success: true`, `action: "add"`                 | P0       | complete |
+| 3   | Remove remote           | `{ path, action: "remove", name: "upstream" }`                       | `success: true`, `action: "remove"`              | P0       | complete |
 | 4   | Add without name throws | `{ path, action: "add", url: "https://..." }`                        | Error: "name parameter is required"              | P0       | mocked   |
 | 5   | Flag injection in name  | `{ path, action: "add", name: "--exec=evil", url: "x" }`             | `assertNoFlagInjection` throws                   | P0       | mocked   |
-| 6   | Show remote details     | `{ path, action: "show", name: "origin" }`                           | `showDetails` with fetchUrl, pushUrl, headBranch | P1       | recorded |
+| 6   | Show remote details     | `{ path, action: "show", name: "origin" }`                           | `showDetails` with fetchUrl, pushUrl, headBranch | P1       | complete |
 | 7   | Rename remote           | `{ path, action: "rename", oldName: "origin", newName: "upstream" }` | `success: true`, `action: "rename"`              | P1       | mocked   |
 | 8   | Set-url                 | `{ path, action: "set-url", name: "origin", url: "https://new" }`    | `success: true`, `action: "set-url"`             | P1       | mocked   |
 | 9   | Prune remote            | `{ path, action: "prune", name: "origin" }`                          | `success: true`, `prunedBranches` array          | P1       | mocked   |
@@ -793,9 +793,9 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                          | Params                                                 | Expected Output                                               | Priority | Status   |
 | --- | --------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------- | -------- | -------- |
-| 1   | Unstage files (mixed reset HEAD)  | `{ path, files: ["a.ts"] }`                            | `success: true`, `ref: "HEAD"`, `filesAffected` contains file | P0       | recorded |
-| 2   | Soft reset                        | `{ path, ref: "HEAD~1", mode: "soft" }`                | `mode: "soft"`, HEAD moved back, changes kept staged          | P0       | recorded |
-| 3   | Hard reset without confirm throws | `{ path, ref: "HEAD~1", mode: "hard" }`                | Error: "Safety guard..."                                      | P0       | recorded |
+| 1   | Unstage files (mixed reset HEAD)  | `{ path, files: ["a.ts"] }`                            | `success: true`, `ref: "HEAD"`, `filesAffected` contains file | P0       | complete |
+| 2   | Soft reset                        | `{ path, ref: "HEAD~1", mode: "soft" }`                | `mode: "soft"`, HEAD moved back, changes kept staged          | P0       | complete |
+| 3   | Hard reset without confirm throws | `{ path, ref: "HEAD~1", mode: "hard" }`                | Error: "Safety guard..."                                      | P0       | complete |
 | 4   | Hard reset with confirm           | `{ path, ref: "HEAD~1", mode: "hard", confirm: true }` | `success: true`, `mode: "hard"`, changes discarded            | P0       | mocked   |
 | 5   | Flag injection in ref             | `{ path, ref: "--exec=evil" }`                         | `assertNoFlagInjection` throws                                | P0       | mocked   |
 | 6   | Invalid ref                       | `{ path, ref: "nonexistent" }`                         | `errorType: "invalid-ref"`                                    | P0       | mocked   |
@@ -838,8 +838,8 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                       | Params                                             | Expected Output                                             | Priority | Status   |
 | --- | ------------------------------ | -------------------------------------------------- | ----------------------------------------------------------- | -------- | -------- |
-| 1   | Restore working tree file      | `{ path, files: ["modified.ts"] }`                 | `restored` contains file, `staged: false`, `source: "HEAD"` | P0       | recorded |
-| 2   | Restore staged file            | `{ path, files: ["staged.ts"], staged: true }`     | `staged: true`, file unstaged                               | P0       | recorded |
+| 1   | Restore working tree file      | `{ path, files: ["modified.ts"] }`                 | `restored` contains file, `staged: false`, `source: "HEAD"` | P0       | complete |
+| 2   | Restore staged file            | `{ path, files: ["staged.ts"], staged: true }`     | `staged: true`, file unstaged                               | P0       | complete |
 | 3   | No files provided throws       | `{ path, files: [] }`                              | Error: "'files' must be provided"                           | P0       | mocked   |
 | 4   | Flag injection in files        | `{ path, files: ["--exec=evil"] }`                 | `assertNoFlagInjection` throws                              | P0       | mocked   |
 | 5   | Nonexistent file               | `{ path, files: ["nonexistent.ts"] }`              | `errorType: "pathspec"`                                     | P0       | mocked   |
@@ -879,11 +879,11 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario               | Params                            | Expected Output                                        | Priority | Status   |
 | --- | ---------------------- | --------------------------------- | ------------------------------------------------------ | -------- | -------- |
-| 1   | Show HEAD commit       | `{ path }`                        | `hash`, `author`, `date`, `message`, `diff` with files | P0       | recorded |
-| 2   | Show specific commit   | `{ path, ref: "abc123" }`         | Commit details for specified ref                       | P0       | recorded |
-| 3   | Invalid ref            | `{ path, ref: "nonexistent" }`    | Error thrown                                           | P0       | recorded |
+| 1   | Show HEAD commit       | `{ path }`                        | `hash`, `author`, `date`, `message`, `diff` with files | P0       | complete |
+| 2   | Show specific commit   | `{ path, ref: "abc123" }`         | Commit details for specified ref                       | P0       | complete |
+| 3   | Invalid ref            | `{ path, ref: "nonexistent" }`    | Error thrown                                           | P0       | complete |
 | 4   | Flag injection in ref  | `{ path, ref: "--exec=evil" }`    | `assertNoFlagInjection` throws                         | P0       | mocked   |
-| 5   | Show tag object        | `{ path, ref: "v1.0" }`           | `objectType: "tag"`, tag metadata                      | P1       | recorded |
+| 5   | Show tag object        | `{ path, ref: "v1.0" }`           | `objectType: "tag"`, tag metadata                      | P1       | complete |
 | 6   | Show tree object       | `{ path, ref: "HEAD^{tree}" }`    | `objectType: "tree"`, tree content                     | P1       | mocked   |
 | 7   | Show blob object       | `{ path, ref: "HEAD:README.md" }` | `objectType: "blob"`, file content                     | P1       | mocked   |
 | 8   | Include patch          | `{ path, patch: true }`           | Diff includes full patch content                       | P1       | mocked   |
@@ -923,14 +923,14 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                  | Params                                                   | Expected Output                                   | Priority | Status   |
 | --- | ------------------------- | -------------------------------------------------------- | ------------------------------------------------- | -------- | -------- |
-| 1   | Push (stash changes)      | `{ path, action: "push" }`                               | `action: "push"`, `success: true`, `stashRef` set | P0       | recorded |
-| 2   | Pop stash                 | `{ path, action: "pop" }`                                | `action: "pop"`, `success: true`                  | P0       | recorded |
-| 3   | Push with no changes      | `{ path, action: "push" }` (clean)                       | `success: false`, no changes to stash             | P0       | recorded |
+| 1   | Push (stash changes)      | `{ path, action: "push" }`                               | `action: "push"`, `success: true`, `stashRef` set | P0       | complete |
+| 2   | Pop stash                 | `{ path, action: "pop" }`                                | `action: "pop"`, `success: true`                  | P0       | complete |
+| 3   | Push with no changes      | `{ path, action: "push" }` (clean)                       | `success: false`, no changes to stash             | P0       | complete |
 | 4   | Flag injection in message | `{ path, action: "push", message: "--exec=evil" }`       | `assertNoFlagInjection` throws                    | P0       | mocked   |
-| 5   | Apply stash               | `{ path, action: "apply" }`                              | `action: "apply"`, `success: true`                | P0       | recorded |
+| 5   | Apply stash               | `{ path, action: "apply" }`                              | `action: "apply"`, `success: true`                | P0       | complete |
 | 6   | Drop stash                | `{ path, action: "drop", index: 0 }`                     | `action: "drop"`, `success: true`                 | P1       | mocked   |
 | 7   | Clear all stashes         | `{ path, action: "clear" }`                              | `action: "clear"`, `success: true`                | P1       | mocked   |
-| 8   | Show stash                | `{ path, action: "show", index: 0 }`                     | `action: "show"`, `diffStat` populated            | P1       | recorded |
+| 8   | Show stash                | `{ path, action: "show", index: 0 }`                     | `action: "show"`, `diffStat` populated            | P1       | complete |
 | 9   | Push with message         | `{ path, action: "push", message: "WIP: feature" }`      | Stash created with message                        | P1       | mocked   |
 | 10  | Push include untracked    | `{ path, action: "push", includeUntracked: true }`       | Untracked files stashed                           | P1       | mocked   |
 | 11  | Push staged only          | `{ path, action: "push", staged: true }`                 | Only staged changes stashed                       | P1       | mocked   |
@@ -966,8 +966,8 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                    | Params                           | Expected Output                               | Priority | Status   |
 | --- | --------------------------- | -------------------------------- | --------------------------------------------- | -------- | -------- |
-| 1   | List stashes (with stashes) | `{ path }`                       | `stashes` array, `total >= 1`                 | P0       | recorded |
-| 2   | List stashes (empty)        | `{ path }` (no stashes)          | `stashes: []`, `total: 0`                     | P0       | recorded |
+| 1   | List stashes (with stashes) | `{ path }`                       | `stashes` array, `total >= 1`                 | P0       | complete |
+| 2   | List stashes (empty)        | `{ path }` (no stashes)          | `stashes: []`, `total: 0`                     | P0       | complete |
 | 3   | Not a git repo              | `{ path: "/tmp/not-a-repo" }`    | Error thrown                                  | P0       | mocked   |
 | 4   | Flag injection in grep      | `{ path, grep: "--exec=evil" }`  | `assertNoFlagInjection` throws                | P0       | mocked   |
 | 5   | With maxCount               | `{ path, maxCount: 3 }`          | `stashes` length <= 3                         | P1       | mocked   |
@@ -1012,13 +1012,13 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                   | Params                                                         | Expected Output                                         | Priority | Status   |
 | --- | -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------- | -------- | -------- |
-| 1   | List tags                  | `{ path }`                                                     | `tags` array, `total` count                             | P0       | recorded |
-| 2   | Create lightweight tag     | `{ path, action: "create", name: "v1.0" }`                     | `success: true`, `action: "create"`, `annotated: false` | P0       | recorded |
-| 3   | Create annotated tag       | `{ path, action: "create", name: "v1.0", message: "Release" }` | `success: true`, `annotated: true`                      | P0       | recorded |
-| 4   | Delete tag                 | `{ path, action: "delete", name: "v1.0" }`                     | `success: true`, `action: "delete"`                     | P0       | recorded |
+| 1   | List tags                  | `{ path }`                                                     | `tags` array, `total` count                             | P0       | complete |
+| 2   | Create lightweight tag     | `{ path, action: "create", name: "v1.0" }`                     | `success: true`, `action: "create"`, `annotated: false` | P0       | complete |
+| 3   | Create annotated tag       | `{ path, action: "create", name: "v1.0", message: "Release" }` | `success: true`, `annotated: true`                      | P0       | complete |
+| 4   | Delete tag                 | `{ path, action: "delete", name: "v1.0" }`                     | `success: true`, `action: "delete"`                     | P0       | complete |
 | 5   | Create without name throws | `{ path, action: "create" }`                                   | Error: "name parameter is required"                     | P0       | mocked   |
 | 6   | Flag injection in name     | `{ path, action: "create", name: "--exec=evil" }`              | `assertNoFlagInjection` throws                          | P0       | mocked   |
-| 7   | No tags in repo            | `{ path }` (no tags)                                           | `tags: []`, `total: 0`                                  | P0       | recorded |
+| 7   | No tags in repo            | `{ path }` (no tags)                                           | `tags: []`, `total: 0`                                  | P0       | complete |
 | 8   | Tag at specific commit     | `{ path, action: "create", name: "v1.0", commit: "abc123" }`   | `commit: "abc123"`                                      | P1       | mocked   |
 | 9   | Pattern filter             | `{ path, pattern: "v1.*" }`                                    | Only matching tags                                      | P1       | mocked   |
 | 10  | Contains filter            | `{ path, contains: "abc123" }`                                 | Only tags containing commit                             | P1       | mocked   |
@@ -1063,10 +1063,10 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 | #   | Scenario                       | Params                                                                               | Expected Output                                     | Priority | Status   |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------- | -------- | -------- |
-| 1   | List worktrees                 | `{ path }`                                                                           | `worktrees` array, `total >= 1` (main worktree)     | P0       | recorded |
-| 2   | Add worktree                   | `{ path, action: "add", worktreePath: "../wt-test", branch: "main" }`                | `success: true`, `action: "add"`, `path` set        | P0       | recorded |
+| 1   | List worktrees                 | `{ path }`                                                                           | `worktrees` array, `total >= 1` (main worktree)     | P0       | complete |
+| 2   | Add worktree                   | `{ path, action: "add", worktreePath: "../wt-test", branch: "main" }`                | `success: true`, `action: "add"`, `path` set        | P0       | complete |
 | 3   | Remove worktree                | `{ path, action: "remove", worktreePath: "../wt-test" }`                             | `success: true`, `action: "remove"`                 | P0       | mocked   |
-| 4   | Add without path throws        | `{ path, action: "add" }`                                                            | Error: "'worktreePath' is required"                 | P0       | recorded |
+| 4   | Add without path throws        | `{ path, action: "add" }`                                                            | Error: "'worktreePath' is required"                 | P0       | complete |
 | 5   | Flag injection in worktreePath | `{ path, action: "add", worktreePath: "--exec=evil" }`                               | `assertNoFlagInjection` throws                      | P0       | mocked   |
 | 6   | Add with new branch            | `{ path, action: "add", worktreePath: "../wt", branch: "feat", createBranch: true }` | Branch created, worktree added                      | P1       | mocked   |
 | 7   | Lock worktree                  | `{ path, action: "lock", worktreePath: "../wt" }`                                    | `success: true`, `action: "lock"`                   | P1       | mocked   |

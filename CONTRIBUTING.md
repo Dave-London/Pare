@@ -172,6 +172,40 @@ pnpm --filter @paretools/git test  # Run tests for a specific package
 2. **Integration Tests** — Test the full MCP server lifecycle by spawning the server and using an MCP client
 3. **Fidelity Tests** — Run real CLI commands and verify that the structured output accurately reflects the raw output
 
+### Smoke Tests
+
+Smoke tests validate the full tool chain — fixture → mock runner → tool handler → parser → schema — using real CLI output captured as fixtures. They live in `tests/smoke/` and are separate from per-package unit tests.
+
+```bash
+pnpm smoke              # Run all smoke tests (mocked + recorded)
+pnpm smoke:coverage     # Show coverage report across all scenario files
+```
+
+**Directory structure:**
+
+```
+tests/smoke/
+  scenarios/     # Scenario mapping files (*.md) — one per server group
+  fixtures/      # Recorded CLI output (*.txt) — organized by tool
+  mocked/        # Phase 2 mocked tests (*.smoke.test.ts)
+  suite/         # Phase 3 recorded tests (*.recorded.test.ts)
+  vitest.config.ts
+```
+
+**Adding a new recorded smoke test:**
+
+1. **Capture a fixture** — Run the real CLI command and save the output to `tests/smoke/fixtures/<server>/<tool>/<scenario>.txt`
+2. **Write the test** — Create or extend a file in `tests/smoke/suite/`. Follow the existing pattern: mock the runner with `vi.mocked(git).mockResolvedValueOnce()`, call the tool handler, and validate `structuredContent` against the Zod schema
+3. **Update the scenario file** — Change the scenario's status from `mocked` → `complete` in the corresponding `tests/smoke/scenarios/*.md` file
+4. **Run `pnpm smoke`** — Verify all tests pass
+
+**Key patterns to follow:**
+
+- Always add `vi.mocked(runner).mockReset()` in `beforeEach` — `vi.clearAllMocks()` does not clear `mockResolvedValueOnce` queues
+- Pass `compact: false` for tools using `compactDualOutput` to get full field objects in tests
+- FakeServer doesn't apply Zod `.default()` values — pass all params with defaults explicitly
+- Check the tool implementation for the exact number of `git()` calls to mock (some tools make multiple calls)
+
 ## Code Style
 
 - **Prettier**: Formatting is handled automatically by **Husky** and **lint-staged** via a pre-commit hook. You don't need to format your code manually.
@@ -182,6 +216,7 @@ pnpm --filter @paretools/git test  # Run tests for a specific package
 ```bash
 pnpm build          # Build all packages
 pnpm test           # Run all tests
+pnpm smoke          # Run smoke tests
 pnpm lint           # Lint all packages
 pnpm format:check   # Check formatting
 ```

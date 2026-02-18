@@ -23,6 +23,7 @@
     "release": "turbo run build && changeset publish",
     "changelog": "tsx scripts/aggregate-changelog.ts",
     "smoke": "vitest run --config tests/smoke/vitest.config.ts",
+    "smoke:coverage": "tsx scripts/smoke-coverage.ts",
     "benchmark": "tsx benchmarks/v2/scripts/benchmark.ts",
     "docs:api": "typedoc",
     "sync-tool-counts": "tsx scripts/sync-tool-counts.ts",
