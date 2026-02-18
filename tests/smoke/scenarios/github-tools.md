@@ -767,7 +767,7 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 15  | Auto-merge enable                 | `{ number: "123", auto: true }`                        | `state: "auto-merge-enabled"`                       | P1       | mocked |
 | 16  | Disable auto-merge                | `{ number: "123", disableAuto: true }`                 | `state: "auto-merge-disabled"`                      | P1       | mocked |
 | 17  | Custom merge subject              | `{ number: "123", subject: "release: v1.0" }`          | --subject flag passed                               | P1       | mocked |
-| 18  | Custom commit body                | `{ number: "123", commitBody: "Detailed merge info" }` | --body flag passed                                  | P1       | mocked |
+| 18  | Custom commit body                | `{ number: "123", commitBody: "Detailed merge info" }` | --body-file stdin with body content                 | P1       | mocked |
 | 19  | Match head commit (race safety)   | `{ number: "123", matchHeadCommit: "abc123" }`         | --match-head-commit flag passed                     | P1       | mocked |
 | 20  | Cross-repo merge                  | `{ number: "123", repo: "owner/repo" }`                | --repo flag passed                                  | P1       | mocked |
 | 21  | Merge commit SHA in output        | `{ number: "123" }`                                    | `mergeCommitSha` populated when available           | P2       | mocked |

@@ -80,7 +80,26 @@ export function registerPrChecksTool(server: McpServer) {
         );
       }
 
-      const data = parsePrChecks(result.stdout, prNum);
+      let data;
+      try {
+        data = parsePrChecks(result.stdout, prNum);
+      } catch {
+        const combined = `${result.stdout}\n${result.stderr}`.trim();
+        return compactDualOutput(
+          {
+            pr: prNum,
+            checks: [],
+            summary: { total: 0, passed: 0, failed: 0, pending: 0, skipped: 0, cancelled: 0 },
+            errorType: "unknown" as const,
+            errorMessage: combined || "Failed to parse pr checks output",
+          },
+          result.stdout,
+          formatPrChecks,
+          compactPrChecksMap,
+          formatPrChecksCompact,
+          compact === false,
+        );
+      }
       return compactDualOutput(
         data,
         result.stdout,
