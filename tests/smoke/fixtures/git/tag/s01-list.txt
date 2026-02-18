@@ -1,0 +1,4 @@
+v2.0.0	2026-02-18T19:51:06+02:00	Release 2.0.0	commit
+v2.0.1	2026-02-18T19:51:06+02:00	chore: empty commit	
+v1.0.0	2026-02-18T19:51:02+02:00	Release 1.0.0	commit
+v1.0.1	2026-02-18T19:51:02+02:00	fix: add subtraction function	

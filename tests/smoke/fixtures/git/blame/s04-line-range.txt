@@ -1,0 +1,39 @@
+ded6b306479dec5cc7269b21ad38c41c3e81dbfa 1 1 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437061
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437061
+committer-tz +0200
+summary feat: initial project setup
+boundary
+filename src/index.ts
+	export function main() { return 42; }
+2a71f401b6cb619619ea79aa5e6ce88091743848 2 2 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437062
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437062
+committer-tz +0200
+summary chore: iteration 1 of refactoring
+previous b4ddfaf51f819f02289d4fcd2bf942f2c9323df9 src/index.ts
+filename src/index.ts
+	// change 1
+44cb4c3c9204e1c8bbf6d345945dc3618bc96e35 3 3 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437062
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437062
+committer-tz +0200
+summary chore: iteration 2 of refactoring
+previous 2a71f401b6cb619619ea79aa5e6ce88091743848 src/index.ts
+filename src/index.ts
+	// change 2

@@ -1,0 +1,10 @@
+* remote origin
+  Fetch URL: C:/Users/dave2/AppData/Local/Temp/pare-smoke-git-remote-13392
+  Push  URL: C:/Users/dave2/AppData/Local/Temp/pare-smoke-git-remote-13392
+  HEAD branch: main
+  Remote branches:
+    feature-branch tracked
+    main           tracked
+  Local refs configured for 'git push':
+    feature-branch pushes to feature-branch (up to date)
+    main           pushes to main           (fast-forwardable)

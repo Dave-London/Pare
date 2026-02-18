@@ -1,0 +1,9 @@
+diff --git a/src/index.ts b/src/index.ts
+index bec23a8..3e8b822 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -6,3 +6,4 @@ export function main() { return 42; }
+ // change 5
+ // change 6
+ // change 7
++// unstaged change

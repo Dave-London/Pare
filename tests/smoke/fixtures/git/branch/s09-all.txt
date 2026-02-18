@@ -1,0 +1,4 @@
+  feature-branch                9174a8c feat: extend feature module
+* main                          75bd4c6 chore: iteration 7 of refactoring
+  remotes/origin/feature-branch 9174a8c feat: extend feature module
+  remotes/origin/main           75bd4c6 chore: iteration 7 of refactoring

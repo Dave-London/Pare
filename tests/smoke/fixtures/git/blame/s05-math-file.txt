@@ -1,0 +1,25 @@
+7731a5b7858d4994844b422345538b66bfcc9ff5 1 1 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437061
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437061
+committer-tz +0200
+summary feat: add math utilities
+filename src/math.ts
+	export function add(a, b) { return a + b; }
+b4ddfaf51f819f02289d4fcd2bf942f2c9323df9 2 2 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437062
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437062
+committer-tz +0200
+summary fix: add subtraction function
+previous 7731a5b7858d4994844b422345538b66bfcc9ff5 src/math.ts
+filename src/math.ts
+	export function sub(a, b) { return a - b; }

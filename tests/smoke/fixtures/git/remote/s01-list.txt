@@ -1,0 +1,2 @@
+origin	C:/Users/dave2/AppData/Local/Temp/pare-smoke-git-remote-13392 (fetch)
+origin	C:/Users/dave2/AppData/Local/Temp/pare-smoke-git-remote-13392 (push)
