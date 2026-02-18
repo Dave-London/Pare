@@ -117,21 +117,21 @@
 
 ### Scenarios
 
-| #   | Scenario                            | Params                                     | Expected Output                                         | Priority | Status |
-| --- | ----------------------------------- | ------------------------------------------ | ------------------------------------------------------- | -------- | ------ |
-| 1   | Clean project, no errors            | `{ path }`                                 | `success: true`, `errors: 0`, `diagnostics: []`         | P0       | mocked |
-| 2   | Project with type errors            | `{ path }`                                 | `success: false`, `errors > 0`, `diagnostics` populated | P0       | mocked |
-| 3   | No tsconfig.json                    | `{ path: "/tmp/empty" }`                   | Error thrown or success with no files                   | P0       | mocked |
-| 4   | Flag injection via project          | `{ path, project: "--exec=evil" }`         | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 5   | Flag injection via declarationDir   | `{ path, declarationDir: "--exec=evil" }`  | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 6   | Diagnostic has file/line/severity   | `{ path }` (with errors)                   | Each diagnostic has `file`, `line`, `severity`          | P1       | mocked |
-| 7   | noEmit: false with listEmittedFiles | `{ path, noEmit: false }`                  | `emittedFiles` populated                                | P1       | mocked |
-| 8   | project: custom tsconfig            | `{ path, project: "tsconfig.build.json" }` | Uses specified config                                   | P1       | mocked |
-| 9   | skipLibCheck: true                  | `{ path, skipLibCheck: true }`             | Faster check, .d.ts errors skipped                      | P1       | mocked |
-| 10  | compact: false                      | `{ path, compact: false }`                 | Full diagnostics with column/message                    | P2       | mocked |
-| 11  | incremental: true                   | `{ path, incremental: true }`              | Incremental build state                                 | P2       | mocked |
-| 12  | pretty: false                       | `{ path, pretty: false }`                  | Normalized parser-friendly output                       | P2       | mocked |
-| 13  | Schema validation                   | all                                        | Zod parse succeeds                                      | P0       | mocked |
+| #   | Scenario                            | Params                                     | Expected Output                                         | Priority | Status   |
+| --- | ----------------------------------- | ------------------------------------------ | ------------------------------------------------------- | -------- | -------- |
+| 1   | Clean project, no errors            | `{ path }`                                 | `success: true`, `errors: 0`, `diagnostics: []`         | P0       | complete |
+| 2   | Project with type errors            | `{ path }`                                 | `success: false`, `errors > 0`, `diagnostics` populated | P0       | complete |
+| 3   | No tsconfig.json                    | `{ path: "/tmp/empty" }`                   | Error thrown or success with no files                   | P0       | complete |
+| 4   | Flag injection via project          | `{ path, project: "--exec=evil" }`         | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 5   | Flag injection via declarationDir   | `{ path, declarationDir: "--exec=evil" }`  | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 6   | Diagnostic has file/line/severity   | `{ path }` (with errors)                   | Each diagnostic has `file`, `line`, `severity`          | P1       | mocked   |
+| 7   | noEmit: false with listEmittedFiles | `{ path, noEmit: false }`                  | `emittedFiles` populated                                | P1       | mocked   |
+| 8   | project: custom tsconfig            | `{ path, project: "tsconfig.build.json" }` | Uses specified config                                   | P1       | mocked   |
+| 9   | skipLibCheck: true                  | `{ path, skipLibCheck: true }`             | Faster check, .d.ts errors skipped                      | P1       | mocked   |
+| 10  | compact: false                      | `{ path, compact: false }`                 | Full diagnostics with column/message                    | P2       | mocked   |
+| 11  | incremental: true                   | `{ path, incremental: true }`              | Incremental build state                                 | P2       | mocked   |
+| 12  | pretty: false                       | `{ path, pretty: false }`                  | Normalized parser-friendly output                       | P2       | mocked   |
+| 13  | Schema validation                   | all                                        | Zod parse succeeds                                      | P0       | mocked   |
 
 ---
 

@@ -1,0 +1,77 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "qs": {
+      "name": "qs",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1113161,
+          "name": "qs",
+          "dependency": "qs",
+          "title": "qs arrayLimit bypass in comma parsing allows denial of service",
+          "url": "https://github.com/advisories/GHSA-w7fw-mjwx-w883",
+          "severity": "low",
+          "cwe": ["CWE-20"],
+          "cvss": {
+            "score": 3.7,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=6.7.0 <=6.14.1"
+        }
+      ],
+      "effects": [],
+      "range": ">=6.7.0 <=6.14.1",
+      "nodes": ["node_modules/qs"],
+      "fixAvailable": {
+        "name": "express",
+        "version": "4.21.2",
+        "isSemVerMajor": false
+      }
+    },
+    "ajv": {
+      "name": "ajv",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1113214,
+          "name": "ajv",
+          "dependency": "ajv",
+          "title": "ajv has ReDoS when using $data option",
+          "url": "https://github.com/advisories/GHSA-2g4f-4pwh-qvx6",
+          "severity": "moderate",
+          "cwe": ["CWE-400"],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<8.18.0"
+        }
+      ],
+      "effects": [],
+      "range": "<8.18.0",
+      "nodes": ["node_modules/ajv"],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 1,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0,
+      "total": 2
+    },
+    "dependencies": {
+      "prod": 120,
+      "dev": 45,
+      "optional": 0,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 165
+    }
+  }
+}

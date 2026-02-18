@@ -1,0 +1,7 @@
+src/deprecated.ts(5,1): error TS6385: 'oldFunction' is deprecated.
+src/deprecated.ts(12,1): error TS6385: 'legacyApi' is deprecated.
+
+Found 2 errors in 1 file.
+
+Errors  Files
+     2  src/deprecated.ts:5

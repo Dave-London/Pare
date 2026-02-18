@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "my-project",
+  "dependencies": {
+    "express": {
+      "version": "4.21.2",
+      "resolved": "https://registry.npmjs.org/express/-/express-4.21.2.tgz"
+    },
+    "lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+    },
+    "zod": {
+      "version": "3.23.8",
+      "resolved": "https://registry.npmjs.org/zod/-/zod-3.23.8.tgz"
+    }
+  },
+  "devDependencies": {
+    "typescript": {
+      "version": "5.9.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz"
+    },
+    "vitest": {
+      "version": "4.0.18",
+      "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.0.18.tgz"
+    }
+  }
+}

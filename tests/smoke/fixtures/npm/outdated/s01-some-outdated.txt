@@ -1,0 +1,23 @@
+{
+  "typescript": {
+    "current": "5.8.0",
+    "wanted": "5.9.3",
+    "latest": "5.9.3",
+    "dependent": "my-project",
+    "location": "node_modules/typescript"
+  },
+  "eslint": {
+    "current": "9.38.0",
+    "wanted": "9.39.2",
+    "latest": "10.0.0",
+    "dependent": "my-project",
+    "location": "node_modules/eslint"
+  },
+  "lodash": {
+    "current": "4.17.20",
+    "wanted": "4.17.21",
+    "latest": "4.17.21",
+    "dependent": "my-project",
+    "location": "node_modules/lodash"
+  }
+}
