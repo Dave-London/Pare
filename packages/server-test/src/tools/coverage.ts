@@ -8,6 +8,7 @@ import { parseVitestCoverage, parseVitestCoverageJson } from "../lib/parsers/vit
 import { parseMochaCoverage, parseMochaCoverageJson } from "../lib/parsers/mocha.js";
 import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../lib/formatters.js";
 import { CoverageSchema } from "../schemas/index.js";
+import { TEST_CLI_TIMEOUT_MS } from "../lib/timeouts.js";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -282,7 +283,7 @@ export function registerCoverageTool(server: McpServer) {
       await mkdir(tempDir, { recursive: true });
 
       const { cmd, cmdArgs } = getCoverageCommand(detected, extraArgs, coverageJsonPath);
-      const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
+      const result = await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
       const output = result.stdout + "\n" + result.stderr;
 
       let coverage;

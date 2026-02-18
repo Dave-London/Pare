@@ -8,5 +8,6 @@ export interface GhCmdOptions {
 
 export async function ghCmd(args: string[], cwdOrOpts?: string | GhCmdOptions): Promise<RunResult> {
   const opts = typeof cwdOrOpts === "string" ? { cwd: cwdOrOpts } : cwdOrOpts;
-  return run("gh", args, { cwd: opts?.cwd, timeout: 30_000, stdin: opts?.stdin });
+  // gh is a native executable; disable shell mode to avoid cmd.exe escaping/quoting issues.
+  return run("gh", args, { cwd: opts?.cwd, timeout: 30_000, stdin: opts?.stdin, shell: false });
 }

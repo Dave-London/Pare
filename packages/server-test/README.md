@@ -7,12 +7,13 @@
 
 Part of the [Pare](https://github.com/Dave-London/Pare) suite of MCP servers. Auto-detects pytest, jest, vitest, and mocha.
 
-## Tools (2)
+## Tools (3)
 
-| Tool       | Description                                             |
-| ---------- | ------------------------------------------------------- |
-| `run`      | Run tests, returns pass/fail counts and failure details |
-| `coverage` | Run tests with coverage, returns per-file summary       |
+| Tool         | Description                                             |
+| ------------ | ------------------------------------------------------- |
+| `run`        | Run tests, returns pass/fail counts and failure details |
+| `coverage`   | Run tests with coverage, returns per-file summary       |
+| `playwright` | Run Playwright tests with structured pass/fail output   |
 
 ## Quick Start
 
@@ -54,19 +55,35 @@ Add to your MCP client config:
 }
 ```
 
+## Timeout Policy
+
+- Tool process timeout (`run`, `coverage`, `playwright`): `300_000ms` (5 minutes)
+- Integration test MCP call timeout: `300_000ms`
+- Vitest file/test timeout for this package: `300_000ms`
+
+This package runs real downstream suites (including `@paretools/git` integration tests), so lower global limits like 120s can fail due to cumulative runtime on slower CI/Windows runners.
+
+## Test Batching (Maintainers)
+
+- `pnpm test:unit` runs fast parser/formatter/helper tests
+- `pnpm test:integration` runs MCP integration + tool-params tests
+- `pnpm test:fidelity` runs the long fidelity suite
+
+The default `pnpm test` runs these batches sequentially for earlier failure and clearer triage.
+
 ## All Pare Servers (149 tools)
 
-| Package                                                              | Tools                                                                       | Wraps                              |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------- |
-| [@paretools/git](https://www.npmjs.com/package/@paretools/git)       | status, log, diff, branch, show, add, commit, push, pull, checkout          | git                                |
-| **@paretools/test**                                                  | run, coverage                                                               | pytest, jest, vitest, mocha        |
-| [@paretools/npm](https://www.npmjs.com/package/@paretools/npm)       | install, audit, outdated, list, run, test, init                             | npm                                |
-| [@paretools/build](https://www.npmjs.com/package/@paretools/build)   | tsc, build, esbuild, vite-build, webpack                                    | tsc, esbuild, vite, webpack        |
-| [@paretools/lint](https://www.npmjs.com/package/@paretools/lint)     | lint, format-check, prettier-format, biome-check, biome-format              | eslint, prettier, biome            |
-| [@paretools/python](https://www.npmjs.com/package/@paretools/python) | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black | pip, mypy, ruff, pytest, uv, black |
-| [@paretools/docker](https://www.npmjs.com/package/@paretools/docker) | ps, build, logs, images, run, exec, compose-up, compose-down, pull          | docker, docker compose             |
-| [@paretools/cargo](https://www.npmjs.com/package/@paretools/cargo)   | build, test, clippy, run, add, remove, fmt, doc, check                      | cargo                              |
-| [@paretools/go](https://www.npmjs.com/package/@paretools/go)         | build, test, vet, run, mod-tidy, fmt, generate                              | go, gofmt                          |
+| Package                                                              | Tools                                                                       | Wraps                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- |
+| [@paretools/git](https://www.npmjs.com/package/@paretools/git)       | status, log, diff, branch, show, add, commit, push, pull, checkout          | git                                     |
+| **@paretools/test**                                                  | run, coverage, playwright                                                   | pytest, jest, vitest, mocha, playwright |
+| [@paretools/npm](https://www.npmjs.com/package/@paretools/npm)       | install, audit, outdated, list, run, test, init                             | npm                                     |
+| [@paretools/build](https://www.npmjs.com/package/@paretools/build)   | tsc, build, esbuild, vite-build, webpack                                    | tsc, esbuild, vite, webpack             |
+| [@paretools/lint](https://www.npmjs.com/package/@paretools/lint)     | lint, format-check, prettier-format, biome-check, biome-format              | eslint, prettier, biome                 |
+| [@paretools/python](https://www.npmjs.com/package/@paretools/python) | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black | pip, mypy, ruff, pytest, uv, black      |
+| [@paretools/docker](https://www.npmjs.com/package/@paretools/docker) | ps, build, logs, images, run, exec, compose-up, compose-down, pull          | docker, docker compose                  |
+| [@paretools/cargo](https://www.npmjs.com/package/@paretools/cargo)   | build, test, clippy, run, add, remove, fmt, doc, check                      | cargo                                   |
+| [@paretools/go](https://www.npmjs.com/package/@paretools/go)         | build, test, vet, run, mod-tidy, fmt, generate                              | go, gofmt                               |
 
 ## Compatible Clients
 

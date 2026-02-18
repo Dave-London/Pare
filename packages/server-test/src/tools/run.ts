@@ -12,6 +12,7 @@ import { parseVitestJson } from "../lib/parsers/vitest.js";
 import { parseMochaJson } from "../lib/parsers/mocha.js";
 import { formatTestRun, compactTestRunMap, formatTestRunCompact } from "../lib/formatters.js";
 import { TestRunSchema } from "../schemas/index.js";
+import { TEST_CLI_TIMEOUT_MS } from "../lib/timeouts.js";
 
 /** Exported for unit testing. */
 export function getRunCommand(
@@ -403,7 +404,7 @@ export function registerRunTool(server: McpServer) {
         cmdArgs.push(`--outputFile=${tempPath}`);
       }
 
-      const result = await run(cmd, cmdArgs, { cwd, timeout: 180_000 });
+      const result = await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
 
       // Combine stdout and stderr for parsing (some frameworks write to stderr)
       const output = result.stdout + "\n" + result.stderr;

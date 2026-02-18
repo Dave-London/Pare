@@ -3,18 +3,21 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureBuiltArtifacts } from "./ensure-built.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
 /** MCP SDK defaults to 60 s request timeout; override for CI where process spawning is slow. */
-const CALL_TIMEOUT = { timeout: 180_000 };
+const CALL_TIMEOUT = { timeout: 300_000 };
 
 describe("@paretools/test integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
 
   beforeAll(async () => {
+    ensureBuiltArtifacts(__dirname);
+
     transport = new StdioClientTransport({
       command: "node",
       args: [SERVER_PATH],
