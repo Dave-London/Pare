@@ -91,9 +91,6 @@ export function registerRunTool(server: McpServer) {
       const cwd = path || process.cwd();
       assertNoFlagInjection(target, "target");
       if (file) assertNoFlagInjection(file, "file");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const resolved = resolveTool(tool || "auto", cwd);
 

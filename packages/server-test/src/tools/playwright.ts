@@ -214,9 +214,6 @@ export function registerPlaywrightTool(server: McpServer) {
       args,
       compact,
     }) => {
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       if (filter) {
         assertNoFlagInjection(filter, "filter");
       }

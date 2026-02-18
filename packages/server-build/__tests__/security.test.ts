@@ -138,18 +138,8 @@ describe("security: vite-build tool — mode parameter validation", () => {
   });
 });
 
-describe("security: vite-build tool — args[] parameter validation", () => {
-  it("rejects flag-like args values", () => {
-    expect(() => assertNoFlagInjection("--outDir=/tmp/evil", "args")).toThrow(
-      /must not start with "-"/,
-    );
-    expect(() => assertNoFlagInjection("-w", "args")).toThrow(/must not start with "-"/);
-    expect(() => assertNoFlagInjection("--base=/evil", "args")).toThrow(/must not start with "-"/);
-  });
-});
-
 // ---------------------------------------------------------------------------
-// webpack tool — config and args[] flag injection
+// webpack tool — config flag injection
 // ---------------------------------------------------------------------------
 
 describe("security: webpack tool — config parameter validation", () => {
@@ -172,40 +162,6 @@ describe("security: webpack tool — config parameter validation", () => {
     expect(() => assertNoFlagInjection(" --output-path=/tmp", "config")).toThrow(
       /must not start with "-"/,
     );
-  });
-});
-
-describe("security: webpack tool — args[] parameter validation", () => {
-  it("rejects flag-like args values", () => {
-    expect(() => assertNoFlagInjection("--output-path=/tmp/evil", "args")).toThrow(
-      /must not start with "-"/,
-    );
-    expect(() => assertNoFlagInjection("--mode=production", "args")).toThrow(
-      /must not start with "-"/,
-    );
-    expect(() => assertNoFlagInjection("-d", "args")).toThrow(/must not start with "-"/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// build tool — args[] validation (note: command uses assertAllowedCommand)
-// ---------------------------------------------------------------------------
-
-describe("security: build tool — args[] parameter validation", () => {
-  it("rejects flag-like args values", () => {
-    expect(() => assertNoFlagInjection("--exec=rm -rf /", "args")).toThrow(
-      /must not start with "-"/,
-    );
-    expect(() => assertNoFlagInjection("-rf", "args")).toThrow(/must not start with "-"/);
-    expect(() => assertNoFlagInjection("--output=/etc/passwd", "args")).toThrow(
-      /must not start with "-"/,
-    );
-  });
-
-  it("accepts safe args values", () => {
-    expect(() => assertNoFlagInjection("run", "args")).not.toThrow();
-    expect(() => assertNoFlagInjection("build", "args")).not.toThrow();
-    expect(() => assertNoFlagInjection("src/index.ts", "args")).not.toThrow();
   });
 });
 

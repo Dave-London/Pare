@@ -82,9 +82,6 @@ export function registerTestTool(server: McpServer) {
       packageManager,
       filter,
     }) => {
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       if (filter) assertNoFlagInjection(filter, "filter");
 
       // Validate workspace values

@@ -84,9 +84,6 @@ export function registerListTool(server: McpServer) {
       for (const p of packages ?? []) {
         assertNoFlagInjection(p, "packages");
       }
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);

@@ -54,6 +54,8 @@ export function registerIssueCloseTool(server: McpServer) {
       const issueNum = typeof number === "number" ? number : 0;
 
       const args = ["issue", "close", selector];
+      // Note: gh issue close only supports --comment, not --comment-file or stdin.
+      // This is a gh CLI limitation — no stdin alternative exists for closing comments.
       if (comment) {
         args.push("--comment", comment);
       }

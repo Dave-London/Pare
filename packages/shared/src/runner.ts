@@ -1,4 +1,4 @@
-import { spawn, execFile as nodeExecFile } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
@@ -36,7 +36,10 @@ export interface RunOptions {
 function killProcessGroup(pid: number): void {
   if (process.platform === "win32") {
     try {
-      nodeExecFile("taskkill", ["/pid", String(pid), "/T", "/F"]);
+      execFileSync("taskkill", ["/pid", String(pid), "/T", "/F"], {
+        stdio: "ignore",
+        timeout: 5_000,
+      });
     } catch {
       /* best-effort */
     }

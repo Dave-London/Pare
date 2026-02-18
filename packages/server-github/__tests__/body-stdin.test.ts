@@ -21,6 +21,7 @@ import { registerPrCommentTool } from "../src/tools/pr-comment.js";
 import { registerPrReviewTool } from "../src/tools/pr-review.js";
 import { registerPrUpdateTool } from "../src/tools/pr-update.js";
 import { registerReleaseCreateTool } from "../src/tools/release-create.js";
+import { registerPrMergeTool } from "../src/tools/pr-merge.js";
 
 type ToolHandler = (
   input: Record<string, unknown>,
@@ -54,6 +55,7 @@ function setupServer(): FakeServer {
   registerPrReviewTool(server as never);
   registerPrUpdateTool(server as never);
   registerReleaseCreateTool(server as never);
+  registerPrMergeTool(server as never);
   return server;
 }
 
@@ -175,6 +177,38 @@ describe("stdin body passing (#516): all text-body tools use --body-file - with 
     expect(args).toContain("-");
     expect(args).not.toContain("--body");
     expect((opts as { stdin?: string }).stdin).toBe(SPECIAL_BODY);
+  });
+
+  it("pr-merge passes commitBody via stdin, not --body", async () => {
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: "✓ Merged pull request #42\n",
+      stderr: "",
+    });
+    const handler = server.tools.get("pr-merge")!.handler;
+    await handler({ number: "42", method: "squash", commitBody: SPECIAL_BODY });
+
+    const [args, opts] = vi.mocked(ghCmd).mock.calls[0];
+    expect(args).toContain("--body-file");
+    expect(args).toContain("-");
+    expect(args).not.toContain("--body");
+    expect((opts as { stdin?: string }).stdin).toBe(SPECIAL_BODY);
+  });
+
+  it("pr-merge without commitBody does not use stdin", async () => {
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: "✓ Merged pull request #42\n",
+      stderr: "",
+    });
+    const handler = server.tools.get("pr-merge")!.handler;
+    await handler({ number: "42", method: "squash" });
+
+    const [args, opts] = vi.mocked(ghCmd).mock.calls[0];
+    expect(args).not.toContain("--body-file");
+    expect(args).not.toContain("--body");
+    const stdinVal = typeof opts === "object" ? (opts as { stdin?: string }).stdin : undefined;
+    expect(stdinVal).toBeUndefined();
   });
 
   it("release-create passes notes via stdin using --notes-file -, not --notes", async () => {

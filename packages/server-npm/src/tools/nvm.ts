@@ -69,9 +69,6 @@ export function registerNvmTool(server: McpServer) {
       // Validate inputs for exec action
       if (version) assertNoFlagInjection(version, "version");
       if (command) assertNoFlagInjection(command, "command");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       // Helper: read .nvmrc from the working directory
       async function readNvmrc(): Promise<string | undefined> {

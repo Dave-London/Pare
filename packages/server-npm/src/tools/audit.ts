@@ -75,9 +75,6 @@ export function registerAuditTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       if (workspace) assertNoFlagInjection(workspace, "workspace");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       const pm = await detectPackageManager(cwd, packageManager);
 
       const pmArgs: string[] = [];

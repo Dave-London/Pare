@@ -114,12 +114,18 @@ export function registerPrMergeTool(server: McpServer) {
       if (auto) args.push("--auto");
       if (disableAuto) args.push("--disable-auto");
       if (subject) args.push("--subject", subject);
-      if (commitBody) args.push("--body", commitBody);
+      // Use --body-file - to pass commitBody via stdin, avoiding shell escaping issues
+      // for bodies with special characters (backticks, pipes, etc.) — especially on Windows
+      let stdin: string | undefined;
+      if (commitBody) {
+        args.push("--body-file", "-");
+        stdin = commitBody;
+      }
       if (authorEmail) args.push("--author-email", authorEmail);
       if (matchHeadCommit) args.push("--match-head-commit", matchHeadCommit);
       if (repo) args.push("--repo", repo);
 
-      const result = await ghCmd(args, cwd);
+      const result = await ghCmd(args, { cwd, stdin });
 
       if (result.exitCode !== 0) {
         const combined = `${result.stdout}\n${result.stderr}`.trim();

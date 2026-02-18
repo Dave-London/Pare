@@ -144,9 +144,6 @@ export function registerBuildTool(server: McpServer) {
       for (const s of ssh ?? []) {
         assertNoFlagInjection(s, "ssh");
       }
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const cwd = path || process.cwd();
       const dockerArgs = ["build", "."];

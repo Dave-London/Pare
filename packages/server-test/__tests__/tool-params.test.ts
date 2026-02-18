@@ -66,16 +66,22 @@ describe("tool parameter handling", () => {
       expect(summary.total).toEqual(expect.any(Number));
     }, 180_000);
 
-    it("rejects flag-like args to prevent argument injection", async () => {
+    it("accepts flag-like args (passed through to test runner)", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
-      // Flag-like args must be rejected by assertNoFlagInjection
+      // args[] is explicitly for passing CLI flags — no flag injection check
       const result = await client.callTool({
         name: "run",
-        arguments: { path: gitPkgPath, framework: "vitest", args: ["--bail", "1"] },
+        arguments: {
+          path: gitPkgPath,
+          framework: "vitest",
+          filter: "parsers",
+          args: ["--bail", "1"],
+        },
       });
 
-      expect(result.isError).toBe(true);
-    }, 15_000);
+      // Should not error — flags are valid args for the test runner
+      expect(result.isError).not.toBe(true);
+    }, 180_000);
 
     it("returns error for nonexistent path", async () => {
       const result = await client.callTool({

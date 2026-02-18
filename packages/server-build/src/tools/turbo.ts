@@ -132,9 +132,6 @@ export function registerTurboTool(server: McpServer) {
       if (summarize) cliArgs.push("--summarize");
 
       if (args) {
-        for (const a of args) {
-          assertNoFlagInjection(a, "args");
-        }
         cliArgs.push(...args);
       }
 

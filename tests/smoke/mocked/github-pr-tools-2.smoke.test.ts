@@ -190,8 +190,10 @@ describe("Smoke: github.pr-merge", () => {
     mockGh("Squash-merged pull request #123\nhttps://github.com/owner/repo/pull/123");
     await callAndValidate({ number: "123", method: "squash", commitBody: "Detailed merge info" });
     const args = vi.mocked(ghCmd).mock.calls[0][0] as string[];
-    expect(args).toContain("--body");
-    expect(args).toContain("Detailed merge info");
+    expect(args).toContain("--body-file");
+    expect(args).toContain("-");
+    const opts = vi.mocked(ghCmd).mock.calls[0][1] as { stdin?: string };
+    expect(opts.stdin).toBe("Detailed merge info");
   });
 
   it("S19 [P1] match head commit (race safety)", async () => {
