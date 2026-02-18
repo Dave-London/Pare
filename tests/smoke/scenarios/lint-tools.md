@@ -27,21 +27,21 @@
 
 ### Scenarios
 
-| #   | Scenario                               | Params                                | Expected Output                        | Priority | Status |
-| --- | -------------------------------------- | ------------------------------------- | -------------------------------------- | -------- | ------ |
-| 1   | Clean project, no lint errors          | `{ path }`                            | `total: 0`, `errors: 0`, `warnings: 0` | P0       | mocked |
-| 2   | Project with lint errors               | `{ path }`                            | `diagnostics` populated, `errors > 0`  | P0       | mocked |
-| 3   | ESLint not installed                   | `{ path: "/tmp/empty" }`              | Error thrown                           | P0       | mocked |
-| 4   | Flag injection via patterns            | `{ path, patterns: ["--exec=evil"] }` | `assertNoFlagInjection` throws         | P0       | mocked |
-| 5   | Flag injection via config              | `{ path, config: "--exec=evil" }`     | `assertNoFlagInjection` throws         | P0       | mocked |
-| 6   | Flag injection via rule                | `{ path, rule: ["--exec=evil"] }`     | `assertNoFlagInjection` throws         | P0       | mocked |
-| 7   | Diagnostic has file/line/rule/severity | `{ path }` (with errors)              | Each diagnostic has required fields    | P1       | mocked |
-| 8   | fix: true applies fixes                | `{ path, fix: true }`                 | Files modified, fixable counts reduced | P1       | mocked |
-| 9   | quiet: true suppresses warnings        | `{ path, quiet: true }`               | `warnings: 0`                          | P1       | mocked |
-| 10  | maxWarnings: 0                         | `{ path, maxWarnings: 0 }`            | Fails if any warnings                  | P1       | mocked |
-| 11  | cache: true                            | `{ path, cache: true }`               | Faster subsequent runs                 | P2       | mocked |
-| 12  | fixDryRun: true                        | `{ path, fixDryRun: true }`           | Preview fixes without writing          | P2       | mocked |
-| 13  | Schema validation                      | all                                   | Zod parse succeeds                     | P0       | mocked |
+| #   | Scenario                               | Params                                | Expected Output                        | Priority | Status   |
+| --- | -------------------------------------- | ------------------------------------- | -------------------------------------- | -------- | -------- |
+| 1   | Clean project, no lint errors          | `{ path }`                            | `total: 0`, `errors: 0`, `warnings: 0` | P0       | complete |
+| 2   | Project with lint errors               | `{ path }`                            | `diagnostics` populated, `errors > 0`  | P0       | complete |
+| 3   | ESLint not installed                   | `{ path: "/tmp/empty" }`              | Error thrown                           | P0       | mocked   |
+| 4   | Flag injection via patterns            | `{ path, patterns: ["--exec=evil"] }` | `assertNoFlagInjection` throws         | P0       | mocked   |
+| 5   | Flag injection via config              | `{ path, config: "--exec=evil" }`     | `assertNoFlagInjection` throws         | P0       | mocked   |
+| 6   | Flag injection via rule                | `{ path, rule: ["--exec=evil"] }`     | `assertNoFlagInjection` throws         | P0       | mocked   |
+| 7   | Diagnostic has file/line/rule/severity | `{ path }` (with errors)              | Each diagnostic has required fields    | P1       | mocked   |
+| 8   | fix: true applies fixes                | `{ path, fix: true }`                 | Files modified, fixable counts reduced | P1       | mocked   |
+| 9   | quiet: true suppresses warnings        | `{ path, quiet: true }`               | `warnings: 0`                          | P1       | mocked   |
+| 10  | maxWarnings: 0                         | `{ path, maxWarnings: 0 }`            | Fails if any warnings                  | P1       | mocked   |
+| 11  | cache: true                            | `{ path, cache: true }`               | Faster subsequent runs                 | P2       | mocked   |
+| 12  | fixDryRun: true                        | `{ path, fixDryRun: true }`           | Preview fixes without writing          | P2       | mocked   |
+| 13  | Schema validation                      | all                                   | Zod parse succeeds                     | P0       | mocked   |
 
 ---
 
@@ -72,20 +72,20 @@
 
 ### Scenarios
 
-| #   | Scenario                      | Params                                 | Expected Output                                    | Priority | Status |
-| --- | ----------------------------- | -------------------------------------- | -------------------------------------------------- | -------- | ------ |
-| 1   | All files formatted           | `{ path }`                             | `formatted: true`, `files: []`, `total: 0`         | P0       | mocked |
-| 2   | Unformatted files exist       | `{ path }`                             | `formatted: false`, `files` populated, `total > 0` | P0       | mocked |
-| 3   | Prettier not installed        | `{ path: "/tmp/empty" }`               | Error thrown                                       | P0       | mocked |
-| 4   | Flag injection via patterns   | `{ path, patterns: ["--exec=evil"] }`  | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 5   | Flag injection via config     | `{ path, config: "--exec=evil" }`      | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 6   | Flag injection via ignorePath | `{ path, ignorePath: "--exec=evil" }`  | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 7   | Flag injection via parser     | `{ path, parser: "--exec=evil" }`      | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 8   | ignoreUnknown: true           | `{ path, ignoreUnknown: true }`        | Unknown files skipped                              | P1       | mocked |
-| 9   | Custom config path            | `{ path, config: ".prettierrc.json" }` | Uses specified config                              | P1       | mocked |
-| 10  | tabWidth: 4                   | `{ path, tabWidth: 4 }`                | Checks with 4-space indent                         | P2       | mocked |
-| 11  | singleQuote: true             | `{ path, singleQuote: true }`          | Checks for single quotes                           | P2       | mocked |
-| 12  | Schema validation             | all                                    | Zod parse succeeds                                 | P0       | mocked |
+| #   | Scenario                      | Params                                 | Expected Output                                    | Priority | Status   |
+| --- | ----------------------------- | -------------------------------------- | -------------------------------------------------- | -------- | -------- |
+| 1   | All files formatted           | `{ path }`                             | `formatted: true`, `files: []`, `total: 0`         | P0       | complete |
+| 2   | Unformatted files exist       | `{ path }`                             | `formatted: false`, `files` populated, `total > 0` | P0       | complete |
+| 3   | Prettier not installed        | `{ path: "/tmp/empty" }`               | Error thrown                                       | P0       | mocked   |
+| 4   | Flag injection via patterns   | `{ path, patterns: ["--exec=evil"] }`  | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 5   | Flag injection via config     | `{ path, config: "--exec=evil" }`      | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 6   | Flag injection via ignorePath | `{ path, ignorePath: "--exec=evil" }`  | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 7   | Flag injection via parser     | `{ path, parser: "--exec=evil" }`      | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 8   | ignoreUnknown: true           | `{ path, ignoreUnknown: true }`        | Unknown files skipped                              | P1       | mocked   |
+| 9   | Custom config path            | `{ path, config: ".prettierrc.json" }` | Uses specified config                              | P1       | mocked   |
+| 10  | tabWidth: 4                   | `{ path, tabWidth: 4 }`                | Checks with 4-space indent                         | P2       | mocked   |
+| 11  | singleQuote: true             | `{ path, singleQuote: true }`          | Checks for single quotes                           | P2       | mocked   |
+| 12  | Schema validation             | all                                    | Zod parse succeeds                                 | P0       | mocked   |
 
 ---
 

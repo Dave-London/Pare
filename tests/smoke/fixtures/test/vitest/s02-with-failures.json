@@ -1,0 +1,81 @@
+{
+  "numTotalTestSuites": 2,
+  "numPassedTestSuites": 1,
+  "numFailedTestSuites": 1,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 6,
+  "numPassedTests": 4,
+  "numFailedTests": 2,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "startTime": 1708272000000,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["parseOutput"],
+          "fullName": "parseOutput handles valid input",
+          "status": "passed",
+          "title": "handles valid input",
+          "duration": 3
+        },
+        {
+          "ancestorTitles": ["parseOutput"],
+          "fullName": "parseOutput handles empty input",
+          "status": "failed",
+          "title": "handles empty input",
+          "duration": 5,
+          "failureMessages": [
+            "Error: Expected empty array but got undefined\n    at /project/src/__tests__/parsers.test.ts:25:5"
+          ]
+        },
+        {
+          "ancestorTitles": ["parseOutput"],
+          "fullName": "parseOutput handles malformed input",
+          "status": "passed",
+          "title": "handles malformed input",
+          "duration": 2
+        }
+      ],
+      "startTime": 1708272000100,
+      "endTime": 1708272000250,
+      "status": "failed",
+      "message": "",
+      "name": "/project/src/__tests__/parsers.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["formatOutput"],
+          "fullName": "formatOutput formats success",
+          "status": "passed",
+          "title": "formats success",
+          "duration": 1
+        },
+        {
+          "ancestorTitles": ["formatOutput"],
+          "fullName": "formatOutput formats errors",
+          "status": "passed",
+          "title": "formats errors",
+          "duration": 2
+        },
+        {
+          "ancestorTitles": ["formatOutput"],
+          "fullName": "formatOutput handles null fields",
+          "status": "failed",
+          "title": "handles null fields",
+          "duration": 4,
+          "failureMessages": [
+            "TypeError: Cannot read properties of null (reading 'length')\n    at /project/src/__tests__/formatters.test.ts:42:10"
+          ]
+        }
+      ],
+      "startTime": 1708272000300,
+      "endTime": 1708272000400,
+      "status": "failed",
+      "message": "",
+      "name": "/project/src/__tests__/formatters.test.ts"
+    }
+  ]
+}

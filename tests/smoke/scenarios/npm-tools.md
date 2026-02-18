@@ -24,22 +24,22 @@
 
 ### Scenarios
 
-| #   | Scenario                           | Params                                | Expected Output                                           | Priority | Status |
-| --- | ---------------------------------- | ------------------------------------- | --------------------------------------------------------- | -------- | ------ |
-| 1   | Clean project, no vulnerabilities  | `{ path }`                            | `summary.total: 0`, `vulnerabilities: []`                 | P0       | mocked |
-| 2   | Project with known vulnerabilities | `{ path }`                            | `vulnerabilities` array populated, `summary` counts match | P0       | mocked |
-| 3   | Nonexistent path                   | `{ path: "/tmp/nonexistent" }`        | Error thrown                                              | P0       | mocked |
-| 4   | No package.json in path            | `{ path: "/tmp/empty-dir" }`          | Error thrown                                              | P0       | mocked |
-| 5   | Flag injection via workspace       | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws                            | P0       | mocked |
-| 6   | Flag injection via args            | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                            | P0       | mocked |
-| 7   | level: "high" filters low/moderate | `{ path, level: "high" }`             | Only high/critical vulns reported                         | P1       | mocked |
-| 8   | production: true omits devDeps     | `{ path, production: true }`          | Only production dep vulns                                 | P1       | mocked |
-| 9   | fix: true runs audit fix           | `{ path, fix: true }`                 | Returns fix counts                                        | P1       | mocked |
-| 10  | packageLockOnly: true              | `{ path, packageLockOnly: true }`     | Succeeds without node_modules                             | P1       | mocked |
-| 11  | pnpm auto-detection                | `{ path }` (pnpm project)             | `packageManager: "pnpm"`                                  | P1       | mocked |
-| 12  | yarn auto-detection                | `{ path }` (yarn project)             | `packageManager: "yarn"`                                  | P1       | mocked |
-| 13  | omit: ["dev", "optional"]          | `{ path, omit: ["dev", "optional"] }` | Dev/optional deps excluded                                | P2       | mocked |
-| 14  | Schema validation                  | all                                   | Zod parse succeeds for every scenario                     | P0       | mocked |
+| #   | Scenario                           | Params                                | Expected Output                                           | Priority | Status   |
+| --- | ---------------------------------- | ------------------------------------- | --------------------------------------------------------- | -------- | -------- |
+| 1   | Clean project, no vulnerabilities  | `{ path }`                            | `summary.total: 0`, `vulnerabilities: []`                 | P0       | complete |
+| 2   | Project with known vulnerabilities | `{ path }`                            | `vulnerabilities` array populated, `summary` counts match | P0       | complete |
+| 3   | Nonexistent path                   | `{ path: "/tmp/nonexistent" }`        | Error thrown                                              | P0       | mocked   |
+| 4   | No package.json in path            | `{ path: "/tmp/empty-dir" }`          | Error thrown                                              | P0       | mocked   |
+| 5   | Flag injection via workspace       | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws                            | P0       | mocked   |
+| 6   | Flag injection via args            | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                            | P0       | mocked   |
+| 7   | level: "high" filters low/moderate | `{ path, level: "high" }`             | Only high/critical vulns reported                         | P1       | mocked   |
+| 8   | production: true omits devDeps     | `{ path, production: true }`          | Only production dep vulns                                 | P1       | mocked   |
+| 9   | fix: true runs audit fix           | `{ path, fix: true }`                 | Returns fix counts                                        | P1       | mocked   |
+| 10  | packageLockOnly: true              | `{ path, packageLockOnly: true }`     | Succeeds without node_modules                             | P1       | mocked   |
+| 11  | pnpm auto-detection                | `{ path }` (pnpm project)             | `packageManager: "pnpm"`                                  | P1       | mocked   |
+| 12  | yarn auto-detection                | `{ path }` (yarn project)             | `packageManager: "yarn"`                                  | P1       | mocked   |
+| 13  | omit: ["dev", "optional"]          | `{ path, omit: ["dev", "optional"] }` | Dev/optional deps excluded                                | P2       | mocked   |
+| 14  | Schema validation                  | all                                   | Zod parse succeeds for every scenario                     | P0       | mocked   |
 
 ---
 
@@ -63,19 +63,19 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                             | Expected Output                                       | Priority | Status |
-| --- | ---------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------- | ------ |
-| 1   | Existing package (express)   | `{ package: "express" }`                           | `name: "express"`, `version`, `description` populated | P0       | mocked |
-| 2   | Nonexistent package          | `{ package: "zzz-nonexistent-pkg-xyz" }`           | Error thrown                                          | P0       | mocked |
-| 3   | Flag injection via package   | `{ package: "--exec=evil" }`                       | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 4   | Flag injection via registry  | `{ package: "express", registry: "--exec=evil" }`  | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 5   | Flag injection via field     | `{ package: "express", field: "--exec=evil" }`     | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 6   | Flag injection via workspace | `{ package: "express", workspace: "--exec=evil" }` | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 7   | Scoped package               | `{ package: "@types/node" }`                       | `name: "@types/node"`                                 | P1       | mocked |
-| 8   | Specific version             | `{ package: "express@4.17.1" }`                    | `version: "4.17.1"`                                   | P1       | mocked |
-| 9   | field: "engines"             | `{ package: "express", field: "engines" }`         | `engines` populated                                   | P1       | mocked |
-| 10  | compact: false               | `{ package: "express", compact: false }`           | Full output format                                    | P2       | mocked |
-| 11  | Schema validation            | all                                                | Zod parse succeeds                                    | P0       | mocked |
+| #   | Scenario                     | Params                                             | Expected Output                                       | Priority | Status   |
+| --- | ---------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------- | -------- |
+| 1   | Existing package (express)   | `{ package: "express" }`                           | `name: "express"`, `version`, `description` populated | P0       | complete |
+| 2   | Nonexistent package          | `{ package: "zzz-nonexistent-pkg-xyz" }`           | Error thrown                                          | P0       | mocked   |
+| 3   | Flag injection via package   | `{ package: "--exec=evil" }`                       | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 4   | Flag injection via registry  | `{ package: "express", registry: "--exec=evil" }`  | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 5   | Flag injection via field     | `{ package: "express", field: "--exec=evil" }`     | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 6   | Flag injection via workspace | `{ package: "express", workspace: "--exec=evil" }` | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 7   | Scoped package               | `{ package: "@types/node" }`                       | `name: "@types/node"`                                 | P1       | mocked   |
+| 8   | Specific version             | `{ package: "express@4.17.1" }`                    | `version: "4.17.1"`                                   | P1       | mocked   |
+| 9   | field: "engines"             | `{ package: "express", field: "engines" }`         | `engines` populated                                   | P1       | mocked   |
+| 10  | compact: false               | `{ package: "express", compact: false }`           | Full output format                                    | P2       | mocked   |
+| 11  | Schema validation            | all                                                | Zod parse succeeds                                    | P0       | mocked   |
 
 ---
 
@@ -196,23 +196,23 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                | Expected Output                                          | Priority | Status |
-| --- | ---------------------------- | ------------------------------------- | -------------------------------------------------------- | -------- | ------ |
-| 1   | List top-level deps          | `{ path }`                            | `name`, `version`, `dependencies` populated, `total > 0` | P0       | mocked |
-| 2   | Empty project (no deps)      | `{ path }`                            | `dependencies` empty/undefined, `total: 0`               | P0       | mocked |
-| 3   | No package.json              | `{ path: "/tmp/empty" }`              | Error thrown                                             | P0       | mocked |
-| 4   | Flag injection via filter    | `{ path, filter: "--exec=evil" }`     | `assertNoFlagInjection` throws                           | P0       | mocked |
-| 5   | Flag injection via workspace | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws                           | P0       | mocked |
-| 6   | Flag injection via packages  | `{ path, packages: ["--exec=evil"] }` | `assertNoFlagInjection` throws                           | P0       | mocked |
-| 7   | Flag injection via args      | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                           | P0       | mocked |
-| 8   | depth: 1                     | `{ path, depth: 1 }`                  | Nested deps one level deep                               | P1       | mocked |
-| 9   | packages filter              | `{ path, packages: ["lodash"] }`      | Only lodash in output                                    | P1       | mocked |
-| 10  | production: true             | `{ path, production: true }`          | No devDeps in output                                     | P1       | mocked |
-| 11  | global: true                 | `{ global: true }`                    | Global packages listed                                   | P1       | mocked |
-| 12  | pnpm list parsing            | `{ path }` (pnpm project)             | Correct multi-workspace parse                            | P1       | mocked |
-| 13  | yarn list parsing            | `{ path }` (yarn project)             | Correct yarn tree parse                                  | P1       | mocked |
-| 14  | compact: false               | `{ path, compact: false }`            | Full output format                                       | P2       | mocked |
-| 15  | Schema validation            | all                                   | Zod parse succeeds                                       | P0       | mocked |
+| #   | Scenario                     | Params                                | Expected Output                                          | Priority | Status   |
+| --- | ---------------------------- | ------------------------------------- | -------------------------------------------------------- | -------- | -------- |
+| 1   | List top-level deps          | `{ path }`                            | `name`, `version`, `dependencies` populated, `total > 0` | P0       | complete |
+| 2   | Empty project (no deps)      | `{ path }`                            | `dependencies` empty/undefined, `total: 0`               | P0       | mocked   |
+| 3   | No package.json              | `{ path: "/tmp/empty" }`              | Error thrown                                             | P0       | mocked   |
+| 4   | Flag injection via filter    | `{ path, filter: "--exec=evil" }`     | `assertNoFlagInjection` throws                           | P0       | mocked   |
+| 5   | Flag injection via workspace | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws                           | P0       | mocked   |
+| 6   | Flag injection via packages  | `{ path, packages: ["--exec=evil"] }` | `assertNoFlagInjection` throws                           | P0       | mocked   |
+| 7   | Flag injection via args      | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                           | P0       | mocked   |
+| 8   | depth: 1                     | `{ path, depth: 1 }`                  | Nested deps one level deep                               | P1       | mocked   |
+| 9   | packages filter              | `{ path, packages: ["lodash"] }`      | Only lodash in output                                    | P1       | mocked   |
+| 10  | production: true             | `{ path, production: true }`          | No devDeps in output                                     | P1       | mocked   |
+| 11  | global: true                 | `{ global: true }`                    | Global packages listed                                   | P1       | mocked   |
+| 12  | pnpm list parsing            | `{ path }` (pnpm project)             | Correct multi-workspace parse                            | P1       | mocked   |
+| 13  | yarn list parsing            | `{ path }` (yarn project)             | Correct yarn tree parse                                  | P1       | mocked   |
+| 14  | compact: false               | `{ path, compact: false }`            | Full output format                                       | P2       | mocked   |
+| 15  | Schema validation            | all                                   | Zod parse succeeds                                       | P0       | mocked   |
 
 ---
 
@@ -278,20 +278,20 @@
 
 ### Scenarios
 
-| #   | Scenario                                 | Params                                | Expected Output                              | Priority | Status |
-| --- | ---------------------------------------- | ------------------------------------- | -------------------------------------------- | -------- | ------ |
-| 1   | Project with outdated deps               | `{ path }`                            | `packages` array populated, `total > 0`      | P0       | mocked |
-| 2   | All deps up to date                      | `{ path }`                            | `packages: []`, `total: 0`                   | P0       | mocked |
-| 3   | No package.json                          | `{ path: "/tmp/empty" }`              | Error or empty result                        | P0       | mocked |
-| 4   | Flag injection via filter                | `{ path, filter: "--exec=evil" }`     | `assertNoFlagInjection` throws               | P0       | mocked |
-| 5   | Flag injection via workspace             | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws               | P0       | mocked |
-| 6   | Flag injection via packages              | `{ path, packages: ["--exec=evil"] }` | `assertNoFlagInjection` throws               | P0       | mocked |
-| 7   | Flag injection via args                  | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws               | P0       | mocked |
-| 8   | Outdated entry has current/wanted/latest | `{ path }`                            | Each entry has `current`, `wanted`, `latest` | P1       | mocked |
-| 9   | production: true                         | `{ path, production: true }`          | Only production outdated deps                | P1       | mocked |
-| 10  | packages filter                          | `{ path, packages: ["lodash"] }`      | Only lodash in results                       | P1       | mocked |
-| 11  | long: true                               | `{ path, long: true }`                | Homepage populated                           | P2       | mocked |
-| 12  | Schema validation                        | all                                   | Zod parse succeeds                           | P0       | mocked |
+| #   | Scenario                                 | Params                                | Expected Output                              | Priority | Status   |
+| --- | ---------------------------------------- | ------------------------------------- | -------------------------------------------- | -------- | -------- |
+| 1   | Project with outdated deps               | `{ path }`                            | `packages` array populated, `total > 0`      | P0       | complete |
+| 2   | All deps up to date                      | `{ path }`                            | `packages: []`, `total: 0`                   | P0       | complete |
+| 3   | No package.json                          | `{ path: "/tmp/empty" }`              | Error or empty result                        | P0       | mocked   |
+| 4   | Flag injection via filter                | `{ path, filter: "--exec=evil" }`     | `assertNoFlagInjection` throws               | P0       | mocked   |
+| 5   | Flag injection via workspace             | `{ path, workspace: "--exec=evil" }`  | `assertNoFlagInjection` throws               | P0       | mocked   |
+| 6   | Flag injection via packages              | `{ path, packages: ["--exec=evil"] }` | `assertNoFlagInjection` throws               | P0       | mocked   |
+| 7   | Flag injection via args                  | `{ path, args: ["--exec=evil"] }`     | `assertNoFlagInjection` throws               | P0       | mocked   |
+| 8   | Outdated entry has current/wanted/latest | `{ path }`                            | Each entry has `current`, `wanted`, `latest` | P1       | mocked   |
+| 9   | production: true                         | `{ path, production: true }`          | Only production outdated deps                | P1       | mocked   |
+| 10  | packages filter                          | `{ path, packages: ["lodash"] }`      | Only lodash in results                       | P1       | mocked   |
+| 11  | long: true                               | `{ path, long: true }`                | Homepage populated                           | P2       | mocked   |
+| 12  | Schema validation                        | all                                   | Zod parse succeeds                           | P0       | mocked   |
 
 ---
 

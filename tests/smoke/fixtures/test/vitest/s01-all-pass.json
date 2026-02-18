@@ -1,0 +1,126 @@
+{
+  "numTotalTestSuites": 3,
+  "numPassedTestSuites": 3,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 12,
+  "numPassedTests": 12,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "startTime": 1708272000000,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["parseStatus"],
+          "fullName": "parseStatus handles clean repo",
+          "status": "passed",
+          "title": "handles clean repo",
+          "duration": 2
+        },
+        {
+          "ancestorTitles": ["parseStatus"],
+          "fullName": "parseStatus handles staged files",
+          "status": "passed",
+          "title": "handles staged files",
+          "duration": 1
+        },
+        {
+          "ancestorTitles": ["parseStatus"],
+          "fullName": "parseStatus handles modified files",
+          "status": "passed",
+          "title": "handles modified files",
+          "duration": 1
+        },
+        {
+          "ancestorTitles": ["parseStatus"],
+          "fullName": "parseStatus handles conflicts",
+          "status": "passed",
+          "title": "handles conflicts",
+          "duration": 3
+        }
+      ],
+      "startTime": 1708272000100,
+      "endTime": 1708272000200,
+      "status": "passed",
+      "message": "",
+      "name": "/project/src/__tests__/parsers.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["formatStatus"],
+          "fullName": "formatStatus formats clean status",
+          "status": "passed",
+          "title": "formats clean status",
+          "duration": 1
+        },
+        {
+          "ancestorTitles": ["formatStatus"],
+          "fullName": "formatStatus formats mixed status",
+          "status": "passed",
+          "title": "formats mixed status",
+          "duration": 1
+        },
+        {
+          "ancestorTitles": ["formatStatus"],
+          "fullName": "formatStatus formats conflicts",
+          "status": "passed",
+          "title": "formats conflicts",
+          "duration": 2
+        },
+        {
+          "ancestorTitles": ["formatStatus"],
+          "fullName": "formatStatus formats branch info",
+          "status": "passed",
+          "title": "formats branch info",
+          "duration": 1
+        }
+      ],
+      "startTime": 1708272000200,
+      "endTime": 1708272000280,
+      "status": "passed",
+      "message": "",
+      "name": "/project/src/__tests__/formatters.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["integration"],
+          "fullName": "integration MCP server lifecycle",
+          "status": "passed",
+          "title": "MCP server lifecycle",
+          "duration": 45
+        },
+        {
+          "ancestorTitles": ["integration"],
+          "fullName": "integration handles tool call",
+          "status": "passed",
+          "title": "handles tool call",
+          "duration": 12
+        },
+        {
+          "ancestorTitles": ["integration"],
+          "fullName": "integration validates output schema",
+          "status": "passed",
+          "title": "validates output schema",
+          "duration": 8
+        },
+        {
+          "ancestorTitles": ["integration"],
+          "fullName": "integration handles errors gracefully",
+          "status": "passed",
+          "title": "handles errors gracefully",
+          "duration": 5
+        }
+      ],
+      "startTime": 1708272000300,
+      "endTime": 1708272000400,
+      "status": "passed",
+      "message": "",
+      "name": "/project/src/__tests__/integration.test.ts"
+    }
+  ]
+}
