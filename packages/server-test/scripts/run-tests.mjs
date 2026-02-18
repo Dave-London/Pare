@@ -1,12 +1,13 @@
 import { spawnSync } from "node:child_process";
-
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const rawArgs = process.argv.slice(2);
 const forwardedArgs = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
 const hasCoverage = forwardedArgs.includes("--coverage");
 
 function run(args) {
-  const result = spawnSync(pnpmCommand, args, { stdio: "inherit" });
+  const result = spawnSync("pnpm", args, {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
 
   if (result.error) {
     throw result.error;
