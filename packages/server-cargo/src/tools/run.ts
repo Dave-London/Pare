@@ -125,10 +125,6 @@ export function registerRunTool(server: McpServer) {
       if (example) assertNoFlagInjection(example, "example");
       if (profile) assertNoFlagInjection(profile, "profile");
       if (target) assertNoFlagInjection(target, "target");
-      // Defense-in-depth: validate args even though they come after "--" separator
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const cargoArgs = ["run"];
       if (release) cargoArgs.push("--release");

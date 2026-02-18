@@ -109,9 +109,6 @@ export function registerInstallTool(server: McpServer) {
       packageManager,
       filter,
     }) => {
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       if (filter) assertNoFlagInjection(filter, "filter");
       if (registry) assertNoFlagInjection(registry, "registry");
 

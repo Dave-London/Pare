@@ -100,9 +100,6 @@ export function registerWebpackTool(server: McpServer) {
       if (entry) assertNoFlagInjection(entry, "entry");
       if (target) assertNoFlagInjection(target, "target");
       if (devtool) assertNoFlagInjection(devtool, "devtool");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       // Validate env keys and values (Gap #84)
       const envRecord = env as Record<string, string> | undefined;

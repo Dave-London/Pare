@@ -210,9 +210,6 @@ export function registerEsbuildTool(server: McpServer) {
         cliArgs.push(`--metafile=${metafilePath}`);
       }
 
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       if (args) {
         cliArgs.push(...args);
       }

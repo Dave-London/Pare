@@ -60,9 +60,6 @@ export function registerBuildTool(server: McpServer) {
     async ({ command, args, path, timeout, env, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       // Validate env values to prevent flag injection
       const envRecord = env as Record<string, string> | undefined;
       if (envRecord) {

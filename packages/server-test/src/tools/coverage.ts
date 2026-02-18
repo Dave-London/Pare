@@ -254,9 +254,6 @@ export function registerCoverageTool(server: McpServer) {
       outputSchema: CoverageSchema,
     },
     async ({ path, framework, branch, all, filter, source, exclude, failUnder, args, compact }) => {
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       for (const s of source ?? []) {
         assertNoFlagInjection(s, "source");
       }

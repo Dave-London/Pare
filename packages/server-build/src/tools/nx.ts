@@ -121,9 +121,6 @@ export function registerNxTool(server: McpServer) {
       if (base) assertNoFlagInjection(base, "base");
       if (head) assertNoFlagInjection(head, "head");
       if (configuration) assertNoFlagInjection(configuration, "configuration");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const cliArgs: string[] = [];
 

@@ -93,9 +93,6 @@ export function registerRunTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       assertNoFlagInjection(script, "script");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
       if (filter) assertNoFlagInjection(filter, "filter");
       if (scriptShell) assertNoFlagInjection(scriptShell, "scriptShell");
 

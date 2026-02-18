@@ -101,9 +101,6 @@ export function registerViteBuildTool(server: McpServer) {
       if (config) assertNoFlagInjection(config, "config");
       if (base) assertNoFlagInjection(base, "base");
       if (ssr) assertNoFlagInjection(ssr, "ssr");
-      for (const a of args ?? []) {
-        assertNoFlagInjection(a, "args");
-      }
 
       const cliArgs: string[] = [];
 
