@@ -1,0 +1,4 @@
+src/main.py:10: error: Incompatible return value type (got "str", expected "int")  [return-value]
+src/main.py:15: error: Argument 1 to "foo" has incompatible type "str"; expected "int"  [arg-type]
+src/utils.py:8: note: Revealed type is "builtins.str"
+Found 2 errors in 2 files (checked 5 source files)

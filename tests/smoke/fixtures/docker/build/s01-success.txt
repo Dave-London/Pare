@@ -1,0 +1,14 @@
+#1 [internal] load build definition from Dockerfile
+#1 DONE 0.0s
+#2 [internal] load .dockerignore
+#2 DONE 0.0s
+#3 [1/3] FROM docker.io/library/node:20-slim@sha256:abc123 CACHED
+#4 [2/3] COPY package.json ./
+#4 DONE 0.1s
+#5 [3/3] RUN npm install
+#5 DONE 5.2s
+#6 exporting to image
+#6 exporting layers done
+#6 writing image sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2 done
+#6 naming to docker.io/library/myapp:latest done
+#6 DONE 0.3s

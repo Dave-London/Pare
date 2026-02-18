@@ -136,21 +136,21 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                            | Expected Output                                     | Priority | Status |
-| --- | -------------------------------- | --------------------------------- | --------------------------------------------------- | -------- | ------ |
-| 1   | Successful build                 | `{ path }`                        | `{ success: true, errors: 0, warnings: N }`         | P0       | mocked |
-| 2   | Build with errors                | `{ path }` (broken project)       | `{ success: false, diagnostics: [...], errors: N }` | P0       | mocked |
-| 3   | No Cargo.toml                    | `{ path: "/tmp/empty" }`          | Error thrown                                        | P0       | mocked |
-| 4   | Flag injection on `package`      | `{ package: "--exec=evil" }`      | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 5   | Flag injection on `target`       | `{ target: "--exec=evil" }`       | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 6   | Flag injection on `profile`      | `{ profile: "--exec=evil" }`      | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 7   | Flag injection on `manifestPath` | `{ manifestPath: "--exec=evil" }` | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 8   | Flag injection on `features`     | `{ features: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                      | P0       | mocked |
-| 9   | Release build                    | `{ path, release: true }`         | `{ success: true }`                                 | P1       | mocked |
-| 10  | Build with features              | `{ path, features: ["serde"] }`   | `{ success: true }`                                 | P1       | mocked |
-| 11  | Keep going on errors             | `{ path, keepGoing: true }`       | Collects all diagnostics                            | P1       | mocked |
-| 12  | Build with timings               | `{ path, timings: true }`         | `{ timings: { generated: true } }`                  | P2       | mocked |
-| 13  | Schema validation                | all                               | Zod parse succeeds against `CargoBuildResultSchema` | P0       | mocked |
+| #   | Scenario                         | Params                            | Expected Output                                     | Priority | Status   |
+| --- | -------------------------------- | --------------------------------- | --------------------------------------------------- | -------- | -------- |
+| 1   | Successful build                 | `{ path }`                        | `{ success: true, errors: 0, warnings: N }`         | P0       | complete |
+| 2   | Build with errors                | `{ path }` (broken project)       | `{ success: false, diagnostics: [...], errors: N }` | P0       | complete |
+| 3   | No Cargo.toml                    | `{ path: "/tmp/empty" }`          | Error thrown                                        | P0       | mocked   |
+| 4   | Flag injection on `package`      | `{ package: "--exec=evil" }`      | `assertNoFlagInjection` throws                      | P0       | mocked   |
+| 5   | Flag injection on `target`       | `{ target: "--exec=evil" }`       | `assertNoFlagInjection` throws                      | P0       | mocked   |
+| 6   | Flag injection on `profile`      | `{ profile: "--exec=evil" }`      | `assertNoFlagInjection` throws                      | P0       | mocked   |
+| 7   | Flag injection on `manifestPath` | `{ manifestPath: "--exec=evil" }` | `assertNoFlagInjection` throws                      | P0       | mocked   |
+| 8   | Flag injection on `features`     | `{ features: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                      | P0       | mocked   |
+| 9   | Release build                    | `{ path, release: true }`         | `{ success: true }`                                 | P1       | mocked   |
+| 10  | Build with features              | `{ path, features: ["serde"] }`   | `{ success: true }`                                 | P1       | mocked   |
+| 11  | Keep going on errors             | `{ path, keepGoing: true }`       | Collects all diagnostics                            | P1       | mocked   |
+| 12  | Build with timings               | `{ path, timings: true }`         | `{ timings: { generated: true } }`                  | P2       | mocked   |
+| 13  | Schema validation                | all                               | Zod parse succeeds against `CargoBuildResultSchema` | P0       | mocked   |
 
 ### Summary: 13 scenarios (P0: 8, P1: 3, P2: 1)
 
@@ -229,21 +229,21 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                    | Expected Output                                       | Priority | Status |
-| --- | ---------------------------- | ----------------------------------------- | ----------------------------------------------------- | -------- | ------ |
-| 1   | Clean project                | `{ path }`                                | `{ success: true, total: 0, errors: 0, warnings: 0 }` | P0       | mocked |
-| 2   | Project with lint warnings   | `{ path }`                                | `{ diagnostics: [...], warnings: N }`                 | P0       | mocked |
-| 3   | No Cargo.toml                | `{ path: "/tmp/empty" }`                  | Error thrown                                          | P0       | mocked |
-| 4   | Flag injection on `package`  | `{ package: "--exec=evil" }`              | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 5   | Flag injection on `features` | `{ features: ["--exec=evil"] }`           | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 6   | Flag injection on `warn`     | `{ warn: ["--exec=evil"] }`               | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 7   | Flag injection on `allow`    | `{ allow: ["--exec=evil"] }`              | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 8   | Flag injection on `deny`     | `{ deny: ["--exec=evil"] }`               | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 9   | Flag injection on `forbid`   | `{ forbid: ["--exec=evil"] }`             | `assertNoFlagInjection` throws                        | P0       | mocked |
-| 10  | Deny specific lint           | `{ path, deny: ["clippy::unwrap_used"] }` | Those lints become errors                             | P1       | mocked |
-| 11  | Fix mode                     | `{ path, fix: true }`                     | Auto-applied suggestions                              | P1       | mocked |
-| 12  | Suggestion text              | `{ path }`                                | `diagnostics[].suggestion` populated where applicable | P1       | mocked |
-| 13  | Schema validation            | all                                       | Zod parse succeeds against `CargoClippyResultSchema`  | P0       | mocked |
+| #   | Scenario                     | Params                                    | Expected Output                                       | Priority | Status   |
+| --- | ---------------------------- | ----------------------------------------- | ----------------------------------------------------- | -------- | -------- |
+| 1   | Clean project                | `{ path }`                                | `{ success: true, total: 0, errors: 0, warnings: 0 }` | P0       | complete |
+| 2   | Project with lint warnings   | `{ path }`                                | `{ diagnostics: [...], warnings: N }`                 | P0       | complete |
+| 3   | No Cargo.toml                | `{ path: "/tmp/empty" }`                  | Error thrown                                          | P0       | mocked   |
+| 4   | Flag injection on `package`  | `{ package: "--exec=evil" }`              | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 5   | Flag injection on `features` | `{ features: ["--exec=evil"] }`           | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 6   | Flag injection on `warn`     | `{ warn: ["--exec=evil"] }`               | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 7   | Flag injection on `allow`    | `{ allow: ["--exec=evil"] }`              | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 8   | Flag injection on `deny`     | `{ deny: ["--exec=evil"] }`               | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 9   | Flag injection on `forbid`   | `{ forbid: ["--exec=evil"] }`             | `assertNoFlagInjection` throws                        | P0       | mocked   |
+| 10  | Deny specific lint           | `{ path, deny: ["clippy::unwrap_used"] }` | Those lints become errors                             | P1       | mocked   |
+| 11  | Fix mode                     | `{ path, fix: true }`                     | Auto-applied suggestions                              | P1       | mocked   |
+| 12  | Suggestion text              | `{ path }`                                | `diagnostics[].suggestion` populated where applicable | P1       | mocked   |
+| 13  | Schema validation            | all                                       | Zod parse succeeds against `CargoClippyResultSchema`  | P0       | mocked   |
 
 ### Summary: 13 scenarios (P0: 9, P1: 3, P2: 0)
 
@@ -316,18 +316,18 @@
 
 ### Scenarios
 
-| #   | Scenario                       | Params                                     | Expected Output                                              | Priority | Status |
-| --- | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------ | -------- | ------ |
-| 1   | Already formatted              | `{ path }`                                 | `{ success: true, needsFormatting: false, filesChanged: 0 }` | P0       | mocked |
-| 2   | Files need formatting          | `{ path }`                                 | `{ success: true, filesChanged: N, files: [...] }`           | P0       | mocked |
-| 3   | Check mode with violations     | `{ path, check: true }`                    | `{ success: false, needsFormatting: true }`                  | P0       | mocked |
-| 4   | No Cargo.toml                  | `{ path: "/tmp/empty" }`                   | Error thrown                                                 | P0       | mocked |
-| 5   | Flag injection on `package`    | `{ package: "--exec=evil" }`               | `assertNoFlagInjection` throws                               | P0       | mocked |
-| 6   | Flag injection on `configPath` | `{ configPath: "--exec=evil" }`            | `assertNoFlagInjection` throws                               | P0       | mocked |
-| 7   | Check with diff output         | `{ path, check: true, includeDiff: true }` | `{ diff: "..." }`                                            | P1       | mocked |
-| 8   | Format workspace               | `{ path, all: true }`                      | All packages formatted                                       | P1       | mocked |
-| 9   | Custom edition                 | `{ path, edition: "2021" }`                | Uses edition-specific rules                                  | P2       | mocked |
-| 10  | Schema validation              | all                                        | Zod parse succeeds against `CargoFmtResultSchema`            | P0       | mocked |
+| #   | Scenario                       | Params                                     | Expected Output                                              | Priority | Status   |
+| --- | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------ | -------- | -------- |
+| 1   | Already formatted              | `{ path }`                                 | `{ success: true, needsFormatting: false, filesChanged: 0 }` | P0       | complete |
+| 2   | Files need formatting          | `{ path }`                                 | `{ success: true, filesChanged: N, files: [...] }`           | P0       | complete |
+| 3   | Check mode with violations     | `{ path, check: true }`                    | `{ success: false, needsFormatting: true }`                  | P0       | mocked   |
+| 4   | No Cargo.toml                  | `{ path: "/tmp/empty" }`                   | Error thrown                                                 | P0       | mocked   |
+| 5   | Flag injection on `package`    | `{ package: "--exec=evil" }`               | `assertNoFlagInjection` throws                               | P0       | mocked   |
+| 6   | Flag injection on `configPath` | `{ configPath: "--exec=evil" }`            | `assertNoFlagInjection` throws                               | P0       | mocked   |
+| 7   | Check with diff output         | `{ path, check: true, includeDiff: true }` | `{ diff: "..." }`                                            | P1       | mocked   |
+| 8   | Format workspace               | `{ path, all: true }`                      | All packages formatted                                       | P1       | mocked   |
+| 9   | Custom edition                 | `{ path, edition: "2021" }`                | Uses edition-specific rules                                  | P2       | mocked   |
+| 10  | Schema validation              | all                                        | Zod parse succeeds against `CargoFmtResultSchema`            | P0       | mocked   |
 
 ### Summary: 10 scenarios (P0: 6, P1: 2, P2: 1)
 
@@ -454,20 +454,20 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                              | Expected Output                                                    | Priority | Status |
-| --- | ---------------------------- | ----------------------------------- | ------------------------------------------------------------------ | -------- | ------ |
-| 1   | All tests pass               | `{ path }`                          | `{ success: true, passed: N, failed: 0, total: N }`                | P0       | mocked |
-| 2   | Tests with failures          | `{ path }`                          | `{ success: false, tests: [{ status: "FAILED", output: "..." }] }` | P0       | mocked |
-| 3   | No tests found               | `{ path }` (no tests)               | `{ success: true, total: 0 }`                                      | P0       | mocked |
-| 4   | Compilation failure          | `{ path }` (broken)                 | `{ success: false, compilationDiagnostics: [...] }`                | P0       | mocked |
-| 5   | Flag injection on `filter`   | `{ filter: "--exec=evil" }`         | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 6   | Flag injection on `package`  | `{ package: "--exec=evil" }`        | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 7   | Flag injection on `features` | `{ features: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 8   | Filter specific test         | `{ path, filter: "test_name" }`     | Only matching tests                                                | P1       | mocked |
-| 9   | Doc tests only               | `{ path, doc: true }`               | Only doc tests                                                     | P1       | mocked |
-| 10  | Ignored tests                | `{ path, testArgs: ["--ignored"] }` | Runs ignored tests                                                 | P1       | mocked |
-| 11  | Test duration tracking       | `{ path }`                          | `{ duration: "..." }` populated                                    | P2       | mocked |
-| 12  | Schema validation            | all                                 | Zod parse succeeds against `CargoTestResultSchema`                 | P0       | mocked |
+| #   | Scenario                     | Params                              | Expected Output                                                    | Priority | Status   |
+| --- | ---------------------------- | ----------------------------------- | ------------------------------------------------------------------ | -------- | -------- |
+| 1   | All tests pass               | `{ path }`                          | `{ success: true, passed: N, failed: 0, total: N }`                | P0       | complete |
+| 2   | Tests with failures          | `{ path }`                          | `{ success: false, tests: [{ status: "FAILED", output: "..." }] }` | P0       | complete |
+| 3   | No tests found               | `{ path }` (no tests)               | `{ success: true, total: 0 }`                                      | P0       | mocked   |
+| 4   | Compilation failure          | `{ path }` (broken)                 | `{ success: false, compilationDiagnostics: [...] }`                | P0       | mocked   |
+| 5   | Flag injection on `filter`   | `{ filter: "--exec=evil" }`         | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 6   | Flag injection on `package`  | `{ package: "--exec=evil" }`        | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 7   | Flag injection on `features` | `{ features: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 8   | Filter specific test         | `{ path, filter: "test_name" }`     | Only matching tests                                                | P1       | mocked   |
+| 9   | Doc tests only               | `{ path, doc: true }`               | Only doc tests                                                     | P1       | mocked   |
+| 10  | Ignored tests                | `{ path, testArgs: ["--ignored"] }` | Runs ignored tests                                                 | P1       | mocked   |
+| 11  | Test duration tracking       | `{ path }`                          | `{ duration: "..." }` populated                                    | P2       | mocked   |
+| 12  | Schema validation            | all                                 | Zod parse succeeds against `CargoTestResultSchema`                 | P0       | mocked   |
 
 ### Summary: 12 scenarios (P0: 7, P1: 3, P2: 1)
 
@@ -503,20 +503,20 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                          | Expected Output                                                    | Priority | Status |
-| --- | ---------------------------- | ------------------------------- | ------------------------------------------------------------------ | -------- | ------ |
-| 1   | Display dependency tree      | `{ path }`                      | `{ success: true, dependencies: [...], packages: N, tree: "..." }` | P0       | mocked |
-| 2   | No Cargo.toml                | `{ path: "/tmp/empty" }`        | Error thrown                                                       | P0       | mocked |
-| 3   | Flag injection on `package`  | `{ package: "--exec=evil" }`    | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 4   | Flag injection on `prune`    | `{ prune: "--exec=evil" }`      | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 5   | Flag injection on `invert`   | `{ invert: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 6   | Flag injection on `format`   | `{ format: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 7   | Flag injection on `target`   | `{ target: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 8   | Flag injection on `features` | `{ features: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                     | P0       | mocked |
-| 9   | Depth limit                  | `{ path, depth: 1 }`            | Only direct deps                                                   | P1       | mocked |
-| 10  | Show duplicates              | `{ path, duplicates: true }`    | Only multiply-versioned deps                                       | P1       | mocked |
-| 11  | Invert tree                  | `{ path, invert: "serde" }`     | Reverse dependency chain                                           | P1       | mocked |
-| 12  | Schema validation            | all                             | Zod parse succeeds against `CargoTreeResultSchema`                 | P0       | mocked |
+| #   | Scenario                     | Params                          | Expected Output                                                    | Priority | Status   |
+| --- | ---------------------------- | ------------------------------- | ------------------------------------------------------------------ | -------- | -------- |
+| 1   | Display dependency tree      | `{ path }`                      | `{ success: true, dependencies: [...], packages: N, tree: "..." }` | P0       | complete |
+| 2   | No Cargo.toml                | `{ path: "/tmp/empty" }`        | Error thrown                                                       | P0       | mocked   |
+| 3   | Flag injection on `package`  | `{ package: "--exec=evil" }`    | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 4   | Flag injection on `prune`    | `{ prune: "--exec=evil" }`      | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 5   | Flag injection on `invert`   | `{ invert: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 6   | Flag injection on `format`   | `{ format: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 7   | Flag injection on `target`   | `{ target: "--exec=evil" }`     | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 8   | Flag injection on `features` | `{ features: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                     | P0       | mocked   |
+| 9   | Depth limit                  | `{ path, depth: 1 }`            | Only direct deps                                                   | P1       | mocked   |
+| 10  | Show duplicates              | `{ path, duplicates: true }`    | Only multiply-versioned deps                                       | P1       | mocked   |
+| 11  | Invert tree                  | `{ path, invert: "serde" }`     | Reverse dependency chain                                           | P1       | mocked   |
+| 12  | Schema validation            | all                             | Zod parse succeeds against `CargoTreeResultSchema`                 | P0       | mocked   |
 
 ### Summary: 12 scenarios (P0: 9, P1: 3, P2: 0)
 

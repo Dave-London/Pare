@@ -1,0 +1,1 @@
+{"GOARCH":"amd64","GOBIN":"","GOCACHE":"/home/user/.cache/go-build","GOMODCACHE":"/home/user/go/pkg/mod","GOPATH":"/home/user/go","GOROOT":"/usr/local/go","GOTOOLDIR":"/usr/local/go/pkg/tool/linux_amd64","GOVERSION":"go1.22.0","GOOS":"linux","CGO_ENABLED":"1"}

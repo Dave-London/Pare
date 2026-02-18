@@ -1,0 +1,3 @@
+# my-app
+./main.go:10:2: undefined: foo
+./main.go:15:5: cannot use "hello" (untyped string constant) as int value in assignment

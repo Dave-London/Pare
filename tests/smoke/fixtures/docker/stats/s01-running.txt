@@ -1,0 +1,1 @@
+{"Container":"abc123","Name":"my-nginx","CPUPerc":"0.50%","MemUsage":"25.5MiB / 7.77GiB","MemPerc":"0.32%","NetIO":"1.2kB / 0B","BlockIO":"8.19kB / 0B","PIDs":"3"}

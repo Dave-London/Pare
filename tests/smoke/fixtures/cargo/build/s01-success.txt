@@ -1,0 +1,2 @@
+{"reason":"compiler-artifact","package_id":"my-app 0.1.0 (path+file:///project)","target":{"kind":["bin"],"name":"my-app","src_path":"/project/src/main.rs"},"profile":{"opt_level":"0","debuginfo":2},"filenames":["/project/target/debug/my-app"],"fresh":false}
+{"reason":"build-finished","success":true}

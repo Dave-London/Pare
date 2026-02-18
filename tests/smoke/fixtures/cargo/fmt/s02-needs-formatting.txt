@@ -1,0 +1,8 @@
+Diff in /project/src/main.rs at line 5:
+-    let x=1;
++    let x = 1;
+
+Diff in /project/src/lib.rs at line 12:
+-    fn   foo(){
++    fn foo() {
+

@@ -1,0 +1,2 @@
+{"ID":"sha256:abc123","Repository":"nginx","Tag":"latest","Size":"187MB","CreatedAt":"2026-02-10T10:00:00Z","CreatedSince":"8 days ago"}
+{"ID":"sha256:def456","Repository":"postgres","Tag":"15","Size":"412MB","CreatedAt":"2026-02-08T08:00:00Z","CreatedSince":"10 days ago"}

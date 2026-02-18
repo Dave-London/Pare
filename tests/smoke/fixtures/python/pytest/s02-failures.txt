@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-8.0.0, pluggy-1.4.0
+rootdir: /project
+collected 5 items
+
+tests/test_main.py ...F.                                                 [100%]
+
+=================================== FAILURES ===================================
+________________________________ test_subtract _________________________________
+
+    def test_subtract():
+>       assert subtract(5, 3) == 3
+E       assert 2 == 3
+E        +  where 2 = subtract(5, 3)
+
+tests/test_main.py:15: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_main.py::test_subtract - assert 2 == 3
+========================= 1 failed, 4 passed in 0.15s =========================

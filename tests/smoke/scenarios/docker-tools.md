@@ -30,23 +30,23 @@
 
 ### Scenarios
 
-| #   | Scenario                                | Params                                             | Expected Output                                         | Priority | Status |
-| --- | --------------------------------------- | -------------------------------------------------- | ------------------------------------------------------- | -------- | ------ |
-| 1   | Successful build with tag               | `{ path, tag: "myapp:latest" }`                    | `{ success: true, imageId: "sha256:...", duration: N }` | P0       | mocked |
-| 2   | Build with multiple tags                | `{ path, tag: ["myapp:latest", "myapp:v1"] }`      | `{ success: true }`, both tags applied                  | P1       | mocked |
-| 3   | Build failure (bad Dockerfile)          | `{ path, file: "nonexistent.Dockerfile" }`         | `{ success: false, errors: [...] }`                     | P0       | mocked |
-| 4   | Empty output (no Dockerfile in context) | `{ path: "/tmp/empty-dir" }`                       | Error thrown or `{ success: false }`                    | P0       | mocked |
-| 5   | Flag injection on `tag`                 | `{ tag: "--exec=evil" }`                           | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 6   | Flag injection on `file`                | `{ file: "--exec=evil" }`                          | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 7   | Flag injection on `target`              | `{ target: "--exec=evil" }`                        | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 8   | Flag injection on `platform`            | `{ platform: "--exec=evil" }`                      | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 9   | Flag injection on `buildArgs`           | `{ buildArgs: ["--exec=evil"] }`                   | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 10  | Flag injection on `label`               | `{ label: ["--exec=evil"] }`                       | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 11  | Flag injection on `args`                | `{ args: ["--exec=evil"] }`                        | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 12  | Build with noCache and pull             | `{ path, tag: "test", noCache: true, pull: true }` | `{ success: true }` with fresh layers                   | P1       | mocked |
-| 13  | Build with target (multi-stage)         | `{ path, target: "builder" }`                      | `{ success: true }`                                     | P1       | mocked |
-| 14  | Build with buildArgs                    | `{ path, buildArgs: ["NODE_ENV=production"] }`     | `{ success: true }`                                     | P1       | mocked |
-| 15  | Schema validation                       | all                                                | Zod parse succeeds against `DockerBuildSchema`          | P0       | mocked |
+| #   | Scenario                                | Params                                             | Expected Output                                         | Priority | Status   |
+| --- | --------------------------------------- | -------------------------------------------------- | ------------------------------------------------------- | -------- | -------- |
+| 1   | Successful build with tag               | `{ path, tag: "myapp:latest" }`                    | `{ success: true, imageId: "sha256:...", duration: N }` | P0       | complete |
+| 2   | Build with multiple tags                | `{ path, tag: ["myapp:latest", "myapp:v1"] }`      | `{ success: true }`, both tags applied                  | P1       | mocked   |
+| 3   | Build failure (bad Dockerfile)          | `{ path, file: "nonexistent.Dockerfile" }`         | `{ success: false, errors: [...] }`                     | P0       | mocked   |
+| 4   | Empty output (no Dockerfile in context) | `{ path: "/tmp/empty-dir" }`                       | Error thrown or `{ success: false }`                    | P0       | mocked   |
+| 5   | Flag injection on `tag`                 | `{ tag: "--exec=evil" }`                           | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 6   | Flag injection on `file`                | `{ file: "--exec=evil" }`                          | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 7   | Flag injection on `target`              | `{ target: "--exec=evil" }`                        | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 8   | Flag injection on `platform`            | `{ platform: "--exec=evil" }`                      | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 9   | Flag injection on `buildArgs`           | `{ buildArgs: ["--exec=evil"] }`                   | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 10  | Flag injection on `label`               | `{ label: ["--exec=evil"] }`                       | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 11  | Flag injection on `args`                | `{ args: ["--exec=evil"] }`                        | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 12  | Build with noCache and pull             | `{ path, tag: "test", noCache: true, pull: true }` | `{ success: true }` with fresh layers                   | P1       | mocked   |
+| 13  | Build with target (multi-stage)         | `{ path, target: "builder" }`                      | `{ success: true }`                                     | P1       | mocked   |
+| 14  | Build with buildArgs                    | `{ path, buildArgs: ["NODE_ENV=production"] }`     | `{ success: true }`                                     | P1       | mocked   |
+| 15  | Schema validation                       | all                                                | Zod parse succeeds against `DockerBuildSchema`          | P0       | mocked   |
 
 ### Summary: 15 scenarios (P0: 8, P1: 4, P2: 0)
 
@@ -329,16 +329,16 @@
 
 ### Scenarios
 
-| #   | Scenario                       | Params                            | Expected Output                                 | Priority | Status |
-| --- | ------------------------------ | --------------------------------- | ----------------------------------------------- | -------- | ------ |
-| 1   | List all images                | `{}`                              | `{ images: [...], total: N }`                   | P0       | mocked |
-| 2   | No images present              | `{}`                              | `{ images: [], total: 0 }`                      | P0       | mocked |
-| 3   | Flag injection on `reference`  | `{ reference: "--exec=evil" }`    | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 4   | Flag injection on `filterExpr` | `{ filterExpr: "--exec=evil" }`   | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 5   | Filter by reference            | `{ reference: "nginx" }`          | Only nginx images                               | P1       | mocked |
-| 6   | Filter with filterExpr         | `{ filterExpr: "dangling=true" }` | Only dangling images                            | P1       | mocked |
-| 7   | Show digests                   | `{ digests: true }`               | `digest` field populated                        | P2       | mocked |
-| 8   | Schema validation              | all                               | Zod parse succeeds against `DockerImagesSchema` | P0       | mocked |
+| #   | Scenario                       | Params                            | Expected Output                                 | Priority | Status   |
+| --- | ------------------------------ | --------------------------------- | ----------------------------------------------- | -------- | -------- |
+| 1   | List all images                | `{}`                              | `{ images: [...], total: N }`                   | P0       | complete |
+| 2   | No images present              | `{}`                              | `{ images: [], total: 0 }`                      | P0       | mocked   |
+| 3   | Flag injection on `reference`  | `{ reference: "--exec=evil" }`    | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 4   | Flag injection on `filterExpr` | `{ filterExpr: "--exec=evil" }`   | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 5   | Filter by reference            | `{ reference: "nginx" }`          | Only nginx images                               | P1       | mocked   |
+| 6   | Filter with filterExpr         | `{ filterExpr: "dangling=true" }` | Only dangling images                            | P1       | mocked   |
+| 7   | Show digests                   | `{ digests: true }`               | `digest` field populated                        | P2       | mocked   |
+| 8   | Schema validation              | all                               | Zod parse succeeds against `DockerImagesSchema` | P0       | mocked   |
 
 ### Summary: 8 scenarios (P0: 4, P1: 2, P2: 1)
 
@@ -399,18 +399,18 @@
 
 ### Scenarios
 
-| #   | Scenario                      | Params                                     | Expected Output                                        | Priority | Status |
-| --- | ----------------------------- | ------------------------------------------ | ------------------------------------------------------ | -------- | ------ |
-| 1   | Get container logs            | `{ container: "mycontainer" }`             | `{ container: "mycontainer", lines: [...], total: N }` | P0       | mocked |
-| 2   | Container with no logs        | `{ container: "empty" }`                   | `{ total: 0 }`                                         | P0       | mocked |
-| 3   | Container not found           | `{ container: "nonexistent" }`             | Error thrown                                           | P0       | mocked |
-| 4   | Flag injection on `container` | `{ container: "--exec=evil" }`             | `assertNoFlagInjection` throws                         | P0       | mocked |
-| 5   | Flag injection on `since`     | `{ container: "c", since: "--exec=evil" }` | `assertNoFlagInjection` throws                         | P0       | mocked |
-| 6   | Flag injection on `until`     | `{ container: "c", until: "--exec=evil" }` | `assertNoFlagInjection` throws                         | P0       | mocked |
-| 7   | Logs with tail                | `{ container: "c", tail: 10 }`             | At most 10 lines                                       | P1       | mocked |
-| 8   | Logs with limit truncation    | `{ container: "c", limit: 5 }`             | `{ isTruncated: true }`                                | P1       | mocked |
-| 9   | Logs with timestamps          | `{ container: "c", timestamps: true }`     | `entries[].timestamp` populated                        | P1       | mocked |
-| 10  | Schema validation             | all                                        | Zod parse succeeds against `DockerLogsSchema`          | P0       | mocked |
+| #   | Scenario                      | Params                                     | Expected Output                                        | Priority | Status   |
+| --- | ----------------------------- | ------------------------------------------ | ------------------------------------------------------ | -------- | -------- |
+| 1   | Get container logs            | `{ container: "mycontainer" }`             | `{ container: "mycontainer", lines: [...], total: N }` | P0       | complete |
+| 2   | Container with no logs        | `{ container: "empty" }`                   | `{ total: 0 }`                                         | P0       | mocked   |
+| 3   | Container not found           | `{ container: "nonexistent" }`             | Error thrown                                           | P0       | mocked   |
+| 4   | Flag injection on `container` | `{ container: "--exec=evil" }`             | `assertNoFlagInjection` throws                         | P0       | mocked   |
+| 5   | Flag injection on `since`     | `{ container: "c", since: "--exec=evil" }` | `assertNoFlagInjection` throws                         | P0       | mocked   |
+| 6   | Flag injection on `until`     | `{ container: "c", until: "--exec=evil" }` | `assertNoFlagInjection` throws                         | P0       | mocked   |
+| 7   | Logs with tail                | `{ container: "c", tail: 10 }`             | At most 10 lines                                       | P1       | mocked   |
+| 8   | Logs with limit truncation    | `{ container: "c", limit: 5 }`             | `{ isTruncated: true }`                                | P1       | mocked   |
+| 9   | Logs with timestamps          | `{ container: "c", timestamps: true }`     | `entries[].timestamp` populated                        | P1       | mocked   |
+| 10  | Schema validation             | all                                        | Zod parse succeeds against `DockerLogsSchema`          | P0       | mocked   |
 
 ### Summary: 10 scenarios (P0: 6, P1: 3, P2: 0)
 
@@ -433,14 +433,14 @@
 
 ### Scenarios
 
-| #   | Scenario                          | Params                                         | Expected Output                                                       | Priority | Status |
-| --- | --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | -------- | ------ |
-| 1   | List all networks                 | `{}`                                           | `{ networks: [...], total: N }` (includes default bridge, host, none) | P0       | mocked |
-| 2   | Empty output (no custom networks) | `{}`                                           | `{ networks: [...], total: >= 3 }` (defaults always exist)            | P0       | mocked |
-| 3   | Flag injection on `filter`        | `{ filter: "--exec=evil" }`                    | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 4   | Filter by driver                  | `{ filter: "driver=bridge" }`                  | Only bridge networks                                                  | P1       | mocked |
-| 5   | Multiple filters                  | `{ filter: ["driver=bridge", "scope=local"] }` | Intersection of filters                                               | P1       | mocked |
-| 6   | Schema validation                 | all                                            | Zod parse succeeds against `DockerNetworkLsSchema`                    | P0       | mocked |
+| #   | Scenario                          | Params                                         | Expected Output                                                       | Priority | Status   |
+| --- | --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | -------- | -------- |
+| 1   | List all networks                 | `{}`                                           | `{ networks: [...], total: N }` (includes default bridge, host, none) | P0       | complete |
+| 2   | Empty output (no custom networks) | `{}`                                           | `{ networks: [...], total: >= 3 }` (defaults always exist)            | P0       | mocked   |
+| 3   | Flag injection on `filter`        | `{ filter: "--exec=evil" }`                    | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 4   | Filter by driver                  | `{ filter: "driver=bridge" }`                  | Only bridge networks                                                  | P1       | mocked   |
+| 5   | Multiple filters                  | `{ filter: ["driver=bridge", "scope=local"] }` | Intersection of filters                                               | P1       | mocked   |
+| 6   | Schema validation                 | all                                            | Zod parse succeeds against `DockerNetworkLsSchema`                    | P0       | mocked   |
 
 ### Summary: 6 scenarios (P0: 4, P1: 2, P2: 0)
 
@@ -464,15 +464,15 @@
 
 ### Scenarios
 
-| #   | Scenario                   | Params                         | Expected Output                                           | Priority | Status |
-| --- | -------------------------- | ------------------------------ | --------------------------------------------------------- | -------- | ------ |
-| 1   | List containers            | `{}`                           | `{ containers: [...], total: N, running: N, stopped: N }` | P0       | mocked |
-| 2   | No containers              | `{}`                           | `{ containers: [], total: 0, running: 0, stopped: 0 }`    | P0       | mocked |
-| 3   | Flag injection on `filter` | `{ filter: "--exec=evil" }`    | `assertNoFlagInjection` throws                            | P0       | mocked |
-| 4   | Filter by status           | `{ filter: "status=running" }` | Only running containers                                   | P1       | mocked |
-| 5   | Show last N                | `{ last: 1 }`                  | At most 1 container                                       | P1       | mocked |
-| 6   | Show sizes                 | `{ size: true }`               | Size info in output                                       | P2       | mocked |
-| 7   | Schema validation          | all                            | Zod parse succeeds against `DockerPsSchema`               | P0       | mocked |
+| #   | Scenario                   | Params                         | Expected Output                                           | Priority | Status   |
+| --- | -------------------------- | ------------------------------ | --------------------------------------------------------- | -------- | -------- |
+| 1   | List containers            | `{}`                           | `{ containers: [...], total: N, running: N, stopped: N }` | P0       | complete |
+| 2   | No containers              | `{}`                           | `{ containers: [], total: 0, running: 0, stopped: 0 }`    | P0       | complete |
+| 3   | Flag injection on `filter` | `{ filter: "--exec=evil" }`    | `assertNoFlagInjection` throws                            | P0       | mocked   |
+| 4   | Filter by status           | `{ filter: "status=running" }` | Only running containers                                   | P1       | mocked   |
+| 5   | Show last N                | `{ last: 1 }`                  | At most 1 container                                       | P1       | mocked   |
+| 6   | Show sizes                 | `{ size: true }`               | Size info in output                                       | P2       | mocked   |
+| 7   | Schema validation          | all                            | Zod parse succeeds against `DockerPsSchema`               | P0       | mocked   |
 
 ### Summary: 7 scenarios (P0: 4, P1: 2, P2: 1)
 
@@ -497,15 +497,15 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                         | Expected Output                                                       | Priority | Status |
-| --- | ---------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | -------- | ------ |
-| 1   | Pull existing image          | `{ image: "alpine:latest" }`                   | `{ status: "pulled", success: true, image: "alpine", tag: "latest" }` | P0       | mocked |
-| 2   | Pull already up-to-date      | `{ image: "alpine:latest" }`                   | `{ status: "up-to-date", success: true }`                             | P0       | mocked |
-| 3   | Pull nonexistent image       | `{ image: "nonexistent/image:99" }`            | `{ status: "error", success: false, errorType: "not-found" }`         | P0       | mocked |
-| 4   | Flag injection on `image`    | `{ image: "--exec=evil" }`                     | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 5   | Flag injection on `platform` | `{ image: "alpine", platform: "--exec=evil" }` | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 6   | Pull with platform           | `{ image: "alpine", platform: "linux/arm64" }` | `{ success: true }`                                                   | P1       | mocked |
-| 7   | Schema validation            | all                                            | Zod parse succeeds against `DockerPullSchema`                         | P0       | mocked |
+| #   | Scenario                     | Params                                         | Expected Output                                                       | Priority | Status   |
+| --- | ---------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | -------- | -------- |
+| 1   | Pull existing image          | `{ image: "alpine:latest" }`                   | `{ status: "pulled", success: true, image: "alpine", tag: "latest" }` | P0       | complete |
+| 2   | Pull already up-to-date      | `{ image: "alpine:latest" }`                   | `{ status: "up-to-date", success: true }`                             | P0       | mocked   |
+| 3   | Pull nonexistent image       | `{ image: "nonexistent/image:99" }`            | `{ status: "error", success: false, errorType: "not-found" }`         | P0       | mocked   |
+| 4   | Flag injection on `image`    | `{ image: "--exec=evil" }`                     | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 5   | Flag injection on `platform` | `{ image: "alpine", platform: "--exec=evil" }` | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 6   | Pull with platform           | `{ image: "alpine", platform: "linux/arm64" }` | `{ success: true }`                                                   | P1       | mocked   |
+| 7   | Schema validation            | all                                            | Zod parse succeeds against `DockerPullSchema`                         | P0       | mocked   |
 
 ### Summary: 7 scenarios (P0: 5, P1: 1, P2: 0)
 
@@ -587,14 +587,14 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                            | Expected Output                                                  | Priority | Status |
-| --- | -------------------------------- | --------------------------------- | ---------------------------------------------------------------- | -------- | ------ |
-| 1   | Stats for running containers     | `{}`                              | `{ containers: [...], total: N }` with cpuPercent, memoryPercent | P0       | mocked |
-| 2   | No running containers            | `{}`                              | `{ containers: [], total: 0 }`                                   | P0       | mocked |
-| 3   | Flag injection on `containers`   | `{ containers: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 4   | Stats for specific container     | `{ containers: ["mycontainer"] }` | Single container stats                                           | P1       | mocked |
-| 5   | All containers including stopped | `{ all: true }`                   | Includes stopped containers                                      | P1       | mocked |
-| 6   | Schema validation                | all                               | Zod parse succeeds against `DockerStatsSchema`                   | P0       | mocked |
+| #   | Scenario                         | Params                            | Expected Output                                                  | Priority | Status   |
+| --- | -------------------------------- | --------------------------------- | ---------------------------------------------------------------- | -------- | -------- |
+| 1   | Stats for running containers     | `{}`                              | `{ containers: [...], total: N }` with cpuPercent, memoryPercent | P0       | complete |
+| 2   | No running containers            | `{}`                              | `{ containers: [], total: 0 }`                                   | P0       | mocked   |
+| 3   | Flag injection on `containers`   | `{ containers: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 4   | Stats for specific container     | `{ containers: ["mycontainer"] }` | Single container stats                                           | P1       | mocked   |
+| 5   | All containers including stopped | `{ all: true }`                   | Includes stopped containers                                      | P1       | mocked   |
+| 6   | Schema validation                | all                               | Zod parse succeeds against `DockerStatsSchema`                   | P0       | mocked   |
 
 ### Summary: 6 scenarios (P0: 4, P1: 2, P2: 0)
 
@@ -617,14 +617,14 @@
 
 ### Scenarios
 
-| #   | Scenario                   | Params                                          | Expected Output                                   | Priority | Status |
-| --- | -------------------------- | ----------------------------------------------- | ------------------------------------------------- | -------- | ------ |
-| 1   | List all volumes           | `{}`                                            | `{ volumes: [...], total: N }`                    | P0       | mocked |
-| 2   | No volumes                 | `{}`                                            | `{ volumes: [], total: 0 }`                       | P0       | mocked |
-| 3   | Flag injection on `filter` | `{ filter: "--exec=evil" }`                     | `assertNoFlagInjection` throws                    | P0       | mocked |
-| 4   | Filter by dangling         | `{ filter: "dangling=true" }`                   | Only dangling volumes                             | P1       | mocked |
-| 5   | Multiple filters           | `{ filter: ["dangling=true", "driver=local"] }` | Intersection                                      | P1       | mocked |
-| 6   | Schema validation          | all                                             | Zod parse succeeds against `DockerVolumeLsSchema` | P0       | mocked |
+| #   | Scenario                   | Params                                          | Expected Output                                   | Priority | Status   |
+| --- | -------------------------- | ----------------------------------------------- | ------------------------------------------------- | -------- | -------- |
+| 1   | List all volumes           | `{}`                                            | `{ volumes: [...], total: N }`                    | P0       | complete |
+| 2   | No volumes                 | `{}`                                            | `{ volumes: [], total: 0 }`                       | P0       | mocked   |
+| 3   | Flag injection on `filter` | `{ filter: "--exec=evil" }`                     | `assertNoFlagInjection` throws                    | P0       | mocked   |
+| 4   | Filter by dangling         | `{ filter: "dangling=true" }`                   | Only dangling volumes                             | P1       | mocked   |
+| 5   | Multiple filters           | `{ filter: ["dangling=true", "driver=local"] }` | Intersection                                      | P1       | mocked   |
+| 6   | Schema validation          | all                                             | Zod parse succeeds against `DockerVolumeLsSchema` | P0       | mocked   |
 
 ### Summary: 6 scenarios (P0: 4, P1: 2, P2: 0)
 

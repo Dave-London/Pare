@@ -1,0 +1,3 @@
+# my-app
+./main.go:12:2: Printf format %d has arg of wrong type string
+./main.go:20:2: unreachable code
