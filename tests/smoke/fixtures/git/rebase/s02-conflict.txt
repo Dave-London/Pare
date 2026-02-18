@@ -1,0 +1,5 @@
+Auto-merging src/index.ts
+CONFLICT (content): Merge conflict in src/index.ts
+error: could not apply abc1234... conflicting change
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".

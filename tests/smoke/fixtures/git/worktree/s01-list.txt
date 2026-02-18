@@ -1,0 +1,4 @@
+worktree C:/Users/dave2/AppData/Local/Temp/pare-smoke-git-13392
+HEAD 60b056801fed3539c952d4b65855a03b31d9184d
+branch refs/heads/main
+

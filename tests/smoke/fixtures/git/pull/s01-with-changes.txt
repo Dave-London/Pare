@@ -1,0 +1,5 @@
+Updating abc1234..def5678
+Fast-forward
+ src/index.ts  | 5 +++--
+ src/helper.ts | 3 +++
+ 2 files changed, 6 insertions(+), 2 deletions(-)

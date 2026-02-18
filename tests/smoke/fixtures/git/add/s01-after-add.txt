@@ -1,0 +1,2 @@
+M  src/index.ts
+A  src/new-file.ts

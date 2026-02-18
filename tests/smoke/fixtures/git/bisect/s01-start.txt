@@ -1,0 +1,4 @@
+status: waiting for both good and bad commits
+status: waiting for good commit(s), bad commit known
+Bisecting: 6 revisions left to test after this (roughly 3 steps)
+[72f80a40f891fd87354cc2f28075ca9d81ae417d] chore: iteration 4 of refactoring

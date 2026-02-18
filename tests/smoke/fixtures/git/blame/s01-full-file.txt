@@ -1,0 +1,117 @@
+ded6b306479dec5cc7269b21ad38c41c3e81dbfa 1 1 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437061
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437061
+committer-tz +0200
+summary feat: initial project setup
+boundary
+filename src/index.ts
+	export function main() { return 42; }
+2a71f401b6cb619619ea79aa5e6ce88091743848 2 2 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437062
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437062
+committer-tz +0200
+summary chore: iteration 1 of refactoring
+previous b4ddfaf51f819f02289d4fcd2bf942f2c9323df9 src/index.ts
+filename src/index.ts
+	// change 1
+44cb4c3c9204e1c8bbf6d345945dc3618bc96e35 3 3 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437062
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437062
+committer-tz +0200
+summary chore: iteration 2 of refactoring
+previous 2a71f401b6cb619619ea79aa5e6ce88091743848 src/index.ts
+filename src/index.ts
+	// change 2
+e56baf0cc940c80ee86c8bba59338afc207d5298 4 4 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437063
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437063
+committer-tz +0200
+summary chore: iteration 3 of refactoring
+previous 44cb4c3c9204e1c8bbf6d345945dc3618bc96e35 src/index.ts
+filename src/index.ts
+	// change 3
+72f80a40f891fd87354cc2f28075ca9d81ae417d 5 5 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437063
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437063
+committer-tz +0200
+summary chore: iteration 4 of refactoring
+previous e56baf0cc940c80ee86c8bba59338afc207d5298 src/index.ts
+filename src/index.ts
+	// change 4
+714f9047cde9a185d84d4d511ed7219dea643f68 6 6 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437063
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437063
+committer-tz +0200
+summary chore: iteration 5 of refactoring
+previous 72f80a40f891fd87354cc2f28075ca9d81ae417d src/index.ts
+filename src/index.ts
+	// change 5
+c54a68eb72e0fe0fe93dc1bc3ef13ab0bff87fae 7 7 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437063
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437063
+committer-tz +0200
+summary chore: iteration 6 of refactoring
+previous 714f9047cde9a185d84d4d511ed7219dea643f68 src/index.ts
+filename src/index.ts
+	// change 6
+75bd4c6dbc8a575a504480a6930f9787f568342e 8 8 1
+author Test User
+author-mail <test@example.com>
+author-time 1771437064
+author-tz +0200
+committer Test User
+committer-mail <test@example.com>
+committer-time 1771437064
+committer-tz +0200
+summary chore: iteration 7 of refactoring
+previous c54a68eb72e0fe0fe93dc1bc3ef13ab0bff87fae src/index.ts
+filename src/index.ts
+	// change 7
+0000000000000000000000000000000000000000 9 9 1
+author Not Committed Yet
+author-mail <not.committed.yet>
+author-time 1771437065
+author-tz +0200
+committer Not Committed Yet
+committer-mail <not.committed.yet>
+committer-time 1771437065
+committer-tz +0200
+summary Version of src/index.ts from src/index.ts
+previous 75bd4c6dbc8a575a504480a6930f9787f568342e src/index.ts
+filename src/index.ts
+	// unstaged change
