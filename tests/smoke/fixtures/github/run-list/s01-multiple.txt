@@ -1,0 +1,26 @@
+[
+  {
+    "databaseId": 12345678,
+    "name": "CI",
+    "displayTitle": "feat: add stash tool",
+    "headBranch": "feat/stash-tool",
+    "status": "completed",
+    "conclusion": "success",
+    "event": "push",
+    "createdAt": "2026-02-15T14:30:00Z",
+    "updatedAt": "2026-02-15T14:35:00Z",
+    "url": "https://github.com/owner/repo/actions/runs/12345678"
+  },
+  {
+    "databaseId": 12345677,
+    "name": "CI",
+    "displayTitle": "fix: handle empty log",
+    "headBranch": "fix/empty-log",
+    "status": "completed",
+    "conclusion": "failure",
+    "event": "pull_request",
+    "createdAt": "2026-02-14T10:00:00Z",
+    "updatedAt": "2026-02-14T10:12:00Z",
+    "url": "https://github.com/owner/repo/actions/runs/12345677"
+  }
+]

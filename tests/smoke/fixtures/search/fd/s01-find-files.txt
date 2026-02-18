@@ -1,0 +1,8 @@
+src/tools/status.ts
+src/tools/log.ts
+src/tools/diff.ts
+src/tools/show.ts
+src/tools/blame.ts
+src/tools/branch.ts
+src/tools/add.ts
+src/tools/commit.ts

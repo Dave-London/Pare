@@ -1,0 +1,38 @@
+diff --git a/src/tools/stash.ts b/src/tools/stash.ts
+new file mode 100644
+index 0000000..abc1234
+--- /dev/null
++++ b/src/tools/stash.ts
+@@ -0,0 +1,45 @@
++import { dualOutput } from "@paretools/shared";
++import { GitStashSchema } from "../schemas/index.js";
++import { git } from "../lib/git-runner.js";
++
++export function registerStashTool(server: McpServer) {
++  server.registerTool("stash", {
++    title: "Git Stash",
++    description: "Stash changes in the working directory",
++    inputSchema: {
++      action: { type: "string", enum: ["push", "pop", "apply", "drop", "show"] },
++    },
++    outputSchema: GitStashSchema,
++  }, async (params) => {
++    const result = await git(["stash", params.action]);
++    return dualOutput(parseStash(result), formatStash);
++  });
++}
+diff --git a/src/schemas/index.ts b/src/schemas/index.ts
+index def5678..ghi9012 100644
+--- a/src/schemas/index.ts
++++ b/src/schemas/index.ts
+@@ -100,3 +100,12 @@ export const GitResetSchema = z.object({
+   mode: z.string(),
+   ref: z.string(),
+ });
++
++export const GitStashSchema = z.object({
++  action: z.string(),
++  success: z.boolean(),
++  stashRef: z.string().optional(),
++  message: z.string().optional(),
++});

@@ -1,0 +1,19 @@
+{
+  "login": "testuser",
+  "id": 12345,
+  "node_id": "MDQ6VXNlcjEyMzQ1",
+  "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
+  "type": "User",
+  "name": "Test User",
+  "company": "Acme Corp",
+  "blog": "https://testuser.dev",
+  "location": "London, UK",
+  "email": "test@example.com",
+  "bio": "Software engineer",
+  "public_repos": 42,
+  "public_gists": 5,
+  "followers": 100,
+  "following": 50,
+  "created_at": "2020-01-01T00:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}

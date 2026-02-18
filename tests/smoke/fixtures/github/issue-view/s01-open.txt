@@ -1,0 +1,38 @@
+{
+  "number": 42,
+  "title": "Fix authentication flow for OAuth tokens",
+  "state": "OPEN",
+  "body": "The OAuth token refresh logic fails silently when the token expires.\n\n## Steps to reproduce\n1. Login with OAuth\n2. Wait for token expiry\n3. Try to access protected resource\n\n## Expected\nToken should auto-refresh.\n\n## Actual\nSilent failure, user sees empty response.",
+  "author": {
+    "login": "testuser"
+  },
+  "assignees": [
+    {
+      "login": "devuser"
+    }
+  ],
+  "labels": [
+    {
+      "name": "bug"
+    },
+    {
+      "name": "priority: high"
+    }
+  ],
+  "milestone": {
+    "title": "v2.0"
+  },
+  "createdAt": "2026-01-15T10:30:00Z",
+  "updatedAt": "2026-02-10T14:22:00Z",
+  "closedAt": null,
+  "comments": [
+    {
+      "author": {
+        "login": "reviewer1"
+      },
+      "body": "I can reproduce this. The issue is in `src/auth/oauth.ts` line 45.",
+      "createdAt": "2026-01-16T08:00:00Z"
+    }
+  ],
+  "url": "https://github.com/owner/repo/issues/42"
+}

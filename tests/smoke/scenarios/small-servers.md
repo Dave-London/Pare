@@ -386,24 +386,24 @@ Consolidated scenario mapping for k8s (5 tools), search (4 tools), http (4 tools
 
 ### Scenarios
 
-| #   | Scenario                        | Params                                         | Expected Output                                         | Priority | Status |
-| --- | ------------------------------- | ---------------------------------------------- | ------------------------------------------------------- | -------- | ------ |
-| 1   | Search for a common pattern     | `{ pattern: "import", path: "src/" }`          | `{ matches: [...], totalMatches: N, filesSearched: M }` | P0       | mocked |
-| 2   | No matches found                | `{ pattern: "xyzzy_nonexistent_pattern_abc" }` | `{ matches: [], totalMatches: 0 }`                      | P0       | mocked |
-| 3   | Invalid regex pattern           | `{ pattern: "[invalid" }`                      | Error from rg about invalid regex                       | P0       | mocked |
-| 4   | Flag injection on pattern       | `{ pattern: "--exec=evil" }`                   | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 5   | Flag injection on path          | `{ pattern: "test", path: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 6   | Flag injection on glob          | `{ pattern: "test", glob: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 7   | Flag injection on type          | `{ pattern: "test", type: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked |
-| 8   | Case-insensitive search         | `{ pattern: "TODO", caseSensitive: false }`    | Matches both "TODO" and "todo"                          | P1       | mocked |
-| 9   | Glob filter                     | `{ pattern: "import", glob: "*.ts" }`          | Only matches in .ts files                               | P1       | mocked |
-| 10  | Fixed string match              | `{ pattern: "a.b", fixedStrings: true }`       | Matches literal "a.b" not regex "a[any]b"               | P1       | mocked |
-| 11  | Word-only match                 | `{ pattern: "test", wordRegexp: true }`        | Does not match "testing" or "attest"                    | P1       | mocked |
-| 12  | maxResults truncation           | `{ pattern: ".", maxResults: 5 }`              | At most 5 matches returned                              | P1       | mocked |
-| 13  | Type filter                     | `{ pattern: "function", type: "ts" }`          | Only TypeScript file matches                            | P1       | mocked |
-| 14  | maxDepth limits search          | `{ pattern: "test", maxDepth: 1 }`             | Only top-level directory matches                        | P2       | mocked |
-| 15  | hidden: true includes dot-files | `{ pattern: "test", hidden: true }`            | Matches in .hidden files                                | P2       | mocked |
-| 16  | Schema validation               | all                                            | Zod parse against `SearchResultSchema` succeeds         | P0       | mocked |
+| #   | Scenario                        | Params                                         | Expected Output                                         | Priority | Status   |
+| --- | ------------------------------- | ---------------------------------------------- | ------------------------------------------------------- | -------- | -------- |
+| 1   | Search for a common pattern     | `{ pattern: "import", path: "src/" }`          | `{ matches: [...], totalMatches: N, filesSearched: M }` | P0       | complete |
+| 2   | No matches found                | `{ pattern: "xyzzy_nonexistent_pattern_abc" }` | `{ matches: [], totalMatches: 0 }`                      | P0       | complete |
+| 3   | Invalid regex pattern           | `{ pattern: "[invalid" }`                      | Error from rg about invalid regex                       | P0       | mocked   |
+| 4   | Flag injection on pattern       | `{ pattern: "--exec=evil" }`                   | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 5   | Flag injection on path          | `{ pattern: "test", path: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 6   | Flag injection on glob          | `{ pattern: "test", glob: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 7   | Flag injection on type          | `{ pattern: "test", type: "--exec=evil" }`     | `assertNoFlagInjection` throws                          | P0       | mocked   |
+| 8   | Case-insensitive search         | `{ pattern: "TODO", caseSensitive: false }`    | Matches both "TODO" and "todo"                          | P1       | mocked   |
+| 9   | Glob filter                     | `{ pattern: "import", glob: "*.ts" }`          | Only matches in .ts files                               | P1       | mocked   |
+| 10  | Fixed string match              | `{ pattern: "a.b", fixedStrings: true }`       | Matches literal "a.b" not regex "a[any]b"               | P1       | mocked   |
+| 11  | Word-only match                 | `{ pattern: "test", wordRegexp: true }`        | Does not match "testing" or "attest"                    | P1       | mocked   |
+| 12  | maxResults truncation           | `{ pattern: ".", maxResults: 5 }`              | At most 5 matches returned                              | P1       | mocked   |
+| 13  | Type filter                     | `{ pattern: "function", type: "ts" }`          | Only TypeScript file matches                            | P1       | mocked   |
+| 14  | maxDepth limits search          | `{ pattern: "test", maxDepth: 1 }`             | Only top-level directory matches                        | P2       | mocked   |
+| 15  | hidden: true includes dot-files | `{ pattern: "test", hidden: true }`            | Matches in .hidden files                                | P2       | mocked   |
+| 16  | Schema validation               | all                                            | Zod parse against `SearchResultSchema` succeeds         | P0       | mocked   |
 
 ### Summary
 
@@ -504,25 +504,25 @@ Consolidated scenario mapping for k8s (5 tools), search (4 tools), http (4 tools
 
 ### Scenarios
 
-| #   | Scenario                        | Params                                     | Expected Output                                | Priority | Status |
-| --- | ------------------------------- | ------------------------------------------ | ---------------------------------------------- | -------- | ------ |
-| 1   | Find all files in a directory   | `{ path: "src/" }`                         | `{ files: [...], total: N }` with file entries | P0       | mocked |
-| 2   | Find by pattern                 | `{ pattern: "test", path: "src/" }`        | Only files matching "test" in name             | P0       | mocked |
-| 3   | No matches                      | `{ pattern: "xyzzy_nonexistent" }`         | `{ files: [], total: 0 }`                      | P0       | mocked |
-| 4   | Flag injection on pattern       | `{ pattern: "--exec=evil" }`               | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 5   | Flag injection on path          | `{ pattern: "test", path: "--exec=evil" }` | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 6   | Flag injection on extension     | `{ extension: "--exec=evil" }`             | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 7   | Flag injection on exclude       | `{ exclude: "--exec=evil" }`               | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 8   | Flag injection on size          | `{ size: "--exec=evil" }`                  | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 9   | Flag injection on changedWithin | `{ changedWithin: "--exec=evil" }`         | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 10  | Filter by extension             | `{ extension: "ts", path: "src/" }`        | Only .ts files returned                        | P1       | mocked |
-| 11  | Filter by type: directory       | `{ type: "directory", path: "." }`         | Only directories returned                      | P1       | mocked |
-| 12  | Exclude pattern                 | `{ exclude: "node_modules", path: "." }`   | No node_modules entries                        | P1       | mocked |
-| 13  | maxResults truncation           | `{ maxResults: 5, path: "." }`             | At most 5 files                                | P1       | mocked |
-| 14  | absolutePath: true              | `{ absolutePath: true, path: "src/" }`     | All paths are absolute                         | P1       | mocked |
-| 15  | size filter                     | `{ size: "+1m" }`                          | Only files larger than 1MB                     | P2       | mocked |
-| 16  | changedWithin filter            | `{ changedWithin: "1d" }`                  | Only recently modified files                   | P2       | mocked |
-| 17  | Schema validation               | all                                        | Zod parse against `FindResultSchema` succeeds  | P0       | mocked |
+| #   | Scenario                        | Params                                     | Expected Output                                | Priority | Status   |
+| --- | ------------------------------- | ------------------------------------------ | ---------------------------------------------- | -------- | -------- |
+| 1   | Find all files in a directory   | `{ path: "src/" }`                         | `{ files: [...], total: N }` with file entries | P0       | complete |
+| 2   | Find by pattern                 | `{ pattern: "test", path: "src/" }`        | Only files matching "test" in name             | P0       | mocked   |
+| 3   | No matches                      | `{ pattern: "xyzzy_nonexistent" }`         | `{ files: [], total: 0 }`                      | P0       | mocked   |
+| 4   | Flag injection on pattern       | `{ pattern: "--exec=evil" }`               | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 5   | Flag injection on path          | `{ pattern: "test", path: "--exec=evil" }` | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 6   | Flag injection on extension     | `{ extension: "--exec=evil" }`             | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 7   | Flag injection on exclude       | `{ exclude: "--exec=evil" }`               | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 8   | Flag injection on size          | `{ size: "--exec=evil" }`                  | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 9   | Flag injection on changedWithin | `{ changedWithin: "--exec=evil" }`         | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 10  | Filter by extension             | `{ extension: "ts", path: "src/" }`        | Only .ts files returned                        | P1       | mocked   |
+| 11  | Filter by type: directory       | `{ type: "directory", path: "." }`         | Only directories returned                      | P1       | mocked   |
+| 12  | Exclude pattern                 | `{ exclude: "node_modules", path: "." }`   | No node_modules entries                        | P1       | mocked   |
+| 13  | maxResults truncation           | `{ maxResults: 5, path: "." }`             | At most 5 files                                | P1       | mocked   |
+| 14  | absolutePath: true              | `{ absolutePath: true, path: "src/" }`     | All paths are absolute                         | P1       | mocked   |
+| 15  | size filter                     | `{ size: "+1m" }`                          | Only files larger than 1MB                     | P2       | mocked   |
+| 16  | changedWithin filter            | `{ changedWithin: "1d" }`                  | Only recently modified files                   | P2       | mocked   |
+| 17  | Schema validation               | all                                        | Zod parse against `FindResultSchema` succeeds  | P0       | mocked   |
 
 ### Summary
 
@@ -693,19 +693,19 @@ Consolidated scenario mapping for k8s (5 tools), search (4 tools), http (4 tools
 
 ### Scenarios
 
-| #   | Scenario                                | Params                                                                        | Expected Output                                 | Priority | Status |
-| --- | --------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------- | -------- | ------ |
-| 1   | Simple GET                              | `{ url: "https://httpbin.org/get" }`                                          | `{ status: 200, body: "..." }`                  | P0       | mocked |
-| 2   | Non-existent host                       | `{ url: "https://nonexistent.invalid/" }`                                     | Error (connection failure)                      | P0       | mocked |
-| 3   | Unsafe URL scheme                       | `{ url: "file:///etc/passwd" }`                                               | `assertSafeUrl` throws                          | P0       | mocked |
-| 4   | Flag injection on basicAuth             | `{ url: "https://example.com", basicAuth: "--exec=evil" }`                    | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 5   | Flag injection on proxy                 | `{ url: "https://example.com", proxy: "--exec=evil" }`                        | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 6   | Flag injection on resolve               | `{ url: "https://example.com", resolve: "--exec=evil" }`                      | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 7   | Query params appended to URL            | `{ url: "https://httpbin.org/get", queryParams: { foo: "bar", baz: "qux" } }` | Query params reflected in response args         | P1       | mocked |
-| 8   | Query params with existing query string | `{ url: "https://httpbin.org/get?a=1", queryParams: { b: "2" } }`             | Both a=1 and b=2 in URL                         | P1       | mocked |
-| 9   | Custom headers                          | `{ url: "https://httpbin.org/headers", headers: { "Accept": "text/plain" } }` | Header reflected in response                    | P1       | mocked |
-| 10  | Retry on failure                        | `{ url: "https://example.com", retry: 3 }`                                    | Retries attempted on transient failure          | P2       | mocked |
-| 11  | Schema validation                       | all                                                                           | Zod parse against `HttpResponseSchema` succeeds | P0       | mocked |
+| #   | Scenario                                | Params                                                                        | Expected Output                                 | Priority | Status   |
+| --- | --------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------- | -------- | -------- |
+| 1   | Simple GET                              | `{ url: "https://httpbin.org/get" }`                                          | `{ status: 200, body: "..." }`                  | P0       | complete |
+| 2   | Non-existent host                       | `{ url: "https://nonexistent.invalid/" }`                                     | Error (connection failure)                      | P0       | mocked   |
+| 3   | Unsafe URL scheme                       | `{ url: "file:///etc/passwd" }`                                               | `assertSafeUrl` throws                          | P0       | mocked   |
+| 4   | Flag injection on basicAuth             | `{ url: "https://example.com", basicAuth: "--exec=evil" }`                    | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 5   | Flag injection on proxy                 | `{ url: "https://example.com", proxy: "--exec=evil" }`                        | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 6   | Flag injection on resolve               | `{ url: "https://example.com", resolve: "--exec=evil" }`                      | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 7   | Query params appended to URL            | `{ url: "https://httpbin.org/get", queryParams: { foo: "bar", baz: "qux" } }` | Query params reflected in response args         | P1       | mocked   |
+| 8   | Query params with existing query string | `{ url: "https://httpbin.org/get?a=1", queryParams: { b: "2" } }`             | Both a=1 and b=2 in URL                         | P1       | mocked   |
+| 9   | Custom headers                          | `{ url: "https://httpbin.org/headers", headers: { "Accept": "text/plain" } }` | Header reflected in response                    | P1       | mocked   |
+| 10  | Retry on failure                        | `{ url: "https://example.com", retry: 3 }`                                    | Retries attempted on transient failure          | P2       | mocked   |
+| 11  | Schema validation                       | all                                                                           | Zod parse against `HttpResponseSchema` succeeds | P0       | mocked   |
 
 ### Summary
 
@@ -1136,7 +1136,7 @@ Consolidated scenario mapping for k8s (5 tools), search (4 tools), http (4 tools
 
 | #   | Scenario                             | Params                                                                                                  | Expected Output                                                                                    | Priority                | Status                   |
 | --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------ | ------ | ------ |
-| 1   | Run a simple command                 | `{ command: "echo", args: ["hello"] }`                                                                  | `{ command: "echo", exitCode: 0, success: true, stdout: "hello\n", duration: N, timedOut: false }` | P0                      | pending                  |
+| 1   | Run a simple command                 | `{ command: "echo", args: ["hello"] }`                                                                  | `{ command: "echo", exitCode: 0, success: true, stdout: "hello\n", duration: N, timedOut: false }` | P0                      | complete                 |
 | 2   | Command not found                    | `{ command: "nonexistent_command_xyz" }`                                                                | Error thrown (command not found)                                                                   | P0                      | pending                  |
 | 3   | Command exits with error             | `{ command: "node", args: ["-e", "process.exit(42)"] }`                                                 | `{ exitCode: 42, success: false }`                                                                 | P0                      | pending                  |
 | 4   | Empty stdout and stderr              | `{ command: "true" }`                                                                                   | `{ exitCode: 0, stdout: "", stderr: "" }`                                                          | P0                      | pending                  |

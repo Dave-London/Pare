@@ -1,0 +1,6 @@
+HTTP/2 200
+content-type: application/json
+date: Tue, 18 Feb 2026 12:00:00 GMT
+content-length: 234
+
+{"origin":"1.2.3.4","url":"https://httpbin.org/get","headers":{"Host":"httpbin.org","Accept":"*/*","User-Agent":"curl/8.7.1"},"args":{}}
