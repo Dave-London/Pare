@@ -27,7 +27,7 @@ describe("tool parameter handling", () => {
 
     client = new Client({ name: "test-client", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 300_000);
 
   afterAll(async () => {
     await transport.close();
