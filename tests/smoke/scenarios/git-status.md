@@ -29,36 +29,36 @@
 
 | #   | Scenario                                    | Params     | Expected Output                                                                        | Priority | Status   |
 | --- | ------------------------------------------- | ---------- | -------------------------------------------------------------------------------------- | -------- | -------- |
-| 1   | Clean repo, no changes                      | `{ path }` | `{ clean: true, staged: [], modified: [], deleted: [], untracked: [], conflicts: [] }` | P0       | recorded |
-| 2   | Staged files (added)                        | `{ path }` | `staged: [{ file, status: "added" }]`, `clean: false`                                  | P0       | recorded |
-| 3   | Staged files (modified)                     | `{ path }` | `staged: [{ file, status: "modified" }]`                                               | P0       | recorded |
-| 4   | Staged files (deleted)                      | `{ path }` | `staged: [{ file, status: "deleted" }]`                                                | P0       | recorded |
-| 5   | Staged rename                               | `{ path }` | `staged: [{ file: "new", status: "renamed", oldFile: "old" }]`                         | P0       | recorded |
-| 6   | Worktree modified files                     | `{ path }` | `modified: ["file.txt"]`, staged empty                                                 | P0       | recorded |
-| 7   | Worktree deleted files                      | `{ path }` | `deleted: ["file.txt"]`                                                                | P0       | recorded |
-| 8   | Untracked files                             | `{ path }` | `untracked: ["new-file.txt"]`                                                          | P0       | recorded |
-| 9   | Mixed state (staged + modified + untracked) | `{ path }` | All arrays populated, `clean: false`                                                   | P0       | recorded |
-| 10  | Both staged and worktree modified (MM)      | `{ path }` | File in both `staged` and `modified`                                                   | P0       | recorded |
+| 1   | Clean repo, no changes                      | `{ path }` | `{ clean: true, staged: [], modified: [], deleted: [], untracked: [], conflicts: [] }` | P0       | complete |
+| 2   | Staged files (added)                        | `{ path }` | `staged: [{ file, status: "added" }]`, `clean: false`                                  | P0       | complete |
+| 3   | Staged files (modified)                     | `{ path }` | `staged: [{ file, status: "modified" }]`                                               | P0       | complete |
+| 4   | Staged files (deleted)                      | `{ path }` | `staged: [{ file, status: "deleted" }]`                                                | P0       | complete |
+| 5   | Staged rename                               | `{ path }` | `staged: [{ file: "new", status: "renamed", oldFile: "old" }]`                         | P0       | complete |
+| 6   | Worktree modified files                     | `{ path }` | `modified: ["file.txt"]`, staged empty                                                 | P0       | complete |
+| 7   | Worktree deleted files                      | `{ path }` | `deleted: ["file.txt"]`                                                                | P0       | complete |
+| 8   | Untracked files                             | `{ path }` | `untracked: ["new-file.txt"]`                                                          | P0       | complete |
+| 9   | Mixed state (staged + modified + untracked) | `{ path }` | All arrays populated, `clean: false`                                                   | P0       | complete |
+| 10  | Both staged and worktree modified (MM)      | `{ path }` | File in both `staged` and `modified`                                                   | P0       | complete |
 
 ### Branch & upstream
 
 | #   | Scenario                         | Params     | Expected Output                                                | Priority | Status   |
 | --- | -------------------------------- | ---------- | -------------------------------------------------------------- | -------- | -------- |
-| 11  | On branch with upstream tracking | `{ path }` | `branch: "main"`, `upstream: "origin/main"`                    | P0       | recorded |
-| 12  | Ahead of upstream                | `{ path }` | `ahead: N > 0`                                                 | P0       | recorded |
-| 13  | Behind upstream                  | `{ path }` | `behind: N > 0`                                                | P0       | recorded |
-| 14  | Ahead and behind                 | `{ path }` | Both `ahead` and `behind` > 0                                  | P1       | recorded |
-| 15  | Detached HEAD                    | `{ path }` | `branch` is HEAD sha or "(HEAD detached at ...)"`              | P1       | recorded |
-| 16  | No upstream configured           | `{ path }` | `upstream: undefined`, `ahead: undefined`, `behind: undefined` | P1       | recorded |
-| 17  | New branch, no commits           | `{ path }` | `branch: "new-branch"`, no upstream                            | P2       | recorded |
+| 11  | On branch with upstream tracking | `{ path }` | `branch: "main"`, `upstream: "origin/main"`                    | P0       | complete |
+| 12  | Ahead of upstream                | `{ path }` | `ahead: N > 0`                                                 | P0       | complete |
+| 13  | Behind upstream                  | `{ path }` | `behind: N > 0`                                                | P0       | complete |
+| 14  | Ahead and behind                 | `{ path }` | Both `ahead` and `behind` > 0                                  | P1       | complete |
+| 15  | Detached HEAD                    | `{ path }` | `branch` is HEAD sha or "(HEAD detached at ...)"`              | P1       | complete |
+| 16  | No upstream configured           | `{ path }` | `upstream: undefined`, `ahead: undefined`, `behind: undefined` | P1       | complete |
+| 17  | New branch, no commits           | `{ path }` | `branch: "new-branch"`, no upstream                            | P2       | complete |
 
 ### Conflicts
 
 | #   | Scenario                 | Params     | Expected Output               | Priority | Status   |
 | --- | ------------------------ | ---------- | ----------------------------- | -------- | -------- |
-| 18  | Merge conflict (UU)      | `{ path }` | `conflicts: ["file.txt"]`     | P0       | recorded |
-| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | recorded |
-| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | recorded |
+| 18  | Merge conflict (UU)      | `{ path }` | `conflicts: ["file.txt"]`     | P0       | complete |
+| 19  | Both added conflict (AA) | `{ path }` | `conflicts: ["file.txt"]`     | P1       | complete |
+| 20  | Multiple conflict types  | `{ path }` | Multiple files in `conflicts` | P1       | complete |
 
 ### Optional params — untrackedFiles (arg-only)
 
@@ -93,16 +93,16 @@
 
 | #   | Scenario                              | Params                             | Expected Output                               | Priority | Status   |
 | --- | ------------------------------------- | ---------------------------------- | --------------------------------------------- | -------- | -------- |
-| 35  | porcelainVersion: "v2" clean repo     | `{ path, porcelainVersion: "v2" }` | Same schema shape, parsed from v2 format      | P1       | recorded |
-| 36  | porcelainVersion: "v2" with changes   | `{ path, porcelainVersion: "v2" }` | staged/modified/etc populated from v2 format  | P1       | recorded |
-| 37  | porcelainVersion: "v2" with conflicts | `{ path, porcelainVersion: "v2" }` | Conflicts detected from `u ` prefix lines     | P1       | recorded |
-| 38  | porcelainVersion: "v2" with renames   | `{ path, porcelainVersion: "v2" }` | Rename with oldFile from tab-separated fields | P2       | recorded |
+| 35  | porcelainVersion: "v2" clean repo     | `{ path, porcelainVersion: "v2" }` | Same schema shape, parsed from v2 format      | P1       | complete |
+| 36  | porcelainVersion: "v2" with changes   | `{ path, porcelainVersion: "v2" }` | staged/modified/etc populated from v2 format  | P1       | complete |
+| 37  | porcelainVersion: "v2" with conflicts | `{ path, porcelainVersion: "v2" }` | Conflicts detected from `u ` prefix lines     | P1       | complete |
+| 38  | porcelainVersion: "v2" with renames   | `{ path, porcelainVersion: "v2" }` | Rename with oldFile from tab-separated fields | P2       | complete |
 
 ### Error paths
 
 | #   | Scenario         | Params                         | Expected Output                   | Priority | Status   |
 | --- | ---------------- | ------------------------------ | --------------------------------- | -------- | -------- |
-| 39  | Not a git repo   | `{ path: "/tmp/not-a-repo" }`  | Error thrown: "git status failed" | P0       | recorded |
+| 39  | Not a git repo   | `{ path: "/tmp/not-a-repo" }`  | Error thrown: "git status failed" | P0       | complete |
 | 40  | Nonexistent path | `{ path: "/tmp/nonexistent" }` | Error thrown                      | P1       | complete |
 
 ### Schema validation
@@ -119,7 +119,7 @@
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 13     | 13     | 13       | 2        |
-| P1        | 16     | 16     | 10       | 6        |
-| P2        | 12     | 12     | 2        | 8        |
-| **Total** | **41** | **41** | **25**   | **16**   |
+| P0        | 13     | 13     | 0        | 13       |
+| P1        | 16     | 16     | 0        | 16       |
+| P2        | 12     | 12     | 0        | 12       |
+| **Total** | **41** | **41** | **0**    | **41**   |
