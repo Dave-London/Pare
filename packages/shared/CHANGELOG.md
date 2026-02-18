@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.10.0
+
+### Patch Changes
+
+- [#547](https://github.com/Dave-London/Pare/pull/547) [`3a6f31c`](https://github.com/Dave-London/Pare/commit/3a6f31c92a3507388dacbf1fd69afa3f76e032e2) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: use synchronous `execFileSync` for Windows `taskkill` in `killProcessGroup()` to prevent orphan processes accumulating after timeouts
+
 ## 0.9.0
 
 ### Patch Changes

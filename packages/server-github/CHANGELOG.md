@@ -1,5 +1,31 @@
 # @paretools/github
 
+## 0.10.0
+
+### Minor Changes
+
+- [#528](https://github.com/Dave-London/Pare/pull/528) [`65697bf`](https://github.com/Dave-London/Pare/commit/65697bff5f751ff8990e154512ed5c58f54710e6) Thanks [@Dave-London](https://github.com/Dave-London)! - Add label-list and label-create tools for repository label management. Fix run-view bug where --log/--log-failed flags conflicted with --json, causing JSON parse crashes.
+
+### Patch Changes
+
+- [#547](https://github.com/Dave-London/Pare/pull/547) [`3a6f31c`](https://github.com/Dave-London/Pare/commit/3a6f31c92a3507388dacbf1fd69afa3f76e032e2) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix shell escaping for pr-merge commitBody by using --body-file - with stdin instead of --body CLI arg
+
+- [`ba6fab4`](https://github.com/Dave-London/Pare/commit/ba6fab4014061ea402885779b7f3a4762477d71d) - Fix release-create to use --notes-file stdin for shell-safe body handling
+
+- [#552](https://github.com/Dave-London/Pare/pull/552) [`a618e9f`](https://github.com/Dave-London/Pare/commit/a618e9f733b179583355ad32f8558a7fd866661e) Thanks [@Dave-London](https://github.com/Dave-London)! - Improve reliability for long-running test and GitHub CLI workflows.
+  - `@paretools/test`:
+    - Raise test CLI wrapper timeout policy to 5 minutes (`300_000ms`) for `run`, `coverage`, and `playwright`
+    - Increase package Vitest timeout to `300_000ms`
+    - Split test execution into `test:unit`, `test:integration`, and `test:fidelity` with sequential `test` orchestration
+    - Auto-build required dist artifacts for integration-style tests to avoid stale-build false failures
+    - Document timeout and test-batching policy in README
+  - `@paretools/github`:
+    - Run `gh` with `shell: false` to avoid Windows shell escaping quirks for native executable invocation
+    - Add unit coverage for `gh` runner invocation options
+
+- Updated dependencies [[`3a6f31c`](https://github.com/Dave-London/Pare/commit/3a6f31c92a3507388dacbf1fd69afa3f76e032e2)]:
+  - @paretools/shared@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes
