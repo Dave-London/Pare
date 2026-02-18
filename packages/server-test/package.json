@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "pnpm run test:unit && pnpm run test:integration && pnpm run test:fidelity",
+    "test": "node ./scripts/run-tests.mjs",
     "test:unit": "vitest run --exclude __tests__/integration.test.ts --exclude __tests__/tool-params.test.ts --exclude __tests__/fidelity.test.ts",
     "test:integration": "vitest run __tests__/integration.test.ts __tests__/tool-params.test.ts",
     "test:fidelity": "vitest run __tests__/fidelity.test.ts",
