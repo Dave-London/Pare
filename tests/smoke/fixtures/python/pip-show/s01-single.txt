@@ -1,0 +1,10 @@
+Name: requests
+Version: 2.31.0
+Summary: Python HTTP for Humans.
+Home-page: https://requests.readthedocs.io
+Author: Kenneth Reitz
+Author-email: me@kennethreitz.org
+License: Apache-2.0
+Location: /usr/lib/python3.12/site-packages
+Requires: certifi, charset-normalizer, idna, urllib3
+Required-by: httpx

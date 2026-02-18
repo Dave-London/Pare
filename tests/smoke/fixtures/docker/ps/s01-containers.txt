@@ -1,0 +1,2 @@
+{"ID":"abc123def456","Names":"my-nginx","Image":"nginx:latest","Status":"Up 2 hours","State":"running","Ports":"0.0.0.0:8080->80/tcp","RunningFor":"2 hours ago","Labels":"maintainer=NGINX","Networks":"bridge"}
+{"ID":"def789ghi012","Names":"my-postgres","Image":"postgres:15","Status":"Exited (0) 1 hour ago","State":"exited","Ports":"","RunningFor":"3 hours ago","Labels":"","Networks":""}

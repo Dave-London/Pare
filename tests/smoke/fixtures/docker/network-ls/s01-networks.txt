@@ -1,0 +1,3 @@
+{"ID":"abc123def456","Name":"bridge","Driver":"bridge","Scope":"local","IPv6":"false","Internal":"false","CreatedAt":"2026-01-01T00:00:00Z"}
+{"ID":"def789ghi012","Name":"host","Driver":"host","Scope":"local","IPv6":"false","Internal":"false","CreatedAt":"2026-01-01T00:00:00Z"}
+{"ID":"ghi345jkl678","Name":"none","Driver":"null","Scope":"local","IPv6":"false","Internal":"false","CreatedAt":"2026-01-01T00:00:00Z"}

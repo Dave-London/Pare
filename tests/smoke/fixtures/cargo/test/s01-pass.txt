@@ -1,0 +1,8 @@
+{"reason":"compiler-artifact","package_id":"my-app 0.1.0 (path+file:///project)","target":{"kind":["lib"],"name":"my-app","src_path":"/project/src/lib.rs"},"profile":{"opt_level":"0","debuginfo":2},"filenames":["/project/target/debug/deps/libmy_app.rlib"],"fresh":false}
+
+running 3 tests
+test tests::test_add ... ok
+test tests::test_sub ... ok
+test tests::test_mul ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

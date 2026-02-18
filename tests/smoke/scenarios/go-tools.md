@@ -28,24 +28,24 @@
 
 ### Scenarios
 
-| #   | Scenario                               | Params                                     | Expected Output                                                   | Priority | Status |
-| --- | -------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- | -------- | ------ |
-| 1   | Successful build, no errors            | `{ path }`                                 | `{ success: true, errors: [], total: 0 }`                         | P0       | mocked |
-| 2   | Build with compile errors              | `{ path }` (broken code)                   | `{ success: false, errors: [{ file, line, message }], total: N }` | P0       | mocked |
-| 3   | Build with raw errors (linker/package) | `{ path }` (linker error)                  | `{ success: false, rawErrors: ["..."] }`                          | P0       | mocked |
-| 4   | Empty project / no Go files            | `{ path }` (empty dir)                     | Error thrown or `{ success: false }`                              | P0       | mocked |
-| 5   | Flag injection via packages            | `{ path, packages: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 6   | Flag injection via output              | `{ path, output: "--exec=evil" }`          | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 7   | Flag injection via tags                | `{ path, tags: ["--exec=evil"] }`          | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 8   | Build with race detection              | `{ path, race: true }`                     | `success: true`, `-race` in args                                  | P1       | mocked |
-| 9   | Build with trimpath                    | `{ path, trimpath: true }`                 | `success: true`, `-trimpath` in args                              | P1       | mocked |
-| 10  | Build with tags                        | `{ path, tags: ["integration"] }`          | `success: true`, correct tag passed                               | P1       | mocked |
-| 11  | Build with ldflags                     | `{ path, ldflags: "-X main.version=1.0" }` | `success: true`, ldflags applied                                  | P1       | mocked |
-| 12  | Build with output path                 | `{ path, output: "mybin" }`                | Binary written to specified path                                  | P1       | mocked |
-| 13  | Build with buildmode                   | `{ path, buildmode: "pie" }`               | `success: true`, buildmode applied                                | P2       | mocked |
-| 14  | Build with gcflags                     | `{ path, gcflags: "-N -l" }`               | `success: true`, gcflags applied                                  | P2       | mocked |
-| 15  | Build cache estimate populated         | `{ path }`                                 | `buildCache: { estimatedHits, estimatedMisses, totalPackages }`   | P1       | mocked |
-| 16  | Schema validation on all outputs       | all                                        | Zod parse succeeds                                                | P0       | mocked |
+| #   | Scenario                               | Params                                     | Expected Output                                                   | Priority | Status   |
+| --- | -------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- | -------- | -------- |
+| 1   | Successful build, no errors            | `{ path }`                                 | `{ success: true, errors: [], total: 0 }`                         | P0       | complete |
+| 2   | Build with compile errors              | `{ path }` (broken code)                   | `{ success: false, errors: [{ file, line, message }], total: N }` | P0       | complete |
+| 3   | Build with raw errors (linker/package) | `{ path }` (linker error)                  | `{ success: false, rawErrors: ["..."] }`                          | P0       | mocked   |
+| 4   | Empty project / no Go files            | `{ path }` (empty dir)                     | Error thrown or `{ success: false }`                              | P0       | mocked   |
+| 5   | Flag injection via packages            | `{ path, packages: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 6   | Flag injection via output              | `{ path, output: "--exec=evil" }`          | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 7   | Flag injection via tags                | `{ path, tags: ["--exec=evil"] }`          | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 8   | Build with race detection              | `{ path, race: true }`                     | `success: true`, `-race` in args                                  | P1       | mocked   |
+| 9   | Build with trimpath                    | `{ path, trimpath: true }`                 | `success: true`, `-trimpath` in args                              | P1       | mocked   |
+| 10  | Build with tags                        | `{ path, tags: ["integration"] }`          | `success: true`, correct tag passed                               | P1       | mocked   |
+| 11  | Build with ldflags                     | `{ path, ldflags: "-X main.version=1.0" }` | `success: true`, ldflags applied                                  | P1       | mocked   |
+| 12  | Build with output path                 | `{ path, output: "mybin" }`                | Binary written to specified path                                  | P1       | mocked   |
+| 13  | Build with buildmode                   | `{ path, buildmode: "pie" }`               | `success: true`, buildmode applied                                | P2       | mocked   |
+| 14  | Build with gcflags                     | `{ path, gcflags: "-N -l" }`               | `success: true`, gcflags applied                                  | P2       | mocked   |
+| 15  | Build cache estimate populated         | `{ path }`                                 | `buildCache: { estimatedHits, estimatedMisses, totalPackages }`   | P1       | mocked   |
+| 16  | Schema validation on all outputs       | all                                        | Zod parse succeeds                                                | P0       | mocked   |
 
 **Subtotal: 16 scenarios (P0: 7, P1: 5, P2: 2)**
 
@@ -81,27 +81,27 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                  | Expected Output                                                  | Priority | Status |
-| --- | -------------------------------- | --------------------------------------- | ---------------------------------------------------------------- | -------- | ------ |
-| 17  | All tests pass                   | `{ path }`                              | `{ success: true, passed: N, failed: 0, skipped: 0 }`            | P0       | mocked |
-| 18  | Some tests fail                  | `{ path }` (failing tests)              | `{ success: false, failed: N > 0, tests: [{ status: "fail" }] }` | P0       | mocked |
-| 19  | Tests with subtests              | `{ path }`                              | `tests` includes entries with `parent` field                     | P0       | mocked |
-| 20  | Package-level build failure      | `{ path }` (broken package)             | `{ success: false, packageFailures: [{ package, output }] }`     | P0       | mocked |
-| 21  | No test files found              | `{ path }` (no `_test.go`)              | `{ success: true, total: 0, tests: [] }`                         | P0       | mocked |
-| 22  | Flag injection via packages      | `{ path, packages: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 23  | Flag injection via run           | `{ path, run: "--exec=evil" }`          | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 24  | Flag injection via bench         | `{ path, bench: "--exec=evil" }`        | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 25  | Flag injection via benchtime     | `{ path, benchtime: "--exec=evil" }`    | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 26  | Flag injection via timeout       | `{ path, timeout: "--exec=evil" }`      | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 27  | Flag injection via coverprofile  | `{ path, coverprofile: "--exec=evil" }` | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 28  | Flag injection via tags          | `{ path, tags: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                   | P0       | mocked |
-| 29  | Run with filter                  | `{ path, run: "TestFoo" }`              | Only matching tests in output                                    | P1       | mocked |
-| 30  | Run with failfast                | `{ path, failfast: true }`              | Stops after first failure                                        | P1       | mocked |
-| 31  | Run with race detection          | `{ path, race: true }`                  | Race detector enabled                                            | P1       | mocked |
-| 32  | Run with coverage                | `{ path, cover: true }`                 | Coverage data in output                                          | P1       | mocked |
-| 33  | Run benchmarks                   | `{ path, bench: "." }`                  | Benchmark results in output                                      | P1       | mocked |
-| 34  | Shuffle tests                    | `{ path, shuffle: "on" }`               | `-shuffle=on` in args                                            | P2       | mocked |
-| 35  | Schema validation on all outputs | all                                     | Zod parse succeeds                                               | P0       | mocked |
+| #   | Scenario                         | Params                                  | Expected Output                                                  | Priority | Status   |
+| --- | -------------------------------- | --------------------------------------- | ---------------------------------------------------------------- | -------- | -------- |
+| 17  | All tests pass                   | `{ path }`                              | `{ success: true, passed: N, failed: 0, skipped: 0 }`            | P0       | complete |
+| 18  | Some tests fail                  | `{ path }` (failing tests)              | `{ success: false, failed: N > 0, tests: [{ status: "fail" }] }` | P0       | complete |
+| 19  | Tests with subtests              | `{ path }`                              | `tests` includes entries with `parent` field                     | P0       | mocked   |
+| 20  | Package-level build failure      | `{ path }` (broken package)             | `{ success: false, packageFailures: [{ package, output }] }`     | P0       | mocked   |
+| 21  | No test files found              | `{ path }` (no `_test.go`)              | `{ success: true, total: 0, tests: [] }`                         | P0       | mocked   |
+| 22  | Flag injection via packages      | `{ path, packages: ["--exec=evil"] }`   | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 23  | Flag injection via run           | `{ path, run: "--exec=evil" }`          | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 24  | Flag injection via bench         | `{ path, bench: "--exec=evil" }`        | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 25  | Flag injection via benchtime     | `{ path, benchtime: "--exec=evil" }`    | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 26  | Flag injection via timeout       | `{ path, timeout: "--exec=evil" }`      | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 27  | Flag injection via coverprofile  | `{ path, coverprofile: "--exec=evil" }` | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 28  | Flag injection via tags          | `{ path, tags: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                   | P0       | mocked   |
+| 29  | Run with filter                  | `{ path, run: "TestFoo" }`              | Only matching tests in output                                    | P1       | mocked   |
+| 30  | Run with failfast                | `{ path, failfast: true }`              | Stops after first failure                                        | P1       | mocked   |
+| 31  | Run with race detection          | `{ path, race: true }`                  | Race detector enabled                                            | P1       | mocked   |
+| 32  | Run with coverage                | `{ path, cover: true }`                 | Coverage data in output                                          | P1       | mocked   |
+| 33  | Run benchmarks                   | `{ path, bench: "." }`                  | Benchmark results in output                                      | P1       | mocked   |
+| 34  | Shuffle tests                    | `{ path, shuffle: "on" }`               | `-shuffle=on` in args                                            | P2       | mocked   |
+| 35  | Schema validation on all outputs | all                                     | Zod parse succeeds                                               | P0       | mocked   |
 
 **Subtotal: 19 scenarios (P0: 12, P1: 5, P2: 1)**
 
@@ -127,21 +127,21 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                 | Expected Output                                                        | Priority | Status |
-| --- | -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- | -------- | ------ |
-| 36  | Clean code, no diagnostics       | `{ path }`                             | `{ success: true, diagnostics: [], total: 0 }`                         | P0       | mocked |
-| 37  | Code with vet issues             | `{ path }` (vet warnings)              | `{ success: false, diagnostics: [{ file, line, message }], total: N }` | P0       | mocked |
-| 38  | Code with compilation errors     | `{ path }` (broken code)               | `compilationErrors` populated                                          | P0       | mocked |
-| 39  | Flag injection via packages      | `{ path, packages: ["--exec=evil"] }`  | `assertNoFlagInjection` throws                                         | P0       | mocked |
-| 40  | Flag injection via tags          | `{ path, tags: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                         | P0       | mocked |
-| 41  | Flag injection via vettool       | `{ path, vettool: "--exec=evil" }`     | `assertNoFlagInjection` throws                                         | P0       | mocked |
-| 42  | Flag injection via analyzers     | `{ path, analyzers: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                         | P0       | mocked |
-| 43  | Diagnostics with analyzer names  | `{ path }` (printf issues)             | `diagnostics[].analyzer` populated (e.g., `"printf"`)                  | P1       | mocked |
-| 44  | Enable specific analyzer         | `{ path, analyzers: ["shadow"] }`      | Only shadow diagnostics reported                                       | P1       | mocked |
-| 45  | Disable specific analyzer        | `{ path, analyzers: ["-printf"] }`     | Printf analyzer disabled                                               | P1       | mocked |
-| 46  | Context lines                    | `{ path, contextLines: 3 }`            | `-c=3` in args                                                         | P2       | mocked |
-| 47  | Custom vettool                   | `{ path, vettool: "/path/to/tool" }`   | `-vettool` in args                                                     | P2       | mocked |
-| 48  | Schema validation on all outputs | all                                    | Zod parse succeeds                                                     | P0       | mocked |
+| #   | Scenario                         | Params                                 | Expected Output                                                        | Priority | Status   |
+| --- | -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- | -------- | -------- |
+| 36  | Clean code, no diagnostics       | `{ path }`                             | `{ success: true, diagnostics: [], total: 0 }`                         | P0       | complete |
+| 37  | Code with vet issues             | `{ path }` (vet warnings)              | `{ success: false, diagnostics: [{ file, line, message }], total: N }` | P0       | complete |
+| 38  | Code with compilation errors     | `{ path }` (broken code)               | `compilationErrors` populated                                          | P0       | mocked   |
+| 39  | Flag injection via packages      | `{ path, packages: ["--exec=evil"] }`  | `assertNoFlagInjection` throws                                         | P0       | mocked   |
+| 40  | Flag injection via tags          | `{ path, tags: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                         | P0       | mocked   |
+| 41  | Flag injection via vettool       | `{ path, vettool: "--exec=evil" }`     | `assertNoFlagInjection` throws                                         | P0       | mocked   |
+| 42  | Flag injection via analyzers     | `{ path, analyzers: ["--exec=evil"] }` | `assertNoFlagInjection` throws                                         | P0       | mocked   |
+| 43  | Diagnostics with analyzer names  | `{ path }` (printf issues)             | `diagnostics[].analyzer` populated (e.g., `"printf"`)                  | P1       | mocked   |
+| 44  | Enable specific analyzer         | `{ path, analyzers: ["shadow"] }`      | Only shadow diagnostics reported                                       | P1       | mocked   |
+| 45  | Disable specific analyzer        | `{ path, analyzers: ["-printf"] }`     | Printf analyzer disabled                                               | P1       | mocked   |
+| 46  | Context lines                    | `{ path, contextLines: 3 }`            | `-c=3` in args                                                         | P2       | mocked   |
+| 47  | Custom vettool                   | `{ path, vettool: "/path/to/tool" }`   | `-vettool` in args                                                     | P2       | mocked   |
+| 48  | Schema validation on all outputs | all                                    | Zod parse succeeds                                                     | P0       | mocked   |
 
 **Subtotal: 13 scenarios (P0: 8, P1: 3, P2: 2)**
 
@@ -212,17 +212,17 @@
 
 ### Scenarios
 
-| #   | Scenario                             | Params                                | Expected Output                                    | Priority | Status |
-| --- | ------------------------------------ | ------------------------------------- | -------------------------------------------------- | -------- | ------ |
-| 62  | All files formatted                  | `{ path }`                            | `{ success: true, filesChanged: 0 }`               | P0       | mocked |
-| 63  | Unformatted files found (check mode) | `{ path, check: true }`               | `{ filesChanged: N, files: ["unformatted.go"] }`   | P0       | mocked |
-| 64  | Files reformatted (fix mode)         | `{ path }`                            | `{ success: true, filesChanged: N, files: [...] }` | P0       | mocked |
-| 65  | Parse errors in Go files             | `{ path }` (syntax errors)            | `parseErrors: [{ file, line, message }]`           | P0       | mocked |
-| 66  | Flag injection via patterns          | `{ path, patterns: ["--exec=evil"] }` | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 67  | Diff output with changes             | `{ path, diff: true }`                | `changes: [{ file, diff }]` populated              | P1       | mocked |
-| 68  | Simplify mode                        | `{ path, simplify: true }`            | `-s` in args                                       | P1       | mocked |
-| 69  | All errors mode                      | `{ path, allErrors: true }`           | `-e` in args, more errors reported                 | P2       | mocked |
-| 70  | Schema validation on all outputs     | all                                   | Zod parse succeeds                                 | P0       | mocked |
+| #   | Scenario                             | Params                                | Expected Output                                    | Priority | Status   |
+| --- | ------------------------------------ | ------------------------------------- | -------------------------------------------------- | -------- | -------- |
+| 62  | All files formatted                  | `{ path }`                            | `{ success: true, filesChanged: 0 }`               | P0       | complete |
+| 63  | Unformatted files found (check mode) | `{ path, check: true }`               | `{ filesChanged: N, files: ["unformatted.go"] }`   | P0       | complete |
+| 64  | Files reformatted (fix mode)         | `{ path }`                            | `{ success: true, filesChanged: N, files: [...] }` | P0       | mocked   |
+| 65  | Parse errors in Go files             | `{ path }` (syntax errors)            | `parseErrors: [{ file, line, message }]`           | P0       | mocked   |
+| 66  | Flag injection via patterns          | `{ path, patterns: ["--exec=evil"] }` | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 67  | Diff output with changes             | `{ path, diff: true }`                | `changes: [{ file, diff }]` populated              | P1       | mocked   |
+| 68  | Simplify mode                        | `{ path, simplify: true }`            | `-s` in args                                       | P1       | mocked   |
+| 69  | All errors mode                      | `{ path, allErrors: true }`           | `-e` in args, more errors reported                 | P2       | mocked   |
+| 70  | Schema validation on all outputs     | all                                   | Zod parse succeeds                                 | P0       | mocked   |
 
 **Subtotal: 9 scenarios (P0: 6, P1: 2, P2: 1)**
 
@@ -245,14 +245,14 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                 | Expected Output                                              | Priority | Status |
-| --- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------ | -------- | ------ |
-| 71  | Full environment returned        | `{ path }`                             | `{ success: true, goroot, gopath, goversion, goos, goarch }` | P0       | mocked |
-| 72  | Specific vars queried            | `{ path, vars: ["GOROOT", "GOPATH"] }` | `vars` map includes only requested keys                      | P0       | mocked |
-| 73  | Flag injection via vars          | `{ path, vars: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                               | P0       | mocked |
-| 74  | Changed mode                     | `{ path, changed: true }`              | `-changed` in args, only modified vars shown                 | P1       | mocked |
-| 75  | cgoEnabled field populated       | `{ path }`                             | `cgoEnabled` is boolean                                      | P1       | mocked |
-| 76  | Schema validation on all outputs | all                                    | Zod parse succeeds                                           | P0       | mocked |
+| #   | Scenario                         | Params                                 | Expected Output                                              | Priority | Status   |
+| --- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------ | -------- | -------- |
+| 71  | Full environment returned        | `{ path }`                             | `{ success: true, goroot, gopath, goversion, goos, goarch }` | P0       | complete |
+| 72  | Specific vars queried            | `{ path, vars: ["GOROOT", "GOPATH"] }` | `vars` map includes only requested keys                      | P0       | mocked   |
+| 73  | Flag injection via vars          | `{ path, vars: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                               | P0       | mocked   |
+| 74  | Changed mode                     | `{ path, changed: true }`              | `-changed` in args, only modified vars shown                 | P1       | mocked   |
+| 75  | cgoEnabled field populated       | `{ path }`                             | `cgoEnabled` is boolean                                      | P1       | mocked   |
+| 76  | Schema validation on all outputs | all                                    | Zod parse succeeds                                           | P0       | mocked   |
 
 **Subtotal: 6 scenarios (P0: 4, P1: 2, P2: 0)**
 
@@ -402,22 +402,22 @@
 
 ### Scenarios
 
-| #   | Scenario                              | Params                                        | Expected Output                                 | Priority | Status |
-| --- | ------------------------------------- | --------------------------------------------- | ----------------------------------------------- | -------- | ------ |
-| 113 | List packages in project              | `{ path }`                                    | `{ success: true, packages: [...], total: N }`  | P0       | mocked |
-| 114 | List modules                          | `{ path, modules: true }`                     | `{ success: true, modules: [...], total: N }`   | P0       | mocked |
-| 115 | No packages found                     | `{ path }` (empty project)                    | `{ success: true, total: 0 }`                   | P0       | mocked |
-| 116 | Flag injection via packages           | `{ path, packages: ["--exec=evil"] }`         | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 117 | Flag injection via jsonFields         | `{ path, jsonFields: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 118 | Flag injection via tags               | `{ path, tags: ["--exec=evil"] }`             | `assertNoFlagInjection` throws                  | P0       | mocked |
-| 119 | Package with error info               | `{ path }` (broken import)                    | `packages[].error.err` populated                | P1       | mocked |
-| 120 | Module with version/dir info          | `{ path, modules: true }`                     | `modules[].path`, `modules[].version` populated | P1       | mocked |
-| 121 | Updates mode auto-enables module mode | `{ path, updates: true }`                     | `-m -u` in args                                 | P1       | mocked |
-| 122 | Deps mode                             | `{ path, deps: true }`                        | `-deps` in args, transitive deps listed         | P1       | mocked |
-| 123 | Selective JSON fields                 | `{ path, jsonFields: ["Dir", "ImportPath"] }` | `-json=Dir,ImportPath` in args                  | P1       | mocked |
-| 124 | Find mode (fast)                      | `{ path, find: true }`                        | `-find` in args                                 | P2       | mocked |
-| 125 | Tolerate errors                       | `{ path, tolerateErrors: true }`              | `-e` in args                                    | P2       | mocked |
-| 126 | Schema validation on all outputs      | all                                           | Zod parse succeeds                              | P0       | mocked |
+| #   | Scenario                              | Params                                        | Expected Output                                 | Priority | Status   |
+| --- | ------------------------------------- | --------------------------------------------- | ----------------------------------------------- | -------- | -------- |
+| 113 | List packages in project              | `{ path }`                                    | `{ success: true, packages: [...], total: N }`  | P0       | complete |
+| 114 | List modules                          | `{ path, modules: true }`                     | `{ success: true, modules: [...], total: N }`   | P0       | mocked   |
+| 115 | No packages found                     | `{ path }` (empty project)                    | `{ success: true, total: 0 }`                   | P0       | mocked   |
+| 116 | Flag injection via packages           | `{ path, packages: ["--exec=evil"] }`         | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 117 | Flag injection via jsonFields         | `{ path, jsonFields: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 118 | Flag injection via tags               | `{ path, tags: ["--exec=evil"] }`             | `assertNoFlagInjection` throws                  | P0       | mocked   |
+| 119 | Package with error info               | `{ path }` (broken import)                    | `packages[].error.err` populated                | P1       | mocked   |
+| 120 | Module with version/dir info          | `{ path, modules: true }`                     | `modules[].path`, `modules[].version` populated | P1       | mocked   |
+| 121 | Updates mode auto-enables module mode | `{ path, updates: true }`                     | `-m -u` in args                                 | P1       | mocked   |
+| 122 | Deps mode                             | `{ path, deps: true }`                        | `-deps` in args, transitive deps listed         | P1       | mocked   |
+| 123 | Selective JSON fields                 | `{ path, jsonFields: ["Dir", "ImportPath"] }` | `-json=Dir,ImportPath` in args                  | P1       | mocked   |
+| 124 | Find mode (fast)                      | `{ path, find: true }`                        | `-find` in args                                 | P2       | mocked   |
+| 125 | Tolerate errors                       | `{ path, tolerateErrors: true }`              | `-e` in args                                    | P2       | mocked   |
+| 126 | Schema validation on all outputs      | all                                           | Zod parse succeeds                              | P0       | mocked   |
 
 **Subtotal: 14 scenarios (P0: 7, P1: 5, P2: 2)**
 
@@ -453,27 +453,27 @@
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                    | Expected Output                                                          | Priority | Status |
-| --- | -------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ | -------- | ------ |
-| 127 | Clean code, no diagnostics       | `{ path }`                                | `{ total: 0, errors: 0, warnings: 0, diagnostics: [] }`                  | P0       | mocked |
-| 128 | Code with lint issues            | `{ path }` (lint warnings)                | `{ total: N, diagnostics: [{ file, line, linter, severity, message }] }` | P0       | mocked |
-| 129 | golangci-lint not installed      | `{ path }` (no binary)                    | Error thrown                                                             | P0       | mocked |
-| 130 | Flag injection via patterns      | `{ path, patterns: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 131 | Flag injection via config        | `{ path, config: "--exec=evil" }`         | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 132 | Flag injection via newFromRev    | `{ path, newFromRev: "--exec=evil" }`     | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 133 | Flag injection via timeout       | `{ path, timeout: "--exec=evil" }`        | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 134 | Flag injection via enable        | `{ path, enable: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 135 | Flag injection via disable       | `{ path, disable: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 136 | Flag injection via buildTags     | `{ path, buildTags: ["--exec=evil"] }`    | `assertNoFlagInjection` throws                                           | P0       | mocked |
-| 137 | Enable specific linters          | `{ path, enable: ["govet", "errcheck"] }` | `--enable govet,errcheck` in args                                        | P1       | mocked |
-| 138 | Disable specific linters         | `{ path, disable: ["deadcode"] }`         | `--disable deadcode` in args                                             | P1       | mocked |
-| 139 | New from rev                     | `{ path, newFromRev: "HEAD~5" }`          | `--new-from-rev HEAD~5` in args                                          | P1       | mocked |
-| 140 | Fix mode                         | `{ path, fix: true }`                     | `--fix` in args                                                          | P1       | mocked |
-| 141 | By-linter summary populated      | `{ path }` (multiple linters)             | `byLinter: [{ linter, count }]`                                          | P1       | mocked |
-| 142 | Results truncated flag           | `{ path, maxIssuesPerLinter: 1 }`         | `resultsTruncated: true` when limit hit                                  | P1       | mocked |
-| 143 | Presets                          | `{ path, presets: ["bugs", "style"] }`    | `--presets bugs,style` in args                                           | P2       | mocked |
-| 144 | Concurrency                      | `{ path, concurrency: 2 }`                | `--concurrency 2` in args                                                | P2       | mocked |
-| 145 | Schema validation on all outputs | all                                       | Zod parse succeeds                                                       | P0       | mocked |
+| #   | Scenario                         | Params                                    | Expected Output                                                          | Priority | Status   |
+| --- | -------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ | -------- | -------- |
+| 127 | Clean code, no diagnostics       | `{ path }`                                | `{ total: 0, errors: 0, warnings: 0, diagnostics: [] }`                  | P0       | complete |
+| 128 | Code with lint issues            | `{ path }` (lint warnings)                | `{ total: N, diagnostics: [{ file, line, linter, severity, message }] }` | P0       | complete |
+| 129 | golangci-lint not installed      | `{ path }` (no binary)                    | Error thrown                                                             | P0       | mocked   |
+| 130 | Flag injection via patterns      | `{ path, patterns: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 131 | Flag injection via config        | `{ path, config: "--exec=evil" }`         | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 132 | Flag injection via newFromRev    | `{ path, newFromRev: "--exec=evil" }`     | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 133 | Flag injection via timeout       | `{ path, timeout: "--exec=evil" }`        | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 134 | Flag injection via enable        | `{ path, enable: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 135 | Flag injection via disable       | `{ path, disable: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 136 | Flag injection via buildTags     | `{ path, buildTags: ["--exec=evil"] }`    | `assertNoFlagInjection` throws                                           | P0       | mocked   |
+| 137 | Enable specific linters          | `{ path, enable: ["govet", "errcheck"] }` | `--enable govet,errcheck` in args                                        | P1       | mocked   |
+| 138 | Disable specific linters         | `{ path, disable: ["deadcode"] }`         | `--disable deadcode` in args                                             | P1       | mocked   |
+| 139 | New from rev                     | `{ path, newFromRev: "HEAD~5" }`          | `--new-from-rev HEAD~5` in args                                          | P1       | mocked   |
+| 140 | Fix mode                         | `{ path, fix: true }`                     | `--fix` in args                                                          | P1       | mocked   |
+| 141 | By-linter summary populated      | `{ path }` (multiple linters)             | `byLinter: [{ linter, count }]`                                          | P1       | mocked   |
+| 142 | Results truncated flag           | `{ path, maxIssuesPerLinter: 1 }`         | `resultsTruncated: true` when limit hit                                  | P1       | mocked   |
+| 143 | Presets                          | `{ path, presets: ["bugs", "style"] }`    | `--presets bugs,style` in args                                           | P2       | mocked   |
+| 144 | Concurrency                      | `{ path, concurrency: 2 }`                | `--concurrency 2` in args                                                | P2       | mocked   |
+| 145 | Schema validation on all outputs | all                                       | Zod parse succeeds                                                       | P0       | mocked   |
 
 **Subtotal: 19 scenarios (P0: 11, P1: 6, P2: 2)**
 

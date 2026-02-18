@@ -25,19 +25,19 @@
 
 ### Scenarios
 
-| #   | Scenario                          | Params                             | Expected Output                                                       | Priority | Status |
-| --- | --------------------------------- | ---------------------------------- | --------------------------------------------------------------------- | -------- | ------ |
-| 1   | Format clean project (no changes) | `{ path }`                         | `{ filesChanged: 0, success: true }`                                  | P0       | mocked |
-| 2   | Format project with changes       | `{ path }`                         | `{ filesChanged: N, success: true }`                                  | P0       | mocked |
-| 3   | Check mode with violations        | `{ path, check: true }`            | `{ success: false, errorType: "check_failed", wouldReformat: [...] }` | P0       | mocked |
-| 4   | No Python files found             | `{ path: "/tmp/empty" }`           | `{ filesChecked: 0, success: true }`                                  | P0       | mocked |
-| 5   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 6   | Flag injection on `targetVersion` | `{ targetVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 7   | Flag injection on `config`        | `{ config: "--exec=evil" }`        | `assertNoFlagInjection` throws                                        | P0       | mocked |
-| 8   | Syntax error in file              | `{ path }` (bad syntax)            | `{ success: false, errorType: "internal_error", diagnostics: [...] }` | P1       | mocked |
-| 9   | Custom line length                | `{ path, lineLength: 120 }`        | `{ success: true }`                                                   | P1       | mocked |
-| 10  | Diff mode                         | `{ path, diff: true }`             | `{ success: true }`                                                   | P2       | mocked |
-| 11  | Schema validation                 | all                                | Zod parse succeeds against `BlackResultSchema`                        | P0       | mocked |
+| #   | Scenario                          | Params                             | Expected Output                                                       | Priority | Status   |
+| --- | --------------------------------- | ---------------------------------- | --------------------------------------------------------------------- | -------- | -------- |
+| 1   | Format clean project (no changes) | `{ path }`                         | `{ filesChanged: 0, success: true }`                                  | P0       | complete |
+| 2   | Format project with changes       | `{ path }`                         | `{ filesChanged: N, success: true }`                                  | P0       | complete |
+| 3   | Check mode with violations        | `{ path, check: true }`            | `{ success: false, errorType: "check_failed", wouldReformat: [...] }` | P0       | mocked   |
+| 4   | No Python files found             | `{ path: "/tmp/empty" }`           | `{ filesChecked: 0, success: true }`                                  | P0       | mocked   |
+| 5   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 6   | Flag injection on `targetVersion` | `{ targetVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 7   | Flag injection on `config`        | `{ config: "--exec=evil" }`        | `assertNoFlagInjection` throws                                        | P0       | mocked   |
+| 8   | Syntax error in file              | `{ path }` (bad syntax)            | `{ success: false, errorType: "internal_error", diagnostics: [...] }` | P1       | mocked   |
+| 9   | Custom line length                | `{ path, lineLength: 120 }`        | `{ success: true }`                                                   | P1       | mocked   |
+| 10  | Diff mode                         | `{ path, diff: true }`             | `{ success: true }`                                                   | P2       | mocked   |
+| 11  | Schema validation                 | all                                | Zod parse succeeds against `BlackResultSchema`                        | P0       | mocked   |
 
 ### Summary: 11 scenarios (P0: 7, P1: 2, P2: 1)
 
@@ -118,21 +118,21 @@
 
 ### Scenarios
 
-| #   | Scenario                          | Params                             | Expected Output                                                            | Priority | Status |
-| --- | --------------------------------- | ---------------------------------- | -------------------------------------------------------------------------- | -------- | ------ |
-| 1   | Clean project (no errors)         | `{ path }`                         | `{ success: true, total: 0, errors: 0 }`                                   | P0       | mocked |
-| 2   | Project with type errors          | `{ path }`                         | `{ success: false, diagnostics: [{ severity: "error", ... }], errors: N }` | P0       | mocked |
-| 3   | No Python files                   | `{ path: "/tmp/empty" }`           | `{ success: true, total: 0 }`                                              | P0       | mocked |
-| 4   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 5   | Flag injection on `configFile`    | `{ configFile: "--exec=evil" }`    | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 6   | Flag injection on `pythonVersion` | `{ pythonVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 7   | Flag injection on `exclude`       | `{ exclude: "--exec=evil" }`       | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 8   | Flag injection on `module`        | `{ module: "--exec=evil" }`        | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 9   | Flag injection on `package`       | `{ package: "--exec=evil" }`       | `assertNoFlagInjection` throws                                             | P0       | mocked |
-| 10  | Strict mode                       | `{ path, strict: true }`           | More diagnostics than non-strict                                           | P1       | mocked |
-| 11  | Check specific module             | `{ path, module: "mymodule" }`     | Diagnostics scoped to module                                               | P1       | mocked |
-| 12  | With warnings and notes           | `{ path }`                         | `{ warnings: N, notes: N }` counts separated                               | P1       | mocked |
-| 13  | Schema validation                 | all                                | Zod parse succeeds against `MypyResultSchema`                              | P0       | mocked |
+| #   | Scenario                          | Params                             | Expected Output                                                            | Priority | Status   |
+| --- | --------------------------------- | ---------------------------------- | -------------------------------------------------------------------------- | -------- | -------- |
+| 1   | Clean project (no errors)         | `{ path }`                         | `{ success: true, total: 0, errors: 0 }`                                   | P0       | complete |
+| 2   | Project with type errors          | `{ path }`                         | `{ success: false, diagnostics: [{ severity: "error", ... }], errors: N }` | P0       | complete |
+| 3   | No Python files                   | `{ path: "/tmp/empty" }`           | `{ success: true, total: 0 }`                                              | P0       | mocked   |
+| 4   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 5   | Flag injection on `configFile`    | `{ configFile: "--exec=evil" }`    | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 6   | Flag injection on `pythonVersion` | `{ pythonVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 7   | Flag injection on `exclude`       | `{ exclude: "--exec=evil" }`       | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 8   | Flag injection on `module`        | `{ module: "--exec=evil" }`        | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 9   | Flag injection on `package`       | `{ package: "--exec=evil" }`       | `assertNoFlagInjection` throws                                             | P0       | mocked   |
+| 10  | Strict mode                       | `{ path, strict: true }`           | More diagnostics than non-strict                                           | P1       | mocked   |
+| 11  | Check specific module             | `{ path, module: "mymodule" }`     | Diagnostics scoped to module                                               | P1       | mocked   |
+| 12  | With warnings and notes           | `{ path }`                         | `{ warnings: N, notes: N }` counts separated                               | P1       | mocked   |
+| 13  | Schema validation                 | all                                | Zod parse succeeds against `MypyResultSchema`                              | P0       | mocked   |
 
 ### Summary: 13 scenarios (P0: 9, P1: 3, P2: 0)
 
@@ -252,15 +252,15 @@
 
 ### Scenarios
 
-| #   | Scenario                    | Params                               | Expected Output                                | Priority | Status |
-| --- | --------------------------- | ------------------------------------ | ---------------------------------------------- | -------- | ------ |
-| 1   | List all packages           | `{}`                                 | `{ success: true, packages: [...], total: N }` | P0       | mocked |
-| 2   | Empty environment           | `{}`                                 | `{ success: true, packages: [], total: 0 }`    | P0       | mocked |
-| 3   | Flag injection on `exclude` | `{ exclude: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                 | P0       | mocked |
-| 4   | Outdated packages           | `{ outdated: true }`                 | `packages[].latestVersion` populated           | P1       | mocked |
-| 5   | Exclude specific packages   | `{ exclude: ["pip", "setuptools"] }` | Those packages absent                          | P1       | mocked |
-| 6   | Not-required packages       | `{ notRequired: true }`              | Only top-level packages                        | P2       | mocked |
-| 7   | Schema validation           | all                                  | Zod parse succeeds against `PipListSchema`     | P0       | mocked |
+| #   | Scenario                    | Params                               | Expected Output                                | Priority | Status   |
+| --- | --------------------------- | ------------------------------------ | ---------------------------------------------- | -------- | -------- |
+| 1   | List all packages           | `{}`                                 | `{ success: true, packages: [...], total: N }` | P0       | complete |
+| 2   | Empty environment           | `{}`                                 | `{ success: true, packages: [], total: 0 }`    | P0       | mocked   |
+| 3   | Flag injection on `exclude` | `{ exclude: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                 | P0       | mocked   |
+| 4   | Outdated packages           | `{ outdated: true }`                 | `packages[].latestVersion` populated           | P1       | mocked   |
+| 5   | Exclude specific packages   | `{ exclude: ["pip", "setuptools"] }` | Those packages absent                          | P1       | mocked   |
+| 6   | Not-required packages       | `{ notRequired: true }`              | Only top-level packages                        | P2       | mocked   |
+| 7   | Schema validation           | all                                  | Zod parse succeeds against `PipListSchema`     | P0       | mocked   |
 
 ### Summary: 7 scenarios (P0: 4, P1: 2, P2: 1)
 
@@ -284,16 +284,16 @@
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                | Expected Output                                           | Priority | Status |
-| --- | ---------------------------- | ------------------------------------- | --------------------------------------------------------- | -------- | ------ |
-| 1   | Show single package          | `{ package: "pip" }`                  | `{ success: true, name: "pip", version: "..." }`          | P0       | mocked |
-| 2   | Package not found            | `{ package: "nonexistent-zzz" }`      | `{ success: false }` or error                             | P0       | mocked |
-| 3   | No package specified         | `{}`                                  | Error: "at least one package name is required"            | P0       | mocked |
-| 4   | Flag injection on `package`  | `{ package: "--exec=evil" }`          | `assertNoFlagInjection` throws                            | P0       | mocked |
-| 5   | Flag injection on `packages` | `{ packages: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                            | P0       | mocked |
-| 6   | Multiple packages            | `{ packages: ["pip", "setuptools"] }` | `{ packages: [{ name: "pip" }, { name: "setuptools" }] }` | P1       | mocked |
-| 7   | Show with files              | `{ package: "pip", files: true }`     | File listing included                                     | P2       | mocked |
-| 8   | Schema validation            | all                                   | Zod parse succeeds against `PipShowSchema`                | P0       | mocked |
+| #   | Scenario                     | Params                                | Expected Output                                           | Priority | Status   |
+| --- | ---------------------------- | ------------------------------------- | --------------------------------------------------------- | -------- | -------- |
+| 1   | Show single package          | `{ package: "pip" }`                  | `{ success: true, name: "pip", version: "..." }`          | P0       | complete |
+| 2   | Package not found            | `{ package: "nonexistent-zzz" }`      | `{ success: false }` or error                             | P0       | mocked   |
+| 3   | No package specified         | `{}`                                  | Error: "at least one package name is required"            | P0       | mocked   |
+| 4   | Flag injection on `package`  | `{ package: "--exec=evil" }`          | `assertNoFlagInjection` throws                            | P0       | mocked   |
+| 5   | Flag injection on `packages` | `{ packages: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                            | P0       | mocked   |
+| 6   | Multiple packages            | `{ packages: ["pip", "setuptools"] }` | `{ packages: [{ name: "pip" }, { name: "setuptools" }] }` | P1       | mocked   |
+| 7   | Show with files              | `{ package: "pip", files: true }`     | File listing included                                     | P2       | mocked   |
+| 8   | Schema validation            | all                                   | Zod parse succeeds against `PipShowSchema`                | P0       | mocked   |
 
 ### Summary: 8 scenarios (P0: 6, P1: 1, P2: 1)
 
@@ -411,21 +411,21 @@
 
 ### Scenarios
 
-| #   | Scenario                       | Params                               | Expected Output                                                   | Priority | Status |
-| --- | ------------------------------ | ------------------------------------ | ----------------------------------------------------------------- | -------- | ------ |
-| 1   | All tests pass                 | `{ path }`                           | `{ success: true, passed: N, failed: 0, total: N }`               | P0       | mocked |
-| 2   | Tests with failures            | `{ path }`                           | `{ success: false, failures: [{ test: "...", message: "..." }] }` | P0       | mocked |
-| 3   | No tests found                 | `{ path: "/tmp/empty" }`             | `{ success: true, total: 0 }` or no-tests exit                    | P0       | mocked |
-| 4   | Flag injection on `targets`    | `{ targets: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 5   | Flag injection on `markers`    | `{ markers: "--exec=evil" }`         | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 6   | Flag injection on `keyword`    | `{ keyword: "--exec=evil" }`         | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 7   | Flag injection on `coverage`   | `{ coverage: "--exec=evil" }`        | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 8   | Flag injection on `configFile` | `{ configFile: "--exec=evil" }`      | `assertNoFlagInjection` throws                                    | P0       | mocked |
-| 9   | Exit on first failure          | `{ path, exitFirst: true }`          | `{ failed: 1 }` (stops at first)                                  | P1       | mocked |
-| 10  | Keyword filter                 | `{ path, keyword: "test_specific" }` | Only matching tests                                               | P1       | mocked |
-| 11  | Collect only                   | `{ path, collectOnly: true }`        | Test list without execution                                       | P1       | mocked |
-| 12  | With coverage                  | `{ path, coverage: "src" }`          | `{ success: true }` with coverage data                            | P2       | mocked |
-| 13  | Schema validation              | all                                  | Zod parse succeeds against `PytestResultSchema`                   | P0       | mocked |
+| #   | Scenario                       | Params                               | Expected Output                                                   | Priority | Status   |
+| --- | ------------------------------ | ------------------------------------ | ----------------------------------------------------------------- | -------- | -------- |
+| 1   | All tests pass                 | `{ path }`                           | `{ success: true, passed: N, failed: 0, total: N }`               | P0       | complete |
+| 2   | Tests with failures            | `{ path }`                           | `{ success: false, failures: [{ test: "...", message: "..." }] }` | P0       | complete |
+| 3   | No tests found                 | `{ path: "/tmp/empty" }`             | `{ success: true, total: 0 }` or no-tests exit                    | P0       | mocked   |
+| 4   | Flag injection on `targets`    | `{ targets: ["--exec=evil"] }`       | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 5   | Flag injection on `markers`    | `{ markers: "--exec=evil" }`         | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 6   | Flag injection on `keyword`    | `{ keyword: "--exec=evil" }`         | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 7   | Flag injection on `coverage`   | `{ coverage: "--exec=evil" }`        | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 8   | Flag injection on `configFile` | `{ configFile: "--exec=evil" }`      | `assertNoFlagInjection` throws                                    | P0       | mocked   |
+| 9   | Exit on first failure          | `{ path, exitFirst: true }`          | `{ failed: 1 }` (stops at first)                                  | P1       | mocked   |
+| 10  | Keyword filter                 | `{ path, keyword: "test_specific" }` | Only matching tests                                               | P1       | mocked   |
+| 11  | Collect only                   | `{ path, collectOnly: true }`        | Test list without execution                                       | P1       | mocked   |
+| 12  | With coverage                  | `{ path, coverage: "src" }`          | `{ success: true }` with coverage data                            | P2       | mocked   |
+| 13  | Schema validation              | all                                  | Zod parse succeeds against `PytestResultSchema`                   | P0       | mocked   |
 
 ### Summary: 13 scenarios (P0: 9, P1: 3, P2: 1)
 
@@ -459,21 +459,21 @@
 
 ### Scenarios
 
-| #   | Scenario                          | Params                             | Expected Output                                    | Priority | Status |
-| --- | --------------------------------- | ---------------------------------- | -------------------------------------------------- | -------- | ------ |
-| 1   | Clean project                     | `{ path }`                         | `{ success: true, total: 0, fixable: 0 }`          | P0       | mocked |
-| 2   | Project with violations           | `{ path }`                         | `{ success: false, diagnostics: [...], total: N }` | P0       | mocked |
-| 3   | No Python files                   | `{ path: "/tmp/empty" }`           | `{ success: true, total: 0 }`                      | P0       | mocked |
-| 4   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 5   | Flag injection on `config`        | `{ config: "--exec=evil" }`        | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 6   | Flag injection on `targetVersion` | `{ targetVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 7   | Flag injection on `select`        | `{ select: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 8   | Flag injection on `ignore`        | `{ ignore: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 9   | Flag injection on `exclude`       | `{ exclude: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                     | P0       | mocked |
-| 10  | Select specific rules             | `{ path, select: ["E", "F401"] }`  | Only selected rule violations                      | P1       | mocked |
-| 11  | Fix mode                          | `{ path, fix: true }`              | `{ fixedCount: N }`                                | P1       | mocked |
-| 12  | Fixable count                     | `{ path }`                         | `{ fixable: N }` correctly counted                 | P1       | mocked |
-| 13  | Schema validation                 | all                                | Zod parse succeeds against `RuffResultSchema`      | P0       | mocked |
+| #   | Scenario                          | Params                             | Expected Output                                    | Priority | Status   |
+| --- | --------------------------------- | ---------------------------------- | -------------------------------------------------- | -------- | -------- |
+| 1   | Clean project                     | `{ path }`                         | `{ success: true, total: 0, fixable: 0 }`          | P0       | complete |
+| 2   | Project with violations           | `{ path }`                         | `{ success: false, diagnostics: [...], total: N }` | P0       | complete |
+| 3   | No Python files                   | `{ path: "/tmp/empty" }`           | `{ success: true, total: 0 }`                      | P0       | mocked   |
+| 4   | Flag injection on `targets`       | `{ targets: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 5   | Flag injection on `config`        | `{ config: "--exec=evil" }`        | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 6   | Flag injection on `targetVersion` | `{ targetVersion: "--exec=evil" }` | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 7   | Flag injection on `select`        | `{ select: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 8   | Flag injection on `ignore`        | `{ ignore: ["--exec=evil"] }`      | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 9   | Flag injection on `exclude`       | `{ exclude: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                     | P0       | mocked   |
+| 10  | Select specific rules             | `{ path, select: ["E", "F401"] }`  | Only selected rule violations                      | P1       | mocked   |
+| 11  | Fix mode                          | `{ path, fix: true }`              | `{ fixedCount: N }`                                | P1       | mocked   |
+| 12  | Fixable count                     | `{ path }`                         | `{ fixable: N }` correctly counted                 | P1       | mocked   |
+| 13  | Schema validation                 | all                                | Zod parse succeeds against `RuffResultSchema`      | P0       | mocked   |
 
 ### Summary: 13 scenarios (P0: 9, P1: 3, P2: 0)
 

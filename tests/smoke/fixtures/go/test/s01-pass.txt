@@ -1,0 +1,12 @@
+{"Time":"2026-02-18T10:00:00Z","Action":"start","Package":"my-app"}
+{"Time":"2026-02-18T10:00:00Z","Action":"run","Package":"my-app","Test":"TestAdd"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestAdd","Output":"=== RUN   TestAdd\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestAdd","Output":"--- PASS: TestAdd (0.00s)\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"pass","Package":"my-app","Test":"TestAdd","Elapsed":0}
+{"Time":"2026-02-18T10:00:00Z","Action":"run","Package":"my-app","Test":"TestSub"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestSub","Output":"=== RUN   TestSub\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestSub","Output":"--- PASS: TestSub (0.00s)\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"pass","Package":"my-app","Test":"TestSub","Elapsed":0}
+{"Time":"2026-02-18T10:00:01Z","Action":"output","Package":"my-app","Output":"PASS\n"}
+{"Time":"2026-02-18T10:00:01Z","Action":"output","Package":"my-app","Output":"ok  \tmy-app\t0.005s\n"}
+{"Time":"2026-02-18T10:00:01Z","Action":"pass","Package":"my-app","Elapsed":0.005}

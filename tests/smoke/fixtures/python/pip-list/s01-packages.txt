@@ -1,0 +1,1 @@
+[{"name":"pip","version":"24.0"},{"name":"setuptools","version":"69.0.3"},{"name":"requests","version":"2.31.0"},{"name":"urllib3","version":"2.2.0"},{"name":"certifi","version":"2024.2.2"}]

@@ -1,0 +1,5 @@
+latest: Pulling from library/alpine
+e2b5: Pull complete
+Digest: sha256:abcdef1234567890
+Status: Downloaded newer image for alpine:latest
+docker.io/library/alpine:latest

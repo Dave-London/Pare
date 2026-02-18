@@ -1,0 +1,13 @@
+{"Time":"2026-02-18T10:00:00Z","Action":"start","Package":"my-app"}
+{"Time":"2026-02-18T10:00:00Z","Action":"run","Package":"my-app","Test":"TestAdd"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestAdd","Output":"=== RUN   TestAdd\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestAdd","Output":"--- PASS: TestAdd (0.00s)\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"pass","Package":"my-app","Test":"TestAdd","Elapsed":0}
+{"Time":"2026-02-18T10:00:00Z","Action":"run","Package":"my-app","Test":"TestSub"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestSub","Output":"=== RUN   TestSub\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestSub","Output":"    main_test.go:20: expected 2, got 3\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"output","Package":"my-app","Test":"TestSub","Output":"--- FAIL: TestSub (0.00s)\n"}
+{"Time":"2026-02-18T10:00:00Z","Action":"fail","Package":"my-app","Test":"TestSub","Elapsed":0}
+{"Time":"2026-02-18T10:00:01Z","Action":"output","Package":"my-app","Output":"FAIL\n"}
+{"Time":"2026-02-18T10:00:01Z","Action":"output","Package":"my-app","Output":"FAIL\tmy-app\t0.006s\n"}
+{"Time":"2026-02-18T10:00:01Z","Action":"fail","Package":"my-app","Elapsed":0.006}

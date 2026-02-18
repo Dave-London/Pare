@@ -1,0 +1,17 @@
+my-app v0.1.0 (/project)
+├── serde v1.0.200
+│   └── serde_derive v1.0.200 (proc-macro)
+│       ├── proc-macro2 v1.0.78
+│       │   └── unicode-ident v1.0.12
+│       ├── quote v1.0.35
+│       │   └── proc-macro2 v1.0.78 (*)
+│       └── syn v2.0.48
+│           ├── proc-macro2 v1.0.78 (*)
+│           ├── quote v1.0.35 (*)
+│           └── unicode-ident v1.0.12 (*)
+└── tokio v1.36.0
+    ├── pin-project-lite v0.2.13
+    └── tokio-macros v2.2.0
+        ├── proc-macro2 v1.0.78 (*)
+        ├── quote v1.0.35 (*)
+        └── syn v2.0.48 (*)

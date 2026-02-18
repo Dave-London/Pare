@@ -1,0 +1,2 @@
+{"Dir":"/project","ImportPath":"my-app","Name":"main","GoFiles":["main.go"],"Imports":["fmt","os"]}
+{"Dir":"/project/internal/handler","ImportPath":"my-app/internal/handler","Name":"handler","GoFiles":["handler.go"],"Imports":["net/http","encoding/json"]}
