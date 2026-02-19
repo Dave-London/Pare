@@ -8,6 +8,4 @@ coverage:
       default:
         target: 70%
 
-comment:
-  layout: "reach,diff,flags,files"
-  require_changes: true
+comment: false

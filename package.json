@@ -49,5 +49,10 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,yaml,yml}": "prettier --write"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch": ">=10.2.1"
+    }
   }
 }
