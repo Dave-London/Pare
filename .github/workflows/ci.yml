@@ -5,19 +5,81 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      full-suite: ${{ steps.check.outputs.full-suite }}
+    steps:
+      - id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.head_ref }}" == changeset-release/* ]]; then
+            echo "full-suite=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full-suite=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-test-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm format:check
+      - run: pnpm test
+
+  build-and-test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm format:check
+      - run: pnpm test
+
+  build-and-test-full:
+    needs: classify
+    if: needs.classify.outputs.full-suite == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20, 22]
-
+        exclude:
+          # These are already covered by the light jobs
+          - os: ubuntu-latest
+            node-version: 22
+          - os: windows-latest
+            node-version: 22
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -36,6 +98,8 @@ jobs:
       - run: pnpm test
 
   coverage:
+    needs: classify
+    if: needs.classify.outputs.full-suite == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -103,3 +167,51 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level=high
+
+  ci-gate:
+    # Always run, even if upstream jobs are skipped
+    if: always()
+    needs:
+      - build-and-test-ubuntu
+      - build-and-test-windows
+      - build-and-test-full
+      - coverage
+      - lint
+      - smoke
+      - audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required jobs
+        run: |
+          echo "Checking required jobs..."
+
+          if [[ "${{ needs.lint.result }}" != "success" ]]; then
+            echo "lint failed: ${{ needs.lint.result }}"
+            exit 1
+          fi
+          if [[ "${{ needs.smoke.result }}" != "success" ]]; then
+            echo "smoke failed: ${{ needs.smoke.result }}"
+            exit 1
+          fi
+          if [[ "${{ needs.audit.result }}" != "success" ]]; then
+            echo "audit failed: ${{ needs.audit.result }}"
+            exit 1
+          fi
+          if [[ "${{ needs.build-and-test-ubuntu.result }}" != "success" ]]; then
+            echo "build-and-test-ubuntu failed: ${{ needs.build-and-test-ubuntu.result }}"
+            exit 1
+          fi
+          if [[ "${{ needs.build-and-test-windows.result }}" != "success" ]]; then
+            echo "build-and-test-windows failed: ${{ needs.build-and-test-windows.result }}"
+            exit 1
+          fi
+
+          # Conditional jobs: must pass if they ran, OK to skip
+          for result in "${{ needs.build-and-test-full.result }}" "${{ needs.coverage.result }}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "Conditional job failed: $result"
+              exit 1
+            fi
+          done
+
+          echo "All required checks passed!"
