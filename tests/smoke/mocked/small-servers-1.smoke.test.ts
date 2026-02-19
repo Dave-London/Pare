@@ -956,10 +956,8 @@ describe("Smoke: search.search", () => {
   });
 
   it("S3 [P0] invalid regex pattern", async () => {
-    mockRg("", "regex parse error", 2);
-    // The tool should still return a valid schema result (rg error)
-    const { parsed } = await callAndValidate({ pattern: "[invalid" });
-    expect(parsed.totalMatches).toBe(0);
+    // validateRegexPattern now throws before rg runs
+    await expect(callAndValidate({ pattern: "[invalid" })).rejects.toThrow(/Invalid regex pattern/);
   });
 
   it("S4 [P0] flag injection on pattern", async () => {

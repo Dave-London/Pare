@@ -5,6 +5,7 @@ import { rgCmd } from "../lib/search-runner.js";
 import { parseRgCountOutput } from "../lib/parsers.js";
 import { formatCount, compactCountMap, formatCountCompact } from "../lib/formatters.js";
 import { CountResultSchema } from "../schemas/index.js";
+import { validateRegexPattern } from "../lib/validation.js";
 
 /** Registers the `count` tool on the given MCP server. */
 export function registerCountTool(server: McpServer) {
@@ -100,6 +101,7 @@ export function registerCountTool(server: McpServer) {
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
       if (type) assertNoFlagInjection(type, "type");
+      if (!fixedStrings) validateRegexPattern(pattern);
 
       const cwd = path || process.cwd();
       const args = countMatches ? ["--count-matches"] : ["--count"];
