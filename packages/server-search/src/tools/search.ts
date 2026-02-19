@@ -5,6 +5,7 @@ import { rgCmd } from "../lib/search-runner.js";
 import { parseRgJsonOutput } from "../lib/parsers.js";
 import { formatSearch, compactSearchMap, formatSearchCompact } from "../lib/formatters.js";
 import { SearchResultSchema } from "../schemas/index.js";
+import { validateRegexPattern } from "../lib/validation.js";
 
 /** Registers the `search` tool on the given MCP server. */
 export function registerSearchTool(server: McpServer) {
@@ -99,6 +100,7 @@ export function registerSearchTool(server: McpServer) {
       if (path) assertNoFlagInjection(path, "path");
       if (glob) assertNoFlagInjection(glob, "glob");
       if (type) assertNoFlagInjection(type, "type");
+      if (!fixedStrings) validateRegexPattern(pattern);
 
       const cwd = path || process.cwd();
       const args = ["--json"];
