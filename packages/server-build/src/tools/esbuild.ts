@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { esbuildCmd } from "../lib/build-runner.js";
 import { parseEsbuildOutput } from "../lib/parsers.js";
 import { formatEsbuild, compactEsbuildMap, formatEsbuildCompact } from "../lib/formatters.js";
@@ -19,7 +25,7 @@ export function registerEsbuildTool(server: McpServer) {
       description:
         "Runs the esbuild bundler and returns structured errors, warnings, and output files.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         entryPoints: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -110,7 +116,7 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional esbuild flags"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: EsbuildResultSchema,
     },

@@ -4,7 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
@@ -253,7 +261,7 @@ export function registerRunTool(server: McpServer) {
       description:
         "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -270,11 +278,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             'Shard spec for distributed test execution (e.g., "1/3") via --shard (jest/vitest)',
           ),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to test config file (--config for all frameworks)"),
+        config: configInput("Path to test config file (--config for all frameworks)"),
         updateSnapshots: z
           .boolean()
           .optional()
@@ -338,7 +342,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the test runner"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: TestRunSchema,
     },

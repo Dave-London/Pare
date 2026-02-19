@@ -5,7 +5,14 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { pytest } from "../lib/python-runner.js";
 import { parsePytestOutput } from "../lib/parsers.js";
 import { formatPytest, compactPytestMap, formatPytestCompact } from "../lib/formatters.js";
@@ -20,7 +27,7 @@ export function registerPytestTool(server: McpServer) {
       description:
         "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -75,12 +82,8 @@ export function registerPytestTool(server: McpServer) {
           .max(128)
           .optional()
           .describe("Number of parallel workers for pytest-xdist (-n NUM, 0=auto)"),
-        configFile: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to pytest config file (-c FILE)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        configFile: configInput("Path to pytest config file (-c FILE)"),
+        compact: compactInput,
       },
       outputSchema: PytestResultSchema,
     },

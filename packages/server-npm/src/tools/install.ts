@@ -2,7 +2,12 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+} from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseInstallOutput } from "../lib/parsers.js";
@@ -22,7 +27,7 @@ export function registerInstallTool(server: McpServer) {
         "Lifecycle scripts (preinstall/postinstall) are skipped by default for safety. " +
         "Set ignoreScripts to false if packages need postinstall scripts to work (e.g., esbuild, sharp).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         args: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

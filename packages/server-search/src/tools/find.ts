@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { fdCmd } from "../lib/search-runner.js";
 import { parseFdOutput } from "../lib/parsers.js";
 import { formatFind, compactFindMap, formatFindCompact } from "../lib/formatters.js";
@@ -20,7 +26,7 @@ export function registerFindTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Regex pattern to match file/directory names"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Directory to search in"),
+        path: pathInput("Directory to search in"),
         type: z
           .enum(["file", "directory", "symlink", "executable", "empty"])
           .optional()
@@ -75,7 +81,7 @@ export function registerFindTool(server: McpServer) {
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
         follow: z.boolean().optional().describe("Follow symbolic links (--follow)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: FindResultSchema,
     },

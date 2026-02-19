@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parsePush, parsePushError } from "../lib/parsers.js";
 import { formatPush } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerPushTool(server: McpServer) {
       description:
         "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, summary, and whether the remote branch was newly created.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         remote: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

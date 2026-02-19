@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoFmtOutput } from "../lib/parsers.js";
 import { formatCargoFmt, compactFmtMap, formatFmtCompact } from "../lib/formatters.js";
@@ -14,7 +21,7 @@ export function registerFmtTool(server: McpServer) {
       title: "Cargo Fmt",
       description: "Checks or fixes Rust formatting and returns structured output.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         check: z
           .boolean()
           .optional()
@@ -49,16 +56,12 @@ export function registerFmtTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Rustfmt configuration options (-- --config <KEY=VALUE>)"),
-        configPath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to rustfmt config file (-- --config-path <PATH>)"),
+        configPath: configInput("Path to rustfmt config file (-- --config-path <PATH>)"),
         emit: z
           .enum(["files", "stdout"])
           .optional()
           .describe("Output mode for rustfmt (-- --emit <MODE>)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoFmtResultSchema,
     },

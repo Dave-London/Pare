@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { viteCmd } from "../lib/build-runner.js";
 import { parseViteBuildOutput } from "../lib/parsers.js";
 import { formatViteBuild, compactViteBuildMap, formatViteBuildCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerViteBuildTool(server: McpServer) {
       title: "Vite Build",
       description: "Runs Vite production build and returns structured output files with sizes.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         mode: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -75,7 +81,7 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional Vite build flags"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: ViteBuildResultSchema,
     },

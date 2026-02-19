@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseMerge, parseMergeAbort } from "../lib/parsers.js";
 import { formatMerge } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerMergeTool(server: McpServer) {
       description:
         "Merges a branch into the current branch. Supports abort, continue, and quit actions. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),
         noFf: z.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),

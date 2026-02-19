@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseReflogOutput } from "../lib/parsers.js";
@@ -18,7 +18,7 @@ export function registerReflogTool(server: McpServer) {
       description:
         "Returns reference log entries as structured data, useful for recovery operations. Also supports checking if a reflog exists.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["show", "exists"])
           .optional()
@@ -52,7 +52,7 @@ export function registerReflogTool(server: McpServer) {
         skip: z.number().optional().describe("Skip N entries for pagination (--skip)"),
         all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
         reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitReflogSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoTestOutput } from "../lib/parsers.js";
 import { formatCargoTest, compactTestMap, formatTestCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerTestTool(server: McpServer) {
       description:
         "Runs cargo test and returns structured test results (name, status, pass/fail counts).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         filter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -80,7 +86,7 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoTestResultSchema,
     },

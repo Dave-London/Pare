@@ -7,6 +7,9 @@ import {
   assertAllowedRoot,
   assertNoFlagInjection,
   assertValidLogOpts,
+  repoPathInput,
+  compactInput,
+  configInput,
 } from "@paretools/shared";
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
@@ -25,7 +28,7 @@ export function registerGitleaksTool(server: McpServer) {
       description:
         "Runs Gitleaks to detect hardcoded secrets in git repositories. Returns structured finding data with redacted secrets.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path to scan"),
+        path: repoPathInput,
         redact: z
           .boolean()
           .optional()
@@ -33,11 +36,7 @@ export function registerGitleaksTool(server: McpServer) {
           .describe(
             "Redact raw secrets in output (--redact). Defaults to true to prevent secret leakage to LLM context.",
           ),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to custom gitleaks rule file (--config)"),
+        config: configInput("Path to custom gitleaks rule file (--config)"),
         baselinePath: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -87,7 +86,7 @@ export function registerGitleaksTool(server: McpServer) {
           .number()
           .optional()
           .describe("Exit code when findings are detected (--exit-code)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitleaksScanResultSchema,
     },

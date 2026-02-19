@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoAuditJson } from "../lib/parsers.js";
 import { formatCargoAudit, compactAuditMap, formatAuditCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerAuditTool(server: McpServer) {
       title: "Cargo Audit",
       description: "Runs cargo audit and returns structured vulnerability data.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         fix: z
           .boolean()
           .optional()
@@ -77,7 +83,7 @@ export function registerAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("URL for advisory database (--url <URL>)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoAuditResultSchema,
     },

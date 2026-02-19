@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrReview } from "../lib/parsers.js";
 import { formatPrReview } from "../lib/formatters.js";
@@ -39,7 +39,7 @@ export function registerPrReviewTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Read review body from file (--body-file). Mutually exclusive with body."),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
       },
       outputSchema: PrReviewResultSchema,
     },

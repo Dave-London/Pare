@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { parseGetOutput } from "../lib/parsers.js";
 import { formatGet, compactGetMap, formatGetCompact } from "../lib/formatters.js";
 import { KubectlGetResultSchema } from "../schemas/index.js";
@@ -49,11 +56,7 @@ export function registerGetTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Kubernetes context for multi-cluster operations (--context)"),
-        kubeconfig: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to kubeconfig file (--kubeconfig)"),
+        kubeconfig: pathInput("Path to kubeconfig file (--kubeconfig)"),
         sortBy: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -82,7 +85,7 @@ export function registerGetTool(server: McpServer) {
           .describe(
             "Subresource to access (--subresource). E.g., 'status' or 'scale' for status/scale subresource.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: KubectlGetResultSchema,
     },

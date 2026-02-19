@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseCheckout, parseCheckoutError } from "../lib/parsers.js";
 import { formatCheckout } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerCheckoutTool(server: McpServer) {
       description:
         "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         ref: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

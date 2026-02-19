@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseInfoJson } from "../lib/parsers.js";
@@ -22,7 +28,7 @@ export function registerInfoTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Package name to look up (e.g. 'express', 'lodash@4.17.21')"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         registry: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -40,7 +46,7 @@ export function registerInfoTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Workspace for scoped queries (maps to --workspace for npm)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
         packageManager: packageManagerInput,
       },
       outputSchema: NpmInfoSchema,

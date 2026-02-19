@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseReset, parseResetError, validateResetArgs } from "../lib/parsers.js";
 import { formatReset } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerResetTool(server: McpServer) {
       description:
         "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. The 'hard' mode requires confirm=true as a safety guard since it permanently discards changes. Returns structured data with the ref, mode, and list of affected files.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

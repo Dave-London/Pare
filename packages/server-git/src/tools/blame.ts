@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+} from "@paretools/shared";
 import { git, resolveFilePath } from "../lib/git-runner.js";
 import { parseBlameOutput } from "../lib/parsers.js";
 import { formatBlame, compactBlameMap, formatBlameCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerBlameTool(server: McpServer) {
       description:
         "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, email, date) and their attributed lines.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
         startLine: z.number().optional().describe("Start line number for blame range"),
         endLine: z.number().optional().describe("End line number for blame range"),
@@ -51,7 +57,7 @@ export function registerBlameTool(server: McpServer) {
         ignoreWhitespace: z.boolean().optional().describe("Ignore whitespace changes (-w)"),
         reverse: z.boolean().optional().describe("Find when lines were removed (--reverse)"),
         showStats: z.boolean().optional().describe("Include work-amount statistics (--show-stats)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitBlameSchema,
     },

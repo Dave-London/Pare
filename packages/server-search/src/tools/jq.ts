@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { jqCmd } from "../lib/search-runner.js";
 import { parseJqOutput } from "../lib/parsers.js";
 import { formatJq, compactJqMap, formatJqCompact } from "../lib/formatters.js";
@@ -19,11 +25,7 @@ export function registerJqTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("jq filter expression (e.g., '.name', '.[] | select(.age > 30)')"),
-        file: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a JSON file to process"),
+        file: pathInput("Path to a JSON file to process"),
         input: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -76,7 +78,7 @@ export function registerJqTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't print newlines between outputs (--join-output)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: JqResultSchema,
     },

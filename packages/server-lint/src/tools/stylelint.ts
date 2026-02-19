@@ -1,6 +1,14 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  fixInput,
+  configInput,
+} from "@paretools/shared";
 import { stylelintCmd } from "../lib/lint-runner.js";
 import { parseStylelintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
@@ -15,14 +23,14 @@ export function registerStylelintTool(server: McpServer) {
       description:
         "Runs Stylelint and returns structured diagnostics (file, line, column, rule, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("File patterns to lint (default: ['.'])"),
-        fix: z.boolean().optional().default(false).describe("Auto-fix problems"),
+        fix: fixInput,
         quiet: z
           .boolean()
           .optional()
@@ -53,17 +61,9 @@ export function registerStylelintTool(server: McpServer) {
           .min(0)
           .optional()
           .describe("Maximum number of warnings before failing (maps to --max-warnings)"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to Stylelint configuration file (maps to --config)"),
-        ignorePath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a custom ignore file (maps to --ignore-path)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        config: configInput("Path to Stylelint configuration file (maps to --config)"),
+        ignorePath: configInput("Path to a custom ignore file (maps to --ignore-path)"),
+        compact: compactInput,
       },
       outputSchema: LintResultSchema,
     },

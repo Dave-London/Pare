@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+} from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunList } from "../lib/parsers.js";
 import { formatRunList, compactRunListMap, formatRunListCompact } from "../lib/formatters.js";
@@ -87,8 +93,8 @@ export function registerRunListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by creation time (--created), e.g. '>2024-01-01'"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: repoPathInput,
+        compact: compactInput,
       },
       outputSchema: RunListResultSchema,
     },

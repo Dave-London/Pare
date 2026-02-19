@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { webpackCmd } from "../lib/build-runner.js";
 import { parseWebpackOutput } from "../lib/parsers.js";
 import { formatWebpack, compactWebpackMap, formatWebpackCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerWebpackTool(server: McpServer) {
       description:
         "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         config: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -76,7 +82,7 @@ export function registerWebpackTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional webpack flags"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: WebpackResultSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoDocOutput } from "../lib/parsers.js";
 import { formatCargoDoc, compactDocMap, formatDocCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerDocTool(server: McpServer) {
       title: "Cargo Doc",
       description: "Generates Rust documentation and returns structured output with warning count.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         open: z
           .boolean()
           .optional()
@@ -77,7 +83,7 @@ export function registerDocTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoDocResultSchema,
     },

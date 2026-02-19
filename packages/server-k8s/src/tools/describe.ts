@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { parseDescribeOutput } from "../lib/parsers.js";
 import { formatDescribe, compactDescribeMap, formatDescribeCompact } from "../lib/formatters.js";
 import { KubectlDescribeResultSchema } from "../schemas/index.js";
@@ -47,12 +54,8 @@ export function registerDescribeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Kubernetes context for multi-cluster operations (--context)"),
-        kubeconfig: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to kubeconfig file (--kubeconfig)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        kubeconfig: pathInput("Path to kubeconfig file (--kubeconfig)"),
+        compact: compactInput,
       },
       outputSchema: KubectlDescribeResultSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvInstall } from "../lib/parsers.js";
 import { formatUvInstall, compactUvInstallMap, formatUvInstallCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerUvInstallTool(server: McpServer) {
       description:
         "Runs uv pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -76,7 +82,7 @@ export function registerUvInstallTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package extras to install (--extra NAME)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: UvInstallSchema,
     },

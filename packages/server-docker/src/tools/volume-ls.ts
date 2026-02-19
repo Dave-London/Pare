@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseVolumeLsJson } from "../lib/parsers.js";
 import { formatVolumeLs, compactVolumeLsMap, formatVolumeLsCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerVolumeLsTool(server: McpServer) {
       description:
         "Lists Docker volumes with structured driver, mountpoint, and scope information.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         filter: z
           .union([
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -30,7 +36,7 @@ export function registerVolumeLsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Display cluster volumes from Docker Swarm (default: false)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: DockerVolumeLsSchema,
     },

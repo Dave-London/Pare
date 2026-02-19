@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseStashListOutput } from "../lib/parsers.js";
@@ -16,7 +16,7 @@ export function registerStashListTool(server: McpServer) {
       description:
         "Lists all stash entries with index, message, date, branch, and optional file change summary. Returns structured stash data.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         maxCount: z.number().optional().describe("Limit number of stash entries (-n/--max-count)"),
         grep: z
           .string()
@@ -40,7 +40,7 @@ export function registerStashListTool(server: McpServer) {
           .describe(
             "Include file count and change summary per stash entry. Runs an additional git stash show per entry.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitStashListSchema,
     },

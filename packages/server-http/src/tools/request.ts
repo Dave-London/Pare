@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { curlCmd } from "../lib/curl-runner.js";
 import { parseCurlOutput, PARE_META_SEPARATOR } from "../lib/parsers.js";
 import {
@@ -111,8 +117,8 @@ export function registerRequestTool(server: McpServer) {
           .describe(
             "Custom DNS resolution (--resolve). Format: 'host:port:addr' (e.g., 'example.com:443:127.0.0.1')",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        compact: compactInput,
+        path: cwdPathInput,
       },
       outputSchema: HttpResponseSchema,
     },

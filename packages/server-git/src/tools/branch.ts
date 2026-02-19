@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch } from "../lib/parsers.js";
@@ -15,7 +15,7 @@ export function registerBranchTool(server: McpServer) {
       title: "Git Branch",
       description: "Lists, creates, renames, or deletes branches. Returns structured branch data.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         create: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -71,7 +71,7 @@ export function registerBranchTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Switch to the created branch after creation (uses git switch)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitBranchSchema,
     },

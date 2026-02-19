@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { makeCmd, justCmd, resolveTool } from "../lib/make-runner.js";
 import {
   parseJustList,
@@ -56,7 +62,7 @@ export function registerListTool(server: McpServer) {
       description:
         "Lists available make or just targets with optional descriptions. Auto-detects make vs just.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         tool: z
           .enum(["auto", "make", "just"])
           .optional()
@@ -92,7 +98,7 @@ export function registerListTool(server: McpServer) {
           .describe(
             "Include recipe command bodies per target where available (from just JSON dump or Makefile source)",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: MakeListResultSchema,
     },

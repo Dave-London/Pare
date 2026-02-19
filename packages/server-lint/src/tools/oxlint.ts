@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { oxlintCmd } from "../lib/lint-runner.js";
 import { parseOxlintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
@@ -15,7 +22,7 @@ export function registerOxlintTool(server: McpServer) {
       description:
         "Runs Oxlint and returns structured diagnostics (file, line, column, rule, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -33,11 +40,7 @@ export function registerOxlintTool(server: McpServer) {
           .describe("Apply suggestion-level fixes (maps to --fix-suggestions)"),
         threads: z.number().optional().describe("Number of threads to use for parallel linting"),
         noIgnore: z.boolean().optional().describe("Disable ignore patterns (maps to --no-ignore)"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to Oxlint configuration file (maps to --config)"),
+        config: configInput("Path to Oxlint configuration file (maps to --config)"),
         deny: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -60,17 +63,9 @@ export function registerOxlintTool(server: McpServer) {
           .describe(
             "Plugin categories to enable (e.g., 'import', 'jest', 'jsx-a11y') (maps to --<plugin>-plugin)",
           ),
-        tsconfig: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to tsconfig.json for type-aware rules (maps to --tsconfig)"),
-        ignorePath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to an alternate ignore file (maps to --ignore-path)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        tsconfig: configInput("Path to tsconfig.json for type-aware rules (maps to --tsconfig)"),
+        ignorePath: configInput("Path to an alternate ignore file (maps to --ignore-path)"),
+        compact: compactInput,
       },
       outputSchema: LintResultSchema,
     },

@@ -5,6 +5,8 @@ import {
   dualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
 } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseRemoteOutput, parseRemoteShow, parseRemotePrune } from "../lib/parsers.js";
@@ -25,7 +27,7 @@ export function registerRemoteTool(server: McpServer) {
       description:
         "Manages remote repositories. Supports list (default), add, remove, rename, set-url, prune, and show actions. Returns structured remote data.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["list", "add", "remove", "rename", "set-url", "prune", "show", "update"])
           .optional()
@@ -51,7 +53,7 @@ export function registerRemoteTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("New remote name (required for rename action)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitRemoteSchema,
     },

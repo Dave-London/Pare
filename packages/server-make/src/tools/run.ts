@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { makeCmd, justCmd, resolveTool } from "../lib/make-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
@@ -22,7 +28,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the target"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         tool: z
           .enum(["auto", "make", "just"])
           .optional()
@@ -67,7 +73,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Check if target is up to date without executing (make -q, make only). Exit code 0 = up to date.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: MakeRunResultSchema,
     },

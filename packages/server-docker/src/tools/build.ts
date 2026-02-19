@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseBuildOutput } from "../lib/parsers.js";
 import { formatBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
@@ -97,7 +102,7 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional build arguments"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: DockerBuildSchema,
     },

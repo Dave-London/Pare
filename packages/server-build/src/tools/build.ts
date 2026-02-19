@@ -7,6 +7,8 @@ import {
   assertNoFlagInjection,
   assertAllowedRoot,
   INPUT_LIMITS,
+  cwdPathInput,
+  compactInput,
 } from "@paretools/shared";
 import { runBuildCommand } from "../lib/build-runner.js";
 import { parseBuildCommandOutput } from "../lib/parsers.js";
@@ -37,7 +39,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .default([])
           .describe("Arguments for the build command (e.g., ['run', 'build'])"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         timeout: z
           .number()
           .int()
@@ -53,7 +55,7 @@ export function registerBuildTool(server: McpServer) {
           .describe(
             "Environment variables to set for the build process (e.g., { NODE_ENV: 'production', CI: 'true' }). Merged with existing environment.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: BuildResultSchema,
     },

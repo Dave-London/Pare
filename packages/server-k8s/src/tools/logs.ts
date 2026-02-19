@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { parseLogsOutput } from "../lib/parsers.js";
 import { formatLogs, compactLogsMap, formatLogsCompact } from "../lib/formatters.js";
 import { KubectlLogsResultSchema } from "../schemas/index.js";
@@ -90,7 +96,7 @@ export function registerLogsTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Attempt to parse each log line as JSON and return `logEntries`"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: KubectlLogsResultSchema,
     },

@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { hadolintCmd } from "../lib/lint-runner.js";
 import { parseHadolintJson } from "../lib/parsers.js";
 import { formatLint, compactLintMap, formatLintCompact } from "../lib/formatters.js";
@@ -15,7 +22,7 @@ export function registerHadolintTool(server: McpServer) {
       description:
         "Runs Hadolint (Dockerfile linter) and returns structured diagnostics (file, line, rule, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -45,11 +52,7 @@ export function registerHadolintTool(server: McpServer) {
           .optional()
           .describe("Enforce strict label schema (maps to --strict-labels)"),
         verbose: z.boolean().optional().describe("Enable verbose output (maps to --verbose)"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to Hadolint configuration file (maps to --config)"),
+        config: configInput("Path to Hadolint configuration file (maps to --config)"),
         requireLabel: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -79,7 +82,7 @@ export function registerHadolintTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Rule codes to treat as info (maps to --info)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: LintResultSchema,
     },

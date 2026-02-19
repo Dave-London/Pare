@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import {
   parseHelmListOutput,
   parseHelmStatusOutput,
@@ -178,7 +184,7 @@ export function registerHelmTool(server: McpServer) {
           ),
         noHooks: z.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
         skipCrds: z.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: z.union([
         HelmListResultSchema,

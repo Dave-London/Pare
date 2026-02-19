@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunRerun } from "../lib/parsers.js";
 import { formatRunRerun } from "../lib/formatters.js";
@@ -45,7 +45,7 @@ export function registerRunRerunTool(server: McpServer) {
           .describe(
             "Rerun a specific job by its databaseId (-j/--job). Note: requires the job's databaseId, not the job name.",
           ),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
       },
       outputSchema: RunRerunResultSchema,
     },

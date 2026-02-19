@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
 import { parsePrettierListDifferent } from "../lib/parsers.js";
 import {
@@ -19,7 +26,7 @@ export function registerFormatCheckTool(server: McpServer) {
       description:
         "Checks if files are formatted and returns a structured list of files needing formatting.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -42,16 +49,8 @@ export function registerFormatCheckTool(server: McpServer) {
           .enum(["silent", "error", "warn", "log", "debug"])
           .optional()
           .describe("Log level to control output verbosity"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a Prettier configuration file (maps to --config)"),
-        ignorePath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a custom ignore file (maps to --ignore-path)"),
+        config: configInput("Path to a Prettier configuration file (maps to --config)"),
+        ignorePath: configInput("Path to a custom ignore file (maps to --ignore-path)"),
         parser: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -77,7 +76,7 @@ export function registerFormatCheckTool(server: McpServer) {
           .min(1)
           .optional()
           .describe("The line length where Prettier will try to wrap"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: FormatCheckResultSchema,
     },

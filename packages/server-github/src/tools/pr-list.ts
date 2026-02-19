@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+} from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrList } from "../lib/parsers.js";
 import { formatPrList, compactPrListMap, formatPrListCompact } from "../lib/formatters.js";
@@ -78,8 +84,8 @@ export function registerPrListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by GitHub App (--app)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: repoPathInput,
+        compact: compactInput,
       },
       outputSchema: PrListResultSchema,
     },

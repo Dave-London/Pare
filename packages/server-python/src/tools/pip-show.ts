@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { pip } from "../lib/python-runner.js";
 import { parsePipShowOutput } from "../lib/parsers.js";
 import { formatPipShow, compactPipShowMap, formatPipShowCompact } from "../lib/formatters.js";
@@ -26,13 +32,13 @@ export function registerPipShowTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package names to show (supports multiple packages)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         files: z
           .boolean()
           .optional()
           .default(false)
           .describe("List installed files for the package (-f, --files)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PipShowSchema,
     },

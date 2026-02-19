@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { rgCmd } from "../lib/search-runner.js";
 import { parseRgJsonOutput } from "../lib/parsers.js";
 import { formatSearch, compactSearchMap, formatSearchCompact } from "../lib/formatters.js";
@@ -20,11 +26,7 @@ export function registerSearchTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Regular expression pattern to search for"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Directory or file to search in"),
+        path: pathInput("Directory or file to search in"),
         glob: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -73,7 +75,7 @@ export function registerSearchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: SearchResultSchema,
     },

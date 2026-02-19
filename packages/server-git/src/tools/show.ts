@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseShow } from "../lib/parsers.js";
@@ -22,7 +22,7 @@ export function registerShowTool(server: McpServer) {
       title: "Git Show",
       description: "Shows commit details and diff statistics for a given ref.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         ref: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -47,7 +47,7 @@ export function registerShowTool(server: McpServer) {
           .optional()
           .describe("GPG signature verification (--show-signature)"),
         notes: z.boolean().optional().describe("Include git notes (--notes)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitShowSchema,
     },

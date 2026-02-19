@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { prettier } from "../lib/lint-runner.js";
 import {
   parsePrettierListDifferent,
@@ -23,7 +30,7 @@ export function registerPrettierFormatTool(server: McpServer) {
       description:
         "Formats files with Prettier (--write) and returns a structured list of changed files.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -70,12 +77,8 @@ export function registerPrettierFormatTool(server: McpServer) {
           .min(1)
           .optional()
           .describe("The line length where Prettier will try to wrap"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a Prettier configuration file (maps to --config)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        config: configInput("Path to a Prettier configuration file (maps to --config)"),
+        compact: compactInput,
       },
       outputSchema: FormatWriteResultSchema,
     },

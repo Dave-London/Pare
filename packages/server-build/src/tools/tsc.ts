@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { tsc } from "../lib/build-runner.js";
 import { parseTscOutput } from "../lib/parsers.js";
 import { formatTsc, compactTscMap, formatTscCompact } from "../lib/formatters.js";
@@ -16,7 +22,7 @@ export function registerTscTool(server: McpServer) {
         "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). " +
         "Note: In compact mode, diagnostics are trimmed to file, line, and code — column and message fields are omitted to save tokens.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         noEmit: z
           .boolean()
           .optional()
@@ -64,7 +70,7 @@ export function registerTscTool(server: McpServer) {
           .describe(
             "Enable or disable pretty-printed output (maps to --pretty). Set false for normalized parser-friendly output.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: TscResultSchema,
     },

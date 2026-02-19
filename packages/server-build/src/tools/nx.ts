@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { nxCmd } from "../lib/build-runner.js";
 import { parseNxOutput } from "../lib/parsers.js";
 import { formatNx, compactNxMap, formatNxCompact } from "../lib/formatters.js";
@@ -56,7 +62,7 @@ export function registerNxTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Projects to exclude from run-many (maps to --exclude)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         parallel: z
           .number()
           .optional()
@@ -91,7 +97,7 @@ export function registerNxTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to nx"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: NxResultSchema,
     },

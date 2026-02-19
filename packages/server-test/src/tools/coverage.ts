@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage, parsePytestCoverageJson } from "../lib/parsers/pytest.js";
 import { parseJestCoverage, parseJestCoverageJson } from "../lib/parsers/jest.js";
@@ -202,7 +209,7 @@ export function registerCoverageTool(server: McpServer) {
       title: "Test Coverage",
       description: "Runs tests with coverage and returns structured coverage summary per file.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -250,7 +257,7 @@ export function registerCoverageTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to the coverage runner"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CoverageSchema,
     },

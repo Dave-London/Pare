@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseInspectJsonAll } from "../lib/parsers.js";
 import { formatInspect, compactInspectMap, formatInspectCompact } from "../lib/formatters.js";
@@ -32,8 +38,8 @@ export function registerInspectTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Display total file sizes (-s, --size)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       outputSchema: DockerInspectSchema,
     },

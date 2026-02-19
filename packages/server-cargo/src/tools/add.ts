@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoAddOutput } from "../lib/parsers.js";
 import { formatCargoAdd, compactAddMap, formatAddCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerAddTool(server: McpServer) {
       description:
         "Adds dependencies to a Rust project and returns structured output. WARNING: may execute untrusted code.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -97,7 +103,7 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run without accessing the network (--offline)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoAddResultSchema,
     },

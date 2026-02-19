@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrChecks } from "../lib/parsers.js";
 import { formatPrChecks, compactPrChecksMap, formatPrChecksCompact } from "../lib/formatters.js";
@@ -42,7 +47,7 @@ export function registerPrChecksTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to show only required checks (--required)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PrChecksResultSchema,
     },

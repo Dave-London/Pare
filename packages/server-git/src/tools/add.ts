@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseAdd } from "../lib/parsers.js";
 import { formatAdd } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerAddTool(server: McpServer) {
       description:
         "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

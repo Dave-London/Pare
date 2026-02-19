@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoBuildJson } from "../lib/parsers.js";
 import { formatCargoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerBuildTool(server: McpServer) {
       description:
         "Runs cargo build and returns structured diagnostics (file, line, code, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         release: z.boolean().optional().default(false).describe("Build in release mode"),
         keepGoing: z
           .boolean()
@@ -82,7 +88,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to Cargo.toml (--manifest-path <PATH>)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoBuildResultSchema,
     },

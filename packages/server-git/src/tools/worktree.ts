@@ -5,6 +5,8 @@ import {
   compactDualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
 } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseWorktreeList, parseWorktreeResult } from "../lib/parsers.js";
@@ -25,7 +27,7 @@ export function registerWorktreeTool(server: McpServer) {
       description:
         "Lists, adds, removes, locks, unlocks, or prunes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["list", "add", "remove", "lock", "unlock", "prune", "move", "repair"])
           .optional()
@@ -86,7 +88,7 @@ export function registerWorktreeTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Optional worktree paths to repair (used with action=repair)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitWorktreeOutputSchema,
     },

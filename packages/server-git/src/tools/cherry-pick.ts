@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseCherryPick } from "../lib/parsers.js";
 import { formatCherryPick } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerCherryPickTool(server: McpServer) {
       description:
         "Applies specific commits to the current branch. Returns structured data with applied commits, any conflicts, and new commit hash.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         commits: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
