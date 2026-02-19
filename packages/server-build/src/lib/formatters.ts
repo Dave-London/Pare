@@ -8,6 +8,8 @@ import type {
   WebpackResult,
   TurboResult,
   NxResult,
+  LernaResult,
+  RollupResult,
 } from "../schemas/index.js";
 
 /** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
@@ -478,4 +480,149 @@ export function formatNxCompact(data: NxCompact): string {
     return `nx: ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
   }
   return `nx: failed — ${data.passed} passed, ${data.failed} failed, ${data.cached} cached (${data.duration}s)`;
+}
+
+// ---------------------------------------------------------------------------
+// lerna
+// ---------------------------------------------------------------------------
+
+/** Formats structured Lerna results into a human-readable summary. */
+export function formatLerna(data: LernaResult): string {
+  const packages = data.packages ?? [];
+  const errors = data.errors ?? [];
+
+  if (data.success) {
+    const lines = [`lerna ${data.action}: succeeded in ${data.duration}s`];
+    if (packages.length > 0) {
+      lines.push(`  ${packages.length} packages:`);
+      for (const pkg of packages) {
+        const priv = pkg.private ? " (private)" : "";
+        const loc = pkg.location ? ` @ ${pkg.location}` : "";
+        lines.push(`    ${pkg.name}@${pkg.version}${priv}${loc}`);
+      }
+    }
+    if (data.output) {
+      const outputLines = data.output.split("\n").filter(Boolean);
+      if (outputLines.length > 0) {
+        lines.push(`  output: ${outputLines.length} lines`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  const lines = [`lerna ${data.action}: failed (${data.duration}s)`];
+  for (const err of errors) {
+    lines.push(`  ${err}`);
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// lerna compact
+// ---------------------------------------------------------------------------
+
+/** Compact lerna: success, action, duration, and package count only. */
+export interface LernaCompact {
+  [key: string]: unknown;
+  success: boolean;
+  action: string;
+  duration: number;
+  packageCount: number;
+  errors?: string[];
+}
+
+export function compactLernaMap(data: LernaResult): LernaCompact {
+  const compact: LernaCompact = {
+    success: data.success,
+    action: data.action,
+    duration: data.duration,
+    packageCount: (data.packages ?? []).length,
+  };
+  if (data.errors?.length) compact.errors = data.errors;
+  return compact;
+}
+
+export function formatLernaCompact(data: LernaCompact): string {
+  if (data.success) {
+    const parts = [`lerna ${data.action}: succeeded in ${data.duration}s`];
+    if (data.packageCount > 0) parts.push(`${data.packageCount} packages`);
+    return parts.join(", ");
+  }
+  return `lerna ${data.action}: failed (${data.duration}s)`;
+}
+
+// ---------------------------------------------------------------------------
+// rollup
+// ---------------------------------------------------------------------------
+
+/** Formats structured Rollup results into a human-readable summary. */
+export function formatRollup(data: RollupResult): string {
+  const bundles = data.bundles ?? [];
+  const errors = data.errors ?? [];
+  const warnings = data.warnings ?? [];
+
+  if (data.success) {
+    const parts = [`rollup: build succeeded in ${data.duration}s`];
+    if (bundles.length > 0) parts.push(`${bundles.length} bundles`);
+    if (warnings.length > 0) parts.push(`${warnings.length} warnings`);
+
+    const lines = [parts.join(", ")];
+    for (const bundle of bundles) {
+      const fmt = bundle.format ? ` [${bundle.format}]` : "";
+      const size = bundle.size !== undefined ? ` (${bundle.size} bytes)` : "";
+      lines.push(`  ${bundle.input} → ${bundle.output}${fmt}${size}`);
+    }
+    for (const warn of warnings) {
+      lines.push(`  WARN: ${warn}`);
+    }
+    return lines.join("\n");
+  }
+
+  const lines = [
+    `rollup: build failed (${data.duration}s) — ${errors.length} errors, ${warnings.length} warnings`,
+  ];
+  for (const err of errors) {
+    const loc = err.file
+      ? `${err.file}${err.line ? `:${err.line}` : ""}${err.column ? `:${err.column}` : ""}`
+      : "";
+    lines.push(`  ERROR${loc ? ` ${loc}` : ""}: ${err.message}`);
+  }
+  for (const warn of warnings) {
+    lines.push(`  WARN: ${warn}`);
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// rollup compact
+// ---------------------------------------------------------------------------
+
+/** Compact rollup: success and duration. Error/warning arrays included when non-empty. */
+export interface RollupCompact {
+  [key: string]: unknown;
+  success: boolean;
+  duration: number;
+  bundleCount: number;
+  errors?: Array<{ file?: string; line?: number; message: string }>;
+  warnings?: string[];
+}
+
+export function compactRollupMap(data: RollupResult): RollupCompact {
+  const compact: RollupCompact = {
+    success: data.success,
+    duration: data.duration,
+    bundleCount: (data.bundles ?? []).length,
+  };
+  if (data.errors?.length) compact.errors = data.errors;
+  if (data.warnings?.length) compact.warnings = data.warnings;
+  return compact;
+}
+
+export function formatRollupCompact(data: RollupCompact): string {
+  if (data.success) {
+    const parts = [`rollup: build succeeded in ${data.duration}s`];
+    if (data.bundleCount > 0) parts.push(`${data.bundleCount} bundles`);
+    return parts.join(", ");
+  }
+  return `rollup: build failed (${data.duration}s)`;
 }

@@ -15,6 +15,11 @@ import type {
   TurboTask,
   NxResult,
   NxTask,
+  LernaResult,
+  LernaPackage,
+  RollupResult,
+  RollupBundle,
+  RollupError,
 } from "../schemas/index.js";
 
 // tsc output format: file(line,col): error TSxxxx: message
@@ -852,5 +857,160 @@ export function parseNxOutput(
     failed,
     cached,
     affectedProjects: affectedProjects.size > 0 ? [...affectedProjects] : undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// lerna
+// ---------------------------------------------------------------------------
+
+/** Parses Lerna JSON output (from --json flag) into structured package list. */
+export function parseLernaOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+  action: "list" | "run" | "changed" | "version",
+): LernaResult {
+  const packages: LernaPackage[] = [];
+  const errors: string[] = [];
+
+  // For list/changed, lerna --json outputs a JSON array
+  if (action === "list" || action === "changed") {
+    try {
+      const jsonStart = stdout.indexOf("[");
+      if (jsonStart >= 0) {
+        const jsonStr = stdout.slice(jsonStart);
+        const parsed = JSON.parse(jsonStr) as Record<string, unknown>[];
+        for (const pkg of parsed) {
+          packages.push({
+            name: String(pkg.name ?? ""),
+            version: String(pkg.version ?? ""),
+            location: typeof pkg.location === "string" ? pkg.location : undefined,
+            private: typeof pkg.private === "boolean" ? pkg.private : undefined,
+          });
+        }
+      }
+    } catch {
+      // JSON parsing failed; fall back to error extraction
+    }
+  }
+
+  // Collect error lines from stderr
+  const combined = stdout + "\n" + stderr;
+  const lines = combined.split("\n").filter(Boolean);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (isErrorLine(trimmed)) {
+      errors.push(trimmed);
+    }
+  }
+
+  // For run/version, capture the full output as a string
+  const output = action === "run" || action === "version" ? stdout || undefined : undefined;
+
+  return {
+    success: exitCode === 0,
+    action,
+    packages: packages.length > 0 ? packages : undefined,
+    output,
+    errors: errors.length > 0 ? errors : undefined,
+    duration,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// rollup
+// ---------------------------------------------------------------------------
+
+// Rollup output format:
+//   src/index.js → dist/bundle.js...
+//   created dist/bundle.js in 1.2s
+// or with format info:
+//   src/index.js → dist/bundle.cjs.js, dist/bundle.esm.js...
+// Error format:
+//   [!] Error: Could not resolve './missing' from src/index.js
+//   src/index.js (10:5)
+// or:
+//   [!] (plugin xyz) Error: message
+// Warning format:
+//   (!) Unresolved dependencies
+//   (!) Missing exports
+
+const ROLLUP_BUNDLE_RE = /^(.+?)\s+→\s+(.+?)\.{3}$/;
+const ROLLUP_CREATED_RE = /^created\s+(.+?)\s+in\s+[\d.]+/;
+const ROLLUP_ERROR_HEADER_RE = /^\[!]\s+(?:\(.+?\)\s+)?(?:Error:\s+)?(.+)$/;
+const ROLLUP_ERROR_LOCATION_RE = /^(.+?)\s+\((\d+):(\d+)\)$/;
+const ROLLUP_WARNING_RE = /^\(\!\)\s+(.+)$/;
+
+/** Parses Rollup bundler output into structured bundles, errors, and warnings. */
+export function parseRollupOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  duration: number,
+): RollupResult {
+  const bundles: RollupBundle[] = [];
+  const errors: RollupError[] = [];
+  const warnings: string[] = [];
+
+  const combined = stdout + "\n" + stderr;
+  const lines = combined.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Match bundle lines: src/index.js → dist/bundle.js...
+    const bundleMatch = trimmed.match(ROLLUP_BUNDLE_RE);
+    if (bundleMatch) {
+      const input = bundleMatch[1].trim();
+      const outputParts = bundleMatch[2].split(",").map((p) => p.trim());
+      for (const outputFile of outputParts) {
+        bundles.push({
+          input,
+          output: outputFile,
+        });
+      }
+      continue;
+    }
+
+    // Match error header: [!] Error: message or [!] (plugin x) Error: message
+    const errorMatch = trimmed.match(ROLLUP_ERROR_HEADER_RE);
+    if (errorMatch) {
+      const message = errorMatch[1].trim();
+      let file: string | undefined;
+      let lineNum: number | undefined;
+      let column: number | undefined;
+
+      // Next line may have location info: file.js (10:5)
+      if (i + 1 < lines.length) {
+        const locMatch = lines[i + 1].trim().match(ROLLUP_ERROR_LOCATION_RE);
+        if (locMatch) {
+          file = locMatch[1];
+          lineNum = parseInt(locMatch[2], 10);
+          column = parseInt(locMatch[3], 10);
+          i++; // Skip location line
+        }
+      }
+
+      errors.push({ file, line: lineNum, column, message });
+      continue;
+    }
+
+    // Match warning lines: (!) Warning message
+    const warnMatch = trimmed.match(ROLLUP_WARNING_RE);
+    if (warnMatch) {
+      warnings.push(warnMatch[1].trim());
+      continue;
+    }
+  }
+
+  return {
+    success: exitCode === 0,
+    bundles: bundles.length > 0 ? bundles : undefined,
+    errors: errors.length > 0 ? errors : undefined,
+    warnings: warnings.length > 0 ? warnings : undefined,
+    duration,
   };
 }
