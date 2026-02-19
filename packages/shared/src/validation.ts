@@ -12,6 +12,35 @@ export function assertNoFlagInjection(value: string, paramName: string): void {
 }
 
 /**
+ * Validates that a git sort key is safe. Git sort keys may start with `-` (meaning
+ * descending order), e.g. `-creatordate`, `-committerdate`, `version:refname`.
+ * Only allows alphanumeric chars, colons, dots, and underscores (with optional leading `-`).
+ */
+export function assertValidSortKey(value: string, paramName: string): void {
+  if (!/^-?[a-zA-Z][a-zA-Z0-9:._-]*$/.test(value)) {
+    throw new Error(
+      `Invalid ${paramName}: "${value}". Sort keys must match /^-?[a-zA-Z][a-zA-Z0-9:._-]*$/.`,
+    );
+  }
+}
+
+/**
+ * Validates that a git log option string is safe. Log options are `--`-prefixed flags
+ * with optional values, e.g. `--since=2024-01-01`, `--author=foo`, `--all`.
+ * Each space-separated token must be a long-form flag (`--name` or `--name=value`).
+ */
+export function assertValidLogOpts(value: string, paramName: string): void {
+  const tokens = value.split(/\s+/).filter(Boolean);
+  for (const token of tokens) {
+    if (!/^--[a-zA-Z][\w-]*(=.*)?$/.test(token)) {
+      throw new Error(
+        `Invalid ${paramName} token: "${token}". Log options must be long-form flags (--name or --name=value).`,
+      );
+    }
+  }
+}
+
+/**
  * Allowlist of known safe build commands.
  * Prevents arbitrary command execution via the build tool's command parameter.
  */
