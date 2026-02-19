@@ -8,6 +8,16 @@ export {
   assertAllowedCommand,
 } from "./validation.js";
 export { INPUT_LIMITS } from "./limits.js";
+export {
+  compactInput,
+  projectPathInput,
+  repoPathInput,
+  cwdPathInput,
+  fixInput,
+  pathInput,
+  configInput,
+  filePatternsInput,
+} from "./input-schemas.js";
 export { sanitizeErrorOutput } from "./sanitize.js";
 export { shouldRegisterTool, _resetProfileCache } from "./tool-filter.js";
 export { PROFILES, resolveProfile } from "./profiles.js";
