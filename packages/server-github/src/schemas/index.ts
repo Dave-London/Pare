@@ -517,3 +517,67 @@ export const LabelCreateResultSchema = z.object({
 });
 
 export type LabelCreateResult = z.infer<typeof LabelCreateResultSchema>;
+
+// ── Repo schemas ────────────────────────────────────────────────────
+
+/** Zod schema for structured repo-view output. */
+export const RepoViewResultSchema = z.object({
+  name: z.string(),
+  owner: z.string(),
+  description: z.string().nullable(),
+  url: z.string(),
+  homepageUrl: z.string().nullable().optional(),
+  defaultBranch: z.string(),
+  isPrivate: z.boolean(),
+  isArchived: z.boolean(),
+  isFork: z.boolean(),
+  stars: z.number(),
+  forks: z.number(),
+  languages: z.array(z.string()).optional(),
+  topics: z.array(z.string()).optional(),
+  license: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  pushedAt: z.string().optional(),
+  errorType: z.enum(["not-found", "permission-denied", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type RepoViewResult = z.infer<typeof RepoViewResultSchema>;
+
+/** Zod schema for structured repo-clone output. */
+export const RepoCloneResultSchema = z.object({
+  success: z.boolean(),
+  repo: z.string(),
+  directory: z.string().optional(),
+  message: z.string(),
+  errorType: z.enum(["not-found", "permission-denied", "already-exists", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type RepoCloneResult = z.infer<typeof RepoCloneResultSchema>;
+
+// ── Discussion schemas ──────────────────────────────────────────────
+
+/** Zod schema for a single discussion item. */
+export const DiscussionItemSchema = z.object({
+  number: z.number(),
+  title: z.string(),
+  author: z.string(),
+  category: z.string(),
+  createdAt: z.string(),
+  url: z.string(),
+  isAnswered: z.boolean(),
+  comments: z.number(),
+});
+
+/** Zod schema for structured discussion-list output. */
+export const DiscussionListResultSchema = z.object({
+  discussions: z.array(DiscussionItemSchema),
+  totalCount: z.number(),
+  errorType: z.enum(["not-found", "permission-denied", "unknown"]).optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type DiscussionItem = z.infer<typeof DiscussionItemSchema>;
+export type DiscussionListResult = z.infer<typeof DiscussionListResultSchema>;
