@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseComposeUpOutput } from "../lib/parsers.js";
 import { formatComposeUp, compactComposeUpMap, formatComposeUpCompact } from "../lib/formatters.js";
@@ -85,7 +90,7 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Run in dry-run mode without actually starting services (default: false)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: DockerComposeUpSchema,
     },

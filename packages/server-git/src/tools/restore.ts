@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseRestore, parseRestoreError } from "../lib/parsers.js";
 import { formatRestore } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerRestoreTool(server: McpServer) {
       description:
         "Discards working tree changes or restores files from a specific commit. Returns structured data with restored files, source ref, and staged flag.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

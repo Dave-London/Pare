@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { poetry } from "../lib/python-runner.js";
 import { parsePoetryOutput } from "../lib/parsers.js";
 import { formatPoetry, compactPoetryMap, formatPoetryCompact } from "../lib/formatters.js";
@@ -48,7 +54,7 @@ export function registerPoetryTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Exclude hashes in exported requirements (--without-hashes)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         dryRun: z
           .boolean()
           .optional()
@@ -69,7 +75,7 @@ export function registerPoetryTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show dependency tree, for show action (--tree)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PoetryResultSchema,
     },

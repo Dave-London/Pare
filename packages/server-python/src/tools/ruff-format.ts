@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { ruff } from "../lib/python-runner.js";
 import { parseRuffFormatOutput } from "../lib/parsers.js";
 import {
@@ -57,12 +64,8 @@ export function registerRuffFormatTool(server: McpServer) {
           .positive()
           .optional()
           .describe("Override the configured indent width (--indent-width)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to custom ruff config file"),
+        path: projectPathInput,
+        config: configInput("Path to custom ruff config file"),
         targetVersion: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -82,7 +85,7 @@ export function registerRuffFormatTool(server: McpServer) {
           .enum(["single", "double"])
           .optional()
           .describe("Quote style override for formatting"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: RuffFormatResultSchema,
     },

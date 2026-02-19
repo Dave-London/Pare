@@ -5,6 +5,9 @@ import {
   dualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
 } from "@paretools/shared";
 import { shellcheckCmd } from "../lib/lint-runner.js";
 import {
@@ -24,7 +27,7 @@ export function registerShellcheckTool(server: McpServer) {
       description:
         "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, column, rule, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -73,17 +76,9 @@ export function registerShellcheckTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Only report these check codes (maps to --include)"),
-        rcfile: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to a custom ShellCheck config file (maps to --rcfile)"),
-        sourcePath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to resolve source commands (maps to --source-path)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        rcfile: configInput("Path to a custom ShellCheck config file (maps to --rcfile)"),
+        sourcePath: configInput("Path to resolve source commands (maps to --source-path)"),
+        compact: compactInput,
       },
       outputSchema: LintResultSchema,
     },

@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { black } from "../lib/python-runner.js";
 import { parseBlackOutput } from "../lib/parsers.js";
 import { formatBlack, compactBlackMap, formatBlackCompact } from "../lib/formatters.js";
@@ -15,7 +22,7 @@ export function registerBlackTool(server: McpServer) {
       description:
         "Runs Black code formatter and returns structured results (files changed, unchanged, would reformat).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -49,12 +56,8 @@ export function registerBlackTool(server: McpServer) {
           .default(false)
           .describe("Skip string quote normalization (-S)"),
         preview: z.boolean().optional().default(false).describe("Enable preview style (--preview)"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to explicit Black config file (--config)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        config: configInput("Path to explicit Black config file (--config)"),
+        compact: compactInput,
       },
       outputSchema: BlackResultSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  pathInput,
+} from "@paretools/shared";
 import { rgCmd } from "../lib/search-runner.js";
 import { parseRgCountOutput } from "../lib/parsers.js";
 import { formatCount, compactCountMap, formatCountCompact } from "../lib/formatters.js";
@@ -20,11 +26,7 @@ export function registerCountTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Regular expression pattern to count matches for"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Directory or file to search in"),
+        path: pathInput("Directory or file to search in"),
         glob: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -75,7 +77,7 @@ export function registerCountTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CountResultSchema,
     },

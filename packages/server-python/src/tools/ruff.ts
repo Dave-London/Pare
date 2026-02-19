@@ -1,6 +1,14 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  fixInput,
+  configInput,
+} from "@paretools/shared";
 import { ruff } from "../lib/python-runner.js";
 import { parseRuffJson } from "../lib/parsers.js";
 import { formatRuff, compactRuffMap, formatRuffCompact } from "../lib/formatters.js";
@@ -15,14 +23,14 @@ export function registerRuffTool(server: McpServer) {
       description:
         "Runs ruff check and returns structured lint diagnostics (file, line, code, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["."])
           .describe("Files or directories to check (default: ['.'])"),
-        fix: z.boolean().optional().default(false).describe("Auto-fix problems"),
+        fix: fixInput,
         unsafeFixes: z
           .boolean()
           .optional()
@@ -56,11 +64,7 @@ export function registerRuffTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Rule codes or prefixes to suppress (e.g. ['E501'])"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to custom ruff config file"),
+        config: configInput("Path to custom ruff config file"),
         targetVersion: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -71,7 +75,7 @@ export function registerRuffTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("File patterns to exclude from checking"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: RuffResultSchema,
     },

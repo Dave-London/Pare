@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { biome } from "../lib/lint-runner.js";
 import { parseBiomeFormat } from "../lib/parsers.js";
 import {
@@ -19,7 +26,7 @@ export function registerBiomeFormatTool(server: McpServer) {
       description:
         "Formats files with Biome (format --write) and returns a structured list of changed files.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -36,11 +43,7 @@ export function registerBiomeFormatTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Only format files changed since this git ref (maps to --since)"),
-        configPath: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to Biome configuration file (maps to --config-path)"),
+        configPath: configInput("Path to Biome configuration file (maps to --config-path)"),
         indentStyle: z
           .enum(["tab", "space"])
           .optional()
@@ -55,7 +58,7 @@ export function registerBiomeFormatTool(server: McpServer) {
           .optional()
           .describe("Semicolon style (always or asNeeded)"),
         lineEnding: z.enum(["lf", "crlf", "cr"]).optional().describe("Line ending style"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: FormatWriteResultSchema,
     },

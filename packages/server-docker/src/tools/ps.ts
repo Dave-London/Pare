@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parsePsJson } from "../lib/parsers.js";
 import { formatPs, compactPsMap, formatPsCompact } from "../lib/formatters.js";
@@ -30,7 +35,7 @@ export function registerPsTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by status, name, label, network (--filter)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: DockerPsSchema,
     },

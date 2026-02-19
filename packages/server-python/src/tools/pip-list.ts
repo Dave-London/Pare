@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { pip } from "../lib/python-runner.js";
 import { parsePipListJson } from "../lib/parsers.js";
 import { formatPipList, compactPipListMap, formatPipListCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerPipListTool(server: McpServer) {
       title: "pip List",
       description: "Runs pip list and returns a structured list of installed packages.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         local: z
           .boolean()
           .optional()
@@ -52,7 +58,7 @@ export function registerPipListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Package names to exclude from output"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PipListSchema,
     },

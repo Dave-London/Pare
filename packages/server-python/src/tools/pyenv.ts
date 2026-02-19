@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { pyenv } from "../lib/python-runner.js";
 import { parsePyenvOutput } from "../lib/parsers.js";
 import { formatPyenv, compactPyenvMap, formatPyenvCompact } from "../lib/formatters.js";
@@ -38,7 +44,7 @@ export function registerPyenvTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Command name for `which` action (e.g. python, pip)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         skipExisting: z
           .boolean()
           .optional()
@@ -54,7 +60,7 @@ export function registerPyenvTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Clear local/global version setting (--unset)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
       outputSchema: z.object({ action: z.string() }).passthrough(),

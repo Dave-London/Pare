@@ -4,7 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { parsePlaywrightJson } from "../lib/parsers/playwright.js";
 import {
   formatPlaywrightResult,
@@ -110,7 +118,7 @@ export function registerPlaywrightTool(server: McpServer) {
       description:
         "Runs Playwright tests with JSON reporter and returns structured results with pass/fail status, duration, and error messages.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         filter: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -140,11 +148,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .enum(["on", "off", "retain-on-failure"])
           .optional()
           .describe("Trace recording mode (--trace)"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to non-default Playwright config file (--config)"),
+        config: configInput("Path to non-default Playwright config file (--config)"),
         headed: z.boolean().optional().default(false).describe("Run tests in headed browser mode"),
         updateSnapshots: z
           .boolean()
@@ -189,7 +193,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Additional arguments to pass to Playwright test runner"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PlaywrightResultSchema,
     },

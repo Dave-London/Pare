@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { uv } from "../lib/python-runner.js";
 import { parseUvRun } from "../lib/parsers.js";
 import { formatUvRun, compactUvRunMap, formatUvRunCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerUvRunTool(server: McpServer) {
       title: "uv Run",
       description: "Runs a command in a uv-managed environment and returns structured output.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         command: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -67,7 +73,7 @@ export function registerUvRunTool(server: McpServer) {
           .optional()
           .default(20000)
           .describe("Maximum characters to return for stdout/stderr before truncation"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: UvRunSchema,
     },

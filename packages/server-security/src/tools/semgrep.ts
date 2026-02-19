@@ -6,6 +6,8 @@ import {
   INPUT_LIMITS,
   assertNoFlagInjection,
   assertAllowedRoot,
+  cwdPathInput,
+  compactInput,
 } from "@paretools/shared";
 import { parseSemgrepJson } from "../lib/parsers.js";
 import {
@@ -83,8 +85,8 @@ export function registerSemgrepTool(server: McpServer) {
           .optional()
           .describe("Maximum file size in bytes to scan, skip larger files (--max-target-bytes)"),
         jobs: z.number().optional().describe("Number of parallel jobs for scanning (--jobs)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       outputSchema: SemgrepScanResultSchema,
     },

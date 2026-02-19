@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoRunOutput } from "../lib/parsers.js";
 import { formatCargoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerRunTool(server: McpServer) {
       title: "Cargo Run",
       description: "Runs a cargo binary and returns structured output (exit code, stdout, stderr).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -96,7 +102,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Maximum size in bytes for stdout/stderr before truncation. Default: 1048576 (1MB). Min: 1024, Max: 10485760 (10MB).",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: CargoRunResultSchema,
     },

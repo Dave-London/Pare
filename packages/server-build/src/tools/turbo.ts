@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  projectPathInput,
+  compactInput,
+} from "@paretools/shared";
 import { turboCmd } from "../lib/build-runner.js";
 import { parseTurboOutput } from "../lib/parsers.js";
 import { formatTurbo, compactTurboMap, formatTurboCompact } from "../lib/formatters.js";
@@ -84,8 +90,8 @@ export function registerTurboTool(server: McpServer) {
           .describe(
             "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']).",
           ),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: projectPathInput,
+        compact: compactInput,
       },
       outputSchema: TurboResultSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseNetworkLsJson } from "../lib/parsers.js";
 import { formatNetworkLs, compactNetworkLsMap, formatNetworkLsCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerNetworkLsTool(server: McpServer) {
       title: "Docker Network LS",
       description: "Lists Docker networks with structured driver and scope information.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        path: cwdPathInput,
         filter: z
           .union([
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -29,7 +35,7 @@ export function registerNetworkLsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate network IDs (default: false)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: DockerNetworkLsSchema,
     },

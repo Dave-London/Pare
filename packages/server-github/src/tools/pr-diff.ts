@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../lib/formatters.js";
@@ -33,7 +33,7 @@ export function registerPrDiffTool(server: McpServer) {
           .default(false)
           .describe("Include full patch content in chunks"),
         nameOnly: z.boolean().optional().describe("List only changed file names (--name-only)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PrDiffResultSchema,
     },

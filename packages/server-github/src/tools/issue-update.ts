@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseIssueUpdate } from "../lib/parsers.js";
 import { formatIssueUpdate } from "../lib/formatters.js";
@@ -36,7 +36,7 @@ export function registerIssueUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Issue number or full GitHub issue URL to update"),
         /** Repository path on disk. Defaults to cwd. */
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
 
         // ── Content fields ──────────────────────────────────────────
         /** Replace the issue title entirely. */

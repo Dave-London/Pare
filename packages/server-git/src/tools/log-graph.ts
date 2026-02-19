@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseLogGraph } from "../lib/parsers.js";
@@ -16,7 +16,7 @@ export function registerLogGraphTool(server: McpServer) {
       description:
         "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         maxCount: z
           .number()
           .optional()
@@ -54,7 +54,7 @@ export function registerLogGraphTool(server: McpServer) {
           .describe("Show only decorated commits (--simplify-by-decoration)"),
         branches: z.boolean().optional().describe("Show all branches (--branches)"),
         remotes: z.boolean().optional().describe("Show remote branches (--remotes)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitLogGraphSchema,
     },

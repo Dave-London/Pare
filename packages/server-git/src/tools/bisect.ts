@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBisect, parseBisectRun } from "../lib/parsers.js";
 import { formatBisect, formatBisectRun } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerBisectTool(server: McpServer) {
       description:
         "Binary search for the commit that introduced a bug. Returns structured data with action taken, current commit, remaining steps estimate, and result.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["start", "good", "bad", "reset", "status", "skip", "run", "replay"])
           .describe("Bisect action to perform"),

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { pipAudit } from "../lib/python-runner.js";
 import { parsePipAuditJson } from "../lib/parsers.js";
 import { formatPipAudit, compactPipAuditMap, formatPipAuditCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerPipAuditTool(server: McpServer) {
       title: "pip Audit",
       description: "Runs pip-audit and returns a structured vulnerability report.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         requirements: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -64,7 +70,7 @@ export function registerPipAuditTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Custom package index URL for corporate/private registry support"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: PipAuditResultSchema,
     },

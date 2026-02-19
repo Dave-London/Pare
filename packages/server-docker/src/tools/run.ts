@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
 import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
@@ -114,8 +120,8 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Mount the container root filesystem as read-only (default: false)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       outputSchema: DockerRunSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoTestJson } from "../lib/parsers.js";
 import { formatGoTest, compactTestMap, formatTestCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerTestTool(server: McpServer) {
       description:
         "Runs go test and returns structured test results (name, status, package, elapsed).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -109,7 +115,7 @@ export function registerTestTool(server: McpServer) {
           .describe(
             "Randomize test execution order (-shuffle). 'on' uses a random seed, 'off' is the default.",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoTestResultSchema,
     },

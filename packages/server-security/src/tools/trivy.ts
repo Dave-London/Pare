@@ -6,6 +6,8 @@ import {
   INPUT_LIMITS,
   assertAllowedRoot,
   assertNoFlagInjection,
+  cwdPathInput,
+  compactInput,
 } from "@paretools/shared";
 import { parseTrivyJson } from "../lib/parsers.js";
 import { formatTrivyScan, compactTrivyScanMap, formatTrivyScanCompact } from "../lib/formatters.js";
@@ -85,8 +87,8 @@ export function registerTrivyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Skip vulnerability database update for faster scans (--skip-db-update)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       outputSchema: TrivyScanResultSchema,
     },

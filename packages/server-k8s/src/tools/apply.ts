@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  run,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+} from "@paretools/shared";
 import { parseApplyOutput } from "../lib/parsers.js";
 import { formatApply, compactApplyMap, formatApplyCompact } from "../lib/formatters.js";
 import { KubectlApplyResultSchema } from "../schemas/index.js";
@@ -87,7 +93,7 @@ export function registerApplyTool(server: McpServer) {
           .describe(
             "Cascade mode for deletion of dependents: 'background' (default), 'orphan', or 'foreground'",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: KubectlApplyResultSchema,
     },

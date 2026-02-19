@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { mypy } from "../lib/python-runner.js";
 import { parseMypyJsonOutput } from "../lib/parsers.js";
 import { formatMypy, compactMypyMap, formatMypyCompact } from "../lib/formatters.js";
@@ -15,7 +22,7 @@ export function registerMypyTool(server: McpServer) {
       description:
         "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -39,11 +46,7 @@ export function registerMypyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Disable incremental mode (--no-incremental)"),
-        configFile: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to mypy config file (--config-file)"),
+        configFile: configInput("Path to mypy config file (--config-file)"),
         pythonVersion: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -118,7 +121,7 @@ export function registerMypyTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Warn about statically unreachable code (--warn-unreachable)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: MypyResultSchema,
     },

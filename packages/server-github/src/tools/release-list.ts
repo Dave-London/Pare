@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+} from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseReleaseList } from "../lib/parsers.js";
 import {
@@ -43,8 +49,8 @@ export function registerReleaseListTool(server: McpServer) {
           .describe("Exclude pre-releases from the list (--exclude-pre-releases)"),
         // S-gap P1: Add order param
         order: z.enum(["asc", "desc"]).optional().describe("Sort order (--order). Default: desc."),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: repoPathInput,
+        compact: compactInput,
       },
       outputSchema: ReleaseListResultSchema,
     },

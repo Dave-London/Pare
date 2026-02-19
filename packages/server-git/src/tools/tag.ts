@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, dualOutput, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  dualOutput,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+} from "@paretools/shared";
 import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseTagOutput } from "../lib/parsers.js";
@@ -16,7 +22,7 @@ export function registerTagTool(server: McpServer) {
       description:
         "Manages git tags. Supports list (default), create, and delete actions. List returns structured tag data with name, date, and message. Create supports lightweight and annotated tags.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["list", "create", "delete"])
           .optional()
@@ -65,7 +71,7 @@ export function registerTagTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to tags not merged into HEAD (--no-merged)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitTagSchema,
     },

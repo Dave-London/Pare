@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git, resolveFilePath, resolveFilePaths } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
@@ -16,7 +16,7 @@ export function registerDiffTool(server: McpServer) {
       description:
         "Returns file-level diff statistics as structured data. Use full=true for patch content.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
         ref: z
           .string()
@@ -71,7 +71,7 @@ export function registerDiffTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Ignore blank line changes (--ignore-blank-lines)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GitDiffSchema,
     },

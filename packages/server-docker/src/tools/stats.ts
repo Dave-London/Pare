@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseStatsJson } from "../lib/parsers.js";
 import { formatStats, compactStatsMap, formatStatsCompact } from "../lib/formatters.js";
@@ -29,12 +35,8 @@ export function registerStatsTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Do not truncate container IDs (default: false)"),
-        path: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Working directory, consistent with all other Docker tools"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       outputSchema: DockerStatsSchema,
     },

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { npm } from "../lib/npm-runner.js";
 import { parseSearchJson } from "../lib/parsers.js";
 import { formatSearch, compactSearchMap, formatSearchCompact } from "../lib/formatters.js";
@@ -17,7 +23,7 @@ export function registerSearchTool(server: McpServer) {
         "Note: pnpm and yarn do not have a search command, so this always uses npm.",
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Search query string"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         limit: z
           .number()
           .optional()
@@ -40,7 +46,7 @@ export function registerSearchTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Advanced search filtering options (maps to --searchopts)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
         preferOnline: z
           .boolean()
           .optional()

@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
+  compactInput,
+  cwdPathInput,
   INPUT_LIMITS,
   run,
   assertAllowedByPolicy,
@@ -59,7 +61,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default([])
           .describe("Arguments to pass to the command"),
-        cwd: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
+        cwd: cwdPathInput,
         timeout: z
           .number()
           .int()
@@ -103,7 +105,7 @@ export function registerRunTool(server: McpServer) {
           .enum(VALID_ENCODINGS)
           .optional()
           .describe("Output encoding for commands that produce non-UTF-8 output (default: utf-8)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
         shell: z
           .boolean()
           .optional()

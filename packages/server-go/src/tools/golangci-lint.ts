@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+  configInput,
+} from "@paretools/shared";
 import { golangciLintCmd } from "../lib/go-runner.js";
 import { parseGolangciLintJson } from "../lib/parsers.js";
 import {
@@ -19,18 +26,14 @@ export function registerGolangciLintTool(server: McpServer) {
       description:
         "Runs golangci-lint and returns structured lint diagnostics (file, line, linter, severity, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default(["./..."])
           .describe("File patterns or packages to lint (default: ['./...'])"),
-        config: z
-          .string()
-          .max(INPUT_LIMITS.PATH_MAX)
-          .optional()
-          .describe("Path to golangci-lint config file"),
+        config: configInput("Path to golangci-lint config file"),
         fix: z
           .boolean()
           .optional()
@@ -126,7 +129,7 @@ export function registerGolangciLintTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Sort lint results for consistent output (--sort-results)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GolangciLintResultSchema,
     },

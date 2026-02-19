@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseStashOutput, parseStashError } from "../lib/parsers.js";
 import { formatStash } from "../lib/formatters.js";
@@ -15,7 +15,7 @@ export function registerStashTool(server: McpServer) {
       description:
         "Pushes, pops, applies, drops, shows, or clears stash entries. Returns structured result with action, success, message, and stash reference.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Repository path"),
+        path: repoPathInput,
         action: z
           .enum(["push", "pop", "apply", "drop", "clear", "show", "branch"])
           .describe("Stash action to perform"),

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoListOutput, parseGoListModulesOutput } from "../lib/parsers.js";
 import { formatGoList, compactListMap, formatListCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerListTool(server: McpServer) {
       description:
         "Lists Go packages or modules and returns structured information. When `modules` is true, lists modules (with path, version, dir); otherwise lists packages (with dir, importPath, name, goFiles, testGoFiles).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -77,7 +83,7 @@ export function registerListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Build tags that may affect which packages are listed (-tags)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoListResultSchema,
     },

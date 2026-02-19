@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  cwdPathInput,
+} from "@paretools/shared";
 import { conda } from "../lib/python-runner.js";
 import {
   parseCondaListJson,
@@ -53,8 +59,8 @@ export function registerCondaTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("For update action, update all installed packages (--all)"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Working directory"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        path: cwdPathInput,
+        compact: compactInput,
       },
       // MCP listTools expects an object-shaped schema; discriminated unions can be omitted.
       outputSchema: z.object({ action: z.string() }).passthrough(),
