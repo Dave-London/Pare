@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { gofmtCmd } from "../lib/go-runner.js";
 import { parseGoFmtOutput } from "../lib/parsers.js";
 import { formatGoFmt, compactFmtMap, formatFmtCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerFmtTool(server: McpServer) {
       description:
         "Checks or fixes Go source formatting using gofmt. In check mode (-l), lists unformatted files. In fix mode (-w), rewrites files.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -42,7 +48,7 @@ export function registerFmtTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Report all errors, not just the first 10 per file (-e)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoFmtResultSchema,
     },

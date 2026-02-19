@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoRunOutput } from "../lib/parsers.js";
 import { formatGoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerRunTool(server: McpServer) {
       title: "Go Run",
       description: "Runs a Go program and returns structured output (stdout, stderr, exit code).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         file: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -86,7 +92,7 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(200)
           .describe("When stream is true, keep this many trailing stdout/stderr lines"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoRunResultSchema,
     },

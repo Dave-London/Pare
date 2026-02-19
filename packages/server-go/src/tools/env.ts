@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoEnvOutput } from "../lib/parsers.js";
 import { formatGoEnv, compactEnvMap, formatEnvCompact } from "../lib/formatters.js";
@@ -16,7 +22,7 @@ export function registerEnvTool(server: McpServer) {
       description:
         "Returns Go environment variables as structured JSON. Optionally request specific variables.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         vars: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -29,7 +35,7 @@ export function registerEnvTool(server: McpServer) {
           .describe(
             "Show only variables whose effective value differs from the default (-changed)",
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoEnvResultSchema,
     },

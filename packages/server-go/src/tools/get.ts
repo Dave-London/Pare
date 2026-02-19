@@ -2,7 +2,13 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoGetOutput } from "../lib/parsers.js";
 import { formatGoGet, compactGetMap, formatGetCompact } from "../lib/formatters.js";
@@ -20,7 +26,7 @@ export function registerGetTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Packages to install (e.g., ['github.com/pkg/errors@latest'])"),
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         update: z
           .enum(["all", "patch"])
           .optional()
@@ -42,7 +48,7 @@ export function registerGetTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Download the named packages but do not install them (-d)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoGetResultSchema,
     },

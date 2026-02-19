@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoVetOutput } from "../lib/parsers.js";
 import { formatGoVet, compactVetMap, formatVetCompact } from "../lib/formatters.js";
@@ -15,7 +21,7 @@ export function registerVetTool(server: McpServer) {
       description:
         "Runs go vet and returns structured static analysis diagnostics with analyzer names. Uses -json flag for native JSON output with automatic text fallback.",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -46,7 +52,7 @@ export function registerVetTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to a custom analyzer tool binary (-vettool)"),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoVetResultSchema,
     },

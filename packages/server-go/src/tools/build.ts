@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  compactDualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  compactInput,
+  projectPathInput,
+} from "@paretools/shared";
 import { goCmd } from "../lib/go-runner.js";
 import { parseGoBuildOutput, parseGoListOutput } from "../lib/parsers.js";
 import { formatGoBuild, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
@@ -14,7 +20,7 @@ export function registerBuildTool(server: McpServer) {
       title: "Go Build",
       description: "Runs go build and returns structured error list (file, line, column, message).",
       inputSchema: {
-        path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
+        path: projectPathInput,
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -64,7 +70,7 @@ export function registerBuildTool(server: McpServer) {
           .describe(
             'Arguments to pass to the Go compiler (-gcflags). Example: "-N -l" to disable optimizations.',
           ),
-        compact: z.boolean().optional().default(true).describe("Prefer compact output"),
+        compact: compactInput,
       },
       outputSchema: GoBuildResultSchema,
     },
