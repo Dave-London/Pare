@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.10.2
+
+### Patch Changes
+
+- [#570](https://github.com/Dave-London/Pare/pull/570) [`0c50be7`](https://github.com/Dave-London/Pare/commit/0c50be7760bc21ef20e735cef3da065ba93bb36d) Thanks [@Dave-London](https://github.com/Dave-London)! - Add `bugs` URL to package.json for all packages, linking to the GitHub issues page.
+
 ## 0.10.1
 
 ### Patch Changes
