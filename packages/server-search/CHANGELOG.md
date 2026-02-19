@@ -1,5 +1,14 @@
 # @paretools/search
 
+## 0.10.1
+
+### Patch Changes
+
+- [#563](https://github.com/Dave-London/Pare/pull/563) [`da586bc`](https://github.com/Dave-London/Pare/commit/da586bc60f5a67ea7adaa189b6b451668cbdb2e5) Thanks [@Dave-London](https://github.com/Dave-London)! - Add pre-validation of regex patterns in search, count, and find tools. Invalid regex patterns now return a clear structured error message instead of silently returning empty results. The validation is skipped when fixedStrings mode (search/count) or glob mode (find) is active.
+
+- Updated dependencies [[`da71ee5`](https://github.com/Dave-London/Pare/commit/da71ee56c5626d929a28ce1838019a12d496187b)]:
+  - @paretools/shared@0.10.1
+
 ## 0.10.0
 
 ### Patch Changes
