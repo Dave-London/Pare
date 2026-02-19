@@ -5,7 +5,6 @@ import { fdCmd } from "../lib/search-runner.js";
 import { parseFdOutput } from "../lib/parsers.js";
 import { formatFind, compactFindMap, formatFindCompact } from "../lib/formatters.js";
 import { FindResultSchema } from "../schemas/index.js";
-import { validateRegexPattern } from "../lib/validation.js";
 
 /** Registers the `find` tool on the given MCP server. */
 export function registerFindTool(server: McpServer) {
@@ -104,7 +103,6 @@ export function registerFindTool(server: McpServer) {
       if (exclude) assertNoFlagInjection(exclude, "exclude");
       if (size) assertNoFlagInjection(size, "size");
       if (changedWithin) assertNoFlagInjection(changedWithin, "changedWithin");
-      if (pattern && !glob) validateRegexPattern(pattern);
 
       const cwd = path || process.cwd();
       const args = ["--color", "never"];
