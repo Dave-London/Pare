@@ -46,6 +46,9 @@
     "url": "https://github.com/Dave-London/Pare.git",
     "directory": "packages/server-build"
   },
+  "bugs": {
+    "url": "https://github.com/Dave-London/Pare/issues"
+  },
   "files": [
     "dist"
   ],

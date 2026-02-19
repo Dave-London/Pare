@@ -44,6 +44,9 @@
     "url": "https://github.com/Dave-London/Pare.git",
     "directory": "packages/server-npm"
   },
+  "bugs": {
+    "url": "https://github.com/Dave-London/Pare/issues"
+  },
   "files": [
     "dist"
   ],
