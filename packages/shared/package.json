@@ -39,6 +39,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "lint": "eslint src/"
   },
   "dependencies": {
