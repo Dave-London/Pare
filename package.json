@@ -15,6 +15,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
+    "coverage": "turbo run coverage",
     "lint": "eslint packages/",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

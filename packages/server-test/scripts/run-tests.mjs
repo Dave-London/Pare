@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+
 const rawArgs = process.argv.slice(2);
 const forwardedArgs = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
 const hasCoverage = forwardedArgs.includes("--coverage");
