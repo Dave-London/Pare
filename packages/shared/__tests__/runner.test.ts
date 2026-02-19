@@ -121,9 +121,6 @@ describe("run – timeout and process cleanup", () => {
       /timed out/,
     );
 
-    // Wait for OS to clean up the process group (longer on Windows)
-    await new Promise((r) => setTimeout(r, 1000));
-
     // Read the grandchild PID — retry briefly in case write races with kill.
     // On slow Windows CI runners the fixture may not finish spawn() +
     // writeFileSync() before the timeout fires, so the file may appear late
@@ -147,8 +144,20 @@ describe("run – timeout and process cleanup", () => {
     // this platform but not a failure — the process was killed before it
     // could spawn the grandchild.
     if (grandchildPid && !isNaN(grandchildPid)) {
-      // Verify grandchild is dead — process.kill(pid, 0) throws ESRCH if dead
-      expect(() => process.kill(grandchildPid!, 0)).toThrow();
+      // Poll for grandchild death — Windows process cleanup can be very slow.
+      // process.kill(pid, 0) throws ESRCH when the process is gone.
+      let dead = false;
+      for (let i = 0; i < 20; i++) {
+        try {
+          process.kill(grandchildPid!, 0);
+          // Still alive, wait and retry
+          await new Promise((r) => setTimeout(r, 500));
+        } catch {
+          dead = true;
+          break;
+        }
+      }
+      expect(dead).toBe(true);
     }
   }, 30_000);
 
