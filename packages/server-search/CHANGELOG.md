@@ -1,5 +1,12 @@
 # @paretools/search
 
+## 0.10.0
+
+### Patch Changes
+
+- Updated dependencies [[`3a6f31c`](https://github.com/Dave-London/Pare/commit/3a6f31c92a3507388dacbf1fd69afa3f76e032e2)]:
+  - @paretools/shared@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes

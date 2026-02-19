@@ -1,6 +1,6 @@
 {
   "name": "@paretools/security",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "mcpName": "io.github.Dave-London/pare-security",
   "description": "MCP server for security scanning (Trivy, Semgrep, Gitleaks) with structured, token-efficient output",
   "license": "MIT",

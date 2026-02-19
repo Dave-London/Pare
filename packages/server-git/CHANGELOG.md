@@ -1,5 +1,16 @@
 # @paretools/git
 
+## 0.10.0
+
+### Patch Changes
+
+- [`ba6fab4`](https://github.com/Dave-London/Pare/commit/ba6fab4014061ea402885779b7f3a4762477d71d) - Fix branch compact mode garbling names for worktree branches (+ marker parsed incorrectly)
+
+- [`ba6fab4`](https://github.com/Dave-London/Pare/commit/ba6fab4014061ea402885779b7f3a4762477d71d) - Fix worktree list Zod error by replacing z.union() with unified z.object() output schema
+
+- Updated dependencies [[`3a6f31c`](https://github.com/Dave-London/Pare/commit/3a6f31c92a3507388dacbf1fd69afa3f76e032e2)]:
+  - @paretools/shared@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes
