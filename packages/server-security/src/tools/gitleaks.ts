@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   assertAllowedRoot,
   assertNoFlagInjection,
+  assertValidLogOpts,
 } from "@paretools/shared";
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
@@ -107,7 +108,7 @@ export function registerGitleaksTool(server: McpServer) {
     }) => {
       if (config) assertNoFlagInjection(config, "config");
       if (baselinePath) assertNoFlagInjection(baselinePath, "baselinePath");
-      if (logOpts) assertNoFlagInjection(logOpts, "logOpts");
+      if (logOpts) assertValidLogOpts(logOpts, "logOpts");
       if (logLevel) assertNoFlagInjection(logLevel, "logLevel");
       for (const r of enableRule ?? []) {
         assertNoFlagInjection(r, "enableRule");

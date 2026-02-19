@@ -82,7 +82,7 @@ export function registerTurboTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe(
-            "Additional turbo flags (e.g., ['--env-mode=strict']). Each arg is validated with assertNoFlagInjection.",
+            "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']).",
           ),
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Project root path"),
         compact: z.boolean().optional().default(true).describe("Prefer compact output"),

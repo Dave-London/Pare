@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, dualOutput, INPUT_LIMITS } from "@paretools/shared";
-import { assertNoFlagInjection } from "@paretools/shared";
+import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseTagOutput } from "../lib/parsers.js";
 import { formatTag, compactTagMap, formatTagCompact, formatTagMutate } from "../lib/formatters.js";
@@ -153,7 +153,7 @@ export function registerTagTool(server: McpServer) {
 
       // Default: list
       const sortFlag = sortBy || "-creatordate";
-      if (sortBy) assertNoFlagInjection(sortBy, "sortBy");
+      if (sortBy) assertValidSortKey(sortBy, "sortBy");
 
       const args = [
         "tag",
