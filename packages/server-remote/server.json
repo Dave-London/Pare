@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Dave-London/pare-remote",
+  "description": "Pare Remote — Structured SSH and rsync operations (ssh-run, ssh-test, ssh-keyscan, rsync) as typed JSON.",
+  "repository": {
+    "url": "https://github.com/Dave-London/Pare",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@paretools/remote",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
