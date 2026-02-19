@@ -25,6 +25,11 @@ import type {
   GitWorktreeListFull,
   GitWorktree,
   ReflogAction,
+  GitSubmodule,
+  GitSubmoduleEntry,
+  GitClean,
+  GitConfig,
+  GitConfigEntry,
 } from "../schemas/index.js";
 
 const STATUS_MAP: Record<string, GitStatus["staged"][number]["status"]> = {
@@ -1849,4 +1854,111 @@ export function parseBisectRun(stdout: string, stderr: string): GitBisect {
     stepsRun,
     message: combined || "Bisect run completed without identifying a commit",
   };
+}
+
+// ── Submodule parsers ───────────────────────────────────────────────────
+
+/**
+ * Parses `git submodule status` output into structured submodule entries.
+ *
+ * Each line has format: `<status><sha> <path> (<branch>)` where status prefix is:
+ * - ` ` (space) = up-to-date
+ * - `+` = modified (checked out to different commit)
+ * - `-` = uninitialized
+ * - `U` = merge conflict (treated as modified)
+ */
+export function parseSubmoduleStatus(stdout: string): GitSubmoduleEntry[] {
+  const lines = stdout.split("\n").filter(Boolean);
+  return lines.map((line) => {
+    const trimmed = line.trimStart();
+    const prefix = line.length > trimmed.length ? line[line.length - trimmed.length - 1] : line[0];
+
+    let statusChar: string;
+    let rest: string;
+
+    if (prefix === "+" || prefix === "-" || prefix === "U") {
+      statusChar = prefix;
+      rest = line.slice(1).trimStart();
+    } else {
+      // Space prefix or no prefix = up-to-date
+      statusChar = " ";
+      rest = trimmed;
+    }
+
+    const parts = rest.split(/\s+/);
+    const sha = parts[0] || "";
+    const path = parts[1] || "";
+    // Branch info is in parentheses at the end, e.g., "(heads/main)"
+    const branchMatch = rest.match(/\((.+)\)\s*$/);
+    const branch = branchMatch ? branchMatch[1] : undefined;
+
+    let status: GitSubmoduleEntry["status"];
+    if (statusChar === "-") {
+      status = "uninitialized";
+    } else if (statusChar === "+" || statusChar === "U") {
+      status = "modified";
+    } else {
+      status = "up-to-date";
+    }
+
+    return { path, sha, branch, status };
+  });
+}
+
+// ── Clean parsers ───────────────────────────────────────────────────────
+
+/**
+ * Parses `git clean --dry-run` or `git clean -f` output into structured data.
+ *
+ * Dry-run lines: "Would remove <file>"
+ * Force lines: "Removing <file>"
+ */
+export function parseCleanOutput(stdout: string, dryRun: boolean): GitClean {
+  const lines = stdout.split("\n").filter(Boolean);
+  const files: string[] = [];
+
+  for (const line of lines) {
+    const wouldRemove = line.match(/^Would remove\s+(.+)/);
+    const removing = line.match(/^Removing\s+(.+)/);
+    if (wouldRemove) {
+      files.push(wouldRemove[1].trim());
+    } else if (removing) {
+      files.push(removing[1].trim());
+    }
+  }
+
+  const verb = dryRun ? "would be removed" : "removed";
+  return {
+    dryRun,
+    files,
+    removedCount: files.length,
+    message:
+      files.length > 0
+        ? `${files.length} file(s) ${verb}`
+        : `No files ${dryRun ? "to remove" : "removed"}`,
+  };
+}
+
+// ── Config parsers ──────────────────────────────────────────────────────
+
+/**
+ * Parses `git config --list` output into structured config entries.
+ * Each line has format: `key=value`
+ */
+export function parseConfigList(
+  stdout: string,
+  scope?: "local" | "global" | "system" | "worktree",
+): GitConfigEntry[] {
+  const lines = stdout.split("\n").filter(Boolean);
+  return lines.map((line) => {
+    const eqIdx = line.indexOf("=");
+    if (eqIdx === -1) {
+      return { key: line.trim(), value: "", ...(scope ? { scope } : {}) };
+    }
+    return {
+      key: line.slice(0, eqIdx).trim(),
+      value: line.slice(eqIdx + 1).trim(),
+      ...(scope ? { scope } : {}),
+    };
+  });
 }

@@ -705,3 +705,69 @@ export type GitTagMutate = {
   commit?: string;
   annotated?: boolean;
 };
+
+// ── Submodule ───────────────────────────────────────────────────────────
+
+/** Zod schema for a single submodule entry with path, SHA, branch, and status. */
+export const GitSubmoduleEntrySchema = z.object({
+  path: z.string(),
+  sha: z.string(),
+  branch: z.string().optional(),
+  status: z.enum(["up-to-date", "modified", "uninitialized"]),
+});
+
+/** Zod schema for structured git submodule output supporting list, add, update, sync, and deinit actions. */
+export const GitSubmoduleSchema = z.object({
+  action: z.enum(["list", "add", "update", "sync", "deinit"]),
+  submodules: z.array(GitSubmoduleEntrySchema).optional(),
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export type GitSubmoduleEntry = z.infer<typeof GitSubmoduleEntrySchema>;
+export type GitSubmodule = z.infer<typeof GitSubmoduleSchema>;
+
+// ── Archive ─────────────────────────────────────────────────────────────
+
+/** Zod schema for structured git archive output with success status, format, output file, and treeish. */
+export const GitArchiveSchema = z.object({
+  success: z.boolean(),
+  format: z.string(),
+  outputFile: z.string(),
+  treeish: z.string(),
+  message: z.string(),
+});
+
+export type GitArchive = z.infer<typeof GitArchiveSchema>;
+
+// ── Clean ───────────────────────────────────────────────────────────────
+
+/** Zod schema for structured git clean output with dry-run flag, file list, and removed count. */
+export const GitCleanSchema = z.object({
+  dryRun: z.boolean(),
+  files: z.array(z.string()),
+  removedCount: z.number(),
+  message: z.string(),
+});
+
+export type GitClean = z.infer<typeof GitCleanSchema>;
+
+// ── Config ──────────────────────────────────────────────────────────────
+
+/** Zod schema for a single config entry with key, value, and optional scope. */
+export const GitConfigEntrySchema = z.object({
+  key: z.string(),
+  value: z.string(),
+  scope: z.enum(["local", "global", "system", "worktree"]).optional(),
+});
+
+/** Zod schema for structured git config output supporting get, set, list, and unset actions. */
+export const GitConfigSchema = z.object({
+  action: z.enum(["get", "set", "list", "unset"]),
+  entries: z.array(GitConfigEntrySchema).optional(),
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export type GitConfigEntry = z.infer<typeof GitConfigEntrySchema>;
+export type GitConfig = z.infer<typeof GitConfigSchema>;
