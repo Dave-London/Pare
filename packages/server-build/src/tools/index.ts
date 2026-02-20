@@ -7,6 +7,8 @@ import { registerViteBuildTool } from "./vite-build.js";
 import { registerWebpackTool } from "./webpack.js";
 import { registerTurboTool } from "./turbo.js";
 import { registerNxTool } from "./nx.js";
+import { registerLernaTool } from "./lerna.js";
+import { registerRollupTool } from "./rollup.js";
 
 /** Registers all build tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
@@ -18,4 +20,6 @@ export function registerAllTools(server: McpServer) {
   if (s("webpack")) registerWebpackTool(server);
   if (s("turbo")) registerTurboTool(server);
   if (s("nx")) registerNxTool(server);
+  if (s("lerna")) registerLernaTool(server);
+  if (s("rollup")) registerRollupTool(server);
 }

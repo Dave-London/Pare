@@ -384,3 +384,104 @@ export interface NxResult {
   cached: number;
   affectedProjects?: string[];
 }
+
+// ---------------------------------------------------------------------------
+// lerna
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single Lerna package entry. */
+export const LernaPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  location: z.string().optional(),
+  private: z.boolean().optional(),
+});
+
+/** Zod schema for structured Lerna output with action, packages, and optional script output.
+ *  In compact mode, location is omitted from packages; only name and version are returned. */
+export const LernaResultSchema = z.object({
+  success: z.boolean(),
+  action: z.enum(["list", "run", "changed", "version"]),
+  packages: z.array(LernaPackageSchema).optional(),
+  output: z.string().optional(),
+  errors: z.array(z.string()).optional(),
+  duration: z.number(),
+});
+
+/** Full Lerna package entry. */
+export interface LernaPackage {
+  [key: string]: unknown;
+  name: string;
+  version: string;
+  location?: string;
+  private?: boolean;
+}
+
+/** Full Lerna result -- always returned by the parser. */
+export interface LernaResult {
+  [key: string]: unknown;
+  success: boolean;
+  action: "list" | "run" | "changed" | "version";
+  packages?: LernaPackage[];
+  output?: string;
+  errors?: string[];
+  duration: number;
+}
+
+// ---------------------------------------------------------------------------
+// rollup
+// ---------------------------------------------------------------------------
+
+/** Zod schema for a single Rollup bundle entry. */
+export const RollupBundleSchema = z.object({
+  input: z.string(),
+  output: z.string(),
+  format: z.string().optional(),
+  size: z.number().optional(),
+});
+
+/** Zod schema for a single Rollup error diagnostic. */
+export const RollupErrorSchema = z.object({
+  file: z.string().optional(),
+  line: z.number().optional(),
+  column: z.number().optional(),
+  message: z.string(),
+});
+
+/** Zod schema for structured Rollup output with bundles, errors, warnings, and duration.
+ *  In compact mode, arrays are omitted; only success and duration are returned. */
+export const RollupResultSchema = z.object({
+  success: z.boolean(),
+  bundles: z.array(RollupBundleSchema).optional(),
+  errors: z.array(RollupErrorSchema).optional(),
+  warnings: z.array(z.string()).optional(),
+  duration: z.number(),
+});
+
+/** Full Rollup bundle entry. */
+export interface RollupBundle {
+  [key: string]: unknown;
+  input: string;
+  output: string;
+  format?: string;
+  size?: number;
+}
+
+/** Full Rollup error entry. */
+export interface RollupError {
+  [key: string]: unknown;
+  file?: string;
+  line?: number;
+  column?: number;
+  message: string;
+}
+
+/** Full Rollup result -- always returned by the parser. */
+export interface RollupResult {
+  [key: string]: unknown;
+  success: boolean;
+  bundles?: RollupBundle[];
+  errors?: RollupError[];
+  warnings?: string[];
+  duration: number;
+}

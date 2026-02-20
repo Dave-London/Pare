@@ -38,3 +38,11 @@ export async function turboCmd(args: string[], cwd?: string): Promise<RunResult>
 export async function nxCmd(args: string[], cwd?: string): Promise<RunResult> {
   return run("npx", ["nx", ...args], { cwd, timeout: 300_000 });
 }
+
+export async function lernaCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["lerna", ...args], { cwd, timeout: 300_000 });
+}
+
+export async function rollupCmd(args: string[], cwd?: string): Promise<RunResult> {
+  return run("npx", ["rollup", ...args], { cwd, timeout: 300_000 });
+}
