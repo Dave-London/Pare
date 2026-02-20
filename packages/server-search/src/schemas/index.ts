@@ -72,3 +72,14 @@ export const JqResultSchema = z.object({
 });
 
 export type JqResult = z.infer<typeof JqResultSchema>;
+
+// ── Yq (yq) ────────────────────────────────────────────────────────
+
+/** Zod schema for structured yq output with the transformed result. */
+export const YqResultSchema = z.object({
+  output: z.string(),
+  outputFormat: z.string().optional(),
+  exitCode: z.number(),
+});
+
+export type YqResult = z.infer<typeof YqResultSchema>;
