@@ -1,4 +1,10 @@
-import type { SearchResult, FindResult, CountResult, JqResult } from "../schemas/index.js";
+import type {
+  SearchResult,
+  FindResult,
+  CountResult,
+  JqResult,
+  YqResult,
+} from "../schemas/index.js";
 import * as path from "node:path";
 import { lstatSync } from "node:fs";
 
@@ -233,6 +239,33 @@ export function parseJqOutput(stdout: string, stderr: string, exitCode: number):
   return {
     output: textOutput,
     result: parsedLines.length > 0 ? parsedLines : undefined,
+    exitCode,
+  };
+}
+
+// ── yq parser ────────────────────────────────────────────────────────
+
+/**
+ * Parses yq command output into a structured YqResult.
+ * If the command failed (non-zero exit), stderr is used as the output.
+ */
+export function parseYqOutput(
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  outputFormat?: string,
+): YqResult {
+  if (exitCode !== 0) {
+    return {
+      output: stderr.trim() || stdout.trim(),
+      outputFormat,
+      exitCode,
+    };
+  }
+
+  return {
+    output: stdout.trimEnd(),
+    outputFormat,
     exitCode,
   };
 }
