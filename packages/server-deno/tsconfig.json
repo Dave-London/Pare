@@ -1,0 +1,5 @@
+{
+  "extends": "@paretools/tsconfig/tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
