@@ -2,6 +2,13 @@ import { run, type RunResult } from "@paretools/shared";
 
 /** Platform-specific install hints for commands used by the search package. */
 const INSTALL_HINTS: Record<string, string> = {
+  yq: [
+    `Command not found: "yq". Install it to use this tool:`,
+    `  macOS:   brew install yq`,
+    `  Ubuntu:  sudo snap install yq`,
+    `  Windows: choco install yq`,
+    `  More:    https://github.com/mikefarah/yq#install`,
+  ].join("\n"),
   rg: [
     `Command not found: "rg". Install it to use this tool:`,
     `  macOS:   brew install ripgrep`,
@@ -53,6 +60,13 @@ export async function rgCmd(args: string[], cwd?: string): Promise<RunResult> {
 
 export async function fdCmd(args: string[], cwd?: string): Promise<RunResult> {
   return runWithInstallHint("fd", args, { cwd, timeout: 180_000 });
+}
+
+export async function yqCmd(
+  args: string[],
+  opts?: { cwd?: string; stdin?: string },
+): Promise<RunResult> {
+  return runWithInstallHint("yq", args, { cwd: opts?.cwd, stdin: opts?.stdin, timeout: 180_000 });
 }
 
 export async function jqCmd(

@@ -21,6 +21,9 @@ import type {
   ApiResult,
   LabelListResult,
   LabelCreateResult,
+  RepoViewResult,
+  RepoCloneResult,
+  DiscussionListResult,
 } from "../schemas/index.js";
 
 /**
@@ -917,6 +920,94 @@ export function parseLabelCreate(
     description: description ?? undefined,
     color: color ?? undefined,
     url,
+  };
+}
+
+/**
+ * Parses `gh repo view --json ...` output into structured repo view data.
+ * Renames gh field names to our schema names (e.g., stargazerCount -> stars).
+ */
+export function parseRepoView(json: string): RepoViewResult {
+  const raw = JSON.parse(json);
+
+  return {
+    name: raw.name ?? "",
+    owner: raw.owner?.login ?? "",
+    description: raw.description ?? null,
+    url: raw.url ?? "",
+    homepageUrl: raw.homepageUrl ?? undefined,
+    defaultBranch: raw.defaultBranchRef?.name ?? "main",
+    isPrivate: raw.isPrivate ?? false,
+    isArchived: raw.isArchived ?? false,
+    isFork: raw.isFork ?? false,
+    stars: raw.stargazerCount ?? 0,
+    forks: raw.forkCount ?? 0,
+    languages: raw.languages
+      ? (raw.languages as { node: { name: string } }[]).map((l) => l.node.name)
+      : undefined,
+    topics: raw.repositoryTopics
+      ? (raw.repositoryTopics as { name: string }[]).map((t) => t.name)
+      : undefined,
+    license: raw.licenseInfo?.name ?? undefined,
+    createdAt: raw.createdAt ?? undefined,
+    updatedAt: raw.updatedAt ?? undefined,
+    pushedAt: raw.pushedAt ?? undefined,
+  };
+}
+
+/**
+ * Parses `gh repo clone` output into structured repo clone data.
+ * The gh CLI prints a confirmation message to stderr on success.
+ */
+export function parseRepoClone(
+  stdout: string,
+  stderr: string,
+  repo: string,
+  directory?: string,
+): RepoCloneResult {
+  const combined = `${stdout}\n${stderr}`.trim();
+  return {
+    success: true,
+    repo,
+    directory: directory ?? undefined,
+    message: combined || `Cloned ${repo} successfully`,
+  };
+}
+
+/**
+ * Parses `gh api graphql` output for discussions into structured discussion list data.
+ * The GraphQL response contains a repository.discussions object with nodes and totalCount.
+ */
+export function parseDiscussionList(json: string): DiscussionListResult {
+  const raw = JSON.parse(json);
+  const data = raw.data?.repository?.discussions ?? {};
+  const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+
+  const discussions = nodes.map(
+    (d: {
+      number: number;
+      title: string;
+      author?: { login: string };
+      category?: { name: string };
+      createdAt: string;
+      url: string;
+      isAnswered?: boolean;
+      comments?: { totalCount: number };
+    }) => ({
+      number: d.number,
+      title: d.title,
+      author: d.author?.login ?? "ghost",
+      category: d.category?.name ?? "",
+      createdAt: d.createdAt ?? "",
+      url: d.url ?? "",
+      isAnswered: d.isAnswered ?? false,
+      comments: d.comments?.totalCount ?? 0,
+    }),
+  );
+
+  return {
+    discussions,
+    totalCount: data.totalCount ?? discussions.length,
   };
 }
 

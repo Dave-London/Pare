@@ -100,7 +100,57 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(webpack@5.105.2)
 
+  packages/server-bun:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@4.3.6)
+      '@paretools/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@paretools/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
   packages/server-cargo:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@4.3.6)
+      '@paretools/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@paretools/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/server-db:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
@@ -151,6 +201,31 @@ importers:
         version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/server-docker:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@4.3.6)
+      '@paretools/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@paretools/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/server-dotnet:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
@@ -251,6 +326,31 @@ importers:
         version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/server-http:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@4.3.6)
+      '@paretools/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@paretools/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/server-jvm:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
@@ -401,6 +501,31 @@ importers:
         version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/server-python:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(zod@4.3.6)
+      '@paretools/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@paretools/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.2.3)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/server-ruby:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0

@@ -28,3 +28,20 @@ export {
   assertNoPathQualifiedCommand,
 } from "./policy.js";
 export type { ToolOutput } from "./types.js";
+export {
+  PareErrorCategory,
+  PareErrorSchema,
+  classifyError,
+  errorOutput,
+  invalidInputError,
+  isCommandNotFound,
+  isPermissionDenied,
+  isTimeout,
+  isNetworkError,
+  isAuthError,
+  isConflict,
+  isNotFound,
+  isAlreadyExists,
+  isConfigurationError,
+} from "./errors.js";
+export type { PareErrorCategoryType, PareError } from "./errors.js";

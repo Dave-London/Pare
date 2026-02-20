@@ -24,6 +24,10 @@ import { registerLogGraphTool } from "./log-graph.js";
 import { registerReflogTool } from "./reflog.js";
 import { registerBisectTool } from "./bisect.js";
 import { registerWorktreeTool } from "./worktree.js";
+import { registerSubmoduleTool } from "./submodule.js";
+import { registerArchiveTool } from "./archive.js";
+import { registerCleanTool } from "./clean.js";
+import { registerConfigTool } from "./config.js";
 
 /** Registers all git tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
@@ -52,4 +56,8 @@ export function registerAllTools(server: McpServer) {
   if (s("reflog")) registerReflogTool(server);
   if (s("bisect")) registerBisectTool(server);
   if (s("worktree")) registerWorktreeTool(server);
+  if (s("submodule")) registerSubmoduleTool(server);
+  if (s("archive")) registerArchiveTool(server);
+  if (s("clean")) registerCleanTool(server);
+  if (s("config")) registerConfigTool(server);
 }
