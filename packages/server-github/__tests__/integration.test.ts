@@ -27,11 +27,12 @@ describe("@paretools/github integration", () => {
     await transport.close();
   });
 
-  it("lists all 24 tools", async () => {
+  it("lists all 27 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "api",
+      "discussion-list",
       "gist-create",
       "issue-close",
       "issue-comment",
@@ -52,6 +53,8 @@ describe("@paretools/github integration", () => {
       "pr-view",
       "release-create",
       "release-list",
+      "repo-clone",
+      "repo-view",
       "run-list",
       "run-rerun",
       "run-view",

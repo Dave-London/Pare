@@ -21,6 +21,9 @@ import type {
   ApiResult,
   LabelListResult,
   LabelCreateResult,
+  RepoViewResult,
+  RepoCloneResult,
+  DiscussionListResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
@@ -620,6 +623,112 @@ export function formatRunViewLog(data: RunViewResult): string {
       ? data.logs.slice(0, 2000) + "\n... (truncated)"
       : data.logs;
   return `${header}\n\n${logsPreview ?? ""}`;
+}
+
+// ── Repo ────────────────────────────────────────────────────────────
+
+/** Formats structured repo view data into human-readable text. */
+export function formatRepoView(data: RepoViewResult): string {
+  const lines = [
+    `${data.owner}/${data.name}${data.isPrivate ? " (private)" : ""}`,
+    `  ${data.description ?? "(no description)"}`,
+    `  ${data.url}`,
+    `  default branch: ${data.defaultBranch}`,
+    `  stars: ${data.stars}, forks: ${data.forks}`,
+  ];
+  if (data.isArchived) lines.push(`  archived: true`);
+  if (data.isFork) lines.push(`  fork: true`);
+  if (data.languages && data.languages.length > 0)
+    lines.push(`  languages: ${data.languages.join(", ")}`);
+  if (data.topics && data.topics.length > 0) lines.push(`  topics: ${data.topics.join(", ")}`);
+  if (data.license) lines.push(`  license: ${data.license}`);
+  if (data.homepageUrl) lines.push(`  homepage: ${data.homepageUrl}`);
+  if (data.createdAt) lines.push(`  created: ${data.createdAt}`);
+  if (data.pushedAt) lines.push(`  pushed: ${data.pushedAt}`);
+  return lines.join("\n");
+}
+
+/** Compact repo view: key fields only. */
+export interface RepoViewCompact {
+  [key: string]: unknown;
+  name: string;
+  owner: string;
+  url: string;
+  defaultBranch: string;
+  isPrivate: boolean;
+  stars: number;
+  forks: number;
+}
+
+export function compactRepoViewMap(data: RepoViewResult): RepoViewCompact {
+  return {
+    name: data.name,
+    owner: data.owner,
+    url: data.url,
+    defaultBranch: data.defaultBranch,
+    isPrivate: data.isPrivate,
+    stars: data.stars,
+    forks: data.forks,
+  };
+}
+
+export function formatRepoViewCompact(data: RepoViewCompact): string {
+  const vis = data.isPrivate ? " (private)" : "";
+  return `${data.owner}/${data.name}${vis} — ${data.stars} stars, ${data.forks} forks [${data.defaultBranch}]`;
+}
+
+/** Formats structured repo clone data into human-readable text. */
+export function formatRepoClone(data: RepoCloneResult): string {
+  if (!data.success) {
+    const errorPart = data.errorType ? ` [${data.errorType}]` : "";
+    return `Clone failed for ${data.repo}${errorPart}: ${data.errorMessage ?? data.message}`;
+  }
+  const dirPart = data.directory ? ` into ${data.directory}` : "";
+  return `Cloned ${data.repo}${dirPart}`;
+}
+
+// ── Discussion ──────────────────────────────────────────────────────
+
+/** Formats structured discussion list data into human-readable text. */
+export function formatDiscussionList(data: DiscussionListResult): string {
+  if (data.totalCount === 0) return "No discussions found.";
+
+  const lines = [`${data.totalCount} discussions:`];
+  for (const d of data.discussions) {
+    const answered = d.isAnswered ? " (answered)" : "";
+    const comments = d.comments > 0 ? ` [${d.comments} comments]` : "";
+    lines.push(`  #${d.number} ${d.title} [${d.category}] @${d.author}${answered}${comments}`);
+  }
+  return lines.join("\n");
+}
+
+/** Compact discussion list: number, title, category only. */
+export interface DiscussionListCompact {
+  [key: string]: unknown;
+  discussions: { number: number; title: string; category: string; isAnswered: boolean }[];
+  totalCount: number;
+}
+
+export function compactDiscussionListMap(data: DiscussionListResult): DiscussionListCompact {
+  return {
+    discussions: data.discussions.map((d) => ({
+      number: d.number,
+      title: d.title,
+      category: d.category,
+      isAnswered: d.isAnswered,
+    })),
+    totalCount: data.totalCount,
+  };
+}
+
+export function formatDiscussionListCompact(data: DiscussionListCompact): string {
+  if (data.totalCount === 0) return "No discussions found.";
+  const lines = [`${data.totalCount} discussions:`];
+  for (const d of data.discussions) {
+    const answered = d.isAnswered ? " (answered)" : "";
+    lines.push(`  #${d.number} ${d.title} [${d.category}]${answered}`);
+  }
+  return lines.join("\n");
 }
 
 // ── API ─────────────────────────────────────────────────────────────
