@@ -3,7 +3,6 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
-  INPUT_LIMITS,
   compactInput,
   projectPathInput,
   filePatternsInput,
