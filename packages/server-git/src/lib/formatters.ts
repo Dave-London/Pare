@@ -26,6 +26,10 @@ import type {
   GitTagMutate,
   GitWorktreeListFull,
   GitWorktree,
+  GitSubmodule,
+  GitArchive,
+  GitClean,
+  GitConfig,
 } from "../schemas/index.js";
 
 /** Formats structured git status data into a human-readable summary string. */
@@ -802,4 +806,48 @@ export function formatTagMutate(t: GitTagMutate): string {
     return `${type} '${t.name}' created${t.commit ? ` at ${t.commit}` : ""}`;
   }
   return `Tag '${t.name}' deleted`;
+}
+
+// ── Submodule formatter ─────────────────────────────────────────────────
+
+/** Formats structured git submodule output into a human-readable summary. */
+export function formatSubmodule(s: GitSubmodule): string {
+  if (s.action !== "list" || !s.submodules || s.submodules.length === 0) {
+    return s.message;
+  }
+  const lines = s.submodules.map(
+    (sub) =>
+      `${sub.status === "up-to-date" ? " " : sub.status === "modified" ? "+" : "-"} ${sub.sha.slice(0, 7)} ${sub.path}${sub.branch ? ` (${sub.branch})` : ""}`,
+  );
+  return `${s.submodules.length} submodule(s)\n${lines.join("\n")}`;
+}
+
+// ── Archive formatter ───────────────────────────────────────────────────
+
+/** Formats structured git archive output into a human-readable summary. */
+export function formatArchive(a: GitArchive): string {
+  return a.message;
+}
+
+// ── Clean formatter ─────────────────────────────────────────────────────
+
+/** Formats structured git clean output into a human-readable summary. */
+export function formatClean(c: GitClean): string {
+  if (c.files.length === 0) {
+    return c.message;
+  }
+  const verb = c.dryRun ? "Would remove" : "Removed";
+  const lines = c.files.map((f) => `  ${verb}: ${f}`);
+  return `${c.message}\n${lines.join("\n")}`;
+}
+
+// ── Config formatter ────────────────────────────────────────────────────
+
+/** Formats structured git config output into a human-readable summary. */
+export function formatConfig(c: GitConfig): string {
+  if (c.action === "list" && c.entries && c.entries.length > 0) {
+    const lines = c.entries.map((e) => `${e.key}=${e.value}${e.scope ? ` [${e.scope}]` : ""}`);
+    return `${c.entries.length} config entries\n${lines.join("\n")}`;
+  }
+  return c.message;
 }
