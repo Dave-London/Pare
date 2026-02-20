@@ -8,6 +8,7 @@ import { registerOutputTool } from "./output.js";
 import { registerStateListTool } from "./state-list.js";
 import { registerWorkspaceTool } from "./workspace.js";
 import { registerShowTool } from "./show.js";
+import { registerVagrantTool } from "./vagrant.js";
 
 /** Registers all Infra tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
@@ -20,4 +21,5 @@ export function registerAllTools(server: McpServer) {
   if (s("state-list")) registerStateListTool(server);
   if (s("workspace")) registerWorkspaceTool(server);
   if (s("show")) registerShowTool(server);
+  if (s("vagrant")) registerVagrantTool(server);
 }
