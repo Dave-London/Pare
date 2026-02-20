@@ -938,7 +938,6 @@ export function parseLernaOutput(
 //   (!) Missing exports
 
 const ROLLUP_BUNDLE_RE = /^(.+?)\s+→\s+(.+?)\.{3}$/;
-const ROLLUP_CREATED_RE = /^created\s+(.+?)\s+in\s+[\d.]+/;
 const ROLLUP_ERROR_HEADER_RE = /^\[!]\s+(?:\(.+?\)\s+)?(?:Error:\s+)?(.+)$/;
 const ROLLUP_ERROR_LOCATION_RE = /^(.+?)\s+\((\d+):(\d+)\)$/;
 const ROLLUP_WARNING_RE = /^\(\!\)\s+(.+)$/;
