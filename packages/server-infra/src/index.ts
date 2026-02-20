@@ -8,7 +8,7 @@ const server = new McpServer(
   { name: "@paretools/infra", version: "0.1.0" },
   {
     instructions:
-      "Structured infrastructure-as-code operations (Terraform init, plan, validate, fmt, output, state, workspace, show). Returns typed JSON.",
+      "Structured infrastructure-as-code operations (Terraform init, plan, validate, fmt, output, state, workspace, show; Vagrant status, up, halt, destroy, global-status). Returns typed JSON.",
   },
 );
 
