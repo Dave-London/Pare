@@ -16,13 +16,11 @@ import {
   formatGradleTasksCompact,
   compactGradleDepsMap,
   formatGradleDepsCompact,
-  compactMavenBuildMap,
   formatMavenBuildCompact,
   compactMavenTestMap,
   formatMavenTestCompact,
   compactMavenDepsMap,
   formatMavenDepsCompact,
-  compactMavenVerifyMap,
   formatMavenVerifyCompact,
 } from "../src/lib/formatters.js";
 import type {

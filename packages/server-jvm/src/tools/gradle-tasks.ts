@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS, compactInput, projectPathInput } from "@paretools/shared";
+import { compactDualOutput, compactInput, projectPathInput } from "@paretools/shared";
 import { gradleCmd } from "../lib/jvm-runner.js";
 import { parseGradleTasks } from "../lib/parsers.js";
 import {
