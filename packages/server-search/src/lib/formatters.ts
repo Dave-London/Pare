@@ -1,4 +1,10 @@
-import type { SearchResult, FindResult, CountResult, JqResult } from "../schemas/index.js";
+import type {
+  SearchResult,
+  FindResult,
+  CountResult,
+  JqResult,
+  YqResult,
+} from "../schemas/index.js";
 
 // ── Full formatters ─────────────────────────────────────────────────
 
@@ -125,6 +131,37 @@ export function compactJqMap(data: JqResult): JqCompact {
 export function formatJqCompact(data: JqCompact): string {
   if (data.exitCode !== 0) {
     return `jq: error (exit ${data.exitCode})\n${data.output}`;
+  }
+  return data.output;
+}
+
+// ── Yq formatters ───────────────────────────────────────────────────
+
+/** Formats yq result into a human-readable string. */
+export function formatYq(data: YqResult): string {
+  if (data.exitCode !== 0) {
+    return `yq: error (exit ${data.exitCode})\n${data.output}`;
+  }
+  return data.output;
+}
+
+/** Compact yq: same as full — output is already minimal. */
+export interface YqCompact {
+  [key: string]: unknown;
+  output: string;
+  exitCode: number;
+}
+
+export function compactYqMap(data: YqResult): YqCompact {
+  return {
+    output: data.output,
+    exitCode: data.exitCode,
+  };
+}
+
+export function formatYqCompact(data: YqCompact): string {
+  if (data.exitCode !== 0) {
+    return `yq: error (exit ${data.exitCode})\n${data.output}`;
   }
   return data.output;
 }

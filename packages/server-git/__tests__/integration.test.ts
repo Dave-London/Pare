@@ -45,17 +45,20 @@ describe("@paretools/git integration", () => {
     await transport.close();
   });
 
-  it("lists all 24 tools", async () => {
+  it("lists all 28 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "add",
+      "archive",
       "bisect",
       "blame",
       "branch",
       "checkout",
       "cherry-pick",
+      "clean",
       "commit",
+      "config",
       "diff",
       "log",
       "log-graph",
@@ -71,6 +74,7 @@ describe("@paretools/git integration", () => {
       "stash",
       "stash-list",
       "status",
+      "submodule",
       "tag",
       "worktree",
     ]);
