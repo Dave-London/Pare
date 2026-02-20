@@ -227,6 +227,32 @@ describe("formatStateList", () => {
   });
 });
 
+describe("compactOutputMap + formatOutputCompact", () => {
+  it("produces compact output summary", () => {
+    const data: TerraformOutputResult = {
+      success: true,
+      outputs: [
+        { name: "ip", value: "10.0.0.1", type: "string" },
+        { name: "secret", value: "<sensitive>", type: "string", sensitive: true },
+      ],
+    };
+    const text = formatOutputCompact(compactOutputMap(data));
+    expect(text).toContain("2 outputs");
+  });
+});
+
+describe("compactStateListMap + formatStateListCompact", () => {
+  it("produces compact state list summary", () => {
+    const data: TerraformStateListResult = {
+      success: true,
+      resources: ["aws_instance.web", "aws_s3_bucket.data"],
+      total: 2,
+    };
+    const text = formatStateListCompact(compactStateListMap(data));
+    expect(text).toContain("2 resources");
+  });
+});
+
 // ── Workspace formatters ────────────────────────────────────────────
 
 describe("formatWorkspace", () => {
