@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { compactDualOutput, compactInput, projectPathInput } from "@paretools/shared";
 import { bunCmd } from "../lib/bun-runner.js";
