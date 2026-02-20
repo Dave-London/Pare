@@ -25,10 +25,8 @@ import type {
   GitWorktreeListFull,
   GitWorktree,
   ReflogAction,
-  GitSubmodule,
   GitSubmoduleEntry,
   GitClean,
-  GitConfig,
   GitConfigEntry,
 } from "../schemas/index.js";
 
