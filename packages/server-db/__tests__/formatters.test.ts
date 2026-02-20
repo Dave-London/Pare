@@ -10,7 +10,6 @@ import {
   compactMysqlQueryMap,
   formatMysqlQueryCompact,
   formatMysqlListDatabases,
-  compactMysqlListDatabasesMap,
   formatMysqlListDatabasesCompact,
   formatRedisPing,
   compactRedisPingMap,
