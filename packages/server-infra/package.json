@@ -1,6 +1,6 @@
 {
   "name": "@paretools/infra",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "mcpName": "io.github.Dave-London/pare-infra",
   "description": "MCP server for infrastructure-as-code operations with structured, token-efficient output",
   "license": "MIT",

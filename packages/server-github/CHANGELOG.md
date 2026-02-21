@@ -1,5 +1,16 @@
 # @paretools/github
 
+## 0.11.0
+
+### Minor Changes
+
+- [#578](https://github.com/Dave-London/Pare/pull/578) [`7cafb03`](https://github.com/Dave-London/Pare/commit/7cafb035d661b1a56371346eb143c00d4560ab9d) Thanks [@Dave-London](https://github.com/Dave-London)! - Add three new GitHub tools: repo-view, repo-clone, and discussion-list
+
+### Patch Changes
+
+- Updated dependencies [[`154f567`](https://github.com/Dave-London/Pare/commit/154f5678d69df15db746d0fc8afbcc2ecc17ac85), [`a069792`](https://github.com/Dave-London/Pare/commit/a069792ad77be8c159fcf9b72ffc6036ff9d25dd)]:
+  - @paretools/shared@0.11.0
+
 ## 0.10.2
 
 ### Patch Changes

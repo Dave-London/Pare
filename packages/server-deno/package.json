@@ -1,6 +1,6 @@
 {
   "name": "@paretools/deno",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "mcpName": "io.github.Dave-London/pare-deno",
   "description": "MCP server for Deno runtime operations with structured, token-efficient output",
   "license": "MIT",
