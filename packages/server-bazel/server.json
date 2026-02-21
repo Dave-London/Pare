@@ -3,12 +3,12 @@
   "name": "io.github.Dave-London/pare-bazel",
   "description": "Pare Bazel — Structured Bazel build system operations as typed JSON.",
   "repository": { "url": "https://github.com/Dave-London/Pare", "source": "github" },
-  "version": "0.1.0",
+  "version": "0.10.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@paretools/bazel",
-      "version": "0.1.0",
+      "version": "0.10.2",
       "transport": { "type": "stdio" }
     }
   ]
