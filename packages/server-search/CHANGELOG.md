@@ -1,5 +1,16 @@
 # @paretools/search
 
+## 0.11.0
+
+### Minor Changes
+
+- [#580](https://github.com/Dave-London/Pare/pull/580) [`b1839f7`](https://github.com/Dave-London/Pare/commit/b1839f76f401308d9cbd2746f47ebb4f31c2a5c4) Thanks [@Dave-London](https://github.com/Dave-London)! - Add yq tool for YAML/JSON/XML/TOML processing
+
+### Patch Changes
+
+- Updated dependencies [[`154f567`](https://github.com/Dave-London/Pare/commit/154f5678d69df15db746d0fc8afbcc2ecc17ac85), [`a069792`](https://github.com/Dave-London/Pare/commit/a069792ad77be8c159fcf9b72ffc6036ff9d25dd)]:
+  - @paretools/shared@0.11.0
+
 ## 0.10.2
 
 ### Patch Changes

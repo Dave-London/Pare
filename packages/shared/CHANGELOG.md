@@ -1,5 +1,15 @@
 # @paretools/shared
 
+## 0.11.0
+
+### Minor Changes
+
+- [#589](https://github.com/Dave-London/Pare/pull/589) [`154f567`](https://github.com/Dave-London/Pare/commit/154f5678d69df15db746d0fc8afbcc2ecc17ac85) Thanks [@Dave-London](https://github.com/Dave-London)! - Add structured error categorization for agent recovery
+
+### Patch Changes
+
+- [#573](https://github.com/Dave-London/Pare/pull/573) [`a069792`](https://github.com/Dave-London/Pare/commit/a069792ad77be8c159fcf9b72ffc6036ff9d25dd) Thanks [@Dave-London](https://github.com/Dave-London)! - Add centralized Zod input schemas for common tool parameters (compactInput, projectPathInput, repoPathInput, cwdPathInput, fixInput, pathInput, configInput, filePatternsInput) to reduce duplication across server packages
+
 ## 0.10.2
 
 ### Patch Changes
