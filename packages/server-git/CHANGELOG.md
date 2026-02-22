@@ -1,5 +1,16 @@
 # @paretools/git
 
+## 0.11.0
+
+### Minor Changes
+
+- [#577](https://github.com/Dave-London/Pare/pull/577) [`b22bb4a`](https://github.com/Dave-London/Pare/commit/b22bb4acc850a7a1da4b851997c3fd4fb2ada395) Thanks [@Dave-London](https://github.com/Dave-London)! - Add four new git tools: submodule, archive, clean, and config
+
+### Patch Changes
+
+- Updated dependencies [[`154f567`](https://github.com/Dave-London/Pare/commit/154f5678d69df15db746d0fc8afbcc2ecc17ac85), [`a069792`](https://github.com/Dave-London/Pare/commit/a069792ad77be8c159fcf9b72ffc6036ff9d25dd)]:
+  - @paretools/shared@0.11.0
+
 ## 0.10.2
 
 ### Patch Changes
