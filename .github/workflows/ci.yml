@@ -18,10 +18,13 @@ jobs:
       full-suite: ${{ steps.check.outputs.full-suite }}
     steps:
       - id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]] || \
-             [[ "${{ github.event_name }}" == "schedule" ]] || \
-             [[ "${{ github.head_ref }}" == changeset-release/* ]]; then
+          if [[ "$EVENT_NAME" == "push" ]] || \
+             [[ "$EVENT_NAME" == "schedule" ]] || \
+             [[ "$HEAD_REF" == changeset-release/* ]]; then
             echo "full-suite=true" >> "$GITHUB_OUTPUT"
           else
             echo "full-suite=false" >> "$GITHUB_OUTPUT"
