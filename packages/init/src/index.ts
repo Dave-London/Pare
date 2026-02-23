@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";

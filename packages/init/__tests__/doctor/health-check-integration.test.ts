@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { checkServer } from "../../src/lib/doctor/health-check.js";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isWindows } from "../../src/lib/platform.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 
