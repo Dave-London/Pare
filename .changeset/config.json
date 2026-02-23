@@ -20,7 +20,20 @@
       "@paretools/test",
       "@paretools/security",
       "@paretools/make",
-      "@paretools/process"
+      "@paretools/process",
+      "@paretools/bazel",
+      "@paretools/bun",
+      "@paretools/cmake",
+      "@paretools/db",
+      "@paretools/deno",
+      "@paretools/dotnet",
+      "@paretools/infra",
+      "@paretools/init",
+      "@paretools/jvm",
+      "@paretools/nix",
+      "@paretools/remote",
+      "@paretools/ruby",
+      "@paretools/swift"
     ]
   ],
   "linked": [],
