@@ -22,6 +22,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
+    "canary": "changeset version --snapshot canary",
     "changelog": "tsx scripts/aggregate-changelog.ts",
     "smoke": "vitest run --config tests/smoke/vitest.config.ts",
     "smoke:coverage": "tsx scripts/smoke-coverage.ts",
