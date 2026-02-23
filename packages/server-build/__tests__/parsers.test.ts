@@ -6,6 +6,8 @@ import {
   parseSizeToBytes,
   parseEsbuildMetafile,
   parseWebpackProfile,
+  parseLernaOutput,
+  parseRollupOutput,
 } from "../src/lib/parsers.js";
 
 describe("parseTscOutput", () => {
@@ -310,5 +312,158 @@ describe("parseWebpackProfile", () => {
     expect(result).toBeDefined();
     expect(result!.modules).toHaveLength(1);
     expect(result!.modules[0].name).toBe("./src/app.ts");
+  });
+});
+
+describe("parseLernaOutput", () => {
+  it("parses successful list with JSON array of packages", () => {
+    const packages = [
+      { name: "@scope/core", version: "1.0.0", location: "/packages/core", private: false },
+      { name: "@scope/utils", version: "2.1.0", location: "/packages/utils", private: true },
+    ];
+    const stdout = JSON.stringify(packages);
+    const result = parseLernaOutput(stdout, "", 0, 1.5, "list");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("list");
+    expect(result.packages).toHaveLength(2);
+    expect(result.packages![0]).toEqual({
+      name: "@scope/core",
+      version: "1.0.0",
+      location: "/packages/core",
+      private: false,
+    });
+    expect(result.packages![1]).toEqual({
+      name: "@scope/utils",
+      version: "2.1.0",
+      location: "/packages/utils",
+      private: true,
+    });
+    expect(result.output).toBeUndefined();
+    expect(result.duration).toBe(1.5);
+  });
+
+  it("parses successful changed with empty result", () => {
+    const stdout = "[]";
+    const result = parseLernaOutput(stdout, "", 0, 0.8, "changed");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("changed");
+    expect(result.packages).toBeUndefined();
+    expect(result.errors).toBeUndefined();
+  });
+
+  it("parses run action with output string", () => {
+    const stdout = "lerna info run\n> @scope/core build\nCompiled successfully\n";
+    const result = parseLernaOutput(stdout, "", 0, 3.2, "run");
+
+    expect(result.success).toBe(true);
+    expect(result.action).toBe("run");
+    expect(result.output).toBe(stdout);
+    expect(result.packages).toBeUndefined();
+  });
+
+  it("parses failed command with error lines", () => {
+    const stderr = "Error: Command failed with exit code 1\nlerna ERR! build failed";
+    const result = parseLernaOutput("", stderr, 1, 2.0, "run");
+
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("run");
+    expect(result.errors).toBeDefined();
+    expect(result.errors!.length).toBeGreaterThan(0);
+  });
+
+  it("handles malformed JSON gracefully", () => {
+    const stdout = "not valid json [";
+    const result = parseLernaOutput(stdout, "", 0, 0.5, "list");
+
+    expect(result.success).toBe(true);
+    expect(result.packages).toBeUndefined();
+  });
+});
+
+describe("parseRollupOutput", () => {
+  it("parses successful build with single bundle", () => {
+    const stdout = "src/index.js \u2192 dist/bundle.js...";
+    const result = parseRollupOutput(stdout, "", 0, 1.2);
+
+    expect(result.success).toBe(true);
+    expect(result.bundles).toHaveLength(1);
+    expect(result.bundles![0]).toEqual({ input: "src/index.js", output: "dist/bundle.js" });
+    expect(result.errors).toBeUndefined();
+    expect(result.warnings).toBeUndefined();
+    expect(result.duration).toBe(1.2);
+  });
+
+  it("parses multiple bundles with comma-separated output files", () => {
+    const stdout = "src/index.js \u2192 dist/bundle.cjs.js, dist/bundle.esm.js...";
+    const result = parseRollupOutput(stdout, "", 0, 2.0);
+
+    expect(result.success).toBe(true);
+    expect(result.bundles).toHaveLength(2);
+    expect(result.bundles![0]).toEqual({ input: "src/index.js", output: "dist/bundle.cjs.js" });
+    expect(result.bundles![1]).toEqual({ input: "src/index.js", output: "dist/bundle.esm.js" });
+  });
+
+  it("parses build errors with location info", () => {
+    const stdout = [
+      "[!] Error: Could not resolve './missing' from src/index.js",
+      "src/index.js (10:5)",
+    ].join("\n");
+    const result = parseRollupOutput(stdout, "", 1, 0.5);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors![0]).toEqual({
+      file: "src/index.js",
+      line: 10,
+      column: 5,
+      message: "Could not resolve './missing' from src/index.js",
+    });
+  });
+
+  it("parses build errors without location info (plugin errors)", () => {
+    const stderr = "[!] (plugin typescript) Error: Could not compile";
+    const result = parseRollupOutput("", stderr, 1, 0.3);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors![0].message).toContain("Could not compile");
+    expect(result.errors![0].file).toBeUndefined();
+    expect(result.errors![0].line).toBeUndefined();
+  });
+
+  it("parses warnings", () => {
+    const stdout = [
+      "src/index.js \u2192 dist/bundle.js...",
+      "(!) Unresolved dependencies",
+      "(!) Missing exports",
+    ].join("\n");
+    const result = parseRollupOutput(stdout, "", 0, 1.0);
+
+    expect(result.success).toBe(true);
+    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings![0]).toBe("Unresolved dependencies");
+    expect(result.warnings![1]).toBe("Missing exports");
+  });
+
+  it("parses mixed errors and warnings", () => {
+    const stdout = [
+      "(!) Circular dependency detected",
+      "[!] Error: Unexpected token",
+      "src/bad.js (3:8)",
+      "(!) Tree-shaking disabled",
+    ].join("\n");
+    const result = parseRollupOutput(stdout, "", 1, 0.7);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors![0].message).toBe("Unexpected token");
+    expect(result.errors![0].file).toBe("src/bad.js");
+    expect(result.errors![0].line).toBe(3);
+    expect(result.errors![0].column).toBe(8);
+    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings![0]).toBe("Circular dependency detected");
+    expect(result.warnings![1]).toBe("Tree-shaking disabled");
   });
 });
