@@ -29,6 +29,7 @@ packages/
   server-security/ @paretools/security  — Secret & vulnerability scanning (3 tools)
   server-make/     @paretools/make      — Make operations (2 tools)
   server-process/  @paretools/process   — Command execution (1 tool)
+  init/            @paretools/init      — Setup CLI & health check (not an MCP server)
   tsconfig/        Shared TypeScript config
   eslint-config/   Shared ESLint config
 ```

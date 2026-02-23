@@ -42,7 +42,7 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (149 tools, 16 packages)
+## Available Servers (149 tools, 17 packages)
 
 | Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -62,6 +62,52 @@ This uses MCP's `structuredContent` and `outputSchema` features to provide type-
 | [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                   | trivy, semgrep, gitleaks                                         |
 | [`@paretools/k8s`](./packages/server-k8s)           | kubectl-get, kubectl-describe, kubectl-logs, kubectl-apply, helm                                                                                                                                                                                           | kubectl, helm                                                    |
 | [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                        | child_process                                                    |
+
+## Quick Setup
+
+The fastest way to configure Pare in any supported AI client:
+
+```bash
+npx @paretools/init
+```
+
+This auto-detects your installed clients, lets you pick a preset (web, python, rust, go, devops, full), and writes the correct config.
+
+**Flag mode** (non-interactive):
+
+```bash
+npx @paretools/init --client claude-code --preset web
+npx @paretools/init --client vscode --all
+npx @paretools/init --client cursor --preset python --dry-run
+```
+
+**Health check** — verify configured servers are working:
+
+```bash
+npx @paretools/doctor
+```
+
+> **Note:** After running `pare-init`, restart your client session for the new servers to take effect.
+
+## Manual Configuration
+
+If you prefer manual setup, add the JSON/TOML/YAML entries below to your client's config file.
+
+**Config file paths:**
+
+| Client            | Config Path                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Claude Code       | `{project}/.claude/settings.local.json`                                                                                |
+| Claude Desktop    | `~/.config/Claude/claude_desktop_config.json` (macOS/Linux) or `%APPDATA%/Claude/claude_desktop_config.json` (Windows) |
+| Cursor            | `~/.cursor/mcp.json`                                                                                                   |
+| VS Code / Copilot | `{project}/.vscode/mcp.json`                                                                                           |
+| Windsurf          | `~/.codeium/windsurf/mcp_config.json`                                                                                  |
+| Zed               | `~/.config/zed/settings.json`                                                                                          |
+| OpenAI Codex      | `{project}/.codex/config.toml`                                                                                         |
+| Continue.dev      | `{project}/.continue/mcpServers/pare.yaml`                                                                             |
+| Gemini CLI        | `~/.gemini/settings.json`                                                                                              |
+
+> **Tip:** Use `npx @paretools/init` instead of manual configuration — it handles platform differences (e.g. Windows `cmd /c` wrapper) and merges safely with existing config.
 
 ## Quick Start
 

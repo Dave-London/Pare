@@ -1,0 +1,70 @@
+{
+  "name": "@paretools/init",
+  "version": "0.1.0",
+  "description": "Setup CLI and health check for Pare MCP servers — auto-detect clients, install servers, verify connections",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "setup",
+    "init",
+    "cli",
+    "doctor",
+    "health-check",
+    "ai",
+    "ai-agent",
+    "claude",
+    "cursor",
+    "copilot",
+    "devtools"
+  ],
+  "homepage": "https://github.com/Dave-London/Pare/tree/main/packages/init",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "bin": {
+    "pare-init": "./dist/index.js",
+    "pare-doctor": "./dist/doctor.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dave-London/Pare.git",
+    "directory": "packages/init"
+  },
+  "bugs": {
+    "url": "https://github.com/Dave-London/Pare/issues"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.5.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "smol-toml": "^1.3.1",
+    "yaml": "^2.7.1"
+  },
+  "devDependencies": {
+    "@paretools/tsconfig": "workspace:*",
+    "@types/node": "^25.2.3",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
+  }
+}
