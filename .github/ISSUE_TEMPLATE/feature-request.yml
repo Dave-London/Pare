@@ -17,6 +17,14 @@ body:
         - "@paretools/python"
         - "@paretools/cargo"
         - "@paretools/go"
+        - "@paretools/github"
+        - "@paretools/k8s"
+        - "@paretools/search"
+        - "@paretools/http"
+        - "@paretools/security"
+        - "@paretools/make"
+        - "@paretools/process"
+        - "@paretools/init"
         - "@paretools/shared"
         - New server
         - Other

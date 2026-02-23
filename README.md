@@ -42,7 +42,7 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (149 tools, 16 packages)
+## Available Servers (149 tools, 17 packages)
 
 | Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
