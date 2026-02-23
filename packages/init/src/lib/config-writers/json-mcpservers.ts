@@ -1,0 +1,47 @@
+import type { FileSystem } from "../merge.js";
+import type { ServerEntry } from "../servers.js";
+import { npxCommand } from "../platform.js";
+
+interface McpServersConfig {
+  mcpServers?: Record<string, { command: string; args: string[] }>;
+  [key: string]: unknown;
+}
+
+/** Build the mcpServers entries for a list of Pare servers. */
+export function buildMcpServersEntries(
+  servers: ServerEntry[],
+): Record<string, { command: string; args: string[] }> {
+  const entries: Record<string, { command: string; args: string[] }> = {};
+  for (const s of servers) {
+    const { command, args } = npxCommand(s.pkg);
+    entries[s.id] = { command, args };
+  }
+  return entries;
+}
+
+/**
+ * Merge Pare server entries into a JSON file using the mcpServers format.
+ * Used by: Claude Code, Claude Desktop, Cursor, Windsurf, Cline, Roo Code, Gemini CLI.
+ */
+export function writeMcpServersConfig(
+  configPath: string,
+  servers: ServerEntry[],
+  fs: FileSystem,
+): string {
+  let existing: McpServersConfig = {};
+  const raw = fs.readFile(configPath);
+  if (raw !== undefined) {
+    existing = JSON.parse(raw) as McpServersConfig;
+  }
+
+  if (!existing.mcpServers) {
+    existing.mcpServers = {};
+  }
+
+  const newEntries = buildMcpServersEntries(servers);
+  Object.assign(existing.mcpServers, newEntries);
+
+  const output = JSON.stringify(existing, null, 2) + "\n";
+  fs.writeFile(configPath, output);
+  return output;
+}
