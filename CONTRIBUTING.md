@@ -230,6 +230,30 @@ pnpm format:check   # Check formatting
 4. **Use `execFile`, not `exec`** — Prevents shell injection.
 5. **Test with real output** — Capture actual CLI output as test fixtures.
 
+## Canary (Pre-release) Versions
+
+Canary releases let you test unpublished changes from any branch without affecting the `latest` npm tag.
+
+**How to publish a canary:**
+
+1. Go to **Actions > Canary Release** in GitHub
+2. Click **Run workflow** and select the branch you want to publish from
+3. The workflow builds, tests, then publishes snapshot versions tagged as `canary`
+
+The published versions look like `0.10.2-canary-20260223-abc1234` and are installed with:
+
+```bash
+npm install @paretools/git@canary
+```
+
+Canary versions never become `latest` -- they are published under the `canary` dist-tag only.
+
+You can also generate canary version numbers locally (without publishing) using:
+
+```bash
+pnpm canary
+```
+
 ## Commit Messages
 
 Use conventional commits:
