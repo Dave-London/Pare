@@ -1,0 +1,133 @@
+name: Nightly Full Suite
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm smoke
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=high
+
+  summary:
+    if: always()
+    needs: [build-and-test, lint, smoke, audit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect results
+        id: results
+        run: |
+          echo "## Nightly Full Suite Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build & Test (matrix) | ${{ needs.build-and-test.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lint & Format | ${{ needs.lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Smoke Tests | ${{ needs.smoke.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Audit | ${{ needs.audit.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
+          # Determine if any required job failed
+          FAILED="false"
+          for result in "${{ needs.build-and-test.result }}" "${{ needs.lint.result }}" "${{ needs.smoke.result }}"; do
+            if [[ "$result" != "success" ]]; then
+              FAILED="true"
+            fi
+          done
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+
+      - name: Create issue on failure
+        if: steps.results.outputs.failed == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const results = {
+              'build-and-test': '${{ needs.build-and-test.result }}',
+              'lint': '${{ needs.lint.result }}',
+              'smoke': '${{ needs.smoke.result }}',
+              'audit': '${{ needs.audit.result }}'
+            };
+            const failed = Object.entries(results)
+              .filter(([, v]) => v !== 'success')
+              .map(([k, v]) => `- **${k}**: ${v}`)
+              .join('\n');
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Nightly suite failure — ${new Date().toISOString().slice(0, 10)}`,
+              body: `The nightly full suite run failed.\n\n**Failed jobs:**\n${failed}\n\n**Run:** ${runUrl}`,
+              labels: ['bug', 'area: infra']
+            });
