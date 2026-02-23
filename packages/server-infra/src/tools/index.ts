@@ -9,6 +9,9 @@ import { registerStateListTool } from "./state-list.js";
 import { registerWorkspaceTool } from "./workspace.js";
 import { registerShowTool } from "./show.js";
 import { registerVagrantTool } from "./vagrant.js";
+import { registerAnsiblePlaybookTool } from "./ansible-playbook.js";
+import { registerAnsibleInventoryTool } from "./ansible-inventory.js";
+import { registerAnsibleGalaxyTool } from "./ansible-galaxy.js";
 
 /** Registers all Infra tools on the given MCP server, filtered by policy. */
 export function registerAllTools(server: McpServer) {
@@ -22,4 +25,7 @@ export function registerAllTools(server: McpServer) {
   if (s("workspace")) registerWorkspaceTool(server);
   if (s("show")) registerShowTool(server);
   if (s("vagrant")) registerVagrantTool(server);
+  if (s("ansible-playbook")) registerAnsiblePlaybookTool(server);
+  if (s("ansible-inventory")) registerAnsibleInventoryTool(server);
+  if (s("ansible-galaxy")) registerAnsibleGalaxyTool(server);
 }
