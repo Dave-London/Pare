@@ -233,7 +233,7 @@ describe("@paretools/git cherry-pick integration", () => {
     const branches = gitInTemp(["branch"]).trim().split("\n");
     const defaultBranch = branches
       .find((b) => !b.includes("feature-branch"))
-      ?.replace("*", "")
+      ?.replaceAll("*", "")
       .trim();
     if (defaultBranch) {
       gitInTemp(["checkout", defaultBranch]);
