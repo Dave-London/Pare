@@ -1,6 +1,6 @@
 {
   "name": "@paretools/init",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Setup CLI and health check for Pare MCP servers — auto-detect clients, install servers, verify connections",
   "license": "MIT",
   "keywords": [

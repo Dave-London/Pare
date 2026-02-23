@@ -1,6 +1,6 @@
 {
   "name": "@paretools/make",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "mcpName": "io.github.Dave-London/pare-make",
   "description": "MCP server for Make/Just task runners with structured, token-efficient output",
   "license": "MIT",

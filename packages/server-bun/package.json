@@ -1,6 +1,6 @@
 {
   "name": "@paretools/bun",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "mcpName": "io.github.Dave-London/pare-bun",
   "description": "MCP server for Bun runtime operations with structured, token-efficient output",
   "license": "MIT",
