@@ -2,6 +2,7 @@ import YAML from "yaml";
 import type { FileSystem } from "../merge.js";
 import type { ServerEntry } from "../servers.js";
 import { npxCommand } from "../platform.js";
+import { stripBom } from "../parse-utils.js";
 
 interface ContinueConfig {
   name?: string;
@@ -22,7 +23,16 @@ export function writeContinueConfig(
   let existing: ContinueConfig = {};
   const raw = fs.readFile(configPath);
   if (raw !== undefined) {
-    existing = YAML.parse(raw) as ContinueConfig;
+    const trimmed = stripBom(raw).trim();
+    if (trimmed.length > 0) {
+      try {
+        const parsed = YAML.parse(trimmed) as ContinueConfig | null;
+        existing = parsed ?? {};
+      } catch {
+        console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
+        existing = {};
+      }
+    }
   }
 
   if (!existing.name) existing.name = "Pare Tools";

@@ -2,6 +2,7 @@ import { parse, stringify } from "smol-toml";
 import type { FileSystem } from "../merge.js";
 import type { ServerEntry } from "../servers.js";
 import { npxCommand } from "../platform.js";
+import { stripBom } from "../parse-utils.js";
 
 interface CodexConfig {
   mcp_servers?: Record<string, { command: string; args: string[] }>;
@@ -20,7 +21,15 @@ export function writeCodexConfig(
   let existing: CodexConfig = {};
   const raw = fs.readFile(configPath);
   if (raw !== undefined) {
-    existing = parse(raw) as unknown as CodexConfig;
+    const trimmed = stripBom(raw).trim();
+    if (trimmed.length > 0) {
+      try {
+        existing = parse(trimmed) as unknown as CodexConfig;
+      } catch {
+        console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
+        existing = {};
+      }
+    }
   }
 
   if (!existing.mcp_servers) {

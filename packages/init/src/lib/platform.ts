@@ -8,9 +8,16 @@ export function isWindows(): boolean {
 /**
  * Build the command + args for spawning an npx-based server.
  * On Windows, wraps with `cmd /c` to avoid ENOENT issues.
+ *
+ * @param pkg - npm package name
+ * @param forceWindows - override platform detection (for testing)
  */
-export function npxCommand(pkg: string): { command: string; args: string[] } {
-  if (isWindows()) {
+export function npxCommand(
+  pkg: string,
+  forceWindows?: boolean,
+): { command: string; args: string[] } {
+  const win = forceWindows ?? isWindows();
+  if (win) {
     return { command: "cmd", args: ["/c", "npx", "-y", pkg] };
   }
   return { command: "npx", args: ["-y", pkg] };
