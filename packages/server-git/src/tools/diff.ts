@@ -179,7 +179,7 @@ export function registerDiffTool(server: McpServer) {
           formatDiff,
           compactDiffMap,
           formatDiffCompact,
-          compact === false,
+          compact === false || full,
         );
       }
 
@@ -254,7 +254,7 @@ export function registerDiffTool(server: McpServer) {
         formatDiff,
         compactDiffMap,
         formatDiffCompact,
-        compact === false,
+        compact === false || full,
       );
     },
   );
