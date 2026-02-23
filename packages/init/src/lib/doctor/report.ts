@@ -18,6 +18,9 @@ export function formatReport(results: HealthResult[]): string {
     const detail = r.error ? ` — ${r.error}` : "";
 
     lines.push(`  [${icon}] ${r.serverId}${info ? ` (${info})` : ""}${detail}`);
+    if (r.warning) {
+      lines.push(`         Warning: ${r.warning}`);
+    }
   }
 
   lines.push("─".repeat(60));

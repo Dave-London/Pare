@@ -72,6 +72,9 @@ async function main(): Promise<void> {
     console.log(`\n[dry-run] Would write to: ${result.configPath}\n`);
     console.log(result.output);
   } else {
+    if (result.backupPath) {
+      console.log(`\nBacked up existing config to: ${result.backupPath}`);
+    }
     console.log(`\nWrote ${result.serverCount} Pare servers to: ${result.configPath}`);
     console.log(`\nServers added: ${servers.map((s) => s.id).join(", ")}`);
     console.log(`\nRestart your ${client.name} session to activate the new servers.`);
