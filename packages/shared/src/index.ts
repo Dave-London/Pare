@@ -45,3 +45,5 @@ export {
   isConfigurationError,
 } from "./errors.js";
 export type { PareErrorCategoryType, PareError } from "./errors.js";
+export { createServer } from "./server.js";
+export type { CreateServerOptions } from "./server.js";
