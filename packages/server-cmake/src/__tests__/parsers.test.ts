@@ -339,3 +339,124 @@ describe("parseCMakeCleanOutput", () => {
     expect(result.exitCode).toBe(1);
   });
 });
+
+// ── Additional edge cases for branch coverage ───────────────────────
+
+describe("parseCMakeConfigureOutput — edge cases", () => {
+  it("parses C compiler only (no CXX)", () => {
+    const stdout = "-- The C compiler identification is Clang 14.0.0\n-- Configuring done";
+    const result = parseCMakeConfigureOutput(stdout, "", 0, "build");
+    expect(result.generator).toBe("Clang 14.0.0");
+  });
+
+  it("parses warnings without location", () => {
+    const stdout = [
+      "CMake Warning:",
+      "  This is a warning without file location.",
+      "",
+      "-- Configuring done",
+    ].join("\n");
+    const result = parseCMakeConfigureOutput(stdout, "", 0, "build");
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings!.some((w) => w.message.includes("warning without file"))).toBe(true);
+    expect(result.warnings!.some((w) => !w.file)).toBe(true);
+  });
+
+  it("parses errors without location", () => {
+    const stderr = [
+      "CMake Error:",
+      "  Could not find CMakeLists.txt.",
+      "",
+      "-- Configuring incomplete",
+    ].join("\n");
+    const result = parseCMakeConfigureOutput("", stderr, 1, "build");
+    expect(result.errors).toBeDefined();
+    expect(result.errors!.some((e) => !e.file)).toBe(true);
+  });
+});
+
+describe("parseCTestOutput — edge cases", () => {
+  it("parses Timeout test result", () => {
+    const stdout = [
+      "Test project /home/user/build",
+      "1/2 Test #1: test_fast .....................   Passed    0.01 sec",
+      "2/2 Test #2: test_slow ....................***Timeout   60.00 sec",
+      "",
+      "50% tests passed, 1 tests failed out of 2",
+      "",
+      "Total Test time (real) =  60.01 sec",
+    ].join("\n");
+    const result = parseCTestOutput(stdout, "", 8);
+    expect(result.tests).toHaveLength(2);
+    expect(result.tests[1].status).toBe("timeout");
+    expect(result.summary.timeout).toBe(1);
+  });
+
+  it("parses Not Run test result", () => {
+    const stdout = [
+      "Test project /home/user/build",
+      "1/1 Test #1: test_skipped .................***Not Run   0.00 sec",
+      "",
+      "Total Test time (real) =   0.00 sec",
+    ].join("\n");
+    const result = parseCTestOutput(stdout, "", 0);
+    expect(result.tests).toHaveLength(1);
+    expect(result.tests[0].status).toBe("not_run");
+    expect(result.summary.skipped).toBe(1);
+  });
+
+  it("parses Disabled test result", () => {
+    const stdout = [
+      "Test project /home/user/build",
+      "1/1 Test #1: test_disabled ................***Disabled   0.00 sec",
+      "",
+      "Total Test time (real) =   0.00 sec",
+    ].join("\n");
+    const result = parseCTestOutput(stdout, "", 0);
+    expect(result.tests).toHaveLength(1);
+    expect(result.tests[0].status).toBe("disabled");
+  });
+
+  it("falls back to counting when no summary line", () => {
+    const stdout = [
+      "1/2 Test #1: test_a .......................   Passed    0.01 sec",
+      "2/2 Test #2: test_b ......................***Failed    0.02 sec",
+    ].join("\n");
+    const result = parseCTestOutput(stdout, "", 8);
+    expect(result.summary.passed).toBe(1);
+    expect(result.summary.failed).toBe(1);
+    expect(result.summary.totalTests).toBe(2);
+  });
+
+  it("handles no total duration", () => {
+    const stdout = [
+      "1/1 Test #1: test_a .......................   Passed    0.01 sec",
+      "100% tests passed, 0 tests failed out of 1",
+    ].join("\n");
+    const result = parseCTestOutput(stdout, "", 0);
+    expect(result.summary.totalDurationSec).toBeUndefined();
+  });
+});
+
+describe("parseCMakePresetsOutput — edge cases", () => {
+  it("parses presets with test presets", () => {
+    const stdout = [
+      "Available test presets:",
+      "",
+      '  "unit-tests" - Unit tests',
+      '  "integration" - Integration tests',
+    ].join("\n");
+    const result = parseCMakePresetsOutput(stdout, "", 0);
+    expect(result.testPresets).toHaveLength(2);
+    expect(result.testPresets![0].name).toBe("unit-tests");
+    expect(result.testPresets![0].displayName).toBe("Unit tests");
+  });
+
+  it("parses presets without display name", () => {
+    const stdout = ["Available configure presets:", "", '  "default"'].join("\n");
+    const result = parseCMakePresetsOutput(stdout, "", 0);
+    expect(result.configurePresets).toHaveLength(1);
+    expect(result.configurePresets![0].name).toBe("default");
+    expect(result.configurePresets![0].displayName).toBeUndefined();
+  });
+});

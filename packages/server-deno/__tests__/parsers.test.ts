@@ -426,4 +426,306 @@ file:///project/main.ts
     expect(result.type).toBe("TypeScript");
     expect(result.local).toBe("/project/main.ts");
   });
+
+  it("parses text info with npm dependencies", () => {
+    const stdout = `local: /project/main.ts
+type: TypeScript
+deps:
+file:///project/main.ts
+  npm:chalk@5.0.0
+  https://deno.land/std@0.200.0/path/mod.ts`;
+
+    const result = parseInfoText(stdout, "", 0, "main.ts");
+
+    expect(result.success).toBe(true);
+    expect(result.totalDependencies).toBe(3);
+    expect(result.dependencies).toHaveLength(3);
+    expect(result.dependencies![0].type).toBe("local");
+    expect(result.dependencies![1].type).toBe("npm");
+    expect(result.dependencies![2].type).toBe("remote");
+  });
+
+  it("returns no type/local when not in output", () => {
+    const result = parseInfoText("deps:\nfile:///a.ts", "", 0);
+    expect(result.type).toBeUndefined();
+    expect(result.local).toBeUndefined();
+  });
+
+  it("returns empty dependencies when no dep lines match", () => {
+    const result = parseInfoText("no deps here", "", 0, "mod.ts");
+    expect(result.totalDependencies).toBe(0);
+    expect(result.dependencies).toBeUndefined();
+  });
+});
+
+// ── Additional parser branch coverage ───────────────────────────────
+
+describe("parseTestOutput — error block parsing", () => {
+  it("parses failure section with error messages", () => {
+    const stdout = `running 2 tests from ./test.ts
+test passing ... ok (5ms)
+test failing ... FAILED (2ms)
+
+FAILED | 1 passed | 1 failed | 0 ignored (10ms)
+
+failures:
+
+---- failing ----
+AssertionError: expected 1 to equal 2
+    at test.ts:5:3
+`;
+
+    const result = parseTestOutput(stdout, "", 1, 15);
+
+    expect(result.failed).toBe(1);
+    expect(result.tests).toHaveLength(2);
+    const failedTest = result.tests!.find((t) => t.status === "failed");
+    expect(failedTest).toBeDefined();
+    expect(failedTest!.error).toContain("AssertionError");
+  });
+
+  it("falls back to counting when no summary line", () => {
+    const stdout = `test a ... ok (1ms)
+test b ... FAILED (2ms)
+test c ... ignored (0ms)`;
+
+    const result = parseTestOutput(stdout, "", 1, 10);
+
+    expect(result.passed).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.ignored).toBe(1);
+    expect(result.total).toBe(3);
+  });
+
+  it("parses measured count from output", () => {
+    const stdout = `running 2 tests from ./bench.ts
+test bench1 ... ok (100ms)
+test bench2 ... ok (200ms)
+
+ok | 2 passed | 0 failed | 0 ignored (350ms)
+1 measured`;
+
+    const result = parseTestOutput(stdout, "", 0, 350);
+    expect(result.measured).toBe(1);
+  });
+});
+
+describe("parseLintJson — edge cases", () => {
+  it("handles diagnostics with fallback field names", () => {
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          file: "/project/a.ts",
+          line: 10,
+          column: 5,
+          message: "unused var",
+        },
+      ],
+      errors: [],
+    });
+
+    const result = parseLintJson(json);
+
+    expect(result.diagnostics![0].file).toBe("/project/a.ts");
+    expect(result.diagnostics![0].line).toBe(10);
+    expect(result.diagnostics![0].column).toBe(5);
+  });
+
+  it("handles diagnostics without optional fields", () => {
+    const json = JSON.stringify({
+      diagnostics: [
+        {
+          filename: "/a.ts",
+          range: { start: { line: 1 } },
+          message: "err",
+        },
+      ],
+    });
+
+    const result = parseLintJson(json);
+
+    expect(result.diagnostics![0].column).toBeUndefined();
+    expect(result.diagnostics![0].code).toBeUndefined();
+    expect(result.diagnostics![0].hint).toBeUndefined();
+  });
+
+  it("handles errors array with fallback field names", () => {
+    const json = JSON.stringify({
+      diagnostics: [],
+      errors: [
+        {
+          file: "/b.ts",
+          line: 5,
+          column: 3,
+          code: "syntax",
+          message: "syntax error",
+        },
+      ],
+    });
+
+    const result = parseLintJson(json);
+
+    expect(result.total).toBe(1);
+    expect(result.diagnostics![0].file).toBe("/b.ts");
+    expect(result.diagnostics![0].line).toBe(5);
+    expect(result.diagnostics![0].column).toBe(3);
+    expect(result.diagnostics![0].code).toBe("syntax");
+  });
+});
+
+describe("parseFmtCheck — edge cases", () => {
+  it("detects unformatted .tsx files from standalone paths", () => {
+    const stderr = `./src/component.tsx`;
+
+    const result = parseFmtCheck("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(1);
+    expect(result.files).toEqual(["./src/component.tsx"]);
+  });
+
+  it("detects unformatted .jsx files", () => {
+    const result = parseFmtCheck("", "./app.jsx", 1);
+    expect(result.total).toBe(1);
+  });
+
+  it("detects unformatted .json files", () => {
+    const result = parseFmtCheck("", "./config.json", 1);
+    expect(result.total).toBe(1);
+  });
+
+  it("detects unformatted .md files", () => {
+    const result = parseFmtCheck("", "./README.md", 1);
+    expect(result.total).toBe(1);
+  });
+
+  it("ignores error: and Checked lines in standalone mode", () => {
+    const stderr = `error: Found 1 not formatted file
+Checked 5 files
+./src/main.ts`;
+
+    const result = parseFmtCheck("", stderr, 1);
+
+    // The "from" pattern won't match, so it falls through to standalone
+    // error: and Checked lines should be skipped
+    expect(result.files).toEqual(["./src/main.ts"]);
+  });
+
+  it("returns no files when exitCode is 0 and no from lines", () => {
+    const result = parseFmtCheck("", "Checked 10 files", 0);
+    expect(result.total).toBe(0);
+    expect(result.files).toBeUndefined();
+  });
+});
+
+describe("parseFmtWrite — edge cases", () => {
+  it("detects formatted .tsx files", () => {
+    const stdout = `./src/component.tsx`;
+    const result = parseFmtWrite(stdout, "", 0);
+    expect(result.total).toBe(1);
+    expect(result.files).toEqual(["./src/component.tsx"]);
+  });
+
+  it("detects formatted .jsx files", () => {
+    const result = parseFmtWrite("./app.jsx", "", 0);
+    expect(result.total).toBe(1);
+  });
+
+  it("detects formatted .json files", () => {
+    const result = parseFmtWrite("./config.json", "", 0);
+    expect(result.total).toBe(1);
+  });
+
+  it("detects formatted .md files", () => {
+    const result = parseFmtWrite("./README.md", "", 0);
+    expect(result.total).toBe(1);
+  });
+
+  it("ignores Checked and error: lines", () => {
+    const result = parseFmtWrite("Checked 5 files\nerror: something\n./a.ts", "", 0);
+    expect(result.total).toBe(1);
+    expect(result.files).toEqual(["./a.ts"]);
+  });
+
+  it("handles failed write mode", () => {
+    const result = parseFmtWrite("", "error: permission denied", 1);
+    expect(result.success).toBe(false);
+    expect(result.mode).toBe("write");
+    expect(result.total).toBe(0);
+  });
+});
+
+describe("parseCheckOutput — edge cases", () => {
+  it("parses generic error format (pattern 3)", () => {
+    const stderr = `error[E0001]: something went wrong
+ --> /project/file.ts:10:5`;
+
+    const result = parseCheckOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(1);
+    expect(result.errors![0].file).toBe("/project/file.ts");
+    expect(result.errors![0].line).toBe(10);
+    expect(result.errors![0].column).toBe(5);
+    expect(result.errors![0].code).toBe("E0001");
+    expect(result.errors![0].message).toBe("something went wrong");
+  });
+
+  it("parses generic error without code (pattern 3)", () => {
+    const stderr = `error: some problem
+ at /project/main.ts:3:1`;
+
+    const result = parseCheckOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.total).toBe(1);
+    expect(result.errors![0].code).toBeUndefined();
+    expect(result.errors![0].message).toBe("some problem");
+  });
+});
+
+describe("parseInfoJson — edge cases", () => {
+  it("uses roots[0] as module when module param not provided", () => {
+    const json = JSON.stringify({
+      roots: ["file:///project/main.ts"],
+      modules: [{ specifier: "file:///project/main.ts", size: 100 }],
+    });
+
+    const result = parseInfoJson(json);
+
+    expect(result.module).toBe("file:///project/main.ts");
+  });
+
+  it("handles module without size", () => {
+    const json = JSON.stringify({
+      modules: [{ specifier: "https://example.com/lib.ts" }],
+    });
+
+    const result = parseInfoJson(json);
+
+    expect(result.totalDependencies).toBe(1);
+    expect(result.dependencies![0].size).toBeUndefined();
+    expect(result.totalSize).toBeUndefined();
+  });
+
+  it("handles module with unknown specifier type", () => {
+    const json = JSON.stringify({
+      modules: [{ specifier: "data:application/json,{}" }],
+    });
+
+    const result = parseInfoJson(json);
+
+    expect(result.dependencies![0].type).toBeUndefined();
+  });
+
+  it("uses mediaType from first module", () => {
+    const json = JSON.stringify({
+      modules: [{ specifier: "file:///a.ts", mediaType: "JavaScript", local: "/a.ts" }],
+    });
+
+    const result = parseInfoJson(json);
+
+    expect(result.type).toBe("JavaScript");
+    expect(result.local).toBe("/a.ts");
+  });
 });

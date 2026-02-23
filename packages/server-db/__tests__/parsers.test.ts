@@ -487,4 +487,173 @@ describe("parseMongoshStats", () => {
     expect(result.success).toBe(true);
     expect(result.raw).toBeUndefined();
   });
+
+  it("handles JSON with non-string db and non-number collections", () => {
+    const stdout = JSON.stringify({
+      db: 123,
+      collections: "not a number",
+      objects: "also not number",
+    });
+
+    const result = parseMongoshStats(stdout, "", 0, 30);
+    expect(result.success).toBe(true);
+    expect(result.db).toBeUndefined();
+    expect(result.collections).toBeUndefined();
+    expect(result.objects).toBeUndefined();
+  });
+});
+
+// ── Additional parser edge cases for branch coverage ────────────────
+
+describe("parsePsqlQuery — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parsePsqlQuery("ERROR: relation not found", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("relation not found");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parsePsqlQuery("", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles row with missing columns", () => {
+    const stdout = ["id|name|email", "1|Alice"].join("\n");
+    const result = parsePsqlQuery(stdout, "", 0, 5);
+    expect(result.rows![0]["email"]).toBeNull();
+  });
+});
+
+describe("parsePsqlListDatabases — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parsePsqlListDatabases("psql: error: connection refused", "", 1, 10);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("connection refused");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parsePsqlListDatabases("", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("skips rows with empty name", () => {
+    const stdout = ["Name|Owner", "db1|postgres", "|nobody"].join("\n");
+    const result = parsePsqlListDatabases(stdout, "", 0, 5);
+    expect(result.databases).toHaveLength(1);
+    expect(result.databases![0].name).toBe("db1");
+  });
+
+  it("handles size column", () => {
+    const stdout = ["Name|Owner|Encoding|Collate|Ctype|Size", "db1|pg|UTF8|en|en|8MB"].join("\n");
+    const result = parsePsqlListDatabases(stdout, "", 0, 5);
+    expect(result.databases![0].size).toBe("8MB");
+  });
+
+  it("handles missing Name header", () => {
+    const stdout = ["NoName|Owner", "db1|postgres"].join("\n");
+    const result = parsePsqlListDatabases(stdout, "", 0, 5);
+    // Falls back to values[0]
+    expect(result.databases![0].name).toBe("db1");
+  });
+});
+
+describe("parseMysqlQuery — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseMysqlQuery("ERROR: some error", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("some error");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parseMysqlQuery("", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("handles NULL values in mysql", () => {
+    const stdout = ["id\tname", "1\tNULL"].join("\n");
+    const result = parseMysqlQuery(stdout, "", 0, 5);
+    expect(result.rows![0]["name"]).toBeNull();
+  });
+});
+
+describe("parseMysqlListDatabases — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseMysqlListDatabases("ERROR: access denied", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("access denied");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parseMysqlListDatabases("", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe("parseRedisPing — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseRedisPing("NOAUTH Authentication required", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("NOAUTH");
+  });
+
+  it("handles empty response", () => {
+    const result = parseRedisPing("", "", 0, 5);
+    expect(result.success).toBe(false);
+    expect(result.response).toBeUndefined();
+  });
+});
+
+describe("parseRedisInfo — edge cases", () => {
+  it("handles key-value line without a section header", () => {
+    const stdout = "some_key:some_value\n";
+    const result = parseRedisInfo(stdout, "", 0, 5);
+    // Without a section header, the line should be ignored
+    expect(result.sections).toEqual([]);
+  });
+
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseRedisInfo("ERR: not authorized", "", 1, 5);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("not authorized");
+  });
+});
+
+describe("parseRedisCommand — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseRedisCommand("(error) ERR bad", "", 1, 1);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("ERR bad");
+  });
+});
+
+describe("parseMongoshEval — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseMongoshEval("MongoError: bad stuff", "", 1, 30);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("bad stuff");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parseMongoshEval("", "", 1, 30);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe("parseMongoshStats — edge cases", () => {
+  it("handles error from stdout when stderr is empty", () => {
+    const result = parseMongoshStats("MongoError: bad", "", 1, 50);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("bad");
+  });
+
+  it("handles no error text at all", () => {
+    const result = parseMongoshStats("", "", 1, 50);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeUndefined();
+  });
 });
