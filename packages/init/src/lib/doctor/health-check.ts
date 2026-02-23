@@ -11,6 +11,15 @@ export interface HealthResult {
 
 const SERVER_TIMEOUT = 15_000;
 
+/** Race a promise against a timeout, cleaning up the timer on resolution. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 /**
  * Spawn a Pare MCP server, perform initialize + listTools, report health.
  */
@@ -30,20 +39,9 @@ export async function checkServer(
 
     const client = new Client({ name: "pare-doctor", version: "1.0.0" });
 
-    // Race against timeout
-    const connectPromise = client.connect(transport);
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Connection timeout")), SERVER_TIMEOUT),
-    );
+    await withTimeout(client.connect(transport), SERVER_TIMEOUT, "Connection");
 
-    await Promise.race([connectPromise, timeoutPromise]);
-
-    const { tools } = await Promise.race([
-      client.listTools(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("listTools timeout")), SERVER_TIMEOUT),
-      ),
-    ]);
+    const { tools } = await withTimeout(client.listTools(), SERVER_TIMEOUT, "listTools");
 
     const latencyMs = Date.now() - start;
 

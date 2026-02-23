@@ -3,12 +3,15 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseToml } from "smol-toml";
+import YAML from "yaml";
 import { parseDoctorArgs, DOCTOR_HELP } from "./lib/args.js";
 import { CLIENT_MAP, resolveConfigPath, type ClientEntry } from "./lib/clients.js";
 import { checkServer } from "./lib/doctor/health-check.js";
 import { formatReport } from "./lib/doctor/report.js";
 import { detectClients } from "./lib/detect.js";
 import { promptClient } from "./lib/prompts.js";
+import { parseJsonc } from "./lib/parse-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -36,40 +39,64 @@ function extractPareServers(client: ClientEntry, projectDir: string): Map<string
   const raw = readFileSync(configPath, "utf-8");
   const servers = new Map<string, ServerConfig>();
 
-  if (client.format === "json-mcpservers") {
-    const config = JSON.parse(raw) as { mcpServers?: Record<string, ServerConfig> };
-    if (config.mcpServers) {
-      for (const [key, val] of Object.entries(config.mcpServers)) {
-        if (key.startsWith("pare-")) {
-          servers.set(key, val);
+  try {
+    if (client.format === "json-mcpservers") {
+      const config = parseJsonc(raw) as { mcpServers?: Record<string, ServerConfig> };
+      if (config?.mcpServers) {
+        for (const [key, val] of Object.entries(config.mcpServers)) {
+          if (key.startsWith("pare-")) {
+            servers.set(key, val);
+          }
+        }
+      }
+    } else if (client.format === "json-vscode") {
+      const config = parseJsonc(raw) as {
+        servers?: Record<string, { type: string; command: string; args: string[] }>;
+      };
+      if (config?.servers) {
+        for (const [key, val] of Object.entries(config.servers)) {
+          if (key.startsWith("pare-")) {
+            servers.set(key, { command: val.command, args: val.args });
+          }
+        }
+      }
+    } else if (client.format === "json-zed") {
+      const config = parseJsonc(raw) as {
+        context_servers?: Record<string, { command: string; args: string[] }>;
+      };
+      if (config?.context_servers) {
+        for (const [key, val] of Object.entries(config.context_servers)) {
+          if (key.startsWith("pare-")) {
+            servers.set(key, { command: val.command, args: val.args });
+          }
+        }
+      }
+    } else if (client.format === "toml-codex") {
+      const config = parseToml(raw) as unknown as {
+        mcp_servers?: Record<string, ServerConfig>;
+      };
+      if (config?.mcp_servers) {
+        for (const [key, val] of Object.entries(config.mcp_servers)) {
+          if (key.startsWith("pare-")) {
+            servers.set(key, val);
+          }
+        }
+      }
+    } else if (client.format === "yaml-continue") {
+      const config = YAML.parse(raw) as {
+        mcpServers?: Array<{ name: string; command: string; args: string[] }>;
+      };
+      if (config?.mcpServers) {
+        for (const entry of config.mcpServers) {
+          if (entry.name.startsWith("pare-")) {
+            servers.set(entry.name, { command: entry.command, args: entry.args });
+          }
         }
       }
     }
-  } else if (client.format === "json-vscode") {
-    const config = JSON.parse(raw) as {
-      servers?: Record<string, { type: string; command: string; args: string[] }>;
-    };
-    if (config.servers) {
-      for (const [key, val] of Object.entries(config.servers)) {
-        if (key.startsWith("pare-")) {
-          servers.set(key, { command: val.command, args: val.args });
-        }
-      }
-    }
-  } else if (client.format === "json-zed") {
-    const config = JSON.parse(raw) as {
-      context_servers?: Record<string, { command: string; args: string[] }>;
-    };
-    if (config.context_servers) {
-      for (const [key, val] of Object.entries(config.context_servers)) {
-        if (key.startsWith("pare-")) {
-          servers.set(key, { command: val.command, args: val.args });
-        }
-      }
-    }
+  } catch {
+    console.warn(`Warning: Could not parse ${configPath}`);
   }
-  // TOML and YAML formats would need additional parsing — skip for now
-  // as doctor focuses on the most common clients
 
   return servers;
 }

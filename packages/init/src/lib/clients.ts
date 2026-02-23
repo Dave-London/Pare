@@ -41,13 +41,6 @@ function claudeDesktopPath(): string {
   return join(xdgConfig(), "Claude", "claude_desktop_config.json");
 }
 
-function vscodeExtDir(): string {
-  if (isWindows()) {
-    return join(homedir(), ".vscode", "extensions");
-  }
-  return join(homedir(), ".vscode", "extensions");
-}
-
 /** Resolve {project} in a config path to the given project directory. */
 export function resolveConfigPath(configPath: string, projectDir: string): string {
   return configPath.replace("{project}", projectDir);
@@ -55,6 +48,7 @@ export function resolveConfigPath(configPath: string, projectDir: string): strin
 
 export function getClients(): ClientEntry[] {
   const home = homedir();
+  const vscodeExt = join(home, ".vscode", "extensions");
 
   return [
     {
@@ -87,7 +81,7 @@ export function getClients(): ClientEntry[] {
       configPath: "{project}/.vscode/mcp.json",
       format: "json-vscode",
       scope: "project",
-      detectPaths: [vscodeExtDir()],
+      detectPaths: [vscodeExt],
     },
     {
       id: "windsurf",
@@ -111,7 +105,8 @@ export function getClients(): ClientEntry[] {
       configPath: join(home, ".vscode", "cline_mcp_settings.json"),
       format: "json-mcpservers",
       scope: "user",
-      detectPaths: [join(vscodeExtDir())],
+      // Detect by the actual config file, not the shared extensions dir
+      detectPaths: [join(home, ".vscode", "cline_mcp_settings.json")],
     },
     {
       id: "roo-code",
@@ -119,7 +114,8 @@ export function getClients(): ClientEntry[] {
       configPath: join(home, ".vscode", "roo_code_mcp_settings.json"),
       format: "json-mcpservers",
       scope: "user",
-      detectPaths: [join(vscodeExtDir())],
+      // Detect by the actual config file, not the shared extensions dir
+      detectPaths: [join(home, ".vscode", "roo_code_mcp_settings.json")],
     },
     {
       id: "codex",

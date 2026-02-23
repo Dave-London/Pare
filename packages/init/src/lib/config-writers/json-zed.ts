@@ -1,7 +1,7 @@
 import type { FileSystem } from "../merge.js";
 import type { ServerEntry } from "../servers.js";
 import { npxCommand } from "../platform.js";
-import { stripBom, isPlainObject } from "../parse-utils.js";
+import { isPlainObject, parseJsonc } from "../parse-utils.js";
 
 interface ZedSettings {
   context_servers?: Record<
@@ -14,25 +14,21 @@ interface ZedSettings {
 /**
  * Merge Pare server entries into Zed's settings.json.
  * Format: context_servers key with env field.
+ * Handles JSONC (JSON with comments) safely.
  */
 export function writeZedConfig(configPath: string, servers: ServerEntry[], fs: FileSystem): string {
   let existing: ZedSettings = {};
   const raw = fs.readFile(configPath);
-  if (raw !== undefined) {
-    const trimmed = stripBom(raw).trim();
-    if (trimmed.length > 0) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (isPlainObject(parsed)) {
-          existing = parsed as ZedSettings;
-        } else {
-          console.warn(`Warning: ${configPath} is not a JSON object, creating fresh config.`);
-          existing = {};
-        }
-      } catch {
-        console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
-        existing = {};
+  if (raw !== undefined && raw.trim().length > 0) {
+    try {
+      const parsed = parseJsonc(raw);
+      if (isPlainObject(parsed)) {
+        existing = parsed as ZedSettings;
+      } else {
+        console.warn(`Warning: ${configPath} is not a JSON object, creating fresh config.`);
       }
+    } catch {
+      console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
     }
   }
 

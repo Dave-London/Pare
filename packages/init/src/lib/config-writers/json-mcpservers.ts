@@ -1,7 +1,7 @@
 import type { FileSystem } from "../merge.js";
 import type { ServerEntry } from "../servers.js";
 import { npxCommand } from "../platform.js";
-import { stripBom, isPlainObject } from "../parse-utils.js";
+import { isPlainObject, parseJsonc } from "../parse-utils.js";
 
 interface McpServersConfig {
   mcpServers?: Record<string, { command: string; args: string[] }>;
@@ -23,6 +23,7 @@ export function buildMcpServersEntries(
 /**
  * Merge Pare server entries into a JSON file using the mcpServers format.
  * Used by: Claude Code, Claude Desktop, Cursor, Windsurf, Cline, Roo Code, Gemini CLI.
+ * Handles JSONC (JSON with comments) safely.
  */
 export function writeMcpServersConfig(
   configPath: string,
@@ -31,21 +32,16 @@ export function writeMcpServersConfig(
 ): string {
   let existing: McpServersConfig = {};
   const raw = fs.readFile(configPath);
-  if (raw !== undefined) {
-    const trimmed = stripBom(raw).trim();
-    if (trimmed.length > 0) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (isPlainObject(parsed)) {
-          existing = parsed as McpServersConfig;
-        } else {
-          console.warn(`Warning: ${configPath} is not a JSON object, creating fresh config.`);
-          existing = {};
-        }
-      } catch {
-        console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
-        existing = {};
+  if (raw !== undefined && raw.trim().length > 0) {
+    try {
+      const parsed = parseJsonc(raw);
+      if (isPlainObject(parsed)) {
+        existing = parsed as McpServersConfig;
+      } else {
+        console.warn(`Warning: ${configPath} is not a JSON object, creating fresh config.`);
       }
+    } catch {
+      console.warn(`Warning: Could not parse ${configPath}, creating fresh config.`);
     }
   }
 

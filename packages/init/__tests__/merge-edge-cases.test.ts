@@ -94,6 +94,89 @@ describe("json-mcpservers edge cases", () => {
   });
 });
 
+describe("json-mcpservers JSONC support", () => {
+  it("preserves existing config when file has single-line comments", () => {
+    const fs = memoryFs({
+      "/config.json": [
+        "{",
+        "  // MCP server configuration",
+        '  "mcpServers": {',
+        '    "my-server": { "command": "node", "args": ["server.js"] }',
+        "  }",
+        "}",
+      ].join("\n"),
+    });
+
+    writeMcpServersConfig("/config.json", [git], fs);
+
+    const written = JSON.parse(fs.files.get("/config.json")!);
+    expect(written.mcpServers["my-server"]).toBeDefined();
+    expect(written.mcpServers["pare-git"]).toBeDefined();
+  });
+
+  it("preserves existing config when file has block comments", () => {
+    const fs = memoryFs({
+      "/config.json": [
+        "/* Claude Code settings */",
+        "{",
+        '  "mcpServers": {',
+        '    "custom": { "command": "x", "args": [] }',
+        "  }",
+        "}",
+      ].join("\n"),
+    });
+
+    writeMcpServersConfig("/config.json", [git], fs);
+
+    const written = JSON.parse(fs.files.get("/config.json")!);
+    expect(written.mcpServers["custom"]).toBeDefined();
+    expect(written.mcpServers["pare-git"]).toBeDefined();
+  });
+});
+
+describe("json-vscode JSONC support", () => {
+  it("preserves existing VS Code config with comments", () => {
+    const fs = memoryFs({
+      "/mcp.json": [
+        "{",
+        "  // Copilot MCP servers",
+        '  "servers": {',
+        '    "my-lsp": { "type": "stdio", "command": "node", "args": ["lsp.js"] }',
+        "  }",
+        "}",
+      ].join("\n"),
+    });
+
+    writeVsCodeConfig("/mcp.json", [git], fs);
+
+    const written = JSON.parse(fs.files.get("/mcp.json")!);
+    expect(written.servers["my-lsp"]).toBeDefined();
+    expect(written.servers["pare-git"]).toBeDefined();
+    expect(written.servers["pare-git"].type).toBe("stdio");
+  });
+});
+
+describe("json-zed JSONC support", () => {
+  it("preserves existing Zed settings with comments", () => {
+    const fs = memoryFs({
+      "/settings.json": [
+        "{",
+        "  // Zed editor theme",
+        '  "theme": "One Dark",',
+        "  /* MCP context servers */",
+        '  "context_servers": {}',
+        "}",
+      ].join("\n"),
+    });
+
+    writeZedConfig("/settings.json", [git], fs);
+
+    const written = JSON.parse(fs.files.get("/settings.json")!);
+    expect(written.theme).toBe("One Dark");
+    expect(written.context_servers["pare-git"]).toBeDefined();
+  });
+});
+
 describe("json-vscode edge cases", () => {
   it("handles empty file gracefully", () => {
     const fs = memoryFs({ "/mcp.json": "" });
