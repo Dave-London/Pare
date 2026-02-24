@@ -59,7 +59,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.27.0",
     "@paretools/shared": "workspace:*",
     "zod": "^4.3.6"
   },
