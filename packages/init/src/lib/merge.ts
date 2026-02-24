@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ClientEntry, ConfigFormat } from "./clients.js";
 import { resolveConfigPath } from "./clients.js";
@@ -13,6 +13,8 @@ import { writeContinueConfig } from "./config-writers/yaml-continue.js";
 export interface FileSystem {
   readFile(path: string): string | undefined;
   writeFile(path: string, content: string): void;
+  /** Create a .bak backup of a file before modifying it. Returns the backup path, or undefined if no file to back up. */
+  backupFile(path: string): string | undefined;
 }
 
 /** Real filesystem implementation. */
@@ -29,6 +31,12 @@ export function realFs(): FileSystem {
       }
       writeFileSync(path, content, "utf-8");
     },
+    backupFile(path: string): string | undefined {
+      if (!existsSync(path)) return undefined;
+      const backupPath = path + ".bak";
+      copyFileSync(path, backupPath);
+      return backupPath;
+    },
   };
 }
 
@@ -44,6 +52,13 @@ export function memoryFs(
     },
     writeFile(path: string, content: string): void {
       files.set(path, content);
+    },
+    backupFile(path: string): string | undefined {
+      const content = files.get(path);
+      if (content === undefined) return undefined;
+      const backupPath = path + ".bak";
+      files.set(backupPath, content);
+      return backupPath;
     },
   };
 }
@@ -63,10 +78,13 @@ export interface MergeResult {
   configPath: string;
   output: string;
   serverCount: number;
+  /** Path to the .bak backup file, if one was created. */
+  backupPath?: string;
 }
 
 /**
  * Merge Pare server entries into a client's config file.
+ * Creates a .bak backup of the existing config before modification.
  * Returns the resolved config path and output content.
  */
 export function mergeConfig(
@@ -76,6 +94,10 @@ export function mergeConfig(
   fs: FileSystem,
 ): MergeResult {
   const configPath = resolveConfigPath(client.configPath, projectDir);
+
+  // Back up existing config before modification
+  const backupPath = fs.backupFile(configPath);
+
   const writer = FORMAT_WRITERS[client.format];
   const output = writer(configPath, servers, fs);
 
@@ -83,5 +105,6 @@ export function mergeConfig(
     configPath,
     output,
     serverCount: servers.length,
+    backupPath,
   };
 }

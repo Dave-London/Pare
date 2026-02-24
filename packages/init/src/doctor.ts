@@ -8,7 +8,7 @@ import { parse as parseToml } from "smol-toml";
 import YAML from "yaml";
 import { parseDoctorArgs, DOCTOR_HELP } from "./lib/args.js";
 import { CLIENT_MAP, resolveConfigPath, type ClientEntry } from "./lib/clients.js";
-import { checkServer } from "./lib/doctor/health-check.js";
+import { checkServer, validateServerPackage } from "./lib/doctor/health-check.js";
 import { formatReport } from "./lib/doctor/report.js";
 import { detectClients } from "./lib/detect.js";
 import { promptClient } from "./lib/prompts.js";
@@ -144,11 +144,22 @@ async function main(): Promise<void> {
 
   console.log(`\nChecking ${servers.size} Pare server(s) for ${client.name}...\n`);
 
-  // 3. Health check each server
+  // 3. Health check each server (validate package names first)
   const results = [];
   for (const [id, config] of servers) {
     process.stdout.write(`  Checking ${id}...`);
+
+    // Validate @paretools/* package names against the allowlist
+    const validation = validateServerPackage(config.args);
+    const validationWarning = !validation.valid ? validation.warning : undefined;
+    if (validationWarning) {
+      console.warn(`\n  Warning: ${validationWarning}`);
+    }
+
     const result = await checkServer(id, config.command, config.args);
+    if (validationWarning) {
+      result.warning = validationWarning;
+    }
     process.stdout.write(` ${result.status === "pass" ? "OK" : "FAILED"}\n`);
     results.push(result);
   }

@@ -7,6 +7,53 @@ export interface HealthResult {
   toolCount?: number;
   latencyMs?: number;
   error?: string;
+  warning?: string;
+}
+
+/**
+ * Known-good @paretools/* package names.
+ * Used to validate npx invocations and guard against typosquatting.
+ */
+export const PARETOOLS_PACKAGES = new Set([
+  "@paretools/git",
+  "@paretools/github",
+  "@paretools/npm",
+  "@paretools/build",
+  "@paretools/lint",
+  "@paretools/test",
+  "@paretools/search",
+  "@paretools/http",
+  "@paretools/make",
+  "@paretools/python",
+  "@paretools/cargo",
+  "@paretools/go",
+  "@paretools/docker",
+  "@paretools/k8s",
+  "@paretools/security",
+  "@paretools/process",
+  "@paretools/init",
+]);
+
+/**
+ * Validate whether a server's args reference a known @paretools/* package.
+ * Returns `{ valid: true }` for known packages, or `{ valid: false, warning }` for unknown ones.
+ */
+export function validateServerPackage(
+  args: string[],
+): { valid: true } | { valid: false; warning: string } {
+  // Look for a @paretools/* package in the args (npx -y @paretools/git)
+  const pkg = args.find((a) => a.startsWith("@paretools/"));
+  if (!pkg) {
+    // Not a paretools package — allow but don't warn (user's own server)
+    return { valid: true };
+  }
+  if (PARETOOLS_PACKAGES.has(pkg)) {
+    return { valid: true };
+  }
+  return {
+    valid: false,
+    warning: `Unknown @paretools package "${pkg}" — possible typosquatting risk. Known packages: ${[...PARETOOLS_PACKAGES].join(", ")}`,
+  };
 }
 
 const SERVER_TIMEOUT = 15_000;
