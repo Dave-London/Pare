@@ -11,7 +11,7 @@
 | Input validation (`assertNoFlagInjection`)     | 26/26 PASS |
 | Command injection (no shell interpolation)     | 26/26 PASS |
 | Zod `.max()` input limits on all string params | 26/26 PASS |
-| Security test coverage                         | 17/26 PASS |
+| Security test coverage                         | 26/26 PASS |
 | Security policy controls                       | PASS       |
 | Overall                                        | PASS       |
 
@@ -31,7 +31,7 @@
 
 - **Tools:** terraform (init, plan, show, state-list, validate, fmt, output, workspace), vagrant (status, global-status, up, halt, destroy), ansible (playbook, inventory, galaxy)
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `out`, `target`, `varFile`, `machine`, `branch`. Terraform vars safely unpacked via `args.push("-var", "${key}=${value}")` (no string interpolation). Vagrant destroy gated by `assertAllowedByPolicy("vagrant", "infra")`
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-infra/__tests__/security.test.ts`
 - **Decision:** PASS — proper validation, policy gate on destructive operation
 
 #### V10: `@paretools/remote` — SSH, rsync, SCP (PASS)
@@ -39,7 +39,7 @@
 - **Tools:** ssh-run, ssh-test, ssh-keyscan, rsync
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `host`, `user`, `identityFile`, and each item in `options` array
 - **Accepted risk:** `command` parameter in ssh-run accepts arbitrary strings — inherent to SSH execution, documented with WARNING in tool description
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-remote/__tests__/security.test.ts`
 - **Decision:** PASS with accepted risk
 
 #### V11: `@paretools/db` — PostgreSQL, MySQL, MongoDB, Redis (PASS)
@@ -47,7 +47,7 @@
 - **Tools:** psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `database`, `host`, `user` connection parameters
 - **Accepted risk:** `query`/`command` parameters accept arbitrary strings — inherent to database tools, documented with WARNING in tool descriptions
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-db/__tests__/security.test.ts`
 - **Decision:** PASS with accepted risk
 
 #### V12: `@paretools/jvm` — Gradle, Maven (PASS)
@@ -55,14 +55,14 @@
 - **Tools:** gradle (build, dependencies, tasks, test), maven (build, dependencies, test, verify)
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to each item in `tasks`/`targets` arrays
 - **Accepted risk:** `args` arrays not individually validated — intentional for build tool CLI flags, size-limited by schema
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-jvm/__tests__/security.test.ts`
 - **Decision:** PASS with accepted risk (consistent with existing build tool pattern)
 
 #### V13: `@paretools/bun` — Bun Runtime (PASS)
 
 - **Tools:** add, remove, install, build, run, test, outdated, pm-ls, create
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to each item in `packages` arrays
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-bun/__tests__/security.test.ts`
 - **Decision:** PASS
 
 #### V14: `@paretools/deno` — Deno Runtime (PASS)
@@ -70,28 +70,28 @@
 - **Tools:** run, check, fmt, lint, test, info, bench, task
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `file` parameter. Permission flags are boolean enums (no injection surface)
 - **Accepted risk:** `args` array items not individually validated — size-limited by schema. Deno's permission model provides defense-in-depth
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-deno/__tests__/security.test.ts`
 - **Decision:** PASS
 
 #### V15: `@paretools/dotnet` — .NET (PASS)
 
 - **Tools:** add-package, build, clean, list-package, publish, restore, run, test, format
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `project`, `configuration`, `framework`, `runtime`, `output`, `package` parameters
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-dotnet/__tests__/security.test.ts`
 - **Decision:** PASS
 
 #### V16: `@paretools/ruby` — Ruby Ecosystem (PASS)
 
 - **Tools:** bundle (check, exec, install), gem (install, list, outdated), ruby run, rspec, rubocop, erb, rdoc, yard
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `file`, `gem` parameters
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-ruby/__tests__/security.test.ts`
 - **Decision:** PASS
 
 #### V17: `@paretools/bazel` — Bazel Build System (PASS)
 
 - **Tools:** build, test (unified tool with multiple actions)
 - **Verification:** All tools use `run()` (execFile). `assertNoFlagInjection()` applied to `targets`, `queryExpr`, `infoKey`. Additional pattern validation ensures targets match Bazel conventions (`//`, `@`, or `...`). Policy gates on `bazel run` and `bazel clean --expunge` via `assertAllowedByPolicy("bazel", "bazel")`
-- **Security tests:** Not yet present — to be added
+- **Security tests:** Added — `server-bazel/__tests__/security.test.ts`
 - **Decision:** PASS — extra defense-in-depth with target pattern validation
 
 #### V18: `@paretools/cmake` — CMake (PASS)
@@ -251,15 +251,15 @@ All findings below were identified and fixed in v0.7.0. They remain remediated i
 | `@paretools/k8s`      | PASS               | PASS              | PASS         | PASS           |
 | `@paretools/process`  | PASS (I3 accepted) | PASS              | PASS         | PASS           |
 | `@paretools/shared`   | N/A (utility)      | N/A               | N/A          | PASS           |
-| `@paretools/infra`    | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/remote`   | PASS (I5 accepted) | PASS              | PASS         | Missing        |
-| `@paretools/db`       | PASS (I6 accepted) | PASS              | PASS         | Missing        |
-| `@paretools/jvm`      | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/bun`      | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/deno`     | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/dotnet`   | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/ruby`     | PASS               | PASS              | PASS         | Missing        |
-| `@paretools/bazel`    | PASS               | PASS              | PASS         | Missing        |
+| `@paretools/infra`    | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/remote`   | PASS (I5 accepted) | PASS              | PASS         | PASS           |
+| `@paretools/db`       | PASS (I6 accepted) | PASS              | PASS         | PASS           |
+| `@paretools/jvm`      | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/bun`      | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/deno`     | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/dotnet`   | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/ruby`     | PASS               | PASS              | PASS         | PASS           |
+| `@paretools/bazel`    | PASS               | PASS              | PASS         | PASS           |
 | `@paretools/cmake`    | PASS               | PASS              | PASS         | PASS           |
 
 ### Security Test Coverage by Package
@@ -285,21 +285,21 @@ All findings below were identified and fixed in v0.7.0. They remain remediated i
 | `@paretools/shared`   | Tested via `server-build/__tests__/security.test.ts` | assertNoFlagInjection, assertAllowedCommand, assertAllowedByPolicy, assertAllowedRoot, assertNoPathQualifiedCommand                                                                                                                                                                                              |
 | `@paretools/cmake`    | `server-cmake/__tests__/security.test.ts`            | cache key regex validation, assertNoFlagInjection on sourceDir+buildDir+target, assertAllowedByPolicy for install, Zod limits                                                                                                                                                                                    |
 
-### Packages Missing Security Tests
+### Previously Missing Security Tests (Resolved)
 
-The following 9 packages implement all security patterns correctly in source code but lack dedicated `security.test.ts` files:
+The following 9 packages previously lacked dedicated `security.test.ts` files. All have been added as of v0.13.0:
 
-| Package             | Guards present in source                                                  | Priority                |
-| ------------------- | ------------------------------------------------------------------------- | ----------------------- |
-| `@paretools/infra`  | assertNoFlagInjection, assertAllowedByPolicy (vagrant destroy)            | High — destructive ops  |
-| `@paretools/remote` | assertNoFlagInjection on host/user/options                                | High — remote execution |
-| `@paretools/db`     | assertNoFlagInjection on connection params                                | High — database access  |
-| `@paretools/jvm`    | assertNoFlagInjection on task arrays                                      | Medium                  |
-| `@paretools/bun`    | assertNoFlagInjection on package names                                    | Medium                  |
-| `@paretools/deno`   | assertNoFlagInjection on file paths                                       | Medium                  |
-| `@paretools/dotnet` | assertNoFlagInjection on project/config/framework                         | Medium                  |
-| `@paretools/ruby`   | assertNoFlagInjection on file/gem params                                  | Medium                  |
-| `@paretools/bazel`  | assertNoFlagInjection + target pattern validation + assertAllowedByPolicy | High — destructive ops  |
+| Package             | Guards present in source                                                  | Security tests |
+| ------------------- | ------------------------------------------------------------------------- | -------------- |
+| `@paretools/infra`  | assertNoFlagInjection, assertAllowedByPolicy (vagrant destroy)            | Added          |
+| `@paretools/remote` | assertNoFlagInjection on host/user/options                                | Added          |
+| `@paretools/db`     | assertNoFlagInjection on connection params                                | Added          |
+| `@paretools/jvm`    | assertNoFlagInjection on task arrays                                      | Added          |
+| `@paretools/bun`    | assertNoFlagInjection on package names                                    | Added          |
+| `@paretools/deno`   | assertNoFlagInjection on file paths                                       | Added          |
+| `@paretools/dotnet` | assertNoFlagInjection on project/config/framework                         | Added          |
+| `@paretools/ruby`   | assertNoFlagInjection on file/gem params                                  | Added          |
+| `@paretools/bazel`  | assertNoFlagInjection + target pattern validation + assertAllowedByPolicy | Added          |
 
 ## Security Architecture
 

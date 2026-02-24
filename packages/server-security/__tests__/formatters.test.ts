@@ -1,12 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
   formatTrivyScan,
+  schemaTrivyScanMap,
   compactTrivyScanMap,
   formatTrivyScanCompact,
   formatSemgrepScan,
+  schemaSemgrepScanMap,
   compactSemgrepScanMap,
   formatSemgrepScanCompact,
   formatGitleaksScan,
+  schemaGitleaksScanMap,
   compactGitleaksScanMap,
   formatGitleaksScanCompact,
 } from "../src/lib/formatters.js";
@@ -96,6 +99,151 @@ describe("formatTrivyScan", () => {
 
     expect(output).toContain("Trivy fs scan: /app");
     expect(output).toContain("1 medium");
+  });
+});
+
+// -- Schema maps (strip Internal-only fields for structuredContent) -----------
+
+describe("schemaTrivyScanMap", () => {
+  it("keeps target, scanType, vulnerabilities (stripped), and summary; drops totalVulnerabilities and title", () => {
+    const data: TrivyScanResultInternal = {
+      target: "alpine:3.18",
+      scanType: "image",
+      vulnerabilities: [
+        {
+          id: "CVE-2024-0001",
+          severity: "CRITICAL",
+          package: "libcrypto3",
+          installedVersion: "3.1.4-r1",
+          fixedVersion: "3.1.4-r5",
+          title: "Buffer overflow",
+          cvssScore: 9.8,
+        },
+      ],
+      summary: { critical: 1, high: 0, medium: 0, low: 0, unknown: 0 },
+      totalVulnerabilities: 1,
+    };
+
+    const result = schemaTrivyScanMap(data);
+
+    expect(result.target).toBe("alpine:3.18");
+    expect(result.scanType).toBe("image");
+    expect(result.summary.critical).toBe(1);
+    expect(result).not.toHaveProperty("totalVulnerabilities");
+    expect(result.vulnerabilities).toHaveLength(1);
+    expect(result.vulnerabilities![0].id).toBe("CVE-2024-0001");
+    expect(result.vulnerabilities![0].cvssScore).toBe(9.8);
+    expect(result.vulnerabilities![0]).not.toHaveProperty("title");
+  });
+
+  it("handles undefined vulnerabilities", () => {
+    const data: TrivyScanResultInternal = {
+      target: "clean:latest",
+      scanType: "fs",
+      summary: { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 },
+      totalVulnerabilities: 0,
+    };
+
+    const result = schemaTrivyScanMap(data);
+
+    expect(result.vulnerabilities).toBeUndefined();
+    expect(result).not.toHaveProperty("totalVulnerabilities");
+  });
+});
+
+describe("schemaSemgrepScanMap", () => {
+  it("keeps findings (stripped), errors, and summary; drops totalFindings and config", () => {
+    const data: SemgrepScanResultInternal = {
+      totalFindings: 1,
+      findings: [
+        {
+          ruleId: "python.lang.security.audit.exec-detected",
+          path: "app/main.py",
+          startLine: 42,
+          endLine: 42,
+          message: "Detected use of exec()",
+          severity: "ERROR",
+          category: "security",
+          cwe: ["CWE-78"],
+        },
+      ],
+      errors: [{ message: "parse error", type: "SyntaxError", path: "bad.py" }],
+      summary: { error: 1, warning: 0, info: 0 },
+      config: "auto",
+    };
+
+    const result = schemaSemgrepScanMap(data);
+
+    expect(result).not.toHaveProperty("totalFindings");
+    expect(result).not.toHaveProperty("config");
+    expect(result.summary.error).toBe(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings![0].ruleId).toBe("python.lang.security.audit.exec-detected");
+    expect(result.findings![0].cwe).toEqual(["CWE-78"]);
+    expect(result.findings![0]).not.toHaveProperty("category");
+  });
+
+  it("handles undefined findings and errors", () => {
+    const data: SemgrepScanResultInternal = {
+      totalFindings: 0,
+      summary: { error: 0, warning: 0, info: 0 },
+      config: "p/default",
+    };
+
+    const result = schemaSemgrepScanMap(data);
+
+    expect(result.findings).toBeUndefined();
+    expect(result.errors).toBeUndefined();
+    expect(result).not.toHaveProperty("config");
+  });
+});
+
+describe("schemaGitleaksScanMap", () => {
+  it("keeps findings (stripped); drops totalFindings, summary, description, author, date", () => {
+    const data: GitleaksScanResultInternal = {
+      totalFindings: 1,
+      findings: [
+        {
+          ruleID: "generic-api-key",
+          description: "Generic API Key",
+          match: 'apiKey = "AKI***PLE"',
+          secret: "AKI***PLE",
+          file: "config/settings.py",
+          startLine: 15,
+          endLine: 15,
+          commit: "abc123def456789",
+          author: "dev@example.com",
+          date: "2024-01-15T10:30:00Z",
+        },
+      ],
+      summary: { totalFindings: 1 },
+    };
+
+    const result = schemaGitleaksScanMap(data);
+
+    expect(result).not.toHaveProperty("totalFindings");
+    expect(result).not.toHaveProperty("summary");
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings![0].ruleID).toBe("generic-api-key");
+    expect(result.findings![0].file).toBe("config/settings.py");
+    expect(result.findings![0].commit).toBe("abc123def456789");
+    expect(result.findings![0]).not.toHaveProperty("description");
+    expect(result.findings![0]).not.toHaveProperty("author");
+    expect(result.findings![0]).not.toHaveProperty("date");
+  });
+
+  it("handles undefined findings", () => {
+    const data: GitleaksScanResultInternal = {
+      totalFindings: 0,
+      summary: { totalFindings: 0 },
+    };
+
+    const result = schemaGitleaksScanMap(data);
+
+    expect(result.findings).toBeUndefined();
+    expect(result).not.toHaveProperty("totalFindings");
+    expect(result).not.toHaveProperty("summary");
   });
 });
 
