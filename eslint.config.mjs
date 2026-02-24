@@ -57,6 +57,6 @@ export default [
     },
   },
   {
-    ignores: ["**/dist/", "**/node_modules/", "**/coverage/"],
+    ignores: ["**/dist/", "**/node_modules/", "**/coverage/", "**/__tests__/fixtures/"],
   },
 ];
