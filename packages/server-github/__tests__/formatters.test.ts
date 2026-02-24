@@ -49,9 +49,6 @@ describe("formatPrView", () => {
     mergeable: "MERGEABLE",
     reviewDecision: "APPROVED",
     checks: [{ name: "CI", status: "COMPLETED", conclusion: "SUCCESS" }],
-    url: "https://github.com/owner/repo/pull/42",
-    headBranch: "feat/add",
-    baseBranch: "main",
     additions: 50,
     deletions: 10,
     changedFiles: 3,
@@ -60,7 +57,6 @@ describe("formatPrView", () => {
   it("formats PR view with all fields", () => {
     const output = formatPrView(data);
     expect(output).toContain("PR #42: Add feature (OPEN)");
-    expect(output).toContain("feat/add → main");
     expect(output).toContain("mergeable: MERGEABLE");
     expect(output).toContain("+50 -10 (3 files)");
     expect(output).toContain("CI: COMPLETED (SUCCESS)");
@@ -91,9 +87,6 @@ describe("compactPrView", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "APPROVED",
       checks: [{ name: "CI", status: "COMPLETED", conclusion: "SUCCESS" }],
-      url: "https://github.com/owner/repo/pull/1",
-      headBranch: "feat/test",
-      baseBranch: "main",
       additions: 10,
       deletions: 5,
       changedFiles: 2,
@@ -124,7 +117,6 @@ describe("formatPrList", () => {
           author: "alice",
         },
       ],
-      total: 1,
     };
     const output = formatPrList(data);
     expect(output).toContain("1 pull requests:");
@@ -133,7 +125,7 @@ describe("formatPrList", () => {
   });
 
   it("formats empty list", () => {
-    const data: PrListResult = { prs: [], total: 0 };
+    const data: PrListResult = { prs: [] };
     expect(formatPrList(data)).toBe("No pull requests found.");
   });
 });
@@ -144,7 +136,6 @@ describe("compactPrList", () => {
       prs: [
         { number: 1, state: "OPEN", title: "PR", url: "https://url", headBranch: "b", author: "a" },
       ],
-      total: 1,
     };
     const compact = compactPrListMap(data);
     expect(compact.prs[0]).not.toHaveProperty("url");
@@ -252,10 +243,6 @@ describe("compactPrChecks", () => {
     };
     const compact = compactPrChecksMap(data);
     expect(compact.pr).toBe(42);
-    expect(compact.total).toBe(1);
-    expect(compact.passed).toBe(1);
-    expect(compact.failed).toBe(0);
-    expect(compact.pending).toBe(0);
     expect(compact).toHaveProperty("checks");
     expect(compact).toHaveProperty("summary");
 
@@ -362,7 +349,6 @@ describe("formatIssueList", () => {
           assignees: [],
         },
       ],
-      total: 1,
     };
     const output = formatIssueList(data);
     expect(output).toContain("1 issues:");
@@ -370,7 +356,7 @@ describe("formatIssueList", () => {
   });
 
   it("formats empty list", () => {
-    const data: IssueListResult = { issues: [], total: 0 };
+    const data: IssueListResult = { issues: [] };
     expect(formatIssueList(data)).toBe("No issues found.");
   });
 });
@@ -388,7 +374,6 @@ describe("compactIssueList", () => {
           assignees: ["a"],
         },
       ],
-      total: 1,
     };
     const compact = compactIssueListMap(data);
     expect(compact.issues[0]).not.toHaveProperty("url");
@@ -517,7 +502,6 @@ describe("formatRunList", () => {
           createdAt: "2024-01-01T00:00:00Z",
         },
       ],
-      total: 1,
     };
     const output = formatRunList(data);
     expect(output).toContain("1 workflow runs:");
@@ -525,7 +509,7 @@ describe("formatRunList", () => {
   });
 
   it("formats empty list", () => {
-    const data: RunListResult = { runs: [], total: 0 };
+    const data: RunListResult = { runs: [] };
     expect(formatRunList(data)).toBe("No workflow runs found.");
   });
 });
@@ -545,7 +529,6 @@ describe("compactRunList", () => {
           createdAt: "2024-01-01T00:00:00Z",
         },
       ],
-      total: 1,
     };
     const compact = compactRunListMap(data);
     expect(compact.runs[0]).not.toHaveProperty("headBranch");
@@ -568,9 +551,6 @@ describe("formatPrView — reviews (P1 #147)", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "APPROVED",
       checks: [],
-      url: "https://github.com/owner/repo/pull/42",
-      headBranch: "feat/add",
-      baseBranch: "main",
       additions: 10,
       deletions: 5,
       changedFiles: 2,
@@ -602,9 +582,6 @@ describe("formatPrView — reviews (P1 #147)", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "",
       checks: [],
-      url: "https://url",
-      headBranch: "feat/test",
-      baseBranch: "main",
       additions: 0,
       deletions: 0,
       changedFiles: 0,
@@ -635,7 +612,6 @@ describe("formatRunList — expanded fields (P1 #148)", () => {
           attempt: 1,
         },
       ],
-      total: 1,
     };
     const output = formatRunList(data);
 
@@ -742,7 +718,6 @@ describe("formatLabelList", () => {
         { name: "bug", description: "Something isn't working", color: "d73a4a", isDefault: true },
         { name: "feature", description: "", color: "a2eeef", isDefault: false },
       ],
-      total: 2,
     };
     const output = formatLabelList(data);
 
@@ -754,7 +729,7 @@ describe("formatLabelList", () => {
   });
 
   it("formats empty label list", () => {
-    const data: LabelListResult = { labels: [], total: 0 };
+    const data: LabelListResult = { labels: [] };
     expect(formatLabelList(data)).toBe("No labels found.");
   });
 });
@@ -796,7 +771,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: true,
       method: "merge",
-      url: "https://github.com/owner/repo/pull/42",
       state: "merged",
     };
     expect(formatPrMerge(data)).toContain("Merged PR #42 via merge");
@@ -807,7 +781,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: true,
       method: "squash",
-      url: "https://github.com/owner/repo/pull/42",
       state: "merged",
       branchDeleted: true,
     };
@@ -819,7 +792,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: true,
       method: "merge",
-      url: "https://github.com/owner/repo/pull/42",
       state: "merged",
       branchDeleted: false,
     };
@@ -831,7 +803,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: true,
       method: "merge",
-      url: "https://github.com/owner/repo/pull/42",
       state: "merged",
       mergeCommitSha: "abcdef1234567890abcdef1234567890abcdef12",
     };
@@ -843,7 +814,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: false,
       method: "squash",
-      url: "https://github.com/owner/repo/pull/42",
       state: "auto-merge-enabled",
     };
     expect(formatPrMerge(data)).toContain("Auto-merge enabled");
@@ -854,7 +824,6 @@ describe("formatPrMerge", () => {
       number: 42,
       merged: false,
       method: "merge",
-      url: "https://github.com/owner/repo/pull/42",
       state: "auto-merge-disabled",
     };
     expect(formatPrMerge(data)).toContain("Auto-merge disabled");
@@ -868,18 +837,14 @@ describe("formatPrReview", () => {
     const data: PrReviewResult = {
       number: 10,
       event: "APPROVE",
-      url: "https://github.com/owner/repo/pull/10",
     };
-    expect(formatPrReview(data)).toBe(
-      "Reviewed PR #10 (APPROVE): https://github.com/owner/repo/pull/10",
-    );
+    expect(formatPrReview(data)).toBe("Reviewed PR #10 (APPROVE)");
   });
 
   it("formats review with error", () => {
     const data: PrReviewResult = {
       number: 10,
       event: "APPROVE",
-      url: "https://github.com/owner/repo/pull/10",
       errorType: "not-found",
     };
     expect(formatPrReview(data)).toContain("[error: not-found]");
@@ -939,14 +904,13 @@ describe("formatIssueClose", () => {
 
 // ── Issue Create with labels ──────────────────────────────────────────
 
-describe("formatIssueCreate — with labels", () => {
-  it("formats issue create with labels", () => {
+describe("formatIssueCreate — basic", () => {
+  it("formats issue create", () => {
     const data: IssueCreateResult = {
       number: 50,
       url: "https://github.com/owner/repo/issues/50",
-      labelsApplied: ["bug", "urgent"],
     };
-    expect(formatIssueCreate(data)).toContain("[bug, urgent]");
+    expect(formatIssueCreate(data)).toContain("Created issue #50");
   });
 });
 
@@ -959,9 +923,6 @@ describe("formatPrDiff", () => {
         { file: "image.png", status: "added", additions: 0, deletions: 0, binary: true },
         { file: "readme.md", status: "modified", additions: 5, deletions: 2 },
       ],
-      totalAdditions: 5,
-      totalDeletions: 2,
-      totalFiles: 2,
     };
     const output = formatPrDiff(data);
     expect(output).toContain("(binary)");
@@ -971,9 +932,6 @@ describe("formatPrDiff", () => {
   it("formats truncated diff", () => {
     const data: PrDiffResult = {
       files: [{ file: "a.ts", status: "modified", additions: 10, deletions: 5 }],
-      totalAdditions: 10,
-      totalDeletions: 5,
-      totalFiles: 1,
       truncated: true,
     };
     expect(formatPrDiff(data)).toContain("(truncated)");
@@ -984,12 +942,9 @@ describe("compactPrDiff", () => {
   it("maps to compact format", () => {
     const data: PrDiffResult = {
       files: [{ file: "a.ts", status: "modified", additions: 10, deletions: 5 }],
-      totalAdditions: 10,
-      totalDeletions: 5,
-      totalFiles: 1,
     };
     const compact = compactPrDiffMap(data);
-    expect(compact.totalFiles).toBe(1);
+    expect(compact.files).toHaveLength(1);
     expect(formatPrDiffCompact(compact)).toContain("1 files changed");
   });
 });
@@ -1092,20 +1047,18 @@ describe("formatGistCreate", () => {
 // ── Release Create ───────────────────────────────────────────────────
 
 describe("formatReleaseCreate", () => {
-  it("formats draft prerelease with assets", () => {
+  it("formats draft prerelease", () => {
     const data: ReleaseCreateResult = {
       tag: "v1.0.0-beta",
       url: "https://github.com/owner/repo/releases/tag/v1.0.0-beta",
       draft: true,
       prerelease: true,
-      assetsUploaded: 3,
     };
     const output = formatReleaseCreate(data);
     expect(output).toContain("(draft, prerelease)");
-    expect(output).toContain("3 assets uploaded");
   });
 
-  it("formats release without flags or assets", () => {
+  it("formats release without flags", () => {
     const data: ReleaseCreateResult = {
       tag: "v1.0.0",
       url: "https://github.com/owner/repo/releases/tag/v1.0.0",
@@ -1114,7 +1067,6 @@ describe("formatReleaseCreate", () => {
     };
     const output = formatReleaseCreate(data);
     expect(output).not.toContain("(");
-    expect(output).not.toContain("assets");
   });
 });
 
@@ -1142,7 +1094,6 @@ describe("formatReleaseList", () => {
           url: "https://url",
         },
       ],
-      total: 2,
     };
     const output = formatReleaseList(data);
     expect(output).toContain("(latest)");
@@ -1150,7 +1101,7 @@ describe("formatReleaseList", () => {
   });
 
   it("formats empty release list", () => {
-    const data: ReleaseListResult = { releases: [], total: 0 };
+    const data: ReleaseListResult = { releases: [] };
     expect(formatReleaseList(data)).toBe("No releases found.");
   });
 });
@@ -1168,7 +1119,6 @@ describe("compactReleaseList", () => {
           url: "https://url",
         },
       ],
-      total: 1,
     };
     const compact = compactReleaseListMap(data);
     expect(compact.releases[0]).not.toHaveProperty("publishedAt");
@@ -1178,14 +1128,13 @@ describe("compactReleaseList", () => {
   });
 
   it("formats empty compact release list", () => {
-    const compact = { releases: [], total: 0 };
+    const compact = { releases: [] };
     expect(formatReleaseListCompact(compact)).toBe("No releases found.");
   });
 
   it("formats compact release with flags", () => {
     const compact = {
       releases: [{ tag: "v1.0.0-rc", name: "RC", draft: true, prerelease: true }],
-      total: 1,
     };
     expect(formatReleaseListCompact(compact)).toContain("(draft, prerelease)");
   });
@@ -1410,7 +1359,6 @@ describe("formatDiscussionList", () => {
           comments: 0,
         },
       ],
-      totalCount: 2,
     };
     const output = formatDiscussionList(data);
     expect(output).toContain("2 discussions:");
@@ -1421,7 +1369,7 @@ describe("formatDiscussionList", () => {
   });
 
   it("formats empty discussion list", () => {
-    const data: DiscussionListResult = { discussions: [], totalCount: 0 };
+    const data: DiscussionListResult = { discussions: [] };
     expect(formatDiscussionList(data)).toBe("No discussions found.");
   });
 });
@@ -1441,7 +1389,6 @@ describe("compactDiscussionList", () => {
           comments: 3,
         },
       ],
-      totalCount: 1,
     };
     const compact = compactDiscussionListMap(data);
     expect(compact.discussions[0]).not.toHaveProperty("author");
@@ -1450,7 +1397,7 @@ describe("compactDiscussionList", () => {
   });
 
   it("formats empty compact discussion list", () => {
-    const compact = { discussions: [], totalCount: 0 };
+    const compact = { discussions: [] };
     expect(formatDiscussionListCompact(compact)).toBe("No discussions found.");
   });
 });
@@ -1467,9 +1414,6 @@ describe("formatPrView — additional optional fields", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "",
       checks: [],
-      url: "https://url",
-      headBranch: "feat",
-      baseBranch: "main",
       additions: 0,
       deletions: 0,
       changedFiles: 0,
@@ -1500,9 +1444,6 @@ describe("formatPrView — additional optional fields", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "APPROVED",
       checks: [],
-      url: "https://url",
-      headBranch: "feat",
-      baseBranch: "main",
       additions: 0,
       deletions: 0,
       changedFiles: 0,
@@ -1521,9 +1462,6 @@ describe("formatPrView — additional optional fields", () => {
       mergeable: "MERGEABLE",
       reviewDecision: "",
       checks: [],
-      url: "https://url",
-      headBranch: "feat",
-      baseBranch: "main",
       additions: 0,
       deletions: 0,
       changedFiles: 0,
@@ -1598,7 +1536,6 @@ describe("formatIssueList — with author", () => {
           author: "alice",
         },
       ],
-      total: 1,
     };
     expect(formatIssueList(data)).toContain("@alice");
   });
@@ -1651,7 +1588,6 @@ describe("formatPrList — additional fields", () => {
           isDraft: true,
         },
       ],
-      total: 1,
     };
     const output = formatPrList(data);
     expect(output).toContain("{wip}");
@@ -1676,7 +1612,6 @@ describe("formatRunList — no conclusion/sha/event", () => {
           createdAt: "2024-01-01",
         },
       ],
-      total: 1,
     };
     const output = formatRunList(data);
     expect(output).not.toContain("→");
@@ -1689,7 +1624,6 @@ describe("formatRunList — no conclusion/sha/event", () => {
 describe("formatApi", () => {
   it("formats API response with JSON body", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: { message: "ok" },
       endpoint: "/repos/owner/repo",
@@ -1702,7 +1636,6 @@ describe("formatApi", () => {
 
   it("formats API response with string body", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: "plain text response",
       endpoint: "/repos",
@@ -1713,7 +1646,6 @@ describe("formatApi", () => {
 
   it("truncates long body", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: "x".repeat(600),
       endpoint: "/repos",
@@ -1724,7 +1656,6 @@ describe("formatApi", () => {
 
   it("includes error body when present", () => {
     const data: ApiResult = {
-      status: 422,
       statusCode: 422,
       body: "error",
       endpoint: "/repos",
@@ -1736,7 +1667,6 @@ describe("formatApi", () => {
 
   it("includes JSON error body", () => {
     const data: ApiResult = {
-      status: 422,
       statusCode: 422,
       body: "error",
       endpoint: "/repos",

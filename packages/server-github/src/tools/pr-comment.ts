@@ -74,7 +74,6 @@ export function registerPrCommentTool(server: McpServer) {
         const data = {
           operation: operation as "create" | "edit" | "delete",
           prNumber: prNum,
-          body,
           errorType: classifyCommentError(result.stderr || result.stdout),
           errorMessage: (result.stderr || result.stdout || "gh pr comment failed").trim(),
         };
@@ -85,7 +84,6 @@ export function registerPrCommentTool(server: McpServer) {
       const data = parseComment(result.stdout, {
         operation: operation as "create" | "edit" | "delete",
         prNumber: prNum,
-        body,
       });
       return dualOutput(data, formatComment);
     },

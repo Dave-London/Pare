@@ -191,9 +191,6 @@ export function registerPrCreateTool(server: McpServer) {
           {
             number: 0,
             url: "",
-            title,
-            baseBranch: base,
-            headBranch: head,
             draft: !!draft,
             errorType: classifyPrCreateError(combined),
             errorMessage: combined || "gh pr create failed",
@@ -203,9 +200,6 @@ export function registerPrCreateTool(server: McpServer) {
       }
 
       const data = parsePrCreate(result.stdout, {
-        title,
-        baseBranch: base,
-        headBranch: head,
         draft: !!draft,
       });
       return dualOutput(data, formatPrCreate);

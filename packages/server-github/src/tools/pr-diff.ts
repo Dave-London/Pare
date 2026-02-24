@@ -196,8 +196,5 @@ function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
 
   return {
     files,
-    totalAdditions: files.reduce((sum, f) => sum + f.additions, 0),
-    totalDeletions: files.reduce((sum, f) => sum + f.deletions, 0),
-    totalFiles: files.length,
   };
 }

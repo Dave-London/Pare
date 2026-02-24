@@ -34,11 +34,9 @@ describe("parseComment (issue-comment)", () => {
     const result = parseComment("https://github.com/owner/repo/issues/15#issuecomment-789012\n", {
       operation: "create",
       issueNumber: 15,
-      body: "test comment",
     });
     expect(result.operation).toBe("create");
     expect(result.issueNumber).toBe(15);
-    expect(result.body).toBe("test comment");
   });
 });
 

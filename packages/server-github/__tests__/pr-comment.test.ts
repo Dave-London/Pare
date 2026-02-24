@@ -34,11 +34,9 @@ describe("parseComment (pr-comment)", () => {
     const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123456\n", {
       operation: "create",
       prNumber: 42,
-      body: "test comment",
     });
     expect(result.operation).toBe("create");
     expect(result.prNumber).toBe(42);
-    expect(result.body).toBe("test comment");
   });
 });
 

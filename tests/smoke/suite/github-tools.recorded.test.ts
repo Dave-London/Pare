@@ -156,12 +156,9 @@ describe("Recorded: github.issue-list", () => {
 
   it("S2 [recorded] empty list", async () => {
     const fixture = loadFixture("issue-list/s02-empty.txt");
-    // issue-list makes two ghCmd calls: main list + probe for hasMore
-    mockGh(fixture);
     mockGh(fixture);
     const { parsed } = await callAndValidate({});
     expect(parsed.issues).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 });
 

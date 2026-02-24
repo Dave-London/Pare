@@ -67,7 +67,6 @@ describe("Smoke: github.pr-merge", () => {
     const { parsed } = await callAndValidate({ number: "123", method: "squash" });
     expect(parsed.merged).toBe(true);
     expect(parsed.method).toBe("squash");
-    expect(parsed.url).toContain("/pull/123");
     expect(parsed.state).toBe("merged");
   });
 
@@ -256,7 +255,6 @@ describe("Smoke: github.pr-review", () => {
     mockGh("Approved pull request #123\nhttps://github.com/owner/repo/pull/123");
     const { parsed } = await callAndValidate({ number: "123", event: "approve" });
     expect(parsed.event).toBe("APPROVE");
-    expect(parsed.url).toContain("/pull/123");
   });
 
   it("S2 [P0] request changes with body", async () => {
@@ -705,9 +703,6 @@ describe("Smoke: github.pr-view", () => {
     expect(parsed.number).toBe(123);
     expect(parsed.state).toBe("OPEN");
     expect(parsed.title).toBe("Fix bug");
-    expect(parsed.url).toContain("/pull/123");
-    expect(parsed.headBranch).toBe("fix-bug");
-    expect(parsed.baseBranch).toBe("main");
     expect(parsed.additions).toBe(10);
     expect(parsed.deletions).toBe(5);
     expect(parsed.changedFiles).toBe(3);

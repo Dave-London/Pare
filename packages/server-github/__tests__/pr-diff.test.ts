@@ -15,9 +15,7 @@ describe("parsePrDiffNumstat", () => {
 
     const result = parsePrDiffNumstat(stdout);
 
-    expect(result.totalFiles).toBe(3);
-    expect(result.totalAdditions).toBe(15);
-    expect(result.totalDeletions).toBe(10);
+    expect(result.files).toHaveLength(3);
     expect(result.files[0]).toEqual({
       file: "src/index.ts",
       status: "modified",
@@ -40,10 +38,7 @@ describe("parsePrDiffNumstat", () => {
 
   it("handles empty output", () => {
     const result = parsePrDiffNumstat("");
-    expect(result.totalFiles).toBe(0);
     expect(result.files).toEqual([]);
-    expect(result.totalAdditions).toBe(0);
-    expect(result.totalDeletions).toBe(0);
   });
 
   it("handles binary files with dash stats", () => {
@@ -79,9 +74,9 @@ describe("parsePrDiffNumstat", () => {
     const stdout = "42\t7\tREADME.md\n";
     const result = parsePrDiffNumstat(stdout);
 
-    expect(result.totalFiles).toBe(1);
-    expect(result.totalAdditions).toBe(42);
-    expect(result.totalDeletions).toBe(7);
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].additions).toBe(42);
+    expect(result.files[0].deletions).toBe(7);
     expect(result.files[0].status).toBe("modified");
   });
 });
@@ -99,9 +94,6 @@ describe("formatPrDiff", () => {
       { file: "src/index.ts", status: "modified", additions: 10, deletions: 2 },
       { file: "src/lib/new.ts", status: "added", additions: 50, deletions: 0 },
     ],
-    totalAdditions: 60,
-    totalDeletions: 2,
-    totalFiles: 2,
   };
 
   it("formats diff with file stats", () => {
@@ -114,9 +106,6 @@ describe("formatPrDiff", () => {
   it("formats empty diff", () => {
     const empty: PrDiffResult = {
       files: [],
-      totalAdditions: 0,
-      totalDeletions: 0,
-      totalFiles: 0,
     };
     const output = formatPrDiff(empty);
     expect(output).toContain("0 files changed, +0 -0");
@@ -128,9 +117,6 @@ describe("formatPrDiff", () => {
         { file: "image.png", status: "added", additions: 0, deletions: 0, binary: true },
         { file: "src/index.ts", status: "modified", additions: 5, deletions: 2 },
       ],
-      totalAdditions: 5,
-      totalDeletions: 2,
-      totalFiles: 2,
     };
     const output = formatPrDiff(binaryDiff);
     expect(output).toContain("image.png +0 -0 (binary)");
@@ -150,16 +136,11 @@ describe("compactPrDiff", () => {
           chunks: [{ header: "@@ -1,5 +1,7 @@", lines: "+new line\n old line" }],
         },
       ],
-      totalAdditions: 10,
-      totalDeletions: 2,
-      totalFiles: 1,
     };
 
     const compact = compactPrDiffMap(data);
-    expect(compact.totalFiles).toBe(1);
+    expect(compact.files).toHaveLength(1);
     expect(compact.files[0]).not.toHaveProperty("chunks");
-    expect(compact).not.toHaveProperty("totalAdditions");
-    expect(compact).not.toHaveProperty("totalDeletions");
 
     const text = formatPrDiffCompact(compact);
     expect(text).toContain("1 files changed");

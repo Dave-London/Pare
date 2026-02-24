@@ -72,7 +72,6 @@ describe("Smoke: github.pr-comment", () => {
     const { parsed } = await callAndValidate({ number: "123", body: "LGTM" });
     expect(parsed.operation).toBe("create");
     expect(parsed.url).toContain("https://github.com/");
-    expect(parsed.body).toBe("LGTM");
     expect(parsed.commentId).toBe("456789");
   });
 
@@ -118,7 +117,7 @@ describe("Smoke: github.pr-comment", () => {
     const body = "```\ncode | filter\n```";
     mockGh("https://github.com/owner/repo/pull/123#issuecomment-200");
     const { parsed } = await callAndValidate({ number: "123", body });
-    expect(parsed.body).toBe(body);
+    expect(parsed.operation).toBe("create");
   });
 
   // ── S8: Edit last comment ─────────────────────────────────────────
@@ -213,7 +212,6 @@ describe("Smoke: github.pr-create", () => {
     const { parsed } = await callAndValidate({ title: "Fix bug", body: "Fixes #123" });
     expect(parsed.number).toBe(42);
     expect(parsed.url).toContain("/pull/42");
-    expect(parsed.title).toBe("Fix bug");
   });
 
   // ── S2: Create draft PR ───────────────────────────────────────────
@@ -518,9 +516,6 @@ describe("Smoke: github.pr-diff", () => {
     expect(parsed.files[0].status).toBe("modified");
     expect(parsed.files[0].additions).toBe(2);
     expect(parsed.files[0].deletions).toBe(1);
-    expect(parsed.totalAdditions).toBe(2);
-    expect(parsed.totalDeletions).toBe(1);
-    expect(parsed.totalFiles).toBe(1);
   });
 
   // ── S2: Empty diff (no changes) ──────────────────────────────────
@@ -528,9 +523,6 @@ describe("Smoke: github.pr-diff", () => {
     mockGh("");
     const { parsed } = await callAndValidate({ number: "123" });
     expect(parsed.files).toEqual([]);
-    expect(parsed.totalFiles).toBe(0);
-    expect(parsed.totalAdditions).toBe(0);
-    expect(parsed.totalDeletions).toBe(0);
   });
 
   // ── S3: PR not found ─────────────────────────────────────────────
@@ -623,9 +615,6 @@ describe("Smoke: github.pr-diff", () => {
     mockGh(SIMPLE_DIFF);
     const { parsed } = await callAndValidate({ number: "123", compact: false });
     expect(parsed.files.length).toBe(1);
-    expect(parsed.totalFiles).toBe(1);
-    expect(parsed.totalAdditions).toBeDefined();
-    expect(parsed.totalDeletions).toBeDefined();
   });
 
   // ── S15: Cross-repo diff ──────────────────────────────────────────
@@ -726,19 +715,9 @@ describe("Smoke: github.pr-list", () => {
     return { result, parsed };
   }
 
-  /**
-   * Helper: mock both the main list query and the count probe query.
-   * pr-list makes 2 ghCmd calls when limit < 1000:
-   *   1. main list query
-   *   2. count probe query (limit=1000)
-   */
-  function mockGhPrList(mainStdout: string, countStdout?: string) {
+  /** Helper: mock the list query. */
+  function mockGhPrList(mainStdout: string, _countStdout?: string) {
     mockGh(mainStdout);
-    if (countStdout !== undefined) {
-      mockGh(countStdout);
-    } else {
-      mockGh(mainStdout);
-    }
   }
 
   // ── S1: List open PRs (default) ───────────────────────────────────
@@ -746,7 +725,6 @@ describe("Smoke: github.pr-list", () => {
     mockGhPrList(SAMPLE_PR_LIST);
     const { parsed } = await callAndValidate({});
     expect(parsed.prs.length).toBe(2);
-    expect(parsed.total).toBe(2);
     expect(parsed.prs[0].number).toBe(42);
     expect(parsed.prs[0].state).toBe("OPEN");
     expect(parsed.prs[0].title).toBe("Add feature X");
@@ -758,7 +736,6 @@ describe("Smoke: github.pr-list", () => {
     mockGhPrList(EMPTY_PR_LIST);
     const { parsed } = await callAndValidate({ label: "nonexistent-label-xyz" });
     expect(parsed.prs).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // ── S3: Flag injection on author ──────────────────────────────────
@@ -842,9 +819,8 @@ describe("Smoke: github.pr-list", () => {
     expect(args).toContain("--draft");
   });
 
-  // ── S16: totalAvailable count ─────────────────────────────────────
-  it("S16 [P1] totalAvailable populated from count probe", async () => {
-    // Main query returns 5 PRs, count probe returns 10
+  // ── S16: limit parameter ─────────────────────────────────────────
+  it("S16 [P1] limit parameter constrains result count", async () => {
     const fivePrs = JSON.stringify(
       Array.from({ length: 5 }, (_, i) => ({
         number: i + 1,
@@ -856,21 +832,9 @@ describe("Smoke: github.pr-list", () => {
         author: { login: "user" },
       })),
     );
-    const tenPrs = JSON.stringify(
-      Array.from({ length: 10 }, (_, i) => ({
-        number: i + 1,
-        state: "OPEN",
-        title: `PR ${i + 1}`,
-        url: `https://github.com/owner/repo/pull/${i + 1}`,
-        headRefName: `branch-${i + 1}`,
-        baseRefName: "main",
-        author: { login: "user" },
-      })),
-    );
-    mockGhPrList(fivePrs, tenPrs);
+    mockGhPrList(fivePrs);
     const { parsed } = await callAndValidate({ limit: 5 });
-    expect(parsed.total).toBe(5);
-    expect(parsed.totalAvailable).toBe(10);
+    expect(parsed.prs.length).toBe(5);
   });
 
   // ── S17: Compact vs full output ───────────────────────────────────
@@ -878,7 +842,6 @@ describe("Smoke: github.pr-list", () => {
     mockGhPrList(SAMPLE_PR_LIST);
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.prs.length).toBe(2);
-    expect(parsed.total).toBe(2);
   });
 
   // ── S18: Cross-repo listing ───────────────────────────────────────

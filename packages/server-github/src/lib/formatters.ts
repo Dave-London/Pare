@@ -32,10 +32,8 @@ import type {
 export function formatPrView(data: PrViewResult): string {
   const lines = [
     `PR #${data.number}: ${data.title} (${data.state})`,
-    `  ${data.headBranch} → ${data.baseBranch}`,
     `  mergeable: ${data.mergeable}, review: ${data.reviewDecision || "none"}`,
     `  +${data.additions} -${data.deletions} (${data.changedFiles} files)`,
-    `  ${data.url}`,
   ];
   // S-gap: Show author, labels, isDraft, assignees
   if (data.author) lines.push(`  author: @${data.author}`);
@@ -70,9 +68,10 @@ export function formatPrView(data: PrViewResult): string {
 
 /** Formats structured PR list data into human-readable text. */
 export function formatPrList(data: PrListResult): string {
-  if (data.total === 0) return "No pull requests found.";
+  const total = data.prs.length;
+  if (total === 0) return "No pull requests found.";
 
-  const lines = [`${data.total} pull requests:`];
+  const lines = [`${total} pull requests:`];
   for (const pr of data.prs) {
     const branch = pr.headBranch ? ` [${pr.headBranch}]` : "";
     const author = pr.author ? ` @${pr.author}` : "";
@@ -99,12 +98,12 @@ export function formatPrMerge(data: PrMergeResult): string {
   const shaInfo = data.mergeCommitSha ? ` [${data.mergeCommitSha.slice(0, 7)}]` : "";
 
   if (data.state === "auto-merge-enabled") {
-    return `Auto-merge enabled for PR #${data.number} via ${data.method}: ${data.url}`;
+    return `Auto-merge enabled for PR #${data.number} via ${data.method}`;
   }
   if (data.state === "auto-merge-disabled") {
-    return `Auto-merge disabled for PR #${data.number}: ${data.url}`;
+    return `Auto-merge disabled for PR #${data.number}`;
   }
-  return `Merged PR #${data.number} via ${data.method}${shaInfo}: ${data.url}${branchInfo}`;
+  return `Merged PR #${data.number} via ${data.method}${shaInfo}${branchInfo}`;
 }
 
 /** Formats structured comment result into human-readable text. */
@@ -117,7 +116,7 @@ export function formatComment(data: CommentResult): string {
 /** Formats structured PR review data into human-readable text. */
 export function formatPrReview(data: PrReviewResult): string {
   const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
-  return `Reviewed PR #${data.number} (${data.event}): ${data.url}${errorPart}`;
+  return `Reviewed PR #${data.number} (${data.event})${errorPart}`;
 }
 
 /** Formats structured PR update data into human-readable text. */
@@ -145,16 +144,12 @@ export function formatPrChecks(data: PrChecksResult): string {
   return lines.join("\n");
 }
 
-/** Compact PR checks: summary counts with empty checks array for schema compliance. */
+/** Compact PR checks: summary counts with checks array for schema compliance. */
 export interface PrChecksCompact {
   [key: string]: unknown;
   pr: number;
   checks: PrChecksResult["checks"];
   summary: PrChecksResult["summary"];
-  total: number;
-  passed: number;
-  failed: number;
-  pending: number;
 }
 
 export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
@@ -170,21 +165,21 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
     pr: data.pr,
     checks: data.checks ?? [],
     summary,
-    total: summary.total,
-    passed: summary.passed,
-    failed: summary.failed,
-    pending: summary.pending,
     ...(data.errorType ? { errorType: data.errorType } : {}),
     ...(data.errorMessage ? { errorMessage: data.errorMessage } : {}),
   };
 }
 
 export function formatPrChecksCompact(data: PrChecksCompact): string {
-  return `PR #${data.pr}: ${data.total} checks (${data.passed} passed, ${data.failed} failed, ${data.pending} pending)`;
+  const summary = data.summary ?? { total: 0, passed: 0, failed: 0, pending: 0 };
+  return `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`;
 }
 
 /** Formats structured PR diff data into a human-readable file change summary. */
 export function formatPrDiff(diff: PrDiffResult): string {
+  const totalFiles = diff.files.length;
+  const totalAdditions = diff.files.reduce((sum, f) => sum + f.additions, 0);
+  const totalDeletions = diff.files.reduce((sum, f) => sum + f.deletions, 0);
   const files = diff.files
     .map((f) => {
       const binaryTag = f.binary ? " (binary)" : "";
@@ -192,7 +187,7 @@ export function formatPrDiff(diff: PrDiffResult): string {
     })
     .join("\n");
   const truncatedNote = diff.truncated ? " (truncated)" : "";
-  return `${diff.totalFiles} files changed, +${diff.totalAdditions} -${diff.totalDeletions}${truncatedNote}\n${files}`;
+  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}${truncatedNote}\n${files}`;
 }
 
 /** Formats structured issue view data into human-readable text. */
@@ -223,9 +218,10 @@ export function formatIssueView(data: IssueViewResult): string {
 
 /** Formats structured issue list data into human-readable text. */
 export function formatIssueList(data: IssueListResult): string {
-  if (data.total === 0) return "No issues found.";
+  const total = data.issues.length;
+  if (total === 0) return "No issues found.";
 
-  const lines = [`${data.total} issues:`];
+  const lines = [`${total} issues:`];
   for (const issue of data.issues) {
     const labels = (issue.labels ?? []).length > 0 ? ` [${(issue.labels ?? []).join(", ")}]` : "";
     const author = issue.author ? ` @${issue.author}` : "";
@@ -236,11 +232,7 @@ export function formatIssueList(data: IssueListResult): string {
 
 /** Formats structured issue create data into human-readable text. */
 export function formatIssueCreate(data: IssueCreateResult): string {
-  const labelsPart =
-    data.labelsApplied && data.labelsApplied.length > 0
-      ? ` [${data.labelsApplied.join(", ")}]`
-      : "";
-  return `Created issue #${data.number}: ${data.url}${labelsPart}`;
+  return `Created issue #${data.number}: ${data.url}`;
 }
 
 /** Formats structured issue close data into human-readable text. */
@@ -285,9 +277,10 @@ export function formatRunView(data: RunViewResult): string {
 
 /** Formats structured run list data into human-readable text. */
 export function formatRunList(data: RunListResult): string {
-  if (data.total === 0) return "No workflow runs found.";
+  const total = data.runs.length;
+  if (total === 0) return "No workflow runs found.";
 
-  const lines = [`${data.total} workflow runs:`];
+  const lines = [`${total} workflow runs:`];
   for (const r of data.runs) {
     const conclusion = r.conclusion ? ` → ${r.conclusion}` : "";
     const sha = r.headSha ? ` ${r.headSha.slice(0, 7)}` : "";
@@ -309,9 +302,6 @@ export interface PrViewCompact {
   title: string;
   mergeable: string;
   reviewDecision: string;
-  url: string;
-  headBranch: string;
-  baseBranch: string;
   additions: number;
   deletions: number;
   changedFiles: number;
@@ -325,9 +315,6 @@ export function compactPrViewMap(data: PrViewResult): PrViewCompact {
     title: data.title,
     mergeable: data.mergeable,
     reviewDecision: data.reviewDecision,
-    url: data.url,
-    headBranch: data.headBranch,
-    baseBranch: data.baseBranch,
     additions: data.additions,
     deletions: data.deletions,
     changedFiles: data.changedFiles,
@@ -343,7 +330,6 @@ export function formatPrViewCompact(data: PrViewCompact): string {
 export interface PrListCompact {
   [key: string]: unknown;
   prs: { number: number; title: string; state: string }[];
-  total: number;
 }
 
 export function compactPrListMap(data: PrListResult): PrListCompact {
@@ -353,13 +339,13 @@ export function compactPrListMap(data: PrListResult): PrListCompact {
       title: pr.title,
       state: pr.state,
     })),
-    total: data.total,
   };
 }
 
 export function formatPrListCompact(data: PrListCompact): string {
-  if (data.total === 0) return "No pull requests found.";
-  const lines = [`${data.total} PRs:`];
+  const total = data.prs.length;
+  if (total === 0) return "No pull requests found.";
+  const lines = [`${total} PRs:`];
   for (const pr of data.prs) {
     lines.push(`  #${pr.number} ${pr.title} (${pr.state})`);
   }
@@ -375,7 +361,6 @@ export interface PrDiffCompact {
     additions: number;
     deletions: number;
   }>;
-  totalFiles: number;
 }
 
 export function compactPrDiffMap(data: PrDiffResult): PrDiffCompact {
@@ -386,13 +371,13 @@ export function compactPrDiffMap(data: PrDiffResult): PrDiffCompact {
       additions: f.additions,
       deletions: f.deletions,
     })),
-    totalFiles: data.totalFiles,
   };
 }
 
 export function formatPrDiffCompact(diff: PrDiffCompact): string {
+  const totalFiles = diff.files.length;
   const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${diff.totalFiles} files changed\n${files}`;
+  return `${totalFiles} files changed\n${files}`;
 }
 
 /** Compact issue view: key fields, no body. */
@@ -428,7 +413,6 @@ export function formatIssueViewCompact(data: IssueViewCompact): string {
 export interface IssueListCompact {
   [key: string]: unknown;
   issues: { number: number; title: string; state: string }[];
-  total: number;
 }
 
 export function compactIssueListMap(data: IssueListResult): IssueListCompact {
@@ -438,13 +422,13 @@ export function compactIssueListMap(data: IssueListResult): IssueListCompact {
       title: i.title,
       state: i.state,
     })),
-    total: data.total,
   };
 }
 
 export function formatIssueListCompact(data: IssueListCompact): string {
-  if (data.total === 0) return "No issues found.";
-  const lines = [`${data.total} issues:`];
+  const total = data.issues.length;
+  if (total === 0) return "No issues found.";
+  const lines = [`${total} issues:`];
   for (const i of data.issues) {
     lines.push(`  #${i.number} ${i.title} (${i.state})`);
   }
@@ -484,7 +468,6 @@ export function formatRunViewCompact(data: RunViewCompact): string {
 export interface RunListCompact {
   [key: string]: unknown;
   runs: { id: number; workflowName: string; status: string; conclusion: string | null }[];
-  total: number;
 }
 
 export function compactRunListMap(data: RunListResult): RunListCompact {
@@ -495,13 +478,13 @@ export function compactRunListMap(data: RunListResult): RunListCompact {
       status: r.status,
       conclusion: r.conclusion,
     })),
-    total: data.total,
   };
 }
 
 export function formatRunListCompact(data: RunListCompact): string {
-  if (data.total === 0) return "No workflow runs found.";
-  const lines = [`${data.total} runs:`];
+  const total = data.runs.length;
+  if (total === 0) return "No workflow runs found.";
+  const lines = [`${total} runs:`];
   for (const r of data.runs) {
     const conclusion = r.conclusion ? ` → ${r.conclusion}` : "";
     lines.push(`  #${r.id} ${r.workflowName} (${r.status}${conclusion})`);
@@ -536,16 +519,15 @@ export function formatReleaseCreate(data: ReleaseCreateResult): string {
     .filter(Boolean)
     .join(", ");
   const suffix = flags ? ` (${flags})` : "";
-  const assetsPart =
-    data.assetsUploaded !== undefined ? `, ${data.assetsUploaded} assets uploaded` : "";
-  return `Created release ${data.tag}${suffix}: ${data.url}${assetsPart}`;
+  return `Created release ${data.tag}${suffix}: ${data.url}`;
 }
 
 /** Formats structured release list data into human-readable text. */
 export function formatReleaseList(data: ReleaseListResult): string {
-  if (data.total === 0) return "No releases found.";
+  const total = data.releases.length;
+  if (total === 0) return "No releases found.";
 
-  const lines = [`${data.total} releases:`];
+  const lines = [`${total} releases:`];
   for (const r of data.releases) {
     const flags = [
       r.draft ? "draft" : "",
@@ -564,7 +546,6 @@ export function formatReleaseList(data: ReleaseListResult): string {
 export interface ReleaseListCompact {
   [key: string]: unknown;
   releases: { tag: string; name: string; draft: boolean; prerelease: boolean }[];
-  total: number;
 }
 
 export function compactReleaseListMap(data: ReleaseListResult): ReleaseListCompact {
@@ -575,13 +556,13 @@ export function compactReleaseListMap(data: ReleaseListResult): ReleaseListCompa
       draft: r.draft,
       prerelease: r.prerelease,
     })),
-    total: data.total,
   };
 }
 
 export function formatReleaseListCompact(data: ReleaseListCompact): string {
-  if (data.total === 0) return "No releases found.";
-  const lines = [`${data.total} releases:`];
+  const total = data.releases.length;
+  if (total === 0) return "No releases found.";
+  const lines = [`${total} releases:`];
   for (const r of data.releases) {
     const flags = [r.draft ? "draft" : "", r.prerelease ? "prerelease" : ""]
       .filter(Boolean)
@@ -596,9 +577,10 @@ export function formatReleaseListCompact(data: ReleaseListCompact): string {
 
 /** Formats structured label list data into human-readable text. */
 export function formatLabelList(data: LabelListResult): string {
-  if (data.total === 0) return "No labels found.";
+  const total = data.labels.length;
+  if (total === 0) return "No labels found.";
 
-  const lines = [`${data.total} labels:`];
+  const lines = [`${total} labels:`];
   for (const l of data.labels) {
     const desc = l.description ? ` — ${l.description}` : "";
     const def = l.isDefault ? " (default)" : "";
@@ -691,9 +673,10 @@ export function formatRepoClone(data: RepoCloneResult): string {
 
 /** Formats structured discussion list data into human-readable text. */
 export function formatDiscussionList(data: DiscussionListResult): string {
-  if (data.totalCount === 0) return "No discussions found.";
+  const totalCount = data.discussions.length;
+  if (totalCount === 0) return "No discussions found.";
 
-  const lines = [`${data.totalCount} discussions:`];
+  const lines = [`${totalCount} discussions:`];
   for (const d of data.discussions) {
     const answered = d.isAnswered ? " (answered)" : "";
     const comments = d.comments > 0 ? ` [${d.comments} comments]` : "";
@@ -706,7 +689,6 @@ export function formatDiscussionList(data: DiscussionListResult): string {
 export interface DiscussionListCompact {
   [key: string]: unknown;
   discussions: { number: number; title: string; category: string; isAnswered: boolean }[];
-  totalCount: number;
 }
 
 export function compactDiscussionListMap(data: DiscussionListResult): DiscussionListCompact {
@@ -717,13 +699,13 @@ export function compactDiscussionListMap(data: DiscussionListResult): Discussion
       category: d.category,
       isAnswered: d.isAnswered,
     })),
-    totalCount: data.totalCount,
   };
 }
 
 export function formatDiscussionListCompact(data: DiscussionListCompact): string {
-  if (data.totalCount === 0) return "No discussions found.";
-  const lines = [`${data.totalCount} discussions:`];
+  const totalCount = data.discussions.length;
+  if (totalCount === 0) return "No discussions found.";
+  const lines = [`${totalCount} discussions:`];
   for (const d of data.discussions) {
     const answered = d.isAnswered ? " (answered)" : "";
     lines.push(`  #${d.number} ${d.title} [${d.category}]${answered}`);

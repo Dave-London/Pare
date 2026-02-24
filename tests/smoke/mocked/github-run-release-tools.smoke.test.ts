@@ -129,11 +129,9 @@ describe("Smoke: github.run-list", () => {
   // S1 [P0] List runs happy path
   it("S1 [P0] list runs happy path", async () => {
     const runs = [SAMPLE_RUN, { ...SAMPLE_RUN, databaseId: 12346 }];
-    mockGh(JSON.stringify(runs)); // main query
-    mockGh(JSON.stringify(runs)); // count probe
+    mockGh(JSON.stringify(runs));
     const { parsed } = await callAndValidate({});
     expect(parsed.runs.length).toBe(2);
-    expect(parsed.total).toBeGreaterThanOrEqual(0);
     expect(parsed.runs[0].id).toBe(12345);
     expect(parsed.runs[0].workflowName).toBe("CI");
     expect(parsed.runs[0].status).toBe("completed");
@@ -141,11 +139,9 @@ describe("Smoke: github.run-list", () => {
 
   // S2 [P0] Empty run list
   it("S2 [P0] empty run list", async () => {
-    mockGh("[]"); // main query
-    mockGh("[]"); // count probe
+    mockGh("[]");
     const { parsed } = await callAndValidate({ branch: "nonexistent-branch-xyz" });
     expect(parsed.runs).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on branch
@@ -186,8 +182,7 @@ describe("Smoke: github.run-list", () => {
   // S10 [P1] Filter by branch
   it("S10 [P1] filter by branch", async () => {
     const runs = [SAMPLE_RUN];
-    mockGh(JSON.stringify(runs)); // main query
-    mockGh(JSON.stringify(runs)); // count probe
+    mockGh(JSON.stringify(runs));
     await callAndValidate({ branch: "main" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--branch");
@@ -198,7 +193,6 @@ describe("Smoke: github.run-list", () => {
   it("S11 [P1] filter by status", async () => {
     const runs = [SAMPLE_RUN];
     mockGh(JSON.stringify(runs));
-    mockGh(JSON.stringify(runs));
     await callAndValidate({ status: "success" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--status");
@@ -207,7 +201,6 @@ describe("Smoke: github.run-list", () => {
 
   // S12 [P1] Filter by workflow
   it("S12 [P1] filter by workflow", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ workflow: "ci.yml" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -218,26 +211,22 @@ describe("Smoke: github.run-list", () => {
   // S13 [P1] Filter by commit
   it("S13 [P1] filter by commit", async () => {
     mockGh(JSON.stringify([SAMPLE_RUN]));
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ commit: "abc123" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--commit");
     expect(args).toContain("abc123");
   });
 
-  // S14 [P1] totalAvailable count
-  it("S14 [P1] totalAvailable count", async () => {
+  // S14 [P1] limit parameter constrains result count
+  it("S14 [P1] limit parameter constrains result count", async () => {
     const runs5 = [SAMPLE_RUN, SAMPLE_RUN, SAMPLE_RUN, SAMPLE_RUN, SAMPLE_RUN];
-    const runs10 = [...runs5, ...runs5];
-    mockGh(JSON.stringify(runs5)); // main with limit 5
-    mockGh(JSON.stringify(runs10)); // count probe with limit 1000
+    mockGh(JSON.stringify(runs5));
     const { parsed } = await callAndValidate({ limit: 5 });
-    expect(parsed.totalAvailable).toBe(10);
+    expect(parsed.runs.length).toBe(5);
   });
 
   // S15 [P1] Compact vs full output
   it("S15 [P1] compact vs full output", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.runs.length).toBe(1);
@@ -245,7 +234,6 @@ describe("Smoke: github.run-list", () => {
 
   // S16 [P1] Cross-repo listing
   it("S16 [P1] cross-repo listing", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ repo: "owner/repo" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -256,7 +244,6 @@ describe("Smoke: github.run-list", () => {
   // S17 [P1] Include all (disabled workflows)
   it("S17 [P1] include all disabled workflows", async () => {
     mockGh(JSON.stringify([SAMPLE_RUN]));
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ all: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--all");
@@ -264,7 +251,6 @@ describe("Smoke: github.run-list", () => {
 
   // S18 [P1] Filter by event
   it("S18 [P1] filter by event", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ event: "push" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -274,7 +260,6 @@ describe("Smoke: github.run-list", () => {
 
   // S19 [P1] Expanded fields (headSha, event, attempt)
   it("S19 [P1] expanded fields populated in run items", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     const { parsed } = await callAndValidate({ compact: false });
     const run = parsed.runs[0];
@@ -286,7 +271,6 @@ describe("Smoke: github.run-list", () => {
   // S20 [P2] Filter by user
   it("S20 [P2] filter by user", async () => {
     mockGh(JSON.stringify([SAMPLE_RUN]));
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ user: "octocat" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--user");
@@ -295,7 +279,6 @@ describe("Smoke: github.run-list", () => {
 
   // S21 [P2] Filter by created
   it("S21 [P2] filter by created", async () => {
-    mockGh(JSON.stringify([SAMPLE_RUN]));
     mockGh(JSON.stringify([SAMPLE_RUN]));
     await callAndValidate({ created: ">2024-01-01" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -578,8 +561,8 @@ describe("Smoke: github.run-view", () => {
     expect(parsed.event).toBe("push");
     expect(parsed.startedAt).toBe("2026-02-17T10:00:00Z");
     expect(parsed.updatedAt).toBe("2026-02-17T10:05:00Z");
-    expect(parsed.durationSeconds).toBeDefined();
-    expect(parsed.durationSeconds).toBe(300);
+    expect(parsed.startedAt).toBeDefined();
+    expect(parsed.updatedAt).toBeDefined();
   });
 
   // S15 [P2] Exit status mode
@@ -755,7 +738,6 @@ describe("Smoke: github.release-create", () => {
       tag: "v1.0.0",
       assets: ["dist/app.zip", "dist/checksum.txt"],
     });
-    expect(parsed.assetsUploaded).toBe(2);
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("dist/app.zip");
     expect(args).toContain("dist/checksum.txt");
@@ -837,11 +819,9 @@ describe("Smoke: github.release-list", () => {
   // S1 [P0] List releases happy path
   it("S1 [P0] list releases happy path", async () => {
     const releases = [SAMPLE_RELEASE, { ...SAMPLE_RELEASE, tagName: "v0.9.0", isLatest: false }];
-    mockGh(JSON.stringify(releases)); // main query
-    mockGh(JSON.stringify(releases)); // count probe
+    mockGh(JSON.stringify(releases));
     const { parsed } = await callAndValidate({});
     expect(parsed.releases.length).toBe(2);
-    expect(parsed.total).toBeGreaterThanOrEqual(0);
     expect(parsed.releases[0].tag).toBe("v1.0.0");
     expect(parsed.releases[0].name).toBe("Release 1.0.0");
     expect(parsed.releases[0].draft).toBe(false);
@@ -850,11 +830,9 @@ describe("Smoke: github.release-list", () => {
 
   // S2 [P0] Empty release list
   it("S2 [P0] empty release list", async () => {
-    mockGh("[]"); // main query
-    mockGh("[]"); // count probe
+    mockGh("[]");
     const { parsed } = await callAndValidate({ repo: "owner/empty-repo" });
     expect(parsed.releases).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on repo
@@ -874,7 +852,6 @@ describe("Smoke: github.release-list", () => {
   it("S5 [P1] exclude drafts", async () => {
     const releases = [SAMPLE_RELEASE];
     mockGh(JSON.stringify(releases));
-    mockGh(JSON.stringify(releases));
     await callAndValidate({ excludeDrafts: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--exclude-drafts");
@@ -883,7 +860,6 @@ describe("Smoke: github.release-list", () => {
   // S6 [P1] Exclude pre-releases
   it("S6 [P1] exclude pre-releases", async () => {
     const releases = [SAMPLE_RELEASE];
-    mockGh(JSON.stringify(releases));
     mockGh(JSON.stringify(releases));
     await callAndValidate({ excludePreReleases: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -894,26 +870,22 @@ describe("Smoke: github.release-list", () => {
   it("S7 [P1] order ascending", async () => {
     const releases = [SAMPLE_RELEASE];
     mockGh(JSON.stringify(releases));
-    mockGh(JSON.stringify(releases));
     await callAndValidate({ order: "asc" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--order");
     expect(args).toContain("asc");
   });
 
-  // S8 [P1] totalAvailable count
-  it("S8 [P1] totalAvailable count", async () => {
+  // S8 [P1] limit parameter constrains result count
+  it("S8 [P1] limit parameter constrains result count", async () => {
     const releases5 = Array(5).fill(SAMPLE_RELEASE);
-    const releases10 = Array(10).fill(SAMPLE_RELEASE);
-    mockGh(JSON.stringify(releases5)); // main with limit 5
-    mockGh(JSON.stringify(releases10)); // count probe with limit 1000
+    mockGh(JSON.stringify(releases5));
     const { parsed } = await callAndValidate({ limit: 5, compact: false });
-    expect(parsed.totalAvailable).toBe(10);
+    expect(parsed.releases.length).toBe(5);
   });
 
   // S9 [P1] Compact vs full output
   it("S9 [P1] compact vs full output", async () => {
-    mockGh(JSON.stringify([SAMPLE_RELEASE]));
     mockGh(JSON.stringify([SAMPLE_RELEASE]));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.releases.length).toBe(1);
@@ -921,7 +893,6 @@ describe("Smoke: github.release-list", () => {
 
   // S10 [P1] Cross-repo listing
   it("S10 [P1] cross-repo listing", async () => {
-    mockGh(JSON.stringify([SAMPLE_RELEASE]));
     mockGh(JSON.stringify([SAMPLE_RELEASE]));
     await callAndValidate({ repo: "owner/repo" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -931,7 +902,6 @@ describe("Smoke: github.release-list", () => {
 
   // S11 [P1] Release fields populated
   it("S11 [P1] release fields populated", async () => {
-    mockGh(JSON.stringify([SAMPLE_RELEASE]));
     mockGh(JSON.stringify([SAMPLE_RELEASE]));
     const { parsed } = await callAndValidate({ compact: false });
     const rel = parsed.releases[0];
@@ -944,7 +914,6 @@ describe("Smoke: github.release-list", () => {
   // S12 [P2] Custom limit
   it("S12 [P2] custom limit", async () => {
     const releases = Array(5).fill(SAMPLE_RELEASE);
-    mockGh(JSON.stringify(releases));
     mockGh(JSON.stringify(releases));
     const { parsed } = await callAndValidate({ limit: 5 });
     expect(parsed.releases.length).toBeLessThanOrEqual(5);

@@ -109,7 +109,6 @@ describe("@paretools/github integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.prs)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -186,7 +185,6 @@ describe("@paretools/github integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.issues)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -227,7 +225,6 @@ describe("@paretools/github integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.runs)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -250,7 +247,6 @@ describe("@paretools/github integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.releases)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -272,7 +268,7 @@ describe("@paretools/github integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.status).toEqual(expect.any(Number));
+        expect(sc.statusCode).toEqual(expect.any(Number));
         expect(sc.endpoint).toEqual(expect.any(String));
         expect(sc.method).toEqual(expect.any(String));
       }

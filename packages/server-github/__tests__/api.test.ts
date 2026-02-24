@@ -10,7 +10,6 @@ describe("parseApi", () => {
     const json = JSON.stringify({ login: "octocat", id: 1 });
     const result = parseApi(json, 0, "/user", "GET");
 
-    expect(result.status).toBe(200);
     expect(result.statusCode).toBe(200);
     expect(result.body).toEqual({ login: "octocat", id: 1 });
     expect(result.endpoint).toBe("/user");
@@ -21,7 +20,6 @@ describe("parseApi", () => {
     const json = JSON.stringify([{ number: 1 }, { number: 2 }]);
     const result = parseApi(json, 0, "repos/owner/repo/pulls", "GET");
 
-    expect(result.status).toBe(200);
     expect(result.statusCode).toBe(200);
     expect(result.body).toEqual([{ number: 1 }, { number: 2 }]);
     expect(result.endpoint).toBe("repos/owner/repo/pulls");
@@ -30,21 +28,20 @@ describe("parseApi", () => {
   it("returns 422 status for non-zero exit code", () => {
     const result = parseApi("", 1, "/user", "GET");
 
-    expect(result.status).toBe(422);
     expect(result.statusCode).toBe(422);
   });
 
   it("falls back to raw string when stdout is not JSON", () => {
     const result = parseApi("some plain text output\n", 0, "/endpoint", "POST");
 
-    expect(result.status).toBe(200);
+    expect(result.statusCode).toBe(200);
     expect(result.body).toBe("some plain text output\n");
   });
 
   it("handles empty stdout", () => {
     const result = parseApi("", 0, "repos/owner/repo/issues", "DELETE");
 
-    expect(result.status).toBe(200);
+    expect(result.statusCode).toBe(200);
     expect(result.body).toBe("");
     expect(result.method).toBe("DELETE");
   });
@@ -59,7 +56,7 @@ describe("parseApi", () => {
     });
     const result = parseApi(json, 0, "graphql", "POST");
 
-    expect(result.status).toBe(200);
+    expect(result.statusCode).toBe(200);
     expect((result.body as Record<string, unknown>).data).toBeDefined();
   });
 
@@ -70,7 +67,6 @@ describe("parseApi", () => {
     const result = parseApi(stdout, 0, "repos/o/r/issues", "POST");
 
     expect(result.statusCode).toBe(201);
-    expect(result.status).toBe(200); // legacy field still uses exit code
     expect(result.body).toEqual({ id: 42, url: "https://api.github.com/repos/o/r/issues/42" });
   });
 
@@ -81,7 +77,6 @@ describe("parseApi", () => {
     const result = parseApi(stdout, 1, "repos/o/r/nonexistent", "GET");
 
     expect(result.statusCode).toBe(404);
-    expect(result.status).toBe(422); // legacy: non-zero exit code
     expect(result.body).toEqual({ message: "Not Found" });
   });
 
@@ -99,7 +94,6 @@ describe("parseApi", () => {
 describe("formatApi", () => {
   it("formats a JSON object response using statusCode", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: { login: "octocat", id: 1 },
       endpoint: "/user",
@@ -113,7 +107,6 @@ describe("formatApi", () => {
 
   it("formats a string body response", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: "plain text",
       endpoint: "/endpoint",
@@ -128,7 +121,6 @@ describe("formatApi", () => {
   it("truncates long body output", () => {
     const longBody = "x".repeat(600);
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: longBody,
       endpoint: "/endpoint",
@@ -143,7 +135,6 @@ describe("formatApi", () => {
 
   it("formats error status using real HTTP statusCode", () => {
     const data: ApiResult = {
-      status: 422,
       statusCode: 422,
       body: { message: "Validation Failed" },
       endpoint: "repos/owner/repo/pulls",
@@ -157,7 +148,6 @@ describe("formatApi", () => {
 
   it("uses real HTTP status code (201) in formatted output", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 201,
       body: { id: 1 },
       endpoint: "repos/o/r/issues",
@@ -181,7 +171,7 @@ describe("parseApi — error body preservation (P1 #141)", () => {
       '{"message":"Validation Failed","errors":[{"code":"missing_field"}]}',
     );
 
-    expect(result.status).toBe(422);
+    expect(result.statusCode).toBe(422);
     expect(result.errorBody).toEqual({
       message: "Validation Failed",
       errors: [{ code: "missing_field" }],
@@ -218,7 +208,6 @@ describe("parseApi — error body preservation (P1 #141)", () => {
 describe("formatApi — error body display (P1 #141)", () => {
   it("includes error body in formatted output", () => {
     const data: ApiResult = {
-      status: 422,
       statusCode: 422,
       body: "",
       endpoint: "/repos/o/r/issues",
@@ -233,7 +222,6 @@ describe("formatApi — error body display (P1 #141)", () => {
 
   it("does not include error line when no error body", () => {
     const data: ApiResult = {
-      status: 200,
       statusCode: 200,
       body: { id: 1 },
       endpoint: "/user",

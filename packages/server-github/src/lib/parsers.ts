@@ -79,9 +79,6 @@ export function parsePrView(json: string): PrViewResult {
     mergeable: raw.mergeable ?? "UNKNOWN",
     reviewDecision: raw.reviewDecision ?? "",
     checks,
-    url: raw.url,
-    headBranch: raw.headRefName,
-    baseBranch: raw.baseRefName,
     additions: raw.additions ?? 0,
     deletions: raw.deletions ?? 0,
     changedFiles: raw.changedFiles ?? 0,
@@ -108,7 +105,7 @@ export function parsePrView(json: string): PrViewResult {
 /**
  * Parses `gh pr list --json ...` output into structured PR list data.
  */
-export function parsePrList(json: string, totalAvailable?: number): PrListResult {
+export function parsePrList(json: string): PrListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -141,7 +138,7 @@ export function parsePrList(json: string, totalAvailable?: number): PrListResult
     }),
   );
 
-  return { prs, total: prs.length, totalAvailable };
+  return { prs };
 }
 
 /**
@@ -151,9 +148,6 @@ export function parsePrList(json: string, totalAvailable?: number): PrListResult
 export function parsePrCreate(
   stdout: string,
   opts?: {
-    title?: string;
-    baseBranch?: string;
-    headBranch?: string;
     draft?: boolean;
   },
 ): PrCreateResult {
@@ -163,9 +157,6 @@ export function parsePrCreate(
   return {
     number,
     url,
-    title: opts?.title,
-    baseBranch: opts?.baseBranch,
-    headBranch: opts?.headBranch,
     draft: opts?.draft,
   };
 }
@@ -198,8 +189,6 @@ export function parsePrMerge(
   auto?: boolean,
   disableAuto?: boolean,
 ): PrMergeResult {
-  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
-  const url = urlMatch ? urlMatch[1] : "";
   // S-gap: detect if branch was deleted from output
   const branchDeleted =
     deleteBranch !== undefined
@@ -237,7 +226,6 @@ export function parsePrMerge(
     number,
     merged: state === "merged",
     method: detectedMethod,
-    url,
     branchDeleted,
     mergeCommitSha,
     state,
@@ -255,7 +243,6 @@ export function parseComment(
     operation?: "create" | "edit" | "delete";
     issueNumber?: number;
     prNumber?: number;
-    body?: string;
   },
 ): CommentResult {
   const url = stdout.trim();
@@ -269,7 +256,6 @@ export function parseComment(
     commentId,
     issueNumber: opts?.issueNumber,
     prNumber: opts?.prNumber,
-    body: opts?.body,
   };
 }
 
@@ -285,9 +271,6 @@ export function parsePrReview(
   body?: string,
   stderr?: string,
 ): PrReviewResult {
-  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
-  const url = urlMatch ? urlMatch[1] : "";
-
   // P1-gap #145: Parse review event type from CLI output for confirmation
   // Map the CLI event name to GitHub's review event type
   const eventMap: Record<string, string> = {
@@ -303,7 +286,6 @@ export function parsePrReview(
   return {
     number,
     event: resolvedEvent,
-    url,
     body: body ?? undefined,
     errorType,
   };
@@ -449,7 +431,7 @@ export function parseIssueList(json: string): IssueListResult {
     }),
   );
 
-  return { issues, total: issues.length };
+  return { issues };
 }
 
 /**
@@ -457,14 +439,13 @@ export function parseIssueList(json: string): IssueListResult {
  * The gh CLI prints the new issue URL to stdout. We extract the number from it.
  * S-gap: Enhanced to echo back applied labels.
  */
-export function parseIssueCreate(stdout: string, labels?: string[]): IssueCreateResult {
+export function parseIssueCreate(stdout: string): IssueCreateResult {
   const url = stdout.trim();
   const match = url.match(/\/issues\/(\d+)$/);
   const number = match ? parseInt(match[1], 10) : 0;
   return {
     number,
     url,
-    labelsApplied: labels && labels.length > 0 ? labels : undefined,
   };
 }
 
@@ -551,16 +532,6 @@ export function parseRunView(json: string): RunViewResult {
     }),
   );
 
-  const updatedAt = raw.updatedAt ?? undefined;
-  const startedAt = raw.startedAt ?? undefined;
-  const createdAt = raw.createdAt ?? "";
-  let durationSeconds: number | undefined;
-  const start = startedAt ? Date.parse(startedAt) : createdAt ? Date.parse(createdAt) : NaN;
-  const end = updatedAt ? Date.parse(updatedAt) : NaN;
-  if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
-    durationSeconds = Math.round((end - start) / 1000);
-  }
-
   return {
     id: raw.databaseId,
     status: raw.status,
@@ -574,17 +545,16 @@ export function parseRunView(json: string): RunViewResult {
     // P0 enrichments
     headSha: raw.headSha ?? undefined,
     event: raw.event ?? undefined,
-    startedAt,
-    updatedAt,
+    startedAt: raw.startedAt ?? undefined,
+    updatedAt: raw.updatedAt ?? undefined,
     attempt: raw.attempt ?? undefined,
-    durationSeconds,
   };
 }
 
 /**
  * Parses `gh run list --json ...` output into structured run list data.
  */
-export function parseRunList(json: string, totalAvailable?: number): RunListResult {
+export function parseRunList(json: string): RunListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -621,7 +591,7 @@ export function parseRunList(json: string, totalAvailable?: number): RunListResu
     }),
   );
 
-  return { runs, total: runs.length, totalAvailable };
+  return { runs };
 }
 
 /**
@@ -677,7 +647,6 @@ export function parseReleaseCreate(
   draft: boolean,
   prerelease: boolean,
   title?: string,
-  assetsCount?: number,
 ): ReleaseCreateResult {
   const url = stdout.trim();
   return {
@@ -686,7 +655,6 @@ export function parseReleaseCreate(
     draft,
     prerelease,
     title: title ?? undefined,
-    assetsUploaded: assetsCount ?? undefined,
   };
 }
 
@@ -694,7 +662,7 @@ export function parseReleaseCreate(
  * Parses `gh release list --json ...` output into structured release list data.
  * S-gap: Enhanced to include isLatest and createdAt.
  */
-export function parseReleaseList(json: string, totalAvailable?: number): ReleaseListResult {
+export function parseReleaseList(json: string): ReleaseListResult {
   const raw = JSON.parse(json);
   const items = Array.isArray(raw) ? raw : [];
 
@@ -721,7 +689,7 @@ export function parseReleaseList(json: string, totalAvailable?: number): Release
     }),
   );
 
-  return { releases, total: releases.length, totalAvailable };
+  return { releases };
 }
 
 /**
@@ -773,9 +741,6 @@ export function parseApi(
     }
   }
 
-  // Keep legacy `status` as before for backward compat
-  const status = exitCode === 0 ? 200 : 422;
-
   let body: unknown;
   try {
     body = JSON.parse(bodyText);
@@ -793,7 +758,6 @@ export function parseApi(
       : undefined;
 
   return {
-    status,
     statusCode,
     body,
     endpoint,
@@ -894,7 +858,7 @@ export function parseLabelList(json: string): LabelListResult {
     }),
   );
 
-  return { labels, total: labels.length };
+  return { labels };
 }
 
 /**
@@ -1007,7 +971,6 @@ export function parseDiscussionList(json: string): DiscussionListResult {
 
   return {
     discussions,
-    totalCount: data.totalCount ?? discussions.length,
   };
 }
 
@@ -1044,8 +1007,5 @@ export function parsePrDiffNumstat(stdout: string): PrDiffResult {
 
   return {
     files,
-    totalAdditions: files.reduce((sum, f) => sum + f.additions, 0),
-    totalDeletions: files.reduce((sum, f) => sum + f.deletions, 0),
-    totalFiles: files.length,
   };
 }

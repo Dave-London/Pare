@@ -139,25 +139,7 @@ export function registerRunListTool(server: McpServer) {
         throw new Error(`gh run list failed: ${result.stderr}`);
       }
 
-      let totalAvailable: number | undefined;
-      if (limit < 1000) {
-        const countArgs = ["run", "list", "--json", RUN_LIST_FIELDS, "--limit", "1000"];
-        if (branch) countArgs.push("--branch", branch);
-        if (status) countArgs.push("--status", status);
-        if (all) countArgs.push("--all");
-        if (workflow) countArgs.push("--workflow", workflow);
-        if (commit) countArgs.push("--commit", commit);
-        if (repo) countArgs.push("--repo", repo);
-        if (event) countArgs.push("--event", event);
-        if (user) countArgs.push("--user", user);
-        if (created) countArgs.push("--created", created);
-        const countResult = await ghCmd(countArgs, cwd);
-        if (countResult.exitCode === 0) {
-          totalAvailable = parseRunList(countResult.stdout).total;
-        }
-      }
-
-      const data = parseRunList(result.stdout, totalAvailable);
+      const data = parseRunList(result.stdout);
       return compactDualOutput(
         data,
         result.stdout,

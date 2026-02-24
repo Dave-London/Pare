@@ -229,10 +229,6 @@ describe("compactPrChecks (pending checks)", () => {
 
     const compact = compactPrChecksMap(data);
     expect(compact.pr).toBe(50);
-    expect(compact.total).toBe(2);
-    expect(compact.passed).toBe(1);
-    expect(compact.pending).toBe(1);
-    expect(compact.failed).toBe(0);
 
     const text = formatPrChecksCompact(compact);
     expect(text).toContain("PR #50: 2 checks (1 passed, 0 failed, 1 pending)");

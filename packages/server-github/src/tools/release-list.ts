@@ -71,20 +71,7 @@ export function registerReleaseListTool(server: McpServer) {
         throw new Error(`gh release list failed: ${result.stderr}`);
       }
 
-      let totalAvailable: number | undefined;
-      if (limit < 1000) {
-        const countArgs = ["release", "list", "--json", RELEASE_LIST_FIELDS, "--limit", "1000"];
-        if (repo) countArgs.push("--repo", repo);
-        if (excludeDrafts) countArgs.push("--exclude-drafts");
-        if (excludePreReleases) countArgs.push("--exclude-pre-releases");
-        if (order) countArgs.push("--order", order);
-        const countResult = await ghCmd(countArgs, cwd);
-        if (countResult.exitCode === 0) {
-          totalAvailable = parseReleaseList(countResult.stdout).total;
-        }
-      }
-
-      const data = parseReleaseList(result.stdout, totalAvailable);
+      const data = parseReleaseList(result.stdout);
       return compactDualOutput(
         data,
         result.stdout,
