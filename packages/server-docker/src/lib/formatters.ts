@@ -82,9 +82,7 @@ export function formatBuild(data: DockerBuild): string {
  *  #113: Notes when separate stdout/stderr streams are available. */
 export function formatLogs(data: DockerLogs): string {
   const total = (data.lines ?? []).length;
-  const header = data.isTruncated
-    ? `${total} lines (truncated)`
-    : `${total} lines`;
+  const header = data.isTruncated ? `${total} lines (truncated)` : `${total} lines`;
   const streamInfo =
     data.stdoutLines || data.stderrLines
       ? ` [stdout=${(data.stdoutLines ?? []).length}, stderr=${(data.stderrLines ?? []).length}]`
@@ -159,9 +157,7 @@ export function formatComposeUp(data: DockerComposeUp): string {
   if (!data.success) return "Compose up failed";
   const started = (data.services ?? []).length;
   if (started === 0) return "Compose up succeeded (no new services started)";
-  const lines = [
-    `Compose up: ${started} services started (${(data.services ?? []).join(", ")})`,
-  ];
+  const lines = [`Compose up: ${started} services started (${(data.services ?? []).join(", ")})`];
   if (data.serviceStates && data.serviceStates.length > 0) {
     for (const ss of data.serviceStates) {
       lines.push(`  ${ss.name}: ${ss.action}`);
@@ -178,8 +174,7 @@ export function formatComposeUp(data: DockerComposeUp): string {
 export function formatComposeDown(data: DockerComposeDown): string {
   if (!data.success) return "Compose down failed";
   const removedContainers = (data.containers ?? []).filter((c) => c.action === "Removed").length;
-  const removed =
-    removedContainers + (data.volumesRemoved ?? 0) + (data.networksRemoved ?? 0);
+  const removed = removedContainers + (data.volumesRemoved ?? 0) + (data.networksRemoved ?? 0);
   const parts = [`Compose down: ${data.stopped} stopped, ${removed} removed`];
   if (data.volumesRemoved) parts[0] += `, ${data.volumesRemoved} volumes removed`;
   if (data.networksRemoved) parts[0] += `, ${data.networksRemoved} networks removed`;
@@ -303,15 +298,9 @@ export function compactLogsMap(data: DockerLogs): DockerLogsCompact {
 }
 
 export function formatLogsCompact(data: DockerLogsCompact): string {
-  const total = data.head.length + data.tail.length + (data.tail.length > 0 ? 0 : 0);
-  // Estimate total from head+tail; if tail is present there are omitted lines
   const parts = [`${data.head.length + data.tail.length} lines`];
   if (data.head.length) parts.push(data.head.join("\n"));
-  if (data.tail.length)
-    parts.push(
-      "  ... lines omitted ...",
-      data.tail.join("\n"),
-    );
+  if (data.tail.length) parts.push("  ... lines omitted ...", data.tail.join("\n"));
   return parts.join("\n");
 }
 

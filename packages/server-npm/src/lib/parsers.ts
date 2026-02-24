@@ -466,18 +466,6 @@ export function parseListJson(jsonStr: string): NpmList {
     Object.assign(allDeps, mainDeps);
   }
 
-  // Count all deps including nested
-  function countDeps(d: Record<string, NpmListDep>): number {
-    let count = 0;
-    for (const dep of Object.values(d)) {
-      count++;
-      if (dep.dependencies) {
-        count += countDeps(dep.dependencies);
-      }
-    }
-    return count;
-  }
-
   return {
     name: data.name ?? "unknown",
     version: data.version ?? "0.0.0",
@@ -740,12 +728,6 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
   // Yarn Classic NDJSON: each line is a JSON object
   const vulnerabilities: NpmAudit["vulnerabilities"] = [];
   const seen = new Set<string>();
-  let summaryTotal = 0;
-  let critical = 0;
-  let high = 0;
-  let moderate = 0;
-  let low = 0;
-  let info = 0;
 
   for (const line of jsonStr.split("\n")) {
     const trimmed = line.trim();
@@ -770,15 +752,6 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
           ...(adv.cves && adv.cves.length > 0 ? { cve: adv.cves[0] } : {}),
           ...(adv.cwe && adv.cwe.length > 0 ? { cwe: adv.cwe } : {}),
         });
-      } else if (entry.type === "auditSummary" && entry.data) {
-        const v = entry.data.vulnerabilities ?? {};
-        summaryTotal =
-          (v.critical ?? 0) + (v.high ?? 0) + (v.moderate ?? 0) + (v.low ?? 0) + (v.info ?? 0);
-        critical = v.critical ?? 0;
-        high = v.high ?? 0;
-        moderate = v.moderate ?? 0;
-        low = v.low ?? 0;
-        info = v.info ?? 0;
       }
     } catch {
       // skip non-JSON lines
@@ -827,15 +800,6 @@ export function parseYarnListJson(jsonStr: string): NpmList {
         for (const tree of trees) {
           const [name, dep] = parseTreeNode(tree);
           deps[name] = dep;
-        }
-
-        function countDeps(d: Record<string, NpmListDep>): number {
-          let count = 0;
-          for (const dep of Object.values(d)) {
-            count++;
-            if (dep.dependencies) count += countDeps(dep.dependencies);
-          }
-          return count;
         }
 
         return {

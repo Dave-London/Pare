@@ -51,7 +51,6 @@ describe("formatPipInstall", () => {
       success: true,
       installed: [],
       alreadySatisfied: true,
-
     };
     expect(formatPipInstall(data)).toBe("All requirements already satisfied.");
   });
@@ -64,7 +63,6 @@ describe("formatPipInstall", () => {
         { name: "requests", version: "2.31.0" },
       ],
       alreadySatisfied: false,
-
     };
     const output = formatPipInstall(data);
     expect(output).toContain("Installed 2 packages:");
@@ -77,7 +75,6 @@ describe("formatPipInstall", () => {
       success: false,
       installed: [],
       alreadySatisfied: false,
-
     };
     expect(formatPipInstall(data)).toBe("pip install failed.");
   });
@@ -88,7 +85,6 @@ describe("formatMypy", () => {
     const data: MypyResult = {
       success: true,
       diagnostics: [],
-
     };
     expect(formatMypy(data)).toBe("mypy: no errors found.");
   });
@@ -112,7 +108,6 @@ describe("formatMypy", () => {
           message: "Revealed type is 'builtins.str'",
         },
       ],
-
     };
     const output = formatMypy(data);
     expect(output).toContain("mypy: 1 errors, 0 warnings, 1 notes");
@@ -149,7 +144,6 @@ describe("formatRuff", () => {
     const data: RuffResult = {
       success: true,
       diagnostics: [],
-
     };
     expect(formatRuff(data)).toBe("ruff: no issues found.");
   });
@@ -175,7 +169,6 @@ describe("formatRuff", () => {
           fixable: false,
         },
       ],
-
     };
     const output = formatRuff(data);
     expect(output).toContain("ruff: 2 issues (1 fixable)");
@@ -189,7 +182,6 @@ describe("formatPipAudit", () => {
     const data: PipAuditResult = {
       success: true,
       vulnerabilities: [],
-
     };
     expect(formatPipAudit(data)).toBe("No vulnerabilities found.");
   });
@@ -213,7 +205,6 @@ describe("formatPipAudit", () => {
           fixVersions: [],
         },
       ],
-
     };
     const output = formatPipAudit(data);
     expect(output).toContain("2 vulnerabilities:");
@@ -260,7 +251,6 @@ describe("formatMypy — edge cases", () => {
           message: "Unused type: ignore comment",
         },
       ],
-
     };
     const output = formatMypy(data);
     expect(output).toContain("lib.py:5:10 warning: Unused type: ignore comment");
@@ -366,7 +356,6 @@ describe("formatPipList", () => {
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
       ],
-
     };
     const output = formatPipList(data);
     expect(output).toContain("2 packages installed:");
@@ -953,7 +942,6 @@ describe("formatPoetryCompact", () => {
   it("formats failed action", () => {
     const data = compactPoetryMap({
       success: false,
-
     } as PoetryResult);
     expect(formatPoetryCompact(data)).toBe("poetry: failed.");
   });
@@ -981,7 +969,6 @@ describe("formatMypy — notes separated", () => {
         { file: "b.py", line: 2, severity: "warning", message: "warn", code: "unused-ignore" },
         { file: "c.py", line: 3, severity: "note", message: "info" },
       ],
-
     };
     const output = formatMypy(data);
     expect(output).toContain("mypy: 1 errors, 1 warnings, 1 notes");

@@ -910,22 +910,6 @@ function mapSeverity(severity?: string): "error" | "warning" | "info" {
   return "warning";
 }
 
-function classifyLinter(
-  linter: string,
-): "bug-risk" | "style" | "performance" | "security" | "complexity" | "other" {
-  const name = linter.toLowerCase();
-  if (["gosec"].includes(name)) return "security";
-  if (["govet", "staticcheck", "typecheck", "errcheck", "ineffassign", "nilerr"].includes(name)) {
-    return "bug-risk";
-  }
-  if (["gocyclo", "cyclop", "funlen", "nestif", "maintidx"].includes(name)) return "complexity";
-  if (["prealloc", "perfsprint", "makezero", "unconvert"].includes(name)) return "performance";
-  if (["gofmt", "goimports", "revive", "stylecheck", "whitespace", "misspell"].includes(name)) {
-    return "style";
-  }
-  return "other";
-}
-
 interface GolangciLintJsonOutput {
   Issues?: Array<{
     FromLinter?: string;

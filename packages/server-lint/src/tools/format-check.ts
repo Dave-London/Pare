@@ -128,7 +128,6 @@ export function registerFormatCheckTool(server: McpServer) {
       const data = {
         formatted: result.exitCode === 0,
         files,
-        total: files.length,
       };
       return compactDualOutput(
         data,

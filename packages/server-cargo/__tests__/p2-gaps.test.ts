@@ -7,7 +7,6 @@ import {
   parseCargoDocOutput,
   parseCargoFmtOutput,
   parseCargoRemoveOutput,
-  parseCargoRunOutput,
   parseCargoTestOutput,
   detectSignalFromExitCode,
 } from "../src/lib/parsers.js";

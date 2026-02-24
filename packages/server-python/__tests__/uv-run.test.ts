@@ -29,7 +29,6 @@ describe("parseUvRun", () => {
     expect(result.stdout).toBe("output data\n");
     expect(result.stderr).toBe("warning: deprecated\n");
   });
-
 });
 
 describe("formatUvRun", () => {

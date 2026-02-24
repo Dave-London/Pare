@@ -400,15 +400,11 @@ describe("compactComposeDownMap", () => {
 
 describe("formatComposeDownCompact", () => {
   it("formats compact compose down", () => {
-    expect(formatComposeDownCompact({ success: true, stopped: 2 })).toBe(
-      "Compose down: 2 stopped",
-    );
+    expect(formatComposeDownCompact({ success: true, stopped: 2 })).toBe("Compose down: 2 stopped");
   });
 
   it("formats compact compose down failure", () => {
-    expect(formatComposeDownCompact({ success: false, stopped: 0 })).toBe(
-      "Compose down failed",
-    );
+    expect(formatComposeDownCompact({ success: false, stopped: 0 })).toBe("Compose down failed");
   });
 });
 

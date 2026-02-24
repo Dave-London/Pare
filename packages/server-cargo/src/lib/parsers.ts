@@ -38,8 +38,6 @@ export function parseCargoBuildJson(
 ): CargoBuildResult {
   const { diagnostics: rawDiagnostics, buildFinishedSuccess } = parseCompilerMessages(stdout);
   const diagnostics = deduplicateDiagnostics(rawDiagnostics);
-  const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
   // Gap #89: Use build-finished event's success field when available,
   // fall back to exit code

@@ -216,7 +216,7 @@ export function parseBuildOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  duration: number,
+  _duration: number,
 ): DockerBuild {
   const imageIdMatch =
     stdout.match(/writing image sha256:([a-f0-9]+)/i) ||
@@ -563,24 +563,9 @@ export function parsePullOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  image: string,
+  _image: string,
 ): DockerPull {
   const combined = stdout + "\n" + stderr;
-
-  // #119: Handle digest-only references (e.g., "nginx@sha256:abc123...")
-  const isDigestRef = image.includes("@sha256:");
-  let tag: string;
-  let imageName: string;
-
-  if (isDigestRef) {
-    const atIdx = image.indexOf("@");
-    imageName = image.slice(0, atIdx);
-    tag = image.slice(atIdx + 1); // "sha256:abc123..."
-  } else {
-    const parts = image.split(":");
-    tag = parts.length > 1 ? parts[parts.length - 1] : "latest";
-    imageName = parts.length > 1 ? parts.slice(0, -1).join(":") : image;
-  }
 
   // Extract digest from "Digest: sha256:abc123..."
   const digestMatch = combined.match(/Digest:\s*(sha256:[a-f0-9]+)/);

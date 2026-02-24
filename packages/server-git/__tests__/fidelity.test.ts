@@ -234,7 +234,7 @@ describe("fidelity: git branch", () => {
       .trim()
       .split("\n")
       .filter(Boolean)
-      .map((l) => l.replace(/^\*?\s+/, "").split(/\s+/)[0]);
+      .map((l) => l.replace(/^[*+]?\s+/, "").split(/\s+/)[0]);
 
     const branches = parseBranch(raw);
 

@@ -1464,26 +1464,26 @@ describe("parseAdd — newlyStaged (Gap #126)", () => {
     const statusStdout = "M  src/index.ts\nA  src/new.ts\n";
     const previousStagedFiles = new Set(["src/index.ts"]); // was already staged
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("all files are newly staged when none were previously staged", () => {
     const statusStdout = "M  a.ts\nA  b.ts\n";
     const previousStagedFiles = new Set<string>();
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("no files are newly staged when all were previously staged", () => {
     const statusStdout = "M  a.ts\nA  b.ts\n";
     const previousStagedFiles = new Set(["a.ts", "b.ts"]);
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("omits newlyStaged when previousStagedFiles is not provided", () => {
     const statusStdout = "M  a.ts\n";
-    const result = parseAdd(statusStdout);
+    parseAdd(statusStdout);
   });
 });
 
