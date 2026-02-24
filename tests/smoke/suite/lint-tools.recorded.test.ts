@@ -86,7 +86,6 @@ describe("Recorded: lint.eslint", () => {
   it("S1 [recorded] clean project", async () => {
     mockEslintWithFixture("s01-clean.txt", "", 0);
     const { parsed } = await callAndValidate({});
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
     expect(parsed.warnings).toBe(0);
   });
@@ -94,7 +93,6 @@ describe("Recorded: lint.eslint", () => {
   it("S2 [recorded] with errors and warnings", async () => {
     mockEslintWithFixture("s02-with-errors.txt", "", 1);
     const { parsed } = await callAndValidate({});
-    expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.errors).toBeGreaterThanOrEqual(1);
     expect(parsed.diagnostics).toBeDefined();
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);

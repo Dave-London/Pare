@@ -228,7 +228,7 @@ describe("Smoke: git.diff", () => {
   it("S1 [P0] unstaged changes in working tree", async () => {
     mockGit("5\t2\tsrc/index.ts\n3\t0\tsrc/utils.ts\n");
     const { parsed } = await callAndValidate({});
-    expect(parsed.totalFiles).toBe(2);
+    expect(parsed.files.length).toBe(2);
     expect(parsed.files[0].file).toBe("src/index.ts");
     expect(parsed.files[0].additions).toBe(5);
     expect(parsed.files[0].deletions).toBe(2);
@@ -247,7 +247,6 @@ describe("Smoke: git.diff", () => {
     mockGit("");
     const { parsed } = await callAndValidate({});
     expect(parsed.files).toEqual([]);
-    expect(parsed.totalFiles).toBe(0);
   });
 
   // ── S4: Flag injection in ref ──────────────────────────────────────
@@ -298,7 +297,7 @@ describe("Smoke: git.diff", () => {
     mockGit("1\t1\tsrc/index.ts\n"); // numstat call
     mockGit("diff --git a/src/index.ts b/src/index.ts\n@@ -1,3 +1,3 @@\n-old\n+new\n"); // patch call
     const { parsed } = await callAndValidate({ full: true });
-    expect(parsed.totalFiles).toBe(1);
+    expect(parsed.files.length).toBe(1);
     // Two git calls: numstat + patch
     expect(vi.mocked(git).mock.calls.length).toBe(2);
   });
@@ -426,7 +425,6 @@ describe("Smoke: git.log", () => {
     mockGit(entries.join("\n"));
     const { parsed } = await callAndValidate({});
     expect(parsed.commits.length).toBe(2);
-    expect(parsed.total).toBe(2);
     expect(parsed.commits[0].hashShort).toBe("aaa111");
     expect(parsed.commits[0].message).toBe("feat: first");
   });
@@ -444,7 +442,6 @@ describe("Smoke: git.log", () => {
     mockGit("");
     const { parsed } = await callAndValidate({});
     expect(parsed.commits).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // ── S4: Flag injection in ref ──────────────────────────────────────
@@ -586,7 +583,6 @@ describe("Smoke: git.log-graph", () => {
     mockGit("* abc1234 (HEAD -> main) initial commit\n* def5678 second commit\n");
     const { parsed } = await callAndValidate({});
     expect(parsed.commits.length).toBeGreaterThanOrEqual(2);
-    expect(parsed.total).toBe(2);
   });
 
   // ── S2: Empty repo ─────────────────────────────────────────────────
@@ -594,7 +590,6 @@ describe("Smoke: git.log-graph", () => {
     mockGit("");
     const { parsed } = await callAndValidate({});
     expect(parsed.commits).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // ── S3: Flag injection in ref ──────────────────────────────────────
@@ -667,7 +662,7 @@ describe("Smoke: git.log-graph", () => {
     mockGit("* abc1234 (HEAD -> main) initial commit\n| * def5678 feature branch\n");
     const { parsed } = await callAndValidate({});
     // Schema validation already done in callAndValidate
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
+    expect(parsed.commits.length).toBeGreaterThanOrEqual(1);
   });
 
   // ── S12: Flag injection in author ──────────────────────────────────

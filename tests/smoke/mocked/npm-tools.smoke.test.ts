@@ -137,7 +137,6 @@ describe("Smoke: npm.audit", () => {
     });
     mockRunPm(auditJson);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.summary.total).toBe(0);
     expect(parsed.vulnerabilities).toEqual([]);
   });
 
@@ -159,8 +158,6 @@ describe("Smoke: npm.audit", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.vulnerabilities.length).toBe(1);
     expect(parsed.vulnerabilities[0].name).toBe("lodash");
-    expect(parsed.summary.total).toBe(1);
-    expect(parsed.summary.high).toBe(1);
   });
 
   it("S3 [P0] nonexistent path", async () => {
@@ -610,8 +607,6 @@ describe("Smoke: npm.install", () => {
     mockRunPm(installOutput);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.added).toBe(150);
-    expect(parsed.packages).toBe(150);
-    expect(parsed.duration).toBeGreaterThanOrEqual(0);
   });
 
   it("S2 [P0] install specific package", async () => {
@@ -761,7 +756,6 @@ describe("Smoke: npm.list", () => {
     expect(parsed.name).toBe("my-project");
     expect(parsed.version).toBe("1.0.0");
     expect(parsed.dependencies).toBeDefined();
-    expect(parsed.total).toBe(2);
   });
 
   it("S2 [P0] empty project (no deps)", async () => {
@@ -772,7 +766,7 @@ describe("Smoke: npm.list", () => {
     });
     mockRunPm(listJson);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.total).toBe(0);
+    expect(Object.keys(parsed.dependencies ?? {}).length).toBe(0);
   });
 
   it("S3 [P0] no package.json", async () => {
@@ -822,7 +816,6 @@ describe("Smoke: npm.list", () => {
     const args = vi.mocked(runPm).mock.calls[0][1];
     expect(args).toContain("--depth=1");
     expect(parsed.dependencies!.express.dependencies).toBeDefined();
-    expect(parsed.total).toBe(2);
   });
 
   it("S9 [P1] packages filter", async () => {
@@ -881,7 +874,6 @@ describe("Smoke: npm.list", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     // pnpm merges workspace deps
     expect(parsed.dependencies).toBeDefined();
-    expect(parsed.total).toBeGreaterThanOrEqual(2);
   });
 
   it("S13 [P1] yarn list parsing", async () => {
@@ -899,7 +891,6 @@ describe("Smoke: npm.list", () => {
     mockRunPm(yarnListJson);
     const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
     expect(parsed.dependencies).toBeDefined();
-    expect(parsed.total).toBe(2);
   });
 
   it("S14 [P2] compact: false", async () => {
@@ -1042,9 +1033,8 @@ describe("Smoke: npm.nvm", () => {
     // Let's just test it doesn't throw and has structuredContent.
     const result = await handler({ action: "ls-remote" });
     expect(result).toHaveProperty("structuredContent");
-    const sc = result.structuredContent as { versions: unknown[]; total: number };
+    const sc = result.structuredContent as { versions: unknown[] };
     expect(sc.versions.length).toBeGreaterThan(0);
-    expect(sc.total).toBeGreaterThan(0);
   });
 
   it("S10 [P1] action: version", async () => {
@@ -1070,7 +1060,7 @@ describe("Smoke: npm.nvm", () => {
     ].join("\n");
     mockRun(lsRemoteOutput);
     const result = await handler({ action: "ls-remote", majorVersions: 2 });
-    const sc = result.structuredContent as { versions: Array<{ version: string }>; total: number };
+    const sc = result.structuredContent as { versions: Array<{ version: string }> };
     // Should only have v22 and v20 (last 2 major versions)
     const majors = new Set(sc.versions.map((v) => v.version.match(/^v(\d+)/)?.[1]));
     expect(majors.size).toBeLessThanOrEqual(2);
@@ -1139,21 +1129,19 @@ describe("Smoke: npm.outdated", () => {
     mockRunPm(outdatedJson, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.packages.length).toBe(2);
-    expect(parsed.total).toBe(2);
   });
 
   it("S2 [P0] all deps up to date", async () => {
     mockRunPm("{}", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.packages).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S3 [P0] no package.json", async () => {
     // outdated parses result.stdout || "{}" so it won't throw, just returns empty
     mockRunPm("", "npm ERR! code ELSPROBLEMS", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
-    expect(parsed.total).toBe(0);
+    expect(parsed.packages).toEqual([]);
   });
 
   it("S4 [P0] flag injection via filter", async () => {
@@ -1353,12 +1341,10 @@ describe("Smoke: npm.run", () => {
   it("S14 [P0] schema validation", async () => {
     mockRunPm("Build OK", "some warnings", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project", script: "build" });
-    expect(parsed.script).toBe("build");
     expect(parsed.success).toBe(true);
     expect(parsed.stdout).toBe("Build OK");
     expect(parsed.stderr).toBe("some warnings");
     expect(parsed.timedOut).toBe(false);
-    expect(typeof parsed.duration).toBe("number");
   });
 });
 
@@ -1397,14 +1383,12 @@ describe("Smoke: npm.search", () => {
     mockNpm(searchJson);
     const { parsed } = await callAndValidate({ query: "express" });
     expect(parsed.packages.length).toBe(2);
-    expect(parsed.total).toBe(2);
   });
 
   it("S2 [P0] search with no results", async () => {
     mockNpm("[]");
     const { parsed } = await callAndValidate({ query: "zzz-nonexistent-pkg-xyz-123" });
     expect(parsed.packages).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S3 [P0] flag injection via query", async () => {
@@ -1602,7 +1586,6 @@ describe("Smoke: npm.test", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
     expect(parsed.timedOut).toBe(false);
-    expect(typeof parsed.duration).toBe("number");
     expect(typeof parsed.exitCode).toBe("number");
     expect(typeof parsed.stdout).toBe("string");
     expect(typeof parsed.stderr).toBe("string");

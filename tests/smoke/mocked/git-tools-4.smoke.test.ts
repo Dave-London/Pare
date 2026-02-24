@@ -85,7 +85,7 @@ describe("Smoke: git.show", () => {
     expect(parsed.date).toContain("2 hours ago");
     expect(parsed.message).toContain("feat: add new feature");
     expect(parsed.diff).toBeDefined();
-    expect(parsed.diff!.totalFiles).toBeGreaterThanOrEqual(1);
+    expect(parsed.diff!.files.length).toBeGreaterThanOrEqual(1);
   });
 
   // S2: Show specific commit (compact: false for full data)
@@ -251,7 +251,6 @@ describe("Smoke: git.stash", () => {
     mockGit("Saved working directory and index state WIP on main: abc1234 initial commit", "", 0);
 
     const { parsed } = await callAndValidate({ action: "push" });
-    expect(parsed.action).toBe("push");
     expect(parsed.success).toBe(true);
     expect(parsed.stashRef).toBe("stash@{0}");
   });
@@ -265,7 +264,6 @@ describe("Smoke: git.stash", () => {
     );
 
     const { parsed } = await callAndValidate({ action: "pop" });
-    expect(parsed.action).toBe("pop");
     expect(parsed.success).toBe(true);
     expect(parsed.stashRef).toBe("stash@{0}");
   });
@@ -275,7 +273,6 @@ describe("Smoke: git.stash", () => {
     mockGit("", "No local changes to save", 1);
 
     const { parsed } = await callAndValidate({ action: "push" });
-    expect(parsed.action).toBe("push");
     expect(parsed.success).toBe(false);
     expect(parsed.reason).toBe("no-local-changes");
   });
@@ -290,7 +287,6 @@ describe("Smoke: git.stash", () => {
     mockGit("On branch main\nChanges not staged for commit:\n  modified: file.ts\n", "", 0);
 
     const { parsed } = await callAndValidate({ action: "apply" });
-    expect(parsed.action).toBe("apply");
     expect(parsed.success).toBe(true);
   });
 
@@ -299,7 +295,6 @@ describe("Smoke: git.stash", () => {
     mockGit("Dropped stash@{0} (abc1234)", "", 0);
 
     const { parsed } = await callAndValidate({ action: "drop", index: 0 });
-    expect(parsed.action).toBe("drop");
     expect(parsed.success).toBe(true);
     expect(parsed.stashRef).toBe("stash@{0}");
 
@@ -312,7 +307,6 @@ describe("Smoke: git.stash", () => {
     mockGit("", "", 0);
 
     const { parsed } = await callAndValidate({ action: "clear" });
-    expect(parsed.action).toBe("clear");
     expect(parsed.success).toBe(true);
   });
 
@@ -325,7 +319,6 @@ describe("Smoke: git.stash", () => {
     );
 
     const { parsed } = await callAndValidate({ action: "show", index: 0 });
-    expect(parsed.action).toBe("show");
     expect(parsed.success).toBe(true);
     expect(parsed.diffStat).toBeDefined();
     expect(parsed.diffStat!.filesChanged).toBe(1);
@@ -369,7 +362,6 @@ describe("Smoke: git.stash", () => {
       action: "branch",
       branchName: "stash-branch",
     });
-    expect(parsed.action).toBe("branch");
     expect(parsed.success).toBe(true);
     expect(parsed.branchName).toBe("stash-branch");
   });
@@ -383,7 +375,6 @@ describe("Smoke: git.stash", () => {
     );
 
     const { parsed } = await callAndValidate({ action: "pop" });
-    expect(parsed.action).toBe("pop");
     expect(parsed.success).toBe(false);
     expect(parsed.conflictFiles).toBeDefined();
     expect(parsed.conflictFiles!.length).toBeGreaterThanOrEqual(1);
@@ -447,7 +438,6 @@ describe("Smoke: git.stash-list", () => {
     );
 
     const { parsed } = await callAndValidate({ compact: false });
-    expect(parsed.total).toBe(2);
     expect(parsed.stashes.length).toBe(2);
     // Check first stash has expected structure
     const first = parsed.stashes[0] as Record<string, unknown>;
@@ -460,7 +450,6 @@ describe("Smoke: git.stash-list", () => {
     mockGit("");
 
     const { parsed } = await callAndValidate({});
-    expect(parsed.total).toBe(0);
     expect(parsed.stashes).toEqual([]);
   });
 
@@ -507,7 +496,7 @@ describe("Smoke: git.stash-list", () => {
     mockGit(" src/index.ts | 5 +++--\n 1 file changed, 3 insertions(+), 2 deletions(-)\n");
 
     const { parsed } = await callAndValidate({ includeSummary: true, compact: false });
-    expect(parsed.total).toBe(1);
+    expect(parsed.stashes.length).toBe(1);
     const first = parsed.stashes[0] as Record<string, unknown>;
     expect(first).toHaveProperty("files", 1);
     expect(first).toHaveProperty("summary");
@@ -536,7 +525,7 @@ describe("Smoke: git.stash-list", () => {
     mockGit("stash@{0}\tWIP on main: abc1234 msg\t2024-01-15 10:00:00 +0000\n");
 
     const { parsed } = await callAndValidate({ compact: false });
-    expect(parsed.total).toBe(1);
+    expect(parsed.stashes.length).toBe(1);
     const first = parsed.stashes[0] as Record<string, unknown>;
     expect(first).toHaveProperty("date");
     expect(first).toHaveProperty("branch");
@@ -551,7 +540,6 @@ describe("Smoke: git.stash-list", () => {
     );
 
     const { parsed } = await callAndValidate({});
-    expect(parsed.total).toBe(3);
     expect(parsed.stashes.length).toBe(3);
   });
 
@@ -592,7 +580,6 @@ describe("Smoke: git.tag", () => {
 
     const { parsed } = await callAndValidate({});
     expect(parsed.tags).toBeDefined();
-    expect(parsed.total).toBe(3);
     expect(parsed.tags!.length).toBe(3);
   });
 
@@ -652,7 +639,6 @@ describe("Smoke: git.tag", () => {
 
     const { parsed } = await callAndValidate({});
     expect(parsed.tags).toBeDefined();
-    expect(parsed.total).toBe(0);
     expect(parsed.tags!.length).toBe(0);
   });
 
@@ -717,7 +703,7 @@ describe("Smoke: git.tag", () => {
 
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.tags).toBeDefined();
-    expect(parsed.total).toBe(2);
+    expect(parsed.tags!.length).toBe(2);
     const first = parsed.tags![0] as Record<string, unknown>;
     expect(first).toHaveProperty("date");
     expect(first).toHaveProperty("tagType");
@@ -732,7 +718,7 @@ describe("Smoke: git.tag", () => {
 
     const { parsed } = await callAndValidate({});
     expect(parsed.tags).toBeDefined();
-    expect(parsed.total).toBe(2);
+    expect(parsed.tags!.length).toBe(2);
   });
 
   // S15: Delete without name throws
@@ -787,8 +773,8 @@ describe("Smoke: git.worktree", () => {
 
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.worktrees).toBeDefined();
-    expect(parsed.total).toBe(2);
     const wts = parsed.worktrees as Array<Record<string, unknown>>;
+    expect(wts.length).toBe(2);
     expect(wts[0]).toHaveProperty("path", "/home/user/project");
     expect(wts[0]).toHaveProperty("branch", "main");
     expect(wts[1]).toHaveProperty("branch", "feature");
@@ -949,7 +935,7 @@ describe("Smoke: git.worktree", () => {
 
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.worktrees).toBeDefined();
-    expect(parsed.total).toBe(1);
+    expect((parsed.worktrees as Array<Record<string, unknown>>).length).toBe(1);
     const wt = (parsed.worktrees as Array<Record<string, unknown>>)[0];
     expect(wt).toHaveProperty("head");
     expect(wt).toHaveProperty("bare");
@@ -964,7 +950,7 @@ describe("Smoke: git.worktree", () => {
 
     const { parsed: listParsed } = await callAndValidate({});
     expect(listParsed.worktrees).toBeDefined();
-    expect(listParsed.total).toBe(1);
+    expect((listParsed.worktrees as unknown[]).length).toBe(1);
 
     // Test mutate output
     vi.clearAllMocks();

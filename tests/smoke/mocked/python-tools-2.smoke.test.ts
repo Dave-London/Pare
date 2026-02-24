@@ -102,7 +102,6 @@ describe("Smoke: poetry", () => {
     mockRunner(vi.mocked(poetryRunner), POETRY_INSTALL_SUCCESS, "", 0);
     const { parsed } = await callAndValidate({ action: "install", path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.action).toBe("install");
   });
 
   // S2 [P0] Show packages
@@ -110,7 +109,6 @@ describe("Smoke: poetry", () => {
     mockRunner(vi.mocked(poetryRunner), POETRY_SHOW_OUTPUT, "", 0);
     const { parsed } = await callAndValidate({ action: "show", path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.action).toBe("show");
   });
 
   // S3 [P0] No pyproject.toml
@@ -159,7 +157,6 @@ describe("Smoke: poetry", () => {
     mockRunner(vi.mocked(poetryRunner), POETRY_CHECK_OUTPUT, "", 0);
     const { parsed } = await callAndValidate({ action: "check" });
     expect(parsed.success).toBe(true);
-    expect(parsed.action).toBe("check");
   });
 
   // S10 [P2] Dry run install
@@ -370,7 +367,8 @@ describe("Smoke: pytest", () => {
   it("S3 [P0] no tests found returns total 0", async () => {
     mockRunner(vi.mocked(pytestRunner), PYTEST_NO_TESTS, "", 5);
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
-    expect(parsed.total).toBe(0);
+    expect(parsed.passed).toBe(0);
+    expect(parsed.failed).toBe(0);
   });
 
   // S4 [P0] Flag injection on targets
@@ -488,8 +486,6 @@ describe("Smoke: ruff-check", () => {
     mockRunner(vi.mocked(ruff), RUFF_CLEAN, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
-    expect(parsed.fixable).toBe(0);
   });
 
   // S2 [P0] Project with violations
@@ -497,7 +493,6 @@ describe("Smoke: ruff-check", () => {
     mockRunner(vi.mocked(ruff), RUFF_VIOLATIONS, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.diagnostics).toBeDefined();
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);
   });
@@ -507,7 +502,6 @@ describe("Smoke: ruff-check", () => {
     mockRunner(vi.mocked(ruff), "[]", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S4 [P0] Flag injection on targets
@@ -557,12 +551,13 @@ describe("Smoke: ruff-check", () => {
     expect(cliArgs).toContain("--fix");
   });
 
-  // S12 [P1] Fixable count
-  it("S12 [P1] fixable count is correctly counted", async () => {
+  // S12 [P1] Fixable diagnostics present
+  it("S12 [P1] fixable diagnostics are correctly identified", async () => {
     mockRunner(vi.mocked(ruff), RUFF_VIOLATIONS, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    // The parser determines fixable count from the JSON data
-    expect(typeof parsed.fixable).toBe("number");
+    // fixable removed from schema; check diagnostics have fixable property
+    expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.some((d) => d.fixable)).toBe(true);
   });
 
   // S13 [P0] Schema validation

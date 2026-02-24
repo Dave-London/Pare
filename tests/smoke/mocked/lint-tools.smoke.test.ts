@@ -254,7 +254,6 @@ describe("Smoke: lint (ESLint)", () => {
   it("S1 [P0] clean project, no lint errors", async () => {
     mockRunner(eslint, ESLINT_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
     expect(parsed.warnings).toBe(0);
   });
@@ -364,7 +363,6 @@ describe("Smoke: format-check (Prettier)", () => {
     mockRunner(prettier, "", "", 0);
     const { parsed } = await callAndValidate({ path: "/project" });
     expect(parsed.formatted).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   it("S2 [P0] unformatted files exist", async () => {
@@ -372,7 +370,6 @@ describe("Smoke: format-check (Prettier)", () => {
     const { parsed } = await callAndValidate({ path: "/project", compact: false });
     expect(parsed.formatted).toBe(false);
     expect(parsed.files!.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   it("S3 [P0] Prettier not installed throws error", async () => {
@@ -549,7 +546,6 @@ describe("Smoke: biome-check", () => {
   it("S1 [P0] clean project", async () => {
     mockRunner(biome, BIOME_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
     expect(parsed.warnings).toBe(0);
   });
@@ -558,7 +554,6 @@ describe("Smoke: biome-check", () => {
     mockRunner(biome, BIOME_WITH_ISSUES);
     const { parsed } = await callAndValidate({ path: "/project", compact: false });
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   it("S3 [P0] Biome not installed throws error", async () => {
@@ -743,7 +738,6 @@ describe("Smoke: oxlint", () => {
   it("S1 [P0] clean project", async () => {
     mockRunner(oxlintCmd, OXLINT_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
   });
 
@@ -847,7 +841,6 @@ describe("Smoke: hadolint", () => {
   it("S1 [P0] clean Dockerfile", async () => {
     mockRunner(hadolintCmd, HADOLINT_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
   });
 
@@ -855,7 +848,6 @@ describe("Smoke: hadolint", () => {
     mockRunner(hadolintCmd, HADOLINT_WITH_ISSUES);
     const { parsed } = await callAndValidate({ path: "/project", compact: false });
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   it("S3 [P0] Hadolint not installed throws error", async () => {
@@ -973,7 +965,6 @@ describe("Smoke: shellcheck", () => {
   it("S1 [P0] clean shell script", async () => {
     mockRunner(shellcheckCmd, SHELLCHECK_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project", patterns: ["script.sh"] });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
   });
 
@@ -990,7 +981,6 @@ describe("Smoke: shellcheck", () => {
   it("S3 [P0] no shell files found returns empty result", async () => {
     vi.mocked(resolveShellcheckPatterns).mockResolvedValue([]);
     const { parsed } = await callAndValidate({ path: "/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.filesChecked).toBe(0);
   });
 
@@ -1097,7 +1087,6 @@ describe("Smoke: stylelint", () => {
   it("S1 [P0] clean CSS files", async () => {
     mockRunner(stylelintCmd, STYLELINT_CLEAN);
     const { parsed } = await callAndValidate({ path: "/project", patterns: ["*.css"] });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
   });
 

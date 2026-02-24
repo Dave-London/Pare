@@ -1021,7 +1021,6 @@ describe("Smoke: nx", () => {
       path: "/tmp/project",
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.passed).toBeGreaterThan(0);
   });
 
@@ -1032,7 +1031,7 @@ describe("Smoke: nx", () => {
       target: "build",
       path: "/tmp/project",
     });
-    expect(parsed.total).toBeGreaterThan(0);
+    expect(parsed.passed).toBeGreaterThan(0);
   });
 
   // S3 [P0] Nx not installed
