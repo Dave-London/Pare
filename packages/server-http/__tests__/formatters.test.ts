@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   formatHttpResponse,
   formatHttpHeadResponse,
+  schemaResponseMap,
+  schemaHeadResponseMap,
   compactResponseMap,
   formatResponseCompact,
   compactHeadResponseMap,
@@ -248,6 +250,126 @@ describe("formatHttpHeadResponse", () => {
     expect(output).toContain("TLS verify result: 0");
   });
 });
+
+// -- Schema maps (strip Internal-only fields for structuredContent) -----------
+
+describe("schemaResponseMap", () => {
+  it("keeps schema fields and strips Internal-only fields (uploadSize, scheme, tlsVerifyResult)", () => {
+    const data: HttpResponseInternal = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: { "content-type": "application/json" },
+      body: '{"ok":true}',
+      timing: {
+        total: 0.5,
+        details: { namelookup: 0.01, connect: 0.05 },
+      },
+      size: 13,
+      contentType: "application/json",
+      uploadSize: 128,
+      scheme: "https",
+      tlsVerifyResult: 0,
+      tlsVerified: true,
+      redirectChain: [{ status: 302, location: "https://example.com/final" }],
+      finalUrl: "https://example.com/final",
+    };
+
+    const result = schemaResponseMap(data);
+
+    expect(result.status).toBe(200);
+    expect(result.statusText).toBe("OK");
+    expect(result.httpVersion).toBe("2");
+    expect(result.headers).toEqual({ "content-type": "application/json" });
+    expect(result.body).toBe('{"ok":true}');
+    expect(result.size).toBe(13);
+    expect(result.contentType).toBe("application/json");
+    expect(result.tlsVerified).toBe(true);
+    expect(result.redirectChain).toHaveLength(1);
+    expect(result.finalUrl).toBe("https://example.com/final");
+    expect(result.timing.total).toBe(0.5);
+    // Internal-only fields stripped
+    expect(result).not.toHaveProperty("uploadSize");
+    expect(result).not.toHaveProperty("scheme");
+    expect(result).not.toHaveProperty("tlsVerifyResult");
+  });
+
+  it("handles minimal response without optional fields", () => {
+    const data: HttpResponseInternal = {
+      status: 204,
+      statusText: "No Content",
+      headers: {},
+      timing: { total: 0.1 },
+      size: 0,
+    };
+
+    const result = schemaResponseMap(data);
+
+    expect(result.status).toBe(204);
+    expect(result.size).toBe(0);
+    expect(result.body).toBeUndefined();
+    expect(result.redirectChain).toBeUndefined();
+    expect(result.finalUrl).toBeUndefined();
+    expect(result.tlsVerified).toBeUndefined();
+  });
+});
+
+describe("schemaHeadResponseMap", () => {
+  it("keeps schema fields and strips Internal-only fields (scheme, tlsVerifyResult)", () => {
+    const data: HttpHeadResponseInternal = {
+      status: 200,
+      statusText: "OK",
+      httpVersion: "2",
+      headers: { "content-type": "text/html" },
+      timing: {
+        total: 0.15,
+        details: { namelookup: 0.01, connect: 0.03 },
+      },
+      contentType: "text/html",
+      contentLength: 5000,
+      scheme: "https",
+      tlsVerifyResult: 0,
+      tlsVerified: true,
+      redirectChain: [{ status: 301, location: "https://example.com/" }],
+      finalUrl: "https://example.com/",
+    };
+
+    const result = schemaHeadResponseMap(data);
+
+    expect(result.status).toBe(200);
+    expect(result.statusText).toBe("OK");
+    expect(result.httpVersion).toBe("2");
+    expect(result.headers).toEqual({ "content-type": "text/html" });
+    expect(result.contentType).toBe("text/html");
+    expect(result.contentLength).toBe(5000);
+    expect(result.tlsVerified).toBe(true);
+    expect(result.redirectChain).toHaveLength(1);
+    expect(result.finalUrl).toBe("https://example.com/");
+    expect(result.timing.total).toBe(0.15);
+    // Internal-only fields stripped
+    expect(result).not.toHaveProperty("scheme");
+    expect(result).not.toHaveProperty("tlsVerifyResult");
+  });
+
+  it("handles minimal HEAD response without optional fields", () => {
+    const data: HttpHeadResponseInternal = {
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      timing: { total: 0.1 },
+    };
+
+    const result = schemaHeadResponseMap(data);
+
+    expect(result.status).toBe(200);
+    expect(result.contentType).toBeUndefined();
+    expect(result.contentLength).toBeUndefined();
+    expect(result.redirectChain).toBeUndefined();
+    expect(result.tlsVerified).toBeUndefined();
+  });
+});
+
+// -- Compact mappers and formatters -------------------------------------------
 
 describe("compactResponseMap", () => {
   it("maps full response to compact form (no headers, no body)", () => {

@@ -17,36 +17,36 @@
 
 | Package               | Lines  | Branches | Functions | Tests | Status |
 | --------------------- | ------ | -------- | --------- | ----- | ------ |
-| `@paretools/shared`   | 90.30% | 84.21%   | 92.72%    | —     | PASS   |
-| `@paretools/git`      | —      | —        | —         | 664   | NOTE   |
-| `@paretools/github`   | 81.94% | 61.39%   | 86.28%    | —     | WARN   |
-| `@paretools/docker`   | 92.14% | 72.99%   | 96.59%    | —     | PASS   |
-| `@paretools/python`   | 89.17% | 75.20%   | 89.16%    | —     | PASS   |
-| `@paretools/cargo`    | 96.72% | 80.16%   | 100%      | —     | PASS   |
-| `@paretools/go`       | 89.72% | 78.16%   | 93.33%    | —     | PASS   |
-| `@paretools/npm`      | 92.19% | 75.88%   | 94.20%    | —     | PASS   |
-| `@paretools/lint`     | 97.05% | 83.28%   | 100%      | 265   | PASS   |
-| `@paretools/build`    | 92.66% | 75.04%   | 92.53%    | —     | PASS   |
-| `@paretools/k8s`      | 96.67% | 76.81%   | 98.64%    | —     | PASS   |
-| `@paretools/search`   | 88.80% | 72.61%   | 82.75%    | —     | PASS   |
-| `@paretools/http`     | 92.54% | 78.42%   | 86.36%    | —     | PASS   |
-| `@paretools/test`     | 83.05% | 78.43%   | 86.95%    | —     | PASS   |
-| `@paretools/security` | 87.41% | 75.30%   | 88.46%    | —     | PASS   |
-| `@paretools/make`     | 98.33% | 87.84%   | 100%      | —     | PASS   |
-| `@paretools/process`  | 90.00% | 83.33%   | 100%      | —     | PASS   |
-| `@paretools/init`     | 91.78% | 83.60%   | 84.61%    | —     | PASS   |
-| `@paretools/bazel`    | 81.09% | 57.75%   | 89.74%    | —     | WARN   |
-| `@paretools/bun`      | 98.76% | 78.41%   | 100%      | —     | PASS   |
-| `@paretools/cmake`    | 87.29% | 64.41%   | 92.59%    | —     | WARN   |
-| `@paretools/db`       | 96.44% | 64.75%   | 97.91%    | —     | WARN   |
-| `@paretools/deno`     | 86.63% | 66.27%   | 72.22%    | —     | WARN   |
-| `@paretools/dotnet`   | 83.87% | 62.70%   | 79.59%    | —     | WARN   |
-| `@paretools/infra`    | 96.01% | 73.88%   | 97.84%    | —     | PASS   |
-| `@paretools/jvm`      | 89.08% | 75.28%   | 89.18%    | —     | PASS   |
-| `@paretools/nix`      | 96.13% | 88.07%   | 100%      | —     | PASS   |
-| `@paretools/remote`   | 97.75% | 88.11%   | 100%      | —     | PASS   |
-| `@paretools/ruby`     | 94.44% | 88.57%   | 100%      | —     | PASS   |
-| `@paretools/swift`    | 95.91% | 72.41%   | 97.50%    | —     | PASS   |
+| `@paretools/shared`   | 90.30% | 84.21%   | 92.72%    | 262   | PASS   |
+| `@paretools/git`      | —      | —        | —         | 637   | NOTE   |
+| `@paretools/github`   | 81.94% | 61.39%   | 86.28%    | 492   | WARN   |
+| `@paretools/docker`   | 92.14% | 72.99%   | 96.59%    | 492   | PASS   |
+| `@paretools/python`   | 89.17% | 75.20%   | 89.16%    | 422   | PASS   |
+| `@paretools/cargo`    | 96.72% | 80.16%   | 100%      | 340   | PASS   |
+| `@paretools/go`       | 89.72% | 78.16%   | 93.33%    | 346   | PASS   |
+| `@paretools/npm`      | 92.19% | 75.88%   | 94.20%    | 350   | PASS   |
+| `@paretools/lint`     | 97.05% | 83.28%   | 100%      | 264   | PASS   |
+| `@paretools/build`    | 92.66% | 75.04%   | 92.53%    | 243   | PASS   |
+| `@paretools/k8s`      | 96.67% | 76.81%   | 98.64%    | 301   | PASS   |
+| `@paretools/search`   | 88.80% | 72.61%   | 82.75%    | 79    | PASS   |
+| `@paretools/http`     | 92.54% | 78.42%   | 86.36%    | 114   | PASS   |
+| `@paretools/test`     | 83.05% | 78.43%   | 86.95%    | 298   | PASS   |
+| `@paretools/security` | 87.41% | 75.30%   | 88.46%    | 71    | PASS   |
+| `@paretools/make`     | 98.33% | 87.84%   | 100%      | 92    | PASS   |
+| `@paretools/process`  | 90.00% | 83.33%   | 100%      | 76    | PASS   |
+| `@paretools/init`     | 91.78% | 83.60%   | 84.61%    | 122   | PASS   |
+| `@paretools/bazel`    | 81.09% | 57.75%   | 89.74%    | 91    | WARN   |
+| `@paretools/bun`      | 98.76% | 78.41%   | 100%      | 73    | PASS   |
+| `@paretools/cmake`    | 87.29% | 64.41%   | 92.59%    | 0     | WARN   |
+| `@paretools/db`       | 96.44% | 64.75%   | 97.91%    | 145   | WARN   |
+| `@paretools/deno`     | 86.63% | 66.27%   | 72.22%    | 133   | WARN   |
+| `@paretools/dotnet`   | 83.87% | 62.70%   | 79.59%    | 119   | WARN   |
+| `@paretools/infra`    | 96.01% | 73.88%   | 97.84%    | 164   | PASS   |
+| `@paretools/jvm`      | 89.08% | 75.28%   | 89.18%    | 95    | PASS   |
+| `@paretools/nix`      | 96.13% | 88.07%   | 100%      | 87    | PASS   |
+| `@paretools/remote`   | 97.75% | 88.11%   | 100%      | 52    | PASS   |
+| `@paretools/ruby`     | 94.44% | 88.57%   | 100%      | 80    | PASS   |
+| `@paretools/swift`    | 95.91% | 72.41%   | 97.50%    | 71    | PASS   |
 
 ## Packages Below Threshold
 
@@ -85,7 +85,7 @@ The vitest coverage-v8 provider crashes with ENOENT when collecting coverage for
 | Change                       | Impact                                           |
 | ---------------------------- | ------------------------------------------------ |
 | Total packages               | 16 → 30 publishable packages                     |
-| Total tests                  | 3,423 → ~6,000                                   |
+| Total tests                  | 3,423 → 6,111                                    |
 | Total test files             | 167 → 244                                        |
 | `@paretools/github` branches | 78.07% → 61.39% (more tools, fewer branch tests) |
 | `@paretools/lint` lines      | 97.74% → 97.05% (stable)                         |
@@ -102,7 +102,7 @@ Of these, 8 meet all thresholds and 5 are below the branch threshold. All meet l
 
 ## Test Statistics
 
-- **Total tests:** ~6,000
+- **Total tests:** 6,111
 - **Test files:** 244
 - **Packages with tests:** 29/30 (tsconfig excluded)
 - **Framework:** vitest (unit + integration + fidelity)
