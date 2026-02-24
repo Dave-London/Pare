@@ -3,7 +3,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
-import { parseNvmOutput, parseNvmLsRemoteOutput, parseNvmExecOutput } from "../lib/parsers.js";
+import {
+  parseNvmOutput,
+  parseNvmLsRemoteOutput,
+  parseNvmExecOutput,
+  parseNvmAliases,
+} from "../lib/parsers.js";
 import {
   formatNvm,
   formatNvmLsRemote,
@@ -167,15 +172,12 @@ export function registerNvmTool(server: McpServer) {
         // Read .nvmrc for the required version
         const required = await readNvmrc();
 
-        return dualOutput(
-          {
-            ...parsed,
-            ...(which ? { which } : {}),
-            ...(arch ? { arch } : {}),
-            ...(required ? { required } : {}),
-          },
-          formatNvm,
-        );
+        const structuredData = {
+          ...parsed,
+          ...(which ? { which } : {}),
+          ...(required ? { required } : {}),
+        };
+        return dualOutput(structuredData, (d) => formatNvm(d, { arch }));
       }
 
       // ── action: list ──────────────────────────────────────────────────
@@ -194,6 +196,9 @@ export function registerNvmTool(server: McpServer) {
       }
 
       const parsed = parseNvmOutput(listResult.stdout, currentStdout);
+
+      // Extract aliases from list output for the human-readable formatter (display-only)
+      const aliases = parseNvmAliases(listResult.stdout);
 
       // Try to get which path and arch
       let which: string | undefined;
@@ -218,9 +223,8 @@ export function registerNvmTool(server: McpServer) {
         // Not critical
       }
 
-      return dualOutput(
-        { ...parsed, ...(which ? { which } : {}), ...(arch ? { arch } : {}) },
-        formatNvm,
+      return dualOutput({ ...parsed, ...(which ? { which } : {}) }, (d) =>
+        formatNvm(d, { aliases, arch }),
       );
     },
   );

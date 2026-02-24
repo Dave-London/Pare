@@ -12,7 +12,7 @@ describe("parseTestOutput", () => {
     expect(result.timedOut).toBe(false);
     expect(result.stdout).toContain("42 passed");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(3.5);
+    // duration was removed from structured output
   });
 
   it("parses failed test output", () => {
@@ -28,7 +28,7 @@ describe("parseTestOutput", () => {
     expect(result.timedOut).toBe(false);
     expect(result.stdout).toContain("3 failed");
     expect(result.stderr).toContain("FAIL");
-    expect(result.duration).toBe(4.2);
+    // duration was removed from structured output
   });
 
   it("handles no test script defined", () => {
@@ -84,9 +84,8 @@ describe("formatTest", () => {
       stderr: "",
       success: true,
       timedOut: false,
-      duration: 3.5,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 3.5);
     expect(output).toContain("Tests passed in 3.5s");
     expect(output).toContain("stdout:");
     expect(output).toContain("42 passed");
@@ -100,9 +99,8 @@ describe("formatTest", () => {
       stderr: "AssertionError: expected true to be false",
       success: false,
       timedOut: false,
-      duration: 4.2,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 4.2);
     expect(output).toContain("Tests failed (exit code 1) in 4.2s");
     expect(output).toContain("stderr:");
     expect(output).toContain("AssertionError");
@@ -115,9 +113,8 @@ describe("formatTest", () => {
       stderr: "",
       success: true,
       timedOut: false,
-      duration: 0.5,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 0.5);
     expect(output).toBe("Tests passed in 0.5s");
   });
 
@@ -128,9 +125,8 @@ describe("formatTest", () => {
       stderr: "Deprecation warning",
       success: true,
       timedOut: false,
-      duration: 2.0,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 2.0);
     expect(output).toContain("stdout:");
     expect(output).toContain("stderr:");
   });
@@ -162,7 +158,7 @@ describe("parseTestOutput error paths", () => {
     expect(result.timedOut).toBe(false);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(300.0);
+    // duration was removed from structured output
   });
 
   it("handles signal termination (SIGTERM)", () => {

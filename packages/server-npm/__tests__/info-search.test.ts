@@ -135,7 +135,6 @@ describe("parseSearchJson", () => {
 
     const result = parseSearchJson(json);
 
-    expect(result.total).toBe(2);
     expect(result.packages).toHaveLength(2);
     expect(result.packages[0].name).toBe("express");
     expect(result.packages[0].version).toBe("4.18.2");
@@ -161,7 +160,6 @@ describe("parseSearchJson", () => {
 
   it("handles empty search results", () => {
     const result = parseSearchJson("[]");
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -207,7 +205,6 @@ describe("parseSearchJson", () => {
   it("handles non-array JSON by returning empty results", () => {
     const json = JSON.stringify({ name: "not-an-array" });
     const result = parseSearchJson(json);
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -325,7 +322,6 @@ describe("formatSearch", () => {
           author: "TJ",
         },
       ],
-      total: 1,
     };
     const output = formatSearch(data);
     expect(output).toContain("1 packages found:");
@@ -333,14 +329,13 @@ describe("formatSearch", () => {
   });
 
   it("formats empty search results", () => {
-    const data: NpmSearch = { packages: [], total: 0 };
+    const data: NpmSearch = { packages: [] };
     expect(formatSearch(data)).toBe("No packages found.");
   });
 
   it("formats search results without author", () => {
     const data: NpmSearch = {
       packages: [{ name: "pkg", version: "1.0.0", description: "A package" }],
-      total: 1,
     };
     const output = formatSearch(data);
     expect(output).toContain("pkg@1.0.0 — A package");
@@ -362,10 +357,8 @@ describe("compactSearchMap", () => {
           date: "2022-10-08",
         },
       ],
-      total: 1,
     };
     const compact = compactSearchMap(data);
-    expect(compact.total).toBe(1);
     expect(compact.packages[0]).toEqual({
       name: "express",
       version: "4.18.2",
@@ -382,13 +375,12 @@ describe("formatSearchCompact", () => {
   it("formats compact search results", () => {
     const output = formatSearchCompact({
       packages: [{ name: "express", version: "4.18.2", description: "Fast web framework" }],
-      total: 1,
     });
     expect(output).toContain("1 packages found:");
     expect(output).toContain("express@4.18.2 — Fast web framework");
   });
 
   it("formats empty compact results", () => {
-    expect(formatSearchCompact({ packages: [], total: 0 })).toBe("No packages found.");
+    expect(formatSearchCompact({ packages: [] })).toBe("No packages found.");
   });
 });

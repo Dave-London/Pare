@@ -13,14 +13,12 @@ export const NpmInstallPackageSchema = z.object({
   action: z.enum(["added", "removed", "updated"]).describe("What happened to this package"),
 });
 
-/** Zod schema for structured npm install output including package counts, vulnerabilities, and duration. */
+/** Zod schema for structured npm install output including package counts and vulnerabilities. */
 export const NpmInstallSchema = z.object({
   packageManager: packageManagerField,
   added: z.number(),
   removed: z.number(),
   changed: z.number(),
-  duration: z.number(),
-  packages: z.number().describe("Total packages after install"),
   lockfileChanged: z
     .boolean()
     .optional()
@@ -56,18 +54,10 @@ export const NpmAuditVulnSchema = z.object({
   cwe: z.array(z.string()).optional().describe("CWE identifiers for weakness classification"),
 });
 
-/** Zod schema for structured npm audit output with vulnerability list and severity summary. */
+/** Zod schema for structured npm audit output with vulnerability list. */
 export const NpmAuditSchema = z.object({
   packageManager: packageManagerField,
   vulnerabilities: z.array(NpmAuditVulnSchema),
-  summary: z.object({
-    total: z.number(),
-    critical: z.number(),
-    high: z.number(),
-    moderate: z.number(),
-    low: z.number(),
-    info: z.number(),
-  }),
 });
 
 export type NpmAudit = z.infer<typeof NpmAuditSchema>;
@@ -87,7 +77,6 @@ export const NpmOutdatedEntrySchema = z.object({
 export const NpmOutdatedSchema = z.object({
   packageManager: packageManagerField,
   packages: z.array(NpmOutdatedEntrySchema),
-  total: z.number(),
 });
 
 export type NpmOutdated = z.infer<typeof NpmOutdatedSchema>;
@@ -127,20 +116,17 @@ export const NpmListSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Problems reported by npm ls (e.g., missing/extraneous/invalid deps)"),
-  total: z.number(),
 });
 
 export type NpmList = z.infer<typeof NpmListSchema>;
 
-/** Zod schema for structured npm run output with script name, exit code, and captured output. */
+/** Zod schema for structured npm run output with exit code and captured output. */
 export const NpmRunSchema = z.object({
   packageManager: packageManagerField,
-  script: z.string().describe("The script that was executed"),
   exitCode: z.number().describe("Process exit code (0 = success)"),
   stdout: z.string().describe("Standard output from the script"),
   stderr: z.string().describe("Standard error from the script"),
   success: z.boolean().describe("Whether the script exited with code 0"),
-  duration: z.number().describe("Execution duration in seconds"),
   timedOut: z.boolean().describe("Whether the script was killed due to timeout"),
 });
 
@@ -162,7 +148,6 @@ export const NpmTestSchema = z.object({
   stderr: z.string().describe("Standard error from the test run"),
   success: z.boolean().describe("Whether tests passed (exit code 0)"),
   timedOut: z.boolean().describe("Whether the test run timed out"),
-  duration: z.number().describe("Execution duration in seconds"),
   testResults: TestResultsSchema.optional().describe(
     "Parsed test counts from known frameworks (jest, vitest, mocha) — best-effort",
   ),
@@ -203,7 +188,6 @@ export const NpmInfoSchema = z.object({
   dist: z
     .object({
       tarball: z.string().optional(),
-      integrity: z.string().optional().describe("Subresource integrity hash"),
     })
     .optional(),
   engines: z
@@ -214,7 +198,7 @@ export const NpmInfoSchema = z.object({
     .record(z.string(), z.string())
     .optional()
     .describe("Peer dependencies that must be co-installed"),
-  deprecated: z.string().optional().describe("Deprecation message if package is deprecated"),
+  isDeprecated: z.boolean().optional().describe("Whether the package is deprecated"),
   repository: NpmRepositorySchema.optional().describe("Source code repository info"),
   keywords: z.array(z.string()).optional().describe("Package keywords for discovery"),
   versions: z.array(z.string()).optional().describe("All published versions"),
@@ -246,11 +230,6 @@ export const NpmSearchPackageSchema = z.object({
 export const NpmSearchSchema = z.object({
   packageManager: packageManagerField,
   packages: z.array(NpmSearchPackageSchema),
-  total: z.number(),
-  registryTotal: z
-    .number()
-    .optional()
-    .describe("Total matching packages in registry (may differ from returned count)"),
 });
 
 export type NpmSearch = z.infer<typeof NpmSearchSchema>;
@@ -270,10 +249,6 @@ export const NvmResultSchema = z.object({
   versions: z
     .array(NvmVersionEntrySchema)
     .describe("List of installed Node.js versions with optional LTS tags"),
-  aliases: z
-    .record(z.string(), z.string())
-    .optional()
-    .describe("NVM aliases mapped to their target (e.g., default -> v20.11.1)"),
   resolvedVersion: z
     .string()
     .optional()
@@ -284,7 +259,6 @@ export const NvmResultSchema = z.object({
     .describe("Requested version identifier used in `action: version`"),
   default: z.string().optional().describe("Default Node.js version (alias default)"),
   which: z.string().optional().describe("Filesystem path to the active Node.js binary"),
-  arch: z.string().optional().describe("Architecture of the active Node.js (e.g., x64, arm64)"),
   required: z
     .string()
     .optional()
@@ -307,7 +281,6 @@ export const NvmLsRemoteSchema = z.object({
   versions: z
     .array(NvmRemoteVersionSchema)
     .describe("Available remote Node.js versions (filtered to recent major releases)"),
-  total: z.number().describe("Total number of versions returned"),
 });
 
 export type NvmLsRemote = z.infer<typeof NvmLsRemoteSchema>;

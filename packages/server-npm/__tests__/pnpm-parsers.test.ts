@@ -20,8 +20,6 @@ describe("parsePnpmAuditJson", () => {
 
     const result = parsePnpmAuditJson(json);
 
-    expect(result.summary.total).toBe(1);
-    expect(result.summary.high).toBe(1);
     expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].name).toBe("lodash");
   });
@@ -51,7 +49,7 @@ describe("parsePnpmAuditJson", () => {
     expect(result.vulnerabilities[0].severity).toBe("moderate");
     expect(result.vulnerabilities[0].title).toBe("Cross-Site Scripting");
     expect(result.vulnerabilities[0].fixAvailable).toBe(true);
-    expect(result.summary.moderate).toBe(1);
+    expect(result.vulnerabilities[0].severity).toBe("moderate");
   });
 
   it("handles advisory with no patched versions (no fix available)", () => {
@@ -81,7 +79,7 @@ describe("parsePnpmAuditJson", () => {
     const result = parsePnpmAuditJson(json);
 
     expect(result.vulnerabilities).toHaveLength(0);
-    expect(result.summary.total).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(0);
   });
 });
 
@@ -98,7 +96,7 @@ describe("parseOutdatedJson with pnpm", () => {
 
     const result = parseOutdatedJson(json, "pnpm");
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages[0].name).toBe("turbo");
     expect(result.packages[0].current).toBe("2.8.3");
     expect(result.packages[0].latest).toBe("2.8.8");
@@ -124,7 +122,7 @@ describe("parseOutdatedJson with pnpm", () => {
 
     const result = parseOutdatedJson(json, "pnpm");
 
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages[0].name).toBe("express");
     expect(result.packages[0].type).toBe("dependencies");
     expect(result.packages[1].name).toBe("zod");
@@ -133,7 +131,6 @@ describe("parseOutdatedJson with pnpm", () => {
 
   it("handles empty array", () => {
     const result = parseOutdatedJson("[]", "pnpm");
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 });
@@ -142,19 +139,16 @@ describe("parseInstallOutput with pnpm-style output", () => {
   it("parses pnpm install output (similar to npm)", () => {
     // pnpm can output npm-compatible summary lines
     const output = "added 5 packages in 2s";
-    const result = parseInstallOutput(output, 2.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(5);
-    expect(result.packages).toBe(5);
-    expect(result.duration).toBe(2.0);
   });
 
   it("parses pnpm output with packages in line", () => {
     const output =
       "Packages: +52\n\nProgress: resolved 287, reused 235, downloaded 52, added 52\n\ndone in 3.5s\n\n52 packages in 3s";
-    const result = parseInstallOutput(output, 3.5);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(0); // pnpm uses "+52" format, not "added 52"
-    expect(result.packages).toBe(52);
   });
 });

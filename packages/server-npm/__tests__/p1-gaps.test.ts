@@ -110,8 +110,6 @@ describe("Gap #175: formatInstall with package details", () => {
       added: 2,
       removed: 0,
       changed: 0,
-      duration: 1.5,
-      packages: 100,
       packageDetails: [
         { name: "express", version: "4.18.2", action: "added" },
         { name: "zod", version: "3.25.0", action: "added" },
@@ -132,8 +130,6 @@ describe("Gap #175: formatInstall with package details", () => {
       added: 15,
       removed: 0,
       changed: 0,
-      duration: 2.0,
-      packages: 100,
       packageDetails: details,
     };
     const output = formatInstall(data);
@@ -157,7 +153,7 @@ describe("Gap #176: parsePnpmListJson", () => {
     const result = parsePnpmListJson(json);
     expect(result.name).toBe("root");
     expect(result.dependencies!.express.version).toBe("4.18.2");
-    expect(result.total).toBe(1);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
   });
 
   it("merges dependencies from multiple workspace projects", () => {
@@ -186,7 +182,7 @@ describe("Gap #176: parsePnpmListJson", () => {
     expect(result.dependencies!.express.version).toBe("4.18.2");
     expect(result.dependencies!.fastify.version).toBe("4.25.0");
     expect(result.dependencies!.react.version).toBe("18.2.0");
-    expect(result.total).toBe(3);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
   });
 
   it("handles workspace projects with devDependencies", () => {
@@ -218,7 +214,7 @@ describe("Gap #176: parsePnpmListJson", () => {
   it("handles empty array", () => {
     const result = parsePnpmListJson("[]");
     expect(result.name).toBe("unknown");
-    expect(result.total).toBe(0);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
   });
 
   it("handles non-array (single object)", () => {
@@ -339,7 +335,6 @@ describe("Gap #177: formatList with types", () => {
         express: { version: "4.18.2", type: "dependency" as const },
         vitest: { version: "1.0.0", type: "devDependency" as const },
       },
-      total: 2,
     };
     const output = formatList(data);
     expect(output).toContain("express@4.18.2 [dependency]");
@@ -545,30 +540,26 @@ describe("Gap #181: timedOut in run output", () => {
 describe("Gap #181: formatRun with timeout", () => {
   it("formats timed out script", () => {
     const data: NpmRun = {
-      script: "long-task",
       exitCode: 124,
       stdout: "",
       stderr: "Command timed out",
       success: false,
-      duration: 300.0,
       timedOut: true,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "long-task", 300.0);
     expect(output).toContain('Script "long-task" timed out');
     expect(output).toContain("300s");
   });
 
   it("formats normal success without timeout indication", () => {
     const data: NpmRun = {
-      script: "build",
       exitCode: 0,
       stdout: "done",
       stderr: "",
       success: true,
-      duration: 2.0,
       timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "build", 2.0);
     expect(output).toContain("completed successfully");
     expect(output).not.toContain("timed out");
   });
@@ -679,10 +670,9 @@ describe("Gap #182: formatTest with testResults", () => {
       stderr: "",
       success: true,
       timedOut: false,
-      duration: 3.5,
       testResults: { passed: 42, failed: 0, skipped: 2, total: 44 },
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 3.5);
     expect(output).toContain("Results: 42 passed, 0 failed, 2 skipped (44 total)");
   });
 
@@ -693,9 +683,8 @@ describe("Gap #182: formatTest with testResults", () => {
       stderr: "",
       success: true,
       timedOut: false,
-      duration: 1.0,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 1.0);
     expect(output).not.toContain("Results:");
   });
 });

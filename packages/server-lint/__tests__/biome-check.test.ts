@@ -45,7 +45,7 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(1);
     expect(result.filesChecked).toBe(1);
@@ -100,7 +100,7 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(1);
     expect(result.filesChecked).toBe(2);
@@ -112,7 +112,6 @@ describe("parseBiomeJson", () => {
       severity: "error",
       rule: "lint/suspicious/noDoubleEquals",
       message: "Use === instead of ==.",
-      tags: ["fixable"],
     });
 
     expect(result.diagnostics[1]).toEqual({
@@ -130,7 +129,7 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
 
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(0);
@@ -140,8 +139,8 @@ describe("parseBiomeJson", () => {
   it("handles invalid JSON gracefully", () => {
     const result = parseBiomeJson("not json");
 
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles missing diagnostics field", () => {
@@ -149,8 +148,8 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
 
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("maps Biome severity levels correctly", () => {
@@ -260,7 +259,7 @@ describe("parseBiomeJson", () => {
 
     const result = parseBiomeJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(1);
     // Both src/index.ts entries count as one file

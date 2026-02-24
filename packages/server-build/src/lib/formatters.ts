@@ -14,7 +14,7 @@ import type {
 
 /** Formats structured TypeScript compiler results into a human-readable diagnostic summary. */
 export function formatTsc(data: TscResult): string {
-  if (data.success && data.total === 0) {
+  if (data.success && data.diagnostics.length === 0) {
     if (data.emittedFiles && data.emittedFiles.length > 0) {
       return `TypeScript: no errors found. Emitted ${data.emittedFiles.length} files.`;
     }
@@ -45,7 +45,6 @@ export function formatBuildCommand(data: BuildResult): string {
   if (data.success) {
     const parts = [`Build succeeded in ${data.duration}s${exitInfo}`];
     if ((data.warnings ?? []).length) parts.push(`${(data.warnings ?? []).length} warnings`);
-    if (data.outputLines !== undefined) parts.push(`${data.outputLines} output lines`);
     return parts.join(", ");
   }
 
@@ -458,7 +457,6 @@ export interface NxCompact {
   [key: string]: unknown;
   success: boolean;
   duration: number;
-  total: number;
   passed: number;
   failed: number;
   cached: number;
@@ -468,7 +466,6 @@ export function compactNxMap(data: NxResult): NxCompact {
   return {
     success: data.success,
     duration: data.duration,
-    total: data.total,
     passed: data.passed,
     failed: data.failed,
     cached: data.cached,

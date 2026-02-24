@@ -46,9 +46,6 @@ describe("parseNvmOutput", () => {
       { version: "v16.20.2" },
     ]);
     expect(result.default).toBe("v20.11.1");
-    expect(result.aliases).toBeDefined();
-    expect(result.aliases!.default).toBe("v20.11.1");
-    expect(result.aliases!.stable).toBe("v20.11");
   });
 
   it("parses Unix nvm list output with LTS tags", () => {
@@ -158,16 +155,14 @@ describe("formatNvm", () => {
     expect(output).toContain("Default: v20.11.1");
   });
 
-  it("formats nvm aliases when present", () => {
+  it("formats nvm aliases when present via extra param", () => {
     const data: NvmResult = {
       current: "v20.11.1",
       versions: [{ version: "v20.11.1" }],
-      aliases: {
-        default: "v20.11.1",
-        node: "stable",
-      },
     };
-    const output = formatNvm(data);
+    const output = formatNvm(data, {
+      aliases: { default: "v20.11.1", node: "stable" },
+    });
     expect(output).toContain("Aliases:");
     expect(output).toContain("default -> v20.11.1");
     expect(output).toContain("node -> stable");
@@ -266,7 +261,6 @@ describe("parseNvmLsRemoteOutput", () => {
   it("handles empty output", () => {
     const result = parseNvmLsRemoteOutput("", 4);
     expect(result.versions).toEqual([]);
-    expect(result.total).toBe(0);
   });
 });
 
@@ -278,7 +272,6 @@ describe("formatNvmLsRemote", () => {
         { version: "v20.11.1", lts: "iron" },
         { version: "v22.0.0" },
       ],
-      total: 3,
     };
     const output = formatNvmLsRemote(data);
     expect(output).toContain("3 available versions:");
@@ -289,7 +282,7 @@ describe("formatNvmLsRemote", () => {
   });
 
   it("formats empty remote list", () => {
-    const data: NvmLsRemote = { versions: [], total: 0 };
+    const data: NvmLsRemote = { versions: [] };
     expect(formatNvmLsRemote(data)).toBe("No remote versions found.");
   });
 });

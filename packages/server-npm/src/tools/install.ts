@@ -150,8 +150,10 @@ export function registerInstallTool(server: McpServer) {
       const lockfileChanged = beforeLockfileHash !== afterLockfileHash;
 
       const output = result.stdout + "\n" + result.stderr;
-      const install = parseInstallOutput(output, duration);
-      return dualOutput({ ...install, packageManager: pm, lockfileChanged }, formatInstall);
+      const install = parseInstallOutput(output);
+      return dualOutput({ ...install, packageManager: pm, lockfileChanged }, (d) =>
+        formatInstall(d, duration),
+      );
     },
   );
 }

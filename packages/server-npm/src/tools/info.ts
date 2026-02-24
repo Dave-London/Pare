@@ -84,12 +84,23 @@ export function registerInfoTool(server: McpServer) {
         }
       }
 
+      // Capture the deprecation message from raw JSON for human-readable output
+      let deprecationMessage: string | undefined;
+      try {
+        const rawData = JSON.parse(jsonStr);
+        if (typeof rawData.deprecated === "string") {
+          deprecationMessage = rawData.deprecated;
+        }
+      } catch {
+        // Not critical — deprecation message is display-only
+      }
+
       const info = parseInfoJson(jsonStr);
       const infoWithPm = { ...info, packageManager: pm };
       return compactDualOutput(
         infoWithPm,
         result.stdout,
-        formatInfo,
+        (d) => formatInfo(d, deprecationMessage),
         compactInfoMap,
         formatInfoCompact,
         compact === false,

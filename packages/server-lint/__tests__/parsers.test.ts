@@ -62,7 +62,7 @@ describe("parseEslintJson", () => {
 
     const result = parseEslintJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
     expect(result.filesChecked).toBe(2);
@@ -86,7 +86,7 @@ describe("parseEslintJson", () => {
     ]);
 
     const result = parseEslintJson(json);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(1);
@@ -96,8 +96,8 @@ describe("parseEslintJson", () => {
 
   it("handles invalid JSON gracefully", () => {
     const result = parseEslintJson("not json");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles null ruleId", () => {
@@ -180,7 +180,6 @@ describe("parsePrettierCheck", () => {
     const result = parsePrettierCheck(stdout, "", 1);
 
     expect(result.formatted).toBe(false);
-    expect(result.total).toBe(2);
     expect(result.files).toEqual(["src/index.ts", "src/utils.ts"]);
   });
 
@@ -189,7 +188,6 @@ describe("parsePrettierCheck", () => {
     const result = parsePrettierCheck(stdout, "", 0);
 
     expect(result.formatted).toBe(true);
-    expect(result.total).toBe(0);
     expect(result.files).toEqual([]);
   });
 
@@ -251,7 +249,7 @@ describe("parseStylelintJson", () => {
 
     const result = parseStylelintJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
     expect(result.filesChecked).toBe(2);
@@ -271,7 +269,7 @@ describe("parseStylelintJson", () => {
     const json = JSON.stringify([{ source: "/project/src/styles.css", warnings: [] }]);
 
     const result = parseStylelintJson(json);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(1);
@@ -279,8 +277,8 @@ describe("parseStylelintJson", () => {
 
   it("handles invalid JSON gracefully", () => {
     const result = parseStylelintJson("not json");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles null source", () => {
@@ -366,7 +364,7 @@ describe("parseOxlintJson", () => {
 
     const result = parseOxlintJson(lines);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
     expect(result.filesChecked).toBe(2);
@@ -382,7 +380,7 @@ describe("parseOxlintJson", () => {
 
   it("parses clean Oxlint output", () => {
     const result = parseOxlintJson("");
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(0);
@@ -402,7 +400,7 @@ describe("parseOxlintJson", () => {
     ].join("\n");
 
     const result = parseOxlintJson(lines);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].rule).toBe("no-var");
     expect(result.diagnostics[0].column).toBe(1);
   });
@@ -434,7 +432,7 @@ describe("parseOxlintJson", () => {
     ].join("\n");
 
     const result = parseOxlintJson(lines);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
   });
 });
 
@@ -479,7 +477,7 @@ describe("parseShellcheckJson", () => {
 
     const result = parseShellcheckJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(1);
     expect(result.filesChecked).toBe(2);
@@ -501,7 +499,7 @@ describe("parseShellcheckJson", () => {
 
   it("parses clean ShellCheck output (empty array)", () => {
     const result = parseShellcheckJson("[]");
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(0);
@@ -510,14 +508,14 @@ describe("parseShellcheckJson", () => {
 
   it("handles invalid JSON gracefully", () => {
     const result = parseShellcheckJson("not json");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles empty string gracefully", () => {
     const result = parseShellcheckJson("");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("maps info level correctly", () => {
@@ -555,31 +553,8 @@ describe("parseShellcheckJson", () => {
   it("handles non-array JSON gracefully", () => {
     const json = JSON.stringify({ error: "something went wrong" });
     const result = parseShellcheckJson(json);
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
-  });
-
-  it("surfaces suggested fixes from shellcheck fix metadata", () => {
-    const json = JSON.stringify([
-      {
-        file: "deploy.sh",
-        line: 5,
-        column: 3,
-        level: "error",
-        code: 2086,
-        message: "Double quote to prevent globbing and word splitting.",
-        fix: {
-          replacements: [
-            {
-              replacement: '"$var"',
-            },
-          ],
-        },
-      },
-    ]);
-
-    const result = parseShellcheckJson(json);
-    expect(result.diagnostics[0].suggestedFixes).toEqual(['"$var"']);
+    expect(result.errors).toBe(0);
   });
 });
 
@@ -618,7 +593,7 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(1);
     expect(result.filesChecked).toBe(2);
@@ -629,19 +604,16 @@ describe("parseHadolintJson", () => {
       severity: "error",
       rule: "DL3006",
       message: "Always tag the version of an image explicitly.",
-      wikiUrl: "https://github.com/hadolint/hadolint/wiki/DL3006",
     });
     expect(result.diagnostics[1].severity).toBe("warning");
     expect(result.diagnostics[1].rule).toBe("DL3008");
-    expect(result.diagnostics[1].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3008");
     expect(result.diagnostics[2].severity).toBe("info");
     expect(result.diagnostics[2].rule).toBe("DL3048");
-    expect(result.diagnostics[2].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3048");
   });
 
   it("parses clean Hadolint output (empty array)", () => {
     const result = parseHadolintJson("[]");
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(0);
@@ -650,14 +622,14 @@ describe("parseHadolintJson", () => {
 
   it("handles invalid JSON gracefully", () => {
     const result = parseHadolintJson("not json");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles empty string gracefully", () => {
     const result = parseHadolintJson("");
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("maps style level to info", () => {
@@ -674,7 +646,6 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].severity).toBe("info");
-    expect(result.diagnostics[0].wikiUrl).toBe("https://github.com/hadolint/hadolint/wiki/DL3000");
   });
 
   it("handles missing code", () => {
@@ -690,14 +661,13 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].rule).toBe("unknown");
-    expect(result.diagnostics[0].wikiUrl).toBeUndefined();
   });
 
   it("handles non-array JSON gracefully", () => {
     const json = JSON.stringify({ error: "something went wrong" });
     const result = parseHadolintJson(json);
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.errors).toBe(0);
   });
 
   it("handles SC-prefixed codes from ShellCheck-in-Hadolint", () => {
@@ -714,7 +684,6 @@ describe("parseHadolintJson", () => {
 
     const result = parseHadolintJson(json);
     expect(result.diagnostics[0].rule).toBe("SC2046");
-    // SC-prefixed rules should not get a wiki URL (only DL rules do)
-    expect(result.diagnostics[0].wikiUrl).toBeUndefined();
+    expect(result.diagnostics[0].severity).toBe("warning");
   });
 });

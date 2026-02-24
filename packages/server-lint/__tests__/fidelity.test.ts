@@ -197,7 +197,6 @@ describe("fidelity: parseEslintJson", () => {
     const result = parseEslintJson(eslintClean);
 
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
   });
@@ -208,7 +207,7 @@ describe("fidelity: parseEslintJson", () => {
     // Raw data: 2 errors (no-unused-vars sev 2, eqeqeq sev 2), 2 warnings (no-console sev 1, prefer-const sev 1)
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(2);
-    expect(result.total).toBe(4);
+    expect(result.diagnostics).toHaveLength(4);
   });
 
   it("filesChecked matches the number of entries in the JSON array", () => {
@@ -259,7 +258,6 @@ describe("fidelity: parsePrettierCheck", () => {
 
   it("file count matches the number of [warn] file lines", () => {
     const result = parsePrettierCheck(prettierUnformatted, "", 1);
-    expect(result.total).toBe(2);
     expect(result.files).toHaveLength(2);
   });
 
@@ -268,7 +266,6 @@ describe("fidelity: parsePrettierCheck", () => {
 
     expect(result.formatted).toBe(true);
     expect(result.files).toHaveLength(0);
-    expect(result.total).toBe(0);
   });
 
   it("extracts only file paths, not the summary [warn] line", () => {
@@ -296,7 +293,6 @@ describe("fidelity: parsePrettierCheck", () => {
 
     const result = parsePrettierCheck(manyFiles, "", 1);
 
-    expect(result.total).toBe(4);
     expect(result.files).toEqual(["src/a.ts", "src/b.tsx", "src/c.js", "lib/d.mjs"]);
     expect(result.formatted).toBe(false);
   });
@@ -442,7 +438,6 @@ describe("fidelity: parseBiomeJson", () => {
     const result = parseBiomeJson(biomeCheckMixed);
 
     expect(result.diagnostics).toHaveLength(6);
-    expect(result.total).toBe(6);
   });
 
   it("correctly counts errors and warnings across mixed output", () => {
@@ -499,7 +494,7 @@ describe("fidelity: parseBiomeJson", () => {
   it("correctly handles format-only diagnostics", () => {
     const result = parseBiomeJson(biomeCheckFormatOnly);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(2);
@@ -722,7 +717,6 @@ describe("fidelity: parseStylelintJson", () => {
     const result = parseStylelintJson(stylelintMixed);
 
     expect(result.diagnostics).toHaveLength(3);
-    expect(result.total).toBe(3);
   });
 
   it("correctly counts errors and warnings", () => {
@@ -742,7 +736,6 @@ describe("fidelity: parseStylelintJson", () => {
     const result = parseStylelintJson(stylelintClean);
 
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(2);
@@ -827,7 +820,6 @@ describe("fidelity: parseOxlintJson", () => {
     const result = parseOxlintJson(oxlintClean);
 
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.total).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.filesChecked).toBe(0);

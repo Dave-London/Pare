@@ -6,7 +6,7 @@ describe("formatLint", () => {
   it("formats clean lint result", () => {
     const data: LintResult = {
       diagnostics: [],
-      total: 0,
+
       errors: 0,
       warnings: 0,
       filesChecked: 25,
@@ -32,7 +32,7 @@ describe("formatLint", () => {
           message: "'x' is never reassigned. Use 'const' instead.",
         },
       ],
-      total: 2,
+
       errors: 1,
       warnings: 1,
       filesChecked: 10,
@@ -58,7 +58,7 @@ describe("formatLint", () => {
           message: "Import order is incorrect.",
         },
       ],
-      total: 1,
+
       errors: 0,
       warnings: 1,
       filesChecked: 5,
@@ -74,7 +74,6 @@ describe("formatFormatCheck", () => {
     const data: FormatCheckResult = {
       formatted: true,
       files: [],
-      total: 0,
     };
     expect(formatFormatCheck(data)).toBe("All files are formatted.");
   });
@@ -83,7 +82,6 @@ describe("formatFormatCheck", () => {
     const data: FormatCheckResult = {
       formatted: false,
       files: ["src/index.ts", "src/utils.ts", "src/config.ts"],
-      total: 3,
     };
     const output = formatFormatCheck(data);
     expect(output).toContain("3 files need formatting:");
@@ -96,7 +94,6 @@ describe("formatFormatCheck", () => {
     const data: FormatCheckResult = {
       formatted: false,
       files: [],
-      total: 0,
     };
     const output = formatFormatCheck(data);
     expect(output).toContain("0 files need formatting:");
@@ -107,7 +104,6 @@ describe("formatFormatCheck", () => {
     const data: FormatCheckResult = {
       formatted: false,
       files,
-      total: 100,
     };
     const output = formatFormatCheck(data);
     expect(output).toContain("100 files need formatting:");
@@ -149,7 +145,7 @@ describe("formatLint with shellcheck-shaped data", () => {
           message: "Tips depend on target shell and target OS.",
         },
       ],
-      total: 3,
+
       errors: 1,
       warnings: 1,
       filesChecked: 2,
@@ -169,7 +165,7 @@ describe("formatLint with shellcheck-shaped data", () => {
   it("formats clean shellcheck result", () => {
     const data: LintResult = {
       diagnostics: [],
-      total: 0,
+
       errors: 0,
       warnings: 0,
       filesChecked: 3,
@@ -208,7 +204,7 @@ describe("formatLint with hadolint-shaped data", () => {
           message: "Invalid label key.",
         },
       ],
-      total: 3,
+
       errors: 1,
       warnings: 1,
       filesChecked: 2,
@@ -234,7 +230,7 @@ describe("formatLint with hadolint-shaped data", () => {
           message: "Quote this to prevent word splitting.",
         },
       ],
-      total: 1,
+
       errors: 0,
       warnings: 1,
       filesChecked: 1,
@@ -265,7 +261,7 @@ describe("formatLint edge cases", () => {
 
     const data: LintResult = {
       diagnostics,
-      total: 12,
+
       errors,
       warnings,
       filesChecked: 4,
@@ -311,7 +307,7 @@ describe("formatLint edge cases", () => {
           message: "No console.",
         },
       ],
-      total: 3,
+
       errors: 2,
       warnings: 1,
       filesChecked: 3,
@@ -363,7 +359,7 @@ describe("formatFormatWrite edge cases", () => {
 });
 
 describe("formatLint metadata sections", () => {
-  it("includes tags, suggested fixes, and deprecations", () => {
+  it("includes deprecations", () => {
     const data: LintResult = {
       diagnostics: [
         {
@@ -372,11 +368,8 @@ describe("formatLint metadata sections", () => {
           severity: "warning",
           rule: "SC2086",
           message: "Double quote to prevent globbing and word splitting.",
-          tags: ["fixable"],
-          suggestedFixes: ['"$var"'],
         },
       ],
-      total: 1,
       errors: 0,
       warnings: 1,
       filesChecked: 1,
@@ -384,8 +377,6 @@ describe("formatLint metadata sections", () => {
     };
 
     const output = formatLint(data);
-    expect(output).toContain("tags: fixable");
-    expect(output).toContain('suggestedFixes: "$var"');
     expect(output).toContain("Deprecations:");
     expect(output).toContain("Deprecated rule used (https://example.com)");
   });

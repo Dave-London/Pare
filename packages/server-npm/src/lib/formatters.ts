@@ -15,14 +15,15 @@ import type {
 } from "../schemas/index.js";
 
 /** Formats structured npm install data into a human-readable summary of added/removed packages. */
-export function formatInstall(data: NpmInstall): string {
+export function formatInstall(data: NpmInstall, duration?: number): string {
   const parts = [];
   if (data.added) parts.push(`added ${data.added}`);
   if (data.removed) parts.push(`removed ${data.removed}`);
   if (data.changed) parts.push(`changed ${data.changed}`);
+  const durationSuffix = duration !== undefined ? `, ${duration}s` : "";
   const line = parts.length
-    ? parts.join(", ") + ` (${data.packages} packages, ${data.duration}s)`
-    : `up to date (${data.packages} packages)`;
+    ? parts.join(", ") + ` (${data.added + data.removed + data.changed} packages${durationSuffix})`
+    : `up to date`;
 
   const lines = [line];
 
@@ -54,10 +55,16 @@ export function formatInstall(data: NpmInstall): string {
 
 /** Formats structured npm audit data into a human-readable vulnerability report. */
 export function formatAudit(data: NpmAudit): string {
-  if (data.summary.total === 0) return "No vulnerabilities found.";
+  const total = data.vulnerabilities.length;
+  if (total === 0) return "No vulnerabilities found.";
+
+  const critical = data.vulnerabilities.filter((v) => v.severity === "critical").length;
+  const high = data.vulnerabilities.filter((v) => v.severity === "high").length;
+  const moderate = data.vulnerabilities.filter((v) => v.severity === "moderate").length;
+  const low = data.vulnerabilities.filter((v) => v.severity === "low").length;
 
   const lines = [
-    `${data.summary.total} vulnerabilities (${data.summary.critical} critical, ${data.summary.high} high, ${data.summary.moderate} moderate, ${data.summary.low} low)`,
+    `${total} vulnerabilities (${critical} critical, ${high} high, ${moderate} moderate, ${low} low)`,
   ];
   for (const v of data.vulnerabilities) {
     const cveInfo = v.cve ? ` [${v.cve}]` : "";
@@ -70,9 +77,10 @@ export function formatAudit(data: NpmAudit): string {
 
 /** Formats structured npm outdated data into a human-readable list of packages needing updates. */
 export function formatOutdated(data: NpmOutdated): string {
-  if (data.total === 0) return "All packages are up to date.";
+  const total = data.packages.length;
+  if (total === 0) return "All packages are up to date.";
 
-  const lines = [`${data.total} outdated packages:`];
+  const lines = [`${total} outdated packages:`];
   for (const p of data.packages) {
     const homepage = p.homepage ? ` (${p.homepage})` : "";
     lines.push(`  ${p.name}: ${p.current} → ${p.wanted} (latest: ${p.latest})${homepage}`);
@@ -82,7 +90,16 @@ export function formatOutdated(data: NpmOutdated): string {
 
 /** Formats structured npm list data into a human-readable dependency tree summary. */
 export function formatList(data: NpmList): string {
-  const lines = [`${data.name}@${data.version} (${data.total} dependencies)`];
+  function countDeps(deps: Record<string, NpmListDep>): number {
+    let count = 0;
+    for (const dep of Object.values(deps)) {
+      count++;
+      if (dep.dependencies) count += countDeps(dep.dependencies);
+    }
+    return count;
+  }
+  const total = countDeps(data.dependencies ?? {});
+  const lines = [`${data.name}@${data.version} (${total} dependencies)`];
   if (data.problems && data.problems.length > 0) {
     lines.push(`Problems (${data.problems.length}):`);
     for (const problem of data.problems) {
@@ -103,16 +120,18 @@ export function formatList(data: NpmList): string {
 }
 
 /** Formats structured npm run output into a human-readable script execution summary. */
-export function formatRun(data: NpmRun): string {
+export function formatRun(data: NpmRun, script?: string, duration?: number): string {
+  const scriptName = script ?? "unknown";
+  const durationStr = duration !== undefined ? ` in ${duration}s` : "";
   let status: string;
   if (data.timedOut) {
-    status = `timed out after ${data.duration}s`;
+    status = `timed out${duration !== undefined ? ` after ${duration}s` : ""}`;
   } else if (data.success) {
     status = `completed successfully`;
   } else {
     status = `failed (exit code ${data.exitCode})`;
   }
-  const lines = [`Script "${data.script}" ${status} in ${data.duration}s`];
+  const lines = [`Script "${scriptName}" ${status}${durationStr}`];
   if (data.stdout) {
     lines.push("", "stdout:", data.stdout);
   }
@@ -123,13 +142,14 @@ export function formatRun(data: NpmRun): string {
 }
 
 /** Formats structured npm test output into a human-readable test result summary. */
-export function formatTest(data: NpmTest): string {
+export function formatTest(data: NpmTest, duration?: number): string {
   const status = data.timedOut
     ? "timed out"
     : data.success
       ? "passed"
       : `failed (exit code ${data.exitCode})`;
-  const lines = [`Tests ${status} in ${data.duration}s`];
+  const durationStr = duration !== undefined ? ` in ${duration}s` : "";
+  const lines = [`Tests ${status}${durationStr}`];
 
   // Show parsed test results if available
   if (data.testResults) {
@@ -165,28 +185,27 @@ export interface NpmListCompact {
   [key: string]: unknown;
   name: string;
   version: string;
-  total: number;
 }
 
 export function compactListMap(data: NpmList): NpmListCompact {
   return {
     name: data.name,
     version: data.version,
-    total: data.total,
   };
 }
 
 export function formatListCompact(data: NpmListCompact): string {
-  return `${data.name}@${data.version} (${data.total} dependencies)`;
+  return `${data.name}@${data.version}`;
 }
 
 // ── Info formatters ──────────────────────────────────────────────────
 
 /** Formats structured npm info data into a human-readable package summary. */
-export function formatInfo(data: NpmInfo): string {
+export function formatInfo(data: NpmInfo, deprecationMessage?: string): string {
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
-  if (data.deprecated) lines.push(`DEPRECATED: ${data.deprecated}`);
+  if (data.isDeprecated)
+    lines.push(`DEPRECATED${deprecationMessage ? `: ${deprecationMessage}` : ""}`);
   if (data.license) lines.push(`License: ${data.license}`);
   if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
   if (data.repository?.url) lines.push(`Repository: ${data.repository.url}`);
@@ -230,7 +249,7 @@ export interface NpmInfoCompact {
   description: string;
   license?: string;
   homepage?: string;
-  deprecated?: string;
+  isDeprecated?: boolean;
 }
 
 export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
@@ -241,14 +260,14 @@ export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
   };
   if (data.license) result.license = data.license;
   if (data.homepage) result.homepage = data.homepage;
-  if (data.deprecated) result.deprecated = data.deprecated;
+  if (data.isDeprecated) result.isDeprecated = data.isDeprecated;
   return result;
 }
 
 export function formatInfoCompact(data: NpmInfoCompact): string {
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
-  if (data.deprecated) lines.push(`DEPRECATED: ${data.deprecated}`);
+  if (data.isDeprecated) lines.push(`DEPRECATED`);
   if (data.license) lines.push(`License: ${data.license}`);
   if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
   return lines.join("\n");
@@ -258,9 +277,10 @@ export function formatInfoCompact(data: NpmInfoCompact): string {
 
 /** Formats structured npm search data into a human-readable results list. */
 export function formatSearch(data: NpmSearch): string {
-  if (data.total === 0) return "No packages found.";
+  const total = data.packages.length;
+  if (total === 0) return "No packages found.";
 
-  const lines = [`${data.total} packages found:`];
+  const lines = [`${total} packages found:`];
   for (const pkg of data.packages) {
     const author = pkg.author ? ` by ${pkg.author}` : "";
     const scope = pkg.scope ? ` [${pkg.scope}]` : "";
@@ -273,7 +293,6 @@ export function formatSearch(data: NpmSearch): string {
 export interface NpmSearchCompact {
   [key: string]: unknown;
   packages: { name: string; version: string; description: string }[];
-  total: number;
 }
 
 export function compactSearchMap(data: NpmSearch): NpmSearchCompact {
@@ -283,14 +302,14 @@ export function compactSearchMap(data: NpmSearch): NpmSearchCompact {
       version: p.version,
       description: p.description,
     })),
-    total: data.total,
   };
 }
 
 export function formatSearchCompact(data: NpmSearchCompact): string {
-  if (data.total === 0) return "No packages found.";
+  const total = data.packages.length;
+  if (total === 0) return "No packages found.";
 
-  const lines = [`${data.total} packages found:`];
+  const lines = [`${total} packages found:`];
   for (const pkg of data.packages) {
     lines.push(`  ${pkg.name}@${pkg.version} — ${pkg.description}`);
   }
@@ -300,7 +319,10 @@ export function formatSearchCompact(data: NpmSearchCompact): string {
 // ── Nvm formatters ───────────────────────────────────────────────────
 
 /** Formats structured nvm data into a human-readable version summary. */
-export function formatNvm(data: NvmResult): string {
+export function formatNvm(
+  data: NvmResult,
+  extra?: { aliases?: Record<string, string>; arch?: string },
+): string {
   if (data.requestedVersion) {
     return formatNvmVersion(data);
   }
@@ -315,12 +337,12 @@ export function formatNvm(data: NvmResult): string {
   if (data.which) {
     lines.push(`Path: ${data.which}`);
   }
-  if (data.arch) {
-    lines.push(`Architecture: ${data.arch}`);
+  if (extra?.arch) {
+    lines.push(`Architecture: ${extra.arch}`);
   }
-  if (data.aliases && Object.keys(data.aliases).length > 0) {
+  if (extra?.aliases && Object.keys(extra.aliases).length > 0) {
     lines.push("Aliases:");
-    for (const [alias, target] of Object.entries(data.aliases)) {
+    for (const [alias, target] of Object.entries(extra.aliases)) {
       lines.push(`  ${alias} -> ${target}`);
     }
   }
@@ -350,9 +372,10 @@ export function formatNvmVersion(data: NvmResult): string {
 
 /** Formats nvm ls-remote output into a human-readable version list. */
 export function formatNvmLsRemote(data: NvmLsRemote): string {
-  if (data.total === 0) return "No remote versions found.";
+  const total = data.versions.length;
+  if (total === 0) return "No remote versions found.";
 
-  const lines = [`${data.total} available versions:`];
+  const lines = [`${total} available versions:`];
   for (const v of data.versions) {
     const ltsTag = v.lts ? ` (LTS: ${v.lts})` : "";
     lines.push(`  ${v.version}${ltsTag}`);

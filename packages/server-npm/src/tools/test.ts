@@ -154,7 +154,7 @@ export function registerTestTool(server: McpServer) {
         duration,
         timedOut,
       );
-      return dualOutput({ ...data, packageManager: pm }, formatTest);
+      return dualOutput({ ...data, packageManager: pm }, (d) => formatTest(d, duration));
     },
   );
 }

@@ -32,7 +32,7 @@ describe("compactLintMap", () => {
           message: "'x' is never reassigned. Use 'const' instead.",
         },
       ],
-      total: 2,
+
       errors: 1,
       warnings: 1,
       filesChecked: 10,
@@ -40,7 +40,6 @@ describe("compactLintMap", () => {
 
     const compact = compactLintMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(1);
     expect(compact.filesChecked).toBe(10);
@@ -51,7 +50,7 @@ describe("compactLintMap", () => {
   it("handles clean lint result", () => {
     const data: LintResult = {
       diagnostics: [],
-      total: 0,
+
       errors: 0,
       warnings: 0,
       filesChecked: 25,
@@ -59,7 +58,7 @@ describe("compactLintMap", () => {
 
     const compact = compactLintMap(data);
 
-    expect(compact.total).toBe(0);
+    expect(compact.errors).toBe(0);
     expect(compact.filesChecked).toBe(25);
     expect(compact).not.toHaveProperty("diagnostics");
   });
@@ -67,7 +66,7 @@ describe("compactLintMap", () => {
   it("includes deprecationCount when present", () => {
     const data: LintResult = {
       diagnostics: [],
-      total: 0,
+
       errors: 0,
       warnings: 0,
       filesChecked: 1,
@@ -85,17 +84,17 @@ describe("compactLintMap", () => {
 
 describe("formatLintCompact", () => {
   it("formats clean lint result", () => {
-    const compact = { total: 0, errors: 0, warnings: 0, filesChecked: 25 };
+    const compact = { errors: 0, warnings: 0, filesChecked: 25 };
     expect(formatLintCompact(compact)).toBe("Lint: no issues found (25 files checked).");
   });
 
   it("formats lint result with counts", () => {
-    const compact = { total: 5, errors: 2, warnings: 3, filesChecked: 10 };
+    const compact = { errors: 2, warnings: 3, filesChecked: 10 };
     expect(formatLintCompact(compact)).toBe("Lint: 2 errors, 3 warnings across 10 files.");
   });
 
   it("formats lint result with deprecation count", () => {
-    const compact = { total: 1, errors: 0, warnings: 1, filesChecked: 2, deprecationCount: 3 };
+    const compact = { errors: 0, warnings: 1, filesChecked: 2, deprecationCount: 3 };
     expect(formatLintCompact(compact)).toBe(
       "Lint: 0 errors, 1 warnings across 2 files (3 deprecations).",
     );
@@ -125,7 +124,7 @@ describe("compactLintMap with shellcheck-shaped data", () => {
           message: "Tips depend on target shell and target OS.",
         },
       ],
-      total: 2,
+
       errors: 1,
       warnings: 0,
       filesChecked: 2,
@@ -133,7 +132,6 @@ describe("compactLintMap with shellcheck-shaped data", () => {
 
     const compact = compactLintMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(0);
     expect(compact.filesChecked).toBe(2);
@@ -164,7 +162,7 @@ describe("compactLintMap with hadolint-shaped data", () => {
           message: "Pin versions in apt get install.",
         },
       ],
-      total: 2,
+
       errors: 1,
       warnings: 1,
       filesChecked: 1,
@@ -172,7 +170,6 @@ describe("compactLintMap with hadolint-shaped data", () => {
 
     const compact = compactLintMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(1);
     expect(compact.filesChecked).toBe(1);
@@ -185,17 +182,15 @@ describe("compactLintMap with hadolint-shaped data", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactFormatCheckMap", () => {
-  it("keeps only formatted and total, drops file list", () => {
+  it("keeps only formatted status, drops file list", () => {
     const data: FormatCheckResult = {
       formatted: false,
       files: ["src/index.ts", "src/utils.ts", "src/config.ts"],
-      total: 3,
     };
 
     const compact = compactFormatCheckMap(data);
 
     expect(compact.formatted).toBe(false);
-    expect(compact.total).toBe(3);
     // Verify files are dropped
     expect(compact).not.toHaveProperty("files");
   });
@@ -204,13 +199,11 @@ describe("compactFormatCheckMap", () => {
     const data: FormatCheckResult = {
       formatted: true,
       files: [],
-      total: 0,
     };
 
     const compact = compactFormatCheckMap(data);
 
     expect(compact.formatted).toBe(true);
-    expect(compact.total).toBe(0);
     expect(compact).not.toHaveProperty("files");
   });
 });
@@ -221,13 +214,13 @@ describe("compactFormatCheckMap", () => {
 
 describe("formatFormatCheckCompact", () => {
   it("formats when all files are formatted", () => {
-    const compact = { formatted: true, total: 0 };
+    const compact = { formatted: true };
     expect(formatFormatCheckCompact(compact)).toBe("All files are formatted.");
   });
 
   it("formats when files need formatting", () => {
-    const compact = { formatted: false, total: 5 };
-    expect(formatFormatCheckCompact(compact)).toBe("5 files need formatting.");
+    const compact = { formatted: false };
+    expect(formatFormatCheckCompact(compact)).toBe("Some files need formatting.");
   });
 });
 
