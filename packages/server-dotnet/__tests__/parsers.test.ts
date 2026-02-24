@@ -363,4 +363,301 @@ describe("parseDotnetListPackageOutput", () => {
     const result = parseDotnetListPackageOutput(stdout, "", 0);
     expect(result.projects[0].frameworks[0].topLevel![0].latest).toBe("13.0.3");
   });
+
+  it("parses text format with transitive packages", () => {
+    const stdout = [
+      "Project 'MyApp' has the following package references",
+      "   [net8.0]:",
+      "   Top-level Package               Requested   Resolved",
+      "   > Newtonsoft.Json                13.0.1      13.0.3",
+      "   Transitive Package              Resolved    Latest",
+      "   > System.Buffers                 4.5.1       4.5.1",
+    ].join("\n");
+
+    const result = parseDotnetListPackageOutput(stdout, "", 0);
+    expect(result.projects[0].frameworks[0].topLevel).toHaveLength(1);
+    expect(result.projects[0].frameworks[0].transitive).toHaveLength(1);
+    expect(result.projects[0].frameworks[0].transitive![0].id).toBe("System.Buffers");
+  });
+
+  it("parses text format with deprecated (D) tag", () => {
+    const stdout = [
+      "Project 'MyApp' has the following package references",
+      "   [net8.0]:",
+      "   Top-level Package               Requested   Resolved",
+      "   > OldPkg (D)                     1.0.0       1.0.0",
+    ].join("\n");
+
+    const result = parseDotnetListPackageOutput(stdout, "", 0);
+    expect(result.projects[0].frameworks[0].topLevel![0].deprecated).toBe(true);
+  });
+
+  it("parses JSON format with transitive packages", () => {
+    const json = JSON.stringify({
+      version: 1,
+      projects: [
+        {
+          path: "/home/user/MyApp/MyApp.csproj",
+          frameworks: [
+            {
+              framework: "net8.0",
+              topLevelPackages: [{ id: "A", resolvedVersion: "1.0" }],
+              transitivePackages: [{ id: "B", resolvedVersion: "2.0", latestVersion: "3.0" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parseDotnetListPackageOutput(json, "", 0);
+    expect(result.projects[0].frameworks[0].transitive).toHaveLength(1);
+    expect(result.projects[0].frameworks[0].transitive![0].id).toBe("B");
+    expect(result.projects[0].frameworks[0].transitive![0].latest).toBe("3.0");
+  });
+
+  it("parses JSON format with deprecated packages", () => {
+    const json = JSON.stringify({
+      version: 1,
+      projects: [
+        {
+          path: "/home/user/MyApp/MyApp.csproj",
+          frameworks: [
+            {
+              framework: "net8.0",
+              topLevelPackages: [{ id: "OldPkg", resolvedVersion: "1.0", isDeprecated: true }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parseDotnetListPackageOutput(json, "", 0);
+    expect(result.projects[0].frameworks[0].topLevel![0].deprecated).toBe(true);
+  });
+
+  it("falls back to text parsing when JSON is invalid", () => {
+    const stdout = "not valid json {{{ garbage";
+    const result = parseDotnetListPackageOutput(stdout, "", 0);
+    expect(result.success).toBe(true);
+    expect(result.projects).toHaveLength(0);
+  });
+
+  it("falls back to text when JSON has no projects", () => {
+    const json = JSON.stringify({ version: 1, data: "no projects key" });
+    const result = parseDotnetListPackageOutput(json, "", 0);
+    expect(result.projects).toHaveLength(0);
+  });
+
+  it("handles JSON with missing optional fields", () => {
+    const json = JSON.stringify({
+      version: 1,
+      projects: [
+        {
+          frameworks: [
+            {
+              topLevelPackages: [{ id: "Pkg" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parseDotnetListPackageOutput(json, "", 0);
+    expect(result.projects[0].project).toBe("unknown");
+    expect(result.projects[0].frameworks[0].framework).toBe("unknown");
+    expect(result.projects[0].frameworks[0].topLevel![0].resolved).toBe("unknown");
+  });
+});
+
+// ── parseDotnetBuildOutput — additional edge cases ──────────────────
+
+describe("parseDotnetBuildOutput — edge cases", () => {
+  it("parses simple format diagnostic without column", () => {
+    const stdout = "Program.cs(10): error CS1002: ; expected [/home/user/MyApp/MyApp.csproj]";
+
+    const result = parseDotnetBuildOutput(stdout, "", 1);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0].file).toBe("Program.cs");
+    expect(result.diagnostics[0].line).toBe(10);
+    expect(result.diagnostics[0].column).toBeUndefined();
+    expect(result.diagnostics[0].code).toBe("CS1002");
+  });
+
+  it("parses build-level warning without file location", () => {
+    const stderr = "  warning NU1603: Some nuget warning [/home/user/MyApp/MyApp.csproj]";
+
+    const result = parseDotnetBuildOutput("", stderr, 0);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0].severity).toBe("warning");
+    expect(result.diagnostics[0].file).toBe("(build)");
+  });
+});
+
+// ── parseDotnetTestOutput — additional edge cases ───────────────────
+
+describe("parseDotnetTestOutput — edge cases", () => {
+  it("falls back to counting tests when no summary line", () => {
+    const stdout = ["  Passed  Test1 [1 ms]", "  Failed  Test2 [2 ms]", "  Skipped Test3"].join(
+      "\n",
+    );
+
+    const result = parseDotnetTestOutput(stdout, "", 1);
+    expect(result.passed).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.total).toBe(3);
+  });
+
+  it("handles failed test where error message section has no content lines", () => {
+    const stdout = [
+      "  Failed  MyApp.Tests.MathTests.FailingTest [5 ms]",
+      "  Error Message:",
+      "",
+      "Total: 1, Passed: 0, Failed: 1, Skipped: 0",
+    ].join("\n");
+
+    const result = parseDotnetTestOutput(stdout, "", 1);
+    expect(result.tests[0].errorMessage).toBeUndefined();
+  });
+
+  it("stops looking for error message when hitting another test result", () => {
+    const stdout = [
+      "  Failed  Test1 [5 ms]",
+      "  Passed  Test2 [1 ms]",
+      "",
+      "Total: 2, Passed: 1, Failed: 1, Skipped: 0",
+    ].join("\n");
+
+    const result = parseDotnetTestOutput(stdout, "", 1);
+    expect(result.tests[0].errorMessage).toBeUndefined();
+    expect(result.tests[0].status).toBe("Failed");
+  });
+});
+
+// ── parseDotnetRunOutput — additional edge cases ────────────────────
+
+describe("parseDotnetRunOutput — edge cases", () => {
+  it("truncates large stderr", () => {
+    const large = "e".repeat(100);
+    const result = parseDotnetRunOutput("", large, 1, 50);
+    expect(result.stderr).toContain("[truncated]");
+    expect(result.stderr!.length).toBeLessThan(large.length + 20);
+  });
+
+  it("returns timedOut as undefined when not timed out", () => {
+    const result = parseDotnetRunOutput("ok", "", 0, 1048576);
+    expect(result.timedOut).toBeUndefined();
+  });
+});
+
+// ── parseDotnetPublishOutput — edge cases ───────────────────────────
+
+describe("parseDotnetPublishOutput — edge cases", () => {
+  it("parses publish with warnings", () => {
+    const stdout = [
+      "  MyApp -> /out/publish/",
+      "Program.cs(5,3): warning CS0168: unused var [/home/user/MyApp.csproj]",
+    ].join("\n");
+
+    const result = parseDotnetPublishOutput(stdout, "", 0);
+    expect(result.success).toBe(true);
+    expect(result.outputPath).toBe("/out/publish/");
+    expect(result.warnings).toHaveLength(1);
+  });
+
+  it("parses publish with errors", () => {
+    const stdout = ["Program.cs(5,3): error CS1234: bad code [/home/user/MyApp.csproj]"].join("\n");
+
+    const result = parseDotnetPublishOutput(stdout, "", 1);
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it("parses publish with build-level error", () => {
+    const stderr = "  error NU1301: Unable to load service index";
+
+    const result = parseDotnetPublishOutput("", stderr, 1);
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+  });
+});
+
+// ── parseDotnetRestoreOutput — edge cases ───────────────────────────
+
+describe("parseDotnetRestoreOutput — edge cases", () => {
+  it("parses restore with warnings", () => {
+    const stdout = [
+      "  Restored /home/user/MyApp.csproj",
+      "Program.cs(5,3): warning CS0168: unused var [/home/user/MyApp.csproj]",
+    ].join("\n");
+
+    const result = parseDotnetRestoreOutput(stdout, "", 0);
+    expect(result.success).toBe(true);
+    expect(result.restoredProjects).toBe(1);
+    expect(result.warnings).toHaveLength(1);
+  });
+
+  it("parses restore with errors", () => {
+    const stderr = "Program.cs(5,3): error CS1234: bad code [/home/user/MyApp.csproj]";
+
+    const result = parseDotnetRestoreOutput("", stderr, 1);
+    expect(result.success).toBe(false);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it("parses restore with warning code format", () => {
+    const stderr = "  warning NU1603: SomePackage 1.0.0 depends on OtherPkg";
+
+    const result = parseDotnetRestoreOutput("", stderr, 0);
+    expect(result.warnings).toHaveLength(1);
+  });
+
+  it("parses restore with error code format", () => {
+    const stderr = "  error NU1301: Unable to load service index";
+
+    const result = parseDotnetRestoreOutput("", stderr, 1);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it("ignores 0 warnings and 0 errors in summary lines", () => {
+    const stdout = ["  0 Warning(s)", "  0 Error(s)", "  Restored /home/user/MyApp.csproj"].join(
+      "\n",
+    );
+
+    const result = parseDotnetRestoreOutput(stdout, "", 0);
+    expect(result.warnings).toBeUndefined();
+    expect(result.errors).toBeUndefined();
+    expect(result.restoredProjects).toBe(1);
+  });
+
+  it("parses fsproj and vbproj projects", () => {
+    const stdout = [
+      "  Restored /home/user/MyApp.fsproj",
+      "  Restored /home/user/MyApp.vbproj",
+    ].join("\n");
+
+    const result = parseDotnetRestoreOutput(stdout, "", 0);
+    expect(result.restoredProjects).toBe(2);
+  });
+});
+
+// ── parseDotnetAddPackageOutput — edge cases ────────────────────────
+
+describe("parseDotnetAddPackageOutput — edge cases", () => {
+  it("parses add without version match", () => {
+    const stdout = "Some output without PackageReference";
+    const result = parseDotnetAddPackageOutput(stdout, "", 0, "MyPkg");
+    expect(result.success).toBe(true);
+    expect(result.version).toBeUndefined();
+  });
+
+  it("ignores 0 errors in summary lines", () => {
+    const stdout = ["  0 Error(s)", "info : PackageReference for 'A' version '1.0' added"].join(
+      "\n",
+    );
+
+    const result = parseDotnetAddPackageOutput(stdout, "", 0, "A");
+    expect(result.errors).toBeUndefined();
+    expect(result.version).toBe("1.0");
+  });
 });

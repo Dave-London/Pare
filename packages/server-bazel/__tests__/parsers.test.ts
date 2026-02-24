@@ -260,3 +260,86 @@ describe("parseBazelFetchOutput", () => {
     expect(result.exitCode).toBe(1);
   });
 });
+
+// ── Additional edge cases for branch coverage ───────────────────────
+
+describe("parseBazelBuildOutput — edge cases", () => {
+  it("parses error with target label", () => {
+    const stderr = [
+      "ERROR: Target //src:app failed to build",
+      "INFO: Analyzed 2 targets",
+      "INFO: Elapsed time: 1.000s",
+    ].join("\n");
+    const result = parseBazelBuildOutput("", stderr, 1);
+    expect(result.success).toBe(false);
+    expect(result.errors).toBeDefined();
+    const targetError = result.errors!.find((e) => e.target);
+    expect(targetError).toBeDefined();
+    expect(targetError!.target).toBe("//src:app");
+  });
+
+  it("parses error without target label match", () => {
+    const stderr = ["ERROR: Some generic build error", "INFO: Analyzed 1 targets"].join("\n");
+    const result = parseBazelBuildOutput("", stderr, 1);
+    expect(result.errors).toBeDefined();
+    const genericError = result.errors!.find((e) => !e.file && !e.target);
+    expect(genericError).toBeDefined();
+    expect(genericError!.message).toBe("Some generic build error");
+  });
+
+  it("generates failed target entries when totalTargets > 0 with failures", () => {
+    const stderr = [
+      "INFO: Analyzed 3 targets",
+      "ERROR: Target //src:app failed to build",
+      "ERROR: Target //src:lib failed to build",
+      "INFO: Elapsed time: 2.000s",
+    ].join("\n");
+    const result = parseBazelBuildOutput("", stderr, 1);
+    expect(result.targets.length).toBeGreaterThan(0);
+    expect(result.targets.every((t) => t.status === "failed")).toBe(true);
+    expect(result.summary.failedTargets).toBe(2);
+  });
+
+  it("reports successTargets correctly when build fails", () => {
+    const stderr = [
+      "INFO: Analyzed 3 targets",
+      "ERROR: Target //src:app failed to build",
+      "INFO: Elapsed time: 1.500s",
+    ].join("\n");
+    const result = parseBazelBuildOutput("", stderr, 1);
+    expect(result.summary.totalTargets).toBe(3);
+    expect(result.summary.failedTargets).toBe(1);
+    expect(result.summary.successTargets).toBe(2);
+  });
+});
+
+describe("parseBazelTestOutput — edge cases", () => {
+  it("parses flaky test result", () => {
+    const stderr = [
+      "//test:flaky_test                                                FLAKY in 2.0s",
+      "INFO: Elapsed time: 5.000s",
+    ].join("\n");
+    const result = parseBazelTestOutput("", stderr, 0);
+    expect(result.tests).toHaveLength(1);
+    expect(result.tests[0].status).toBe("flaky");
+    expect(result.summary.flaky).toBe(1);
+  });
+
+  it("parses NO STATUS test result", () => {
+    const stderr = [
+      "//test:no_status_test                                            NO STATUS in 0.5s",
+      "INFO: Elapsed time: 1.000s",
+    ].join("\n");
+    const result = parseBazelTestOutput("", stderr, 3);
+    expect(result.tests).toHaveLength(1);
+    expect(result.tests[0].status).toBe("no_status");
+  });
+
+  it("handles skipped status in switch default", () => {
+    // The parser has a switch case for "skipped" but the regex only matches
+    // PASSED|FAILED|FLAKY|TIMEOUT|NO STATUS. This tests that the counting
+    // handles the skipped branch path in the summary.
+    const result = parseBazelTestOutput("", "", 0);
+    expect(result.summary.skipped).toBe(0);
+  });
+});

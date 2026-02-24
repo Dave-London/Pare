@@ -484,4 +484,382 @@ describe("compactMongoshStatsMap / formatMongoshStatsCompact", () => {
       "mongosh stats: OK (40ms)",
     );
   });
+
+  it("formats compact failed", () => {
+    expect(formatMongoshStatsCompact({ success: false, exitCode: 1, duration: 100 })).toContain(
+      "FAILED",
+    );
+  });
+});
+
+// ── Additional edge cases for branch coverage ───────────────────────
+
+describe("formatPsqlQuery — edge cases", () => {
+  it("formats successful query without columns", () => {
+    const data: PsqlQueryResult = {
+      success: true,
+      rowCount: 0,
+      exitCode: 0,
+      duration: 5,
+    };
+    const output = formatPsqlQuery(data);
+    expect(output).toContain("psql query: 0 rows (5ms)");
+    expect(output).not.toContain("columns:");
+  });
+
+  it("formats successful query without rows", () => {
+    const data: PsqlQueryResult = {
+      success: true,
+      columns: ["id"],
+      rowCount: 0,
+      exitCode: 0,
+      duration: 5,
+    };
+    const output = formatPsqlQuery(data);
+    expect(output).toContain("columns: id");
+  });
+
+  it("formats failed query without error", () => {
+    const data: PsqlQueryResult = {
+      success: false,
+      rowCount: 0,
+      exitCode: 1,
+      duration: 5,
+    };
+    const output = formatPsqlQuery(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
+
+  it("formats row with null values", () => {
+    const data: PsqlQueryResult = {
+      success: true,
+      columns: ["id", "name"],
+      rows: [{ id: "1", name: null }],
+      rowCount: 1,
+      exitCode: 0,
+      duration: 10,
+    };
+    const output = formatPsqlQuery(data);
+    expect(output).toContain("name=NULL");
+  });
+});
+
+describe("formatPsqlListDatabases — edge cases", () => {
+  it("formats without error on failure", () => {
+    const data: PsqlListDatabasesResult = {
+      success: false,
+      total: 0,
+      exitCode: 1,
+      duration: 10,
+    };
+    const output = formatPsqlListDatabases(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
+
+  it("formats databases with size field", () => {
+    const data: PsqlListDatabasesResult = {
+      success: true,
+      databases: [{ name: "db1", size: "8MB" }],
+      total: 1,
+      exitCode: 0,
+      duration: 10,
+    };
+    const output = formatPsqlListDatabases(data);
+    expect(output).toContain("size=8MB");
+  });
+
+  it("formats without databases array", () => {
+    const data: PsqlListDatabasesResult = {
+      success: true,
+      total: 0,
+      exitCode: 0,
+      duration: 5,
+    };
+    const output = formatPsqlListDatabases(data);
+    expect(output).toContain("psql: 0 databases");
+  });
+});
+
+describe("formatPsqlListDatabasesCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatPsqlListDatabasesCompact({
+      success: false,
+      total: 0,
+      exitCode: 1,
+      duration: 10,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatMysqlQuery — edge cases", () => {
+  it("formats without columns", () => {
+    const data: MysqlQueryResult = {
+      success: true,
+      rowCount: 0,
+      exitCode: 0,
+      duration: 5,
+    };
+    const output = formatMysqlQuery(data);
+    expect(output).toContain("mysql query: 0 rows");
+    expect(output).not.toContain("columns:");
+  });
+
+  it("formats query without error on failure", () => {
+    const data: MysqlQueryResult = {
+      success: false,
+      rowCount: 0,
+      exitCode: 1,
+      duration: 5,
+    };
+    const output = formatMysqlQuery(data);
+    expect(output).toContain("FAILED");
+  });
+
+  it("formats rows with null values", () => {
+    const data: MysqlQueryResult = {
+      success: true,
+      columns: ["id", "name"],
+      rows: [{ id: "1", name: null }],
+      rowCount: 1,
+      exitCode: 0,
+      duration: 10,
+    };
+    const output = formatMysqlQuery(data);
+    expect(output).toContain("name=NULL");
+  });
+});
+
+describe("formatMysqlQueryCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatMysqlQueryCompact({
+      success: false,
+      rowCount: 0,
+      exitCode: 1,
+      duration: 5,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatMysqlListDatabases — edge cases", () => {
+  it("formats failed mysql list", () => {
+    const data: MysqlListDatabasesResult = {
+      success: false,
+      total: 0,
+      exitCode: 1,
+      duration: 10,
+      error: "access denied",
+    };
+    const output = formatMysqlListDatabases(data);
+    expect(output).toContain("FAILED");
+    expect(output).toContain("access denied");
+  });
+
+  it("formats failed without error", () => {
+    const data: MysqlListDatabasesResult = {
+      success: false,
+      total: 0,
+      exitCode: 1,
+      duration: 10,
+    };
+    const output = formatMysqlListDatabases(data);
+    expect(output).toContain("FAILED");
+  });
+
+  it("formats successful without databases", () => {
+    const data: MysqlListDatabasesResult = {
+      success: true,
+      total: 0,
+      exitCode: 0,
+      duration: 10,
+    };
+    const output = formatMysqlListDatabases(data);
+    expect(output).toContain("mysql: 0 databases");
+  });
+});
+
+describe("formatMysqlListDatabasesCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatMysqlListDatabasesCompact({
+      success: false,
+      total: 0,
+      exitCode: 1,
+      duration: 10,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatRedisPing — edge cases", () => {
+  it("formats ping without response", () => {
+    const data: RedisPingResult = {
+      success: true,
+      exitCode: 0,
+      duration: 2,
+    };
+    const output = formatRedisPing(data);
+    expect(output).toBe("redis PING: OK (2ms)");
+  });
+
+  it("formats failed ping without error", () => {
+    const data: RedisPingResult = {
+      success: false,
+      exitCode: 1,
+      duration: 100,
+    };
+    const output = formatRedisPing(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
+});
+
+describe("formatRedisPingCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatRedisPingCompact({
+      success: false,
+      exitCode: 1,
+      duration: 100,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatRedisInfo — edge cases", () => {
+  it("formats failed info", () => {
+    const data: RedisInfoResult = {
+      success: false,
+      exitCode: 1,
+      duration: 5,
+      error: "NOAUTH",
+    };
+    const output = formatRedisInfo(data);
+    expect(output).toContain("FAILED");
+    expect(output).toContain("NOAUTH");
+  });
+
+  it("formats failed info without error", () => {
+    const data: RedisInfoResult = {
+      success: false,
+      exitCode: 1,
+      duration: 5,
+    };
+    const output = formatRedisInfo(data);
+    expect(output).toContain("FAILED");
+  });
+
+  it("formats info without sections", () => {
+    const data: RedisInfoResult = {
+      success: true,
+      exitCode: 0,
+      duration: 5,
+    };
+    const output = formatRedisInfo(data);
+    expect(output).toContain("redis INFO: 0 sections");
+  });
+});
+
+describe("formatRedisInfoCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatRedisInfoCompact({
+      success: false,
+      sectionCount: 0,
+      exitCode: 1,
+      duration: 5,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatRedisCommand — edge cases", () => {
+  it("formats success without response", () => {
+    const data: RedisCommandResult = {
+      success: true,
+      exitCode: 0,
+      duration: 1,
+    };
+    const output = formatRedisCommand(data);
+    expect(output).toBe("redis command: OK (1ms)");
+  });
+
+  it("formats failed without error", () => {
+    const data: RedisCommandResult = {
+      success: false,
+      exitCode: 1,
+      duration: 1,
+    };
+    const output = formatRedisCommand(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
+});
+
+describe("formatRedisCommandCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatRedisCommandCompact({
+      success: false,
+      exitCode: 1,
+      duration: 1,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatMongoshEval — edge cases", () => {
+  it("formats success without output", () => {
+    const data: MongoshEvalResult = {
+      success: true,
+      exitCode: 0,
+      duration: 50,
+    };
+    const output = formatMongoshEval(data);
+    expect(output).toBe("mongosh eval: OK (50ms)");
+  });
+
+  it("formats failed without error", () => {
+    const data: MongoshEvalResult = {
+      success: false,
+      exitCode: 1,
+      duration: 30,
+    };
+    const output = formatMongoshEval(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
+});
+
+describe("formatMongoshEvalCompact — edge cases", () => {
+  it("formats compact failed", () => {
+    const output = formatMongoshEvalCompact({
+      success: false,
+      exitCode: 1,
+      duration: 30,
+    });
+    expect(output).toContain("FAILED");
+  });
+});
+
+describe("formatMongoshStats — edge cases", () => {
+  it("formats stats without optional fields", () => {
+    const data: MongoshStatsResult = {
+      success: true,
+      exitCode: 0,
+      duration: 80,
+    };
+    const output = formatMongoshStats(data);
+    expect(output).toBe("mongosh stats: OK (80ms)");
+  });
+
+  it("formats failed stats without error", () => {
+    const data: MongoshStatsResult = {
+      success: false,
+      exitCode: 1,
+      duration: 100,
+    };
+    const output = formatMongoshStats(data);
+    expect(output).toContain("FAILED");
+    expect(output).not.toContain("\n");
+  });
 });
