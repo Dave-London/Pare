@@ -103,14 +103,12 @@ describe("Recorded: npm.audit", () => {
   it("S1 [recorded] clean — no vulnerabilities", async () => {
     mockRunPm("audit/s01-clean.txt", "", 0);
     const { parsed } = await callAndValidate({});
-    expect(parsed.summary.total).toBe(0);
     expect(parsed.vulnerabilities.length).toBe(0);
   });
 
   it("S2 [recorded] with vulnerabilities — qs low, ajv moderate", async () => {
     mockRunPm("audit/s02-with-vulns.txt", "", 0);
     const { parsed } = await callAndValidate({});
-    expect(parsed.summary.total).toBeGreaterThan(0);
     expect(parsed.vulnerabilities.length).toBeGreaterThanOrEqual(1);
     const names = parsed.vulnerabilities.map((v) => v.name);
     expect(names).toContain("qs");

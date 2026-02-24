@@ -104,7 +104,6 @@ export function registerDiscussionListTool(server: McpServer) {
         return compactDualOutput(
           {
             discussions: [],
-            totalCount: 0,
             errorType: classifyDiscussionListError(combined),
             errorMessage: combined || "gh api graphql failed",
           },

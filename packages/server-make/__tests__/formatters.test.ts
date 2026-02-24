@@ -7,13 +7,13 @@ import {
   compactListMap,
   formatListCompact,
 } from "../src/lib/formatters.js";
-import type { MakeRunResult, MakeListResult } from "../src/schemas/index.js";
+import type { MakeRunResultInternal, MakeListResultInternal } from "../src/schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
 
 describe("formatRun", () => {
   it("formats successful run", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "build",
       success: true,
       exitCode: 0,
@@ -28,7 +28,7 @@ describe("formatRun", () => {
   });
 
   it("formats failed run", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "test",
       success: false,
       exitCode: 2,
@@ -43,7 +43,7 @@ describe("formatRun", () => {
   });
 
   it("includes errorType when present", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "missing",
       success: false,
       exitCode: 2,
@@ -57,7 +57,7 @@ describe("formatRun", () => {
   });
 
   it("formats just run", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "deploy",
       success: true,
       exitCode: 0,
@@ -72,7 +72,7 @@ describe("formatRun", () => {
   });
 
   it("formats run with no output", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "clean",
       success: true,
       exitCode: 0,
@@ -85,7 +85,7 @@ describe("formatRun", () => {
   });
 
   it("formats timed out run", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "long-task",
       success: false,
       exitCode: 124,
@@ -101,7 +101,7 @@ describe("formatRun", () => {
   });
 
   it("formats timed out just run", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "build",
       success: false,
       exitCode: 124,
@@ -117,7 +117,7 @@ describe("formatRun", () => {
 
 describe("formatList", () => {
   it("formats empty target list", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [],
       total: 0,
       tool: "make",
@@ -126,7 +126,7 @@ describe("formatList", () => {
   });
 
   it("formats just target list with descriptions", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [
         { name: "build", description: "Build the project" },
         { name: "test", description: "Run tests" },
@@ -145,7 +145,7 @@ describe("formatList", () => {
   });
 
   it("formats make target list", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [{ name: "all" }, { name: "build" }, { name: "test" }],
       total: 3,
       tool: "make",
@@ -158,7 +158,7 @@ describe("formatList", () => {
   });
 
   it("formats targets with phony flag", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [{ name: "build", isPhony: true }, { name: "main.o" }],
       total: 2,
       tool: "make",
@@ -169,7 +169,7 @@ describe("formatList", () => {
   });
 
   it("formats targets with dependencies", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [{ name: "test", dependencies: ["build", "fixtures"] }, { name: "build" }],
       total: 2,
       tool: "make",
@@ -180,7 +180,7 @@ describe("formatList", () => {
   });
 
   it("formats targets with phony, dependencies, and descriptions", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [
         {
           name: "deploy",
@@ -197,7 +197,7 @@ describe("formatList", () => {
   });
 
   it("formats target recipes and pattern rules", () => {
-    const data: MakeListResult = {
+    const data: MakeListResultInternal = {
       targets: [{ name: "build", recipe: ["echo build"] }],
       patternRules: [{ pattern: "%.o", dependencies: ["%.c"], recipe: ["$(CC) -c $< -o $@"] }],
       total: 1,
@@ -214,8 +214,8 @@ describe("formatList", () => {
 // ── Compact mappers and formatters ───────────────────────────────────
 
 describe("compactRunMap", () => {
-  it("keeps target, exitCode, success, duration, tool, timedOut — drops stdout/stderr", () => {
-    const data: MakeRunResult = {
+  it("keeps success, exitCode, timedOut; drops target, tool, duration, stdout, stderr", () => {
+    const data: MakeRunResultInternal = {
       target: "build",
       success: true,
       exitCode: 0,
@@ -228,18 +228,18 @@ describe("compactRunMap", () => {
 
     const compact = compactRunMap(data);
 
-    expect(compact.target).toBe("build");
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
-    expect(compact.duration).toBe(1234);
-    expect(compact.tool).toBe("make");
     expect(compact.timedOut).toBe(false);
+    expect(compact).not.toHaveProperty("target");
+    expect(compact).not.toHaveProperty("tool");
+    expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
 
   it("preserves non-zero exit code", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "test",
       success: false,
       exitCode: 2,
@@ -253,12 +253,11 @@ describe("compactRunMap", () => {
 
     expect(compact.exitCode).toBe(2);
     expect(compact.success).toBe(false);
-    expect(compact.tool).toBe("just");
     expect(compact.timedOut).toBe(false);
   });
 
   it("preserves timedOut flag", () => {
-    const data: MakeRunResult = {
+    const data: MakeRunResultInternal = {
       target: "build",
       success: false,
       exitCode: 124,
@@ -278,60 +277,36 @@ describe("formatRunCompact", () => {
   it("formats successful run", () => {
     expect(
       formatRunCompact({
-        target: "build",
         exitCode: 0,
         success: true,
-        duration: 100,
-        tool: "make",
         timedOut: false,
       }),
-    ).toBe("make build: success (100ms).");
+    ).toBe("make/just: success.");
   });
 
   it("formats failed run with exit code", () => {
     expect(
       formatRunCompact({
-        target: "test",
         exitCode: 2,
         success: false,
-        duration: 500,
-        tool: "just",
         timedOut: false,
       }),
-    ).toBe("just test: exit code 2 (500ms).");
-  });
-
-  it("formats failed run with error type", () => {
-    expect(
-      formatRunCompact({
-        target: "missing",
-        exitCode: 2,
-        success: false,
-        duration: 10,
-        tool: "make",
-        timedOut: false,
-        errorType: "missing-target",
-      }),
-    ).toBe("make missing: exit code 2 (10ms) [missing-target].");
+    ).toBe("make/just: exit code 2.");
   });
 
   it("formats timed out run", () => {
     const output = formatRunCompact({
-      target: "build",
       exitCode: 124,
       success: false,
-      duration: 300000,
-      tool: "make",
       timedOut: true,
     });
     expect(output).toContain("TIMED OUT");
-    expect(output).toContain("300000ms");
   });
 });
 
 describe("compactListMap", () => {
-  it("keeps total and tool, drops target details", () => {
-    const data: MakeListResult = {
+  it("keeps patternRules; drops targets, total, tool", () => {
+    const data: MakeListResultInternal = {
       targets: [
         { name: "build", description: "Build it" },
         { name: "test", description: "Test it" },
@@ -343,37 +318,36 @@ describe("compactListMap", () => {
 
     const compact = compactListMap(data);
 
-    expect(compact.total).toBe(3);
-    expect(compact.tool).toBe("just");
-    expect(compact.patternRuleCount).toBe(0);
     expect(compact).not.toHaveProperty("targets");
+    expect(compact).not.toHaveProperty("total");
+    expect(compact).not.toHaveProperty("tool");
   });
 
-  it("preserves zero total for empty list", () => {
-    const data: MakeListResult = {
+  it("preserves patternRules when present", () => {
+    const data: MakeListResultInternal = {
       targets: [],
+      patternRules: [{ pattern: "%.o", dependencies: ["%.c"] }],
       total: 0,
       tool: "make",
     };
 
     const compact = compactListMap(data);
 
-    expect(compact.total).toBe(0);
-    expect(compact.tool).toBe("make");
-    expect(compact.patternRuleCount).toBe(0);
+    expect(compact.patternRules).toHaveLength(1);
   });
 });
 
 describe("formatListCompact", () => {
-  it("formats no targets found", () => {
-    expect(formatListCompact({ total: 0, patternRuleCount: 0, tool: "make" })).toBe(
-      "make: no targets found.",
-    );
+  it("formats target listing", () => {
+    const output = formatListCompact({ patternRules: [] });
+    expect(output).toContain("make/just");
+    expect(output).toContain("0 pattern rules");
   });
 
-  it("formats target count", () => {
-    expect(formatListCompact({ total: 5, patternRuleCount: 2, tool: "just" })).toBe(
-      "just: 5 targets (2 pattern rules)",
-    );
+  it("formats with pattern rules", () => {
+    const output = formatListCompact({
+      patternRules: [{ pattern: "%.o" }, { pattern: "%.so" }],
+    });
+    expect(output).toContain("2 pattern rules");
   });
 });

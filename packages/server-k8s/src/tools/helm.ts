@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
+  strippedCompactDualOutput,
   run,
   assertNoFlagInjection,
   INPUT_LIMITS,
@@ -26,6 +27,13 @@ import {
   formatHelmRollback,
   formatHelmHistory,
   formatHelmTemplate,
+  schemaHelmListMap,
+  schemaHelmStatusMap,
+  schemaHelmInstallMap,
+  schemaHelmUpgradeMap,
+  schemaHelmUninstallMap,
+  schemaHelmRollbackMap,
+  schemaHelmHistoryMap,
   compactHelmListMap,
   formatHelmListCompact,
   compactHelmStatusMap,
@@ -258,10 +266,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmList,
+            schemaHelmListMap,
             compactHelmListMap,
             formatHelmListCompact,
             compact === false,
@@ -286,10 +295,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmStatus,
+            schemaHelmStatusMap,
             compactHelmStatusMap,
             formatHelmStatusCompact,
             compact === false,
@@ -332,10 +342,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmInstall,
+            schemaHelmInstallMap,
             compactHelmInstallMap,
             formatHelmInstallCompact,
             compact === false,
@@ -380,10 +391,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmUpgrade,
+            schemaHelmUpgradeMap,
             compactHelmUpgradeMap,
             formatHelmUpgradeCompact,
             compact === false,
@@ -410,10 +422,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmUninstall,
+            schemaHelmUninstallMap,
             compactHelmUninstallMap,
             formatHelmUninstallCompact,
             compact === false,
@@ -441,10 +454,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmRollback,
+            schemaHelmRollbackMap,
             compactHelmRollbackMap,
             formatHelmRollbackCompact,
             compact === false,
@@ -467,10 +481,11 @@ export function registerHelmTool(server: McpServer) {
           );
           const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-          return compactDualOutput(
+          return strippedCompactDualOutput(
             data,
             rawOutput,
             formatHelmHistory,
+            schemaHelmHistoryMap,
             compactHelmHistoryMap,
             formatHelmHistoryCompact,
             compact === false,

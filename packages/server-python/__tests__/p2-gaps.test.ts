@@ -238,7 +238,7 @@ describe("Python P2 gaps", () => {
 
     const out = await handler({ action: "lock", compact: false });
     expect(vi.mocked(poetry).mock.calls[0][0][0]).toBe("lock");
-    expect(out.structuredContent.action).toBe("lock");
+    expect(out.structuredContent.success).toBe(true);
   });
 
   it("#370 adds poetry check action", async () => {
@@ -253,7 +253,7 @@ describe("Python P2 gaps", () => {
 
     const out = await handler({ action: "check", compact: false });
     expect(vi.mocked(poetry).mock.calls[0][0][0]).toBe("check");
-    expect(out.structuredContent.action).toBe("check");
+    expect(out.structuredContent.success).toBe(true);
   });
 
   it("#371 adds poetry export action", async () => {

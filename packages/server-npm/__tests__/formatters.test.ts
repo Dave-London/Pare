@@ -30,11 +30,9 @@ describe("formatInstall", () => {
       added: 5,
       removed: 0,
       changed: 0,
-      duration: 3.2,
-      packages: 120,
     };
-    const output = formatInstall(data);
-    expect(output).toBe("added 5 (120 packages, 3.2s)");
+    const output = formatInstall(data, 3.2);
+    expect(output).toBe("added 5 (5 packages, 3.2s)");
   });
 
   it("formats install with added, removed, and changed", () => {
@@ -42,8 +40,6 @@ describe("formatInstall", () => {
       added: 3,
       removed: 1,
       changed: 2,
-      duration: 5.1,
-      packages: 150,
       vulnerabilities: {
         total: 2,
         critical: 1,
@@ -54,8 +50,8 @@ describe("formatInstall", () => {
       },
       funding: 10,
     };
-    const output = formatInstall(data);
-    expect(output).toContain("added 3, removed 1, changed 2 (150 packages, 5.1s)");
+    const output = formatInstall(data, 5.1);
+    expect(output).toContain("added 3, removed 1, changed 2 (6 packages, 5.1s)");
     expect(output).toContain("2 vulnerabilities (1 critical, 1 high)");
     expect(output).toContain("10 packages looking for funding");
   });
@@ -65,11 +61,9 @@ describe("formatInstall", () => {
       added: 0,
       removed: 0,
       changed: 0,
-      duration: 0.5,
-      packages: 80,
     };
     const output = formatInstall(data);
-    expect(output).toBe("up to date (80 packages)");
+    expect(output).toBe("up to date");
   });
 
   it("omits vulnerability line when total is 0", () => {
@@ -77,8 +71,6 @@ describe("formatInstall", () => {
       added: 1,
       removed: 0,
       changed: 0,
-      duration: 1.0,
-      packages: 50,
       vulnerabilities: {
         total: 0,
         critical: 0,
@@ -97,7 +89,6 @@ describe("formatAudit", () => {
   it("formats clean audit with no vulnerabilities", () => {
     const data: NpmAudit = {
       vulnerabilities: [],
-      summary: { total: 0, critical: 0, high: 0, moderate: 0, low: 0, info: 0 },
     };
     expect(formatAudit(data)).toBe("No vulnerabilities found.");
   });
@@ -118,7 +109,6 @@ describe("formatAudit", () => {
           fixAvailable: false,
         },
       ],
-      summary: { total: 2, critical: 1, high: 1, moderate: 0, low: 0, info: 0 },
     };
     const output = formatAudit(data);
     expect(output).toContain("2 vulnerabilities (1 critical, 1 high, 0 moderate, 0 low)");
@@ -130,7 +120,7 @@ describe("formatAudit", () => {
 
 describe("formatOutdated", () => {
   it("formats when all packages are up to date", () => {
-    const data: NpmOutdated = { packages: [], total: 0 };
+    const data: NpmOutdated = { packages: [] };
     expect(formatOutdated(data)).toBe("All packages are up to date.");
   });
 
@@ -140,7 +130,6 @@ describe("formatOutdated", () => {
         { name: "express", current: "4.17.1", wanted: "4.18.2", latest: "5.0.0" },
         { name: "lodash", current: "4.17.20", wanted: "4.17.21", latest: "4.17.21" },
       ],
-      total: 2,
     };
     const output = formatOutdated(data);
     expect(output).toContain("2 outdated packages:");
@@ -159,7 +148,6 @@ describe("formatOutdated", () => {
           homepage: "https://www.typescriptlang.org/",
         },
       ],
-      total: 1,
     };
     const output = formatOutdated(data);
     expect(output).toContain("https://www.typescriptlang.org/");
@@ -175,7 +163,6 @@ describe("formatList", () => {
         express: { version: "4.18.2" },
         lodash: { version: "4.17.21" },
       },
-      total: 2,
     };
     const output = formatList(data);
     expect(output).toContain("my-app@1.0.0 (2 dependencies)");
@@ -191,7 +178,6 @@ describe("formatList", () => {
         express: { version: "4.18.2" },
       },
       problems: ["missing: zod@^3.0.0, required by my-app@1.0.0"],
-      total: 1,
     };
     const output = formatList(data);
     expect(output).toContain("Problems (1):");
@@ -203,7 +189,6 @@ describe("formatList", () => {
       name: "empty-app",
       version: "0.1.0",
       dependencies: {},
-      total: 0,
     };
     const output = formatList(data);
     expect(output).toBe("empty-app@0.1.0 (0 dependencies)");
@@ -214,14 +199,13 @@ describe("formatRun", () => {
   it("formats successful script run", () => {
     const data: NpmRun = {
       packageManager: "npm",
-      script: "build",
       exitCode: 0,
       stdout: "Build completed.",
       stderr: "",
       success: true,
-      duration: 2.5,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "build", 2.5);
     expect(output).toContain('Script "build" completed successfully in 2.5s');
     expect(output).toContain("Build completed.");
   });
@@ -229,14 +213,13 @@ describe("formatRun", () => {
   it("formats failed script run with stderr", () => {
     const data: NpmRun = {
       packageManager: "npm",
-      script: "lint",
       exitCode: 1,
       stdout: "",
       stderr: "ESLint found 3 errors",
       success: false,
-      duration: 1.2,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "lint", 1.2);
     expect(output).toContain('Script "lint" failed (exit code 1) in 1.2s');
     expect(output).toContain("ESLint found 3 errors");
   });
@@ -251,9 +234,8 @@ describe("formatTest", () => {
       stderr: "",
       success: true,
       timedOut: false,
-      duration: 4.0,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 4.0);
     expect(output).toContain("Tests passed in 4s");
     expect(output).toContain("All tests passed");
   });
@@ -266,9 +248,8 @@ describe("formatTest", () => {
       stderr: "2 tests failed",
       success: false,
       timedOut: false,
-      duration: 3.1,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 3.1);
     expect(output).toContain("Tests failed (exit code 1) in 3.1s");
     expect(output).toContain("2 tests failed");
   });
@@ -281,9 +262,8 @@ describe("formatTest", () => {
       stderr: "Command timed out",
       success: false,
       timedOut: true,
-      duration: 300,
     };
-    const output = formatTest(data);
+    const output = formatTest(data, 300);
     expect(output).toContain("Tests timed out in 300s");
   });
 });
@@ -374,7 +354,6 @@ describe("formatSearch", () => {
         { name: "express", version: "4.18.2", description: "Web framework", author: "TJ" },
         { name: "koa", version: "2.14.0", description: "Koa web framework" },
       ],
-      total: 2,
     };
     const output = formatSearch(data);
     expect(output).toContain("2 packages found:");
@@ -387,7 +366,6 @@ describe("formatSearch", () => {
     const data: NpmSearch = {
       packageManager: "npm",
       packages: [],
-      total: 0,
     };
     expect(formatSearch(data)).toBe("No packages found.");
   });

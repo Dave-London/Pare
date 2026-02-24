@@ -1,9 +1,39 @@
-import type { MakeRunResult, MakeListResult } from "../schemas/index.js";
+import type {
+  MakeRunResult,
+  MakeRunResultInternal,
+  MakeListResult,
+  MakeListResultInternal,
+} from "../schemas/index.js";
+
+// ── Schema maps (strip Internal-only fields for structuredContent) ──
+
+/** Strips Internal-only fields from make run result for structuredContent. */
+export function schemaRunMap(data: MakeRunResultInternal): MakeRunResult {
+  return {
+    success: data.success,
+    exitCode: data.exitCode,
+    stdout: data.stdout,
+    stderr: data.stderr,
+    timedOut: data.timedOut,
+  };
+}
+
+/** Strips Internal-only fields from make list result for structuredContent. */
+export function schemaListMap(data: MakeListResultInternal): MakeListResult {
+  return {
+    targets: data.targets?.map((t) => ({
+      name: t.name,
+      description: t.description,
+      dependencies: t.dependencies,
+    })),
+    patternRules: data.patternRules,
+  };
+}
 
 // ── Full formatters ──────────────────────────────────────────────────
 
 /** Formats structured run results into a human-readable output summary. */
-export function formatRun(data: MakeRunResult): string {
+export function formatRun(data: MakeRunResultInternal): string {
   const lines: string[] = [];
   if (data.timedOut) {
     lines.push(
@@ -23,7 +53,7 @@ export function formatRun(data: MakeRunResult): string {
 }
 
 /** Formats structured list results into a human-readable target listing. */
-export function formatList(data: MakeListResult): string {
+export function formatList(data: MakeListResultInternal): string {
   if (data.total === 0) return `${data.tool}: no targets found.`;
 
   const lines = [`${data.tool}: ${data.total} targets`];
@@ -55,55 +85,43 @@ export function formatList(data: MakeListResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact run: target, exitCode, success, duration, timedOut. Drop stdout/stderr. */
+/** Compact run: schema-compatible fields only. Drop stdout/stderr and Internal fields. */
 export interface MakeRunCompact {
   [key: string]: unknown;
-  target: string;
   success: boolean;
   exitCode: number;
-  duration: number;
-  tool: "make" | "just";
   timedOut: boolean;
-  errorType?: "missing-target" | "recipe-failure" | "parse-error";
 }
 
-export function compactRunMap(data: MakeRunResult): MakeRunCompact {
+export function compactRunMap(data: MakeRunResultInternal): MakeRunCompact {
   return {
-    target: data.target,
     success: data.success,
     exitCode: data.exitCode,
-    duration: data.duration,
-    tool: data.tool,
     timedOut: data.timedOut,
-    errorType: data.errorType,
   };
 }
 
 export function formatRunCompact(data: MakeRunCompact): string {
   if (data.timedOut) {
-    return `${data.tool} ${data.target}: TIMED OUT after ${data.duration}ms (exit code ${data.exitCode}).`;
+    return `make/just: TIMED OUT (exit code ${data.exitCode}).`;
   }
-  if (data.success) return `${data.tool} ${data.target}: success (${data.duration}ms).`;
-  return `${data.tool} ${data.target}: exit code ${data.exitCode} (${data.duration}ms)${data.errorType ? ` [${data.errorType}]` : ""}.`;
+  if (data.success) return `make/just: success.`;
+  return `make/just: exit code ${data.exitCode}.`;
 }
 
-/** Compact list: total and tool. Drop individual target details. */
+/** Compact list: schema-compatible fields only. Drop target details and Internal fields. */
 export interface MakeListCompact {
   [key: string]: unknown;
-  total: number;
-  patternRuleCount: number;
-  tool: "make" | "just";
+  patternRules?: MakeListResultInternal["patternRules"];
 }
 
-export function compactListMap(data: MakeListResult): MakeListCompact {
+export function compactListMap(data: MakeListResultInternal): MakeListCompact {
   return {
-    total: data.total,
-    patternRuleCount: (data.patternRules ?? []).length,
-    tool: data.tool,
+    patternRules: data.patternRules,
   };
 }
 
 export function formatListCompact(data: MakeListCompact): string {
-  if (data.total === 0) return `${data.tool}: no targets found.`;
-  return `${data.tool}: ${data.total} targets (${data.patternRuleCount} pattern rules)`;
+  const patternCount = (data.patternRules ?? []).length;
+  return `make/just: targets listed (${patternCount} pattern rules)`;
 }

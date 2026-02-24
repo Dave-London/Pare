@@ -65,7 +65,7 @@ describe("parseNxOutput", () => {
     expect(result.success).toBe(true);
     expect(result.duration).toBe(5.4);
     expect(result.tasks).toHaveLength(3);
-    expect(result.total).toBe(3);
+    // total was removed from schema — derivable from tasks.length
     expect(result.passed).toBe(3);
     expect(result.failed).toBe(0);
     expect(result.cached).toBe(2);
@@ -141,7 +141,7 @@ describe("parseNxOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.tasks).toEqual([]);
-    expect(result.total).toBe(0);
+    // total was removed from schema — derivable from tasks.length
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
     expect(result.cached).toBe(0);
@@ -152,7 +152,7 @@ describe("parseNxOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.tasks).toEqual([]);
-    expect(result.total).toBe(0);
+    // total was removed from schema — derivable from tasks.length
   });
 
   it("parses scoped package names", () => {
@@ -284,7 +284,6 @@ describe("compactNxMap", () => {
       tasks: [
         { project: "app", target: "build", status: "success", duration: 1.2, cache: "local" },
       ],
-      total: 1,
       passed: 1,
       failed: 0,
       cached: 1,
@@ -292,7 +291,6 @@ describe("compactNxMap", () => {
     const compact = compactNxMap(data);
     expect(compact.success).toBe(true);
     expect(compact.duration).toBe(5.4);
-    expect(compact.total).toBe(1);
     expect(compact.passed).toBe(1);
     expect(compact.failed).toBe(0);
     expect(compact.cached).toBe(1);
@@ -305,7 +303,6 @@ describe("formatNxCompact", () => {
     const output = formatNxCompact({
       success: true,
       duration: 5.4,
-      total: 3,
       passed: 3,
       failed: 0,
       cached: 2,
@@ -317,7 +314,6 @@ describe("formatNxCompact", () => {
     const output = formatNxCompact({
       success: false,
       duration: 2.6,
-      total: 2,
       passed: 1,
       failed: 1,
       cached: 0,

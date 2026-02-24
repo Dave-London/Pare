@@ -13,7 +13,6 @@ describe("parsePrReview", () => {
 
     expect(result.number).toBe(42);
     expect(result.event).toBe("APPROVE");
-    expect(result.url).toBe("https://github.com/owner/repo/pull/42");
   });
 
   it("parses request-changes review output", () => {
@@ -23,7 +22,6 @@ describe("parsePrReview", () => {
 
     expect(result.number).toBe(7);
     expect(result.event).toBe("REQUEST_CHANGES");
-    expect(result.url).toBe("https://github.com/owner/repo/pull/7");
   });
 
   it("parses comment review output", () => {
@@ -33,7 +31,6 @@ describe("parsePrReview", () => {
 
     expect(result.number).toBe(100);
     expect(result.event).toBe("COMMENT");
-    expect(result.url).toBe("https://github.com/owner/repo/pull/100");
   });
 
   it("handles output without URL", () => {
@@ -43,7 +40,6 @@ describe("parsePrReview", () => {
 
     expect(result.number).toBe(5);
     expect(result.event).toBe("APPROVE");
-    expect(result.url).toBe("");
   });
 
   it("preserves number and event from arguments", () => {
@@ -53,7 +49,6 @@ describe("parsePrReview", () => {
 
     expect(result.number).toBe(99);
     expect(result.event).toBe("COMMENT");
-    expect(result.url).toBe("");
   });
 });
 
@@ -64,33 +59,24 @@ describe("formatPrReview", () => {
     const data: PrReviewResult = {
       number: 42,
       event: "approve",
-      url: "https://github.com/owner/repo/pull/42",
     };
-    expect(formatPrReview(data)).toBe(
-      "Reviewed PR #42 (approve): https://github.com/owner/repo/pull/42",
-    );
+    expect(formatPrReview(data)).toBe("Reviewed PR #42 (approve)");
   });
 
   it("formats request-changes review result", () => {
     const data: PrReviewResult = {
       number: 7,
       event: "request-changes",
-      url: "https://github.com/owner/repo/pull/7",
     };
-    expect(formatPrReview(data)).toBe(
-      "Reviewed PR #7 (request-changes): https://github.com/owner/repo/pull/7",
-    );
+    expect(formatPrReview(data)).toBe("Reviewed PR #7 (request-changes)");
   });
 
   it("formats comment review result", () => {
     const data: PrReviewResult = {
       number: 100,
       event: "comment",
-      url: "https://github.com/owner/repo/pull/100",
     };
-    expect(formatPrReview(data)).toBe(
-      "Reviewed PR #100 (comment): https://github.com/owner/repo/pull/100",
-    );
+    expect(formatPrReview(data)).toBe("Reviewed PR #100 (comment)");
   });
 });
 

@@ -154,7 +154,7 @@ export function parseInstallPackageDetails(stdout: string): NpmInstall["packageD
 }
 
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
-export function parseInstallOutput(stdout: string, duration: number): NpmInstall {
+export function parseInstallOutput(stdout: string, _duration?: number): NpmInstall {
   const installJson = parseInstallJsonOutput(stdout);
   if (installJson) {
     const vulnerabilitiesFromJson =
@@ -175,8 +175,6 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
       added: parseInt(String(installJson.added ?? 0), 10),
       removed: parseInt(String(installJson.removed ?? 0), 10),
       changed: parseInt(String(installJson.changed ?? 0), 10),
-      duration,
-      packages: parseInt(String(installJson.audited ?? installJson.packages ?? 0), 10),
       ...(packageDetails ? { packageDetails } : {}),
       ...(vulnerabilities ? { vulnerabilities } : {}),
       ...(installJson.funding !== undefined
@@ -190,7 +188,6 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
   const added = stdout.match(/added (\d+) package/)?.[1];
   const removed = stdout.match(/removed (\d+) package/)?.[1];
   const changed = stdout.match(/changed (\d+) package/)?.[1];
-  const packages = stdout.match(/(\d+) packages? in/)?.[1];
 
   // Parse vulnerability summary if present
   const vulnMatch = stdout.match(/(\d+) vulnerabilit/);
@@ -220,8 +217,6 @@ export function parseInstallOutput(stdout: string, duration: number): NpmInstall
     added: parseInt(added ?? "0", 10),
     removed: parseInt(removed ?? "0", 10),
     changed: parseInt(changed ?? "0", 10),
-    duration,
-    packages: parseInt(packages ?? "0", 10),
     ...(packageDetails ? { packageDetails } : {}),
     ...(vulnerabilities ? { vulnerabilities } : {}),
     ...(fundingMatch ? { funding: parseInt(fundingMatch[1], 10) } : {}),
@@ -332,17 +327,7 @@ export function parseAuditJson(jsonStr: string): NpmAudit {
     };
   });
 
-  const meta = data.metadata?.vulnerabilities ?? {};
-  const summary = {
-    total: meta.total ?? vulnerabilities.length,
-    critical: meta.critical ?? 0,
-    high: meta.high ?? 0,
-    moderate: meta.moderate ?? 0,
-    low: meta.low ?? 0,
-    info: meta.info ?? 0,
-  };
-
-  return { vulnerabilities, summary };
+  return { vulnerabilities };
 }
 
 /**
@@ -375,17 +360,7 @@ export function parsePnpmAuditJson(jsonStr: string): NpmAudit {
     };
   });
 
-  const meta = data.metadata ?? {};
-  const summary = {
-    total: meta.totalDependencies ? vulnerabilities.length : vulnerabilities.length,
-    critical: meta.vulnerabilities?.critical ?? 0,
-    high: meta.vulnerabilities?.high ?? 0,
-    moderate: meta.vulnerabilities?.moderate ?? 0,
-    low: meta.vulnerabilities?.low ?? 0,
-    info: meta.vulnerabilities?.info ?? 0,
-  };
-
-  return { vulnerabilities, summary };
+  return { vulnerabilities };
 }
 
 /** Parses `npm outdated --json` or `pnpm outdated --json` output into structured data with current, wanted, and latest versions. */
@@ -407,7 +382,7 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
         ...(entry.dependencyType ? { type: entry.dependencyType } : {}),
       };
     });
-    return { packages, total: packages.length };
+    return { packages };
   }
 
   // npm-style { [name]: { current, wanted, latest, ... } }
@@ -428,7 +403,7 @@ export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"):
     };
   });
 
-  return { packages, total: packages.length };
+  return { packages };
 }
 
 /**
@@ -491,18 +466,6 @@ export function parseListJson(jsonStr: string): NpmList {
     Object.assign(allDeps, mainDeps);
   }
 
-  // Count all deps including nested
-  function countDeps(d: Record<string, NpmListDep>): number {
-    let count = 0;
-    for (const dep of Object.values(d)) {
-      count++;
-      if (dep.dependencies) {
-        count += countDeps(dep.dependencies);
-      }
-    }
-    return count;
-  }
-
   return {
     name: data.name ?? "unknown",
     version: data.version ?? "0.0.0",
@@ -510,7 +473,6 @@ export function parseListJson(jsonStr: string): NpmList {
     ...(Array.isArray(data.problems) && data.problems.length > 0
       ? { problems: data.problems.filter((p: unknown): p is string => typeof p === "string") }
       : {}),
-    total: countDeps(allDeps),
   };
 }
 
@@ -578,22 +540,20 @@ export function parsePnpmListJson(jsonStr: string): NpmList {
   return parseListJson(JSON.stringify(merged));
 }
 
-/** Parses `npm run <script>` output into structured data with exit code, stdout/stderr, and duration. */
+/** Parses `npm run <script>` output into structured data with exit code, stdout/stderr. */
 export function parseRunOutput(
-  script: string,
+  _script: string,
   exitCode: number,
   stdout: string,
   stderr: string,
-  duration: number,
+  _duration?: number,
   timedOut: boolean = false,
 ): NpmRun {
   return {
-    script,
     exitCode,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
     success: exitCode === 0 && !timedOut,
-    duration,
     timedOut,
   };
 }
@@ -658,12 +618,12 @@ export function parseTestResults(stdout: string, stderr: string): NpmTest["testR
   return undefined;
 }
 
-/** Parses `npm test` output into structured data with exit code, stdout/stderr, and duration. */
+/** Parses `npm test` output into structured data with exit code, stdout/stderr. */
 export function parseTestOutput(
   exitCode: number,
   stdout: string,
   stderr: string,
-  duration: number,
+  _duration?: number,
   timedOut: boolean = false,
 ): NpmTest {
   const testResults = parseTestResults(stdout, stderr);
@@ -674,7 +634,6 @@ export function parseTestOutput(
     stderr: stderr.trim(),
     success: exitCode === 0 && !timedOut,
     timedOut,
-    duration,
     ...(testResults ? { testResults } : {}),
   };
 }
@@ -715,7 +674,6 @@ export function parseInfoJson(jsonStr: string): NpmInfo {
   if (data.dist?.tarball) {
     result.dist = {
       tarball: data.dist.tarball,
-      ...(data.dist.integrity ? { integrity: data.dist.integrity } : {}),
     };
   }
   if (data.engines && Object.keys(data.engines).length > 0) {
@@ -725,8 +683,7 @@ export function parseInfoJson(jsonStr: string): NpmInfo {
     result.peerDependencies = data.peerDependencies;
   }
   if (data.deprecated) {
-    result.deprecated =
-      typeof data.deprecated === "string" ? data.deprecated : "This package is deprecated";
+    result.isDeprecated = true;
   }
   if (data.repository) {
     if (typeof data.repository === "string") {
@@ -771,12 +728,6 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
   // Yarn Classic NDJSON: each line is a JSON object
   const vulnerabilities: NpmAudit["vulnerabilities"] = [];
   const seen = new Set<string>();
-  let summaryTotal = 0;
-  let critical = 0;
-  let high = 0;
-  let moderate = 0;
-  let low = 0;
-  let info = 0;
 
   for (const line of jsonStr.split("\n")) {
     const trimmed = line.trim();
@@ -801,15 +752,6 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
           ...(adv.cves && adv.cves.length > 0 ? { cve: adv.cves[0] } : {}),
           ...(adv.cwe && adv.cwe.length > 0 ? { cwe: adv.cwe } : {}),
         });
-      } else if (entry.type === "auditSummary" && entry.data) {
-        const v = entry.data.vulnerabilities ?? {};
-        summaryTotal =
-          (v.critical ?? 0) + (v.high ?? 0) + (v.moderate ?? 0) + (v.low ?? 0) + (v.info ?? 0);
-        critical = v.critical ?? 0;
-        high = v.high ?? 0;
-        moderate = v.moderate ?? 0;
-        low = v.low ?? 0;
-        info = v.info ?? 0;
       }
     } catch {
       // skip non-JSON lines
@@ -818,14 +760,6 @@ export function parseYarnAuditJson(jsonStr: string): NpmAudit {
 
   return {
     vulnerabilities,
-    summary: {
-      total: summaryTotal || vulnerabilities.length,
-      critical,
-      high,
-      moderate,
-      low,
-      info,
-    },
   };
 }
 
@@ -868,20 +802,10 @@ export function parseYarnListJson(jsonStr: string): NpmList {
           deps[name] = dep;
         }
 
-        function countDeps(d: Record<string, NpmListDep>): number {
-          let count = 0;
-          for (const dep of Object.values(d)) {
-            count++;
-            if (dep.dependencies) count += countDeps(dep.dependencies);
-          }
-          return count;
-        }
-
         return {
           name: "project",
           version: "0.0.0",
           dependencies: deps,
-          total: countDeps(deps),
         };
       }
 
@@ -898,7 +822,7 @@ export function parseYarnListJson(jsonStr: string): NpmList {
   try {
     return parseListJson(jsonStr);
   } catch {
-    return { name: "unknown", version: "0.0.0", dependencies: {}, total: 0 };
+    return { name: "unknown", version: "0.0.0", dependencies: {} };
   }
 }
 
@@ -948,7 +872,7 @@ export function parseYarnOutdatedJson(jsonStr: string): NpmOutdated {
     }
   }
 
-  return { packages, total: packages.length };
+  return { packages };
 }
 
 /** Parses `npm search <query> --json` output into structured search results. */
@@ -995,7 +919,7 @@ export function parseSearchJson(jsonStr: string): NpmSearch {
     return result;
   });
 
-  return { packages, total: packages.length };
+  return { packages };
 }
 
 function normalizeIsoDate(raw: string): string | undefined {
@@ -1105,7 +1029,6 @@ export function parseNvmOutput(listOutput: string, currentOutput: string): NvmRe
   return {
     current: current || "none",
     versions,
-    ...(Object.keys(aliases).length > 0 ? { aliases } : {}),
     ...(defaultVersion ? { default: defaultVersion } : {}),
   };
 }
@@ -1160,10 +1083,10 @@ export function parseNvmLsRemoteOutput(
       return majorMatch ? allowedMajors.has(parseInt(majorMatch[1], 10)) : false;
     });
 
-    return { versions: filtered, total: filtered.length };
+    return { versions: filtered };
   }
 
-  return { versions: allVersions, total: allVersions.length };
+  return { versions: allVersions };
 }
 
 /**
@@ -1183,6 +1106,22 @@ export function parseNvmExecOutput(
     stderr: stderr.trim(),
     success: exitCode === 0,
   };
+}
+
+/**
+ * Extracts nvm aliases from `nvm list` output (display-only, not part of structured schema).
+ * Used by the tool to pass aliases to the human-readable formatter.
+ */
+export function parseNvmAliases(listOutput: string): Record<string, string> {
+  const aliases: Record<string, string> = {};
+  for (const line of listOutput.split("\n")) {
+    const trimmed = line.trim();
+    const aliasMatch = trimmed.match(/^([^\s]+)\s+->\s+(.+)$/);
+    if (aliasMatch && aliasMatch[1] !== "->") {
+      aliases[aliasMatch[1]] = normalizeAliasTarget(aliasMatch[2]);
+    }
+  }
+  return aliases;
 }
 
 /** Ensures version strings have a "v" prefix. */

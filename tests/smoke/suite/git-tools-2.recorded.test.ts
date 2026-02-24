@@ -80,30 +80,25 @@ describe("Recorded: git.add", () => {
   }
 
   it("S1 [recorded] stage specific files", async () => {
-    // Call 1: before-status (nothing staged)
-    mockGit("?? src/new-file.ts\n M src/index.ts\n");
-    // Call 2: git add -- files
+    // Call 1: git add -- files
     mockGit("");
-    // Call 3: after-status (real fixture)
+    // Call 2: after-status (real fixture)
     mockGit(loadFixture("add", "s01-after-add.txt"));
     const { parsed } = await callAndValidate({
       files: ["src/index.ts", "src/new-file.ts"],
       all: false,
     });
-    expect(parsed.staged).toBeGreaterThanOrEqual(2);
+    expect(parsed.files.length).toBeGreaterThanOrEqual(2);
     expect(parsed.files.some((f) => f.file === "src/index.ts")).toBe(true);
     expect(parsed.files.some((f) => f.file === "src/new-file.ts")).toBe(true);
   });
 
   it("S2 [recorded] stage all changes", async () => {
-    // Call 1: before-status
-    mockGit("?? src/new-file.ts\n M src/index.ts\n");
-    // Call 2: git add -A
+    // Call 1: git add -A
     mockGit("");
-    // Call 3: after-status (real fixture)
+    // Call 2: after-status (real fixture)
     mockGit(loadFixture("add", "s01-after-add.txt"));
     const { parsed } = await callAndValidate({ all: true });
-    expect(parsed.staged).toBe(2);
     expect(parsed.files.length).toBe(2);
   });
 });
@@ -185,7 +180,6 @@ describe("Recorded: git.checkout", () => {
     mockGit("src/feature.ts\n");
     const { parsed } = await callAndValidate({ ref: "feature-branch", create: false });
     expect(parsed.success).toBe(true);
-    expect(parsed.ref).toBe("feature-branch");
     expect(parsed.previousRef).toBe("main");
   });
 
@@ -329,7 +323,6 @@ describe("Recorded: git.stash", () => {
   it("S1 [recorded] push (stash changes)", async () => {
     mockGit(loadFixture("stash", "s01-push.txt"));
     const { parsed } = await callAndValidate({ action: "push" });
-    expect(parsed.action).toBe("push");
     expect(parsed.success).toBe(true);
     expect(parsed.stashRef).toBe("stash@{0}");
   });
@@ -337,7 +330,6 @@ describe("Recorded: git.stash", () => {
   it("S2 [recorded] pop stash", async () => {
     mockGit(loadFixture("stash", "s02-pop.txt"));
     const { parsed } = await callAndValidate({ action: "pop" });
-    expect(parsed.action).toBe("pop");
     expect(parsed.success).toBe(true);
   });
 
@@ -350,7 +342,6 @@ describe("Recorded: git.stash", () => {
   it("S5 [recorded] apply stash", async () => {
     mockGit(loadFixture("stash", "s05-apply.txt"));
     const { parsed } = await callAndValidate({ action: "apply" });
-    expect(parsed.action).toBe("apply");
     expect(parsed.success).toBe(true);
   });
 
@@ -358,7 +349,6 @@ describe("Recorded: git.stash", () => {
     // show action goes through a different path
     mockGit(loadFixture("stash", "s08-show.txt"));
     const { parsed } = await callAndValidate({ action: "show", index: 0 });
-    expect(parsed.action).toBe("show");
     expect(parsed.diffStat).toBeDefined();
   });
 });
@@ -389,7 +379,6 @@ describe("Recorded: git.stash-list", () => {
     mockGit(loadFixture("stash-list", "s01-list.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.stashes.length).toBeGreaterThanOrEqual(1);
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
     // The message should contain branch info (full mode returns objects)
     const stash = parsed.stashes[0] as Record<string, unknown>;
     expect(stash.message).toContain("main");
@@ -399,6 +388,5 @@ describe("Recorded: git.stash-list", () => {
     mockGit(loadFixture("stash-list", "s02-empty.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.stashes).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 });

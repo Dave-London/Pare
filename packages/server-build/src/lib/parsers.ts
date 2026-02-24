@@ -67,7 +67,6 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
   return {
     success: exitCode === 0,
     diagnostics,
-    total: diagnostics.length,
     totalFiles,
     emittedFiles: emittedFiles.length > 0 ? emittedFiles : undefined,
     errors,
@@ -186,7 +185,6 @@ export function parseBuildCommandOutput(
     warnings,
     stdout: stdout || undefined,
     stderr: stderr || undefined,
-    outputLines: lines.length,
   };
 }
 
@@ -293,14 +291,9 @@ export function parseEsbuildOutput(
 
   // Parse metafile if provided (Gap #80)
   let metafile: EsbuildMetafile | undefined;
-  let outputFileStats: Array<{ file: string; bytes: number }> | undefined;
   if (metafileContent) {
     metafile = parseEsbuildMetafile(metafileContent);
     if (metafile) {
-      outputFileStats = Object.entries(metafile.outputs).map(([file, entry]) => ({
-        file,
-        bytes: entry.bytes,
-      }));
       for (const file of Object.keys(metafile.outputs)) {
         outputFiles.add(file);
       }
@@ -312,7 +305,6 @@ export function parseEsbuildOutput(
     errors,
     warnings,
     outputFiles: outputFiles.size > 0 ? [...outputFiles] : undefined,
-    outputFileStats,
     duration,
     metafile,
   };
@@ -852,7 +844,6 @@ export function parseNxOutput(
     success: exitCode === 0,
     duration,
     tasks,
-    total: tasks.length,
     passed,
     failed,
     cached,

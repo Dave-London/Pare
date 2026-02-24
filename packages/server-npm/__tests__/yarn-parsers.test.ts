@@ -38,8 +38,7 @@ describe("parseYarnAuditJson", () => {
     expect(result.vulnerabilities[0].severity).toBe("high");
     expect(result.vulnerabilities[0].title).toBe("Prototype Pollution");
     expect(result.vulnerabilities[0].fixAvailable).toBe(true);
-    expect(result.summary.total).toBe(1);
-    expect(result.summary.high).toBe(1);
+    // summary was removed from schema — verify via vulnerabilities array
   });
 
   it("deduplicates advisories by id", () => {
@@ -85,14 +84,14 @@ describe("parseYarnAuditJson", () => {
     });
 
     const result = parseYarnAuditJson(json);
-    expect(result.summary.total).toBe(1);
+    expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].name).toBe("express");
   });
 
   it("handles empty NDJSON output", () => {
     const result = parseYarnAuditJson("");
     expect(result.vulnerabilities).toHaveLength(0);
-    expect(result.summary.total).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(0);
   });
 
   it("handles advisory with no fix available", () => {
@@ -133,10 +132,9 @@ describe("parseYarnListJson", () => {
     });
 
     const result = parseYarnListJson(json);
-    expect(result.dependencies["express"]).toEqual({ version: "4.18.2" });
-    expect(result.dependencies["lodash"].version).toBe("4.17.21");
-    expect(result.dependencies["lodash"].dependencies?.["lodash.merge"].version).toBe("4.6.2");
-    expect(result.total).toBe(3);
+    expect(result.dependencies!["express"]).toEqual({ version: "4.18.2" });
+    expect(result.dependencies!["lodash"].version).toBe("4.17.21");
+    expect(result.dependencies!["lodash"].dependencies?.["lodash.merge"].version).toBe("4.6.2");
   });
 
   it("handles empty tree", () => {
@@ -146,7 +144,6 @@ describe("parseYarnListJson", () => {
     });
 
     const result = parseYarnListJson(json);
-    expect(result.total).toBe(0);
     expect(result.dependencies).toEqual({});
   });
 
@@ -161,7 +158,7 @@ describe("parseYarnListJson", () => {
 
     const result = parseYarnListJson(json);
     expect(result.name).toBe("my-project");
-    expect(result.dependencies["express"].version).toBe("4.18.2");
+    expect(result.dependencies!["express"].version).toBe("4.18.2");
   });
 
   it("handles scoped packages with @ in name", () => {
@@ -174,12 +171,11 @@ describe("parseYarnListJson", () => {
     });
 
     const result = parseYarnListJson(json);
-    expect(result.dependencies["@types/node"]).toEqual({ version: "20.11.0" });
+    expect(result.dependencies!["@types/node"]).toEqual({ version: "20.11.0" });
   });
 
   it("returns empty result for invalid input", () => {
     const result = parseYarnListJson("not valid json at all");
-    expect(result.total).toBe(0);
     expect(result.dependencies).toEqual({});
   });
 });
@@ -198,7 +194,7 @@ describe("parseYarnOutdatedJson", () => {
     });
 
     const result = parseYarnOutdatedJson(json);
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages[0].name).toBe("express");
     expect(result.packages[0].current).toBe("4.17.0");
     expect(result.packages[0].wanted).toBe("4.18.2");
@@ -215,7 +211,7 @@ describe("parseYarnOutdatedJson", () => {
     });
 
     const result = parseYarnOutdatedJson(json);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -225,13 +221,13 @@ describe("parseYarnOutdatedJson", () => {
     });
 
     const result = parseYarnOutdatedJson(json);
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages[0].name).toBe("express");
   });
 
   it("handles empty NDJSON output", () => {
     const result = parseYarnOutdatedJson("");
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 });
@@ -239,18 +235,17 @@ describe("parseYarnOutdatedJson", () => {
 describe("parseInstallOutput with yarn-style output", () => {
   it("parses yarn install output with success message", () => {
     const output = "success Saved lockfile.\nadded 42 packages in 3.5s\n42 packages in 3s";
-    const result = parseInstallOutput(output, 3.5);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(42);
-    expect(result.packages).toBe(42);
-    expect(result.duration).toBe(3.5);
+    // packages and duration were removed from schema
   });
 
   it("parses yarn install output with no changes", () => {
     const output = "success Already up-to-date.\n0 packages in 0s";
-    const result = parseInstallOutput(output, 0.5);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(0);
-    expect(result.duration).toBe(0.5);
+    // duration was removed from schema
   });
 });

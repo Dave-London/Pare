@@ -436,7 +436,6 @@ describe("Smoke: cargo build", () => {
     mockCargo(BUILD_SUCCESS_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.errors).toBe(0);
   });
 
   // S2 [P0] Build with errors
@@ -444,7 +443,8 @@ describe("Smoke: cargo build", () => {
     mockCargo(BUILD_ERROR_JSON, "", 101);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(false);
-    expect(parsed.errors).toBeGreaterThan(0);
+    expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.length).toBeGreaterThan(0);
   });
 
   // S3 [P0] No Cargo.toml
@@ -553,8 +553,6 @@ describe("Smoke: cargo check", () => {
     mockCargo(CHECK_SUCCESS_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.mode).toBe("check");
-    expect(parsed.errors).toBe(0);
   });
 
   // S2 [P0] Type errors
@@ -562,7 +560,8 @@ describe("Smoke: cargo check", () => {
     mockCargo(CHECK_ERROR_JSON, "", 101);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(false);
-    expect(parsed.errors).toBeGreaterThan(0);
+    expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.length).toBeGreaterThan(0);
   });
 
   // S3 [P0] No Cargo.toml
@@ -644,15 +643,14 @@ describe("Smoke: cargo clippy", () => {
     mockCargo(CLIPPY_CLEAN_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.errors).toBe(0);
-    expect(parsed.warnings).toBe(0);
   });
 
   // S2 [P0] Project with lint warnings
   it("S2 [P0] project with lint warnings returns diagnostics", async () => {
     mockCargo(CLIPPY_WARN_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.warnings).toBeGreaterThan(0);
+    expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.length).toBeGreaterThan(0);
   });
 
   // S3 [P0] No Cargo.toml
@@ -950,7 +948,7 @@ describe("Smoke: cargo remove", () => {
       packages: ["serde"],
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
+    expect(parsed.removed.length).toBeGreaterThanOrEqual(1);
   });
 
   // S2 [P0] Remove nonexistent dep
@@ -1262,7 +1260,8 @@ describe("Smoke: cargo test", () => {
     mockCargo(TEST_EMPTY_OUTPUT, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
+    expect(parsed.passed).toBe(0);
+    expect(parsed.failed).toBe(0);
   });
 
   // S4 [P0] Compilation failure

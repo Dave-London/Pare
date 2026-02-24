@@ -7,8 +7,8 @@ import {
   parseCargoDocOutput,
   parseCargoFmtOutput,
   parseCargoRemoveOutput,
-  parseCargoRunOutput,
   parseCargoTestOutput,
+  detectSignalFromExitCode,
 } from "../src/lib/parsers.js";
 import { registerAddTool } from "../src/tools/add.js";
 import { registerAuditTool } from "../src/tools/audit.js";
@@ -149,8 +149,8 @@ describe("P2 cargo gaps", () => {
         "\n",
       );
       const result = parseCargoBuildJson(stdout, 101);
-      expect(result.total).toBe(1);
-      expect(result.errors).toBe(1);
+      expect(result.diagnostics).toHaveLength(1);
+      expect(result.diagnostics[0].severity).toBe("error");
     });
   });
 
@@ -166,10 +166,9 @@ describe("P2 cargo gaps", () => {
   });
 
   describe("Gap #216: dedicated check schema/mode", () => {
-    it("returns check mode metadata from parseCargoCheckJson", () => {
+    it("returns success from parseCargoCheckJson", () => {
       const stdout = JSON.stringify({ reason: "build-finished", success: true });
       const result = parseCargoCheckJson(stdout, 0);
-      expect(result.mode).toBe("check");
       expect(result.success).toBe(true);
     });
   });
@@ -222,29 +221,17 @@ describe("P2 cargo gaps", () => {
   });
 
   describe("Gap #220: run signal detection", () => {
-    it("detects SIGSEGV from exit code 139", () => {
-      const result = parseCargoRunOutput("", "segmentation fault", 139);
-      expect(result.signal).toBe("SIGSEGV");
+    it("detects SIGSEGV from exit code 139 via helper", () => {
+      // signal field was removed from schema; detectSignalFromExitCode is still available as a helper
+      expect(detectSignalFromExitCode(139, "segmentation fault")).toBe("SIGSEGV");
     });
 
-    it("prefers explicit signal in stderr text when available", () => {
-      const result = parseCargoRunOutput("", "terminated by SIGTERM", 143);
-      expect(result.signal).toBe("SIGTERM");
+    it("prefers explicit signal in stderr text when available via helper", () => {
+      expect(detectSignalFromExitCode(143, "terminated by SIGTERM")).toBe("SIGTERM");
     });
   });
 
   describe("Gap #221: test duration parsing", () => {
-    it("captures suite duration from summary timing", () => {
-      const stdout = [
-        "running 1 test",
-        "test tests::a ... ok",
-        "",
-        "test result: ok. 1 passed; 0 failed; 0 ignored; finished in 0.42s",
-      ].join("\n");
-      const result = parseCargoTestOutput(stdout, 0);
-      expect(result.duration).toBe("0.42s");
-    });
-
     it("captures per-test duration when emitted inline", () => {
       const stdout = [
         "running 1 test",
@@ -254,7 +241,6 @@ describe("P2 cargo gaps", () => {
       ].join("\n");
       const result = parseCargoTestOutput(stdout, 0);
       expect(result.tests?.[0].duration).toBe("0.75s");
-      expect(result.duration).toBe("0.80s");
     });
   });
 });

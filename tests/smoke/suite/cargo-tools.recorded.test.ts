@@ -82,9 +82,6 @@ describe("Recorded: cargo.build", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.errors).toBe(0);
-    expect(parsed.warnings).toBe(0);
-    expect(parsed.total).toBe(0);
   });
 
   it("S2 [recorded] build with compile errors", async () => {
@@ -105,9 +102,8 @@ describe("Recorded: cargo.build", () => {
       compact: false,
     });
     expect(parsed.success).toBe(false);
-    expect(parsed.errors).toBe(1);
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
     expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.length).toBeGreaterThanOrEqual(1);
     expect(parsed.diagnostics![0].file).toBe("src/main.rs");
     expect(parsed.diagnostics![0].severity).toBe("error");
     expect(parsed.diagnostics![0].code).toBe("E0308");
@@ -158,11 +154,9 @@ describe("Recorded: cargo.test", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(3);
     expect(parsed.passed).toBe(3);
     expect(parsed.failed).toBe(0);
     expect(parsed.ignored).toBe(0);
-    expect(parsed.duration).toBe("0.02s");
     expect(parsed.tests![0].name).toBe("tests::test_add");
     expect(parsed.tests![0].status).toBe("ok");
   });
@@ -187,11 +181,9 @@ describe("Recorded: cargo.test", () => {
       compact: false,
     });
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBe(3);
     expect(parsed.passed).toBe(2);
     expect(parsed.failed).toBe(1);
     expect(parsed.ignored).toBe(0);
-    expect(parsed.duration).toBe("0.03s");
     const failedTest = parsed.tests!.find((t) => t.status === "FAILED");
     expect(failedTest).toBeDefined();
     expect(failedTest!.name).toBe("tests::test_sub");
@@ -240,9 +232,6 @@ describe("Recorded: cargo.clippy", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
-    expect(parsed.errors).toBe(0);
-    expect(parsed.warnings).toBe(0);
   });
 
   it("S2 [recorded] clippy with warnings", async () => {
@@ -265,10 +254,8 @@ describe("Recorded: cargo.clippy", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(1);
-    expect(parsed.warnings).toBe(1);
-    expect(parsed.errors).toBe(0);
     expect(parsed.diagnostics).toBeDefined();
+    expect(parsed.diagnostics!.length).toBe(1);
     expect(parsed.diagnostics![0].code).toBe("clippy::redundant_clone");
     expect(parsed.diagnostics![0].file).toBe("src/main.rs");
     expect(parsed.diagnostics![0].line).toBe(10);
@@ -380,9 +367,6 @@ describe("Recorded: cargo.tree", () => {
     });
     expect(parsed.success).toBe(true);
     expect(parsed.packages).toBeGreaterThan(0);
-    expect(parsed.tree).toBeDefined();
-    expect(parsed.tree).toContain("serde");
-    expect(parsed.tree).toContain("tokio");
     expect(parsed.dependencies).toBeDefined();
     // Root package is my-app at depth 0
     const root = parsed.dependencies!.find((d) => d.name === "my-app");

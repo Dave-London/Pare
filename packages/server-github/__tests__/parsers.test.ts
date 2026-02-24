@@ -54,9 +54,6 @@ describe("parsePrView", () => {
       status: "COMPLETED",
       conclusion: "FAILURE",
     });
-    expect(result.url).toBe("https://github.com/owner/repo/pull/42");
-    expect(result.headBranch).toBe("feat/new-feature");
-    expect(result.baseBranch).toBe("main");
     expect(result.additions).toBe(100);
     expect(result.deletions).toBe(20);
     expect(result.changedFiles).toBe(5);
@@ -127,7 +124,7 @@ describe("parsePrList", () => {
 
     const result = parsePrList(json);
 
-    expect(result.total).toBe(2);
+    expect(result.prs.length).toBe(2);
     expect(result.prs[0]).toEqual({
       number: 10,
       state: "OPEN",
@@ -141,7 +138,7 @@ describe("parsePrList", () => {
 
   it("handles empty list", () => {
     const result = parsePrList("[]");
-    expect(result.total).toBe(0);
+    expect(result.prs.length).toBe(0);
     expect(result.prs).toEqual([]);
   });
 
@@ -484,7 +481,7 @@ describe("parseIssueList", () => {
 
     const result = parseIssueList(json);
 
-    expect(result.total).toBe(2);
+    expect(result.issues.length).toBe(2);
     expect(result.issues[0].labels).toEqual(["bug"]);
     expect(result.issues[0].assignees).toEqual(["alice"]);
     expect(result.issues[1].labels).toEqual([]);
@@ -493,7 +490,7 @@ describe("parseIssueList", () => {
 
   it("handles empty list", () => {
     const result = parseIssueList("[]");
-    expect(result.total).toBe(0);
+    expect(result.issues.length).toBe(0);
     expect(result.issues).toEqual([]);
   });
 });
@@ -634,7 +631,7 @@ describe("parseRunList", () => {
 
     const result = parseRunList(json);
 
-    expect(result.total).toBe(2);
+    expect(result.runs.length).toBe(2);
     expect(result.runs[0].id).toBe(100);
     expect(result.runs[0].conclusion).toBe("success");
     expect(result.runs[1].id).toBe(101);
@@ -643,7 +640,7 @@ describe("parseRunList", () => {
 
   it("handles empty list", () => {
     const result = parseRunList("[]");
-    expect(result.total).toBe(0);
+    expect(result.runs.length).toBe(0);
     expect(result.runs).toEqual([]);
   });
 });
@@ -850,7 +847,7 @@ describe("parseLabelList", () => {
 
     const result = parseLabelList(json);
 
-    expect(result.total).toBe(2);
+    expect(result.labels.length).toBe(2);
     expect(result.labels[0]).toEqual({
       name: "bug",
       description: "Something isn't working",
@@ -867,7 +864,7 @@ describe("parseLabelList", () => {
 
   it("handles empty list", () => {
     const result = parseLabelList("[]");
-    expect(result.total).toBe(0);
+    expect(result.labels.length).toBe(0);
     expect(result.labels).toEqual([]);
   });
 
@@ -1137,19 +1134,16 @@ describe("parseReleaseCreate", () => {
       false,
       false,
       "Release 1.0",
-      2,
     );
     expect(result.tag).toBe("v1.0.0");
     expect(result.draft).toBe(false);
     expect(result.prerelease).toBe(false);
     expect(result.title).toBe("Release 1.0");
-    expect(result.assetsUploaded).toBe(2);
   });
 
-  it("handles no title or assets", () => {
+  it("handles no title", () => {
     const result = parseReleaseCreate("https://url", "v2.0.0", true, true);
     expect(result.title).toBeUndefined();
-    expect(result.assetsUploaded).toBeUndefined();
     expect(result.draft).toBe(true);
     expect(result.prerelease).toBe(true);
   });
@@ -1170,14 +1164,14 @@ describe("parseReleaseList", () => {
       },
     ]);
     const result = parseReleaseList(json);
-    expect(result.total).toBe(1);
+    expect(result.releases.length).toBe(1);
     expect(result.releases[0].isLatest).toBe(true);
     expect(result.releases[0].createdAt).toBe("2024-05-30");
   });
 
-  it("handles totalAvailable", () => {
-    const result = parseReleaseList("[]", 50);
-    expect(result.totalAvailable).toBe(50);
+  it("handles empty list", () => {
+    const result = parseReleaseList("[]");
+    expect(result.releases.length).toBe(0);
   });
 });
 
@@ -1299,7 +1293,6 @@ describe("parseDiscussionList", () => {
     });
 
     const result = parseDiscussionList(json);
-    expect(result.totalCount).toBe(10);
     expect(result.discussions).toHaveLength(2);
     expect(result.discussions[0].author).toBe("alice");
     expect(result.discussions[0].isAnswered).toBe(true);
@@ -1313,7 +1306,6 @@ describe("parseDiscussionList", () => {
   it("handles empty response", () => {
     const json = JSON.stringify({ data: {} });
     const result = parseDiscussionList(json);
-    expect(result.totalCount).toBe(0);
     expect(result.discussions).toEqual([]);
   });
 });
@@ -1325,12 +1317,12 @@ describe("parsePrDiffNumstat", () => {
 0\t20\tremoved.ts`;
 
     const result = parsePrDiffNumstat(stdout);
-    expect(result.totalFiles).toBe(3);
+    expect(result.files.length).toBe(3);
     expect(result.files[0].status).toBe("added");
     expect(result.files[1].status).toBe("modified");
     expect(result.files[2].status).toBe("deleted");
-    expect(result.totalAdditions).toBe(15);
-    expect(result.totalDeletions).toBe(23);
+    expect(result.files.reduce((s, f) => s + f.additions, 0)).toBe(15);
+    expect(result.files.reduce((s, f) => s + f.deletions, 0)).toBe(23);
   });
 
   it("detects renamed files with brace syntax", () => {
@@ -1418,7 +1410,7 @@ describe("parseApi", () => {
   });
 });
 
-describe("parseRunView — with steps and duration", () => {
+describe("parseRunView — with steps", () => {
   it("parses jobs with steps", () => {
     const json = JSON.stringify({
       databaseId: 100,
@@ -1447,21 +1439,6 @@ describe("parseRunView — with steps and duration", () => {
     const result = parseRunView(json);
     expect(result.jobs[0].steps).toHaveLength(2);
     expect(result.jobs[0].steps![0].name).toBe("Checkout");
-    expect(result.durationSeconds).toBeDefined();
-    expect(result.durationSeconds).toBeGreaterThan(0);
-  });
-
-  it("computes duration from createdAt when startedAt missing", () => {
-    const json = JSON.stringify({
-      databaseId: 100,
-      status: "completed",
-      headBranch: "main",
-      url: "https://url",
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-15T10:05:00Z",
-    });
-    const result = parseRunView(json);
-    expect(result.durationSeconds).toBe(300);
   });
 
   it("uses displayTitle fallback for name", () => {
@@ -1543,9 +1520,9 @@ describe("parsePrList — with optional fields", () => {
     expect(result.prs[0].mergeable).toBe("MERGEABLE");
   });
 
-  it("handles totalAvailable", () => {
-    const result = parsePrList("[]", 100);
-    expect(result.totalAvailable).toBe(100);
+  it("handles empty list", () => {
+    const result = parsePrList("[]");
+    expect(result.prs).toEqual([]);
   });
 });
 
@@ -1554,11 +1531,9 @@ describe("parseComment — with opts", () => {
     const result = parseComment("https://github.com/owner/repo/pull/42#issuecomment-123", {
       operation: "create",
       prNumber: 42,
-      body: "Great work!",
     });
     expect(result.operation).toBe("create");
     expect(result.prNumber).toBe(42);
-    expect(result.body).toBe("Great work!");
     expect(result.commentId).toBe("123");
   });
 
@@ -1568,15 +1543,11 @@ describe("parseComment — with opts", () => {
   });
 });
 
-describe("parseIssueCreate — with labels", () => {
-  it("echoes back labels", () => {
-    const result = parseIssueCreate("https://github.com/owner/repo/issues/50", ["bug", "urgent"]);
-    expect(result.labelsApplied).toEqual(["bug", "urgent"]);
-  });
-
-  it("returns undefined labels for empty array", () => {
-    const result = parseIssueCreate("https://url", []);
-    expect(result.labelsApplied).toBeUndefined();
+describe("parseIssueCreate — basic", () => {
+  it("parses issue create URL", () => {
+    const result = parseIssueCreate("https://github.com/owner/repo/issues/50");
+    expect(result.number).toBe(50);
+    expect(result.url).toBe("https://github.com/owner/repo/issues/50");
   });
 });
 

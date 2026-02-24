@@ -7,12 +7,10 @@ describe("parseRunOutput", () => {
   it("parses successful script output", () => {
     const result = parseRunOutput("build", 0, "Build complete\nFiles emitted: 5", "", 2.3);
 
-    expect(result.script).toBe("build");
     expect(result.exitCode).toBe(0);
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("Build complete\nFiles emitted: 5");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(2.3);
   });
 
   it("parses failed script output", () => {
@@ -24,12 +22,10 @@ describe("parseRunOutput", () => {
       1.5,
     );
 
-    expect(result.script).toBe("build");
     expect(result.exitCode).toBe(1);
     expect(result.success).toBe(false);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("Cannot find module");
-    expect(result.duration).toBe(1.5);
   });
 
   it("trims whitespace from stdout and stderr", () => {
@@ -42,7 +38,6 @@ describe("parseRunOutput", () => {
   it("handles script with arguments", () => {
     const result = parseRunOutput("test", 0, "Tests passed: 42", "Coverage: 95%", 5.0);
 
-    expect(result.script).toBe("test");
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("Tests passed: 42");
     expect(result.stderr).toBe("Coverage: 95%");
@@ -57,7 +52,6 @@ describe("parseRunOutput", () => {
       0.2,
     );
 
-    expect(result.script).toBe("nonexistent");
     expect(result.exitCode).toBe(1);
     expect(result.success).toBe(false);
     expect(result.stderr).toContain("Missing script");
@@ -66,7 +60,6 @@ describe("parseRunOutput", () => {
   it("handles empty output from a successful script", () => {
     const result = parseRunOutput("clean", 0, "", "", 0.1);
 
-    expect(result.script).toBe("clean");
     expect(result.exitCode).toBe(0);
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("");
@@ -84,14 +77,13 @@ describe("parseRunOutput", () => {
 describe("formatRun", () => {
   it("formats successful script execution", () => {
     const data: NpmRun = {
-      script: "build",
       exitCode: 0,
       stdout: "Build complete",
       stderr: "",
       success: true,
-      duration: 2.3,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "build", 2.3);
     expect(output).toContain('Script "build" completed successfully in 2.3s');
     expect(output).toContain("stdout:");
     expect(output).toContain("Build complete");
@@ -100,14 +92,13 @@ describe("formatRun", () => {
 
   it("formats failed script execution", () => {
     const data: NpmRun = {
-      script: "test",
       exitCode: 1,
       stdout: "",
       stderr: "Test failed: assertion error",
       success: false,
-      duration: 5.0,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "test", 5.0);
     expect(output).toContain('Script "test" failed (exit code 1) in 5s');
     expect(output).toContain("stderr:");
     expect(output).toContain("Test failed: assertion error");
@@ -116,28 +107,26 @@ describe("formatRun", () => {
 
   it("formats script with both stdout and stderr", () => {
     const data: NpmRun = {
-      script: "lint",
       exitCode: 0,
       stdout: "All files passed linting",
       stderr: "Warning: deprecated rule",
       success: true,
-      duration: 1.2,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "lint", 1.2);
     expect(output).toContain("stdout:");
     expect(output).toContain("stderr:");
   });
 
   it("formats script with no output", () => {
     const data: NpmRun = {
-      script: "clean",
       exitCode: 0,
       stdout: "",
       stderr: "",
       success: true,
-      duration: 0.1,
+      timedOut: false,
     };
-    const output = formatRun(data);
+    const output = formatRun(data, "clean", 0.1);
     expect(output).toBe('Script "clean" completed successfully in 0.1s');
   });
 });
@@ -167,7 +156,6 @@ describe("parseRunOutput error paths", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(300.0);
   });
 
   it("handles signal termination (SIGKILL exit code 137)", () => {

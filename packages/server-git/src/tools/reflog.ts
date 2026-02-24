@@ -122,19 +122,6 @@ export function registerReflogTool(server: McpServer) {
 
       const reflog = parseReflogOutput(result.stdout);
 
-      // Count total available entries (without limit) to populate totalAvailable
-      const countArgs = ["reflog", "show", `--format=%H`];
-      if (all) countArgs.push("--all");
-      if (grepReflog) countArgs.push(`--grep-reflog=${grepReflog}`);
-      if (since) countArgs.push(`--since=${since}`);
-      if (until) countArgs.push(`--until=${until}`);
-      if (ref) countArgs.push(ref);
-      const countResult = await git(countArgs, cwd);
-      if (countResult.exitCode === 0) {
-        const totalAvailable = countResult.stdout.trim().split("\n").filter(Boolean).length;
-        reflog.totalAvailable = totalAvailable;
-      }
-
       return compactDualOutput(
         reflog,
         result.stdout,

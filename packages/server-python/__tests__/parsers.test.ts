@@ -26,7 +26,7 @@ describe("parsePipInstall", () => {
     const result = parsePipInstall(stdout, "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
+    expect(result.installed).toHaveLength(3);
     expect(result.installed[0]).toEqual({ name: "requests", version: "2.31.0" });
     expect(result.installed[1]).toEqual({ name: "urllib3", version: "2.1.0" });
     expect(result.alreadySatisfied).toBe(false);
@@ -39,13 +39,13 @@ describe("parsePipInstall", () => {
 
     expect(result.success).toBe(true);
     expect(result.alreadySatisfied).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.installed).toHaveLength(0);
   });
 
   it("handles failed install", () => {
     const result = parsePipInstall("", "ERROR: No matching distribution found for nonexistent", 1);
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
+    expect(result.installed).toHaveLength(0);
   });
 
   it("parses dry-run output with Would install line", () => {
@@ -58,7 +58,7 @@ describe("parsePipInstall", () => {
 
     expect(result.success).toBe(true);
     expect(result.dryRun).toBe(true);
-    expect(result.total).toBe(3);
+    expect(result.installed).toHaveLength(3);
     expect(result.installed[0]).toEqual({ name: "requests", version: "2.31.0" });
     expect(result.installed[1]).toEqual({ name: "urllib3", version: "2.1.0" });
     expect(result.installed[2]).toEqual({ name: "charset-normalizer", version: "3.3.0" });
@@ -84,10 +84,10 @@ describe("parseMypyOutput", () => {
     const result = parseMypyOutput(stdout, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
-    expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(0);
-    expect(result.notes).toBe(1);
+    expect(result.diagnostics).toHaveLength(3);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(0);
+    expect(result.diagnostics.filter((d) => d.severity === "note")).toHaveLength(1);
     expect(result.diagnostics[0]).toEqual({
       file: "src/main.py",
       line: 10,
@@ -105,7 +105,7 @@ describe("parseMypyOutput", () => {
     const result = parseMypyOutput(stdout, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
 
@@ -132,8 +132,8 @@ describe("parseRuffJson", () => {
 
     const result = parseRuffJson(json, 1);
 
-    expect(result.total).toBe(2);
-    expect(result.fixable).toBe(1);
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.fixable)).toHaveLength(1);
     expect(result.success).toBe(false);
     expect(result.diagnostics[0]).toEqual({
       file: "src/main.py",
@@ -152,13 +152,12 @@ describe("parseRuffJson", () => {
 
   it("parses clean output", () => {
     const result = parseRuffJson("[]", 0);
-    expect(result.total).toBe(0);
-    expect(result.fixable).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 
   it("handles invalid JSON", () => {
     const result = parseRuffJson("not json", 0);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
 
@@ -183,7 +182,7 @@ describe("parsePipAuditJson", () => {
 
     const result = parsePipAuditJson(json, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.vulnerabilities).toHaveLength(1);
     expect(result.success).toBe(true);
     expect(result.vulnerabilities[0]).toEqual({
       name: "requests",
@@ -200,12 +199,12 @@ describe("parsePipAuditJson", () => {
     });
 
     const result = parsePipAuditJson(json, 0);
-    expect(result.total).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(0);
   });
 
   it("handles invalid JSON", () => {
     const result = parsePipAuditJson("not json", 0);
-    expect(result.total).toBe(0);
+    expect(result.vulnerabilities).toHaveLength(0);
   });
 });
 
@@ -216,14 +215,12 @@ describe("parsePipInstall — error paths", () => {
     const result = parsePipInstall("", "", 0);
     expect(result.success).toBe(true);
     expect(result.installed).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("handles malformed output with no recognizable patterns", () => {
     const result = parsePipInstall("random garbage\nno patterns here", "", 0);
     expect(result.success).toBe(true);
     expect(result.installed).toEqual([]);
-    expect(result.total).toBe(0);
     expect(result.alreadySatisfied).toBe(false);
   });
 });
@@ -233,14 +230,12 @@ describe("parseMypyOutput — error paths", () => {
     const result = parseMypyOutput("", 0);
     expect(result.success).toBe(true);
     expect(result.diagnostics).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("handles completely malformed output", () => {
     const result = parseMypyOutput("this is not mypy output at all\njust random text", 1);
     expect(result.success).toBe(false);
     expect(result.diagnostics).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("strips ANSI color codes from output", () => {
@@ -255,21 +250,19 @@ describe("parseMypyOutput — error paths", () => {
     expect(result.success).toBe(false);
     // If ANSI codes are not stripped, the regex may not match
     // The parser should still not throw
-    expect(result.total).toBeGreaterThanOrEqual(0);
+    expect(result.diagnostics.length).toBeGreaterThanOrEqual(0);
   });
 
   it("handles output with only the summary line", () => {
     const result = parseMypyOutput("Found 0 errors in 0 files (checked 5 source files)", 0);
     expect(result.success).toBe(true);
     expect(result.diagnostics).toEqual([]);
-    expect(result.total).toBe(0);
   });
 });
 
 describe("parseRuffJson — error paths", () => {
   it("handles empty string", () => {
     const result = parseRuffJson("", 0);
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -289,13 +282,11 @@ describe("parseRuffJson — error paths", () => {
 describe("parsePipAuditJson — error paths", () => {
   it("handles empty string", () => {
     const result = parsePipAuditJson("", 0);
-    expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
 
   it("handles JSON with missing dependencies key", () => {
     const result = parsePipAuditJson("{}", 0);
-    expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
 
@@ -304,7 +295,6 @@ describe("parsePipAuditJson — error paths", () => {
       dependencies: [{ name: "requests", version: "2.31.0" }],
     });
     const result = parsePipAuditJson(json, 0);
-    expect(result.total).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
   });
 });
@@ -315,14 +305,12 @@ describe("parsePytestOutput — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
-    expect(result.total).toBe(0);
     expect(result.failures).toEqual([]);
   });
 
   it("handles malformed output with no summary line", () => {
     const result = parsePytestOutput("random text\nno pytest here", "", 1);
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
   });
 
   it("handles exit code 0 for passing tests", () => {
@@ -330,7 +318,6 @@ describe("parsePytestOutput — error paths", () => {
     const result = parsePytestOutput(stdout, "", 0);
     expect(result.success).toBe(true);
     expect(result.passed).toBe(10);
-    expect(result.total).toBe(10);
   });
 
   it("handles exit code 1 for failed tests", () => {
@@ -340,7 +327,6 @@ describe("parsePytestOutput — error paths", () => {
     expect(result.success).toBe(false);
     expect(result.passed).toBe(5);
     expect(result.failed).toBe(2);
-    expect(result.total).toBe(7);
   });
 
   it("handles exit code 2 for internal errors", () => {
@@ -356,7 +342,6 @@ describe("parsePytestOutput — error paths", () => {
     const stdout = "========================= no tests ran in 0.01s =========================";
     const result = parsePytestOutput(stdout, "", 5);
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
   });
 });
 
@@ -366,7 +351,7 @@ describe("parseBlackOutput — error paths", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.filesUnchanged).toBe(0);
-    expect(result.filesChecked).toBe(0);
+    // filesChecked removed from schema (derivable as filesChanged + filesUnchanged)
     expect(result.wouldReformat).toEqual([]);
     expect(result.errorType).toBeUndefined();
     expect(result.exitCode).toBeUndefined();
@@ -377,7 +362,7 @@ describe("parseBlackOutput — error paths", () => {
     const result = parseBlackOutput("", stderr, 0);
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
-    expect(result.filesChecked).toBe(0);
+    // filesChecked removed from schema (derivable as filesChanged + filesUnchanged)
     expect(result.wouldReformat).toEqual([]);
   });
 
@@ -411,7 +396,6 @@ describe("parseUvInstall — error paths", () => {
   it("handles completely empty output", () => {
     const result = parseUvInstall("", "", 0);
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
     expect(result.installed).toEqual([]);
     expect(result.error).toBeUndefined();
     expect(result.resolutionConflicts).toBeUndefined();
@@ -433,7 +417,7 @@ describe("parseUvInstall — error paths", () => {
     // The summary regex expects a number, so "abc" won't match
     expect(result.success).toBe(true);
     expect(result.installed).toHaveLength(1);
-    expect(result.duration).toBe(0);
+    // duration removed from schema
   });
 
   it("parses resolution conflict errors from stderr", () => {
@@ -474,7 +458,7 @@ describe("parsePipListJson", () => {
     ]);
     const result = parsePipListJson(json, 0);
 
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.success).toBe(true);
     expect(result.packages[0]).toEqual({ name: "flask", version: "3.0.0" });
     expect(result.packages[1]).toEqual({ name: "requests", version: "2.31.0" });
@@ -482,13 +466,13 @@ describe("parsePipListJson", () => {
 
   it("parses empty array", () => {
     const result = parsePipListJson("[]", 0);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 
   it("handles invalid JSON with error info", () => {
     const result = parsePipListJson("not json", 0);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
@@ -497,7 +481,7 @@ describe("parsePipListJson", () => {
 
   it("handles empty string with error info", () => {
     const result = parsePipListJson("", 0);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
@@ -505,7 +489,7 @@ describe("parsePipListJson", () => {
 
   it("handles non-array JSON with error info", () => {
     const result = parsePipListJson('{"key": "value"}', 0);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
     expect(result.success).toBe(false);
     expect(result.error).toBe("pip list output is not a JSON array");
@@ -866,8 +850,7 @@ describe("parsePoetryOutput — show", () => {
     const result = parsePoetryOutput(stdout, "", 0, "show");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("show");
-    expect(result.total).toBe(3);
+    expect(result.packages).toHaveLength(3);
     expect(result.packages).toEqual([
       {
         name: "certifi",
@@ -887,8 +870,7 @@ describe("parsePoetryOutput — show", () => {
     const result = parsePoetryOutput("", "", 0, "show");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("show");
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 });
@@ -904,8 +886,7 @@ describe("parsePoetryOutput — build", () => {
     const result = parsePoetryOutput(stdout, "", 0, "build");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("build");
-    expect(result.total).toBe(2);
+    expect(result.artifacts).toHaveLength(2);
     expect(result.artifacts).toEqual([
       { file: "mypackage-1.0.0.tar.gz" },
       { file: "mypackage-1.0.0-py3-none-any.whl" },
@@ -916,8 +897,7 @@ describe("parsePoetryOutput — build", () => {
     const result = parsePoetryOutput("", "", 0, "build");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("build");
-    expect(result.total).toBe(0);
+    expect(result.artifacts).toHaveLength(0);
     expect(result.artifacts).toEqual([]);
   });
 
@@ -925,7 +905,6 @@ describe("parsePoetryOutput — build", () => {
     const result = parsePoetryOutput("", "Build error", 1, "build");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("build");
   });
 });
 
@@ -944,8 +923,7 @@ describe("parsePoetryOutput — install", () => {
     const result = parsePoetryOutput("", stderr, 0, "install");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("install");
-    expect(result.total).toBe(3);
+    expect(result.packages).toHaveLength(3);
     expect(result.packages).toEqual([
       { name: "certifi", version: "2023.7.22" },
       { name: "charset-normalizer", version: "3.3.0" },
@@ -958,7 +936,7 @@ describe("parsePoetryOutput — install", () => {
     const result = parsePoetryOutput("", stderr, 0, "install");
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 });
@@ -981,8 +959,7 @@ describe("parsePoetryOutput — add", () => {
     const result = parsePoetryOutput("", stderr, 0, "add");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("add");
-    expect(result.total).toBe(3);
+    expect(result.packages).toHaveLength(3);
     expect(result.packages![0]).toEqual({ name: "certifi", version: "2023.7.22" });
   });
 });
@@ -1002,8 +979,7 @@ describe("parsePoetryOutput — remove", () => {
     const result = parsePoetryOutput("", stderr, 0, "remove");
 
     expect(result.success).toBe(true);
-    expect(result.action).toBe("remove");
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages).toEqual([
       { name: "requests", version: "2.31.0" },
       { name: "urllib3", version: "2.1.0" },
@@ -1014,8 +990,6 @@ describe("parsePoetryOutput — remove", () => {
     const result = parsePoetryOutput("", "Package not found", 1, "remove");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("remove");
-    expect(result.total).toBe(0);
   });
 });
 
@@ -1030,7 +1004,7 @@ describe("parsePipListJson with outdated", () => {
     const result = parsePipListJson(stdout, 0, true);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages![0].latestVersion).toBe("2.31.0");
     expect(result.packages![0].latestFiletype).toBe("wheel");
     expect(result.packages![1].latestVersion).toBe("3.0.0");
@@ -1129,10 +1103,10 @@ describe("parseMypyJsonOutput", () => {
     const result = parseMypyJsonOutput(json, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(0);
-    expect(result.notes).toBe(1);
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics!.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics!.filter((d) => d.severity === "warning")).toHaveLength(0);
+    expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(1);
     expect(result.diagnostics![0]).toEqual({
       file: "src/main.py",
       line: 10,
@@ -1155,10 +1129,7 @@ describe("parseMypyJsonOutput", () => {
     const result = parseMypyJsonOutput("[]", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(0);
-    expect(result.notes).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 
   it("falls back to text parsing on invalid JSON", () => {
@@ -1171,10 +1142,10 @@ describe("parseMypyJsonOutput", () => {
     const result = parseMypyJsonOutput(textOutput, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
-    expect(result.errors).toBe(1);
-    expect(result.notes).toBe(1);
-    expect(result.warnings).toBe(0);
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics!.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(1);
+    expect(result.diagnostics!.filter((d) => d.severity === "warning")).toHaveLength(0);
     expect(result.diagnostics![0].file).toBe("src/main.py");
   });
 
@@ -1182,7 +1153,7 @@ describe("parseMypyJsonOutput", () => {
     const result = parseMypyJsonOutput('{"error": true}', 1);
 
     // Falls back to text parsing which finds no diagnostics
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 
   it("handles JSON with all severity levels", () => {
@@ -1218,10 +1189,10 @@ describe("parseMypyJsonOutput", () => {
 
     const result = parseMypyJsonOutput(json, 1);
 
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(1);
-    expect(result.notes).toBe(1);
-    expect(result.total).toBe(3);
+    expect(result.diagnostics!.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics!.filter((d) => d.severity === "warning")).toHaveLength(1);
+    expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(1);
+    expect(result.diagnostics).toHaveLength(3);
   });
 });
 
@@ -1236,10 +1207,10 @@ describe("parseMypyTextOutput — notes separated from warnings", () => {
 
     const result = parseMypyTextOutput(stdout, 1);
 
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(1);
-    expect(result.notes).toBe(1);
-    expect(result.total).toBe(3);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.severity === "note")).toHaveLength(1);
+    expect(result.diagnostics).toHaveLength(3);
   });
 
   it("reports zero notes when there are none", () => {
@@ -1247,10 +1218,10 @@ describe("parseMypyTextOutput — notes separated from warnings", () => {
 
     const result = parseMypyTextOutput(stdout, 1);
 
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(0);
-    expect(result.notes).toBe(0);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(0);
+    expect(result.diagnostics.filter((d) => d.severity === "note")).toHaveLength(0);
+    expect(result.diagnostics).toHaveLength(1);
   });
 });
 
@@ -1279,10 +1250,9 @@ describe("parsePipAuditJson — severity and aliases", () => {
 
     const result = parsePipAuditJson(json, 1);
 
-    expect(result.total).toBe(1);
+    expect(result.vulnerabilities).toHaveLength(1);
     const vuln = result.vulnerabilities![0];
-    expect(vuln.aliases).toEqual(["CVE-2023-32681"]);
-    expect(vuln.url).toBe("https://osv.dev/vulnerability/PYSEC-2023-001");
+    // aliases and url removed from schema
     expect(vuln.severity).toBe("HIGH");
     expect(vuln.cvssScore).toBe(8.1);
   });
@@ -1307,8 +1277,7 @@ describe("parsePipAuditJson — severity and aliases", () => {
     const result = parsePipAuditJson(json, 1);
 
     const vuln = result.vulnerabilities![0];
-    expect(vuln.aliases).toBeUndefined();
-    expect(vuln.url).toBeUndefined();
+    // aliases and url removed from schema
     expect(vuln.severity).toBeUndefined();
     expect(vuln.cvssScore).toBeUndefined();
   });
@@ -1332,7 +1301,8 @@ describe("parsePipAuditJson — severity and aliases", () => {
     });
 
     const result = parsePipAuditJson(json, 0);
-    expect(result.vulnerabilities![0].aliases).toBeUndefined();
+    // aliases removed from schema; just verify the vuln was parsed
+    expect(result.vulnerabilities).toHaveLength(1);
   });
 });
 
@@ -1448,7 +1418,7 @@ describe("parsePoetryOutput — strict regex", () => {
     const result = parsePoetryOutput(stdout, "", 0, "show");
 
     // Should only match the two actual package lines
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages![0].name).toBe("certifi");
     expect(result.packages![1].name).toBe("requests");
   });
@@ -1458,7 +1428,7 @@ describe("parsePoetryOutput — strict regex", () => {
 
     const result = parsePoetryOutput(stdout, "", 0, "show");
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].name).toBe("my.package_v2");
     expect(result.packages![0].version).toBe("1.0.0");
   });
@@ -1473,7 +1443,7 @@ describe("parsePoetryOutput — strict regex", () => {
     const result = parsePoetryOutput(stdout, "", 0, "show");
 
     // Should only match the properly formatted package line
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].name).toBe("requests");
   });
 
@@ -1486,7 +1456,7 @@ describe("parsePoetryOutput — strict regex", () => {
     const result = parsePoetryOutput(stdout, "", 0, "show");
 
     // "loading status" should not match (version doesn't start with digit)
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].name).toBe("requests");
   });
 });
@@ -1541,7 +1511,6 @@ describe("parsePytestOutput — warnings count", () => {
 
     expect(result.passed).toBe(5);
     expect(result.warnings).toBe(2);
-    expect(result.total).toBe(5);
   });
 
   it("parses warnings with mixed results", () => {

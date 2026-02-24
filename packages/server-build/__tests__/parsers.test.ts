@@ -21,7 +21,7 @@ describe("parseTscOutput", () => {
     const result = parseTscOutput(stdout, "", 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.errors).toBe(2);
     expect(result.warnings).toBe(0);
     expect(result.diagnostics[0]).toEqual({
@@ -39,7 +39,7 @@ describe("parseTscOutput", () => {
     const result = parseTscOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -52,7 +52,7 @@ describe("parseTscOutput", () => {
 
     const result = parseTscOutput(stdout, "", 2);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(3);
     expect(result.diagnostics.map((d) => d.file)).toEqual(["src/a.ts", "src/b.ts", "src/c.ts"]);
   });
@@ -61,7 +61,7 @@ describe("parseTscOutput", () => {
     const stdout = "C:\\Users\\dev\\project\\src\\index.ts(5,3): error TS2322: Type mismatch.";
     const result = parseTscOutput(stdout, "", 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].file).toBe("C:\\Users\\dev\\project\\src\\index.ts");
   });
 
@@ -74,7 +74,7 @@ describe("parseTscOutput", () => {
     ].join("\n");
 
     const result = parseTscOutput(stdout, "", 2);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
   });
 });
 

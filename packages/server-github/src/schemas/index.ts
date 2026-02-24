@@ -26,9 +26,6 @@ export const PrViewResultSchema = z.object({
   mergeable: z.string(),
   reviewDecision: z.string(),
   checks: z.array(PrCheckSchema).optional(),
-  url: z.string(),
-  headBranch: z.string(),
-  baseBranch: z.string(),
   additions: z.number(),
   deletions: z.number(),
   changedFiles: z.number(),
@@ -70,8 +67,6 @@ export const PrListItemSchema = z.object({
 /** Zod schema for structured pr-list output. */
 export const PrListResultSchema = z.object({
   prs: z.array(PrListItemSchema),
-  total: z.number(),
-  totalAvailable: z.number().optional(),
 });
 
 export type PrListResult = z.infer<typeof PrListResultSchema>;
@@ -80,9 +75,6 @@ export type PrListResult = z.infer<typeof PrListResultSchema>;
 export const PrCreateResultSchema = z.object({
   number: z.number(),
   url: z.string(),
-  title: z.string().optional(),
-  baseBranch: z.string().optional(),
-  headBranch: z.string().optional(),
   draft: z.boolean().optional(),
   errorType: z
     .enum(["base-branch-missing", "no-commits", "permission-denied", "validation", "unknown"])
@@ -97,7 +89,6 @@ export const PrMergeResultSchema = z.object({
   number: z.number(),
   merged: z.boolean(),
   method: z.string(),
-  url: z.string(),
   // S-gap: Add branchDeleted field
   branchDeleted: z.boolean().optional(),
   /** Merge commit SHA when available from the output. */
@@ -116,7 +107,6 @@ export type PrMergeResult = z.infer<typeof PrMergeResultSchema>;
 export const PrReviewResultSchema = z.object({
   number: z.number(),
   event: z.string(),
-  url: z.string(),
   // S-gap: Add reviewId, reviewDecision, body echo
   reviewId: z.string().optional(),
   reviewDecision: z.string().optional(),
@@ -153,10 +143,6 @@ export const PrDiffFileSchema = z.object({
 /** Zod schema for structured pr-diff output. */
 export const PrDiffResultSchema = z.object({
   files: z.array(PrDiffFileSchema),
-  // S-gap: Make totalAdditions/totalDeletions required (no longer optional)
-  totalAdditions: z.number(),
-  totalDeletions: z.number(),
-  totalFiles: z.number(),
   // S-gap: Add truncation detection
   truncated: z.boolean().optional(),
 });
@@ -204,9 +190,6 @@ export const IssueListItemSchema = z.object({
 /** Zod schema for structured issue-list output. */
 export const IssueListResultSchema = z.object({
   issues: z.array(IssueListItemSchema),
-  total: z.number(),
-  hasMore: z.boolean().optional(),
-  totalAvailable: z.number().optional(),
 });
 
 export type IssueListResult = z.infer<typeof IssueListResultSchema>;
@@ -215,8 +198,6 @@ export type IssueListResult = z.infer<typeof IssueListResultSchema>;
 export const IssueCreateResultSchema = z.object({
   number: z.number(),
   url: z.string(),
-  // S-gap: Add labelsApplied confirmation
-  labelsApplied: z.array(z.string()).optional(),
   partial: z.boolean().optional(),
   errorType: z.enum(["validation", "permission-denied", "partial-created", "unknown"]).optional(),
   errorMessage: z.string().optional(),
@@ -246,12 +227,11 @@ export type IssueCloseResult = z.infer<typeof IssueCloseResultSchema>;
 export const CommentResultSchema = z.object({
   // S-gap: Make url optional (may not always be available)
   url: z.string().optional(),
-  // S-gap: Add operation type, commentId, issueNumber/prNumber, body echo
+  // S-gap: Add operation type, commentId, issueNumber/prNumber
   operation: z.enum(["create", "edit", "delete"]).optional(),
   commentId: z.string().optional(),
   issueNumber: z.number().optional(),
   prNumber: z.number().optional(),
-  body: z.string().optional(),
   errorType: z.enum(["not-found", "permission-denied", "validation", "unknown"]).optional(),
   errorMessage: z.string().optional(),
 });
@@ -300,10 +280,6 @@ export const PrChecksResultSchema = z.object({
   pr: z.number(),
   checks: z.array(PrChecksItemSchema).optional(),
   summary: PrChecksSummarySchema.optional(),
-  total: z.number().optional(),
-  passed: z.number().optional(),
-  failed: z.number().optional(),
-  pending: z.number().optional(),
   errorType: z.enum(["not-found", "permission-denied", "in-progress", "unknown"]).optional(),
   errorMessage: z.string().optional(),
 });
@@ -352,8 +328,6 @@ export const RunViewResultSchema = z.object({
   updatedAt: z.string().optional(),
   /** The attempt number for re-runs (1 = first attempt). */
   attempt: z.number().optional(),
-  /** Derived duration in seconds when timestamps are available. */
-  durationSeconds: z.number().optional(),
   /** Raw log output when --log or --log-failed is used. */
   logs: z.string().optional(),
 });
@@ -380,8 +354,6 @@ export const RunListItemSchema = z.object({
 /** Zod schema for structured run-list output. */
 export const RunListResultSchema = z.object({
   runs: z.array(RunListItemSchema),
-  total: z.number(),
-  totalAvailable: z.number().optional(),
 });
 
 export type RunListResult = z.infer<typeof RunListResultSchema>;
@@ -415,7 +387,6 @@ export const ReleaseCreateResultSchema = z.object({
   id: z.string().optional(),
   title: z.string().optional(),
   isLatest: z.boolean().optional(),
-  assetsUploaded: z.number().optional(),
   errorType: z.enum(["tag-conflict", "permission-denied", "no-new-commits", "unknown"]).optional(),
   errorMessage: z.string().optional(),
 });
@@ -455,8 +426,6 @@ export const ReleaseListItemSchema = z.object({
 /** Zod schema for structured release-list output. */
 export const ReleaseListResultSchema = z.object({
   releases: z.array(ReleaseListItemSchema),
-  total: z.number(),
-  totalAvailable: z.number().optional(),
 });
 
 export type ReleaseListResult = z.infer<typeof ReleaseListResultSchema>;
@@ -465,7 +434,6 @@ export type ReleaseListResult = z.infer<typeof ReleaseListResultSchema>;
 
 /** Zod schema for structured gh api output. */
 export const ApiResultSchema = z.object({
-  status: z.number(),
   /** Real HTTP status code parsed from response headers. */
   statusCode: z.number(),
   body: z.unknown(),
@@ -499,7 +467,6 @@ export const LabelItemSchema = z.object({
 /** Zod schema for structured label-list output. */
 export const LabelListResultSchema = z.object({
   labels: z.array(LabelItemSchema),
-  total: z.number(),
   errorType: z.enum(["not-found", "permission-denied", "unknown"]).optional(),
   errorMessage: z.string().optional(),
 });
@@ -574,7 +541,6 @@ export const DiscussionItemSchema = z.object({
 /** Zod schema for structured discussion-list output. */
 export const DiscussionListResultSchema = z.object({
   discussions: z.array(DiscussionItemSchema),
-  totalCount: z.number(),
   errorType: z.enum(["not-found", "permission-denied", "unknown"]).optional(),
   errorMessage: z.string().optional(),
 });

@@ -79,7 +79,6 @@ describe("Recorded: git.log", () => {
     mockGit(loadFixture("log", "s01-default.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.commits.length).toBe(10);
-    expect(parsed.total).toBe(10);
     // Verify first commit has expected fields (full mode returns objects)
     const commit = parsed.commits[0] as Record<string, unknown>;
     expect(commit.hash).toMatch(/^[0-9a-f]{40}$/);
@@ -92,14 +91,12 @@ describe("Recorded: git.log", () => {
     mockGit(loadFixture("log", "s02-maxcount3.txt"));
     const { parsed } = await callAndValidate({ maxCount: 3 });
     expect(parsed.commits.length).toBe(3);
-    expect(parsed.total).toBe(3);
   });
 
   it("S3 [recorded] empty repo (no commits)", async () => {
     mockGit(loadFixture("log", "s03-empty.txt"));
     const { parsed } = await callAndValidate({});
     expect(parsed.commits).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S7 [recorded] filter by author", async () => {
@@ -116,7 +113,6 @@ describe("Recorded: git.log", () => {
     mockGit(loadFixture("log", "s08-ref-main.txt"));
     const { parsed } = await callAndValidate({ ref: "main" });
     expect(parsed.commits.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 });
 
@@ -146,7 +142,6 @@ describe("Recorded: git.diff", () => {
     mockGit(loadFixture("diff", "s01-unstaged.txt"));
     const { parsed } = await callAndValidate({});
     expect(parsed.files.length).toBeGreaterThanOrEqual(1);
-    expect(parsed.totalFiles).toBeGreaterThanOrEqual(1);
     expect(parsed.files[0].file).toBe("src/index.ts");
     expect(parsed.files[0].additions).toBeGreaterThanOrEqual(1);
   });
@@ -155,14 +150,12 @@ describe("Recorded: git.diff", () => {
     mockGit(loadFixture("diff", "s02-staged.txt"));
     const { parsed } = await callAndValidate({ staged: true });
     expect(parsed.files.length).toBeGreaterThanOrEqual(1);
-    expect(parsed.totalFiles).toBeGreaterThanOrEqual(1);
   });
 
   it("S3 [recorded] no changes (clean)", async () => {
     mockGit(loadFixture("diff", "s03-clean.txt"));
     const { parsed } = await callAndValidate({});
     expect(parsed.files).toEqual([]);
-    expect(parsed.totalFiles).toBe(0);
   });
 
   it("S7 [recorded] diff against ref", async () => {
@@ -278,7 +271,6 @@ describe("Recorded: git.blame", () => {
     const { parsed } = await callAndValidate({ file: "src/index.ts" });
     expect(parsed.commits.length).toBeGreaterThan(0);
     expect(parsed.file).toBe("src/index.ts");
-    expect(parsed.totalLines).toBeGreaterThanOrEqual(1);
     // Each commit group should have author info
     for (const group of parsed.commits) {
       expect(group.hash).toMatch(/^[0-9a-f]+$/);
@@ -289,7 +281,6 @@ describe("Recorded: git.blame", () => {
   it("S4 [recorded] line range blame", async () => {
     mockGit(loadFixture("blame", "s04-line-range.txt"));
     const { parsed } = await callAndValidate({ file: "src/index.ts", startLine: 1, endLine: 3 });
-    expect(parsed.totalLines).toBeLessThanOrEqual(3);
     expect(parsed.commits.length).toBeGreaterThan(0);
   });
 
@@ -297,7 +288,6 @@ describe("Recorded: git.blame", () => {
     mockGit(loadFixture("blame", "s05-math-file.txt"));
     const { parsed } = await callAndValidate({ file: "src/math.ts" });
     expect(parsed.commits.length).toBeGreaterThan(0);
-    expect(parsed.totalLines).toBeGreaterThanOrEqual(1);
   });
 });
 

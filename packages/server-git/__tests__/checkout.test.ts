@@ -8,7 +8,6 @@ describe("parseCheckout", () => {
     const result = parseCheckout("", "Switched to branch 'feature'", "feature", "main", false);
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("feature");
     expect(result.previousRef).toBe("main");
     expect(result.created).toBe(false);
   });
@@ -23,7 +22,6 @@ describe("parseCheckout", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("feature/new");
     expect(result.previousRef).toBe("main");
     expect(result.created).toBe(true);
   });
@@ -32,7 +30,6 @@ describe("parseCheckout", () => {
     const result = parseCheckout("", "Switched to branch 'main'", "main", "HEAD", false);
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("main");
     expect(result.previousRef).toBe("HEAD");
     expect(result.created).toBe(false);
   });
@@ -41,7 +38,6 @@ describe("parseCheckout", () => {
     const result = parseCheckout("", "Switched to branch 'dev'", "dev", "unknown", false);
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("dev");
     expect(result.previousRef).toBe("unknown");
   });
 });
@@ -50,29 +46,24 @@ describe("formatCheckout", () => {
   it("formats branch switch", () => {
     const data: GitCheckout = {
       success: true,
-      ref: "feature",
       previousRef: "main",
       created: false,
     };
-    expect(formatCheckout(data)).toBe("Switched to 'feature' (was main)");
+    expect(formatCheckout(data)).toBe("Checkout completed (was main)");
   });
 
   it("formats new branch creation", () => {
     const data: GitCheckout = {
       success: true,
-      ref: "feature/new",
       previousRef: "main",
       created: true,
     };
-    expect(formatCheckout(data)).toBe(
-      "Created and switched to new branch 'feature/new' (was main)",
-    );
+    expect(formatCheckout(data)).toBe("Created and switched to new branch (was main)");
   });
 
   it("formats checkout failure with dirty tree", () => {
     const data: GitCheckout = {
       success: false,
-      ref: "feature",
       previousRef: "main",
       created: false,
       errorType: "dirty-tree",

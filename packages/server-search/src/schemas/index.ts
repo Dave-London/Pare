@@ -20,27 +20,22 @@ export const SearchFileSummarySchema = z.object({
 /** Zod schema for structured ripgrep search output with match list and totals. */
 export const SearchResultSchema = z.object({
   matches: z.array(SearchMatchSchema).optional(),
-  files: z.array(SearchFileSummarySchema).optional(),
   totalMatches: z.number(),
-  filesSearched: z.number(),
 });
 
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // ── Find (fd) ────────────────────────────────────────────────────────
 
-/** Zod schema for a single file entry with path, name, and extension. */
+/** Zod schema for a single file entry with path and type. */
 export const FindFileSchema = z.object({
   path: z.string(),
-  name: z.string(),
-  ext: z.string(),
   type: z.enum(["file", "directory", "symlink", "other"]),
 });
 
-/** Zod schema for structured fd output with file list and total count. */
+/** Zod schema for structured fd output with file list. */
 export const FindResultSchema = z.object({
   files: z.array(FindFileSchema).optional(),
-  total: z.number(),
 });
 
 export type FindResult = z.infer<typeof FindResultSchema>;
@@ -57,7 +52,6 @@ export const CountFileSchema = z.object({
 export const CountResultSchema = z.object({
   files: z.array(CountFileSchema).optional(),
   totalMatches: z.number(),
-  totalFiles: z.number(),
 });
 
 export type CountResult = z.infer<typeof CountResultSchema>;
@@ -78,7 +72,6 @@ export type JqResult = z.infer<typeof JqResultSchema>;
 /** Zod schema for structured yq output with the transformed result. */
 export const YqResultSchema = z.object({
   output: z.string(),
-  outputFormat: z.string().optional(),
   exitCode: z.number(),
 });
 

@@ -89,7 +89,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.filesChecked).toEqual(expect.any(Number));
@@ -110,9 +110,6 @@ describe("@paretools/lint integration", () => {
       expect(sc.filesChecked).toEqual(expect.any(Number));
       expect(sc.filesChecked as number).toBeGreaterThanOrEqual(1);
       // The fixture has intentional errors (no-console, eqeqeq)
-      expect(sc.total).toEqual(expect.any(Number));
-      expect(sc.total as number).toBeGreaterThan(0);
-
       // Verify diagnostics array contains actual diagnostic objects
       const diagnostics = sc.diagnostics as Array<Record<string, unknown>>;
       expect(Array.isArray(diagnostics)).toBe(true);
@@ -177,7 +174,7 @@ describe("@paretools/lint integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(typeof sc.formatted).toBe("boolean");
-      expect(sc.total).toEqual(expect.any(Number));
+
       // With compact=false, files should always be present
       expect(Array.isArray(sc.files)).toBe(true);
     });
@@ -197,8 +194,7 @@ describe("@paretools/lint integration", () => {
       expect(sc).toBeDefined();
       // The unformatted file should fail the check
       expect(sc.formatted).toBe(false);
-      expect(sc.total).toEqual(expect.any(Number));
-      expect(sc.total as number).toBeGreaterThan(0);
+      expect(Array.isArray(sc.files)).toBe(true);
     });
 
     it("passes check for well-formatted files", async () => {
@@ -215,7 +211,6 @@ describe("@paretools/lint integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(sc.formatted).toBe(true);
-      expect(sc.total).toBe(0);
     });
 
     it("rejects flag injection in patterns via MCP", async () => {
@@ -325,7 +320,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -344,16 +339,14 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(Array.isArray(sc.diagnostics)).toBe(true);
 
       // The fixture has intentional issues (noDoubleEquals, useConst)
-      // so total should be > 0
-      expect(sc.total as number).toBeGreaterThan(0);
-
       const diagnostics = sc.diagnostics as Array<Record<string, unknown>>;
+      expect(diagnostics.length).toBeGreaterThan(0);
       for (const diag of diagnostics) {
         expect(diag.file).toEqual(expect.any(String));
         expect(diag.line).toEqual(expect.any(Number));
@@ -451,7 +444,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -470,7 +463,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(Array.isArray(sc.diagnostics)).toBe(true);
@@ -522,7 +515,7 @@ describe("@paretools/lint integration", () => {
         // Binary installed — verify structured output
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
+
         expect(sc.errors).toEqual(expect.any(Number));
         expect(sc.warnings).toEqual(expect.any(Number));
         expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -565,7 +558,7 @@ describe("@paretools/lint integration", () => {
         // Binary installed — verify structured output
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
+
         expect(sc.errors).toEqual(expect.any(Number));
         expect(sc.warnings).toEqual(expect.any(Number));
         expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -601,7 +594,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(sc.diagnostics === undefined || Array.isArray(sc.diagnostics)).toBe(true);
@@ -617,7 +610,7 @@ describe("@paretools/lint integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.total).toEqual(expect.any(Number));
+
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
       expect(Array.isArray(sc.diagnostics)).toBe(true);

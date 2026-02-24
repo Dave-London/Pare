@@ -251,7 +251,7 @@ export function parseLog(stdout: string): GitLog {
         ...(refs ? { refs } : {}),
       };
     });
-    return { commits, total: commits.length };
+    return { commits };
   }
 
   // Legacy @@-delimited format (one commit per line)
@@ -269,7 +269,7 @@ export function parseLog(stdout: string): GitLog {
     };
   });
 
-  return { commits, total: commits.length };
+  return { commits };
 }
 
 /** Parses `git diff --numstat` output into structured file-level diff statistics. */
@@ -304,12 +304,7 @@ export function parseDiffStat(stdout: string): GitDiff {
     };
   });
 
-  return {
-    files,
-    totalAdditions: files.reduce((sum, f) => sum + f.additions, 0),
-    totalDeletions: files.reduce((sum, f) => sum + f.deletions, 0),
-    totalFiles: files.length,
-  };
+  return { files };
 }
 
 /** Parses `git branch -vv` or `git branch` output into a structured list of branches with the current branch marked and upstream tracking info. */
@@ -386,9 +381,8 @@ const ADD_STATUS_MAP: Record<string, "added" | "modified" | "deleted"> = {
   D: "deleted",
 };
 
-/** Parses `git status --porcelain=v1` output after `git add` to extract the list and count of staged files with per-file status.
- *  When previousStagedFiles is provided, computes newlyStaged count. */
-export function parseAdd(statusStdout: string, previousStagedFiles?: Set<string>): GitAdd {
+/** Parses `git status --porcelain=v1` output after `git add` to extract the list of staged files with per-file status. */
+export function parseAdd(statusStdout: string): GitAdd {
   const lines = statusStdout.split("\n").filter(Boolean);
   const files: Array<{ file: string; status: "added" | "modified" | "deleted" }> = [];
 
@@ -404,17 +398,7 @@ export function parseAdd(statusStdout: string, previousStagedFiles?: Set<string>
     }
   }
 
-  // Compute newlyStaged if we have the previous state
-  let newlyStaged: number | undefined;
-  if (previousStagedFiles !== undefined) {
-    newlyStaged = files.filter((f) => !previousStagedFiles.has(f.file)).length;
-  }
-
-  return {
-    staged: files.length,
-    files,
-    ...(newlyStaged !== undefined ? { newlyStaged } : {}),
-  };
+  return { files };
 }
 
 /** Parses `git commit` output into structured commit data with hash, message, and change statistics. */
@@ -505,15 +489,14 @@ function parsePushObjectStats(combined: string): GitPush["objectStats"] | undefi
 }
 
 /** Parses `git push` output into structured push result data. */
-export function parsePush(stdout: string, stderr: string, remote: string, branch: string): GitPush {
+export function parsePush(
+  stdout: string,
+  stderr: string,
+  _remote: string,
+  _branch: string,
+): GitPush {
   // Git push output goes to stderr typically
   const combined = `${stdout}\n${stderr}`.trim();
-
-  // Extract branch from output if not provided
-  // e.g., "To github.com:user/repo.git\n * [new branch]      main -> main"
-  // or "   abc1234..def5678  main -> main"
-  const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
-  const resolvedBranch = branch || branchMatch?.[1] || "unknown";
 
   // Detect if the remote branch was newly created
   const created = /\[new branch\]|\[new tag\]/.test(combined);
@@ -521,8 +504,6 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
 
   return {
     success: true,
-    remote,
-    branch: resolvedBranch,
     summary: combined || "Push completed successfully",
     ...(created ? { created } : {}),
     ...(objectStats ? { objectStats } : {}),
@@ -533,19 +514,15 @@ export function parsePush(stdout: string, stderr: string, remote: string, branch
 export function parsePushError(
   stdout: string,
   stderr: string,
-  remote: string,
-  branch: string,
+  _remote: string,
+  _branch: string,
 ): GitPush {
   const combined = `${stdout}\n${stderr}`.trim();
-  const branchMatch = combined.match(/(\S+)\s+->\s+(\S+)/);
-  const resolvedBranch = branch || branchMatch?.[1] || "unknown";
   const errorInfo = classifyPushError(combined);
   const objectStats = parsePushObjectStats(combined);
 
   return {
     success: false,
-    remote,
-    branch: resolvedBranch,
     summary: combined || "Push failed",
     ...errorInfo,
     ...(objectStats ? { objectStats } : {}),
@@ -642,7 +619,7 @@ export function parsePull(stdout: string, stderr: string): GitPull {
 export function parseCheckout(
   stdout: string,
   stderr: string,
-  ref: string,
+  _ref: string,
   previousRef: string,
   created: boolean,
   modifiedFiles?: string[],
@@ -656,7 +633,6 @@ export function parseCheckout(
 
   return {
     success: true,
-    ref,
     previousRef,
     created,
     ...(detached ? { detached: true } : {}),
@@ -719,7 +695,6 @@ export function parseCheckoutError(
 
   return {
     success: false,
-    ref,
     previousRef,
     created: false,
     errorType,
@@ -747,7 +722,7 @@ export function parseTagOutput(stdout: string): GitTagFull {
     };
   });
 
-  return { tags, total: tags.length };
+  return { tags };
 }
 
 /** Parses `git stash list --format='%gd\t%gs\t%ci'` output into structured stash list data. */
@@ -766,7 +741,7 @@ export function parseStashListOutput(stdout: string): GitStashListFull {
     };
   });
 
-  return { stashes, total: stashes.length };
+  return { stashes };
 }
 
 /** Parses `git stash push/pop/apply/drop/clear/show` output into structured stash result data. */
@@ -795,7 +770,6 @@ export function parseStashOutput(
   }
 
   return {
-    action,
     success: true,
     message: combined || `Stash ${action} completed successfully`,
     ...(stashRef ? { stashRef } : {}),
@@ -853,7 +827,6 @@ export function parseStashShowOutput(stdout: string, stderr: string): GitStash {
   };
 
   return {
-    action: "show" as const,
     success: true,
     message: combined || "Stash show completed",
     diffStat,
@@ -872,7 +845,6 @@ export function parseStashError(
   // Nothing to stash
   if (/No local changes to save/i.test(combined)) {
     return {
-      action,
       success: false,
       message: combined,
       reason: "no-local-changes",
@@ -894,7 +866,6 @@ export function parseStashError(
     const stashRef = refMatch ? refMatch[0] : undefined;
 
     return {
-      action,
       success: false,
       message: combined,
       reason: "conflict",
@@ -906,7 +877,6 @@ export function parseStashError(
   // No stash entries
   if (/No stash entries found/i.test(combined) || /does not exist/i.test(combined)) {
     return {
-      action,
       success: false,
       message: combined,
       reason: "no-stash-entries",
@@ -916,7 +886,6 @@ export function parseStashError(
   // Dirty index (can't pop due to staged changes)
   if (/saved state.*could not be applied/i.test(combined) || /dirty.*index/i.test(combined)) {
     return {
-      action,
       success: false,
       message: combined,
       reason: "dirty-index",
@@ -925,7 +894,6 @@ export function parseStashError(
 
   // Generic failure
   return {
-    action,
     success: false,
     message: combined || `Stash ${action} failed`,
     reason: "unknown",
@@ -967,7 +935,7 @@ export function parseRemoteOutput(stdout: string): GitRemoteFull {
     protocol: detectProtocol(urls.fetchUrl),
   }));
 
-  return { remotes, total: remotes.length };
+  return { remotes };
 }
 
 /** Parses `git remote show <name>` output into structured data. */
@@ -1062,7 +1030,6 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   let currentEmail = "";
   let currentDate = "";
   let currentLineNumber = 0;
-  let totalLines = 0;
 
   // Track commit info we've seen (porcelain only shows full info once per commit)
   const commitInfo = new Map<string, { author: string; email?: string; date: string }>();
@@ -1147,7 +1114,6 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
         commitOrder.push(fullHash);
       }
       group.lines.push({ lineNumber: currentLineNumber, content: line.slice(1) });
-      totalLines++;
 
       i++;
       continue;
@@ -1162,7 +1128,7 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
     ...commitGroups.get(hash)!,
   }));
 
-  return { commits, file, totalLines };
+  return { commits, file };
 }
 
 /** Parses `git restore` result into structured restore data.
@@ -1570,9 +1536,7 @@ export function parseLogGraph(stdout: string): GitLogGraphFull {
     }
   }
 
-  // Count only actual commits (non-empty hashShort)
-  const total = commits.filter((c) => c.hashShort !== "").length;
-  return { commits, total };
+  return { commits };
 }
 
 /**
@@ -1665,7 +1629,7 @@ export function parseReflogOutput(stdout: string): GitReflogFull {
     };
   });
 
-  return { entries, total: entries.length };
+  return { entries };
 }
 
 /** Parses `git bisect` output into structured bisect result data. */
@@ -1785,7 +1749,7 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
     };
   });
 
-  return { worktrees, total: worktrees.length };
+  return { worktrees };
 }
 
 /** Parses `git worktree add/remove` output into structured worktree result data. */
@@ -1927,9 +1891,7 @@ export function parseCleanOutput(stdout: string, dryRun: boolean): GitClean {
 
   const verb = dryRun ? "would be removed" : "removed";
   return {
-    dryRun,
     files,
-    removedCount: files.length,
     message:
       files.length > 0
         ? `${files.length} file(s) ${verb}`

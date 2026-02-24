@@ -16,8 +16,6 @@ describe("parsePullOutput", () => {
 
     const result = parsePullOutput(stdout, "", 0, "nginx:latest");
 
-    expect(result.image).toBe("nginx");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBe(
       "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
     );
@@ -35,8 +33,6 @@ describe("parsePullOutput", () => {
 
     const result = parsePullOutput(stdout, "", 0, "ubuntu");
 
-    expect(result.image).toBe("ubuntu");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBe(
       "sha256:fedcba987654fedcba987654fedcba987654fedcba987654fedcba987654fedc",
     );
@@ -53,8 +49,6 @@ describe("parsePullOutput", () => {
 
     const result = parsePullOutput(stdout, "", 0, "ubuntu:22.04");
 
-    expect(result.image).toBe("ubuntu");
-    expect(result.tag).toBe("22.04");
     expect(result.success).toBe(true);
     expect(result.status).toBe("pulled");
   });
@@ -65,8 +59,6 @@ describe("parsePullOutput", () => {
 
     const result = parsePullOutput("", stderr, 1, "nonexistent/image:v1");
 
-    expect(result.image).toBe("nonexistent/image");
-    expect(result.tag).toBe("v1");
     expect(result.success).toBe(false);
     expect(result.status).toBe("error");
     expect(result.digest).toBeUndefined();
@@ -81,8 +73,6 @@ describe("parsePullOutput", () => {
 
     const result = parsePullOutput(stdout, "", 0, "registry.example.com:5000/myapp:v1");
 
-    expect(result.image).toBe("registry.example.com:5000/myapp");
-    expect(result.tag).toBe("v1");
     expect(result.success).toBe(true);
     expect(result.status).toBe("pulled");
   });
@@ -103,8 +93,6 @@ describe("parsePullOutput", () => {
   it("handles pull with no digest info", () => {
     const result = parsePullOutput("Already up to date", "", 0, "myimage:dev");
 
-    expect(result.image).toBe("myimage");
-    expect(result.tag).toBe("dev");
     expect(result.digest).toBeUndefined();
     expect(result.success).toBe(true);
     expect(result.status).toBe("pulled");
@@ -118,8 +106,6 @@ describe("parsePullOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.status).toBe("error");
-    expect(result.image).toBe("registry.example.com/myapp");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
   });
 
@@ -131,8 +117,6 @@ describe("parsePullOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.status).toBe("error");
-    expect(result.image).toBe("totallynotarealimage");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
   });
 
@@ -144,8 +128,6 @@ describe("parsePullOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.status).toBe("error");
-    expect(result.image).toBe("nginx");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
   });
 
@@ -157,8 +139,6 @@ describe("parsePullOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.status).toBe("error");
-    expect(result.image).toBe("alpine");
-    expect(result.tag).toBe("3.19");
     expect(result.digest).toBeUndefined();
   });
 });
@@ -166,47 +146,40 @@ describe("parsePullOutput", () => {
 describe("formatPull", () => {
   it("formats successful pull with digest", () => {
     const data: DockerPull = {
-      image: "nginx",
-      tag: "latest",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       status: "pulled",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pulled nginx:latest (sha256:abc123def456...)");
+    expect(output).toContain("Pulled");
+    expect(output).toContain("sha256:abc123def456");
   });
 
   it("formats successful pull without digest", () => {
     const data: DockerPull = {
-      image: "ubuntu",
-      tag: "22.04",
       status: "pulled",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pulled ubuntu:22.04");
+    expect(output).toContain("Pulled");
   });
 
   it("formats up-to-date pull", () => {
     const data: DockerPull = {
-      image: "ubuntu",
-      tag: "latest",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       status: "up-to-date",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("ubuntu:latest is up to date (sha256:abc123def456...)");
+    expect(output).toContain("up to date");
   });
 
   it("formats failed pull", () => {
     const data: DockerPull = {
-      image: "nonexistent/image",
-      tag: "v1",
       status: "error",
       success: false,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pull failed for nonexistent/image:v1");
+    expect(output).toContain("Pull failed");
   });
 });

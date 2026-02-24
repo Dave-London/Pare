@@ -139,7 +139,6 @@ describe("Smoke: black", () => {
       0,
     );
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
-    expect(parsed.filesChecked).toBe(0);
     expect(parsed.success).toBe(true);
   });
 
@@ -468,8 +467,6 @@ describe("Smoke: mypy", () => {
     mockRunner(vi.mocked(mypy), MYPY_CLEAN, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
-    expect(parsed.errors).toBe(0);
   });
 
   // S2 [P0] Project with type errors
@@ -477,7 +474,6 @@ describe("Smoke: mypy", () => {
     mockRunner(vi.mocked(mypy), MYPY_ERRORS_JSON, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
     expect(parsed.success).toBe(false);
-    expect(parsed.errors).toBeGreaterThan(0);
     expect(parsed.diagnostics).toBeDefined();
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);
   });
@@ -487,7 +483,6 @@ describe("Smoke: mypy", () => {
     mockRunner(vi.mocked(mypy), "Success: no issues found in 0 source files\n", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S4 [P0] Flag injection on targets
@@ -538,12 +533,11 @@ describe("Smoke: mypy", () => {
   });
 
   // S12 [P1] With warnings and notes
-  it("S12 [P1] warnings and notes are counted separately", async () => {
+  it("S12 [P1] warnings and notes are counted from diagnostics", async () => {
     mockRunner(vi.mocked(mypy), MYPY_MIXED_JSON, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.errors).toBeGreaterThan(0);
-    expect(parsed.warnings).toBeGreaterThanOrEqual(0);
-    expect(parsed.notes).toBeGreaterThanOrEqual(0);
+    expect(parsed.success).toBe(false);
+    expect(parsed.diagnostics).toBeDefined();
   });
 
   // S13 [P0] Schema validation
@@ -604,7 +598,6 @@ describe("Smoke: pip-audit", () => {
     mockRunner(vi.mocked(pipAudit), AUDIT_CLEAN_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S2 [P0] Vulnerabilities found
@@ -612,7 +605,6 @@ describe("Smoke: pip-audit", () => {
     mockRunner(vi.mocked(pipAudit), AUDIT_VULN_JSON, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S3 [P0] pip-audit not installed
@@ -839,7 +831,6 @@ describe("Smoke: pip-list", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.packages).toBeDefined();
     expect(parsed.packages!.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] Empty environment
@@ -847,7 +838,6 @@ describe("Smoke: pip-list", () => {
     mockRunner(vi.mocked(pip), PIP_LIST_EMPTY, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on exclude

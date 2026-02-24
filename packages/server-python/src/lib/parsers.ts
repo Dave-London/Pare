@@ -78,7 +78,6 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
     alreadySatisfied,
     warnings: warnings.length > 0 ? warnings : undefined,
     dryRun,
-    total: installed.length,
   };
 }
 
@@ -118,17 +117,9 @@ export function parseMypyJsonOutput(stdout: string, exitCode: number): MypyResul
     code: e.code || undefined,
   }));
 
-  const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
-  const notes = diagnostics.filter((d) => d.severity === "note").length;
-
   return {
     success: exitCode === 0,
     diagnostics,
-    total: diagnostics.length,
-    errors,
-    warnings,
-    notes,
   };
 }
 
@@ -151,17 +142,9 @@ export function parseMypyTextOutput(stdout: string, exitCode: number): MypyResul
     }
   }
 
-  const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
-  const notes = diagnostics.filter((d) => d.severity === "note").length;
-
   return {
     success: exitCode === 0,
     diagnostics,
-    total: diagnostics.length,
-    errors,
-    warnings,
-    notes,
   };
 }
 
@@ -177,7 +160,7 @@ export function parseRuffJson(stdout: string, exitCode: number, stderr = ""): Ru
   try {
     entries = JSON.parse(stdout);
   } catch {
-    return { success: exitCode === 0, diagnostics: [], total: 0, fixable: 0 };
+    return { success: exitCode === 0, diagnostics: [] };
   }
 
   const diagnostics = entries.map((e) => ({
@@ -193,7 +176,6 @@ export function parseRuffJson(stdout: string, exitCode: number, stderr = ""): Ru
     url: e.url || undefined,
   }));
 
-  const fixable = diagnostics.filter((d) => d.fixable).length;
   const fixedMatch =
     stderr.match(/\bFixed\s+(\d+)\s+(?:errors?|violations?)\b/i) ??
     stderr.match(/\b(\d+)\s+fixed\b/i);
@@ -202,8 +184,6 @@ export function parseRuffJson(stdout: string, exitCode: number, stderr = ""): Ru
   return {
     success: exitCode === 0,
     diagnostics,
-    total: diagnostics.length,
-    fixable,
     fixedCount,
   };
 }
@@ -244,7 +224,7 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
   try {
     data = JSON.parse(stdout);
   } catch {
-    return { success: exitCode === 0, vulnerabilities: [], total: 0 };
+    return { success: exitCode === 0, vulnerabilities: [] };
   }
 
   const byPackage: NonNullable<PipAuditResult["byPackage"]> = [];
@@ -260,8 +240,6 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
       id: v.id,
       description: v.description ?? "",
       fixVersions: v.fix_versions ?? [],
-      aliases: v.aliases && v.aliases.length > 0 ? v.aliases : undefined,
-      url: v.url || undefined,
       severity: v.severity || undefined,
       cvssScore: v.cvss_score != null ? v.cvss_score : undefined,
     }));
@@ -280,7 +258,6 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
     vulnerabilities,
     byPackage: byPackage.length > 0 ? byPackage : undefined,
     skipped: skipped.length > 0 ? skipped : undefined,
-    total: vulnerabilities.length,
   };
 }
 
@@ -301,8 +278,6 @@ interface PipAuditJson {
   }[];
 }
 
-const PYTEST_DURATION_RE = /in ([\d.]+)s/;
-
 function extractCount(line: string, label: RegExp): number {
   const m = line.match(label);
   return m ? parseInt(m[1], 10) : 0;
@@ -319,7 +294,6 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
   let errors = 0;
   let skipped = 0;
   let warnings = 0;
-  let duration = 0;
 
   for (const line of lines) {
     // Match lines containing pytest summary markers (== ... in Xs ==) or standalone counts
@@ -329,11 +303,6 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
       errors = Math.max(errors, extractCount(line, /(\d+) errors?/));
       skipped = Math.max(skipped, extractCount(line, /(\d+) skipped/));
       warnings = Math.max(warnings, extractCount(line, /(\d+) warnings?/));
-
-      const durationMatch = line.match(PYTEST_DURATION_RE);
-      if (durationMatch) {
-        duration = parseFloat(durationMatch[1]);
-      }
     }
   }
 
@@ -347,8 +316,6 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
       errors: 0,
       skipped: 0,
       warnings,
-      total: 0,
-      duration,
       failures: [],
     };
   }
@@ -386,8 +353,6 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     failures.push({ test: testName, message });
   }
 
-  const total = passed + failed + errors + skipped;
-
   return {
     success: exitCode === 0,
     passed,
@@ -395,15 +360,12 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     errors,
     skipped,
     warnings,
-    total,
-    duration,
     failures,
   };
 }
 
 // Matches uv install output lines like: " + package==version" or "Installed N packages in Ns"
 const UV_INSTALLED_PKG_RE = /^\s*\+\s+(\S+)==(\S+)/;
-const UV_SUMMARY_RE = /Installed (\d+) packages? in ([\d.]+)/;
 // Matches uv resolution conflict lines like: "`package>=1.0` and `package<1.0`"
 const UV_CONFLICT_RE = /`([a-zA-Z0-9_-]+)\s*([^`]*)`/g;
 
@@ -414,16 +376,11 @@ export function parseUvInstall(stdout: string, stderr: string, exitCode: number)
   const lines = output.split("\n");
 
   const installed: { name: string; version: string }[] = [];
-  let duration = 0;
 
   for (const line of lines) {
     const pkgMatch = line.match(UV_INSTALLED_PKG_RE);
     if (pkgMatch) {
       installed.push({ name: pkgMatch[1], version: pkgMatch[2] });
-    }
-    const summaryMatch = line.match(UV_SUMMARY_RE);
-    if (summaryMatch) {
-      duration = parseFloat(summaryMatch[2]);
     }
   }
 
@@ -476,8 +433,6 @@ export function parseUvInstall(stdout: string, stderr: string, exitCode: number)
   return {
     success: exitCode === 0,
     installed,
-    total: installed.length,
-    duration,
     alreadySatisfied,
     error,
     resolutionConflicts,
@@ -530,7 +485,6 @@ export function parseUvRun(
     uvDiagnostics: uvDiagnosticLines.length > 0 ? uvDiagnosticLines : undefined,
     truncated: truncated || undefined,
     success: exitCode === 0,
-    duration: Math.round(durationMs) / 1000,
   };
 }
 
@@ -589,8 +543,6 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
     filesChanged = wouldReformat.length;
   }
 
-  const filesChecked = filesChanged + filesUnchanged;
-
   // In check mode, success means no files need reformatting
   // In format mode, success is always true (exitCode 0) unless black errors
   // exitCode 1 in check mode = files would be reformatted ("check_failed")
@@ -607,7 +559,6 @@ export function parseBlackOutput(stdout: string, stderr: string, exitCode: numbe
   return {
     filesChanged,
     filesUnchanged,
-    filesChecked,
     success,
     exitCode: exitCode !== 0 ? exitCode : undefined,
     errorType,
@@ -631,7 +582,6 @@ export function parsePipListJson(stdout: string, exitCode: number, outdated?: bo
     return {
       success: false,
       packages: [],
-      total: 0,
       error: errorMessage,
       rawOutput: rawOutput || undefined,
     };
@@ -641,7 +591,6 @@ export function parsePipListJson(stdout: string, exitCode: number, outdated?: bo
     return {
       success: false,
       packages: [],
-      total: 0,
       error: "pip list output is not a JSON array",
       rawOutput: stdout.length > 500 ? stdout.slice(0, 500) + "..." : stdout,
     };
@@ -656,7 +605,7 @@ export function parsePipListJson(stdout: string, exitCode: number, outdated?: bo
     ...(outdated && e.latest_filetype ? { latestFiletype: e.latest_filetype } : {}),
   }));
 
-  return { success: exitCode === 0, packages, total: packages.length };
+  return { success: exitCode === 0, packages };
 }
 
 interface PipListJsonEntry {
@@ -1193,9 +1142,7 @@ export function parsePoetryOutput(
     }
     return {
       success: exitCode === 0,
-      action,
       packages,
-      total: packages.length,
     };
   }
 
@@ -1209,9 +1156,7 @@ export function parsePoetryOutput(
     }
     return {
       success: exitCode === 0,
-      action,
       artifacts,
-      total: artifacts.length,
     };
   }
 
@@ -1219,9 +1164,7 @@ export function parsePoetryOutput(
     const messages = lines.map((l) => l.trim()).filter(Boolean);
     return {
       success: exitCode === 0,
-      action,
       messages: messages.length > 0 ? messages : undefined,
-      total: messages.length,
     };
   }
 
@@ -1236,8 +1179,6 @@ export function parsePoetryOutput(
 
   return {
     success: exitCode === 0,
-    action,
     packages,
-    total: packages.length,
   };
 }

@@ -14,8 +14,6 @@ describe("parsePytestOutput", () => {
     expect(result.failed).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.skipped).toBe(0);
-    expect(result.total).toBe(4);
-    expect(result.duration).toBe(0.52);
     expect(result.failures).toEqual([]);
   });
 
@@ -39,8 +37,6 @@ describe("parsePytestOutput", () => {
     expect(result.success).toBe(false);
     expect(result.passed).toBe(2);
     expect(result.failed).toBe(1);
-    expect(result.total).toBe(3);
-    expect(result.duration).toBe(1.23);
     expect(result.failures).toHaveLength(1);
     expect(result.failures[0].test).toBe("test_addition");
     expect(result.failures[0].message).toContain("assert 2 == 3");
@@ -59,8 +55,6 @@ describe("parsePytestOutput", () => {
     expect(result.failed).toBe(1);
     expect(result.errors).toBe(2);
     expect(result.skipped).toBe(1);
-    expect(result.total).toBe(7);
-    expect(result.duration).toBe(2.5);
   });
 
   it("handles no tests collected", () => {
@@ -73,7 +67,6 @@ describe("parsePytestOutput", () => {
     expect(result.success).toBe(true);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
-    expect(result.total).toBe(0);
     expect(result.failures).toEqual([]);
   });
 
@@ -113,7 +106,6 @@ describe("parsePytestOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.passed).toBe(5);
-    expect(result.total).toBe(5);
   });
 });
 
@@ -126,8 +118,6 @@ describe("formatPytest", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 0,
-      duration: 0,
       failures: [],
     };
     expect(formatPytest(data)).toBe("pytest: no tests collected.");
@@ -141,11 +131,9 @@ describe("formatPytest", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 10,
-      duration: 1.5,
       failures: [],
     };
-    expect(formatPytest(data)).toBe("pytest: 10 passed in 1.5s");
+    expect(formatPytest(data)).toBe("pytest: 10 passed");
   });
 
   it("formats mixed results with failures", () => {
@@ -156,13 +144,11 @@ describe("formatPytest", () => {
       errors: 0,
       skipped: 2,
       warnings: 0,
-      total: 6,
-      duration: 2.0,
       failures: [{ test: "test_thing", message: "assert 1 == 2" }],
     };
     const output = formatPytest(data);
 
-    expect(output).toContain("3 passed, 1 failed, 2 skipped in 2s");
+    expect(output).toContain("3 passed, 1 failed, 2 skipped");
     expect(output).toContain("FAILED test_thing: assert 1 == 2");
   });
 });

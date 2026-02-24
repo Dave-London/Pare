@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { compactRunMap, formatRunCompact } from "../src/lib/formatters.js";
-import type { ProcessRunResult } from "../src/schemas/index.js";
+import type { ProcessRunResultInternal } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
 // compactRunMap
 // ---------------------------------------------------------------------------
 
 describe("compactRunMap", () => {
-  it("keeps command, success, exitCode, duration, timedOut; drops stdout and stderr", () => {
-    const data: ProcessRunResult = {
+  it("keeps exitCode, success, timedOut; drops command, duration, stdout, stderr", () => {
+    const data: ProcessRunResultInternal = {
       command: "node",
       exitCode: 0,
       success: true,
@@ -20,18 +20,18 @@ describe("compactRunMap", () => {
 
     const compact = compactRunMap(data);
 
-    expect(compact.command).toBe("node");
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
-    expect(compact.duration).toBe(150);
     expect(compact.timedOut).toBe(false);
     // Verify dropped fields
+    expect(compact).not.toHaveProperty("command");
+    expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
 
   it("preserves signal when present", () => {
-    const data: ProcessRunResult = {
+    const data: ProcessRunResultInternal = {
       command: "sleep",
       exitCode: 124,
       success: false,
@@ -46,12 +46,14 @@ describe("compactRunMap", () => {
 
     expect(compact.timedOut).toBe(true);
     expect(compact.signal).toBe("SIGTERM");
+    expect(compact).not.toHaveProperty("command");
+    expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
 
   it("handles failed command with no signal", () => {
-    const data: ProcessRunResult = {
+    const data: ProcessRunResultInternal = {
       command: "false",
       exitCode: 1,
       success: false,
@@ -66,12 +68,14 @@ describe("compactRunMap", () => {
     expect(compact.success).toBe(false);
     expect(compact.exitCode).toBe(1);
     expect(compact.signal).toBeUndefined();
+    expect(compact).not.toHaveProperty("command");
+    expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
 
   it("preserves truncated flag when true", () => {
-    const data: ProcessRunResult = {
+    const data: ProcessRunResultInternal = {
       command: "cat",
       exitCode: 1,
       success: false,
@@ -86,6 +90,25 @@ describe("compactRunMap", () => {
 
     expect(compact.truncated).toBe(true);
   });
+
+  it("drops cpu metrics", () => {
+    const data: ProcessRunResultInternal = {
+      command: "node",
+      exitCode: 0,
+      success: true,
+      duration: 100,
+      timedOut: false,
+      userCpuTimeMs: 8.7,
+      systemCpuTimeMs: 1.2,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact).not.toHaveProperty("userCpuTimeMs");
+    expect(compact).not.toHaveProperty("systemCpuTimeMs");
+    expect(compact).not.toHaveProperty("command");
+    expect(compact).not.toHaveProperty("duration");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -95,60 +118,52 @@ describe("compactRunMap", () => {
 describe("formatRunCompact", () => {
   it("formats successful compact run", () => {
     const compact = {
-      command: "node",
       success: true,
       exitCode: 0,
-      duration: 150,
       timedOut: false,
     };
-    expect(formatRunCompact(compact)).toBe("node: success (150ms).");
+    expect(formatRunCompact(compact)).toBe("process: success.");
   });
 
   it("formats failed compact run", () => {
     const compact = {
-      command: "false",
       success: false,
       exitCode: 1,
-      duration: 5,
       timedOut: false,
     };
-    expect(formatRunCompact(compact)).toBe("false: exit code 1 (5ms).");
+    expect(formatRunCompact(compact)).toBe("process: exit code 1.");
   });
 
   it("formats timed-out compact run", () => {
     const compact = {
-      command: "sleep",
       success: false,
       exitCode: 124,
-      duration: 60000,
       timedOut: true,
       signal: "SIGTERM",
     };
-    expect(formatRunCompact(compact)).toBe("sleep: timed out after 60000ms (SIGTERM).");
+    expect(formatRunCompact(compact)).toContain("timed out");
+    expect(formatRunCompact(compact)).toContain("SIGTERM");
   });
 
   it("formats timed-out compact run without signal", () => {
     const compact = {
-      command: "sleep",
       success: false,
       exitCode: 124,
-      duration: 60000,
       timedOut: true,
     };
-    expect(formatRunCompact(compact)).toBe("sleep: timed out after 60000ms.");
+    expect(formatRunCompact(compact)).toContain("timed out");
+    expect(formatRunCompact(compact)).not.toContain("SIGTERM");
   });
 
   it("formats truncated compact run", () => {
     const compact = {
-      command: "cat",
       success: false,
       exitCode: 1,
-      duration: 300,
       timedOut: false,
       truncated: true,
     };
     const output = formatRunCompact(compact);
-    expect(output).toContain("cat: exit code 1 (300ms).");
+    expect(output).toContain("process: exit code 1.");
     expect(output).toContain("[output truncated: maxBuffer exceeded]");
   });
 });

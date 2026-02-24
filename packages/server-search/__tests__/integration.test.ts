@@ -44,7 +44,7 @@ describe("@paretools/search integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.fileCount).toBe("number");
       }
     });
 
@@ -69,7 +69,6 @@ describe("@paretools/search integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.files)).toBe(true);
-        expect(typeof sc.total).toBe("number");
       }
     });
   });

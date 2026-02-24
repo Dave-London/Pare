@@ -207,7 +207,6 @@ describe("Gap #88: CVSS score/vector in audit", () => {
 
     const result = parseCargoAuditJson(json, 0);
     expect(result.vulnerabilities![0].cvssScore).toBe(9.8);
-    expect(result.vulnerabilities![0].cvssVector).toBe("9.8");
   });
 
   it("includes raw CVSS score for vector string", () => {
@@ -229,9 +228,6 @@ describe("Gap #88: CVSS score/vector in audit", () => {
 
     const result = parseCargoAuditJson(json, 0);
     expect(result.vulnerabilities![0].cvssScore).toBe(9.8);
-    expect(result.vulnerabilities![0].cvssVector).toBe(
-      "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-    );
   });
 
   it("does not include CVSS fields when cvss is null", () => {
@@ -249,7 +245,6 @@ describe("Gap #88: CVSS score/vector in audit", () => {
 
     const result = parseCargoAuditJson(json, 0);
     expect(result.vulnerabilities![0].cvssScore).toBeUndefined();
-    expect(result.vulnerabilities![0].cvssVector).toBeUndefined();
   });
 
   it("extractCvssScore returns numeric score for plain number", () => {

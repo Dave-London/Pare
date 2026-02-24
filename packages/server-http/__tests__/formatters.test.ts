@@ -7,11 +7,11 @@ import {
   compactHeadResponseMap,
   formatHeadResponseCompact,
 } from "../src/lib/formatters.js";
-import type { HttpResponse, HttpHeadResponse } from "../src/schemas/index.js";
+import type { HttpResponseInternal, HttpHeadResponseInternal } from "../src/schemas/index.js";
 
 describe("formatHttpResponse", () => {
   it("formats a successful JSON response", () => {
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -35,7 +35,7 @@ describe("formatHttpResponse", () => {
   });
 
   it("formats a response without body", () => {
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 204,
       statusText: "No Content",
       headers: {},
@@ -52,7 +52,7 @@ describe("formatHttpResponse", () => {
 
   it("truncates long body in human-readable output", () => {
     const longBody = "x".repeat(600);
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -69,7 +69,7 @@ describe("formatHttpResponse", () => {
   });
 
   it("formats response with expanded timing details", () => {
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -97,7 +97,7 @@ describe("formatHttpResponse", () => {
   });
 
   it("formats response with timing details without TLS (no appconnect)", () => {
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -121,7 +121,7 @@ describe("formatHttpResponse", () => {
   });
 
   it("formats version, redirect chain, and TLS metadata when present", () => {
-    const data: HttpResponse = {
+    const data: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       httpVersion: "2",
@@ -151,7 +151,7 @@ describe("formatHttpResponse", () => {
 
 describe("formatHttpHeadResponse", () => {
   it("formats a HEAD response", () => {
-    const data: HttpHeadResponse = {
+    const data: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -173,7 +173,7 @@ describe("formatHttpHeadResponse", () => {
   });
 
   it("includes contentLength in human-readable output when present", () => {
-    const data: HttpHeadResponse = {
+    const data: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -191,7 +191,7 @@ describe("formatHttpHeadResponse", () => {
   });
 
   it("omits contentLength line when not present", () => {
-    const data: HttpHeadResponse = {
+    const data: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -204,7 +204,7 @@ describe("formatHttpHeadResponse", () => {
   });
 
   it("formats HEAD response with expanded timing details", () => {
-    const data: HttpHeadResponse = {
+    const data: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -227,7 +227,7 @@ describe("formatHttpHeadResponse", () => {
   });
 
   it("formats HEAD response with HTTP version and redirect/TLS metadata", () => {
-    const data: HttpHeadResponse = {
+    const data: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       httpVersion: "2",
@@ -251,7 +251,7 @@ describe("formatHttpHeadResponse", () => {
 
 describe("compactResponseMap", () => {
   it("maps full response to compact form (no headers, no body)", () => {
-    const full: HttpResponse = {
+    const full: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -276,8 +276,8 @@ describe("compactResponseMap", () => {
     expect("body" in compact).toBe(false);
   });
 
-  it("preserves timing details in compact form", () => {
-    const full: HttpResponse = {
+  it("drops timing details in compact form (only total preserved)", () => {
+    const full: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -294,14 +294,12 @@ describe("compactResponseMap", () => {
 
     const compact = compactResponseMap(full);
 
-    expect(compact.timing.details).toBeDefined();
-    expect(compact.timing.details!.namelookup).toBe(0.01);
-    expect(compact.timing.details!.connect).toBe(0.05);
-    expect(compact.timing.details!.starttransfer).toBe(0.4);
+    expect(compact.timing.total).toBe(0.5);
+    expect(compact.timing.details).toBeUndefined();
   });
 
   it("preserves httpVersion in compact form", () => {
-    const full: HttpResponse = {
+    const full: HttpResponseInternal = {
       status: 200,
       statusText: "OK",
       httpVersion: "2",
@@ -360,7 +358,7 @@ describe("formatResponseCompact", () => {
 
 describe("compactHeadResponseMap", () => {
   it("maps full HEAD response to compact form (no headers)", () => {
-    const full: HttpHeadResponse = {
+    const full: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -381,8 +379,8 @@ describe("compactHeadResponseMap", () => {
     expect(compact.timing.total).toBe(0.15);
   });
 
-  it("preserves essential headers in compact HEAD mode", () => {
-    const full: HttpHeadResponse = {
+  it("drops headers in compact HEAD mode (no essentialHeaders)", () => {
+    const full: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {
@@ -402,38 +400,16 @@ describe("compactHeadResponseMap", () => {
 
     const compact = compactHeadResponseMap(full);
 
-    // Essential headers should be preserved
-    expect(compact.essentialHeaders).toBeDefined();
-    expect(compact.essentialHeaders!["content-type"]).toBe("text/html");
-    expect(compact.essentialHeaders!["content-length"]).toBe("5000");
-    expect(compact.essentialHeaders!["cache-control"]).toBe("max-age=3600");
-    expect(compact.essentialHeaders!["etag"]).toBe('"abc123"');
-    expect(compact.essentialHeaders!["last-modified"]).toBe("Wed, 21 Oct 2025 07:28:00 GMT");
-
-    // Non-essential headers should NOT be preserved
-    expect(compact.essentialHeaders!["x-request-id"]).toBeUndefined();
-    expect(compact.essentialHeaders!["x-powered-by"]).toBeUndefined();
-    expect(compact.essentialHeaders!["server"]).toBeUndefined();
-  });
-
-  it("omits essentialHeaders when none of the essential headers are present", () => {
-    const full: HttpHeadResponse = {
-      status: 200,
-      statusText: "OK",
-      headers: {
-        "x-request-id": "req-12345",
-        server: "nginx",
-      },
-      timing: { total: 0.1 },
-    };
-
-    const compact = compactHeadResponseMap(full);
-
-    expect(compact.essentialHeaders).toBeUndefined();
+    // Headers are only in human-readable output, not in compact structuredContent
+    expect(compact).not.toHaveProperty("essentialHeaders");
+    expect(compact).not.toHaveProperty("headers");
+    expect(compact.status).toBe(200);
+    expect(compact.contentType).toBe("text/html");
+    expect(compact.contentLength).toBe(5000);
   });
 
   it("handles missing headers gracefully", () => {
-    const full: HttpHeadResponse = {
+    const full: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       timing: { total: 0.1 },
@@ -441,11 +417,12 @@ describe("compactHeadResponseMap", () => {
 
     const compact = compactHeadResponseMap(full);
 
-    expect(compact.essentialHeaders).toBeUndefined();
+    expect(compact).not.toHaveProperty("essentialHeaders");
+    expect(compact).not.toHaveProperty("headers");
   });
 
-  it("preserves timing details in compact HEAD form", () => {
-    const full: HttpHeadResponse = {
+  it("drops timing details in compact HEAD form (only total preserved)", () => {
+    const full: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       headers: {},
@@ -461,13 +438,12 @@ describe("compactHeadResponseMap", () => {
 
     const compact = compactHeadResponseMap(full);
 
-    expect(compact.timing.details).toBeDefined();
-    expect(compact.timing.details!.namelookup).toBe(0.008);
-    expect(compact.timing.details!.appconnect).toBe(0.11);
+    expect(compact.timing.total).toBe(0.2);
+    expect(compact.timing.details).toBeUndefined();
   });
 
   it("preserves httpVersion in compact HEAD form", () => {
-    const full: HttpHeadResponse = {
+    const full: HttpHeadResponseInternal = {
       status: 200,
       statusText: "OK",
       httpVersion: "2",
@@ -506,35 +482,6 @@ describe("formatHeadResponseCompact", () => {
     const output = formatHeadResponseCompact(compact);
 
     expect(output).toBe("HTTP 200 OK (text/html) | 5000 bytes | 0.100s");
-  });
-
-  it("includes essential headers (excluding content-type and content-length) in compact output", () => {
-    const compact = {
-      status: 200,
-      statusText: "OK",
-      contentType: "text/html",
-      contentLength: 5000,
-      timing: { total: 0.1 },
-      essentialHeaders: {
-        "content-type": "text/html",
-        "content-length": "5000",
-        "cache-control": "max-age=3600",
-        etag: '"abc123"',
-      },
-    };
-
-    const output = formatHeadResponseCompact(compact);
-
-    // First line should have status and size
-    expect(output).toContain("HTTP 200 OK (text/html) | 5000 bytes | 0.100s");
-    // Additional lines for cache-control and etag (content-type and content-length are excluded since shown above)
-    expect(output).toContain("cache-control: max-age=3600");
-    expect(output).toContain('etag: "abc123"');
-    // content-type and content-length should NOT appear again in header lines
-    const lines = output.split("\n");
-    const headerLines = lines.slice(1);
-    expect(headerLines.some((l) => l.includes("content-type:"))).toBe(false);
-    expect(headerLines.some((l) => l.includes("content-length:"))).toBe(false);
   });
 
   it("formats compact HEAD response with HTTP version", () => {

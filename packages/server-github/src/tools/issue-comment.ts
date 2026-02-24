@@ -74,7 +74,6 @@ export function registerIssueCommentTool(server: McpServer) {
         const data = {
           operation: operation as "create" | "edit" | "delete",
           issueNumber: issueNum,
-          body,
           errorType: classifyCommentError(result.stderr || result.stdout),
           errorMessage: (result.stderr || result.stdout || "gh issue comment failed").trim(),
         };
@@ -85,7 +84,6 @@ export function registerIssueCommentTool(server: McpServer) {
       const data = parseComment(result.stdout, {
         operation: operation as "create" | "edit" | "delete",
         issueNumber: issueNum,
-        body,
       });
       return dualOutput(data, formatComment);
     },

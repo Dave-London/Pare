@@ -13,7 +13,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added).toEqual([{ name: "serde", version: "1.0.217" }]);
   });
 
@@ -27,7 +27,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
+    expect(result.added).toHaveLength(3);
     expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
     expect(result.added[1]).toEqual({ name: "tokio", version: "1.41.1" });
     expect(result.added[2]).toEqual({ name: "anyhow", version: "1.0.95" });
@@ -38,7 +38,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({ name: "pretty_assertions", version: "1.4.1" });
   });
 
@@ -49,7 +49,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
   });
 
   it("handles failure (package not found)", () => {
@@ -57,7 +57,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
+    expect(result.added).toHaveLength(0);
     expect(result.added).toEqual([]);
   });
 
@@ -65,7 +65,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.added).toHaveLength(0);
     expect(result.added).toEqual([]);
   });
 
@@ -74,7 +74,7 @@ describe("parseCargoAddOutput", () => {
     const result = parseCargoAddOutput(stdout, "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({ name: "clap", version: "4.5.0" });
   });
 });
@@ -87,7 +87,6 @@ describe("formatCargoAdd", () => {
         { name: "serde", version: "1.0.217" },
         { name: "tokio", version: "1.41.1" },
       ],
-      total: 2,
     });
 
     expect(output).toContain("cargo add: 2 package(s) added");
@@ -99,7 +98,6 @@ describe("formatCargoAdd", () => {
     const output = formatCargoAdd({
       success: false,
       added: [],
-      total: 0,
     });
 
     expect(output).toBe("cargo add: failed");
@@ -109,7 +107,6 @@ describe("formatCargoAdd", () => {
     const output = formatCargoAdd({
       success: true,
       added: [],
-      total: 0,
     });
 
     expect(output).toBe("cargo add: success, no packages added.");
@@ -119,7 +116,6 @@ describe("formatCargoAdd", () => {
     const output = formatCargoAdd({
       success: true,
       added: [{ name: "serde", version: "1.0.217" }],
-      total: 1,
       dryRun: true,
     });
 
@@ -131,7 +127,6 @@ describe("formatCargoAdd", () => {
     const output = formatCargoAdd({
       success: true,
       added: [],
-      total: 0,
       dryRun: true,
     });
 
@@ -149,7 +144,7 @@ describe("parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.removed).toHaveLength(1);
     expect(result.removed).toEqual(["serde"]);
   });
 
@@ -162,7 +157,7 @@ describe("parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(2);
+    expect(result.removed).toHaveLength(2);
     expect(result.removed).toEqual(["serde", "tokio"]);
   });
 
@@ -171,7 +166,7 @@ describe("parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.removed).toHaveLength(1);
     expect(result.removed).toEqual(["pretty_assertions"]);
   });
 
@@ -180,7 +175,7 @@ describe("parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", stderr, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
+    expect(result.removed).toHaveLength(0);
     expect(result.removed).toEqual([]);
   });
 
@@ -188,7 +183,7 @@ describe("parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.removed).toHaveLength(0);
     expect(result.removed).toEqual([]);
   });
 });
@@ -198,7 +193,6 @@ describe("formatCargoRemove", () => {
     const output = formatCargoRemove({
       success: true,
       removed: ["serde", "tokio"],
-      total: 2,
     });
 
     expect(output).toContain("cargo remove: 2 package(s) removed");
@@ -210,7 +204,6 @@ describe("formatCargoRemove", () => {
     const output = formatCargoRemove({
       success: false,
       removed: [],
-      total: 0,
     });
 
     expect(output).toBe("cargo remove: failed");
@@ -220,7 +213,6 @@ describe("formatCargoRemove", () => {
     const output = formatCargoRemove({
       success: true,
       removed: [],
-      total: 0,
     });
 
     expect(output).toBe("cargo remove: success, no packages removed.");

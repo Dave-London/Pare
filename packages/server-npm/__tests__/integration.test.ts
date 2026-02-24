@@ -86,7 +86,6 @@ describe("@paretools/npm integration", () => {
       expect(sc).toBeDefined();
       expect(sc.name).toEqual(expect.any(String));
       expect(sc.version).toEqual(expect.any(String));
-      expect(sc.total).toEqual(expect.any(Number));
       expect(typeof sc.dependencies).toBe("object");
     });
 
@@ -125,7 +124,6 @@ describe("@paretools/npm integration", () => {
         expect(result.content).toBeDefined();
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
-        expect(sc.total).toEqual(expect.any(Number));
         expect(Array.isArray(sc.packages)).toBe(true);
       }
     });
@@ -145,13 +143,7 @@ describe("@paretools/npm integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.summary).toBeDefined();
       expect(Array.isArray(sc.vulnerabilities)).toBe(true);
-
-      const summary = sc.summary as Record<string, unknown>;
-      expect(summary.total).toEqual(expect.any(Number));
-      expect(summary.critical).toEqual(expect.any(Number));
-      expect(summary.high).toEqual(expect.any(Number));
     });
   });
 
@@ -169,12 +161,10 @@ describe("@paretools/npm integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.script).toBe("build");
       expect(sc.exitCode).toEqual(expect.any(Number));
       expect(typeof sc.success).toBe("boolean");
       expect(typeof sc.stdout).toBe("string");
       expect(typeof sc.stderr).toBe("string");
-      expect(sc.duration).toEqual(expect.any(Number));
     });
 
     it("returns failure for a missing script", async () => {
@@ -190,7 +180,6 @@ describe("@paretools/npm integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.script).toBe("nonexistent-script-xyz");
       expect(sc.success).toBe(false);
       expect(sc.exitCode).not.toBe(0);
     });

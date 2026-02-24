@@ -152,7 +152,8 @@ export function registerComposeBuildTool(server: McpServer) {
 
       const data = parseComposeBuildOutput(result.stdout, result.stderr, result.exitCode, duration);
 
-      if (result.exitCode !== 0 && data.built === 0 && (data.services ?? []).length === 0) {
+      const built = (data.services ?? []).filter((s) => s.success).length;
+      if (result.exitCode !== 0 && built === 0 && (data.services ?? []).length === 0) {
         const errorMsg = result.stderr || result.stdout || "Unknown error";
         throw new Error(`docker compose build failed: ${errorMsg.trim()}`);
       }

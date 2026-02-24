@@ -80,9 +80,7 @@ describe("Recorded: docker.ps", () => {
   it("S01 [recorded] lists running and stopped containers", async () => {
     mockDocker(loadFixture("ps/s01-containers.txt"));
     const { parsed } = await callAndValidate({ all: true, compact: false });
-    expect(parsed.total).toBe(2);
-    expect(parsed.running).toBe(1);
-    expect(parsed.stopped).toBe(1);
+    expect(parsed.containers.length).toBe(2);
     expect(parsed.containers[0].name).toBe("my-nginx");
     expect(parsed.containers[0].state).toBe("running");
     expect(parsed.containers[0].image).toBe("nginx:latest");
@@ -96,9 +94,6 @@ describe("Recorded: docker.ps", () => {
   it("S02 [recorded] empty — no containers", async () => {
     mockDocker(loadFixture("ps/s02-empty.txt"));
     const { parsed } = await callAndValidate({ all: true, compact: false });
-    expect(parsed.total).toBe(0);
-    expect(parsed.running).toBe(0);
-    expect(parsed.stopped).toBe(0);
     expect(parsed.containers).toEqual([]);
   });
 });
@@ -127,7 +122,7 @@ describe("Recorded: docker.images", () => {
   it("S01 [recorded] lists images with repo, tag, and size", async () => {
     mockDocker(loadFixture("images/s01-list.txt"));
     const { parsed } = await callAndValidate({ all: false, compact: false });
-    expect(parsed.total).toBe(2);
+    expect(parsed.images.length).toBe(2);
     expect(parsed.images[0].repository).toBe("nginx");
     expect(parsed.images[0].tag).toBe("latest");
     expect(parsed.images[0].size).toBe("187MB");
@@ -168,8 +163,6 @@ describe("Recorded: docker.logs", () => {
       details: false,
       compact: false,
     });
-    expect(parsed.container).toBe("my-nginx");
-    expect(parsed.total).toBe(3);
     expect(parsed.entries).toBeDefined();
     expect(parsed.entries!.length).toBe(3);
     expect(parsed.entries![0].timestamp).toBe("2026-02-18T10:00:00.000000000Z");
@@ -217,8 +210,6 @@ describe("Recorded: docker.build", () => {
     });
     expect(parsed.success).toBe(true);
     expect(parsed.imageId).toBe("a1b2c3d4e5f6");
-    expect(parsed.steps).toBeGreaterThanOrEqual(1);
-    expect(parsed.cacheHits).toBeGreaterThanOrEqual(1);
     expect(parsed.cacheByStep).toBeDefined();
     const cachedStep = parsed.cacheByStep!.find((s) => s.step === "1/3");
     expect(cachedStep?.cached).toBe(true);
@@ -256,8 +247,6 @@ describe("Recorded: docker.pull", () => {
     });
     expect(parsed.success).toBe(true);
     expect(parsed.status).toBe("pulled");
-    expect(parsed.image).toBe("alpine");
-    expect(parsed.tag).toBe("latest");
     expect(parsed.digest).toBe("sha256:abcdef1234567890");
   });
 });
@@ -290,7 +279,7 @@ describe("Recorded: docker.stats", () => {
       noTrunc: false,
       compact: false,
     });
-    expect(parsed.total).toBe(1);
+    expect(parsed.containers.length).toBe(1);
     expect(parsed.containers[0].name).toBe("my-nginx");
     expect(parsed.containers[0].cpuPercent).toBe(0.5);
     expect(parsed.containers[0].memoryPercent).toBe(0.32);
@@ -330,7 +319,7 @@ describe("Recorded: docker.network-ls", () => {
       noTrunc: false,
       compact: false,
     });
-    expect(parsed.total).toBe(3);
+    expect(parsed.networks.length).toBe(3);
     expect(parsed.networks[0].name).toBe("bridge");
     expect(parsed.networks[0].driver).toBe("bridge");
     expect(parsed.networks[0].scope).toBe("local");
@@ -370,7 +359,7 @@ describe("Recorded: docker.volume-ls", () => {
       cluster: false,
       compact: false,
     });
-    expect(parsed.total).toBe(2);
+    expect(parsed.volumes.length).toBe(2);
     expect(parsed.volumes[0].name).toBe("my-data");
     expect(parsed.volumes[0].driver).toBe("local");
     expect(parsed.volumes[0].mountpoint).toBe("/var/lib/docker/volumes/my-data/_data");

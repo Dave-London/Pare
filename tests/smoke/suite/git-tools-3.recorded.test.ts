@@ -248,8 +248,7 @@ describe("Recorded: git.tag", () => {
   it("S1 [recorded] list tags", async () => {
     mockGit(loadFixture("tag", "s01-list.txt"));
     const { parsed } = await callAndValidate({ compact: false });
-    expect(parsed.tags.length).toBeGreaterThanOrEqual(4);
-    expect(parsed.total).toBeGreaterThanOrEqual(4);
+    expect(parsed.tags!.length).toBeGreaterThanOrEqual(4);
     // Verify tag structure (full mode returns objects)
     const tags = parsed.tags as Array<Record<string, unknown>>;
     const v100 = tags.find((t) => t.name === "v1.0.0");
@@ -288,7 +287,6 @@ describe("Recorded: git.tag", () => {
     mockGit(loadFixture("tag", "s07-empty.txt"));
     const { parsed } = await callAndValidate({});
     expect(parsed.tags).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 });
 
@@ -320,8 +318,7 @@ describe("Recorded: git.remote", () => {
     // Call 2: git remote show origin (per-remote details)
     mockGit(loadFixture("remote", "s06-show.txt"));
     const { parsed } = await callAndValidate({ compact: false });
-    expect(parsed.remotes.length).toBeGreaterThanOrEqual(1);
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
+    expect(parsed.remotes!.length).toBeGreaterThanOrEqual(1);
     // Verify remote data (full mode returns objects)
     const remotes = parsed.remotes as Array<Record<string, unknown>>;
     const origin = remotes.find((r) => r.name === "origin");
@@ -383,7 +380,6 @@ describe("Recorded: git.push", () => {
     mockGit("", loadFixture("push", "s01-push.txt"));
     const { parsed } = await callAndValidate({ remote: "origin" });
     expect(parsed.success).toBe(true);
-    expect(parsed.remote).toBe("origin");
   });
 
   it("S2 [recorded] push rejected (non-fast-forward)", async () => {

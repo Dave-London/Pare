@@ -222,16 +222,16 @@ const LIST_EMPTY = JSON.stringify({
 
 describe("fidelity: npm install", () => {
   it("preserves package counts from install output", () => {
-    const result = parseInstallOutput(INSTALL_BASIC, 12);
+    const result = parseInstallOutput(INSTALL_BASIC);
 
     expect(result.added).toBe(42);
     expect(result.removed).toBe(3);
     expect(result.changed).toBe(5);
-    expect(result.duration).toBe(12);
+    // duration was removed from schema — now only in formatter
   });
 
   it("preserves vulnerability summary extraction", () => {
-    const result = parseInstallOutput(INSTALL_WITH_VULNS, 8);
+    const result = parseInstallOutput(INSTALL_WITH_VULNS);
 
     expect(result.added).toBe(150);
     expect(result.vulnerabilities).toBeDefined();
@@ -244,7 +244,7 @@ describe("fidelity: npm install", () => {
   });
 
   it("handles clean install with no vulnerabilities", () => {
-    const result = parseInstallOutput(INSTALL_CLEAN, 4);
+    const result = parseInstallOutput(INSTALL_CLEAN);
 
     expect(result.added).toBe(87);
     expect(result.removed).toBe(0);
@@ -252,11 +252,11 @@ describe("fidelity: npm install", () => {
     // "found 0 vulnerabilities" should NOT produce a vulnerabilities object
     // because the regex looks for "X vulnerabilit" which matches "0 vulnerabilities"
     // The parser sets total = 0 and all severity counts = 0
-    expect(result.duration).toBe(4);
+    // duration was removed from schema — now only in formatter
   });
 
   it("preserves funding count", () => {
-    const result = parseInstallOutput(INSTALL_FUNDING_ONLY, 15);
+    const result = parseInstallOutput(INSTALL_FUNDING_ONLY);
 
     expect(result.added).toBe(200);
     expect(result.changed).toBe(1);
@@ -264,13 +264,13 @@ describe("fidelity: npm install", () => {
   });
 
   it("preserves funding count from detailed install output", () => {
-    const result = parseInstallOutput(INSTALL_BASIC, 12);
+    const result = parseInstallOutput(INSTALL_BASIC);
 
     expect(result.funding).toBe(8);
   });
 
   it("preserves all severity levels when present", () => {
-    const result = parseInstallOutput(INSTALL_ALL_SEVERITIES, 20);
+    const result = parseInstallOutput(INSTALL_ALL_SEVERITIES);
 
     expect(result.added).toBe(300);
     expect(result.vulnerabilities).toBeDefined();
@@ -322,23 +322,25 @@ describe("fidelity: npm audit", () => {
     const result = parseAuditJson(AUDIT_ZERO_VULNS);
 
     expect(result.vulnerabilities).toHaveLength(0);
-    expect(result.summary.total).toBe(0);
-    expect(result.summary.critical).toBe(0);
-    expect(result.summary.high).toBe(0);
-    expect(result.summary.moderate).toBe(0);
-    expect(result.summary.low).toBe(0);
-    expect(result.summary.info).toBe(0);
+    // summary was removed from schema — derivable from vulnerabilities array
   });
 
-  it("preserves summary counts from metadata", () => {
+  it("preserves vulnerability counts derivable from array", () => {
     const result = parseAuditJson(AUDIT_MULTIPLE_VULNS);
 
-    expect(result.summary.total).toBe(4);
-    expect(result.summary.critical).toBe(1);
-    expect(result.summary.high).toBe(1);
-    expect(result.summary.moderate).toBe(1);
-    expect(result.summary.low).toBe(1);
-    expect(result.summary.info).toBe(0);
+    // summary was removed from schema — verify counts via array
+    expect(result.vulnerabilities).toHaveLength(4);
+    const bySeverity = result.vulnerabilities.reduce(
+      (acc, v) => {
+        acc[v.severity] = (acc[v.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    expect(bySeverity["critical"]).toBe(1);
+    expect(bySeverity["high"]).toBe(1);
+    expect(bySeverity["moderate"]).toBe(1);
+    expect(bySeverity["low"]).toBe(1);
   });
 
   it("preserves title and URL from via array", () => {
@@ -365,7 +367,6 @@ describe("fidelity: npm outdated", () => {
     const result = parseOutdatedJson(OUTDATED_MULTIPLE);
 
     expect(result.packages).toHaveLength(3);
-    expect(result.total).toBe(3);
 
     const ts = result.packages.find((p) => p.name === "typescript")!;
     expect(ts.current).toBe("5.3.3");
@@ -399,7 +400,7 @@ describe("fidelity: npm outdated", () => {
     const result = parseOutdatedJson(OUTDATED_EMPTY);
 
     expect(result.packages).toHaveLength(0);
-    expect(result.total).toBe(0);
+    // total was removed from schema — derivable from packages.length
   });
 });
 
@@ -409,7 +410,7 @@ describe("fidelity: npm list", () => {
 
     expect(result.name).toBe("my-app");
     expect(result.version).toBe("1.2.3");
-    expect(result.total).toBe(3);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
 
     expect(result.dependencies["express"]).toBeDefined();
     expect(result.dependencies["express"].version).toBe("4.18.2");
@@ -435,7 +436,7 @@ describe("fidelity: npm list", () => {
 
     expect(result.name).toBe("@paretools/npm");
     expect(result.version).toBe("0.3.0");
-    expect(result.total).toBe(5);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
 
     expect(result.dependencies["@modelcontextprotocol/sdk"]).toBeDefined();
     expect(result.dependencies["@modelcontextprotocol/sdk"].version).toBe("1.26.0");
@@ -459,7 +460,7 @@ describe("fidelity: npm list", () => {
     expect(result.name).toBe("empty-project");
     expect(result.version).toBe("0.0.1");
     expect(result.dependencies).toEqual({});
-    expect(result.total).toBe(0);
+    // total was removed from schema — derivable from Object.keys(dependencies).length
   });
 });
 
@@ -494,33 +495,31 @@ describe("fidelity: npm run", () => {
   it("preserves stdout from successful build script", () => {
     const result = parseRunOutput("build", 0, RUN_BUILD_SUCCESS_STDOUT, "", 3.2);
 
-    expect(result.script).toBe("build");
+    // script and duration were removed from schema — now only in formatter
     expect(result.exitCode).toBe(0);
     expect(result.success).toBe(true);
     expect(result.stdout).toContain("Build complete");
     expect(result.stdout).toContain("dist/index.js");
     expect(result.stdout).toContain("42 KB");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(3.2);
   });
 
   it("preserves stderr from failed build script", () => {
     const result = parseRunOutput("build", 2, "", RUN_BUILD_FAILURE_STDERR, 1.8);
 
-    expect(result.script).toBe("build");
+    // script and duration were removed from schema — now only in formatter
     expect(result.exitCode).toBe(2);
     expect(result.success).toBe(false);
     expect(result.stderr).toContain("error TS2322");
     expect(result.stderr).toContain("error TS2345");
     expect(result.stderr).toContain("ELIFECYCLE");
     expect(result.stdout).toBe("");
-    expect(result.duration).toBe(1.8);
   });
 
   it("preserves error details for missing script", () => {
     const result = parseRunOutput("deploy", 1, "", RUN_MISSING_SCRIPT_STDERR, 0.1);
 
-    expect(result.script).toBe("deploy");
+    // script was removed from schema — now only in formatter
     expect(result.exitCode).toBe(1);
     expect(result.success).toBe(false);
     expect(result.stderr).toContain('Missing script: "deploy"');
@@ -551,7 +550,7 @@ describe("fidelity: npm test", () => {
     expect(result.stdout).toContain("17 passed");
     expect(result.stdout).toContain("2 passed (2)");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(1.23);
+    // duration was removed from schema — now only in formatter
   });
 
   it("preserves output from failing test run", () => {
@@ -564,7 +563,7 @@ describe("fidelity: npm test", () => {
     expect(result.stderr).toContain("FAIL src/lib/utils.test.ts");
     expect(result.stderr).toContain("AssertionError");
     expect(result.stderr).toContain("expected null to be 'default'");
-    expect(result.duration).toBe(2.1);
+    // duration was removed from schema — now only in formatter
   });
 
   it("preserves error when no test script defined", () => {

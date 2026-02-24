@@ -133,7 +133,6 @@ describe("fidelity: git log", () => {
 
     // Commit count matches
     expect(log.commits.length).toBe(rawHashes.length);
-    expect(log.total).toBe(rawHashes.length);
   });
 
   it("preserves commit messages", () => {
@@ -226,23 +225,6 @@ describe("fidelity: git diff", () => {
       expect(diff.files[i].deletions).toBe(expectedDel);
     }
   });
-
-  it("totalAdditions/totalDeletions match sum of per-file counts", () => {
-    if (!hasParentCommit()) return; // shallow clone in CI
-
-    const rawNumstat = gitRaw(["diff", "--numstat", "HEAD~1"]);
-
-    if (!rawNumstat.trim()) return;
-
-    const diff = parseDiffStat(rawNumstat);
-
-    const expectedAdditions = diff.files.reduce((sum, f) => sum + f.additions, 0);
-    const expectedDeletions = diff.files.reduce((sum, f) => sum + f.deletions, 0);
-
-    expect(diff.totalAdditions).toBe(expectedAdditions);
-    expect(diff.totalDeletions).toBe(expectedDeletions);
-    expect(diff.totalFiles).toBe(diff.files.length);
-  });
 });
 
 describe("fidelity: git branch", () => {
@@ -252,7 +234,7 @@ describe("fidelity: git branch", () => {
       .trim()
       .split("\n")
       .filter(Boolean)
-      .map((l) => l.replace(/^\*?\s+/, "").split(/\s+/)[0]);
+      .map((l) => l.replace(/^[*+]?\s+/, "").split(/\s+/)[0]);
 
     const branches = parseBranch(raw);
 
@@ -313,7 +295,7 @@ describe("fidelity: git show", () => {
     const rawFileCountMatch = rawStat.match(/(\d+) files? changed/);
 
     if (rawFileCountMatch) {
-      expect(show.diff.totalFiles).toBe(parseInt(rawFileCountMatch[1], 10));
+      expect(show.diff.files.length).toBe(parseInt(rawFileCountMatch[1], 10));
     }
   });
 });
@@ -330,15 +312,11 @@ describe("fidelity: edge cases", () => {
   it("parseLog handles empty output", () => {
     const log = parseLog("");
     expect(log.commits).toHaveLength(0);
-    expect(log.total).toBe(0);
   });
 
   it("parseDiffStat handles empty diff", () => {
     const diff = parseDiffStat("");
     expect(diff.files).toHaveLength(0);
-    expect(diff.totalAdditions).toBe(0);
-    expect(diff.totalDeletions).toBe(0);
-    expect(diff.totalFiles).toBe(0);
   });
 
   it("parseBranch handles single branch", () => {
@@ -512,7 +490,6 @@ describe("fidelity: log edge cases (expanded)", () => {
     ].join("\n");
     const log = parseLog(lines);
     expect(log.commits).toHaveLength(3);
-    expect(log.total).toBe(3);
     expect(log.commits[0].refs).toBe("HEAD -> main, origin/main");
     expect(log.commits[1].refs).toBeUndefined();
     expect(log.commits[2].refs).toBe("tag: v1.0.0");
@@ -552,8 +529,6 @@ describe("fidelity: diff edge cases (expanded)", () => {
     expect(diff.files).toHaveLength(1);
     expect(diff.files[0].additions).toBe(1500);
     expect(diff.files[0].deletions).toBe(2300);
-    expect(diff.totalAdditions).toBe(1500);
-    expect(diff.totalDeletions).toBe(2300);
   });
 
   it("parseDiffStat handles very large counts (10000+)", () => {
@@ -568,9 +543,7 @@ describe("fidelity: diff edge cases (expanded)", () => {
     expect(diff.files[1].additions).toBe(0);
     expect(diff.files[1].deletions).toBe(12000);
     expect(diff.files[1].status).toBe("deleted");
-    expect(diff.totalAdditions).toBe(15000);
-    expect(diff.totalDeletions).toBe(12000);
-    expect(diff.totalFiles).toBe(2);
+    expect(diff.files).toHaveLength(2);
   });
 
   it("parseDiffStat handles renamed file with zero changes", () => {
@@ -599,15 +572,13 @@ describe("fidelity: diff edge cases (expanded)", () => {
       "10\t10\tsrc/refactored.ts",
     ].join("\n");
     const diff = parseDiffStat(lines);
-    expect(diff.totalFiles).toBe(5);
+    expect(diff.files).toHaveLength(5);
     expect(diff.files[0].status).toBe("renamed");
     expect(diff.files[1].status).toBe("added");
     expect(diff.files[2].status).toBe("deleted");
     expect(diff.files[3].additions).toBe(0);
     expect(diff.files[3].deletions).toBe(0);
     expect(diff.files[4].status).toBe("modified");
-    expect(diff.totalAdditions).toBe(115);
-    expect(diff.totalDeletions).toBe(62);
   });
 });
 
@@ -621,9 +592,6 @@ describe("fidelity: show edge cases (expanded)", () => {
     expect(show.date).toBe("1 day ago");
     expect(show.message).toBe("chore: empty commit");
     expect(show.diff.files).toHaveLength(0);
-    expect(show.diff.totalFiles).toBe(0);
-    expect(show.diff.totalAdditions).toBe(0);
-    expect(show.diff.totalDeletions).toBe(0);
   });
 
   it("parseShow handles commit body with multi-line message containing @@", () => {
@@ -655,9 +623,7 @@ describe("fidelity: show edge cases (expanded)", () => {
       "0\t800\tsrc/old-module.ts",
     ].join("\n");
     const show = parseShow(metadata, diffLines);
-    expect(show.diff.totalFiles).toBe(3);
-    expect(show.diff.totalAdditions).toBe(1500);
-    expect(show.diff.totalDeletions).toBe(1000);
+    expect(show.diff.files).toHaveLength(3);
   });
 });
 
@@ -714,7 +680,7 @@ describe("fidelity: git add (write tool)", () => {
 
     const result = parseAdd(statusOut);
 
-    expect(result.staged).toBe(2);
+    expect(result.files).toHaveLength(2);
     expect(result.files.map((f) => f.file)).toContain("a.ts");
     expect(result.files.map((f) => f.file)).toContain("b.ts");
   });
@@ -725,7 +691,7 @@ describe("fidelity: git add (write tool)", () => {
 
     const result = parseAdd(statusOut);
 
-    expect(result.staged).toBe(1);
+    expect(result.files).toHaveLength(1);
     expect(result.files.map((f) => f.file)).toContain("initial.txt");
     expect(result.files[0].status).toBe("deleted");
   });
@@ -737,7 +703,7 @@ describe("fidelity: git add (write tool)", () => {
 
     const result = parseAdd(statusOut);
 
-    expect(result.staged).toBe(1);
+    expect(result.files).toHaveLength(1);
     expect(result.files.map((f) => f.file)).toContain("initial.txt");
     expect(result.files[0].status).toBe("modified");
   });
@@ -750,8 +716,7 @@ describe("fidelity: git add (write tool)", () => {
 
     const result = parseAdd(statusOut);
 
-    expect(result.staged).toBe(0);
-    expect(result.files).toEqual([]);
+    expect(result.files).toHaveLength(0);
   });
 
   it("parseAdd with git add -A stages everything", () => {
@@ -764,7 +729,7 @@ describe("fidelity: git add (write tool)", () => {
 
     const result = parseAdd(statusOut);
 
-    expect(result.staged).toBe(3);
+    expect(result.files).toHaveLength(3);
     expect(result.files.map((f) => f.file)).toContain("new1.ts");
     expect(result.files.map((f) => f.file)).toContain("new2.ts");
     expect(result.files.map((f) => f.file)).toContain("initial.txt");
@@ -854,7 +819,6 @@ describe("fidelity: git checkout (write tool)", () => {
     const result = parseCheckout("", stderr, "feature/test", currentBranch, true);
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("feature/test");
     expect(result.previousRef).toBe(currentBranch);
     expect(result.created).toBe(true);
 
@@ -881,7 +845,6 @@ describe("fidelity: git checkout (write tool)", () => {
     const result = parseCheckout("", stderr, "dev", previousBranch, false);
 
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("dev");
     expect(result.previousRef).toBe(previousBranch);
     expect(result.created).toBe(false);
   });
@@ -895,8 +858,6 @@ describe("fidelity: git push parser (write tool — fixture-based)", () => {
     const result = parsePush("", stderr, "origin", "feature/auth");
 
     expect(result.success).toBe(true);
-    expect(result.remote).toBe("origin");
-    expect(result.branch).toBe("feature/auth");
     expect(result.summary).toContain("new branch");
   });
 
@@ -907,8 +868,6 @@ describe("fidelity: git push parser (write tool — fixture-based)", () => {
     const result = parsePush("", stderr, "origin", "main");
 
     expect(result.success).toBe(true);
-    expect(result.remote).toBe("origin");
-    expect(result.branch).toBe("main");
     expect(result.summary).toContain("abc1234..def5678");
   });
 
@@ -928,7 +887,7 @@ describe("fidelity: git push parser (write tool — fixture-based)", () => {
 
     const result = parsePush("", stderr, "origin", "");
 
-    expect(result.branch).toBe("develop");
+    expect(result.success).toBe(true);
   });
 });
 
@@ -1003,7 +962,6 @@ describe("fidelity: git log-graph (fixture-based)", () => {
 
     const result = parseLogGraph(raw);
 
-    expect(result.total).toBe(3);
     expect(result.commits).toHaveLength(3);
 
     expect(result.commits[0].hashShort).toBe("abc1234");
@@ -1032,7 +990,6 @@ describe("fidelity: git log-graph (fixture-based)", () => {
     const result = parseLogGraph(raw);
 
     // 4 actual commits + 2 continuation lines
-    expect(result.total).toBe(4);
     expect(result.commits).toHaveLength(6);
 
     // Continuation lines have empty hashShort
@@ -1047,7 +1004,6 @@ describe("fidelity: git log-graph (fixture-based)", () => {
 
   it("parseLogGraph handles empty output", () => {
     const result = parseLogGraph("");
-    expect(result.total).toBe(0);
     expect(result.commits).toHaveLength(0);
   });
 
@@ -1056,7 +1012,6 @@ describe("fidelity: git log-graph (fixture-based)", () => {
 
     const result = parseLogGraph(raw);
 
-    expect(result.total).toBe(1);
     expect(result.commits[0].refs).toBe("HEAD -> main, tag: v1.0.0, origin/main");
     expect(result.commits[0].message).toBe("release: v1.0.0");
   });
@@ -1094,7 +1049,6 @@ describe("fidelity: git reflog (fixture-based)", () => {
 
     const result = parseReflogOutput(raw);
 
-    expect(result.total).toBe(3);
     expect(result.entries).toHaveLength(3);
 
     // First entry — normalized action
@@ -1122,7 +1076,6 @@ describe("fidelity: git reflog (fixture-based)", () => {
 
   it("parseReflogOutput handles empty output", () => {
     const result = parseReflogOutput("");
-    expect(result.total).toBe(0);
     expect(result.entries).toHaveLength(0);
   });
 
@@ -1147,7 +1100,7 @@ describe("fidelity: git reflog (fixture-based)", () => {
 
     // Cross-check: count should match raw lines
     const rawLines = raw.trim().split("\n").filter(Boolean);
-    expect(result.total).toBe(rawLines.length);
+    expect(result.entries.length).toBe(rawLines.length);
 
     // Every entry should have a non-empty hash and selector
     for (const entry of result.entries) {
@@ -1223,7 +1176,6 @@ describe("fidelity: git worktree parser (fixture-based)", () => {
 
     const result = parseWorktreeList(stdout);
 
-    expect(result.total).toBe(2);
     expect(result.worktrees).toHaveLength(2);
 
     expect(result.worktrees[0].path).toBe("/home/user/repo");
@@ -1247,7 +1199,7 @@ describe("fidelity: git worktree parser (fixture-based)", () => {
 
     const result = parseWorktreeList(stdout);
 
-    expect(result.total).toBe(1);
+    expect(result.worktrees).toHaveLength(1);
     expect(result.worktrees[0].bare).toBe(true);
     expect(result.worktrees[0].branch).toBe("");
   });
@@ -1262,14 +1214,13 @@ describe("fidelity: git worktree parser (fixture-based)", () => {
 
     const result = parseWorktreeList(stdout);
 
-    expect(result.total).toBe(1);
+    expect(result.worktrees).toHaveLength(1);
     expect(result.worktrees[0].branch).toBe("(detached)");
     expect(result.worktrees[0].bare).toBe(false);
   });
 
   it("parseWorktreeList handles empty output", () => {
     const result = parseWorktreeList("");
-    expect(result.total).toBe(0);
     expect(result.worktrees).toHaveLength(0);
   });
 

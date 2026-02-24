@@ -10,18 +10,16 @@ describe("parseInstallOutput", () => {
   it("parses install with additions", () => {
     const output =
       "added 52 packages, and audited 235 packages in 3s\n\n25 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities";
-    const result = parseInstallOutput(output, 3.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(52);
-    expect(result.packages).toBe(235);
-    expect(result.duration).toBe(3.0);
     expect(result.funding).toBe(25);
   });
 
   it("parses install with vulnerabilities", () => {
     const output =
       "added 10 packages, and audited 100 packages in 2s\n\n3 vulnerabilities (1 high, 2 moderate)\n";
-    const result = parseInstallOutput(output, 2.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(10);
     expect(result.vulnerabilities).toBeDefined();
@@ -32,22 +30,20 @@ describe("parseInstallOutput", () => {
 
   it("parses up-to-date install", () => {
     const output = "up to date, audited 235 packages in 1s";
-    const result = parseInstallOutput(output, 1.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(0);
     expect(result.removed).toBe(0);
-    expect(result.packages).toBe(235);
   });
 
   it("parses install with removals and changes", () => {
     const output =
       "added 3 packages, removed 5 packages, changed 2 packages, and audited 200 packages in 4s";
-    const result = parseInstallOutput(output, 4.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(3);
     expect(result.removed).toBe(5);
     expect(result.changed).toBe(2);
-    expect(result.packages).toBe(200);
   });
 
   it("parses npm install --json output when available", () => {
@@ -69,12 +65,11 @@ describe("parseInstallOutput", () => {
       },
     });
 
-    const result = parseInstallOutput(output, 2.4);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(2);
     expect(result.removed).toBe(1);
     expect(result.changed).toBe(3);
-    expect(result.packages).toBe(250);
     expect(result.funding).toBe(12);
     expect(result.vulnerabilities?.total).toBe(4);
     expect(result.vulnerabilities?.high).toBe(2);
@@ -100,8 +95,6 @@ describe("parseAuditJson", () => {
 
     const result = parseAuditJson(json);
 
-    expect(result.summary.total).toBe(1);
-    expect(result.summary.high).toBe(1);
     expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].name).toBe("lodash");
     expect(result.vulnerabilities[0].severity).toBe("high");
@@ -117,7 +110,6 @@ describe("parseAuditJson", () => {
     });
 
     const result = parseAuditJson(json);
-    expect(result.summary.total).toBe(0);
     expect(result.vulnerabilities).toHaveLength(0);
   });
 });
@@ -137,7 +129,7 @@ describe("parseOutdatedJson", () => {
 
     const result = parseOutdatedJson(json);
 
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages[0].name).toBe("typescript");
     expect(result.packages[0].current).toBe("5.3.0");
     expect(result.packages[0].wanted).toBe("5.7.0");
@@ -146,7 +138,6 @@ describe("parseOutdatedJson", () => {
 
   it("parses empty outdated", () => {
     const result = parseOutdatedJson("{}");
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -183,16 +174,16 @@ describe("parseListJson", () => {
 
     expect(result.name).toBe("my-project");
     expect(result.version).toBe("1.0.0");
-    expect(result.total).toBe(2);
-    expect(result.dependencies.express.version).toBe("4.18.2");
-    expect(result.dependencies.express).not.toHaveProperty("resolved");
-    expect(result.dependencies.zod.version).toBe("3.25.0");
+    expect(Object.keys(result.dependencies!).length).toBe(2);
+    expect(result.dependencies!.express.version).toBe("4.18.2");
+    expect(result.dependencies!.express).not.toHaveProperty("resolved");
+    expect(result.dependencies!.zod.version).toBe("3.25.0");
   });
 
   it("handles empty dependencies", () => {
     const json = JSON.stringify({ name: "empty", version: "0.0.0", dependencies: {} });
     const result = parseListJson(json);
-    expect(result.total).toBe(0);
+    expect(Object.keys(result.dependencies ?? {}).length).toBe(0);
   });
 
   it("parses nested dependencies (depth > 0)", () => {
@@ -219,15 +210,15 @@ describe("parseListJson", () => {
     const result = parseListJson(json);
 
     expect(result.name).toBe("my-project");
-    expect(result.total).toBe(5); // express + body-parser + bytes + cookie + zod
-    expect(result.dependencies.express.version).toBe("4.18.2");
-    expect(result.dependencies.express.dependencies!["body-parser"].version).toBe("1.20.1");
+    // 5 total deps: express + body-parser + bytes + cookie + zod (count via dependencies tree)
+    expect(result.dependencies!.express.version).toBe("4.18.2");
+    expect(result.dependencies!.express.dependencies!["body-parser"].version).toBe("1.20.1");
     expect(
-      result.dependencies.express.dependencies!["body-parser"].dependencies!.bytes.version,
+      result.dependencies!.express.dependencies!["body-parser"].dependencies!.bytes.version,
     ).toBe("3.1.2");
-    expect(result.dependencies.express.dependencies!.cookie.version).toBe("0.5.0");
-    expect(result.dependencies.zod.version).toBe("3.25.0");
-    expect(result.dependencies.zod.dependencies).toBeUndefined();
+    expect(result.dependencies!.express.dependencies!.cookie.version).toBe("0.5.0");
+    expect(result.dependencies!.zod.version).toBe("3.25.0");
+    expect(result.dependencies!.zod.dependencies).toBeUndefined();
   });
 
   it("parses problems array from npm ls output", () => {
@@ -250,7 +241,7 @@ describe("parseListJson", () => {
 describe("parseInstallOutput branch coverage", () => {
   it("parses 0 vulnerabilities text", () => {
     const output = "added 87 packages in 4s\n\nfound 0 vulnerabilities";
-    const result = parseInstallOutput(output, 4.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(87);
     // "0 vulnerabilities" matches the regex, so vulnerabilities object is created with total=0
@@ -265,7 +256,7 @@ describe("parseInstallOutput branch coverage", () => {
 
   it("omits funding when no funding message is present", () => {
     const output = "added 10 packages in 1s";
-    const result = parseInstallOutput(output, 1.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(10);
     expect(result.funding).toBeUndefined();
@@ -273,7 +264,7 @@ describe("parseInstallOutput branch coverage", () => {
 
   it("omits vulnerabilities when no vulnerability text is present", () => {
     const output = "added 5 packages in 2s\n3 packages are looking for funding";
-    const result = parseInstallOutput(output, 2.0);
+    const result = parseInstallOutput(output);
 
     expect(result.added).toBe(5);
     expect(result.vulnerabilities).toBeUndefined();
@@ -281,12 +272,11 @@ describe("parseInstallOutput branch coverage", () => {
   });
 
   it("handles completely empty output", () => {
-    const result = parseInstallOutput("", 0);
+    const result = parseInstallOutput("");
 
     expect(result.added).toBe(0);
     expect(result.removed).toBe(0);
     expect(result.changed).toBe(0);
-    expect(result.packages).toBe(0);
     expect(result.vulnerabilities).toBeUndefined();
     expect(result.funding).toBeUndefined();
   });
@@ -309,10 +299,7 @@ describe("parseAuditJson branch coverage", () => {
 
     const result = parseAuditJson(json);
 
-    // Should fall back to counting vulnerabilities array length for total
-    expect(result.summary.total).toBe(1);
-    expect(result.summary.critical).toBe(0);
-    expect(result.summary.high).toBe(0);
+    // Summary was removed from schema — verify vulnerabilities array directly
     expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].name).toBe("lodash");
   });
@@ -388,7 +375,6 @@ describe("parseAuditJson branch coverage", () => {
 
     const result = parseAuditJson(json);
 
-    expect(result.summary.total).toBe(0);
     expect(result.vulnerabilities).toHaveLength(0);
   });
 
@@ -446,7 +432,7 @@ describe("parseListJson branch coverage", () => {
 
     expect(result.name).toBe("unknown");
     expect(result.version).toBe("1.0.0");
-    expect(result.total).toBe(1);
+    expect(Object.keys(result.dependencies ?? {}).length).toBe(1);
   });
 
   it("defaults version to '0.0.0' when missing from JSON", () => {
@@ -479,7 +465,6 @@ describe("parseListJson branch coverage", () => {
 
     expect(result.name).toBe("bare");
     expect(result.dependencies).toEqual({});
-    expect(result.total).toBe(0);
   });
 
   it("defaults dependency version to 'unknown' when missing", () => {
@@ -491,7 +476,7 @@ describe("parseListJson branch coverage", () => {
 
     const result = parseListJson(json);
 
-    expect(result.dependencies["no-version"].version).toBe("unknown");
+    expect(result.dependencies!["no-version"].version).toBe("unknown");
   });
 
   it("throws on invalid JSON string", () => {

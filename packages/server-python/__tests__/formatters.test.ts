@@ -51,7 +51,6 @@ describe("formatPipInstall", () => {
       success: true,
       installed: [],
       alreadySatisfied: true,
-      total: 0,
     };
     expect(formatPipInstall(data)).toBe("All requirements already satisfied.");
   });
@@ -64,7 +63,6 @@ describe("formatPipInstall", () => {
         { name: "requests", version: "2.31.0" },
       ],
       alreadySatisfied: false,
-      total: 2,
     };
     const output = formatPipInstall(data);
     expect(output).toContain("Installed 2 packages:");
@@ -77,7 +75,6 @@ describe("formatPipInstall", () => {
       success: false,
       installed: [],
       alreadySatisfied: false,
-      total: 0,
     };
     expect(formatPipInstall(data)).toBe("pip install failed.");
   });
@@ -88,10 +85,6 @@ describe("formatMypy", () => {
     const data: MypyResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      errors: 0,
-      warnings: 0,
-      notes: 0,
     };
     expect(formatMypy(data)).toBe("mypy: no errors found.");
   });
@@ -115,10 +108,6 @@ describe("formatMypy", () => {
           message: "Revealed type is 'builtins.str'",
         },
       ],
-      total: 2,
-      errors: 1,
-      warnings: 0,
-      notes: 1,
     };
     const output = formatMypy(data);
     expect(output).toContain("mypy: 1 errors, 0 warnings, 1 notes");
@@ -139,7 +128,7 @@ describe("formatMypy", () => {
           message: "Cannot find implementation or library stub",
         },
       ],
-      total: 1,
+
       errors: 1,
       warnings: 0,
       notes: 0,
@@ -155,8 +144,6 @@ describe("formatRuff", () => {
     const data: RuffResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      fixable: 0,
     };
     expect(formatRuff(data)).toBe("ruff: no issues found.");
   });
@@ -182,8 +169,6 @@ describe("formatRuff", () => {
           fixable: false,
         },
       ],
-      total: 2,
-      fixable: 1,
     };
     const output = formatRuff(data);
     expect(output).toContain("ruff: 2 issues (1 fixable)");
@@ -197,7 +182,6 @@ describe("formatPipAudit", () => {
     const data: PipAuditResult = {
       success: true,
       vulnerabilities: [],
-      total: 0,
     };
     expect(formatPipAudit(data)).toBe("No vulnerabilities found.");
   });
@@ -221,7 +205,6 @@ describe("formatPipAudit", () => {
           fixVersions: [],
         },
       ],
-      total: 2,
     };
     const output = formatPipAudit(data);
     expect(output).toContain("2 vulnerabilities:");
@@ -248,10 +231,6 @@ describe("formatMypy — edge cases", () => {
           message: "Cannot find implementation or library stub for module named 'missing'",
         },
       ],
-      total: 1,
-      errors: 1,
-      warnings: 0,
-      notes: 0,
     };
     const output = formatMypy(data);
     expect(output).toContain("src/app.py:42 error: Cannot find implementation or library stub");
@@ -272,10 +251,6 @@ describe("formatMypy — edge cases", () => {
           message: "Unused type: ignore comment",
         },
       ],
-      total: 1,
-      errors: 0,
-      warnings: 1,
-      notes: 0,
     };
     const output = formatMypy(data);
     expect(output).toContain("lib.py:5:10 warning: Unused type: ignore comment");
@@ -296,13 +271,11 @@ describe("formatPytest — edge cases", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 100,
-      duration: 15.5,
       failures,
     };
     const output = formatPytest(data);
 
-    expect(output).toContain("80 passed, 20 failed in 15.5s");
+    expect(output).toContain("80 passed, 20 failed");
     // All 20 failures should be listed
     for (let i = 0; i < 20; i++) {
       expect(output).toContain(`FAILED test_case_${i}: assertion failed in case ${i}`);
@@ -317,12 +290,11 @@ describe("formatPytest — edge cases", () => {
       errors: 3,
       skipped: 2,
       warnings: 0,
-      total: 5,
-      duration: 0.5,
+
       failures: [],
     };
     const output = formatPytest(data);
-    expect(output).toContain("3 errors, 2 skipped in 0.5s");
+    expect(output).toContain("3 errors, 2 skipped");
     expect(output).not.toContain("passed");
     expect(output).not.toContain("failed");
   });
@@ -335,7 +307,6 @@ describe("formatBlack — edge cases", () => {
     const data: BlackResult = {
       filesChanged: 0,
       filesUnchanged: 0,
-      filesChecked: 0,
       success: true,
       wouldReformat: ["orphan.py"],
     };
@@ -348,7 +319,6 @@ describe("formatBlack — edge cases", () => {
     const data: BlackResult = {
       filesChanged: 3,
       filesUnchanged: 2,
-      filesChecked: 5,
       success: true,
       wouldReformat: [],
     };
@@ -362,7 +332,6 @@ describe("formatBlack — edge cases", () => {
     const data: BlackResult = {
       filesChanged: 0,
       filesUnchanged: 0,
-      filesChecked: 0,
       success: false,
       exitCode: 123,
       errorType: "internal_error",
@@ -376,7 +345,7 @@ describe("formatBlack — edge cases", () => {
 
 describe("formatPipList", () => {
   it("formats empty package list", () => {
-    const data: PipList = { success: true, packages: [], total: 0 };
+    const data: PipList = { success: true, packages: [] };
     expect(formatPipList(data)).toBe("No packages installed.");
   });
 
@@ -387,7 +356,6 @@ describe("formatPipList", () => {
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
       ],
-      total: 2,
     };
     const output = formatPipList(data);
     expect(output).toContain("2 packages installed:");
@@ -881,23 +849,19 @@ describe("formatPoetry", () => {
   it("formats failed action", () => {
     const data: PoetryResult = {
       success: false,
-      action: "install",
-      total: 0,
     };
-    expect(formatPoetry(data)).toBe("poetry install failed.");
+    expect(formatPoetry(data, "install")).toBe("poetry install failed.");
   });
 
   it("formats show with packages", () => {
     const data: PoetryResult = {
       success: true,
-      action: "show",
       packages: [
         { name: "requests", version: "2.31.0" },
         { name: "flask", version: "3.0.0" },
       ],
-      total: 2,
     };
-    const output = formatPoetry(data);
+    const output = formatPoetry(data, "show");
     expect(output).toContain("2 packages:");
     expect(output).toContain("requests==2.31.0");
     expect(output).toContain("flask==3.0.0");
@@ -906,21 +870,17 @@ describe("formatPoetry", () => {
   it("formats show with no packages", () => {
     const data: PoetryResult = {
       success: true,
-      action: "show",
       packages: [],
-      total: 0,
     };
-    expect(formatPoetry(data)).toBe("No packages found.");
+    expect(formatPoetry(data, "show")).toBe("No packages found.");
   });
 
   it("formats build with artifacts", () => {
     const data: PoetryResult = {
       success: true,
-      action: "build",
       artifacts: [{ file: "mypackage-1.0.0.tar.gz" }, { file: "mypackage-1.0.0-py3-none-any.whl" }],
-      total: 2,
     };
-    const output = formatPoetry(data);
+    const output = formatPoetry(data, "build");
     expect(output).toContain("Built 2 artifacts:");
     expect(output).toContain("mypackage-1.0.0.tar.gz");
     expect(output).toContain("mypackage-1.0.0-py3-none-any.whl");
@@ -929,21 +889,17 @@ describe("formatPoetry", () => {
   it("formats build with no artifacts", () => {
     const data: PoetryResult = {
       success: true,
-      action: "build",
       artifacts: [],
-      total: 0,
     };
-    expect(formatPoetry(data)).toBe("poetry build: no artifacts produced.");
+    expect(formatPoetry(data, "build")).toBe("poetry build: no artifacts produced.");
   });
 
   it("formats install with packages", () => {
     const data: PoetryResult = {
       success: true,
-      action: "install",
       packages: [{ name: "requests", version: "2.31.0" }],
-      total: 1,
     };
-    const output = formatPoetry(data);
+    const output = formatPoetry(data, "install");
     expect(output).toContain("poetry install: 1 packages:");
     expect(output).toContain("requests==2.31.0");
   });
@@ -951,24 +907,20 @@ describe("formatPoetry", () => {
   it("formats install with no changes", () => {
     const data: PoetryResult = {
       success: true,
-      action: "install",
       packages: [],
-      total: 0,
     };
-    expect(formatPoetry(data)).toBe("poetry install: no changes.");
+    expect(formatPoetry(data, "install")).toBe("poetry install: no changes.");
   });
 
   it("formats add with packages", () => {
     const data: PoetryResult = {
       success: true,
-      action: "add",
       packages: [
         { name: "certifi", version: "2023.7.22" },
         { name: "requests", version: "2.31.0" },
       ],
-      total: 2,
     };
-    const output = formatPoetry(data);
+    const output = formatPoetry(data, "add");
     expect(output).toContain("poetry add: 2 packages:");
     expect(output).toContain("certifi==2023.7.22");
   });
@@ -976,11 +928,9 @@ describe("formatPoetry", () => {
   it("formats remove with packages", () => {
     const data: PoetryResult = {
       success: true,
-      action: "remove",
       packages: [{ name: "requests", version: "2.31.0" }],
-      total: 1,
     };
-    const output = formatPoetry(data);
+    const output = formatPoetry(data, "remove");
     expect(output).toContain("poetry remove: 1 packages:");
     expect(output).toContain("requests==2.31.0");
   });
@@ -992,93 +942,19 @@ describe("formatPoetryCompact", () => {
   it("formats failed action", () => {
     const data = compactPoetryMap({
       success: false,
-      action: "install",
-      total: 0,
     } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry install failed.");
+    expect(formatPoetryCompact(data)).toBe("poetry: failed.");
   });
 
-  it("formats show with packages", () => {
+  it("formats successful action", () => {
     const data = compactPoetryMap({
       success: true,
-      action: "show",
       packages: [
         { name: "requests", version: "2.31.0" },
         { name: "flask", version: "3.0.0" },
       ],
-      total: 2,
     } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("2 packages installed.");
-  });
-
-  it("formats show with no packages", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "show",
-      packages: [],
-      total: 0,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("No packages found.");
-  });
-
-  it("formats build with artifacts", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "build",
-      artifacts: [{ file: "pkg-1.0.0.tar.gz" }, { file: "pkg-1.0.0-py3-none-any.whl" }],
-      total: 2,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("Built 2 artifacts.");
-  });
-
-  it("formats build with no artifacts", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "build",
-      artifacts: [],
-      total: 0,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry build: no artifacts produced.");
-  });
-
-  it("formats install with packages", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "install",
-      packages: [{ name: "requests", version: "2.31.0" }],
-      total: 1,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry install: 1 packages.");
-  });
-
-  it("formats install with no changes", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "install",
-      packages: [],
-      total: 0,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry install: no changes.");
-  });
-
-  it("formats add with packages", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "add",
-      packages: [{ name: "certifi", version: "2023.7.22" }],
-      total: 1,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry add: 1 packages.");
-  });
-
-  it("formats remove with packages", () => {
-    const data = compactPoetryMap({
-      success: true,
-      action: "remove",
-      packages: [{ name: "requests", version: "2.31.0" }],
-      total: 1,
-    } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry remove: 1 packages.");
+    expect(formatPoetryCompact(data)).toBe("poetry: success.");
   });
 });
 
@@ -1093,10 +969,6 @@ describe("formatMypy — notes separated", () => {
         { file: "b.py", line: 2, severity: "warning", message: "warn", code: "unused-ignore" },
         { file: "c.py", line: 3, severity: "note", message: "info" },
       ],
-      total: 3,
-      errors: 1,
-      warnings: 1,
-      notes: 1,
     };
     const output = formatMypy(data);
     expect(output).toContain("mypy: 1 errors, 1 warnings, 1 notes");
@@ -1107,7 +979,7 @@ describe("formatPipAudit — severity fields", () => {
   it("includes severity and CVSS score in output", () => {
     const data: PipAuditResult = {
       success: false,
-      total: 1,
+
       vulnerabilities: [
         {
           name: "requests",
@@ -1131,7 +1003,7 @@ describe("formatPipList — error surfacing", () => {
     const data: PipList = {
       success: false,
       packages: [],
-      total: 0,
+
       error: "Failed to parse JSON",
     };
     expect(formatPipList(data)).toContain("pip list error: Failed to parse JSON");
@@ -1194,8 +1066,7 @@ describe("formatPytest — warnings in output", () => {
       errors: 0,
       skipped: 0,
       warnings: 3,
-      total: 10,
-      duration: 1.5,
+
       failures: [],
     };
     const output = formatPytest(data);
@@ -1210,8 +1081,7 @@ describe("formatPytest — warnings in output", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 5,
-      duration: 0.5,
+
       failures: [],
     };
     const output = formatPytest(data);
@@ -1223,8 +1093,7 @@ describe("formatRuff — fixApplicability", () => {
   it("includes fix applicability in formatted output", () => {
     const data: RuffResult = {
       success: false,
-      total: 1,
-      fixable: 1,
+
       diagnostics: [
         {
           file: "a.py",
@@ -1244,8 +1113,7 @@ describe("formatRuff — fixApplicability", () => {
   it("omits fix applicability when not present", () => {
     const data: RuffResult = {
       success: false,
-      total: 1,
-      fixable: 0,
+
       diagnostics: [
         {
           file: "a.py",

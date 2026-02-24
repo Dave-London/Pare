@@ -16,7 +16,7 @@ export function parseEslintJson(stdout: string): LintResult {
   try {
     files = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -47,7 +47,6 @@ export function parseEslintJson(stdout: string): LintResult {
 
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     fixableErrorCount,
@@ -99,7 +98,6 @@ export function parsePrettierCheck(
   return {
     formatted: exitCode === 0,
     files,
-    total: files.length,
   };
 }
 
@@ -210,7 +208,7 @@ export function parseBiomeJson(stdout: string): LintResult {
   try {
     biomeOutput = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -243,9 +241,7 @@ export function parseBiomeJson(stdout: string): LintResult {
       rule,
       message,
     };
-    if (Array.isArray(diag.tags) && diag.tags.length > 0) {
-      diagnostic.tags = diag.tags.filter((tag): tag is string => typeof tag === "string");
-    }
+    // tags were removed from schema — display-only, not actionable
 
     // Extract column: try new format first, then old format
     const col = extractBiomeColumnNumber(diag.location);
@@ -261,7 +257,6 @@ export function parseBiomeJson(stdout: string): LintResult {
 
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     filesChecked: filesSet.size,
@@ -388,7 +383,7 @@ export function parseStylelintJson(stdout: string): LintResult {
   try {
     files = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -426,7 +421,6 @@ export function parseStylelintJson(stdout: string): LintResult {
 
   const result: LintResult = {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     filesChecked: files.length,
@@ -498,7 +492,6 @@ export function parseOxlintJson(stdout: string): LintResult {
 
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     filesChecked: filesSet.size,
@@ -545,11 +538,11 @@ export function parseShellcheckJson(stdout: string): LintResult {
   try {
     findings = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   if (!Array.isArray(findings)) {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -569,10 +562,7 @@ export function parseShellcheckJson(stdout: string): LintResult {
     if (finding.column !== undefined && finding.column !== null) {
       diag.column = finding.column;
     }
-    const suggestedFixes = extractShellcheckSuggestedFixes(finding.fix);
-    if (suggestedFixes) {
-      diag.suggestedFixes = suggestedFixes;
-    }
+    // suggestedFixes were removed from schema — display-only, not actionable
     diagnostics.push(diag);
   }
 
@@ -581,7 +571,6 @@ export function parseShellcheckJson(stdout: string): LintResult {
 
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     filesChecked: filesSet.size,
@@ -614,26 +603,6 @@ interface ShellcheckJsonEntry {
   fix?: unknown;
 }
 
-function extractShellcheckSuggestedFixes(fix: unknown): string[] | undefined {
-  if (!fix || typeof fix !== "object") return undefined;
-
-  const replacements = (fix as { replacements?: unknown }).replacements;
-  if (!Array.isArray(replacements)) return undefined;
-
-  const values = replacements
-    .map((entry) =>
-      typeof entry === "object" && entry && "replacement" in entry
-        ? (entry as { replacement?: unknown }).replacement
-        : undefined,
-    )
-    .filter(
-      (replacement): replacement is string =>
-        typeof replacement === "string" && replacement.length > 0,
-    );
-
-  return values.length > 0 ? values : undefined;
-}
-
 /**
  * Parses Hadolint JSON output (from `hadolint --format json`).
  *
@@ -648,11 +617,11 @@ export function parseHadolintJson(stdout: string): LintResult {
   try {
     findings = JSON.parse(stdout);
   } catch {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   if (!Array.isArray(findings)) {
-    return { diagnostics: [], total: 0, errors: 0, warnings: 0, filesChecked: 0 };
+    return { diagnostics: [], errors: 0, warnings: 0, filesChecked: 0 };
   }
 
   const diagnostics: LintDiagnostic[] = [];
@@ -673,10 +642,7 @@ export function parseHadolintJson(stdout: string): LintResult {
     if (finding.column !== undefined && finding.column !== null) {
       diag.column = finding.column;
     }
-    // Compute wiki URL for DL-prefixed rules
-    if (typeof rule === "string" && rule.startsWith("DL")) {
-      diag.wikiUrl = `https://github.com/hadolint/hadolint/wiki/${rule}`;
-    }
+    // wikiUrl was removed from schema — display-only, not actionable
     diagnostics.push(diag);
   }
 
@@ -685,7 +651,6 @@ export function parseHadolintJson(stdout: string): LintResult {
 
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
     filesChecked: filesSet.size,

@@ -16,7 +16,7 @@ describe("parseBlackOutput", () => {
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(2);
     expect(result.filesUnchanged).toBe(3);
-    expect(result.filesChecked).toBe(5);
+
     expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
     expect(result.errorType).toBe("check_failed");
     expect(result.exitCode).toBe(1);
@@ -30,7 +30,7 @@ describe("parseBlackOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.filesUnchanged).toBe(5);
-    expect(result.filesChecked).toBe(5);
+
     expect(result.wouldReformat).toEqual([]);
     expect(result.errorType).toBeUndefined();
     expect(result.exitCode).toBeUndefined();
@@ -48,7 +48,7 @@ describe("parseBlackOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(2);
     expect(result.filesUnchanged).toBe(1);
-    expect(result.filesChecked).toBe(3);
+
     expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
     expect(result.errorType).toBeUndefined();
   });
@@ -61,7 +61,7 @@ describe("parseBlackOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.filesUnchanged).toBe(3);
-    expect(result.filesChecked).toBe(3);
+
     expect(result.wouldReformat).toEqual([]);
   });
 
@@ -73,7 +73,7 @@ describe("parseBlackOutput", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.filesUnchanged).toBe(0);
-    expect(result.filesChecked).toBe(0);
+
     expect(result.wouldReformat).toEqual([]);
   });
 
@@ -103,7 +103,7 @@ describe("formatBlack", () => {
     const data: BlackResult = {
       filesChanged: 0,
       filesUnchanged: 0,
-      filesChecked: 0,
+
       success: true,
       wouldReformat: [],
     };
@@ -114,7 +114,7 @@ describe("formatBlack", () => {
     const data: BlackResult = {
       filesChanged: 0,
       filesUnchanged: 5,
-      filesChecked: 5,
+
       success: true,
       wouldReformat: [],
     };
@@ -125,7 +125,7 @@ describe("formatBlack", () => {
     const data: BlackResult = {
       filesChanged: 2,
       filesUnchanged: 3,
-      filesChecked: 5,
+
       success: false,
       errorType: "check_failed",
       wouldReformat: ["src/main.py", "src/utils.py"],
@@ -141,7 +141,7 @@ describe("formatBlack", () => {
     const data: BlackResult = {
       filesChanged: 1,
       filesUnchanged: 4,
-      filesChecked: 5,
+
       success: true,
       wouldReformat: ["src/main.py"],
     };
@@ -155,7 +155,7 @@ describe("formatBlack", () => {
     const data: BlackResult = {
       filesChanged: 0,
       filesUnchanged: 0,
-      filesChecked: 0,
+
       success: false,
       exitCode: 123,
       errorType: "internal_error",

@@ -59,7 +59,6 @@ export function parseVitestJson(jsonStr: string): TestRun {
           message: message.split("\n")[0] || "Test failed",
           expected: expectedMatch?.[1]?.trim(),
           actual: actualMatch?.[1]?.trim(),
-          stack: message,
         });
       }
     }

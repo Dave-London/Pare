@@ -29,7 +29,6 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
     expect(result.errors).toEqual([
       { file: "main.go", line: 10, column: 5, message: "undefined: foo" },
     ]);
@@ -45,7 +44,7 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
+    expect(result.errors).toHaveLength(3);
     expect(result.errors[0].file).toBe("main.go");
     expect(result.errors[1].file).toBe("util.go");
     expect(result.errors[2].file).toBe("handler.go");
@@ -67,7 +66,7 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toEqual({
       file: "main.go",
       line: 10,
@@ -80,7 +79,6 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
     expect(result.errors).toEqual([]);
   });
 
@@ -90,7 +88,7 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput(stdout, "", 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toEqual({
       file: "main.go",
       line: 7,
@@ -110,7 +108,7 @@ describe("fidelity: go build", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.errors).toHaveLength(2);
     expect(result.errors[0].file).toBe("main.go");
     expect(result.errors[1].file).toBe("util.go");
   });
@@ -127,7 +125,6 @@ describe("fidelity: go build", () => {
     expect(result.errors).toEqual([]);
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("package myapp/internal/missing is not in GOROOT");
-    expect(result.total).toBe(1);
   });
 
   it("captures 'no required module provides package' errors", () => {
@@ -157,7 +154,6 @@ describe("fidelity: go build", () => {
     expect(result.errors[0].message).toBe("undefined: doStuff");
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("undefined reference to");
-    expect(result.total).toBe(2);
   });
 
   it("captures cgo errors", () => {
@@ -205,7 +201,7 @@ describe("fidelity: go test", () => {
     const result = parseGoTestJson(stdout, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
+    expect(result.tests).toHaveLength(3);
     expect(result.passed).toBe(3);
     expect(result.failed).toBe(0);
     expect(result.skipped).toBe(0);
@@ -225,7 +221,7 @@ describe("fidelity: go test", () => {
     const result = parseGoTestJson(stdout, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
+    expect(result.tests).toHaveLength(3);
     expect(result.passed).toBe(1);
     expect(result.failed).toBe(1);
     expect(result.skipped).toBe(1);
@@ -262,7 +258,6 @@ describe("fidelity: go test", () => {
 
     const result = parseGoTestJson(stdout, 0);
 
-    expect(result.total).toBe(1);
     expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("TestOnly");
     expect(result.tests[0].package).toBe("myapp");
@@ -272,7 +267,7 @@ describe("fidelity: go test", () => {
     const result = parseGoTestJson("", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.tests).toHaveLength(0);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
     expect(result.skipped).toBe(0);
@@ -291,7 +286,7 @@ describe("fidelity: go test", () => {
 
     const result = parseGoTestJson(stdout, 1);
 
-    expect(result.total).toBe(2);
+    expect(result.tests).toHaveLength(2);
     expect(result.passed).toBe(1);
     expect(result.failed).toBe(1);
 
@@ -313,7 +308,7 @@ describe("fidelity: go test", () => {
 
     const result = parseGoTestJson(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("TestOk");
     expect(result.tests[0].status).toBe("pass");
   });
@@ -331,7 +326,7 @@ describe("fidelity: go test", () => {
     const result = parseGoTestJson(stdout, 0);
 
     // The map overwrites, so last terminal action wins
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].status).toBe("pass");
     expect(result.tests[0].elapsed).toBe(0.02);
   });
@@ -447,7 +442,7 @@ describe("fidelity: go test", () => {
 
     const result = parseGoTestJson(stdout, 1);
 
-    expect(result.total).toBe(0);
+    expect(result.tests).toHaveLength(0);
     expect(result.packageFailures).toHaveLength(2);
     expect(result.packageFailures![0].package).toBe("myapp/a");
     expect(result.packageFailures![0].output).toContain("expected 'package'");
@@ -464,7 +459,7 @@ describe("fidelity: go vet", () => {
     const stderr = "main.go:15:2: printf: Sprintf format has extra verb";
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics).toEqual([
       {
         file: "main.go",
@@ -484,7 +479,7 @@ describe("fidelity: go vet", () => {
 
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.diagnostics[0].file).toBe("main.go");
     expect(result.diagnostics[0].line).toBe(15);
     expect(result.diagnostics[0].column).toBe(2);
@@ -502,7 +497,6 @@ describe("fidelity: go vet", () => {
   it("returns empty diagnostics for clean vet output", () => {
     const result = parseGoVetOutput("", "", 0);
 
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -510,7 +504,7 @@ describe("fidelity: go vet", () => {
     const stderr = "main.go:20: unused variable x";
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0]).toEqual({
       file: "main.go",
       line: 20,
@@ -529,7 +523,7 @@ describe("fidelity: go vet", () => {
 
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics[0].file).toBe("main.go");
     expect(result.diagnostics[1].file).toBe("util.go");
   });
@@ -539,7 +533,7 @@ describe("fidelity: go vet", () => {
     const stdout = "main.go:5:1: missing return at end of function";
     const result = parseGoVetOutput(stdout, "", 0);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0]).toEqual({
       file: "main.go",
       line: 5,
@@ -864,7 +858,7 @@ describe("fidelity: go list", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages[0].dir).toBe("/home/user/project");
     expect(result.packages[0].importPath).toBe("github.com/user/project");
     expect(result.packages[0].name).toBe("main");
@@ -894,7 +888,7 @@ describe("fidelity: go list", () => {
     const stdout = pkg1 + "\n" + pkg2 + "\n" + pkg3;
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(3);
+    expect(result.packages).toHaveLength(3);
     expect(result.packages[0].importPath).toBe("github.com/user/project");
     expect(result.packages[1].importPath).toBe("github.com/user/project/internal/auth");
     expect(result.packages[1].goFiles).toEqual(["auth.go", "jwt.go", "middleware.go"]);
@@ -904,7 +898,6 @@ describe("fidelity: go list", () => {
   it("handles empty output for projects with no packages", () => {
     const result = parseGoListOutput("", 0);
 
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -917,7 +910,7 @@ describe("fidelity: go list", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages[0].goFiles).toBeUndefined();
   });
 
@@ -948,8 +941,9 @@ describe("fidelity: go get", () => {
     const result = parseGoGetOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.output).toContain("github.com/pkg/errors v0.9.1");
-    expect(result.output).toContain("go: added");
+    expect(result.resolvedPackages).toHaveLength(1);
+    expect(result.resolvedPackages![0].package).toBe("github.com/pkg/errors");
+    expect(result.resolvedPackages![0].newVersion).toBe("v0.9.1");
   });
 
   it("parses failure with module not found", () => {
@@ -959,8 +953,10 @@ describe("fidelity: go get", () => {
     const result = parseGoGetOutput("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.output).toContain("github.com/nonexistent/pkg");
-    expect(result.output).toContain("no matching versions");
+    expect(result.packages).toBeDefined();
+    const pkgStatus = result.packages!.find((p) => p.path === "github.com/nonexistent/pkg");
+    expect(pkgStatus).toBeDefined();
+    expect(pkgStatus!.error).toContain("no matching versions");
   });
 
   it("parses multiple package downloads", () => {
@@ -975,16 +971,16 @@ describe("fidelity: go get", () => {
     const result = parseGoGetOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.output).toContain("github.com/pkg/errors");
-    expect(result.output).toContain("github.com/stretchr/testify");
-    expect(result.output).toContain("github.com/davecgh/go-spew");
+    expect(result.resolvedPackages).toHaveLength(2);
+    expect(result.resolvedPackages![0].package).toBe("github.com/pkg/errors");
+    expect(result.resolvedPackages![1].package).toBe("github.com/stretchr/testify");
   });
 
-  it("returns undefined output for silent success", () => {
+  it("returns no resolvedPackages for silent success", () => {
     const result = parseGoGetOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.output).toBeUndefined();
+    expect(result.resolvedPackages).toBeUndefined();
   });
 
   it("preserves version conflict errors", () => {
@@ -995,7 +991,10 @@ describe("fidelity: go get", () => {
     const result = parseGoGetOutput("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.output).toContain("invalid version");
-    expect(result.output).toContain("unknown revision v2.0.0");
+    expect(result.packages).toBeDefined();
+    const pkgStatus = result.packages!.find((p) => p.path === "github.com/foo/bar");
+    expect(pkgStatus).toBeDefined();
+    expect(pkgStatus!.error).toContain("invalid version");
+    expect(pkgStatus!.error).toContain("unknown revision v2.0.0");
   });
 });

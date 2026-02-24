@@ -74,8 +74,7 @@ describe("@paretools/python integration", () => {
         // ruff is available — verify structured output
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
-        expect(sc.fixable).toEqual(expect.any(Number));
+        expect(typeof sc.success).toBe("boolean");
         expect(Array.isArray(sc.diagnostics)).toBe(true);
       }
     });
@@ -93,12 +92,11 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/pip|command|not found/i);
       } else {
-        // May return compact output (success + total + alreadySatisfied)
+        // May return compact output (success + alreadySatisfied)
         // or full output (adds installed[]). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(typeof sc.total).toBe("number");
         expect(typeof sc.alreadySatisfied).toBe("boolean");
       }
     });
@@ -120,9 +118,6 @@ describe("@paretools/python integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(Array.isArray(sc.diagnostics)).toBe(true);
-        expect(typeof sc.total).toBe("number");
-        expect(typeof sc.errors).toBe("number");
-        expect(typeof sc.warnings).toBe("number");
       }
     });
   });
@@ -142,7 +137,6 @@ describe("@paretools/python integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.vulnerabilities)).toBe(true);
-        expect(typeof sc.total).toBe("number");
       }
     });
   });
@@ -166,8 +160,6 @@ describe("@paretools/python integration", () => {
         expect(typeof sc.failed).toBe("number");
         expect(typeof sc.errors).toBe("number");
         expect(typeof sc.skipped).toBe("number");
-        expect(typeof sc.total).toBe("number");
-        expect(typeof sc.duration).toBe("number");
         expect(Array.isArray(sc.failures)).toBe(true);
       }
     });
@@ -185,13 +177,11 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/uv|command|not found/i);
       } else {
-        // May return compact output (success + total + duration)
+        // May return compact output (success)
         // or full output (adds installed[]). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(typeof sc.total).toBe("number");
-        expect(typeof sc.duration).toBe("number");
       }
     });
   });
@@ -208,13 +198,12 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/uv|command|not found/i);
       } else {
-        // May return compact output (exitCode + success + duration)
+        // May return compact output (exitCode + success)
         // or full output (adds stdout, stderr). Check fields present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.exitCode).toBe("number");
-        expect(typeof sc.duration).toBe("number");
       }
     });
   });
@@ -236,7 +225,6 @@ describe("@paretools/python integration", () => {
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.filesChanged).toBe("number");
         expect(typeof sc.filesUnchanged).toBe("number");
-        expect(typeof sc.filesChecked).toBe("number");
         expect(Array.isArray(sc.wouldReformat)).toBe(true);
       }
     });
@@ -254,11 +242,11 @@ describe("@paretools/python integration", () => {
         const content = result.content as Array<{ type: string; text: string }>;
         expect(content[0].text).toMatch(/pip|command|not found/i);
       } else {
-        // May return compact output (total only) or full output (adds packages[]).
+        // May return compact output (success only) or full output (adds packages[]).
         // Check the field present in both.
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.total).toBe("number");
+        expect(typeof sc.success).toBe("boolean");
       }
     });
   });
@@ -402,8 +390,6 @@ describe("@paretools/python integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(sc.action).toBe("show");
-        expect(typeof sc.total).toBe("number");
       }
     });
   });

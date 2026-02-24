@@ -113,7 +113,7 @@ export function registerIssueCreateTool(server: McpServer) {
         const combined = `${result.stdout}\n${result.stderr}`.trim();
         const partial = /https:\/\/github\.com\/[^\s]+\/issues\/\d+/.test(result.stdout);
         if (partial) {
-          const partialData = parseIssueCreate(result.stdout, labels);
+          const partialData = parseIssueCreate(result.stdout);
           return dualOutput(
             {
               ...partialData,
@@ -128,7 +128,6 @@ export function registerIssueCreateTool(server: McpServer) {
           {
             number: 0,
             url: "",
-            labelsApplied: labels && labels.length > 0 ? labels : undefined,
             partial: false,
             errorType: classifyIssueCreateError(combined),
             errorMessage: combined || "gh issue create failed",
@@ -137,8 +136,7 @@ export function registerIssueCreateTool(server: McpServer) {
         );
       }
 
-      // S-gap: Pass labels for echo in output
-      const data = parseIssueCreate(result.stdout, labels);
+      const data = parseIssueCreate(result.stdout);
       return dualOutput(data, formatIssueCreate);
     },
   );

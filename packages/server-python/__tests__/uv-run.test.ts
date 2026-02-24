@@ -11,7 +11,6 @@ describe("parseUvRun", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("Hello, world!\n");
     expect(result.stderr).toBe("");
-    expect(result.duration).toBe(1.5);
   });
 
   it("parses failed command", () => {
@@ -21,7 +20,6 @@ describe("parseUvRun", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("Error: file not found\n");
-    expect(result.duration).toBe(0.25);
   });
 
   it("parses command with both stdout and stderr", () => {
@@ -30,13 +28,6 @@ describe("parseUvRun", () => {
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("output data\n");
     expect(result.stderr).toBe("warning: deprecated\n");
-    expect(result.duration).toBe(3);
-  });
-
-  it("rounds duration to milliseconds", () => {
-    const result = parseUvRun("", "", 0, 1234);
-
-    expect(result.duration).toBe(1.234);
   });
 });
 
@@ -47,11 +38,10 @@ describe("formatUvRun", () => {
       stdout: "Hello, world!",
       stderr: "",
       success: true,
-      duration: 1.5,
     };
     const output = formatUvRun(data);
 
-    expect(output).toContain("uv run completed in 1.5s");
+    expect(output).toContain("uv run completed");
     expect(output).toContain("Hello, world!");
   });
 
@@ -61,11 +51,10 @@ describe("formatUvRun", () => {
       stdout: "",
       stderr: "Error occurred",
       success: false,
-      duration: 0.5,
     };
     const output = formatUvRun(data);
 
-    expect(output).toContain("uv run failed (exit 1) in 0.5s");
+    expect(output).toContain("uv run failed (exit 1)");
     expect(output).toContain("Error occurred");
   });
 
@@ -75,11 +64,10 @@ describe("formatUvRun", () => {
       stdout: "",
       stderr: "",
       success: true,
-      duration: 0.1,
     };
     const output = formatUvRun(data);
 
-    expect(output).toBe("uv run completed in 0.1s");
+    expect(output).toBe("uv run completed");
   });
 });
 
@@ -98,6 +86,5 @@ describe("uv-run flag isolation", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("hello\n");
     expect(result.success).toBe(true);
-    expect(result.duration).toBe(0.15);
   });
 });

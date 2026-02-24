@@ -12,11 +12,10 @@ export const TscDiagnosticSchema = z.object({
 });
 
 /** Zod schema for structured tsc output including success status, diagnostics array, and error/warning counts.
- *  In compact mode, total is omitted and diagnostics contain only file:line + severity. */
+ *  In compact mode, diagnostics contain only file:line + severity. */
 export const TscResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(TscDiagnosticSchema),
-  total: z.number().optional(),
   totalFiles: z.number().optional(),
   emittedFiles: z.array(z.string()).optional(),
   errors: z.number(),
@@ -39,7 +38,6 @@ export interface TscResult {
   [key: string]: unknown;
   success: boolean;
   diagnostics: TscDiagnostic[];
-  total: number;
   totalFiles?: number;
   emittedFiles?: string[];
   errors: number;
@@ -56,7 +54,6 @@ export const BuildResultSchema = z.object({
   warnings: z.array(z.string()).optional(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
-  outputLines: z.number().optional(),
 });
 
 /** Full build result -- always returned by the parser. */
@@ -69,7 +66,6 @@ export interface BuildResult {
   warnings?: string[];
   stdout?: string;
   stderr?: string;
-  outputLines?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -109,14 +105,6 @@ export const EsbuildResultSchema = z.object({
   errors: z.array(EsbuildErrorSchema).optional(),
   warnings: z.array(EsbuildWarningSchema).optional(),
   outputFiles: z.array(z.string()).optional(),
-  outputFileStats: z
-    .array(
-      z.object({
-        file: z.string(),
-        bytes: z.number(),
-      }),
-    )
-    .optional(),
   duration: z.number(),
   metafile: EsbuildMetafileSchema.optional(),
 });
@@ -156,7 +144,6 @@ export interface EsbuildResult {
   errors?: EsbuildError[];
   warnings?: EsbuildWarning[];
   outputFiles?: string[];
-  outputFileStats?: Array<{ file: string; bytes: number }>;
   duration: number;
   metafile?: EsbuildMetafile;
 }
@@ -355,7 +342,6 @@ export const NxResultSchema = z.object({
   success: z.boolean(),
   duration: z.number(),
   tasks: z.array(NxTaskSchema).optional(),
-  total: z.number(),
   passed: z.number(),
   failed: z.number(),
   cached: z.number(),
@@ -378,7 +364,6 @@ export interface NxResult {
   success: boolean;
   duration: number;
   tasks?: NxTask[];
-  total: number;
   passed: number;
   failed: number;
   cached: number;

@@ -1,4 +1,4 @@
-import type { MakeRunResult, MakeListResult } from "../schemas/index.js";
+import type { MakeRunResultInternal, MakeListResultInternal } from "../schemas/index.js";
 import type { MakeTool } from "./make-runner.js";
 
 function detectRunErrorType(
@@ -47,7 +47,7 @@ export function parseRunOutput(
   duration: number,
   tool: MakeTool,
   timedOut: boolean = false,
-): MakeRunResult {
+): MakeRunResultInternal {
   const success = exitCode === 0 && !timedOut;
   return {
     target,
@@ -474,7 +474,7 @@ export function buildListResult(
     total: number;
   },
   tool: MakeTool,
-): MakeListResult {
+): MakeListResultInternal {
   return {
     targets: parsed.targets,
     total: parsed.total,

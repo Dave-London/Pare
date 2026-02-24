@@ -185,7 +185,6 @@ describe("Smoke: github.issue-comment", () => {
     const { parsed } = await callAndValidate({ number: "42", body: "Looks good!" });
     expect(parsed.operation).toBe("create");
     expect(parsed.url).toContain("issuecomment-12345");
-    expect(parsed.body).toBe("Looks good!");
   });
 
   it("S2 [P0] issue not found", async () => {
@@ -222,7 +221,7 @@ describe("Smoke: github.issue-comment", () => {
     const markdownBody = "## Header\n- item\n```code```";
     mockGh("https://github.com/owner/repo/issues/42#issuecomment-222");
     const { parsed } = await callAndValidate({ number: "42", body: markdownBody });
-    expect(parsed.body).toBe(markdownBody);
+    expect(parsed.operation).toBe("create");
   });
 
   it("S8 [P1] edit last comment", async () => {
@@ -322,7 +321,10 @@ describe("Smoke: github.issue-create", () => {
       body: "desc",
       labels: ["bug", "p0"],
     });
-    expect(parsed.labelsApplied).toEqual(["bug", "p0"]);
+    expect(parsed.number).toBe(43);
+    const args = vi.mocked(ghCmd).mock.calls[0][0];
+    expect(args).toContain("--label");
+    expect(args).toContain("bug");
   });
 
   it("S3 [P0] flag injection on title", async () => {
@@ -484,12 +486,8 @@ describe("Smoke: github.issue-list", () => {
 
   it("S1 [P0] list open issues (default)", async () => {
     const issues = [sampleIssue(1), sampleIssue(2)];
-    // Main call
-    mockGh(JSON.stringify(issues));
-    // Probe call (hasMore check)
     mockGh(JSON.stringify(issues));
     const { parsed } = await callAndValidate({});
-    expect(parsed.total).toBeGreaterThanOrEqual(0);
     expect(parsed.issues.length).toBe(2);
     expect(parsed.issues[0].number).toBe(1);
     expect(parsed.issues[0].state).toBe("OPEN");
@@ -497,10 +495,8 @@ describe("Smoke: github.issue-list", () => {
 
   it("S2 [P0] empty issue list", async () => {
     mockGh("[]");
-    mockGh("[]");
     const { parsed } = await callAndValidate({ label: "nonexistent-label-xyz" });
     expect(parsed.issues).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S3 [P0] flag injection on label", async () => {
@@ -542,7 +538,6 @@ describe("Smoke: github.issue-list", () => {
   it("S12 [P1] filter by state closed", async () => {
     const closedIssues = [sampleIssue(10, "CLOSED"), sampleIssue(11, "CLOSED")];
     mockGh(JSON.stringify(closedIssues));
-    mockGh(JSON.stringify(closedIssues));
     const { parsed } = await callAndValidate({ state: "closed" });
     for (const issue of parsed.issues) {
       expect(issue.state).toBe("CLOSED");
@@ -555,7 +550,6 @@ describe("Smoke: github.issue-list", () => {
   it("S13 [P1] filter by label", async () => {
     const issues = [sampleIssue(1)];
     mockGh(JSON.stringify(issues));
-    mockGh(JSON.stringify(issues));
     await callAndValidate({ label: "bug" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--label");
@@ -565,37 +559,28 @@ describe("Smoke: github.issue-list", () => {
   it("S14 [P1] filter by assignee", async () => {
     const issues = [sampleIssue(1)];
     mockGh(JSON.stringify(issues));
-    mockGh(JSON.stringify(issues));
     await callAndValidate({ assignee: "octocat" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--assignee");
     expect(args).toContain("octocat");
   });
 
-  it("S15 [P1] hasMore pagination detection", async () => {
+  it("S15 [P1] limit parameter constrains result count", async () => {
     const twoIssues = [sampleIssue(1), sampleIssue(2)];
-    const threeIssues = [sampleIssue(1), sampleIssue(2), sampleIssue(3)];
-    // Main call returns 2 issues (limit=2)
     mockGh(JSON.stringify(twoIssues));
-    // Probe call returns 3 issues (limit+1=3), so hasMore=true
-    mockGh(JSON.stringify(threeIssues));
     const { parsed } = await callAndValidate({ limit: 2 });
-    expect(parsed.hasMore).toBe(true);
-    expect(parsed.totalAvailable).toBeDefined();
+    expect(parsed.issues.length).toBe(2);
   });
 
   it("S16 [P1] paginate all", async () => {
     const issues = Array.from({ length: 5 }, (_, i) => sampleIssue(i + 1));
     mockGh(JSON.stringify(issues));
-    // No probe call when paginate=true
     const { parsed } = await callAndValidate({ paginate: true });
-    expect(parsed.hasMore).toBe(false);
     expect(parsed.issues.length).toBe(5);
   });
 
   it("S17 [P1] compact vs full output", async () => {
     const issues = [sampleIssue(1)];
-    mockGh(JSON.stringify(issues));
     mockGh(JSON.stringify(issues));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.issues).toBeDefined();
@@ -603,7 +588,6 @@ describe("Smoke: github.issue-list", () => {
 
   it("S18 [P1] cross-repo listing", async () => {
     const issues = [sampleIssue(1)];
-    mockGh(JSON.stringify(issues));
     mockGh(JSON.stringify(issues));
     await callAndValidate({ repo: "owner/repo" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -614,7 +598,6 @@ describe("Smoke: github.issue-list", () => {
   it("S19 [P1] search filter", async () => {
     const issues = [sampleIssue(1)];
     mockGh(JSON.stringify(issues));
-    mockGh(JSON.stringify(issues));
     await callAndValidate({ search: "is:open label:bug" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--search");
@@ -623,7 +606,6 @@ describe("Smoke: github.issue-list", () => {
 
   it("S20 [P2] multiple labels filter", async () => {
     const issues = [sampleIssue(1)];
-    mockGh(JSON.stringify(issues));
     mockGh(JSON.stringify(issues));
     await callAndValidate({ labels: ["bug", "enhancement"] });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
@@ -637,7 +619,6 @@ describe("Smoke: github.issue-list", () => {
 
   it("S21 [P2] author + milestone combo", async () => {
     const issues = [sampleIssue(1)];
-    mockGh(JSON.stringify(issues));
     mockGh(JSON.stringify(issues));
     await callAndValidate({ author: "user", milestone: "v1.0" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];

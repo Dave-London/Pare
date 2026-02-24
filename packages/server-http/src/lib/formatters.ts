@@ -1,14 +1,15 @@
 import type {
   HttpResponse,
   HttpHeadResponse,
+  HttpResponseInternal,
+  HttpHeadResponseInternal,
   HttpResponseCompact,
   HttpHeadResponseCompact,
-  HttpTiming,
+  HttpTimingInternal,
 } from "../schemas/index.js";
-import { HEAD_ESSENTIAL_HEADERS } from "../schemas/index.js";
 
 /** Formats timing details into a human-readable string. */
-function formatTimingLine(timing: HttpTiming): string {
+function formatTimingLine(timing: HttpTimingInternal): string {
   let line = `Time: ${timing.total.toFixed(3)}s`;
   if (timing.details) {
     const d = timing.details;
@@ -30,7 +31,7 @@ function formatTimingLine(timing: HttpTiming): string {
 }
 
 /** Formats a full HTTP response into human-readable text. */
-export function formatHttpResponse(data: HttpResponse): string {
+export function formatHttpResponse(data: HttpResponseInternal): string {
   const lines: string[] = [];
 
   const version = data.httpVersion ? `/${data.httpVersion}` : "";
@@ -77,7 +78,7 @@ export function formatHttpResponse(data: HttpResponse): string {
 }
 
 /** Formats a HEAD response into human-readable text. */
-export function formatHttpHeadResponse(data: HttpHeadResponse): string {
+export function formatHttpHeadResponse(data: HttpHeadResponseInternal): string {
   const lines: string[] = [];
 
   const version = data.httpVersion ? `/${data.httpVersion}` : "";
@@ -120,17 +121,52 @@ export function formatHttpHeadResponse(data: HttpHeadResponse): string {
   return lines.join("\n");
 }
 
+// ── Schema maps (strip Internal-only fields for structuredContent) ──
+
+/** Strips Internal-only fields from HTTP response for structuredContent. */
+export function schemaResponseMap(data: HttpResponseInternal): HttpResponse {
+  return {
+    status: data.status,
+    statusText: data.statusText,
+    httpVersion: data.httpVersion,
+    headers: data.headers,
+    body: data.body,
+    timing: { total: data.timing.total, details: {} },
+    size: data.size,
+    contentType: data.contentType,
+    redirectChain: data.redirectChain,
+    finalUrl: data.finalUrl,
+    tlsVerified: data.tlsVerified,
+  };
+}
+
+/** Strips Internal-only fields from HEAD response for structuredContent. */
+export function schemaHeadResponseMap(data: HttpHeadResponseInternal): HttpHeadResponse {
+  return {
+    status: data.status,
+    statusText: data.statusText,
+    httpVersion: data.httpVersion,
+    headers: data.headers,
+    timing: { total: data.timing.total, details: {} },
+    contentType: data.contentType,
+    contentLength: data.contentLength,
+    redirectChain: data.redirectChain,
+    finalUrl: data.finalUrl,
+    tlsVerified: data.tlsVerified,
+  };
+}
+
 // ── Compact types, mappers, and formatters ───────────────────────────
 
 /** Maps full HTTP response to compact form (drop headers and body). */
-export function compactResponseMap(data: HttpResponse): HttpResponseCompact {
+export function compactResponseMap(data: HttpResponseInternal): HttpResponseCompact {
   return {
     status: data.status,
     statusText: data.statusText,
     httpVersion: data.httpVersion,
     contentType: data.contentType,
     size: data.size,
-    timing: data.timing,
+    timing: { total: data.timing.total },
   };
 }
 
@@ -142,28 +178,18 @@ export function formatResponseCompact(data: HttpResponseCompact): string {
 }
 
 /**
- * Maps full HEAD response to compact form.
- * Preserves essential headers (content-length, cache-control, etag, last-modified, content-type)
- * even in compact mode, since HEAD responses are primarily about headers.
+ * Maps full HEAD response to compact form (schema-compatible).
+ * Only includes fields present in HttpHeadResponseSchema.
+ * Essential headers are shown in human-readable text but not in structuredContent.
  */
-export function compactHeadResponseMap(data: HttpHeadResponse): HttpHeadResponseCompact {
-  const headers = data.headers ?? {};
-  const essential: Record<string, string> = {};
-
-  for (const key of HEAD_ESSENTIAL_HEADERS) {
-    if (headers[key] !== undefined) {
-      essential[key] = headers[key];
-    }
-  }
-
+export function compactHeadResponseMap(data: HttpHeadResponseInternal): HttpHeadResponseCompact {
   return {
     status: data.status,
     statusText: data.statusText,
     httpVersion: data.httpVersion,
     contentType: data.contentType,
     contentLength: data.contentLength,
-    timing: data.timing,
-    ...(Object.keys(essential).length > 0 ? { essentialHeaders: essential } : {}),
+    timing: { total: data.timing.total },
   };
 }
 
@@ -172,19 +198,5 @@ export function formatHeadResponseCompact(data: HttpHeadResponseCompact): string
   const version = data.httpVersion ? `/${data.httpVersion}` : "";
   const ct = data.contentType ? ` (${data.contentType})` : "";
   const cl = data.contentLength !== undefined ? ` | ${data.contentLength} bytes` : "";
-  let line = `HTTP${version} ${data.status} ${data.statusText}${ct}${cl} | ${data.timing.total.toFixed(3)}s`;
-
-  if (data.essentialHeaders && Object.keys(data.essentialHeaders).length > 0) {
-    const headerParts: string[] = [];
-    for (const [key, value] of Object.entries(data.essentialHeaders)) {
-      // Skip content-type (already shown) and content-length (already shown as bytes)
-      if (key === "content-type" || key === "content-length") continue;
-      headerParts.push(`${key}: ${value}`);
-    }
-    if (headerParts.length > 0) {
-      line += "\n  " + headerParts.join("\n  ");
-    }
-  }
-
-  return line;
+  return `HTTP${version} ${data.status} ${data.statusText}${ct}${cl} | ${data.timing.total.toFixed(3)}s`;
 }

@@ -70,27 +70,22 @@ describe("Smoke: git.add", () => {
 
   // S1: Stage specific files
   it("S1 [P0] stage specific files", async () => {
-    // Before-status: nothing staged
-    mockGit("");
     // git add -- a.ts
     mockGit("");
     // After-status: a.ts staged as added
     mockGit("A  a.ts\n");
     const { parsed } = await callAndValidate({ files: ["a.ts"], all: false });
-    expect(parsed.staged).toBeGreaterThanOrEqual(1);
+    expect(parsed.files.length).toBeGreaterThanOrEqual(1);
     expect(parsed.files.some((f) => f.file === "a.ts")).toBe(true);
   });
 
   // S2: Stage all changes
   it("S2 [P0] stage all changes", async () => {
-    // Before-status
-    mockGit("?? new.ts\n M mod.ts\n");
     // git add -A
     mockGit("");
     // After-status: all staged
     mockGit("A  new.ts\nM  mod.ts\n");
     const { parsed } = await callAndValidate({ all: true });
-    expect(parsed.staged).toBe(2);
     expect(parsed.files.length).toBe(2);
   });
 
@@ -103,26 +98,24 @@ describe("Smoke: git.add", () => {
 
   // S4: Flag injection in file path
   it("S4 [P0] flag injection in file path is blocked", async () => {
-    // Before-status call happens before flag validation for files
-    mockGit("");
+    // Flag validation happens before any git calls
     await expect(callAndValidate({ files: ["--exec=evil"], all: false })).rejects.toThrow();
   });
 
   // S5: Stage multiple files
   it("S5 [P0] stage multiple files", async () => {
+    // git add -- a.ts b.ts
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  a.ts\nA  b.ts\n");
     const { parsed } = await callAndValidate({ files: ["a.ts", "b.ts"], all: false });
-    expect(parsed.staged).toBeGreaterThanOrEqual(2);
+    expect(parsed.files.length).toBeGreaterThanOrEqual(2);
     expect(parsed.files.some((f) => f.file === "a.ts")).toBe(true);
     expect(parsed.files.some((f) => f.file === "b.ts")).toBe(true);
   });
 
   // S6: Not a git repo
   it("S6 [P0] not a git repo throws error", async () => {
-    // Before-status fails
-    mockGit("", "fatal: not a git repository", 128);
     // git add fails
     mockGit("", "fatal: not a git repository", 128);
     await expect(
@@ -132,94 +125,100 @@ describe("Smoke: git.add", () => {
 
   // S7: Stage with update (tracked only)
   it("S7 [P1] stage with update (tracked only)", async () => {
+    // git add -u
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("M  tracked.ts\n");
     const { parsed } = await callAndValidate({ update: true, all: false });
-    expect(parsed.staged).toBe(1);
-    const args = vi.mocked(git).mock.calls[1][0];
+    expect(parsed.files.length).toBe(1);
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("-u");
   });
 
   // S8: Dry run
   it("S8 [P1] dry run passes --dry-run flag", async () => {
+    // git add -- a.ts --dry-run
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  a.ts\n");
     await callAndValidate({ files: ["a.ts"], dryRun: true, all: false });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--dry-run");
   });
 
   // S9: Force staging ignored file
   it("S9 [P1] force staging passes --force flag", async () => {
+    // git add -- .env --force
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  .env\n");
     await callAndValidate({ files: [".env"], force: true, all: false });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--force");
   });
 
   // S10: Intent to add
   it("S10 [P1] intent to add passes --intent-to-add flag", async () => {
+    // git add -- new.ts --intent-to-add
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  new.ts\n");
     await callAndValidate({ files: ["new.ts"], intentToAdd: true, all: false });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--intent-to-add");
   });
 
-  // S11: newlyStaged tracking
-  it("S11 [P1] newlyStaged tracking reflects pre-staged state", async () => {
-    // Before-status: a.ts already staged
-    mockGit("A  a.ts\n");
-    // git add
+  // S11: re-staging already staged file still returns it
+  it("S11 [P1] re-staging already staged file returns it in files list", async () => {
+    // git add -- a.ts
     mockGit("");
-    // After-status: same
+    // After-status: a.ts still staged
     mockGit("A  a.ts\n");
     const { parsed } = await callAndValidate({ files: ["a.ts"], all: false });
-    expect(parsed.newlyStaged).toBe(0);
+    expect(parsed.files.length).toBeGreaterThanOrEqual(1);
   });
 
   // S12: pathspecFromFile
   it("S12 [P2] pathspecFromFile passes --pathspec-from-file flag", async () => {
+    // git add --pathspec-from-file=filelist.txt
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  x.ts\n");
     await callAndValidate({ pathspecFromFile: "filelist.txt", all: false });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args.some((a: string) => a.includes("--pathspec-from-file=filelist.txt"))).toBe(true);
   });
 
   // S13: chmod +x
   it("S13 [P2] chmod +x passes --chmod=+x flag", async () => {
+    // git add -- script.sh --chmod=+x
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  script.sh\n");
     await callAndValidate({ files: ["script.sh"], chmod: "+x", all: false });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--chmod=+x");
   });
 
   // S14: ignoreRemoval
   it("S14 [P2] ignoreRemoval passes --ignore-removal flag", async () => {
+    // git add -A --ignore-removal
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  new.ts\n");
     await callAndValidate({ all: true, ignoreRemoval: true });
-    const args = vi.mocked(git).mock.calls[1][0];
+    const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--ignore-removal");
   });
 
   // S15: Schema validation (implicit in all tests above via callAndValidate)
   it("S15 [P0] schema validation on all outputs", async () => {
+    // git add -A
     mockGit("");
-    mockGit("");
+    // After-status
     mockGit("A  x.ts\nM  y.ts\nD  z.ts\n");
     const { parsed } = await callAndValidate({ all: true });
-    expect(parsed.staged).toBe(3);
+    expect(parsed.files.length).toBe(3);
     expect(parsed.files[0].status).toMatch(/^(added|modified|deleted)$/);
     expect(parsed.files[1].status).toMatch(/^(added|modified|deleted)$/);
     expect(parsed.files[2].status).toMatch(/^(added|modified|deleted)$/);
@@ -468,7 +467,6 @@ describe("Smoke: git.blame", () => {
     mockGit(PORCELAIN_BLAME);
     const { parsed } = await callAndValidate({ file: "src/index.ts", compact: true });
     expect(parsed.file).toBe("src/index.ts");
-    expect(parsed.totalLines).toBeGreaterThanOrEqual(1);
     expect(parsed.commits.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -545,7 +543,6 @@ describe("Smoke: git.blame", () => {
     mockGit(PORCELAIN_BLAME);
     const { parsed } = await callAndValidate({ file: "src/index.ts", compact: true });
     expect(parsed.file).toBe("src/index.ts");
-    expect(typeof parsed.totalLines).toBe("number");
     expect(Array.isArray(parsed.commits)).toBe(true);
   });
 
@@ -801,7 +798,6 @@ describe("Smoke: git.checkout", () => {
     mockGit("src/index.ts\n");
     const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "main" });
     expect(parsed.success).toBe(true);
-    expect(parsed.ref).toBe("main");
     expect(parsed.previousRef).toBe("feature");
   });
 
@@ -815,7 +811,6 @@ describe("Smoke: git.checkout", () => {
     const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "feat", create: true });
     expect(parsed.success).toBe(true);
     expect(parsed.created).toBe(true);
-    expect(parsed.ref).toBe("feat");
   });
 
   // S3: Checkout nonexistent ref — returns success: false with errorType
@@ -857,7 +852,6 @@ describe("Smoke: git.checkout", () => {
     });
     expect(parsed.success).toBe(true);
     expect(parsed.created).toBe(true);
-    expect(parsed.ref).toBe("orphan-branch");
   });
 
   // S7: Force checkout
@@ -930,7 +924,6 @@ describe("Smoke: git.checkout", () => {
     mockGit("");
     const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "develop" });
     expect(typeof parsed.success).toBe("boolean");
-    expect(typeof parsed.ref).toBe("string");
     expect(typeof parsed.previousRef).toBe("string");
     expect(typeof parsed.created).toBe("boolean");
   });

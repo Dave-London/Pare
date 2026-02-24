@@ -112,7 +112,6 @@ export function registerShellcheckTool(server: McpServer) {
         const validationError = validateShellcheckPatterns(inputPatterns);
         const emptyResult = {
           diagnostics: [],
-          total: 0,
           errors: 0,
           warnings: 0,
           filesChecked: 0,

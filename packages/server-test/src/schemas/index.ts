@@ -8,7 +8,6 @@ export const TestFailureSchema = z.object({
   message: z.string().optional(),
   expected: z.string().optional(),
   actual: z.string().optional(),
-  stack: z.string().optional(),
 });
 
 export type TestFailure = z.infer<typeof TestFailureSchema>;
@@ -60,7 +59,6 @@ export const CoverageSchema = z.object({
   }),
   files: z.array(CoverageFileSchema).optional(),
   totalFiles: z.number().optional(),
-  meetsThreshold: z.boolean().optional(),
 });
 
 export type Coverage = z.infer<typeof CoverageSchema>;

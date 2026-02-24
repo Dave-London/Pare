@@ -32,7 +32,7 @@ describe("parseReleaseList", () => {
 
     const result = parseReleaseList(json);
 
-    expect(result.total).toBe(2);
+    expect(result.releases).toHaveLength(2);
     expect(result.releases[0]).toEqual({
       tag: "v1.0.0",
       name: "Version 1.0.0",
@@ -47,7 +47,6 @@ describe("parseReleaseList", () => {
 
   it("handles empty list", () => {
     const result = parseReleaseList("[]");
-    expect(result.total).toBe(0);
     expect(result.releases).toEqual([]);
   });
 
@@ -100,7 +99,6 @@ describe("formatReleaseList", () => {
           url: "https://github.com/owner/repo/releases/tag/v1.0.0",
         },
       ],
-      total: 1,
     };
     const output = formatReleaseList(data);
     expect(output).toContain("1 releases:");
@@ -108,7 +106,7 @@ describe("formatReleaseList", () => {
   });
 
   it("formats empty list", () => {
-    const data: ReleaseListResult = { releases: [], total: 0 };
+    const data: ReleaseListResult = { releases: [] };
     expect(formatReleaseList(data)).toBe("No releases found.");
   });
 
@@ -124,7 +122,6 @@ describe("formatReleaseList", () => {
           url: "https://github.com/owner/repo/releases/tag/v2.0.0-alpha",
         },
       ],
-      total: 1,
     };
     const output = formatReleaseList(data);
     expect(output).toContain("(draft, prerelease)");
@@ -142,7 +139,6 @@ describe("formatReleaseList", () => {
           url: "https://url",
         },
       ],
-      total: 1,
     };
     const output = formatReleaseList(data);
     expect(output).toContain("(draft)");
@@ -165,13 +161,11 @@ describe("compactReleaseList", () => {
           url: "https://github.com/owner/repo/releases/tag/v1.0.0",
         },
       ],
-      total: 1,
     };
     const compact = compactReleaseListMap(data);
     expect(compact.releases[0]).not.toHaveProperty("url");
     expect(compact.releases[0]).not.toHaveProperty("publishedAt");
     expect(compact.releases[0].tag).toBe("v1.0.0");
-    expect(compact.total).toBe(1);
 
     const text = formatReleaseListCompact(compact);
     expect(text).toContain("1 releases:");
@@ -179,7 +173,7 @@ describe("compactReleaseList", () => {
   });
 
   it("formats empty compact list", () => {
-    const compact = compactReleaseListMap({ releases: [], total: 0 });
+    const compact = compactReleaseListMap({ releases: [] });
     expect(formatReleaseListCompact(compact)).toBe("No releases found.");
   });
 });

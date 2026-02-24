@@ -164,7 +164,6 @@ export function registerReleaseCreateTool(server: McpServer) {
             draft: !!draft,
             prerelease: !!prerelease,
             title: title ?? undefined,
-            assetsUploaded: assets?.length ?? undefined,
             errorType: classifyReleaseCreateError(combined),
             errorMessage: combined || "gh release create failed",
           },
@@ -172,15 +171,7 @@ export function registerReleaseCreateTool(server: McpServer) {
         );
       }
 
-      // S-gap: Pass title and assets count for echo in output
-      const data = parseReleaseCreate(
-        result.stdout,
-        tag,
-        !!draft,
-        !!prerelease,
-        title,
-        assets?.length,
-      );
+      const data = parseReleaseCreate(result.stdout, tag, !!draft, !!prerelease, title);
       return dualOutput(data, formatReleaseCreate);
     },
   );

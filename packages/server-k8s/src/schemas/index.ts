@@ -37,20 +37,26 @@ export type K8sResource = z.infer<typeof K8sResourceSchema>;
 
 // ── Get result ──────────────────────────────────────────────────────
 
-/** Zod schema for structured `kubectl get` output. */
+/** Zod schema for structured `kubectl get` output.
+ * Removed echo-back: resource, namespace, names (agent already knows).
+ * Removed derivable: total (= items.length). */
 export const KubectlGetResultSchema = z.object({
   action: z.literal("get"),
   success: z.boolean(),
-  resource: z.string(),
-  namespace: z.string().optional(),
   items: z.array(K8sResourceSchema).optional(),
-  names: z.array(z.string()).optional(),
-  total: z.number(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
 export type KubectlGetResult = z.infer<typeof KubectlGetResultSchema>;
+
+/** Internal type for parser -> formatter data flow (includes display-only fields). */
+export type KubectlGetResultInternal = KubectlGetResult & {
+  resource: string;
+  namespace?: string;
+  names?: string[];
+  total: number;
+};
 
 // ── Describe result ─────────────────────────────────────────────────
 
@@ -75,14 +81,12 @@ export const K8sEventSchema = z.object({
 
 export type K8sEvent = z.infer<typeof K8sEventSchema>;
 
-/** Zod schema for structured `kubectl describe` output. */
+/** Zod schema for structured `kubectl describe` output.
+ * Removed echo-back: resource, name, namespace (agent already knows).
+ * Moved to formatter: output (raw describe text). */
 export const KubectlDescribeResultSchema = z.object({
   action: z.literal("describe"),
   success: z.boolean(),
-  resource: z.string(),
-  name: z.string(),
-  namespace: z.string().optional(),
-  output: z.string().optional(),
   labels: z.record(z.string(), z.string()).optional(),
   annotations: z.record(z.string(), z.string()).optional(),
   resourceDetails: z
@@ -136,17 +140,23 @@ export const KubectlDescribeResultSchema = z.object({
 
 export type KubectlDescribeResult = z.infer<typeof KubectlDescribeResultSchema>;
 
+/** Internal type for parser -> formatter data flow (includes display-only fields). */
+export type KubectlDescribeResultInternal = KubectlDescribeResult & {
+  resource: string;
+  name: string;
+  namespace?: string;
+  output?: string;
+};
+
 // ── Logs result ─────────────────────────────────────────────────────
 
-/** Zod schema for structured `kubectl logs` output. */
+/** Zod schema for structured `kubectl logs` output.
+ * Removed echo-back: pod, container, namespace (agent already knows).
+ * Removed derivable: lineCount (= logs.split('\\n').length). */
 export const KubectlLogsResultSchema = z.object({
   action: z.literal("logs"),
   success: z.boolean(),
-  pod: z.string(),
-  namespace: z.string().optional(),
-  container: z.string().optional(),
   logs: z.string().optional(),
-  lineCount: z.number(),
   truncated: z.boolean().optional(),
   logEntries: z
     .array(
@@ -162,6 +172,14 @@ export const KubectlLogsResultSchema = z.object({
 
 export type KubectlLogsResult = z.infer<typeof KubectlLogsResultSchema>;
 
+/** Internal type for parser -> formatter data flow (includes display-only fields). */
+export type KubectlLogsResultInternal = KubectlLogsResult & {
+  pod: string;
+  namespace?: string;
+  container?: string;
+  lineCount: number;
+};
+
 // ── Apply result ────────────────────────────────────────────────────
 
 /** A single resource affected by `kubectl apply`. */
@@ -174,17 +192,22 @@ export const K8sAppliedResourceSchema = z.object({
 
 export type K8sAppliedResource = z.infer<typeof K8sAppliedResourceSchema>;
 
-/** Zod schema for structured `kubectl apply` output. */
+/** Zod schema for structured `kubectl apply` output.
+ * Moved to formatter: output (raw apply text). */
 export const KubectlApplyResultSchema = z.object({
   action: z.literal("apply"),
   success: z.boolean(),
   resources: z.array(K8sAppliedResourceSchema).optional(),
-  output: z.string().optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
 export type KubectlApplyResult = z.infer<typeof KubectlApplyResultSchema>;
+
+/** Internal type for parser -> formatter data flow (includes display-only fields). */
+export type KubectlApplyResultInternal = KubectlApplyResult & {
+  output?: string;
+};
 
 // ── Union result ────────────────────────────────────────────────────
 
@@ -212,41 +235,53 @@ export const HelmReleaseSchema = z.object({
 
 export type HelmRelease = z.infer<typeof HelmReleaseSchema>;
 
-/** Helm list result. */
+/** Helm list result.
+ * Removed echo-back: namespace, names (agent already knows).
+ * Removed derivable: total (= releases.length). */
 export const HelmListResultSchema = z.object({
   action: z.literal("list"),
   success: z.boolean(),
-  namespace: z.string().optional(),
   releases: z.array(HelmReleaseSchema).optional(),
-  total: z.number(),
-  names: z.array(z.string()).optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
 export type HelmListResult = z.infer<typeof HelmListResultSchema>;
 
-/** Helm status result. */
+/** Internal type for parser -> formatter data flow. */
+export type HelmListResultInternal = HelmListResult & {
+  namespace?: string;
+  names?: string[];
+  total: number;
+};
+
+/** Helm status result.
+ * Removed echo-back: name, namespace (agent already knows).
+ * Moved to formatter: notes (display-only). */
 export const HelmStatusResultSchema = z.object({
   action: z.literal("status"),
   success: z.boolean(),
-  name: z.string(),
-  namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
   description: z.string().optional(),
-  notes: z.string().optional(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
 export type HelmStatusResult = z.infer<typeof HelmStatusResultSchema>;
 
-/** Helm install/upgrade result. */
+/** Internal type for parser -> formatter data flow. */
+export type HelmStatusResultInternal = HelmStatusResult & {
+  name: string;
+  namespace?: string;
+  notes?: string;
+};
+
+/** Helm install/upgrade result.
+ * Removed echo-back: name (agent already knows). */
 export const HelmInstallResultSchema = z.object({
   action: z.literal("install"),
   success: z.boolean(),
-  name: z.string(),
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
@@ -258,10 +293,14 @@ export const HelmInstallResultSchema = z.object({
 
 export type HelmInstallResult = z.infer<typeof HelmInstallResultSchema>;
 
+/** Internal type for parser -> formatter data flow. */
+export type HelmInstallResultInternal = HelmInstallResult & {
+  name: string;
+};
+
 export const HelmUpgradeResultSchema = z.object({
   action: z.literal("upgrade"),
   success: z.boolean(),
-  name: z.string(),
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
@@ -273,10 +312,14 @@ export const HelmUpgradeResultSchema = z.object({
 
 export type HelmUpgradeResult = z.infer<typeof HelmUpgradeResultSchema>;
 
+/** Internal type for parser -> formatter data flow. */
+export type HelmUpgradeResultInternal = HelmUpgradeResult & {
+  name: string;
+};
+
 export const HelmUninstallResultSchema = z.object({
   action: z.literal("uninstall"),
   success: z.boolean(),
-  name: z.string(),
   namespace: z.string().optional(),
   status: z.string().optional(),
   exitCode: z.number().optional(),
@@ -285,10 +328,14 @@ export const HelmUninstallResultSchema = z.object({
 
 export type HelmUninstallResult = z.infer<typeof HelmUninstallResultSchema>;
 
+/** Internal type for parser -> formatter data flow. */
+export type HelmUninstallResultInternal = HelmUninstallResult & {
+  name: string;
+};
+
 export const HelmRollbackResultSchema = z.object({
   action: z.literal("rollback"),
   success: z.boolean(),
-  name: z.string(),
   namespace: z.string().optional(),
   revision: z.string().optional(),
   status: z.string().optional(),
@@ -297,6 +344,11 @@ export const HelmRollbackResultSchema = z.object({
 });
 
 export type HelmRollbackResult = z.infer<typeof HelmRollbackResultSchema>;
+
+/** Internal type for parser -> formatter data flow. */
+export type HelmRollbackResultInternal = HelmRollbackResult & {
+  name: string;
+};
 
 // ── Helm history schema ─────────────────────────────────────────────
 
@@ -312,19 +364,25 @@ export const HelmRevisionSchema = z.object({
 
 export type HelmRevision = z.infer<typeof HelmRevisionSchema>;
 
-/** Helm history result. */
+/** Helm history result.
+ * Removed echo-back: name (agent already knows).
+ * Removed derivable: total (= revisions.length). */
 export const HelmHistoryResultSchema = z.object({
   action: z.literal("history"),
   success: z.boolean(),
-  name: z.string(),
   namespace: z.string().optional(),
   revisions: z.array(HelmRevisionSchema).optional(),
-  total: z.number(),
   exitCode: z.number().optional(),
   error: z.string().optional(),
 });
 
 export type HelmHistoryResult = z.infer<typeof HelmHistoryResultSchema>;
+
+/** Internal type for parser -> formatter data flow. */
+export type HelmHistoryResultInternal = HelmHistoryResult & {
+  name: string;
+  total: number;
+};
 
 // ── Helm template schema ────────────────────────────────────────────
 

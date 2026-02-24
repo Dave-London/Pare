@@ -2,7 +2,8 @@ import type { LintResult, FormatCheckResult, FormatWriteResult } from "../schema
 
 /** Formats structured ESLint results into a human-readable diagnostic summary with file locations. */
 export function formatLint(data: LintResult): string {
-  if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
+  const total = data.errors + data.warnings;
+  if (total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
 
   const lines = [`Lint: ${data.errors} errors, ${data.warnings} warnings`];
   if (data.fixableErrorCount || data.fixableWarningCount) {
@@ -10,14 +11,7 @@ export function formatLint(data: LintResult): string {
   }
   for (const d of data.diagnostics ?? []) {
     const loc = d.column ? `${d.file}:${d.line}:${d.column}` : `${d.file}:${d.line}`;
-    const extras: string[] = [];
-    if (d.wikiUrl) extras.push(d.wikiUrl);
-    if (d.tags && d.tags.length > 0) extras.push(`tags: ${d.tags.join(", ")}`);
-    if (d.suggestedFixes && d.suggestedFixes.length > 0) {
-      extras.push(`suggestedFixes: ${d.suggestedFixes.join(" | ")}`);
-    }
-    const extraText = extras.length > 0 ? ` (${extras.join("; ")})` : "";
-    lines.push(`  ${loc} ${d.severity} ${d.rule}: ${d.message}${extraText}`);
+    lines.push(`  ${loc} ${d.severity} ${d.rule}: ${d.message}`);
   }
   if (data.deprecations && data.deprecations.length > 0) {
     lines.push("Deprecations:");
@@ -32,7 +26,8 @@ export function formatLint(data: LintResult): string {
 export function formatFormatCheck(data: FormatCheckResult): string {
   if (data.formatted) return "All files are formatted.";
 
-  const lines = [`${data.total} files need formatting:`];
+  const fileCount = (data.files ?? []).length;
+  const lines = [`${fileCount} files need formatting:`];
   for (const f of data.files ?? []) {
     lines.push(`  ${f}`);
   }
@@ -66,7 +61,6 @@ export function formatFormatWrite(data: FormatWriteResult): string {
 /** Compact lint: counts only, no individual diagnostics. */
 export interface LintResultCompact {
   [key: string]: unknown;
-  total: number;
   errors: number;
   warnings: number;
   filesChecked: number;
@@ -75,7 +69,6 @@ export interface LintResultCompact {
 
 export function compactLintMap(data: LintResult): LintResultCompact {
   const result: LintResultCompact = {
-    total: data.total,
     errors: data.errors,
     warnings: data.warnings,
     filesChecked: data.filesChecked,
@@ -87,7 +80,8 @@ export function compactLintMap(data: LintResult): LintResultCompact {
 }
 
 export function formatLintCompact(data: LintResultCompact): string {
-  if (data.total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
+  const total = data.errors + data.warnings;
+  if (total === 0) return `Lint: no issues found (${data.filesChecked} files checked).`;
   const suffix =
     data.deprecationCount && data.deprecationCount > 0
       ? ` (${data.deprecationCount} deprecations)`
@@ -95,23 +89,21 @@ export function formatLintCompact(data: LintResultCompact): string {
   return `Lint: ${data.errors} errors, ${data.warnings} warnings across ${data.filesChecked} files${suffix}.`;
 }
 
-/** Compact format check: counts only, no individual file paths. */
+/** Compact format check: formatted status only. */
 export interface FormatCheckResultCompact {
   [key: string]: unknown;
   formatted: boolean;
-  total: number;
 }
 
 export function compactFormatCheckMap(data: FormatCheckResult): FormatCheckResultCompact {
   return {
     formatted: data.formatted,
-    total: data.total,
   };
 }
 
 export function formatFormatCheckCompact(data: FormatCheckResultCompact): string {
   if (data.formatted) return "All files are formatted.";
-  return `${data.total} files need formatting.`;
+  return "Some files need formatting.";
 }
 
 /** Compact format write: counts only, no individual file paths. */

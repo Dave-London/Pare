@@ -58,8 +58,8 @@ describe("@paretools/security integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.totalVulnerabilities).toBe("number");
         expect(sc.target).toBe("alpine:3.18");
+        expect(sc.summary).toBeDefined();
       }
     });
   });
@@ -81,7 +81,7 @@ describe("@paretools/security integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.totalFindings).toBe("number");
+        expect(sc.summary).toBeDefined();
       }
     });
   });
@@ -103,7 +103,8 @@ describe("@paretools/security integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.totalFindings).toBe("number");
+        // Gitleaks schema only has optional findings array
+        expect(Array.isArray(sc.findings) || sc.findings === undefined).toBe(true);
       }
     });
   });

@@ -154,41 +154,8 @@ export function registerIssueListTool(server: McpServer) {
       }
 
       const data = parseIssueList(result.stdout);
-      if (!paginate) {
-        const probeArgs = [
-          "issue",
-          "list",
-          "--json",
-          ISSUE_LIST_FIELDS,
-          "--limit",
-          String(limit + 1),
-        ];
-        if (state) probeArgs.push("--state", state);
-        if (label) probeArgs.push("--label", label);
-        if (labels && labels.length > 0) {
-          for (const l of labels) probeArgs.push("--label", l);
-        }
-        if (assignee) probeArgs.push("--assignee", assignee);
-        if (search) probeArgs.push("--search", search);
-        if (author) probeArgs.push("--author", author);
-        if (milestone) probeArgs.push("--milestone", milestone);
-        if (mention) probeArgs.push("--mention", mention);
-        if (app) probeArgs.push("--app", app);
-        if (repo) probeArgs.push("--repo", repo);
-        const probeResult = await ghCmd(probeArgs, cwd);
-        if (probeResult.exitCode === 0) {
-          const probe = parseIssueList(probeResult.stdout);
-          const hasMore = probe.total > limit;
-          data.hasMore = hasMore;
-          data.totalAvailable = hasMore ? limit + 1 : data.total;
-          if (hasMore) {
-            data.issues = data.issues.slice(0, limit);
-            data.total = data.issues.length;
-          }
-        }
-      } else {
-        data.hasMore = false;
-        data.totalAvailable = data.total;
+      if (!paginate && data.issues.length > limit) {
+        data.issues = data.issues.slice(0, limit);
       }
       return compactDualOutput(
         data,

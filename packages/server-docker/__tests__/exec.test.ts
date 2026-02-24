@@ -10,7 +10,6 @@ describe("parseExecOutput", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("bin\ndev\netc\nhome\n");
     expect(result.stderr).toBe("");
-    expect(result.success).toBe(true);
   });
 
   it("parses failed exec", () => {
@@ -23,7 +22,6 @@ describe("parseExecOutput", () => {
     expect(result.exitCode).toBe(2);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("No such file or directory");
-    expect(result.success).toBe(false);
   });
 
   it("parses exec with both stdout and stderr", () => {
@@ -32,21 +30,18 @@ describe("parseExecOutput", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("output data");
     expect(result.stderr).toBe("warning: something");
-    expect(result.success).toBe(true);
   });
 
   it("parses exec with exit code 1", () => {
     const result = parseExecOutput("", "command not found: foo", 1);
 
     expect(result.exitCode).toBe(1);
-    expect(result.success).toBe(false);
   });
 
   it("parses exec with exit code 126 (permission denied)", () => {
     const result = parseExecOutput("", "permission denied", 126);
 
     expect(result.exitCode).toBe(126);
-    expect(result.success).toBe(false);
   });
 
   it("handles empty output", () => {
@@ -55,7 +50,6 @@ describe("parseExecOutput", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe("");
-    expect(result.success).toBe(true);
   });
 
   it("parses command not found in container (exit 127)", () => {
@@ -64,7 +58,6 @@ describe("parseExecOutput", () => {
     const result = parseExecOutput("", stderr, 127);
 
     expect(result.exitCode).toBe(127);
-    expect(result.success).toBe(false);
     expect(result.stderr).toContain("executable file not found");
     expect(result.stdout).toBe("");
   });
@@ -74,7 +67,6 @@ describe("parseExecOutput", () => {
     const result = parseExecOutput("", stderr, 1);
 
     expect(result.exitCode).toBe(1);
-    expect(result.success).toBe(false);
     expect(result.stderr).toContain("is not running");
   });
 
@@ -82,7 +74,6 @@ describe("parseExecOutput", () => {
     const result = parseExecOutput("partial output", "Killed", 137);
 
     expect(result.exitCode).toBe(137);
-    expect(result.success).toBe(false);
     expect(result.stdout).toBe("partial output");
     expect(result.stderr).toBe("Killed");
   });
@@ -91,7 +82,6 @@ describe("parseExecOutput", () => {
     const result = parseExecOutput("", "Segmentation fault", 139);
 
     expect(result.exitCode).toBe(139);
-    expect(result.success).toBe(false);
     expect(result.stderr).toContain("Segmentation fault");
   });
 });
@@ -102,7 +92,6 @@ describe("formatExec", () => {
       exitCode: 0,
       stdout: "hello world",
       stderr: "",
-      success: true,
     };
     const output = formatExec(data);
     expect(output).toContain("Exec succeeded");
@@ -114,7 +103,6 @@ describe("formatExec", () => {
       exitCode: 1,
       stdout: "",
       stderr: "command not found",
-      success: false,
     };
     const output = formatExec(data);
     expect(output).toContain("Exec failed (exit code 1)");
@@ -126,7 +114,6 @@ describe("formatExec", () => {
       exitCode: 0,
       stdout: "",
       stderr: "",
-      success: true,
     };
     const output = formatExec(data);
     expect(output).toBe("Exec succeeded");
@@ -137,7 +124,6 @@ describe("formatExec", () => {
       exitCode: 0,
       stdout: "result data",
       stderr: "debug info",
-      success: true,
     };
     const output = formatExec(data);
     expect(output).toContain("Exec succeeded");

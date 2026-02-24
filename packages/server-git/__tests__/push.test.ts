@@ -11,8 +11,6 @@ describe("parsePush", () => {
     const result = parsePush("", stderr, "origin", "main");
 
     expect(result.success).toBe(true);
-    expect(result.remote).toBe("origin");
-    expect(result.branch).toBe("main");
     expect(result.summary).toContain("main -> main");
   });
 
@@ -23,8 +21,6 @@ describe("parsePush", () => {
     const result = parsePush("", stderr, "origin", "feature");
 
     expect(result.success).toBe(true);
-    expect(result.remote).toBe("origin");
-    expect(result.branch).toBe("feature");
   });
 
   it("resolves branch from output when not provided", () => {
@@ -33,15 +29,13 @@ describe("parsePush", () => {
 
     const result = parsePush("", stderr, "origin", "");
 
-    expect(result.branch).toBe("develop");
+    expect(result.success).toBe(true);
   });
 
   it("handles empty output gracefully", () => {
     const result = parsePush("", "", "origin", "main");
 
     expect(result.success).toBe(true);
-    expect(result.remote).toBe("origin");
-    expect(result.branch).toBe("main");
   });
 
   it("preserves force push output", () => {
@@ -59,20 +53,16 @@ describe("formatPush", () => {
   it("formats successful push result", () => {
     const data: GitPush = {
       success: true,
-      remote: "origin",
-      branch: "main",
       summary: "abc1234..def5678  main -> main",
     };
     const output = formatPush(data);
 
-    expect(output).toBe("Pushed to origin/main: abc1234..def5678  main -> main");
+    expect(output).toBe("Push completed: abc1234..def5678  main -> main");
   });
 
   it("formats failed push with error type", () => {
     const data: GitPush = {
       success: false,
-      remote: "origin",
-      branch: "main",
       summary: "[rejected] main -> main (non-fast-forward)",
       errorType: "rejected",
       rejectedRef: "main",
@@ -80,7 +70,7 @@ describe("formatPush", () => {
     };
     const output = formatPush(data);
 
-    expect(output).toContain("Push to origin/main failed");
+    expect(output).toContain("Push failed");
     expect(output).toContain("[rejected]");
     expect(output).toContain("rejected ref: main");
     expect(output).toContain("hint: Updates were rejected");

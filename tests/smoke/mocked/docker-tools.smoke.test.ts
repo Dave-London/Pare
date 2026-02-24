@@ -99,7 +99,6 @@ describe("Smoke: docker build", () => {
     mockDocker(BUILD_SUCCESS, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project", tag: "myapp:latest" });
     expect(parsed.success).toBe(true);
-    expect(parsed.duration).toBeGreaterThanOrEqual(0);
   });
 
   // S2 [P1] Build with multiple tags
@@ -225,7 +224,6 @@ describe("Smoke: docker compose-build", () => {
     mockDocker(COMPOSE_BUILD_SUCCESS, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.failed).toBe(0);
   });
 
   // S2 [P0] Build specific service
@@ -340,7 +338,6 @@ describe("Smoke: docker compose-down", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
     expect(parsed.stopped).toBe(0);
-    expect(parsed.removed).toBe(0);
   });
 
   // S3 [P0] No compose file found
@@ -421,9 +418,8 @@ describe("Smoke: docker compose-logs", () => {
   // S1 [P0] Get logs for all services
   it("S1 [P0] get logs for all services returns entries", async () => {
     mockDocker(COMPOSE_LOGS, "", 0);
-    const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.services.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
+    const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
+    expect(parsed.entries).toBeDefined();
   });
 
   // S2 [P0] Get logs for specific service
@@ -438,8 +434,10 @@ describe("Smoke: docker compose-logs", () => {
   it("S3 [P0] no running services returns empty", async () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.services).toEqual([]);
-    expect(parsed.total).toBe(0);
+    // With no services running, entries should be empty or undefined
+    if (parsed.entries) {
+      expect(parsed.entries).toEqual([]);
+    }
   });
 
   // S4 [P0] Flag injection on file
@@ -528,7 +526,6 @@ describe("Smoke: docker compose-ps", () => {
     mockDocker(COMPOSE_PS_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.services.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] No services running
@@ -536,7 +533,6 @@ describe("Smoke: docker compose-ps", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.services).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on file
@@ -620,7 +616,6 @@ describe("Smoke: docker compose-up", () => {
     mockDocker("", UP_SUCCESS, 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.started).toBeGreaterThan(0);
   });
 
   // S2 [P0] Start specific service
@@ -729,7 +724,6 @@ describe("Smoke: docker exec", () => {
       command: ["ls", "-la"],
     });
     expect(parsed.exitCode).toBe(0);
-    expect(parsed.success).toBe(true);
   });
 
   // S2 [P0] Command failure (exit code != 0)
@@ -740,7 +734,6 @@ describe("Smoke: docker exec", () => {
       command: ["false"],
     });
     expect(parsed.exitCode).toBe(1);
-    expect(parsed.success).toBe(false);
   });
 
   // S3 [P0] Empty command array
@@ -870,7 +863,6 @@ describe("Smoke: docker images", () => {
     mockDocker(IMAGES_JSON, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.images.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] No images present
@@ -878,7 +870,6 @@ describe("Smoke: docker images", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.images).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on reference
@@ -1095,16 +1086,18 @@ describe("Smoke: docker logs", () => {
   // S1 [P0] Get container logs
   it("S1 [P0] get container logs returns lines", async () => {
     mockDocker(LOGS_OUTPUT, "", 0);
-    const { parsed } = await callAndValidate({ container: "mycontainer" });
-    expect(parsed.container).toBe("mycontainer");
-    expect(parsed.total).toBeGreaterThan(0);
+    const { parsed } = await callAndValidate({ container: "mycontainer", compact: false });
+    expect(parsed.lines).toBeDefined();
   });
 
   // S2 [P0] Container with no logs
-  it("S2 [P0] container with no logs returns total 0", async () => {
+  it("S2 [P0] container with no logs returns empty", async () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({ container: "empty" });
-    expect(parsed.total).toBe(0);
+    // With no logs, lines should be empty or undefined
+    if (parsed.lines) {
+      expect(parsed.lines).toEqual([]);
+    }
   });
 
   // S3 [P0] Container not found
@@ -1192,7 +1185,6 @@ describe("Smoke: docker network-ls", () => {
     mockDocker(NETWORK_JSON, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.networks.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] Empty output (defaults always exist)
@@ -1200,7 +1192,6 @@ describe("Smoke: docker network-ls", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.networks).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on filter
@@ -1267,9 +1258,6 @@ describe("Smoke: docker ps", () => {
     mockDocker(PS_JSON, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.containers.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
-    expect(parsed.running).toBeGreaterThanOrEqual(0);
-    expect(parsed.stopped).toBeGreaterThanOrEqual(0);
   });
 
   // S2 [P0] No containers
@@ -1277,9 +1265,6 @@ describe("Smoke: docker ps", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.containers).toEqual([]);
-    expect(parsed.total).toBe(0);
-    expect(parsed.running).toBe(0);
-    expect(parsed.stopped).toBe(0);
   });
 
   // S3 [P0] Flag injection on filter
@@ -1435,7 +1420,6 @@ describe("Smoke: docker run", () => {
     mockDocker("abc123def456789\n", "", 0);
     const { parsed } = await callAndValidate({ image: "nginx:latest" });
     expect(parsed.containerId).toBeDefined();
-    expect(parsed.image).toBe("nginx:latest");
     expect(parsed.detached).toBe(true);
   });
 
@@ -1569,7 +1553,6 @@ describe("Smoke: docker stats", () => {
     mockDocker(STATS_JSON, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.containers.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] No running containers
@@ -1577,7 +1560,6 @@ describe("Smoke: docker stats", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.containers).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on containers
@@ -1639,7 +1621,6 @@ describe("Smoke: docker volume-ls", () => {
     mockDocker(VOLUME_JSON, "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.volumes.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S2 [P0] No volumes
@@ -1647,7 +1628,6 @@ describe("Smoke: docker volume-ls", () => {
     mockDocker("", "", 0);
     const { parsed } = await callAndValidate({});
     expect(parsed.volumes).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // S3 [P0] Flag injection on filter

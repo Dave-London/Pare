@@ -55,12 +55,10 @@ describe("compactLogMap", () => {
           message: "Add feature",
         },
       ],
-      total: 2,
     };
 
     const compact = compactLogMap(log);
 
-    expect(compact.total).toBe(2);
     expect(compact.commits).toHaveLength(2);
     expect(compact.commits[0]).toEqual({
       hashShort: "abc1234",
@@ -82,7 +80,6 @@ describe("formatLogCompact", () => {
         { hashShort: "abc1234", message: "Fix bug", refs: "HEAD -> main" },
         { hashShort: "def5678", message: "Add feature" },
       ],
-      total: 2,
     };
     const output = formatLogCompact(compact);
 
@@ -103,14 +100,10 @@ describe("compactDiffMap", () => {
         },
         { file: "src/b.ts", status: "added", additions: 25, deletions: 0 },
       ],
-      totalAdditions: 35,
-      totalDeletions: 3,
-      totalFiles: 2,
     };
 
     const compact = compactDiffMap(diff);
 
-    expect(compact.totalFiles).toBe(2);
     expect(compact.files).toHaveLength(2);
     expect(compact.files[0]).toEqual({
       file: "src/a.ts",
@@ -138,7 +131,6 @@ describe("formatDiffCompact", () => {
         { file: "src/a.ts", status: "modified" as const, additions: 10, deletions: 3 },
         { file: "src/b.ts", status: "added" as const, additions: 25, deletions: 0 },
       ],
-      totalFiles: 2,
     };
     const output = formatDiffCompact(compact);
 
@@ -192,9 +184,6 @@ describe("compactShowMap", () => {
       message: "Fix parser bug\n\nDetailed description here",
       diff: {
         files: [{ file: "src/parser.ts", status: "modified", additions: 5, deletions: 2 }],
-        totalAdditions: 5,
-        totalDeletions: 2,
-        totalFiles: 1,
       },
     };
 
@@ -214,7 +203,7 @@ describe("compactShowMap", () => {
       author: "Jane <j@e.com>",
       date: "1h ago",
       message: "Some commit",
-      diff: { files: [], totalAdditions: 0, totalDeletions: 0, totalFiles: 0 },
+      diff: { files: [] },
     };
 
     const compact = compactShowMap(show);
@@ -244,12 +233,10 @@ describe("compactTagMap", () => {
         { name: "v1.2.0", date: "2024-01-15T10:30:00+00:00", message: "Release 1.2.0" },
         { name: "v1.1.0", date: "2024-01-01T09:00:00+00:00", message: "Release 1.1.0" },
       ],
-      total: 2,
     };
 
     const compact = compactTagMap(tags);
 
-    expect(compact.total).toBe(2);
     expect(compact.tags).toEqual(["v1.2.0", "v1.1.0"]);
     // Verify dropped fields
     expect(compact.tags[0]).not.toHaveProperty("date");
@@ -259,14 +246,14 @@ describe("compactTagMap", () => {
 
 describe("formatTagCompact", () => {
   it("formats compact tag list", () => {
-    const compact = { tags: ["v1.2.0", "v1.1.0", "v1.0.0"], total: 3 };
+    const compact = { tags: ["v1.2.0", "v1.1.0", "v1.0.0"] };
     const output = formatTagCompact(compact);
 
     expect(output).toBe("v1.2.0\nv1.1.0\nv1.0.0");
   });
 
   it("formats empty tag list", () => {
-    const compact = { tags: [], total: 0 };
+    const compact = { tags: [] };
     expect(formatTagCompact(compact)).toBe("No tags found");
   });
 });
@@ -278,12 +265,10 @@ describe("compactStashListMap", () => {
         { index: 0, message: "WIP on main: abc1234 Fix bug", date: "2024-01-15 10:30:00 +0000" },
         { index: 1, message: "On main: save progress", date: "2024-01-14 09:00:00 +0000" },
       ],
-      total: 2,
     };
 
     const compact = compactStashListMap(stashes);
 
-    expect(compact.total).toBe(2);
     expect(compact.stashes).toEqual([
       "stash@{0}: WIP on main: abc1234 Fix bug",
       "stash@{1}: On main: save progress",
@@ -295,7 +280,6 @@ describe("formatStashListCompact", () => {
   it("formats compact stash list", () => {
     const compact = {
       stashes: ["stash@{0}: WIP on main", "stash@{1}: save progress"],
-      total: 2,
     };
     const output = formatStashListCompact(compact);
 
@@ -303,7 +287,7 @@ describe("formatStashListCompact", () => {
   });
 
   it("formats empty stash list", () => {
-    const compact = { stashes: [], total: 0 };
+    const compact = { stashes: [] };
     expect(formatStashListCompact(compact)).toBe("No stashes found");
   });
 });
@@ -323,26 +307,24 @@ describe("compactRemoteMap", () => {
           pushUrl: "https://github.com/upstream/repo.git",
         },
       ],
-      total: 2,
     };
 
     const compact = compactRemoteMap(remotes);
 
-    expect(compact.total).toBe(2);
     expect(compact.remotes).toEqual(["origin", "upstream"]);
   });
 });
 
 describe("formatRemoteCompact", () => {
   it("formats compact remote list", () => {
-    const compact = { remotes: ["origin", "upstream"], total: 2 };
+    const compact = { remotes: ["origin", "upstream"] };
     const output = formatRemoteCompact(compact);
 
     expect(output).toBe("origin\nupstream");
   });
 
   it("formats empty remote list", () => {
-    const compact = { remotes: [], total: 0 };
+    const compact = { remotes: [] };
     expect(formatRemoteCompact(compact)).toBe("No remotes configured");
   });
 });
@@ -368,13 +350,11 @@ describe("compactBlameMap", () => {
         },
       ],
       file: "src/index.ts",
-      totalLines: 3,
     };
 
     const compact = compactBlameMap(blame);
 
     expect(compact.file).toBe("src/index.ts");
-    expect(compact.totalLines).toBe(3);
     expect(compact.commits).toHaveLength(2);
     expect(compact.commits[0]).toEqual({ hash: "abc12345", lines: [1, 3] });
     expect(compact.commits[1]).toEqual({ hash: "def67890", lines: [2] });
@@ -389,7 +369,6 @@ describe("formatBlameCompact", () => {
         { hash: "def67890", lines: [4, 5, 6, 8] },
       ],
       file: "src/index.ts",
-      totalLines: 10,
     };
     const output = formatBlameCompact(compact);
 
@@ -400,7 +379,6 @@ describe("formatBlameCompact", () => {
     const compact = {
       commits: [{ hash: "abc12345", lines: [42] }],
       file: "src/index.ts",
-      totalLines: 1,
     };
     const output = formatBlameCompact(compact);
 
@@ -408,7 +386,7 @@ describe("formatBlameCompact", () => {
   });
 
   it("formats empty blame", () => {
-    const compact = { commits: [], file: "empty.ts", totalLines: 0 };
+    const compact = { commits: [], file: "empty.ts" };
     expect(formatBlameCompact(compact)).toBe("No blame data for empty.ts");
   });
 });
@@ -423,12 +401,10 @@ describe("compactLogGraphMap", () => {
         { graph: "|/", hashShort: "", message: "" },
         { graph: "*", hashShort: "aaa1111", message: "Base commit" },
       ],
-      total: 3,
     };
 
     const compact = compactLogGraphMap(data);
 
-    expect(compact.total).toBe(3);
     // Only actual commits, no continuation lines
     expect(compact.commits).toHaveLength(3);
     expect(compact.commits[0]).toEqual({
@@ -460,7 +436,6 @@ describe("formatLogGraphCompact", () => {
         { g: "*", h: "abc1234", m: "Fix bug", r: "HEAD -> main" },
         { g: "| *", h: "def5678", m: "Add feature" },
       ],
-      total: 2,
     };
     const output = formatLogGraphCompact(compact);
 
@@ -468,7 +443,7 @@ describe("formatLogGraphCompact", () => {
   });
 
   it("formats empty log-graph", () => {
-    const compact = { commits: [], total: 0 };
+    const compact = { commits: [] };
     expect(formatLogGraphCompact(compact)).toBe("No commits found");
   });
 });
@@ -496,12 +471,10 @@ describe("compactReflogMap", () => {
           date: "2024-01-14 09:00:00 +0000",
         },
       ],
-      total: 2,
     };
 
     const compact = compactReflogMap(reflog);
 
-    expect(compact.total).toBe(2);
     expect(compact.entries).toEqual([
       "abc1234 HEAD@{0} checkout: moving from main to feature",
       "def5678 HEAD@{1} commit: fix the bug",
@@ -516,7 +489,6 @@ describe("formatReflogCompact", () => {
         "abc1234 HEAD@{0} checkout: moving from main to feature",
         "def5678 HEAD@{1} commit: fix the bug",
       ],
-      total: 2,
     };
     const output = formatReflogCompact(compact);
 
@@ -526,7 +498,7 @@ describe("formatReflogCompact", () => {
   });
 
   it("formats empty reflog", () => {
-    const compact = { entries: [], total: 0 };
+    const compact = { entries: [] };
     expect(formatReflogCompact(compact)).toBe("No reflog entries found");
   });
 });
@@ -554,12 +526,10 @@ describe("compactWorktreeListMap", () => {
           bare: true,
         },
       ],
-      total: 3,
     };
 
     const compact = compactWorktreeListMap(worktrees);
 
-    expect(compact.total).toBe(3);
     expect(compact.worktrees).toEqual([
       "/home/user/repo (main)",
       "/home/user/repo-feature (feature/auth)",
@@ -577,7 +547,6 @@ describe("compactWorktreeListMap", () => {
           bare: false,
         },
       ],
-      total: 1,
     };
 
     const compact = compactWorktreeListMap(worktrees);
@@ -590,7 +559,6 @@ describe("formatWorktreeListCompact", () => {
   it("formats compact worktree list", () => {
     const compact = {
       worktrees: ["/home/user/repo (main)", "/home/user/repo-feature (feature/auth)"],
-      total: 2,
     };
     const output = formatWorktreeListCompact(compact);
 
@@ -598,7 +566,7 @@ describe("formatWorktreeListCompact", () => {
   });
 
   it("formats empty worktree list", () => {
-    const compact = { worktrees: [], total: 0 };
+    const compact = { worktrees: [] };
     expect(formatWorktreeListCompact(compact)).toBe("No worktrees found");
   });
 });

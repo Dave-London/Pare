@@ -11,13 +11,10 @@ export const CargoDiagnosticSchema = z.object({
   suggestion: z.string().optional().describe("Suggested fix text from compiler/clippy children"),
 });
 
-/** Zod schema for structured cargo build output including success status, diagnostics, and error/warning counts. */
+/** Zod schema for structured cargo build output including success status and diagnostics. */
 export const CargoBuildResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(CargoDiagnosticSchema).optional(),
-  total: z.number(),
-  errors: z.number(),
-  warnings: z.number(),
   timings: z
     .object({
       generated: z.boolean(),
@@ -31,9 +28,7 @@ export const CargoBuildResultSchema = z.object({
 export type CargoBuildResult = z.infer<typeof CargoBuildResultSchema>;
 
 /** Zod schema for cargo check output, split from build for future check-specific fields. */
-export const CargoCheckResultSchema = CargoBuildResultSchema.extend({
-  mode: z.literal("check"),
-});
+export const CargoCheckResultSchema = CargoBuildResultSchema;
 
 export type CargoCheckResult = z.infer<typeof CargoCheckResultSchema>;
 
@@ -49,11 +44,9 @@ export const CargoTestCaseSchema = z.object({
 export const CargoTestResultSchema = z.object({
   success: z.boolean(),
   tests: z.array(CargoTestCaseSchema).optional(),
-  total: z.number(),
   passed: z.number(),
   failed: z.number(),
   ignored: z.number(),
-  duration: z.string().optional().describe("Total test suite duration from summary line"),
   compilationDiagnostics: z
     .array(CargoDiagnosticSchema)
     .optional()
@@ -62,13 +55,10 @@ export const CargoTestResultSchema = z.object({
 
 export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
 
-/** Zod schema for structured cargo clippy output with diagnostics, success flag, and error/warning counts. */
+/** Zod schema for structured cargo clippy output with diagnostics and success flag. */
 export const CargoClippyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(CargoDiagnosticSchema).optional(),
-  total: z.number(),
-  errors: z.number(),
-  warnings: z.number(),
 });
 
 export type CargoClippyResult = z.infer<typeof CargoClippyResultSchema>;
@@ -79,7 +69,6 @@ export const CargoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   success: z.boolean(),
-  signal: z.string().optional().describe("Detected termination signal (for example SIGSEGV)"),
   failureType: z
     .enum(["compilation", "runtime", "timeout"])
     .optional()
@@ -110,7 +99,6 @@ export const CargoAddedPackageSchema = z.object({
 export const CargoAddResultSchema = z.object({
   success: z.boolean(),
   added: z.array(CargoAddedPackageSchema).optional(),
-  total: z.number(),
   dependencyType: z
     .enum(["normal", "dev", "build"])
     .optional()
@@ -128,7 +116,6 @@ export type CargoAddResult = z.infer<typeof CargoAddResultSchema>;
 export const CargoRemoveResultSchema = z.object({
   success: z.boolean(),
   removed: z.array(z.string()),
-  total: z.number(),
   partialSuccess: z
     .boolean()
     .optional()
@@ -191,7 +178,7 @@ export const CargoUpdatedPackageSchema = z.object({
   to: z.string().describe("Updated version"),
 });
 
-/** Zod schema for structured cargo update output with success flag, parsed updates, and raw output. */
+/** Zod schema for structured cargo update output with success flag and parsed updates. */
 export const CargoUpdateResultSchema = z.object({
   success: z.boolean(),
   updated: z
@@ -199,7 +186,6 @@ export const CargoUpdateResultSchema = z.object({
     .optional()
     .describe("Parsed list of updated dependencies"),
   totalUpdated: z.number().describe("Count of updated packages"),
-  output: z.string().optional().describe("Raw combined output text"),
 });
 
 export type CargoUpdateResult = z.infer<typeof CargoUpdateResultSchema>;
@@ -211,14 +197,13 @@ export const CargoDependencyNodeSchema = z.object({
   depth: z.number().describe("Nesting depth in the dependency tree (0 = root)"),
 });
 
-/** Zod schema for structured cargo tree output with parsed dependencies, tree text, unique package count, and success flag. */
+/** Zod schema for structured cargo tree output with parsed dependencies, unique package count, and success flag. */
 export const CargoTreeResultSchema = z.object({
   success: z.boolean(),
   dependencies: z
     .array(CargoDependencyNodeSchema)
     .optional()
     .describe("Flat list of dependencies with name, version, and depth"),
-  tree: z.string().optional().describe("Raw ASCII tree text"),
   packages: z.number(),
 });
 
@@ -233,12 +218,9 @@ export const CargoAuditVulnSchema = z.object({
     .enum(["critical", "high", "medium", "low", "informational", "unknown"])
     .describe("Severity level derived from CVSS"),
   title: z.string().describe("Short description of the vulnerability"),
-  url: z.string().optional().describe("URL with more information"),
-  date: z.string().optional().describe("Date the advisory was published"),
   patched: z.array(z.string()).describe("Version requirements that fix the vulnerability"),
   unaffected: z.array(z.string()).optional().describe("Version requirements not affected"),
   cvssScore: z.number().optional().describe("Raw CVSS base score (0.0-10.0)"),
-  cvssVector: z.string().optional().describe("Raw CVSS vector string"),
 });
 
 /** Zod schema for structured cargo audit output with vulnerability list, success flag, and severity summary. */

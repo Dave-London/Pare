@@ -48,8 +48,6 @@ describe("compactPytestMap", () => {
       errors: 1,
       skipped: 1,
       warnings: 0,
-      total: 12,
-      duration: 3.5,
       failures: [
         { test: "test_auth_login", message: "assert 200 == 401\n+  where 200 = response.status" },
         { test: "test_auth_logout", message: "KeyError: 'session'" },
@@ -64,8 +62,6 @@ describe("compactPytestMap", () => {
     expect(compact.errors).toBe(1);
     expect(compact.skipped).toBe(1);
     expect(compact.warnings).toBe(0);
-    expect(compact.total).toBe(12);
-    expect(compact.duration).toBe(3.5);
     expect(compact.failedTests).toEqual(["test_auth_login", "test_auth_logout"]);
     // Verify failure messages are dropped
     expect(compact).not.toHaveProperty("failures");
@@ -79,8 +75,6 @@ describe("compactPytestMap", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 10,
-      duration: 1.2,
       failures: [],
     };
 
@@ -98,13 +92,11 @@ describe("formatPytestCompact", () => {
       errors: 0,
       skipped: 1,
       warnings: 0,
-      total: 11,
-      duration: 3.5,
       failedTests: ["test_auth_login", "test_auth_logout"],
     };
     const output = formatPytestCompact(compact);
 
-    expect(output).toContain("8 passed, 2 failed, 1 skipped in 3.5s");
+    expect(output).toContain("8 passed, 2 failed, 1 skipped");
     expect(output).toContain("FAILED test_auth_login");
     expect(output).toContain("FAILED test_auth_logout");
   });
@@ -117,8 +109,6 @@ describe("formatPytestCompact", () => {
       errors: 0,
       skipped: 0,
       warnings: 0,
-      total: 0,
-      duration: 0,
       failedTests: [],
     };
     expect(formatPytestCompact(compact)).toBe("pytest: no tests collected.");
@@ -128,7 +118,7 @@ describe("formatPytestCompact", () => {
 // ── Mypy compact ──────────────────────────────────────────────────────
 
 describe("compactMypyMap", () => {
-  it("keeps counts, drops individual diagnostics", () => {
+  it("keeps success, drops individual diagnostics", () => {
     const data: MypyResult = {
       success: false,
       diagnostics: [
@@ -147,39 +137,31 @@ describe("compactMypyMap", () => {
           message: "Revealed type is 'builtins.str'",
         },
       ],
-      total: 2,
-      errors: 1,
-      warnings: 0,
-      notes: 1,
     };
 
     const compact = compactMypyMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.total).toBe(2);
-    expect(compact.errors).toBe(1);
-    expect(compact.warnings).toBe(0);
-    expect(compact.notes).toBe(1);
     expect(compact).not.toHaveProperty("diagnostics");
   });
 });
 
 describe("formatMypyCompact", () => {
   it("formats clean result", () => {
-    const compact = { success: true, total: 0, errors: 0, warnings: 0, notes: 0 };
+    const compact = { success: true };
     expect(formatMypyCompact(compact)).toBe("mypy: no errors found.");
   });
 
-  it("formats result with counts", () => {
-    const compact = { success: false, total: 5, errors: 3, warnings: 2, notes: 0 };
-    expect(formatMypyCompact(compact)).toBe("mypy: 3 errors, 2 warnings, 0 notes (5 total)");
+  it("formats result with errors", () => {
+    const compact = { success: false };
+    expect(formatMypyCompact(compact)).toBe("mypy: errors found.");
   });
 });
 
 // ── Ruff compact ──────────────────────────────────────────────────────
 
 describe("compactRuffMap", () => {
-  it("keeps total and fixable counts, drops diagnostics", () => {
+  it("keeps success and fixedCount, drops diagnostics", () => {
     const data: RuffResult = {
       success: false,
       diagnostics: [
@@ -200,27 +182,26 @@ describe("compactRuffMap", () => {
           fixable: false,
         },
       ],
-      total: 2,
-      fixable: 1,
+      fixedCount: 1,
     };
 
     const compact = compactRuffMap(data);
 
-    expect(compact.total).toBe(2);
-    expect(compact.fixable).toBe(1);
+    expect(compact.success).toBe(false);
+    expect(compact.fixedCount).toBe(1);
     expect(compact).not.toHaveProperty("diagnostics");
   });
 });
 
 describe("formatRuffCompact", () => {
   it("formats clean result", () => {
-    const compact = { success: true, total: 0, fixable: 0 };
+    const compact = { success: true };
     expect(formatRuffCompact(compact)).toBe("ruff: no issues found.");
   });
 
   it("formats result with issues", () => {
-    const compact = { total: 5, fixable: 3 };
-    expect(formatRuffCompact(compact)).toBe("ruff: 5 issues (3 fixable)");
+    const compact = { success: false, fixedCount: 3 };
+    expect(formatRuffCompact(compact)).toBe("ruff: issues found, 3 fixed");
   });
 });
 
@@ -231,7 +212,6 @@ describe("compactBlackMap", () => {
     const data: BlackResult = {
       filesChanged: 3,
       filesUnchanged: 7,
-      filesChecked: 10,
       success: true,
       wouldReformat: ["a.py", "b.py", "c.py"],
     };
@@ -241,24 +221,23 @@ describe("compactBlackMap", () => {
     expect(compact.success).toBe(true);
     expect(compact.filesChanged).toBe(3);
     expect(compact.filesUnchanged).toBe(7);
-    expect(compact.filesChecked).toBe(10);
     expect(compact).not.toHaveProperty("wouldReformat");
   });
 });
 
 describe("formatBlackCompact", () => {
   it("formats no files found", () => {
-    const compact = { success: true, filesChanged: 0, filesUnchanged: 0, filesChecked: 0 };
+    const compact = { success: true, filesChanged: 0, filesUnchanged: 0 };
     expect(formatBlackCompact(compact)).toBe("black: no Python files found.");
   });
 
   it("formats all clean", () => {
-    const compact = { success: true, filesChanged: 0, filesUnchanged: 10, filesChecked: 10 };
+    const compact = { success: true, filesChanged: 0, filesUnchanged: 10 };
     expect(formatBlackCompact(compact)).toBe("black: 10 files already formatted.");
   });
 
   it("formats with changes", () => {
-    const compact = { success: true, filesChanged: 3, filesUnchanged: 7, filesChecked: 10 };
+    const compact = { success: true, filesChanged: 3, filesUnchanged: 7 };
     expect(formatBlackCompact(compact)).toBe("black: 3 reformatted, 7 unchanged");
   });
 });
@@ -266,7 +245,7 @@ describe("formatBlackCompact", () => {
 // ── Pip Install compact ───────────────────────────────────────────────
 
 describe("compactPipInstallMap", () => {
-  it("keeps success, total, and alreadySatisfied; drops package details", () => {
+  it("keeps success and alreadySatisfied; drops package details", () => {
     const data: PipInstall = {
       success: true,
       installed: [
@@ -274,13 +253,11 @@ describe("compactPipInstallMap", () => {
         { name: "requests", version: "2.31.0" },
       ],
       alreadySatisfied: false,
-      total: 2,
     };
 
     const compact = compactPipInstallMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(2);
     expect(compact.alreadySatisfied).toBe(false);
     expect(compact).not.toHaveProperty("installed");
   });
@@ -288,25 +265,25 @@ describe("compactPipInstallMap", () => {
 
 describe("formatPipInstallCompact", () => {
   it("formats already satisfied", () => {
-    const compact = { success: true, total: 0, alreadySatisfied: true };
+    const compact = { success: true, alreadySatisfied: true };
     expect(formatPipInstallCompact(compact)).toBe("All requirements already satisfied.");
   });
 
   it("formats failed install", () => {
-    const compact = { success: false, total: 0, alreadySatisfied: false };
+    const compact = { success: false, alreadySatisfied: false };
     expect(formatPipInstallCompact(compact)).toBe("pip install failed.");
   });
 
-  it("formats successful install with count", () => {
-    const compact = { success: true, total: 5, alreadySatisfied: false };
-    expect(formatPipInstallCompact(compact)).toBe("Installed 5 packages.");
+  it("formats successful install", () => {
+    const compact = { success: true, alreadySatisfied: false };
+    expect(formatPipInstallCompact(compact)).toBe("Installed packages.");
   });
 });
 
 // ── Pip Audit compact ─────────────────────────────────────────────────
 
 describe("compactPipAuditMap", () => {
-  it("keeps total count, drops vulnerability details", () => {
+  it("keeps success, drops vulnerability details", () => {
     const data: PipAuditResult = {
       success: false,
       vulnerabilities: [
@@ -325,85 +302,78 @@ describe("compactPipAuditMap", () => {
           fixVersions: [],
         },
       ],
-      total: 2,
     };
 
     const compact = compactPipAuditMap(data);
 
-    expect(compact.total).toBe(2);
+    expect(compact.success).toBe(false);
     expect(compact).not.toHaveProperty("vulnerabilities");
   });
 });
 
 describe("formatPipAuditCompact", () => {
   it("formats clean audit", () => {
-    const compact = { success: true, total: 0 };
+    const compact = { success: true };
     expect(formatPipAuditCompact(compact)).toBe("No vulnerabilities found.");
   });
 
   it("formats audit with vulnerabilities", () => {
-    const compact = { success: false, total: 3 };
-    expect(formatPipAuditCompact(compact)).toBe("3 vulnerabilities found.");
+    const compact = { success: false };
+    expect(formatPipAuditCompact(compact)).toBe("Vulnerabilities found.");
   });
 });
 
 // ── Uv Install compact ───────────────────────────────────────────────
 
 describe("compactUvInstallMap", () => {
-  it("keeps success, total, and duration; drops package details", () => {
+  it("keeps success and error info; drops package details", () => {
     const data: UvInstall = {
       success: true,
       installed: [
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
       ],
-      total: 2,
-      duration: 1.5,
     };
 
     const compact = compactUvInstallMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(2);
-    expect(compact.duration).toBe(1.5);
     expect(compact).not.toHaveProperty("installed");
   });
 });
 
 describe("formatUvInstallCompact", () => {
   it("formats failed install", () => {
-    const compact = { success: false, total: 0, duration: 0 };
+    const compact = { success: false };
     expect(formatUvInstallCompact(compact)).toBe("uv install failed.");
   });
 
   it("formats already satisfied", () => {
-    const compact = { success: true, total: 0, duration: 0.1 };
+    const compact = { success: true, alreadySatisfied: true };
     expect(formatUvInstallCompact(compact)).toBe("All requirements already satisfied.");
   });
 
-  it("formats successful install with count", () => {
-    const compact = { success: true, total: 5, duration: 2.3 };
-    expect(formatUvInstallCompact(compact)).toBe("Installed 5 packages in 2.3s.");
+  it("formats successful install", () => {
+    const compact = { success: true };
+    expect(formatUvInstallCompact(compact)).toBe("Installed packages.");
   });
 });
 
 // ── Uv Run compact ───────────────────────────────────────────────────
 
 describe("compactUvRunMap", () => {
-  it("keeps exitCode, success, and duration; drops stdout/stderr", () => {
+  it("keeps exitCode and success; drops stdout/stderr", () => {
     const data: UvRun = {
       exitCode: 0,
       stdout: "Hello, world!\nLine 2\nLine 3",
       stderr: "some warnings here",
       success: true,
-      duration: 0.5,
     };
 
     const compact = compactUvRunMap(data);
 
     expect(compact.exitCode).toBe(0);
     expect(compact.success).toBe(true);
-    expect(compact.duration).toBe(0.5);
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
@@ -411,45 +381,44 @@ describe("compactUvRunMap", () => {
 
 describe("formatUvRunCompact", () => {
   it("formats successful run", () => {
-    const compact = { exitCode: 0, success: true, duration: 0.5 };
-    expect(formatUvRunCompact(compact)).toBe("uv run completed in 0.5s");
+    const compact = { exitCode: 0, success: true };
+    expect(formatUvRunCompact(compact)).toBe("uv run completed");
   });
 
   it("formats failed run", () => {
-    const compact = { exitCode: 1, success: false, duration: 2.0 };
-    expect(formatUvRunCompact(compact)).toBe("uv run failed (exit 1) in 2s");
+    const compact = { exitCode: 1, success: false };
+    expect(formatUvRunCompact(compact)).toBe("uv run failed (exit 1)");
   });
 });
 
 // ── Pip List compact ──────────────────────────────────────────────────
 
 describe("compactPipListMap", () => {
-  it("keeps total count, drops package details", () => {
+  it("keeps success and error, drops package details", () => {
     const data: PipList = {
       success: true,
       packages: [
         { name: "flask", version: "3.0.0" },
         { name: "requests", version: "2.31.0" },
       ],
-      total: 2,
     };
 
     const compact = compactPipListMap(data);
 
-    expect(compact.total).toBe(2);
+    expect(compact.success).toBe(true);
     expect(compact).not.toHaveProperty("packages");
   });
 });
 
 describe("formatPipListCompact", () => {
-  it("formats empty list", () => {
-    const compact = { success: true, total: 0 };
-    expect(formatPipListCompact(compact)).toBe("No packages installed.");
+  it("formats successful list", () => {
+    const compact = { success: true };
+    expect(formatPipListCompact(compact)).toBe("Packages listed.");
   });
 
-  it("formats list with packages", () => {
-    const compact = { success: true, total: 15 };
-    expect(formatPipListCompact(compact)).toBe("15 packages installed.");
+  it("formats error", () => {
+    const compact = { success: false, error: "parse error" };
+    expect(formatPipListCompact(compact)).toBe("pip list error: parse error");
   });
 });
 

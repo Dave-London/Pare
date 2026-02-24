@@ -37,9 +37,7 @@ describe("parsePsJson", () => {
 
     const result = parsePsJson(stdout);
 
-    expect(result.total).toBe(2);
-    expect(result.running).toBe(1);
-    expect(result.stopped).toBe(1);
+    expect(result.containers).toHaveLength(2);
     expect(result.containers[0].id).toBe("abc123def456");
     expect(result.containers[0].name).toBe("web-app");
     expect(result.containers[0].image).toBe("nginx:latest");
@@ -50,9 +48,6 @@ describe("parsePsJson", () => {
 
   it("parses empty output", () => {
     const result = parsePsJson("");
-    expect(result.total).toBe(0);
-    expect(result.running).toBe(0);
-    expect(result.stopped).toBe(0);
     expect(result.containers).toEqual([]);
   });
 
@@ -264,8 +259,6 @@ describe("parseBuildOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.imageId).toBe("a1b2c3d4e5f6");
-    expect(result.duration).toBe(12.5);
-    expect(result.steps).toBe(6);
     expect(result.errors).toBeUndefined();
   });
 
@@ -279,8 +272,7 @@ describe("parseBuildOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.imageId).toBeUndefined();
-    expect(result.duration).toBe(8.0);
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors!.length).toBeGreaterThan(0);
   });
 
   it("parses build with no image ID", () => {
@@ -296,17 +288,13 @@ describe("parseLogsOutput", () => {
       "2024-01-01 Starting app\n2024-01-01 Listening on port 3000\n2024-01-01 Request received";
     const result = parseLogsOutput(stdout, "web-app");
 
-    expect(result.container).toBe("web-app");
     expect(result.lines).toHaveLength(3);
-    expect(result.total).toBe(3);
-    expect(result.lines[0]).toBe("2024-01-01 Starting app");
+    expect(result.lines![0]).toBe("2024-01-01 Starting app");
   });
 
   it("handles empty logs", () => {
     const result = parseLogsOutput("", "empty-container");
-    expect(result.container).toBe("empty-container");
     expect(result.lines).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("truncates lines when limit is exceeded", () => {
@@ -315,11 +303,9 @@ describe("parseLogsOutput", () => {
     const result = parseLogsOutput(stdout, "busy-app", 50);
 
     expect(result.lines).toHaveLength(50);
-    expect(result.total).toBe(50);
     expect(result.isTruncated).toBe(true);
-    expect(result.totalLines).toBe(200);
-    expect(result.lines[0]).toBe("line 1");
-    expect(result.lines[49]).toBe("line 50");
+    expect(result.lines![0]).toBe("line 1");
+    expect(result.lines![49]).toBe("line 50");
   });
 
   it("does not truncate when lines are within limit", () => {
@@ -327,9 +313,7 @@ describe("parseLogsOutput", () => {
     const result = parseLogsOutput(stdout, "small-app", 100);
 
     expect(result.lines).toHaveLength(3);
-    expect(result.total).toBe(3);
     expect(result.isTruncated).toBeUndefined();
-    expect(result.totalLines).toBeUndefined();
   });
 
   it("does not truncate when no limit is provided", () => {
@@ -338,9 +322,7 @@ describe("parseLogsOutput", () => {
     const result = parseLogsOutput(stdout, "unlimited-app");
 
     expect(result.lines).toHaveLength(200);
-    expect(result.total).toBe(200);
     expect(result.isTruncated).toBeUndefined();
-    expect(result.totalLines).toBeUndefined();
   });
 });
 
@@ -365,7 +347,7 @@ describe("parseImagesJson", () => {
 
     const result = parseImagesJson(stdout);
 
-    expect(result.total).toBe(2);
+    expect(result.images).toHaveLength(2);
     expect(result.images[0].id).toBe("sha256:abc12");
     expect(result.images[0].repository).toBe("nginx");
     expect(result.images[0].tag).toBe("latest");
@@ -376,7 +358,6 @@ describe("parseImagesJson", () => {
 
   it("parses empty image list", () => {
     const result = parseImagesJson("");
-    expect(result.total).toBe(0);
     expect(result.images).toEqual([]);
   });
 
@@ -509,7 +490,7 @@ describe("parseNetworkLsJson", () => {
 
     const result = parseNetworkLsJson(stdout);
 
-    expect(result.total).toBe(3);
+    expect(result.networks).toHaveLength(3);
     expect(result.networks[0].id).toBe("aaa111bbb222");
     expect(result.networks[0].name).toBe("bridge");
     expect(result.networks[0].driver).toBe("bridge");
@@ -521,7 +502,6 @@ describe("parseNetworkLsJson", () => {
 
   it("parses empty output", () => {
     const result = parseNetworkLsJson("");
-    expect(result.total).toBe(0);
     expect(result.networks).toEqual([]);
   });
 });
@@ -549,7 +529,7 @@ describe("parseVolumeLsJson", () => {
 
     const result = parseVolumeLsJson(stdout);
 
-    expect(result.total).toBe(2);
+    expect(result.volumes).toHaveLength(2);
     expect(result.volumes[0].name).toBe("my-data");
     expect(result.volumes[0].driver).toBe("local");
     expect(result.volumes[0].mountpoint).toContain("my-data");
@@ -559,7 +539,6 @@ describe("parseVolumeLsJson", () => {
 
   it("parses empty output", () => {
     const result = parseVolumeLsJson("");
-    expect(result.total).toBe(0);
     expect(result.volumes).toEqual([]);
   });
 });
@@ -589,7 +568,7 @@ describe("parseComposePsJson", () => {
 
     const result = parseComposePsJson(stdout);
 
-    expect(result.total).toBe(2);
+    expect(result.services).toHaveLength(2);
     expect(result.services[0].name).toBe("myapp-web-1");
     expect(result.services[0].service).toBe("web");
     expect(result.services[0].state).toBe("running");
@@ -648,7 +627,6 @@ describe("parseComposePsJson", () => {
 
   it("parses empty output", () => {
     const result = parseComposePsJson("");
-    expect(result.total).toBe(0);
     expect(result.services).toEqual([]);
   });
 
@@ -683,15 +661,13 @@ describe("parseComposeLogsOutput", () => {
 
     const result = parseComposeLogsOutput(stdout);
 
-    expect(result.services).toContain("web-1");
-    expect(result.services).toContain("db-1");
-    expect(result.total).toBe(4);
-    expect(result.entries[0]).toEqual({
+    expect(result.entries).toHaveLength(4);
+    expect(result.entries![0]).toEqual({
       timestamp: "2024-06-01T10:00:00.000000000Z",
       service: "web-1",
       message: "Starting server...",
     });
-    expect(result.entries[2]).toEqual({
+    expect(result.entries![2]).toEqual({
       timestamp: "2024-06-01T10:00:00.500000000Z",
       service: "db-1",
       message: "PostgreSQL init",
@@ -703,20 +679,17 @@ describe("parseComposeLogsOutput", () => {
 
     const result = parseComposeLogsOutput(stdout);
 
-    expect(result.services).toEqual(["web-1"]);
-    expect(result.total).toBe(2);
-    expect(result.entries[0]).toEqual({
+    expect(result.entries).toHaveLength(2);
+    expect(result.entries![0]).toEqual({
       service: "web-1",
       message: "Starting server...",
     });
-    expect(result.entries[0].timestamp).toBeUndefined();
+    expect(result.entries![0].timestamp).toBeUndefined();
   });
 
   it("handles empty output", () => {
     const result = parseComposeLogsOutput("");
-    expect(result.services).toEqual([]);
     expect(result.entries).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("truncates entries when limit is exceeded", () => {
@@ -727,28 +700,25 @@ describe("parseComposeLogsOutput", () => {
     const stdout = lines.join("\n");
     const result = parseComposeLogsOutput(stdout, 10);
 
-    expect(result.total).toBe(10);
     expect(result.entries).toHaveLength(10);
     expect(result.isTruncated).toBe(true);
-    expect(result.totalEntries).toBe(100);
   });
 
   it("does not truncate when within limit", () => {
     const stdout = "svc-1  | line 1\nsvc-1  | line 2";
     const result = parseComposeLogsOutput(stdout, 100);
 
-    expect(result.total).toBe(2);
+    expect(result.entries).toHaveLength(2);
     expect(result.isTruncated).toBeUndefined();
-    expect(result.totalEntries).toBeUndefined();
   });
 
   it("handles lines without pipe separator", () => {
     const stdout = "some raw output without pipe";
     const result = parseComposeLogsOutput(stdout);
 
-    expect(result.total).toBe(1);
-    expect(result.entries[0].service).toBe("unknown");
-    expect(result.entries[0].message).toBe("some raw output without pipe");
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries![0].service).toBe("unknown");
+    expect(result.entries![0].message).toBe("some raw output without pipe");
   });
 });
 
@@ -782,7 +752,7 @@ describe("parseStatsJson", () => {
 
     const result = parseStatsJson(stdout);
 
-    expect(result.total).toBe(2);
+    expect(result.containers).toHaveLength(2);
     expect(result.containers[0].id).toBe("abc123def456");
     expect(result.containers[0].name).toBe("web-app");
     expect(result.containers[0].cpuPercent).toBe(1.23);
@@ -798,7 +768,6 @@ describe("parseStatsJson", () => {
 
   it("parses empty output", () => {
     const result = parseStatsJson("");
-    expect(result.total).toBe(0);
     expect(result.containers).toEqual([]);
   });
 

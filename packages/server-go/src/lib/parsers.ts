@@ -73,13 +73,10 @@ export function parseGoBuildOutput(
     }
   }
 
-  const total = errors.length + rawErrors.length;
-
   return {
     success: exitCode === 0,
     errors,
     rawErrors: rawErrors.length > 0 ? rawErrors : undefined,
-    total,
   };
 }
 
@@ -194,7 +191,6 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
     success: exitCode === 0,
     tests,
     packageFailures: packageFailures.length > 0 ? packageFailures : undefined,
-    total: tests.length,
     passed,
     failed,
     skipped,
@@ -245,7 +241,6 @@ export function parseGoVetOutput(stdout: string, stderr: string, exitCode: numbe
       ...jsonResult,
       success: exitCode === 0,
       compilationErrors: compilationErrors.length > 0 ? compilationErrors : undefined,
-      total: jsonResult.total,
     };
   }
 
@@ -264,7 +259,7 @@ export function parseGoVetOutput(stdout: string, stderr: string, exitCode: numbe
 function tryParseGoVetJson(
   stdout: string,
   stderr: string,
-): { diagnostics: GoVetResult["diagnostics"]; total: number } | null {
+): { diagnostics: GoVetResult["diagnostics"] } | null {
   // go vet -json writes JSON to stdout; stderr may have non-JSON messages
   const combined = (stdout + "\n" + stderr).trim();
   if (!combined || !combined.includes("{")) return null;
@@ -321,7 +316,7 @@ function tryParseGoVetJson(
 
   if (!parsedAny) return null;
 
-  return { diagnostics, total: diagnostics.length };
+  return { diagnostics };
 }
 
 /** Parse a posn string like "file.go:10:5" or "file.go:10" into components. */
@@ -381,7 +376,6 @@ function parseGoVetText(
     success: exitCode === 0,
     diagnostics,
     compilationErrors: compilationErrors.length > 0 ? compilationErrors : undefined,
-    total: diagnostics.length,
   };
 }
 
@@ -418,14 +412,13 @@ export function parseGoRunOutput(
   stderr: string,
   exitCode: number,
   timedOut: boolean = false,
-  signal?: string,
+  _signal?: string,
 ): GoRunResult {
   return {
     exitCode,
     stdout: stdout.trimEnd(),
     stderr: stderr.trimEnd(),
     ...(timedOut ? { timedOut: true } : {}),
-    ...(signal ? { signal } : {}),
     success: exitCode === 0 && !timedOut,
   };
 }
@@ -719,7 +712,7 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
   }[] = [];
 
   if (!stdout.trim()) {
-    return { success: exitCode === 0, packages, total: 0 };
+    return { success: exitCode === 0, packages };
   }
 
   // go list -json outputs concatenated JSON objects separated by newlines.
@@ -769,7 +762,7 @@ export function parseGoListOutput(stdout: string, exitCode: number): GoListResul
     }
   }
 
-  return { success: exitCode === 0, packages, total: packages.length };
+  return { success: exitCode === 0, packages };
 }
 
 /**
@@ -788,7 +781,7 @@ export function parseGoListModulesOutput(stdout: string, exitCode: number): GoLi
   }[] = [];
 
   if (!stdout.trim()) {
-    return { success: exitCode === 0, modules, total: 0 };
+    return { success: exitCode === 0, modules };
   }
 
   const chunks = splitJsonObjects(stdout);
@@ -810,7 +803,7 @@ export function parseGoListModulesOutput(stdout: string, exitCode: number): GoLi
     }
   }
 
-  return { success: exitCode === 0, modules, total: modules.length };
+  return { success: exitCode === 0, modules };
 }
 
 /** Splits concatenated JSON objects from go list -json output. */
@@ -844,7 +837,7 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
   const diagnostics: GolangciLintDiagnostic[] = [];
 
   if (!stdout.trim()) {
-    return { diagnostics, total: 0, errors: 0, warnings: 0, byLinter: [] };
+    return { diagnostics, errors: 0, warnings: 0 };
   }
 
   let parsed: GolangciLintJsonOutput;
@@ -852,7 +845,7 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
     parsed = JSON.parse(stdout);
   } catch {
     // If JSON parsing fails, return empty result
-    return { diagnostics, total: 0, errors: 0, warnings: 0, byLinter: [] };
+    return { diagnostics, errors: 0, warnings: 0 };
   }
 
   const issues = parsed.Issues ?? [];
@@ -863,10 +856,8 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
       line: issue.Pos?.Line ?? 0,
       column: issue.Pos?.Column || undefined,
       linter: issue.FromLinter ?? "",
-      category: classifyLinter(issue.FromLinter ?? ""),
       severity,
       message: issue.Text ?? "",
-      sourceLine: issue.SourceLines?.[0] || undefined,
     };
 
     // Capture Replacement/fix data (Gap #154)
@@ -904,21 +895,10 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
-  // Build by-linter summary
-  const linterCounts = new Map<string, number>();
-  for (const d of diagnostics) {
-    linterCounts.set(d.linter, (linterCounts.get(d.linter) ?? 0) + 1);
-  }
-  const byLinter = Array.from(linterCounts.entries())
-    .map(([linter, count]) => ({ linter, count }))
-    .sort((a, b) => b.count - a.count);
-
   return {
     diagnostics,
-    total: diagnostics.length,
     errors,
     warnings,
-    byLinter,
   };
 }
 
@@ -928,22 +908,6 @@ function mapSeverity(severity?: string): "error" | "warning" | "info" {
   if (lower === "error") return "error";
   if (lower === "info") return "info";
   return "warning";
-}
-
-function classifyLinter(
-  linter: string,
-): "bug-risk" | "style" | "performance" | "security" | "complexity" | "other" {
-  const name = linter.toLowerCase();
-  if (["gosec"].includes(name)) return "security";
-  if (["govet", "staticcheck", "typecheck", "errcheck", "ineffassign", "nilerr"].includes(name)) {
-    return "bug-risk";
-  }
-  if (["gocyclo", "cyclop", "funlen", "nestif", "maintidx"].includes(name)) return "complexity";
-  if (["prealloc", "perfsprint", "makezero", "unconvert"].includes(name)) return "performance";
-  if (["gofmt", "goimports", "revive", "stylecheck", "whitespace", "misspell"].includes(name)) {
-    return "style";
-  }
-  return "other";
 }
 
 interface GolangciLintJsonOutput {
@@ -1081,7 +1045,6 @@ export function parseGoGetOutput(
 
   return {
     success: exitCode === 0,
-    output: combined || undefined,
     resolvedPackages: resolvedPackages.length > 0 ? resolvedPackages : undefined,
     packages,
   };

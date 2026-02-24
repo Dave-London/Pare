@@ -69,10 +69,7 @@ describe("@paretools/build integration", () => {
       expect(sc).toBeDefined();
       expect(typeof sc.success).toBe("boolean");
       expect(Array.isArray(sc.diagnostics)).toBe(true);
-      // total may be omitted in compact mode
-      if (sc.total !== undefined) {
-        expect(sc.total).toEqual(expect.any(Number));
-      }
+      // total was removed from schema — derivable from diagnostics.length
       expect(sc.errors).toEqual(expect.any(Number));
       expect(sc.warnings).toEqual(expect.any(Number));
     });
@@ -299,7 +296,7 @@ describe("@paretools/build integration", () => {
           const sc = result.structuredContent as Record<string, unknown>;
           expect(typeof sc.success).toBe("boolean");
           expect(typeof sc.duration).toBe("number");
-          expect(typeof sc.total).toBe("number");
+          // total was removed from schema — derivable from tasks.length
           expect(typeof sc.passed).toBe("number");
           expect(typeof sc.failed).toBe("number");
           expect(typeof sc.cached).toBe("number");

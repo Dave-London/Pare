@@ -20,7 +20,7 @@ describe("parseGoBuildOutput", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.errors).toHaveLength(2);
     expect(result.errors[0]).toEqual({
       file: "main.go",
       line: 10,
@@ -33,7 +33,7 @@ describe("parseGoBuildOutput", () => {
   it("parses clean build", () => {
     const result = parseGoBuildOutput("", "", 0);
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.errors).toHaveLength(0);
   });
 
   it("captures package-level errors not matching file:line:col format", () => {
@@ -48,7 +48,6 @@ describe("parseGoBuildOutput", () => {
     expect(result.rawErrors).toBeDefined();
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("is not in GOROOT");
-    expect(result.total).toBe(1);
   });
 
   it("captures linker errors", () => {
@@ -65,7 +64,6 @@ describe("parseGoBuildOutput", () => {
     expect(result.rawErrors).toBeDefined();
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("cannot find -lmylib");
-    expect(result.total).toBe(2);
   });
 
   it("captures build constraint errors", () => {
@@ -76,7 +74,6 @@ describe("parseGoBuildOutput", () => {
     expect(result.success).toBe(false);
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("build constraints exclude all Go files");
-    expect(result.total).toBe(1);
   });
 
   it("captures module errors starting with go:", () => {
@@ -87,7 +84,6 @@ describe("parseGoBuildOutput", () => {
     expect(result.success).toBe(false);
     expect(result.rawErrors).toHaveLength(1);
     expect(result.rawErrors![0]).toContain("cannot find main module");
-    expect(result.total).toBe(1);
   });
 
   it("does not capture non-file errors on successful build", () => {
@@ -98,7 +94,6 @@ describe("parseGoBuildOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.rawErrors).toBeUndefined();
-    expect(result.total).toBe(0);
   });
 
   it("counts both file errors and raw errors in total", () => {
@@ -111,7 +106,6 @@ describe("parseGoBuildOutput", () => {
 
     expect(result.errors).toHaveLength(1);
     expect(result.rawErrors).toHaveLength(1);
-    expect(result.total).toBe(2);
   });
 });
 
@@ -175,7 +169,7 @@ describe("parseGoTestJson", () => {
     const result = parseGoTestJson(stdout, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
+    expect(result.tests).toHaveLength(3);
     expect(result.passed).toBe(1);
     expect(result.failed).toBe(1);
     expect(result.skipped).toBe(1);
@@ -202,7 +196,7 @@ describe("parseGoTestJson", () => {
 
   it("handles empty output", () => {
     const result = parseGoTestJson("", 0);
-    expect(result.total).toBe(0);
+    expect(result.tests).toHaveLength(0);
   });
 
   it("ignores package-level pass events without Test field", () => {
@@ -212,7 +206,7 @@ describe("parseGoTestJson", () => {
     ].join("\n");
 
     const result = parseGoTestJson(stdout, 0);
-    expect(result.total).toBe(0);
+    expect(result.tests).toHaveLength(0);
     expect(result.packageFailures).toBeUndefined();
   });
 
@@ -281,7 +275,7 @@ describe("parseGoTestJson", () => {
     const result = parseGoTestJson(stdout, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
+    expect(result.tests).toHaveLength(0);
     expect(result.packageFailures).toBeDefined();
     expect(result.packageFailures).toHaveLength(1);
     expect(result.packageFailures![0].package).toBe("myapp/broken");
@@ -314,7 +308,7 @@ describe("parseGoVetOutput", () => {
 
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics![0]).toEqual({
       file: "main.go",
       line: 10,
@@ -325,7 +319,7 @@ describe("parseGoVetOutput", () => {
 
   it("parses clean vet", () => {
     const result = parseGoVetOutput("", "", 0);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 
   it("parses go vet -json output with analyzer names", () => {
@@ -345,7 +339,7 @@ describe("parseGoVetOutput", () => {
     const result = parseGoVetOutput(stdout, "", 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics![0]).toEqual({
       file: "main.go",
       line: 10,
@@ -382,7 +376,7 @@ describe("parseGoVetOutput", () => {
 
     const result = parseGoVetOutput(pkg1 + "\n" + pkg2, "", 2);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics![0].analyzer).toBe("shadow");
     expect(result.diagnostics![0].file).toBe("handler.go");
     expect(result.diagnostics![1].analyzer).toBe("printf");
@@ -401,7 +395,7 @@ describe("parseGoVetOutput", () => {
 
     const result = parseGoVetOutput(stdout, "", 2);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics![0].analyzer).toBe("printf");
     expect(result.diagnostics![0].message).toBe("first printf issue");
     expect(result.diagnostics![1].analyzer).toBe("printf");
@@ -414,7 +408,7 @@ describe("parseGoVetOutput", () => {
 
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics![0].file).toBe("main.go");
     expect(result.diagnostics![0].line).toBe(10);
     // No analyzer in text fallback
@@ -433,7 +427,7 @@ describe("parseGoVetOutput", () => {
 
     const result = parseGoVetOutput(stdout, "", 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics![0].file).toBe("main.go");
     expect(result.diagnostics![0].line).toBe(42);
     expect(result.diagnostics![0].column).toBeUndefined();
@@ -443,7 +437,7 @@ describe("parseGoVetOutput", () => {
   it("parses go vet -json clean output (exit 0, no JSON)", () => {
     const result = parseGoVetOutput("", "", 0);
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
 
@@ -505,7 +499,7 @@ describe("parseGoListOutput", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0]).toEqual({
       dir: "/home/user/project",
       importPath: "github.com/user/project",
@@ -531,7 +525,7 @@ describe("parseGoListOutput", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages![0].importPath).toBe("github.com/user/project");
     expect(result.packages![1].importPath).toBe("github.com/user/project/pkg/util");
     expect(result.packages![1].name).toBe("util");
@@ -540,7 +534,7 @@ describe("parseGoListOutput", () => {
   it("handles empty output", () => {
     const result = parseGoListOutput("", 0);
 
-    expect(result.total).toBe(0);
+    expect(result.packages).toHaveLength(0);
     expect(result.packages).toEqual([]);
   });
 
@@ -553,7 +547,7 @@ describe("parseGoListOutput", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].goFiles).toBeUndefined();
   });
 
@@ -568,7 +562,7 @@ describe("parseGoListOutput", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].imports).toEqual(["fmt", "os", "github.com/user/project/pkg/util"]);
   });
 
@@ -582,7 +576,7 @@ describe("parseGoListOutput", () => {
 
     const result = parseGoListOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].imports).toBeUndefined();
   });
 });
@@ -600,7 +594,7 @@ describe("parseGoListModulesOutput", () => {
     const result = parseGoListModulesOutput(stdout, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.modules).toHaveLength(1);
     expect(result.modules![0]).toEqual({
       path: "github.com/user/project",
       main: true,
@@ -633,7 +627,7 @@ describe("parseGoListModulesOutput", () => {
 
     const result = parseGoListModulesOutput([mod1, mod2, mod3].join("\n"), 0);
 
-    expect(result.total).toBe(3);
+    expect(result.modules).toHaveLength(3);
     expect(result.modules![0].path).toBe("github.com/user/project");
     expect(result.modules![0].main).toBe(true);
     expect(result.modules![1].path).toBe("github.com/pkg/errors");
@@ -645,7 +639,7 @@ describe("parseGoListModulesOutput", () => {
   it("handles empty output", () => {
     const result = parseGoListModulesOutput("", 0);
 
-    expect(result.total).toBe(0);
+    expect(result.modules).toHaveLength(0);
     expect(result.modules).toEqual([]);
   });
 
@@ -658,7 +652,7 @@ describe("parseGoListModulesOutput", () => {
 
     const result = parseGoListModulesOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.modules).toHaveLength(1);
     expect(result.modules![0].version).toBeUndefined();
     expect(result.modules![0].main).toBe(true);
   });
@@ -670,7 +664,6 @@ describe("parseGoGetOutput", () => {
     const result = parseGoGetOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.output).toContain("github.com/pkg/errors");
   });
 
   it("parses failed go get", () => {
@@ -679,14 +672,12 @@ describe("parseGoGetOutput", () => {
     const result = parseGoGetOutput("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.output).toContain("no matching versions");
   });
 
   it("handles empty output on success", () => {
     const result = parseGoGetOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.output).toBeUndefined();
   });
 
   it("parses upgraded packages with version resolution", () => {
@@ -795,20 +786,17 @@ describe("parseGolangciLintJson", () => {
 
     const result = parseGolangciLintJson(stdout, 1);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(2);
-    expect(result.diagnostics).toHaveLength(3);
 
     expect(result.diagnostics![0]).toEqual({
       file: "main.go",
       line: 10,
       column: 5,
       linter: "govet",
-      category: "bug-risk",
       severity: "warning",
       message: "printf: Sprintf format %d reads arg #1, but call has 0 args",
-      sourceLine: '\tfmt.Sprintf("%d")',
     });
 
     expect(result.diagnostics![1]).toEqual({
@@ -816,30 +804,24 @@ describe("parseGolangciLintJson", () => {
       line: 25,
       column: undefined,
       linter: "errcheck",
-      category: "bug-risk",
       severity: "error",
       message: "Error return value is not checked",
-      sourceLine: "\tos.Remove(path)",
     });
-
-    expect(result.diagnostics![2].sourceLine).toBeUndefined();
   });
 
   it("parses clean output with no issues", () => {
     const stdout = JSON.stringify({ Issues: [] });
     const result = parseGolangciLintJson(stdout, 0);
 
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.byLinter).toEqual([]);
   });
 
   it("handles empty stdout", () => {
     const result = parseGolangciLintJson("", 0);
 
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
   });
@@ -847,10 +829,10 @@ describe("parseGolangciLintJson", () => {
   it("handles malformed JSON", () => {
     const result = parseGolangciLintJson("not valid json", 1);
 
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 
-  it("builds by-linter summary sorted by count", () => {
+  it("groups diagnostics by linter", () => {
     const stdout = JSON.stringify({
       Issues: [
         { FromLinter: "errcheck", Text: "err1", Pos: { Filename: "a.go", Line: 1 } },
@@ -862,10 +844,11 @@ describe("parseGolangciLintJson", () => {
 
     const result = parseGolangciLintJson(stdout, 1);
 
-    expect(result.byLinter).toEqual([
-      { linter: "errcheck", count: 3 },
-      { linter: "govet", count: 1 },
-    ]);
+    expect(result.diagnostics).toHaveLength(4);
+    const errcheckIssues = result.diagnostics!.filter((d) => d.linter === "errcheck");
+    expect(errcheckIssues).toHaveLength(3);
+    const govetIssues = result.diagnostics!.filter((d) => d.linter === "govet");
+    expect(govetIssues).toHaveLength(1);
   });
 
   it("defaults severity to warning when not specified", () => {
@@ -882,7 +865,7 @@ describe("parseGolangciLintJson", () => {
     const stdout = JSON.stringify({ Report: {} });
     const result = parseGolangciLintJson(stdout, 0);
 
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
 
@@ -1159,7 +1142,7 @@ describe("parseGoListOutput — Error field (Gap #155)", () => {
 
     const result = parseGoListOutput(stdout, 1);
 
-    expect(result.total).toBe(1);
+    expect(result.packages).toHaveLength(1);
     expect(result.packages![0].error).toBeDefined();
     expect(result.packages![0].error!.err).toBe(
       "build constraints exclude all Go files in /home/user/project",
@@ -1194,7 +1177,7 @@ describe("parseGoListOutput — Error field (Gap #155)", () => {
 
     const result = parseGoListOutput(pkg1 + "\n" + pkg2, 1);
 
-    expect(result.total).toBe(2);
+    expect(result.packages).toHaveLength(2);
     expect(result.packages![0].error).toBeUndefined();
     expect(result.packages![1].error).toBeDefined();
     expect(result.packages![1].error!.err).toBe("no Go files in /project/broken");

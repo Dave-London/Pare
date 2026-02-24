@@ -103,7 +103,6 @@ describe("Recorded: go.build", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toEqual([]);
   });
 
@@ -137,7 +136,6 @@ describe("Recorded: go.build", () => {
     expect(parsed.errors![0].message).toBe("undefined: foo");
     expect(parsed.errors![1].file).toBe("./main.go");
     expect(parsed.errors![1].line).toBe(15);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 });
 
@@ -181,7 +179,6 @@ describe("Recorded: go.test", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(2);
     expect(parsed.passed).toBe(2);
     expect(parsed.failed).toBe(0);
     expect(parsed.skipped).toBe(0);
@@ -208,7 +205,6 @@ describe("Recorded: go.test", () => {
       compact: false,
     });
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBe(2);
     expect(parsed.passed).toBe(1);
     expect(parsed.failed).toBe(1);
     expect(parsed.tests![0].name).toBe("TestAdd");
@@ -256,7 +252,6 @@ describe("Recorded: go.vet", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
     expect(parsed.diagnostics).toEqual([]);
   });
 
@@ -274,7 +269,6 @@ describe("Recorded: go.vet", () => {
       compact: false,
     });
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBe(2);
     expect(parsed.diagnostics!.length).toBe(2);
     expect(parsed.diagnostics![0].file).toBe("./main.go");
     expect(parsed.diagnostics![0].line).toBe(12);
@@ -438,7 +432,6 @@ describe("Recorded: go.list", () => {
       compact: false,
     });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(2);
     expect(parsed.packages!.length).toBe(2);
     expect(parsed.packages![0].importPath).toBe("my-app");
     expect(parsed.packages![0].name).toBe("main");
@@ -487,7 +480,6 @@ describe("Recorded: go.golangci-lint", () => {
       sortResults: false,
       compact: false,
     });
-    expect(parsed.total).toBe(0);
     expect(parsed.diagnostics).toEqual([]);
     expect(parsed.errors).toBe(0);
     expect(parsed.warnings).toBe(0);
@@ -508,7 +500,6 @@ describe("Recorded: go.golangci-lint", () => {
       sortResults: false,
       compact: false,
     });
-    expect(parsed.total).toBe(2);
     expect(parsed.warnings).toBe(2);
     expect(parsed.errors).toBe(0);
     expect(parsed.diagnostics!.length).toBe(2);
@@ -516,12 +507,8 @@ describe("Recorded: go.golangci-lint", () => {
     expect(parsed.diagnostics![0].file).toBe("main.go");
     expect(parsed.diagnostics![0].line).toBe(12);
     expect(parsed.diagnostics![0].severity).toBe("warning");
-    expect(parsed.diagnostics![0].category).toBe("bug-risk");
     expect(parsed.diagnostics![1].linter).toBe("errcheck");
     expect(parsed.diagnostics![1].file).toBe("main.go");
     expect(parsed.diagnostics![1].line).toBe(25);
-    expect(parsed.diagnostics![1].category).toBe("bug-risk");
-    // byLinter summary
-    expect(parsed.byLinter!.length).toBe(2);
   });
 });

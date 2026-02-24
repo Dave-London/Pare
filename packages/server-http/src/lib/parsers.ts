@@ -1,4 +1,8 @@
-import type { HttpResponse, HttpHeadResponse, TimingDetails } from "../schemas/index.js";
+import type {
+  HttpResponseInternal,
+  HttpHeadResponseInternal,
+  TimingDetailsInternal,
+} from "../schemas/index.js";
 
 /** Sentinel appended via curl -w to separate body from metadata. */
 export const PARE_META_SEPARATOR = "---PARE_HTTP_META---";
@@ -37,7 +41,11 @@ interface CurlMeta {
  * When following redirects, multiple status+header blocks may appear.
  * We parse the LAST one (the final response).
  */
-export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: number): HttpResponse {
+export function parseCurlOutput(
+  stdout: string,
+  _stderr: string,
+  _exitCode: number,
+): HttpResponseInternal {
   // Split off the meta section appended by -w
   const metaSepIdx = stdout.lastIndexOf(PARE_META_SEPARATOR);
   let metaSection = "";
@@ -72,6 +80,10 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
 
   const timingDetails = buildTimingDetails(meta);
 
+  const tlsVerifyResult = Number.isFinite(meta.ssl_verify_result)
+    ? meta.ssl_verify_result
+    : undefined;
+
   return {
     status,
     statusText,
@@ -83,12 +95,14 @@ export function parseCurlOutput(stdout: string, _stderr: string, _exitCode: numb
       ...(timingDetails ? { details: timingDetails } : {}),
     },
     size: meta.size_download,
-    uploadSize: meta.size_upload > 0 ? meta.size_upload : undefined,
     contentType,
     redirectChain: redirectChain.length > 0 ? redirectChain : undefined,
     finalUrl: meta.url_effective || undefined,
+    tlsVerified: tlsVerifyResult !== undefined ? tlsVerifyResult === 0 : undefined,
+    // Internal fields for formatter (not in output schema):
+    uploadSize: meta.size_upload > 0 ? meta.size_upload : undefined,
     scheme: meta.scheme || undefined,
-    tlsVerifyResult: Number.isFinite(meta.ssl_verify_result) ? meta.ssl_verify_result : undefined,
+    tlsVerifyResult,
   };
 }
 
@@ -100,7 +114,7 @@ export function parseCurlHeadOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-): HttpHeadResponse {
+): HttpHeadResponseInternal {
   const full = parseCurlOutput(stdout, stderr, exitCode);
 
   // Extract Content-Length as a numeric field for easy size checking
@@ -124,6 +138,8 @@ export function parseCurlHeadOutput(
     contentLength,
     redirectChain: full.redirectChain,
     finalUrl: full.finalUrl,
+    tlsVerified: full.tlsVerified,
+    // Internal fields for formatter (not in output schema):
     scheme: full.scheme,
     tlsVerifyResult: full.tlsVerifyResult,
   };
@@ -215,14 +231,14 @@ export function parseHttpBlock(block: string): {
  * Builds a TimingDetails object from the parsed meta section.
  * Returns undefined if all timing values are zero (no real timing data available).
  */
-function buildTimingDetails(meta: CurlMeta): TimingDetails | undefined {
+function buildTimingDetails(meta: CurlMeta): TimingDetailsInternal | undefined {
   // If namelookup and connect are both 0, we likely have no timing data
   // (e.g. old format or no metadata)
   if (meta.time_namelookup === 0 && meta.time_connect === 0 && meta.time_starttransfer === 0) {
     return undefined;
   }
 
-  const details: TimingDetails = {
+  const details: TimingDetailsInternal = {
     namelookup: meta.time_namelookup,
     connect: meta.time_connect,
   };

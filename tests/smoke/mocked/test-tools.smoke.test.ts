@@ -711,7 +711,8 @@ describe("Smoke: test.coverage", () => {
       framework: "vitest",
       failUnder: 80,
     });
-    expect(parsed.meetsThreshold).toBe(true);
+    // meetsThreshold removed from schema (moved to formatter)
+    expect(parsed.summary.lines).toBeGreaterThanOrEqual(80);
   });
 
   // ── S10: failUnder: 99 (fails) ─────────────────────────────────────
@@ -723,7 +724,8 @@ describe("Smoke: test.coverage", () => {
       framework: "vitest",
       failUnder: 99,
     });
-    expect(parsed.meetsThreshold).toBe(false);
+    // meetsThreshold removed from schema (moved to formatter)
+    expect(parsed.summary.lines).toBeLessThan(99);
   });
 
   // ── S11: all: true includes untested files ──────────────────────────

@@ -62,7 +62,7 @@ describe("fidelity: parseTscOutput", () => {
     const result = parseTscOutput(TSC_SINGLE_ERROR, "", 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.errors).toBe(1);
     expect(result.warnings).toBe(0);
     expect(result.diagnostics).toHaveLength(1);
@@ -79,7 +79,7 @@ describe("fidelity: parseTscOutput", () => {
   it("multiple errors in same file: all diagnostics appear", () => {
     const result = parseTscOutput(TSC_MULTIPLE_ERRORS_SAME_FILE, "", 2);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(3);
     expect(result.warnings).toBe(0);
     expect(result.diagnostics).toHaveLength(3);
@@ -101,7 +101,7 @@ describe("fidelity: parseTscOutput", () => {
   it("errors across multiple files: all files are represented", () => {
     const result = parseTscOutput(TSC_ERRORS_ACROSS_FILES, "", 2);
 
-    expect(result.total).toBe(3);
+    expect(result.diagnostics).toHaveLength(3);
     expect(result.errors).toBe(3);
 
     const files = result.diagnostics.map((d) => d.file);
@@ -115,7 +115,7 @@ describe("fidelity: parseTscOutput", () => {
     const result = parseTscOutput(TSC_WARNING_ONLY, "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(1);
 
@@ -130,7 +130,7 @@ describe("fidelity: parseTscOutput", () => {
     const result = parseTscOutput(TSC_MIXED_ERRORS_AND_WARNINGS, "", 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(5);
+    expect(result.diagnostics).toHaveLength(5);
     expect(result.errors).toBe(3);
     expect(result.warnings).toBe(2);
 
@@ -145,7 +145,7 @@ describe("fidelity: parseTscOutput", () => {
     const result = parseTscOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.errors).toBe(0);
     expect(result.warnings).toBe(0);
     expect(result.diagnostics).toEqual([]);
@@ -165,7 +165,7 @@ describe("fidelity: parseTscOutput", () => {
     const result = parseTscOutput(TSC_MULTILINE_VARIOUS, "", 2);
 
     // Should ignore version line, empty line, and summary line
-    expect(result.total).toBe(5);
+    expect(result.diagnostics).toHaveLength(5);
     expect(result.errors).toBe(4);
     expect(result.warnings).toBe(1);
 
@@ -189,7 +189,7 @@ describe("fidelity: parseTscOutput", () => {
     const stderr = "src/config.ts(1,1): error TS2307: Cannot find module 'missing-pkg'.";
     const result = parseTscOutput("", stderr, 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.errors).toBe(1);
     expect(result.diagnostics[0].file).toBe("src/config.ts");
     expect(result.diagnostics[0].code).toBe(2307);

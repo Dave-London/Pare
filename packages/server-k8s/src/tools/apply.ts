@@ -1,14 +1,19 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
 } from "@paretools/shared";
 import { parseApplyOutput } from "../lib/parsers.js";
-import { formatApply, compactApplyMap, formatApplyCompact } from "../lib/formatters.js";
+import {
+  formatApply,
+  schemaApplyMap,
+  compactApplyMap,
+  formatApplyCompact,
+} from "../lib/formatters.js";
 import { KubectlApplyResultSchema } from "../schemas/index.js";
 
 /** Registers the `apply` tool on the given MCP server. */
@@ -180,10 +185,11 @@ export function registerApplyTool(server: McpServer) {
       const data = parseApplyOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatApply,
+        schemaApplyMap,
         compactApplyMap,
         formatApplyCompact,
         compact === false,

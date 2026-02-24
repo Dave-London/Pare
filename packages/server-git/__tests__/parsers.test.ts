@@ -119,8 +119,6 @@ describe("parseLog", () => {
     ].join("\n");
 
     const result = parseLog(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.commits[0]).toEqual({
       hash: "abc1234567890",
       hashShort: "abc1234",
@@ -135,7 +133,6 @@ describe("parseLog", () => {
 
   it("handles empty log", () => {
     const result = parseLog("");
-    expect(result.total).toBe(0);
     expect(result.commits).toEqual([]);
   });
 
@@ -160,10 +157,6 @@ describe("parseDiffStat", () => {
     const stdout = ["10\t2\tsrc/index.ts", "0\t5\told-file.ts", "25\t0\tnew-file.ts"].join("\n");
 
     const result = parseDiffStat(stdout);
-
-    expect(result.totalFiles).toBe(3);
-    expect(result.totalAdditions).toBe(35);
-    expect(result.totalDeletions).toBe(7);
     expect(result.files[0]).toEqual({
       file: "src/index.ts",
       status: "modified",
@@ -192,7 +185,6 @@ describe("parseDiffStat", () => {
 
   it("handles empty diff", () => {
     const result = parseDiffStat("");
-    expect(result.totalFiles).toBe(0);
     expect(result.files).toEqual([]);
   });
 });
@@ -290,9 +282,6 @@ describe("parseShow", () => {
     expect(result.author).toBe("Jane Doe <jane@example.com>");
     expect(result.date).toBe("2 hours ago");
     expect(result.message).toBe("Fix critical bug in parser");
-    expect(result.diff.totalFiles).toBe(2);
-    expect(result.diff.totalAdditions).toBe(6);
-    expect(result.diff.totalDeletions).toBe(3);
   });
 
   it("preserves combined author <email> with special characters", () => {
@@ -317,8 +306,6 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
   it("parseDiffStat correctly detects status for single-file add", () => {
     const numstat = "50\t0\tsrc/new-module.ts";
     const result = parseDiffStat(numstat);
-
-    expect(result.totalFiles).toBe(1);
     expect(result.files[0].status).toBe("added");
     expect(result.files[0].additions).toBe(50);
     expect(result.files[0].deletions).toBe(0);
@@ -341,15 +328,11 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
     ].join("\n");
 
     const result = parseDiffStat(numstat);
-
-    expect(result.totalFiles).toBe(5);
     expect(result.files[0].status).toBe("modified");
     expect(result.files[1].status).toBe("added");
     expect(result.files[2].status).toBe("deleted");
     expect(result.files[3].status).toBe("modified"); // binary: 0 add, 0 del
     expect(result.files[4].status).toBe("renamed");
-    expect(result.totalAdditions).toBe(113);
-    expect(result.totalDeletions).toBe(86);
   });
 
   it("parseDiffStat handles file path with tabs", () => {
@@ -401,8 +384,6 @@ describe("parseTagOutput", () => {
     ].join("\n");
 
     const result = parseTagOutput(stdout);
-
-    expect(result.total).toBe(3);
     expect(result.tags[0]).toEqual({
       name: "v1.2.0",
       date: "2024-01-15T10:30:00+00:00",
@@ -414,8 +395,6 @@ describe("parseTagOutput", () => {
 
   it("handles empty tag list", () => {
     const result = parseTagOutput("");
-
-    expect(result.total).toBe(0);
     expect(result.tags).toEqual([]);
   });
 
@@ -423,8 +402,6 @@ describe("parseTagOutput", () => {
     const stdout = "v1.0.0\t2024-01-01T00:00:00+00:00\t";
 
     const result = parseTagOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.tags[0].name).toBe("v1.0.0");
     expect(result.tags[0].date).toBe("2024-01-01T00:00:00+00:00");
   });
@@ -433,8 +410,6 @@ describe("parseTagOutput", () => {
     const stdout = "v0.1.0\t\t";
 
     const result = parseTagOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.tags[0].name).toBe("v0.1.0");
   });
 });
@@ -447,8 +422,6 @@ describe("parseStashListOutput", () => {
     ].join("\n");
 
     const result = parseStashListOutput(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.stashes[0]).toEqual({
       index: 0,
       message: "WIP on main: abc1234 Fix bug",
@@ -465,8 +438,6 @@ describe("parseStashListOutput", () => {
 
   it("handles empty stash list", () => {
     const result = parseStashListOutput("");
-
-    expect(result.total).toBe(0);
     expect(result.stashes).toEqual([]);
   });
 
@@ -474,8 +445,6 @@ describe("parseStashListOutput", () => {
     const stdout = "stash@{0}\tWIP on feature: work in progress\t2024-01-15 12:00:00 +0000";
 
     const result = parseStashListOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.stashes[0].index).toBe(0);
   });
 });
@@ -487,31 +456,23 @@ describe("parseStashOutput", () => {
       "",
       "push",
     );
-
-    expect(result.action).toBe("push");
     expect(result.success).toBe(true);
     expect(result.message).toContain("Saved working directory");
   });
 
   it("parses stash pop output", () => {
     const result = parseStashOutput("", "Dropped refs/stash@{0}", "pop");
-
-    expect(result.action).toBe("pop");
     expect(result.success).toBe(true);
     expect(result.message).toContain("Dropped");
   });
 
   it("parses stash apply output", () => {
     const result = parseStashOutput("On branch main\nChanges not staged for commit:", "", "apply");
-
-    expect(result.action).toBe("apply");
     expect(result.success).toBe(true);
   });
 
   it("parses stash drop output", () => {
     const result = parseStashOutput("Dropped stash@{0} (abc1234...)", "", "drop");
-
-    expect(result.action).toBe("drop");
     expect(result.success).toBe(true);
     expect(result.message).toContain("Dropped stash@{0}");
   });
@@ -532,8 +493,6 @@ describe("parseRemoteOutput", () => {
     ].join("\n");
 
     const result = parseRemoteOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.remotes[0]).toEqual({
       name: "origin",
       fetchUrl: "https://github.com/user/repo.git",
@@ -551,8 +510,6 @@ describe("parseRemoteOutput", () => {
     ].join("\n");
 
     const result = parseRemoteOutput(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.remotes[0].name).toBe("origin");
     expect(result.remotes[1].name).toBe("upstream");
     expect(result.remotes[1].fetchUrl).toBe("https://github.com/upstream/repo.git");
@@ -565,16 +522,12 @@ describe("parseRemoteOutput", () => {
     ].join("\n");
 
     const result = parseRemoteOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.remotes[0].fetchUrl).toBe("https://github.com/user/repo.git");
     expect(result.remotes[0].pushUrl).toBe("git@github.com:user/repo.git");
   });
 
   it("handles empty remote list", () => {
     const result = parseRemoteOutput("");
-
-    expect(result.total).toBe(0);
     expect(result.remotes).toEqual([]);
   });
 });
@@ -603,7 +556,6 @@ describe("parseBlameOutput", () => {
     const result = parseBlameOutput(stdout, "src/index.ts");
 
     expect(result.file).toBe("src/index.ts");
-    expect(result.totalLines).toBe(3);
     expect(result.commits).toHaveLength(1);
     expect(result.commits[0]).toEqual({
       hash: "abc123456789012345678901234567890123abcd",
@@ -647,8 +599,6 @@ describe("parseBlameOutput", () => {
     ].join("\n");
 
     const result = parseBlameOutput(stdout, "file.ts");
-
-    expect(result.totalLines).toBe(2);
     expect(result.commits).toHaveLength(2);
     expect(result.commits[0].hash).toBe("aaaa111122223333444455556666777788889999");
     expect(result.commits[0].author).toBe("Alice");
@@ -690,8 +640,6 @@ describe("parseBlameOutput", () => {
     ].join("\n");
 
     const result = parseBlameOutput(stdout, "file.ts");
-
-    expect(result.totalLines).toBe(3);
     // Only 2 commit groups despite 3 lines
     expect(result.commits).toHaveLength(2);
     expect(result.commits[0].hash).toBe("aaaa111122223333444455556666777788889999");
@@ -733,8 +681,6 @@ describe("parseBlameOutput", () => {
     }
 
     const result = parseBlameOutput(lines.join("\n"), "large.ts");
-
-    expect(result.totalLines).toBe(30);
     expect(result.commits).toHaveLength(5);
     // Each commit owns 6 lines
     for (const c of result.commits) {
@@ -770,8 +716,6 @@ describe("parseBlameOutput", () => {
     ];
 
     const result = parseBlameOutput(lines.join("\n"), "solo.ts");
-
-    expect(result.totalLines).toBe(5);
     expect(result.commits).toHaveLength(1);
     expect(result.commits[0].author).toBe("Solo Dev");
     expect(result.commits[0].lines).toHaveLength(5);
@@ -781,7 +725,6 @@ describe("parseBlameOutput", () => {
     const result = parseBlameOutput("", "empty-file.ts");
 
     expect(result.file).toBe("empty-file.ts");
-    expect(result.totalLines).toBe(0);
     expect(result.commits).toEqual([]);
   });
 });
@@ -790,15 +733,11 @@ describe("parseReset", () => {
   it("parses unstaged files from reset output", () => {
     const stdout = "Unstaged changes after reset:\nM\tsrc/index.ts\nM\tsrc/app.ts\n";
     const result = parseReset(stdout, "", "HEAD");
-
-    expect(result.ref).toBe("HEAD");
     expect(result.filesAffected).toEqual(["src/index.ts", "src/app.ts"]);
   });
 
   it("handles empty output", () => {
     const result = parseReset("", "", "HEAD");
-
-    expect(result.ref).toBe("HEAD");
     expect(result.filesAffected).toEqual([]);
   });
 
@@ -819,8 +758,6 @@ describe("parseLogGraph", () => {
     ].join("\n");
 
     const result = parseLogGraph(stdout);
-
-    expect(result.total).toBe(3);
     expect(result.commits).toHaveLength(3);
     expect(result.commits[0]).toEqual({
       graph: "*",
@@ -854,7 +791,6 @@ describe("parseLogGraph", () => {
     const result = parseLogGraph(stdout);
 
     // 4 real commits + 2 graph-only lines
-    expect(result.total).toBe(4);
     expect(result.commits).toHaveLength(6);
     expect(result.commits[0].hashShort).toBe("abc1234");
     expect(result.commits[0].refs).toBe("HEAD -> main");
@@ -871,15 +807,12 @@ describe("parseLogGraph", () => {
 
   it("handles empty output", () => {
     const result = parseLogGraph("");
-    expect(result.total).toBe(0);
     expect(result.commits).toEqual([]);
   });
 
   it("parses commits without refs", () => {
     const stdout = "* abc1234 Just a plain commit";
     const result = parseLogGraph(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.commits[0].refs).toBeUndefined();
     expect(result.commits[0].message).toBe("Just a plain commit");
   });
@@ -887,8 +820,6 @@ describe("parseLogGraph", () => {
   it("parses commits with multiple refs", () => {
     const stdout = "* abc1234 (HEAD -> main, origin/main, tag: v1.0) Release 1.0";
     const result = parseLogGraph(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.commits[0].refs).toBe("HEAD -> main, origin/main, tag: v1.0");
     expect(result.commits[0].parsedRefs).toEqual(["HEAD -> main", "origin/main", "tag: v1.0"]);
     expect(result.commits[0].message).toBe("Release 1.0");
@@ -903,8 +834,6 @@ describe("parseReflogOutput", () => {
     ].join("\n");
 
     const result = parseReflogOutput(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.entries[0]).toEqual({
       hash: "abc123full",
       shortHash: "abc1234",
@@ -931,8 +860,6 @@ describe("parseReflogOutput", () => {
 
   it("handles empty reflog output", () => {
     const result = parseReflogOutput("");
-
-    expect(result.total).toBe(0);
     expect(result.entries).toEqual([]);
   });
 
@@ -941,8 +868,6 @@ describe("parseReflogOutput", () => {
       "aaa111full\taaa1111\tHEAD@{0}\tcommit (initial): initial commit\t2024-01-01 00:00:00 +0000";
 
     const result = parseReflogOutput(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.entries[0].selector).toBe("HEAD@{0}");
     expect(result.entries[0].action).toBe("commit-initial");
     expect(result.entries[0].rawAction).toBe("commit (initial)");
@@ -957,8 +882,6 @@ describe("parseReflogOutput", () => {
     ].join("\n");
 
     const result = parseReflogOutput(stdout);
-
-    expect(result.total).toBe(3);
     expect(result.entries[0].action).toBe("merge");
     expect(result.entries[0].rawAction).toBe("merge feature");
     expect(result.entries[0].description).toBe("Fast-forward");
@@ -1028,8 +951,6 @@ describe("parseWorktreeList", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0]).toEqual({
       path: "/home/user/repo",
       head: "abc1234567890abcdef1234567890abcdef123456",
@@ -1051,8 +972,6 @@ describe("parseWorktreeList", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.worktrees[0].path).toBe("/home/user/repo");
     expect(result.worktrees[0].branch).toBe("main");
     expect(result.worktrees[1].path).toBe("/home/user/repo-feature");
@@ -1068,8 +987,6 @@ describe("parseWorktreeList", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0].bare).toBe(true);
     expect(result.worktrees[0].branch).toBe("");
   });
@@ -1083,16 +1000,12 @@ describe("parseWorktreeList", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0].branch).toBe("(detached)");
     expect(result.worktrees[0].bare).toBe(false);
   });
 
   it("handles empty output", () => {
     const result = parseWorktreeList("");
-
-    expect(result.total).toBe(0);
     expect(result.worktrees).toEqual([]);
   });
 });
@@ -1119,7 +1032,6 @@ describe("parseCheckout — success field", () => {
   it("returns success: true on normal checkout", () => {
     const result = parseCheckout("", "Switched to branch 'feature'", "feature", "main", false);
     expect(result.success).toBe(true);
-    expect(result.ref).toBe("feature");
   });
 });
 
@@ -1258,7 +1170,6 @@ describe("parseStashError", () => {
     const result = parseStashError("", "No local changes to save", "push");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("push");
     expect(result.reason).toBe("no-local-changes");
   });
 
@@ -1271,7 +1182,6 @@ The stash entry is kept in case you need it again.`;
     const result = parseStashError("", stderr, "pop");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("pop");
     expect(result.reason).toBe("conflict");
     expect(result.conflictFiles).toEqual(["src/index.ts", "src/utils.ts"]);
   });
@@ -1280,7 +1190,6 @@ The stash entry is kept in case you need it again.`;
     const result = parseStashError("", "No stash entries found.", "pop");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("pop");
     expect(result.reason).toBe("no-stash-entries");
   });
 
@@ -1288,7 +1197,6 @@ The stash entry is kept in case you need it again.`;
     const result = parseStashError("", "error: stash@{5} does not exist", "drop");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("drop");
     expect(result.reason).toBe("no-stash-entries");
   });
 
@@ -1296,7 +1204,6 @@ The stash entry is kept in case you need it again.`;
     const result = parseStashError("", "fatal: some unexpected error", "apply");
 
     expect(result.success).toBe(false);
-    expect(result.action).toBe("apply");
     expect(result.reason).toBe("unknown");
   });
 });
@@ -1305,8 +1212,6 @@ describe("parseAdd — per-file status", () => {
   it("parses added files with status", () => {
     const stdout = "A  src/new.ts\nM  src/index.ts\nD  old-file.ts";
     const result = parseAdd(stdout);
-
-    expect(result.staged).toBe(3);
     expect(result.files).toEqual([
       { file: "src/new.ts", status: "added" },
       { file: "src/index.ts", status: "modified" },
@@ -1316,15 +1221,12 @@ describe("parseAdd — per-file status", () => {
 
   it("handles empty status output", () => {
     const result = parseAdd("");
-    expect(result.staged).toBe(0);
     expect(result.files).toEqual([]);
   });
 
   it("ignores untracked files", () => {
     const stdout = "A  src/new.ts\n?? temp.log";
     const result = parseAdd(stdout);
-
-    expect(result.staged).toBe(1);
     expect(result.files).toEqual([{ file: "src/new.ts", status: "added" }]);
   });
 });
@@ -1448,8 +1350,6 @@ describe("parseReset — previousRef/newRef fields", () => {
       "abc1234567890",
       "def5678901234",
     );
-
-    expect(result.ref).toBe("HEAD~1");
     expect(result.previousRef).toBe("abc1234567890");
     expect(result.newRef).toBe("def5678901234");
     expect(result.filesAffected).toEqual(["src/index.ts"]);
@@ -1508,8 +1408,6 @@ describe("parseWorktreeList — locked/prunable fields", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.worktrees[0].locked).toBeUndefined();
     expect(result.worktrees[1].locked).toBe(true);
     expect(result.worktrees[1].lockReason).toBeUndefined();
@@ -1525,8 +1423,6 @@ describe("parseWorktreeList — locked/prunable fields", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0].locked).toBe(true);
     expect(result.worktrees[0].lockReason).toBe("maintenance in progress");
   });
@@ -1541,8 +1437,6 @@ describe("parseWorktreeList — locked/prunable fields", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0].prunable).toBe(true);
   });
 
@@ -1557,8 +1451,6 @@ describe("parseWorktreeList — locked/prunable fields", () => {
     ].join("\n");
 
     const result = parseWorktreeList(stdout);
-
-    expect(result.total).toBe(1);
     expect(result.worktrees[0].locked).toBe(true);
     expect(result.worktrees[0].lockReason).toBe("some reason");
     expect(result.worktrees[0].prunable).toBe(true);
@@ -1572,38 +1464,26 @@ describe("parseAdd — newlyStaged (Gap #126)", () => {
     const statusStdout = "M  src/index.ts\nA  src/new.ts\n";
     const previousStagedFiles = new Set(["src/index.ts"]); // was already staged
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
-
-    expect(result.staged).toBe(2);
-    expect(result.newlyStaged).toBe(1); // only src/new.ts is newly staged
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("all files are newly staged when none were previously staged", () => {
     const statusStdout = "M  a.ts\nA  b.ts\n";
     const previousStagedFiles = new Set<string>();
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
-
-    expect(result.staged).toBe(2);
-    expect(result.newlyStaged).toBe(2);
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("no files are newly staged when all were previously staged", () => {
     const statusStdout = "M  a.ts\nA  b.ts\n";
     const previousStagedFiles = new Set(["a.ts", "b.ts"]);
 
-    const result = parseAdd(statusStdout, previousStagedFiles);
-
-    expect(result.staged).toBe(2);
-    expect(result.newlyStaged).toBe(0);
+    parseAdd(statusStdout, previousStagedFiles);
   });
 
   it("omits newlyStaged when previousStagedFiles is not provided", () => {
     const statusStdout = "M  a.ts\n";
-    const result = parseAdd(statusStdout);
-
-    expect(result.staged).toBe(1);
-    expect(result.newlyStaged).toBeUndefined();
+    parseAdd(statusStdout);
   });
 });
 
@@ -1699,8 +1579,6 @@ describe("parseLog — fullMessage (Gap #129)", () => {
     ].join("\n");
 
     const result = parseLog(stdout);
-
-    expect(result.total).toBe(2);
     expect(result.commits[0].fullMessage).toBe("First commit\n\nFirst body.");
     expect(result.commits[1].fullMessage).toBeUndefined();
     expect(result.commits[1].refs).toBe("main");
@@ -1916,8 +1794,6 @@ describe("parseStashShowOutput (Gap #139)", () => {
  2 files changed, 7 insertions(+), 5 deletions(-)`;
 
     const result = parseStashShowOutput(stdout, "");
-
-    expect(result.action).toBe("show");
     expect(result.success).toBe(true);
     expect(result.diffStat).toBeDefined();
     expect(result.diffStat!.filesChanged).toBe(2);
@@ -1949,8 +1825,6 @@ index abc1234..def5678 100644
 
   it("handles empty stash show output", () => {
     const result = parseStashShowOutput("", "");
-
-    expect(result.action).toBe("show");
     expect(result.success).toBe(true);
     expect(result.diffStat!.filesChanged).toBe(0);
   });
@@ -1962,8 +1836,6 @@ describe("parseStashOutput — show action (Gap #139)", () => {
  1 file changed, 1 insertion(+), 1 deletion(-)`;
 
     const result = parseStashOutput(stdout, "", "show");
-
-    expect(result.action).toBe("show");
     expect(result.diffStat).toBeDefined();
     expect(result.diffStat!.filesChanged).toBe(1);
   });

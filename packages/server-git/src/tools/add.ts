@@ -81,20 +81,6 @@ export function registerAddTool(server: McpServer) {
         );
       }
 
-      // Capture status BEFORE add to track newly staged files (Gap #126)
-      const beforeStatus = await git(["status", "--porcelain=v1"], cwd);
-      const previousStagedFiles = new Set<string>();
-      if (beforeStatus.exitCode === 0) {
-        for (const line of beforeStatus.stdout.split("\n").filter(Boolean)) {
-          const index = line[0];
-          if (index && index !== " " && index !== "?") {
-            const file = line.slice(3).trim();
-            const parts = file.split(" -> ");
-            previousStagedFiles.add(parts[parts.length - 1]);
-          }
-        }
-      }
-
       // Build args
       let args: string[];
       if (all) {
@@ -138,7 +124,7 @@ export function registerAddTool(server: McpServer) {
         throw new Error(`git status failed after add: ${statusResult.stderr}`);
       }
 
-      const addResult = parseAdd(statusResult.stdout, previousStagedFiles);
+      const addResult = parseAdd(statusResult.stdout);
       return dualOutput(addResult, formatAdd);
     },
   );

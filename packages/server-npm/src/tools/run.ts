@@ -168,7 +168,7 @@ export function registerRunTool(server: McpServer) {
         duration,
         timedOut,
       );
-      return dualOutput({ ...data, packageManager: pm }, formatRun);
+      return dualOutput({ ...data, packageManager: pm }, (d) => formatRun(d, script, duration));
     },
   );
 }

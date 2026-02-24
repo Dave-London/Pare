@@ -1,12 +1,12 @@
 import type {
-  TrivyScanResult,
-  TrivyVulnerability,
+  TrivyScanResultInternal,
+  TrivyVulnerabilityInternal,
   TrivySeveritySummary,
-  SemgrepScanResult,
-  SemgrepFinding,
+  SemgrepScanResultInternal,
+  SemgrepFindingInternal,
   SemgrepSeveritySummary,
-  GitleaksScanResult,
-  GitleaksFinding,
+  GitleaksScanResultInternal,
+  GitleaksFindingInternal,
 } from "../schemas/index.js";
 
 /** Raw Trivy JSON vulnerability shape (from `trivy --format json`). */
@@ -52,7 +52,7 @@ export function parseTrivyJson(
   jsonStr: string,
   target: string,
   scanType: "image" | "fs" | "config",
-): TrivyScanResult {
+): TrivyScanResultInternal {
   let parsed: TrivyJsonOutput;
   try {
     parsed = JSON.parse(jsonStr) as TrivyJsonOutput;
@@ -66,7 +66,7 @@ export function parseTrivyJson(
     };
   }
 
-  const vulnerabilities: TrivyVulnerability[] = [];
+  const vulnerabilities: TrivyVulnerabilityInternal[] = [];
 
   if (parsed.Results) {
     for (const result of parsed.Results) {
@@ -137,7 +137,7 @@ function extractCvssScore(vuln: TrivyJsonVuln): number | undefined {
 }
 
 /** Computes severity summary counts from a list of vulnerabilities. */
-function computeSummary(vulnerabilities: TrivyVulnerability[]): TrivySeveritySummary {
+function computeSummary(vulnerabilities: TrivyVulnerabilityInternal[]): TrivySeveritySummary {
   const summary: TrivySeveritySummary = { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 };
   for (const v of vulnerabilities) {
     switch (v.severity) {
@@ -198,7 +198,7 @@ interface SemgrepJsonOutput {
  * Semgrep's JSON output has a `results` array containing findings,
  * each with check_id, path, start/end positions, and extra metadata.
  */
-export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanResult {
+export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanResultInternal {
   let parsed: SemgrepJsonOutput;
   try {
     parsed = JSON.parse(jsonStr) as SemgrepJsonOutput;
@@ -211,7 +211,7 @@ export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanRe
     };
   }
 
-  const findings: SemgrepFinding[] = [];
+  const findings: SemgrepFindingInternal[] = [];
 
   if (parsed.results) {
     for (const r of parsed.results) {
@@ -273,7 +273,7 @@ function normalizeCwe(metadataCwe: string | string[] | undefined): string[] | un
 }
 
 /** Computes severity summary counts from a list of Semgrep findings. */
-function computeSemgrepSummary(findings: SemgrepFinding[]): SemgrepSeveritySummary {
+function computeSemgrepSummary(findings: SemgrepFindingInternal[]): SemgrepSeveritySummary {
   const summary: SemgrepSeveritySummary = { error: 0, warning: 0, info: 0 };
   for (const f of findings) {
     switch (f.severity) {
@@ -328,7 +328,7 @@ function redactSecret(secret: string): string {
  * RuleID, Description, Match, Secret, File, StartLine, EndLine,
  * Commit, Author, and Date fields.
  */
-export function parseGitleaksJson(jsonStr: string): GitleaksScanResult {
+export function parseGitleaksJson(jsonStr: string): GitleaksScanResultInternal {
   let parsed: GitleaksJsonFinding[];
   try {
     const raw = JSON.parse(jsonStr) as unknown;
@@ -340,7 +340,7 @@ export function parseGitleaksJson(jsonStr: string): GitleaksScanResult {
     return { totalFindings: 0, findings: [], summary: { totalFindings: 0 } };
   }
 
-  const findings: GitleaksFinding[] = [];
+  const findings: GitleaksFindingInternal[] = [];
   const ruleCounts: Record<string, number> = {};
 
   for (const f of parsed) {

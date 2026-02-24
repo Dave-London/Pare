@@ -23,11 +23,12 @@ import type {
 
 /** Formats structured pip install results into a human-readable summary of installed packages. */
 export function formatPipInstall(data: PipInstall): string {
-  if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
+  const total = (data.installed ?? []).length;
+  if (data.alreadySatisfied && total === 0) return "All requirements already satisfied.";
   if (!data.success) return "pip install failed.";
 
   const verb = data.dryRun ? "Would install" : "Installed";
-  const lines = [`${verb} ${data.total} packages:`];
+  const lines = [`${verb} ${total} packages:`];
   for (const pkg of data.installed ?? []) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
@@ -36,10 +37,15 @@ export function formatPipInstall(data: PipInstall): string {
 
 /** Formats structured mypy type-check results into a human-readable diagnostic summary. */
 export function formatMypy(data: MypyResult): string {
-  if (data.success && data.total === 0) return "mypy: no errors found.";
+  const diagnostics = data.diagnostics ?? [];
+  if (data.success && diagnostics.length === 0) return "mypy: no errors found.";
 
-  const lines = [`mypy: ${data.errors} errors, ${data.warnings} warnings, ${data.notes} notes`];
-  for (const d of data.diagnostics ?? []) {
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+  const notes = diagnostics.filter((d) => d.severity === "note").length;
+
+  const lines = [`mypy: ${errors} errors, ${warnings} warnings, ${notes} notes`];
+  for (const d of diagnostics) {
     const col = d.column ? `:${d.column}` : "";
     const code = d.code ? ` [${d.code}]` : "";
     lines.push(`  ${d.file}:${d.line}${col} ${d.severity}: ${d.message}${code}`);
@@ -49,11 +55,14 @@ export function formatMypy(data: MypyResult): string {
 
 /** Formats structured ruff lint results into a human-readable diagnostic listing. */
 export function formatRuff(data: RuffResult): string {
-  if (data.total === 0) return "ruff: no issues found.";
+  const diagnostics = data.diagnostics ?? [];
+  const total = diagnostics.length;
+  if (total === 0) return "ruff: no issues found.";
 
+  const fixable = diagnostics.filter((d) => d.fixable).length;
   const fixedPart = data.fixedCount !== undefined ? `, ${data.fixedCount} fixed` : "";
-  const lines = [`ruff: ${data.total} issues (${data.fixable} fixable${fixedPart})`];
-  for (const d of data.diagnostics ?? []) {
+  const lines = [`ruff: ${total} issues (${fixable} fixable${fixedPart})`];
+  for (const d of diagnostics) {
     const fixInfo = d.fixApplicability ? ` [fix: ${d.fixApplicability}]` : "";
     lines.push(`  ${d.file}:${d.line}:${d.column} ${d.code}: ${d.message}${fixInfo}`);
   }
@@ -62,10 +71,12 @@ export function formatRuff(data: RuffResult): string {
 
 /** Formats structured pip-audit vulnerability results into a human-readable security report. */
 export function formatPipAudit(data: PipAuditResult): string {
-  if (data.total === 0) return "No vulnerabilities found.";
+  const vulns = data.vulnerabilities ?? [];
+  const total = vulns.length;
+  if (total === 0) return "No vulnerabilities found.";
 
-  const lines = [`${data.total} vulnerabilities:`];
-  for (const v of data.vulnerabilities ?? []) {
+  const lines = [`${total} vulnerabilities:`];
+  for (const v of vulns) {
     const fix = v.fixVersions.length ? ` (fix: ${v.fixVersions.join(", ")})` : "";
     const severity = v.severity ? ` [${v.severity}]` : "";
     const score = v.cvssScore != null ? ` CVSS:${v.cvssScore}` : "";
@@ -76,7 +87,8 @@ export function formatPipAudit(data: PipAuditResult): string {
 
 /** Formats structured pytest results into a human-readable test summary. */
 export function formatPytest(data: PytestResult): string {
-  if (data.total === 0) return "pytest: no tests collected.";
+  const total = data.passed + data.failed + data.errors + data.skipped;
+  if (total === 0) return "pytest: no tests collected.";
 
   const parts: string[] = [];
   if (data.passed > 0) parts.push(`${data.passed} passed`);
@@ -85,7 +97,7 @@ export function formatPytest(data: PytestResult): string {
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
   if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
-  const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
+  const lines = [`pytest: ${parts.join(", ")}`];
 
   for (const f of data.failures ?? []) {
     lines.push(`  FAILED ${f.test}: ${f.message}`);
@@ -96,6 +108,8 @@ export function formatPytest(data: PytestResult): string {
 
 /** Formats structured uv install results into a human-readable summary. */
 export function formatUvInstall(data: UvInstall): string {
+  const installed = data.installed ?? [];
+  const total = installed.length;
   if (!data.success) {
     const lines = ["uv install failed."];
     if (data.resolutionConflicts && data.resolutionConflicts.length > 0) {
@@ -108,10 +122,10 @@ export function formatUvInstall(data: UvInstall): string {
     }
     return lines.join("\n");
   }
-  if (data.alreadySatisfied || data.total === 0) return "All requirements already satisfied.";
+  if (data.alreadySatisfied || total === 0) return "All requirements already satisfied.";
 
-  const lines = [`Installed ${data.total} packages in ${data.duration}s:`];
-  for (const pkg of data.installed ?? []) {
+  const lines = [`Installed ${total} packages:`];
+  for (const pkg of installed) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
@@ -120,7 +134,7 @@ export function formatUvInstall(data: UvInstall): string {
 /** Formats structured uv run results into a human-readable summary. */
 export function formatUvRun(data: UvRun): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
-  const lines = [`uv run ${status} in ${data.duration}s`];
+  const lines = [`uv run ${status}`];
 
   if (data.uvDiagnostics && data.uvDiagnostics.length > 0) {
     lines.push("uv diagnostics:");
@@ -153,7 +167,8 @@ export function formatBlack(data: BlackResult): string {
     return "black: internal error (exit 123). Check for syntax errors.";
   }
 
-  if (data.filesChecked === 0) return "black: no Python files found.";
+  const filesChecked = data.filesChanged + data.filesUnchanged;
+  if (filesChecked === 0) return "black: no Python files found.";
 
   if (data.success && data.filesChanged === 0) {
     return `black: ${data.filesUnchanged} files already formatted.`;
@@ -177,7 +192,7 @@ export function formatBlack(data: BlackResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact pytest: counts + duration + failure test names only (no stack traces). */
+/** Compact pytest: counts + failure test names only (no stack traces). */
 export interface PytestResultCompact {
   [key: string]: unknown;
   success: boolean;
@@ -186,8 +201,6 @@ export interface PytestResultCompact {
   errors: number;
   skipped: number;
   warnings: number;
-  total: number;
-  duration: number;
   failedTests: string[];
 }
 
@@ -199,14 +212,13 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
     errors: data.errors,
     skipped: data.skipped,
     warnings: data.warnings,
-    total: data.total,
-    duration: data.duration,
     failedTests: (data.failures ?? []).map((f) => f.test),
   };
 }
 
 export function formatPytestCompact(data: PytestResultCompact): string {
-  if (data.total === 0) return "pytest: no tests collected.";
+  const total = data.passed + data.failed + data.errors + data.skipped;
+  if (total === 0) return "pytest: no tests collected.";
 
   const parts: string[] = [];
   if (data.passed > 0) parts.push(`${data.passed} passed`);
@@ -215,60 +227,48 @@ export function formatPytestCompact(data: PytestResultCompact): string {
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
   if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
-  const lines = [`pytest: ${parts.join(", ")} in ${data.duration}s`];
+  const lines = [`pytest: ${parts.join(", ")}`];
   for (const t of data.failedTests) {
     lines.push(`  FAILED ${t}`);
   }
   return lines.join("\n");
 }
 
-/** Compact mypy: success + diagnostic counts per severity. Drop individual diagnostics. */
+/** Compact mypy: success only. Drop individual diagnostics. */
 export interface MypyResultCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
-  errors: number;
-  warnings: number;
-  notes: number;
 }
 
 export function compactMypyMap(data: MypyResult): MypyResultCompact {
   return {
     success: data.success,
-    total: data.total,
-    errors: data.errors,
-    warnings: data.warnings,
-    notes: data.notes,
   };
 }
 
 export function formatMypyCompact(data: MypyResultCompact): string {
-  if (data.success && data.total === 0) return "mypy: no errors found.";
-  return `mypy: ${data.errors} errors, ${data.warnings} warnings, ${data.notes} notes (${data.total} total)`;
+  if (data.success) return "mypy: no errors found.";
+  return "mypy: errors found.";
 }
 
-/** Compact ruff: success + diagnostic count. Drop individual entries. */
+/** Compact ruff: success + fixedCount. Drop individual entries. */
 export interface RuffResultCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
-  fixable: number;
   fixedCount?: number;
 }
 
 export function compactRuffMap(data: RuffResult): RuffResultCompact {
   return {
     success: data.success,
-    total: data.total,
-    fixable: data.fixable,
     fixedCount: data.fixedCount,
   };
 }
 
 export function formatRuffCompact(data: RuffResultCompact): string {
-  if (data.total === 0) return "ruff: no issues found.";
+  if (data.success && !data.fixedCount) return "ruff: no issues found.";
   const fixedPart = data.fixedCount !== undefined ? `, ${data.fixedCount} fixed` : "";
-  return `ruff: ${data.total} issues (${data.fixable} fixable${fixedPart})`;
+  return `ruff: issues found${fixedPart}`;
 }
 
 /** Compact black: success + changed/unchanged counts + errorType. Drop individual file lists. */
@@ -277,7 +277,6 @@ export interface BlackResultCompact {
   success: boolean;
   filesChanged: number;
   filesUnchanged: number;
-  filesChecked: number;
   errorType?: "check_failed" | "internal_error";
 }
 
@@ -286,7 +285,6 @@ export function compactBlackMap(data: BlackResult): BlackResultCompact {
     success: data.success,
     filesChanged: data.filesChanged,
     filesUnchanged: data.filesUnchanged,
-    filesChecked: data.filesChecked,
     errorType: data.errorType,
   };
 }
@@ -295,16 +293,16 @@ export function formatBlackCompact(data: BlackResultCompact): string {
   if (data.errorType === "internal_error") {
     return "black: internal error (exit 123).";
   }
-  if (data.filesChecked === 0) return "black: no Python files found.";
+  const filesChecked = data.filesChanged + data.filesUnchanged;
+  if (filesChecked === 0) return "black: no Python files found.";
   if (data.filesChanged === 0) return `black: ${data.filesUnchanged} files already formatted.`;
   return `black: ${data.filesChanged} reformatted, ${data.filesUnchanged} unchanged`;
 }
 
-/** Compact pip-install: success + installed count + dryRun. Drop individual package details. */
+/** Compact pip-install: success + dryRun. Drop individual package details. */
 export interface PipInstallCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
   alreadySatisfied: boolean;
   dryRun?: boolean;
 }
@@ -312,44 +310,39 @@ export interface PipInstallCompact {
 export function compactPipInstallMap(data: PipInstall): PipInstallCompact {
   return {
     success: data.success,
-    total: data.total,
     alreadySatisfied: data.alreadySatisfied,
     dryRun: data.dryRun || undefined,
   };
 }
 
 export function formatPipInstallCompact(data: PipInstallCompact): string {
-  if (data.alreadySatisfied && data.total === 0) return "All requirements already satisfied.";
+  if (data.alreadySatisfied) return "All requirements already satisfied.";
   if (!data.success) return "pip install failed.";
   const verb = data.dryRun ? "Would install" : "Installed";
-  return `${verb} ${data.total} packages.`;
+  return `${verb} packages.`;
 }
 
-/** Compact pip-audit: success + vulnerability count. Drop individual CVE details. */
+/** Compact pip-audit: success only. Drop individual CVE details. */
 export interface PipAuditResultCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
 }
 
 export function compactPipAuditMap(data: PipAuditResult): PipAuditResultCompact {
   return {
     success: data.success,
-    total: data.total,
   };
 }
 
 export function formatPipAuditCompact(data: PipAuditResultCompact): string {
-  if (data.total === 0) return "No vulnerabilities found.";
-  return `${data.total} vulnerabilities found.`;
+  if (data.success) return "No vulnerabilities found.";
+  return "Vulnerabilities found.";
 }
 
-/** Compact uv-install: success + installed count + duration + error info. Drop individual packages. */
+/** Compact uv-install: success + error info. Drop individual packages. */
 export interface UvInstallCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
-  duration: number;
   alreadySatisfied?: boolean;
   error?: string;
   resolutionConflicts?: { package: string; constraint: string }[];
@@ -358,8 +351,6 @@ export interface UvInstallCompact {
 export function compactUvInstallMap(data: UvInstall): UvInstallCompact {
   return {
     success: data.success,
-    total: data.total,
-    duration: data.duration,
     alreadySatisfied: data.alreadySatisfied,
     error: data.error,
     resolutionConflicts: data.resolutionConflicts,
@@ -373,16 +364,15 @@ export function formatUvInstallCompact(data: UvInstallCompact): string {
     }
     return "uv install failed.";
   }
-  if (data.alreadySatisfied || data.total === 0) return "All requirements already satisfied.";
-  return `Installed ${data.total} packages in ${data.duration}s.`;
+  if (data.alreadySatisfied) return "All requirements already satisfied.";
+  return "Installed packages.";
 }
 
-/** Compact uv-run: exitCode + duration. Drop stdout/stderr. */
+/** Compact uv-run: exitCode. Drop stdout/stderr. */
 export interface UvRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
-  duration: number;
   truncated?: boolean;
 }
 
@@ -390,7 +380,6 @@ export function compactUvRunMap(data: UvRun): UvRunCompact {
   return {
     exitCode: data.exitCode,
     success: data.success,
-    duration: data.duration,
     truncated: data.truncated,
   };
 }
@@ -398,7 +387,7 @@ export function compactUvRunMap(data: UvRun): UvRunCompact {
 export function formatUvRunCompact(data: UvRunCompact): string {
   const status = data.success ? "completed" : `failed (exit ${data.exitCode})`;
   const truncated = data.truncated ? " (truncated)" : "";
-  return `uv run ${status} in ${data.duration}s${truncated}`;
+  return `uv run ${status}${truncated}`;
 }
 
 // ── pip-list formatters ──────────────────────────────────────────────
@@ -406,35 +395,35 @@ export function formatUvRunCompact(data: UvRunCompact): string {
 /** Formats structured pip list results into a human-readable package listing. */
 export function formatPipList(data: PipList): string {
   if (data.error) return `pip list error: ${data.error}`;
-  if (data.total === 0) return "No packages installed.";
+  const packages = data.packages ?? [];
+  const total = packages.length;
+  if (total === 0) return "No packages installed.";
 
-  const lines = [`${data.total} packages installed:`];
-  for (const pkg of data.packages ?? []) {
+  const lines = [`${total} packages installed:`];
+  for (const pkg of packages) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
 }
 
-/** Compact pip-list: total count only. Drop individual package details. */
+/** Compact pip-list: success + error only. Drop individual package details. */
 export interface PipListCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
   error?: string;
 }
 
 export function compactPipListMap(data: PipList): PipListCompact {
   return {
     success: data.success,
-    total: data.total,
     error: data.error,
   };
 }
 
 export function formatPipListCompact(data: PipListCompact): string {
   if (data.error) return `pip list error: ${data.error}`;
-  if (data.total === 0) return "No packages installed.";
-  return `${data.total} packages installed.`;
+  if (data.success) return "Packages listed.";
+  return "No packages installed.";
 }
 
 // ── pip-show formatters ──────────────────────────────────────────────
@@ -931,11 +920,12 @@ export function formatPyenvCompact(data: PyenvResultCompact): string {
 
 // ── poetry formatters ────────────────────────────────────────────────
 
-/** Formats structured poetry results into a human-readable summary. */
-export function formatPoetry(data: PoetryResult): string {
-  if (!data.success) return `poetry ${data.action} failed.`;
+/** Formats structured poetry results into a human-readable summary.
+ *  action is passed separately since it is not included in the output schema. */
+export function formatPoetry(data: PoetryResult, action: string): string {
+  if (!data.success) return `poetry ${action} failed.`;
 
-  if (data.action === "show") {
+  if (action === "show") {
     const pkgs = data.packages ?? [];
     if (pkgs.length === 0) return "No packages found.";
     const lines = [`${pkgs.length} packages:`];
@@ -946,7 +936,7 @@ export function formatPoetry(data: PoetryResult): string {
     return lines.join("\n");
   }
 
-  if (data.action === "build") {
+  if (action === "build") {
     const arts = data.artifacts ?? [];
     if (arts.length === 0) return "poetry build: no artifacts produced.";
     const lines = [`Built ${arts.length} artifacts:`];
@@ -956,10 +946,10 @@ export function formatPoetry(data: PoetryResult): string {
     return lines.join("\n");
   }
 
-  if (data.action === "check" || data.action === "lock" || data.action === "export") {
+  if (action === "check" || action === "lock" || action === "export") {
     const msgs = data.messages ?? [];
-    if (msgs.length === 0) return `poetry ${data.action}: success.`;
-    const lines = [`poetry ${data.action}:`];
+    if (msgs.length === 0) return `poetry ${action}: success.`;
+    const lines = [`poetry ${action}:`];
     for (const m of msgs) {
       lines.push(`  ${m}`);
     }
@@ -968,47 +958,28 @@ export function formatPoetry(data: PoetryResult): string {
 
   // install, add, remove, update
   const pkgs = data.packages ?? [];
-  if (pkgs.length === 0) return `poetry ${data.action}: no changes.`;
-  const lines = [`poetry ${data.action}: ${pkgs.length} packages:`];
+  if (pkgs.length === 0) return `poetry ${action}: no changes.`;
+  const lines = [`poetry ${action}: ${pkgs.length} packages:`];
   for (const pkg of pkgs) {
     lines.push(`  ${pkg.name}==${pkg.version}`);
   }
   return lines.join("\n");
 }
 
-/** Compact poetry: success + action + total count. Drop individual package/artifact details. */
+/** Compact poetry: success only. Drop individual package/artifact details.
+ *  action is not in the Zod schema so it must not appear in compact output. */
 export interface PoetryResultCompact {
   [key: string]: unknown;
   success: boolean;
-  action: string;
-  total: number;
 }
 
 export function compactPoetryMap(data: PoetryResult): PoetryResultCompact {
   return {
     success: data.success,
-    action: data.action,
-    total: data.total,
   };
 }
 
 export function formatPoetryCompact(data: PoetryResultCompact): string {
-  if (!data.success) return `poetry ${data.action} failed.`;
-
-  if (data.action === "show") {
-    if (data.total === 0) return "No packages found.";
-    return `${data.total} packages installed.`;
-  }
-
-  if (data.action === "build") {
-    if (data.total === 0) return "poetry build: no artifacts produced.";
-    return `Built ${data.total} artifacts.`;
-  }
-
-  if (data.action === "check" || data.action === "lock" || data.action === "export") {
-    return `poetry ${data.action}: success.`;
-  }
-
-  if (data.total === 0) return `poetry ${data.action}: no changes.`;
-  return `poetry ${data.action}: ${data.total} packages.`;
+  if (!data.success) return "poetry: failed.";
+  return "poetry: success.";
 }

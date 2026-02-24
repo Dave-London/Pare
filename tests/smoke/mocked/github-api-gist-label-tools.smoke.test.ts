@@ -105,7 +105,6 @@ describe("Smoke: github.api", () => {
       endpoint: "repos/owner/repo",
       method: "GET",
     });
-    expect(parsed.status).toBe(200);
     expect(parsed.statusCode).toBe(200);
     expect(parsed.method).toBe("GET");
     expect(parsed.endpoint).toBe("repos/owner/repo");
@@ -579,7 +578,6 @@ describe("Smoke: github.label-list", () => {
     mockGh(JSON.stringify(labels));
     const { parsed } = await callAndValidate({});
     expect(parsed.labels.length).toBe(2);
-    expect(parsed.total).toBe(2);
     expect(parsed.labels[0].name).toBe("bug");
     expect(parsed.labels[0].isDefault).toBe(true);
     expect(parsed.labels[1].color).toBe("a2eeef");
@@ -590,7 +588,6 @@ describe("Smoke: github.label-list", () => {
     mockGh("[]");
     const { parsed } = await callAndValidate({});
     expect(parsed.labels).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // ── S3: Repo not found ──────────────────────────────────────────────
@@ -600,7 +597,6 @@ describe("Smoke: github.label-list", () => {
     expect(parsed.errorType).toBe("not-found");
     expect(parsed.errorMessage).toBeDefined();
     expect(parsed.labels).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   // ── S4: Permission denied ───────────────────────────────────────────

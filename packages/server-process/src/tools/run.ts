@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   compactInput,
   cwdPathInput,
   INPUT_LIMITS,
@@ -10,7 +10,7 @@ import {
   assertAllowedRoot,
 } from "@paretools/shared";
 import { parseRunOutput } from "../lib/parsers.js";
-import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
+import { formatRun, schemaRunMap, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { ProcessRunResultSchema } from "../schemas/index.js";
 
 const VALID_KILL_SIGNALS = [
@@ -235,10 +235,11 @@ export function registerRunTool(server: McpServer) {
         result.systemCpuTimeMicros,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatRun,
+        schemaRunMap,
         compactRunMap,
         formatRunCompact,
         compact === false,

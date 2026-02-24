@@ -45,34 +45,40 @@ describe("compactBuildMap", () => {
         { file: "main.go", line: 10, column: 5, message: "undefined: foo" },
         { file: "util.go", line: 22, message: "syntax error" },
       ],
-      total: 2,
     };
 
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.total).toBe(2);
     expect(compact.errors).toEqual(data.errors);
   });
 
   it("omits errors when empty (clean build)", () => {
-    const data: GoBuildResult = { success: true, errors: [], total: 0 };
+    const data: GoBuildResult = { success: true, errors: [] };
 
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(0);
     expect(compact).not.toHaveProperty("errors");
   });
 });
 
 describe("formatBuildCompact", () => {
   it("formats successful build", () => {
-    expect(formatBuildCompact({ success: true, total: 0 })).toBe("go build: success.");
+    expect(formatBuildCompact({ success: true })).toBe("go build: success.");
   });
 
   it("formats failed build with error count", () => {
-    expect(formatBuildCompact({ success: false, total: 3 })).toBe("go build: 3 errors");
+    expect(
+      formatBuildCompact({
+        success: false,
+        errors: [
+          { file: "a.go", line: 1, message: "e1" },
+          { file: "b.go", line: 2, message: "e2" },
+          { file: "c.go", line: 3, message: "e3" },
+        ],
+      }),
+    ).toBe("go build: 3 errors");
   });
 });
 
@@ -88,7 +94,6 @@ describe("compactTestMap", () => {
         { package: "myapp/auth", name: "TestLogout", status: "fail", elapsed: 0.02 },
         { package: "myapp/util", name: "TestSkipped", status: "skip" },
       ],
-      total: 3,
       passed: 1,
       failed: 1,
       skipped: 1,
@@ -97,7 +102,6 @@ describe("compactTestMap", () => {
     const compact = compactTestMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.total).toBe(3);
     expect(compact.passed).toBe(1);
     expect(compact.failed).toBe(1);
     expect(compact.skipped).toBe(1);
@@ -108,7 +112,6 @@ describe("compactTestMap", () => {
     const data: GoTestResult = {
       success: true,
       tests: [],
-      total: 0,
       passed: 0,
       failed: 0,
       skipped: 0,
@@ -116,7 +119,6 @@ describe("compactTestMap", () => {
 
     const compact = compactTestMap(data);
 
-    expect(compact.total).toBe(0);
     expect(compact.passed).toBe(0);
     expect(compact.failed).toBe(0);
     expect(compact.skipped).toBe(0);
@@ -125,13 +127,13 @@ describe("compactTestMap", () => {
 
 describe("formatTestCompact", () => {
   it("formats passing test summary", () => {
-    expect(formatTestCompact({ success: true, total: 5, passed: 5, failed: 0, skipped: 0 })).toBe(
+    expect(formatTestCompact({ success: true, passed: 5, failed: 0, skipped: 0 })).toBe(
       "ok: 5 passed, 0 failed, 0 skipped",
     );
   });
 
   it("formats failing test summary", () => {
-    expect(formatTestCompact({ success: false, total: 3, passed: 1, failed: 1, skipped: 1 })).toBe(
+    expect(formatTestCompact({ success: false, passed: 1, failed: 1, skipped: 1 })).toBe(
       "FAIL: 1 passed, 1 failed, 1 skipped",
     );
   });
@@ -141,40 +143,47 @@ describe("formatTestCompact", () => {
 // vet
 // ---------------------------------------------------------------------------
 describe("compactVetMap", () => {
-  it("keeps only total count, drops diagnostic details", () => {
+  it("preserves diagnostics when non-empty", () => {
     const data: GoVetResult = {
       success: false,
       diagnostics: [
         { file: "main.go", line: 15, column: 2, message: "unreachable code" },
         { file: "handler.go", line: 30, message: "possible misuse of unsafe.Pointer" },
       ],
-      total: 2,
     };
 
     const compact = compactVetMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.total).toBe(2);
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact.diagnostics).toEqual(data.diagnostics);
   });
 
-  it("preserves zero total for clean vet", () => {
-    const data: GoVetResult = { success: true, diagnostics: [], total: 0 };
+  it("omits diagnostics when empty for clean vet", () => {
+    const data: GoVetResult = { success: true, diagnostics: [] };
 
     const compact = compactVetMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(0);
+    expect(compact).not.toHaveProperty("diagnostics");
   });
 });
 
 describe("formatVetCompact", () => {
   it("formats clean vet", () => {
-    expect(formatVetCompact({ success: true, total: 0 })).toBe("go vet: no issues found.");
+    expect(formatVetCompact({ success: true })).toBe("go vet: no issues found.");
   });
 
   it("formats vet with issues", () => {
-    expect(formatVetCompact({ success: false, total: 3 })).toBe("go vet: 3 issues");
+    expect(
+      formatVetCompact({
+        success: false,
+        diagnostics: [
+          { file: "a.go", line: 1, message: "d1" },
+          { file: "b.go", line: 2, message: "d2" },
+          { file: "c.go", line: 3, message: "d3" },
+        ],
+      }),
+    ).toBe("go vet: 3 issues");
   });
 });
 
@@ -440,7 +449,7 @@ describe("formatEnvCompact", () => {
 // list
 // ---------------------------------------------------------------------------
 describe("compactListMap", () => {
-  it("keeps only total count, drops package details", () => {
+  it("keeps only packageCount, drops package details", () => {
     const data: GoListResult = {
       success: true,
       packages: [
@@ -452,33 +461,34 @@ describe("compactListMap", () => {
         },
         { dir: "/project/pkg", importPath: "github.com/user/project/pkg", name: "pkg" },
       ],
-      total: 2,
     };
 
     const compact = compactListMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(2);
+    expect(compact.packageCount).toBe(2);
     expect(compact).not.toHaveProperty("packages");
   });
 
-  it("preserves zero total for empty list", () => {
-    const data: GoListResult = { success: true, packages: [], total: 0 };
+  it("preserves zero packageCount for empty list", () => {
+    const data: GoListResult = { success: true, packages: [] };
 
     const compact = compactListMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(0);
+    expect(compact.packageCount).toBe(0);
   });
 });
 
 describe("formatListCompact", () => {
   it("formats empty list", () => {
-    expect(formatListCompact({ success: true, total: 0 })).toBe("go list: no packages found.");
+    expect(formatListCompact({ success: true, packageCount: 0 })).toBe(
+      "go list: no packages found.",
+    );
   });
 
   it("formats list with count", () => {
-    expect(formatListCompact({ success: true, total: 5 })).toBe("go list: 5 packages");
+    expect(formatListCompact({ success: true, packageCount: 5 })).toBe("go list: 5 packages");
   });
 });
 
@@ -486,51 +496,31 @@ describe("formatListCompact", () => {
 // get
 // ---------------------------------------------------------------------------
 describe("compactGetMap", () => {
-  it("includes output when non-empty", () => {
+  it("returns success and resolvedCount 0 when no resolved packages", () => {
     const data: GoGetResult = {
       success: true,
-      output: "go: downloading github.com/pkg/errors v0.9.1",
     };
 
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(true);
     expect(compact.resolvedCount).toBe(0);
-    expect(compact.output).toBe("go: downloading github.com/pkg/errors v0.9.1");
   });
 
-  it("omits output when empty", () => {
-    const data: GoGetResult = {
-      success: true,
-      output: "",
-    };
-
-    const compact = compactGetMap(data);
-
-    expect(compact.success).toBe(true);
-    expect(compact.resolvedCount).toBe(0);
-    expect(compact).not.toHaveProperty("output");
-  });
-
-  it("preserves failure state with output", () => {
+  it("preserves failure state", () => {
     const data: GoGetResult = {
       success: false,
-      output: 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
     };
 
     const compact = compactGetMap(data);
 
     expect(compact.success).toBe(false);
     expect(compact.resolvedCount).toBe(0);
-    expect(compact.output).toBe(
-      'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
-    );
   });
 
   it("includes resolvedCount when packages are resolved", () => {
     const data: GoGetResult = {
       success: true,
-      output: "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
       resolvedPackages: [
         { package: "golang.org/x/text", previousVersion: "v0.3.7", newVersion: "v0.14.0" },
       ],
@@ -540,7 +530,6 @@ describe("compactGetMap", () => {
 
     expect(compact.success).toBe(true);
     expect(compact.resolvedCount).toBe(1);
-    expect(compact).not.toHaveProperty("output");
   });
 });
 

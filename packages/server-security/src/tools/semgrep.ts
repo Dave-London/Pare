@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   INPUT_LIMITS,
   assertNoFlagInjection,
@@ -12,6 +12,7 @@ import {
 import { parseSemgrepJson } from "../lib/parsers.js";
 import {
   formatSemgrepScan,
+  schemaSemgrepScanMap,
   compactSemgrepScanMap,
   formatSemgrepScanCompact,
 } from "../lib/formatters.js";
@@ -185,10 +186,11 @@ export function registerSemgrepTool(server: McpServer) {
       const data = parseSemgrepJson(result.stdout, configDisplay);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatSemgrepScan,
+        schemaSemgrepScanMap,
         compactSemgrepScanMap,
         formatSemgrepScanCompact,
         compact === false,

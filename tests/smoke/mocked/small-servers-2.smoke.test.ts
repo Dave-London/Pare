@@ -136,7 +136,7 @@ describe("Smoke: security.trivy", () => {
     const { parsed } = await callAndValidate({ target: "alpine:3.18", scanType: "image" });
     expect(parsed.target).toBe("alpine:3.18");
     expect(parsed.scanType).toBe("image");
-    expect(parsed.totalVulnerabilities).toBeGreaterThanOrEqual(0);
+    // totalVulnerabilities removed from schema (derivable from vulnerabilities.length)
   });
 
   it("S2 [P0] scan filesystem", async () => {
@@ -148,7 +148,7 @@ describe("Smoke: security.trivy", () => {
   it("S3 [P0] clean target (no vulns)", async () => {
     mockRun(JSON.stringify({ Results: [] }));
     const { parsed } = await callAndValidate({ target: "scratch", scanType: "image" });
-    expect(parsed.totalVulnerabilities).toBe(0);
+    // totalVulnerabilities removed from schema (derivable)
     expect(parsed.summary.critical).toBe(0);
   });
 
@@ -265,14 +265,15 @@ describe("Smoke: security.semgrep", () => {
       }),
     );
     const { parsed } = await callAndValidate({ patterns: ["."], config: "auto" });
-    expect(parsed.totalFindings).toBeGreaterThanOrEqual(0);
-    expect(parsed.config).toBe("auto");
+    // totalFindings and config removed from schema (derivable/echo-back)
+    expect(parsed.summary).toBeDefined();
   });
 
   it("S2 [P0] no findings (clean code)", async () => {
     mockRun(JSON.stringify({ results: [], errors: [] }));
     const { parsed } = await callAndValidate({ patterns: ["."], config: "auto" });
-    expect(parsed.totalFindings).toBe(0);
+    // totalFindings removed from schema (derivable)
+    expect(parsed.summary.error).toBe(0);
   });
 
   it("S3 [P0] flag injection on config", async () => {
@@ -370,7 +371,8 @@ describe("Smoke: security.gitleaks", () => {
   it("S1 [P0] scan a clean repo (no secrets)", async () => {
     mockRun("[]");
     const { parsed } = await callAndValidate({ path: "." });
-    expect(parsed.totalFindings).toBe(0);
+    // totalFindings removed from schema (derivable)
+    // findings may be undefined in compact mode
   });
 
   it("S2 [P0] scan repo with secrets", async () => {
@@ -391,7 +393,11 @@ describe("Smoke: security.gitleaks", () => {
       ]),
     );
     const { parsed } = await callAndValidate({ path: "." });
-    expect(parsed.totalFindings).toBeGreaterThan(0);
+    // totalFindings removed from schema (derivable)
+    // findings may be undefined in compact mode, but if present should have items
+    if (parsed.findings) {
+      expect(parsed.findings.length).toBeGreaterThan(0);
+    }
   });
 
   it("S3 [P0] redact enabled (default)", async () => {
@@ -477,14 +483,15 @@ describe("Smoke: make.list", () => {
       "# Files\nbuild: src/main.c\n\tgcc -o build src/main.c\n\ntest: build\n\t./run-tests\n\n.PHONY: clean\nclean:\n\trm -rf build\n",
     );
     const { parsed } = await callAndValidate({ path: "." });
-    expect(parsed.total).toBeGreaterThanOrEqual(0);
-    expect(parsed.tool).toBe("make");
+    // total and tool removed from schema (derivable/echo-back)
+    // targets may be undefined in compact mode
   });
 
   it("S2 [P0] no targets found", async () => {
     mockMakeCmd("");
     const { parsed } = await callAndValidate({ path: "/empty-project" });
-    expect(parsed.total).toBe(0);
+    // total removed from schema (derivable from targets.length)
+    // targets may be undefined in compact mode
   });
 
   it("S3 [P0] flag injection on file", async () => {
@@ -508,7 +515,8 @@ describe("Smoke: make.list", () => {
       exitCode: 0,
     });
     const { parsed } = await callAndValidate({ path: "." });
-    expect(parsed.tool).toBe("just");
+    // tool removed from schema (echo-back)
+    // targets may be undefined in compact mode
   });
 
   it("S6 [P1] filter targets by regex", async () => {
@@ -574,8 +582,7 @@ describe("Smoke: make.run", () => {
     const { parsed } = await callAndValidate({ target: "build" });
     expect(parsed.success).toBe(true);
     expect(parsed.exitCode).toBe(0);
-    expect(parsed.target).toBe("build");
-    expect(parsed.tool).toBe("make");
+    // target and tool removed from schema (echo-back)
     expect(parsed.timedOut).toBe(false);
   });
 
@@ -590,7 +597,7 @@ describe("Smoke: make.run", () => {
     mockMakeCmd("", "make: *** No rule to make target 'nonexistent'.  Stop.\n", 2);
     const { parsed } = await callAndValidate({ target: "nonexistent" });
     expect(parsed.success).toBe(false);
-    expect(parsed.errorType).toBe("missing-target");
+    // errorType removed from schema (display-only, moved to formatter)
   });
 
   it("S4 [P0] flag injection on target", async () => {
@@ -669,7 +676,7 @@ describe("Smoke: process.run", () => {
   it("S1 [P0] run a simple command", async () => {
     mockRun("hello\n", "", 0);
     const { parsed } = await callAndValidate({ command: "echo", args: ["hello"] });
-    expect(parsed.command).toBe("echo");
+    // command removed from schema (echo-back)
     expect(parsed.exitCode).toBe(0);
     expect(parsed.success).toBe(true);
     expect(parsed.timedOut).toBe(false);

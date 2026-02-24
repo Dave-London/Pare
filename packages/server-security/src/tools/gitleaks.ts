@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   INPUT_LIMITS,
   assertAllowedRoot,
@@ -14,6 +14,7 @@ import {
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
   formatGitleaksScan,
+  schemaGitleaksScanMap,
   compactGitleaksScanMap,
   formatGitleaksScanCompact,
 } from "../lib/formatters.js";
@@ -171,10 +172,11 @@ export function registerGitleaksTool(server: McpServer) {
       const data = parseGitleaksJson(result.stdout);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatGitleaksScan,
+        schemaGitleaksScanMap,
         compactGitleaksScanMap,
         formatGitleaksScanCompact,
         compact === false,

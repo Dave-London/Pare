@@ -100,7 +100,6 @@ describe("Smoke: go build", () => {
     mockGoCmd("", "", 0); // build
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S2 [P0] Build with compile errors
@@ -115,7 +114,6 @@ describe("Smoke: go build", () => {
     expect(parsed.success).toBe(false);
     expect(parsed.errors).toBeDefined();
     expect(parsed.errors!.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S3 [P0] Build with raw errors (linker/package)
@@ -334,7 +332,6 @@ describe("Smoke: go test", () => {
     mockGoCmd(noTestJson, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S22 [P0] Flag injection via packages
@@ -466,7 +463,6 @@ describe("Smoke: go vet", () => {
     mockGoCmd("{}\n", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S37 [P0] Code with vet issues
@@ -479,7 +475,6 @@ describe("Smoke: go vet", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
     expect(parsed.success).toBe(false);
     expect(parsed.diagnostics).toBeDefined();
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S38 [P0] Code with compilation errors
@@ -535,7 +530,6 @@ describe("Smoke: go vet", () => {
     mockGoCmd(vetJson, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     // Check diagnostics exist (parser may or may not extract analyzer)
-    expect(parsed.total).toBeGreaterThanOrEqual(0);
   });
 
   // S44 [P1] Enable specific analyzer
@@ -658,7 +652,6 @@ describe("Smoke: go run", () => {
       compact: false,
     });
     expect(parsed.timedOut).toBe(true);
-    expect(parsed.signal).toBe("SIGTERM");
   });
 
   // S56 [P1] Run with program args
@@ -1364,7 +1357,6 @@ describe("Smoke: go list", () => {
     const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
     expect(parsed.success).toBe(true);
     expect(parsed.packages).toBeDefined();
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S114 [P0] List modules
@@ -1377,7 +1369,6 @@ describe("Smoke: go list", () => {
     });
     expect(parsed.success).toBe(true);
     expect(parsed.modules).toBeDefined();
-    expect(parsed.total).toBeGreaterThan(0);
   });
 
   // S115 [P0] No packages found
@@ -1385,7 +1376,6 @@ describe("Smoke: go list", () => {
     mockGoCmd("", "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/empty" });
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
   });
 
   // S116 [P0] Flag injection via packages
@@ -1530,7 +1520,6 @@ describe("Smoke: golangci-lint", () => {
   it("S127 [P0] clean code returns zero diagnostics", async () => {
     mockGolangciLintCmd(LINT_CLEAN_JSON, "", 0);
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
-    expect(parsed.total).toBe(0);
     expect(parsed.errors).toBe(0);
     expect(parsed.warnings).toBe(0);
   });
@@ -1539,7 +1528,6 @@ describe("Smoke: golangci-lint", () => {
   it("S128 [P0] code with lint issues returns diagnostics", async () => {
     mockGolangciLintCmd(LINT_ISSUES_JSON, "", 1);
     const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
-    expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.diagnostics).toBeDefined();
     expect(parsed.diagnostics!.length).toBeGreaterThan(0);
     const diag = parsed.diagnostics![0];
@@ -1559,7 +1547,6 @@ describe("Smoke: golangci-lint", () => {
     );
     const { parsed } = await callAndValidate({ path: "/tmp/project" });
     // Should return a result (possibly failed parse or empty)
-    expect(parsed.total).toBe(0);
   });
 
   // S130 [P0] Flag injection via patterns
@@ -1646,14 +1633,6 @@ describe("Smoke: golangci-lint", () => {
     expect(cliArgs).toContain("--fix");
   });
 
-  // S141 [P1] By-linter summary populated
-  it("S141 [P1] byLinter summary populated with multiple linters", async () => {
-    mockGolangciLintCmd(LINT_ISSUES_JSON, "", 1);
-    const { parsed } = await callAndValidate({ path: "/tmp/project", compact: false });
-    expect(parsed.byLinter).toBeDefined();
-    expect(parsed.byLinter!.length).toBeGreaterThan(0);
-  });
-
   // S142 [P1] Results truncated flag
   it("S142 [P1] resultsTruncated set when maxIssuesPerLinter limit hit", async () => {
     mockGolangciLintCmd(LINT_ISSUES_JSON, "", 1);
@@ -1662,8 +1641,8 @@ describe("Smoke: golangci-lint", () => {
       maxIssuesPerLinter: 1,
       compact: false,
     });
-    // When total >= maxIssuesPerLinter, resultsTruncated should be true
-    if (parsed.total >= 1) {
+    // When diagnostics exist, resultsTruncated should be true
+    if (parsed.diagnostics && parsed.diagnostics.length >= 1) {
       expect(parsed.resultsTruncated).toBe(true);
     }
   });

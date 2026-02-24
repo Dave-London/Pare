@@ -140,7 +140,6 @@ export function registerPrMergeTool(server: McpServer) {
             number: prNum,
             merged: false,
             method: method!,
-            url: "",
             state: disableAuto ? "auto-merge-disabled" : auto ? "auto-merge-enabled" : undefined,
             errorType: classifyPrMergeError(combined),
             errorMessage: combined || "gh pr merge failed",

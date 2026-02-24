@@ -80,7 +80,6 @@ describe("Recorded: git.reflog", () => {
     mockGit(loadFixture("reflog", "s01-default.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.entries.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
     // Verify entry structure (full mode returns objects)
     const entry = parsed.entries[0] as Record<string, unknown>;
     expect(entry.hash).toMatch(/^[0-9a-f]{40}$/);
@@ -94,7 +93,6 @@ describe("Recorded: git.reflog", () => {
     mockGit("");
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.entries).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S6 [recorded] custom maxCount=5", async () => {
@@ -131,7 +129,6 @@ describe("Recorded: git.log-graph", () => {
     mockGit(loadFixture("log-graph", "s01-default.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.commits.length).toBeGreaterThan(0);
-    expect(parsed.total).toBeGreaterThan(0);
     // Verify graph entry structure (full mode returns objects)
     const commit = parsed.commits[0] as Record<string, unknown>;
     expect(commit.hashShort).toMatch(/^[0-9a-f]{7,}$/);
@@ -143,7 +140,6 @@ describe("Recorded: git.log-graph", () => {
     mockGit("");
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.commits).toEqual([]);
-    expect(parsed.total).toBe(0);
   });
 
   it("S5 [recorded] all branches", async () => {
@@ -237,7 +233,6 @@ describe("Recorded: git.worktree", () => {
     mockGit(loadFixture("worktree", "s01-list.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.worktrees!.length).toBeGreaterThanOrEqual(1);
-    expect(parsed.total).toBeGreaterThanOrEqual(1);
     // Verify worktree structure (full mode returns objects)
     const wt = parsed.worktrees![0] as Record<string, unknown>;
     expect(wt.path).toBeDefined();
@@ -249,7 +244,6 @@ describe("Recorded: git.worktree", () => {
     mockGit(loadFixture("worktree", "s02-list-after-add.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.worktrees!.length).toBeGreaterThanOrEqual(2);
-    expect(parsed.total).toBeGreaterThanOrEqual(2);
     // Second worktree should be on a different branch
     const worktrees = parsed.worktrees! as Array<Record<string, unknown>>;
     const branches = worktrees.map((wt) => wt.branch);

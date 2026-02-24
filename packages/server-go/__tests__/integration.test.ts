@@ -67,8 +67,11 @@ describe("@paretools/go integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.diagnostics)).toBe(true);
+        expect(typeof sc.success).toBe("boolean");
+        // diagnostics is conditionally included (only when non-empty)
+        if (sc.diagnostics !== undefined) {
+          expect(Array.isArray(sc.diagnostics)).toBe(true);
+        }
       }
     });
   });
@@ -88,7 +91,6 @@ describe("@paretools/go integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(sc.total).toEqual(expect.any(Number));
         // errors is conditionally included (only when non-empty)
         if (sc.errors !== undefined) {
           expect(Array.isArray(sc.errors)).toBe(true);
@@ -112,7 +114,6 @@ describe("@paretools/go integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(sc.total).toEqual(expect.any(Number));
         expect(sc.passed).toEqual(expect.any(Number));
         expect(sc.failed).toEqual(expect.any(Number));
         expect(sc.skipped).toEqual(expect.any(Number));
@@ -248,8 +249,10 @@ describe("@paretools/go integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
-        expect(Array.isArray(sc.packages)).toBe(true);
+        expect(typeof sc.success).toBe("boolean");
+        if (sc.packages !== undefined) {
+          expect(Array.isArray(sc.packages)).toBe(true);
+        }
       }
     });
   });
@@ -297,7 +300,6 @@ describe("@paretools/go integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.total).toEqual(expect.any(Number));
         expect(sc.errors).toEqual(expect.any(Number));
         expect(sc.warnings).toEqual(expect.any(Number));
       }

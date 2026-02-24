@@ -97,7 +97,6 @@ describe("Recorded: python.pip-list", () => {
     expect(result).toHaveProperty("content");
     const parsed = PipListSchema.parse(result.structuredContent);
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(5);
     expect(parsed.packages).toHaveLength(5);
     expect(parsed.packages![0]).toEqual({ name: "pip", version: "24.0" });
     expect(parsed.packages![2]).toEqual({ name: "requests", version: "2.31.0" });
@@ -183,9 +182,6 @@ describe("Recorded: python.mypy", () => {
     expect(result).toHaveProperty("structuredContent");
     const parsed = MypyResultSchema.parse(result.structuredContent);
     expect(parsed.success).toBe(true);
-    expect(parsed.errors).toBe(0);
-    expect(parsed.warnings).toBe(0);
-    expect(parsed.total).toBe(0);
     expect(parsed.diagnostics).toEqual([]);
   });
 
@@ -211,9 +207,6 @@ describe("Recorded: python.mypy", () => {
     expect(result).toHaveProperty("structuredContent");
     const parsed = MypyResultSchema.parse(result.structuredContent);
     expect(parsed.success).toBe(false);
-    expect(parsed.errors).toBe(2);
-    expect(parsed.notes).toBe(1);
-    expect(parsed.total).toBe(3);
     expect(parsed.diagnostics![0].file).toBe("src/main.py");
     expect(parsed.diagnostics![0].line).toBe(10);
     expect(parsed.diagnostics![0].severity).toBe("error");
@@ -257,8 +250,6 @@ describe("Recorded: python.ruff-check", () => {
     expect(result).toHaveProperty("structuredContent");
     const parsed = RuffResultSchema.parse(result.structuredContent);
     expect(parsed.success).toBe(true);
-    expect(parsed.total).toBe(0);
-    expect(parsed.fixable).toBe(0);
     expect(parsed.diagnostics).toEqual([]);
   });
 
@@ -279,8 +270,6 @@ describe("Recorded: python.ruff-check", () => {
     expect(result).toHaveProperty("structuredContent");
     const parsed = RuffResultSchema.parse(result.structuredContent);
     expect(parsed.success).toBe(false);
-    expect(parsed.total).toBe(2);
-    expect(parsed.fixable).toBe(1);
     expect(parsed.diagnostics![0].code).toBe("F401");
     expect(parsed.diagnostics![0].file).toBe("src/main.py");
     expect(parsed.diagnostics![0].fixable).toBe(true);
@@ -324,8 +313,6 @@ describe("Recorded: python.pytest", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.passed).toBe(5);
     expect(parsed.failed).toBe(0);
-    expect(parsed.total).toBe(5);
-    expect(parsed.duration).toBeCloseTo(0.12, 1);
     expect(parsed.failures).toEqual([]);
   });
 
@@ -346,7 +333,6 @@ describe("Recorded: python.pytest", () => {
     expect(parsed.success).toBe(false);
     expect(parsed.passed).toBe(4);
     expect(parsed.failed).toBe(1);
-    expect(parsed.total).toBe(5);
     expect(parsed.failures!.length).toBe(1);
     expect(parsed.failures![0].test).toBe("test_subtract");
     expect(parsed.failures![0].message).toContain("assert 2 == 3");
@@ -387,7 +373,6 @@ describe("Recorded: python.black", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.filesChanged).toBe(0);
     expect(parsed.filesUnchanged).toBe(3);
-    expect(parsed.filesChecked).toBe(3);
   });
 
   it("S2 [recorded] format changes applied", async () => {
@@ -407,7 +392,6 @@ describe("Recorded: python.black", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.filesChanged).toBe(2);
     expect(parsed.filesUnchanged).toBe(1);
-    expect(parsed.filesChecked).toBe(3);
     expect(parsed.wouldReformat).toContain("src/main.py");
     expect(parsed.wouldReformat).toContain("src/utils.py");
   });

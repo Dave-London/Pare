@@ -34,10 +34,9 @@ export const GitLogEntrySchema = z.object({
   refs: z.string().optional(),
 });
 
-/** Zod schema for structured git log output containing an array of commits and total count. */
+/** Zod schema for structured git log output containing an array of commits. */
 export const GitLogSchema = z.object({
   commits: z.array(GitLogEntrySchema),
-  total: z.number(),
 });
 
 export type GitLog = z.infer<typeof GitLogSchema>;
@@ -60,12 +59,9 @@ export const GitDiffFileSchema = z.object({
     .optional(),
 });
 
-/** Zod schema for structured git diff output with per-file stats and aggregate totals. */
+/** Zod schema for structured git diff output with per-file stats. */
 export const GitDiffSchema = z.object({
   files: z.array(GitDiffFileSchema),
-  totalAdditions: z.number().optional(),
-  totalDeletions: z.number().optional(),
-  totalFiles: z.number(),
 });
 
 export type GitDiff = z.infer<typeof GitDiffSchema>;
@@ -105,9 +101,6 @@ export const GitShowSchema = z.object({
   diff: z
     .object({
       files: z.array(GitDiffFileSchema),
-      totalAdditions: z.number().optional(),
-      totalDeletions: z.number().optional(),
-      totalFiles: z.number(),
     })
     .optional(),
 });
@@ -120,11 +113,9 @@ export const GitAddFileSchema = z.object({
   status: z.enum(["added", "modified", "deleted"]),
 });
 
-/** Zod schema for structured git add output with count and list of staged files with per-file status. */
+/** Zod schema for structured git add output with list of staged files with per-file status. */
 export const GitAddSchema = z.object({
-  staged: z.number(),
   files: z.array(GitAddFileSchema),
-  newlyStaged: z.number().optional(),
 });
 
 export type GitAdd = z.infer<typeof GitAddSchema>;
@@ -141,11 +132,9 @@ export const GitCommitSchema = z.object({
 
 export type GitCommit = z.infer<typeof GitCommitSchema>;
 
-/** Zod schema for structured git push output with success status, remote, branch, and summary. */
+/** Zod schema for structured git push output with success status and summary. */
 export const GitPushSchema = z.object({
   success: z.boolean(),
-  remote: z.string(),
-  branch: z.string(),
   summary: z.string(),
   created: z.boolean().optional(),
   objectStats: z
@@ -196,10 +185,9 @@ export const GitPullSchema = z.object({
 
 export type GitPull = z.infer<typeof GitPullSchema>;
 
-/** Zod schema for structured git checkout output with ref, previous ref, and whether a new branch was created. */
+/** Zod schema for structured git checkout output with previous ref and whether a new branch was created. */
 export const GitCheckoutSchema = z.object({
   success: z.boolean(),
-  ref: z.string(),
   previousRef: z.string(),
   created: z.boolean(),
   detached: z.boolean().optional(),
@@ -221,10 +209,9 @@ export const GitTagEntrySchema = z.object({
   tagType: z.enum(["lightweight", "annotated"]).optional(),
 });
 
-/** Zod schema for structured git tag output with tag list and total count, plus create/delete support. */
+/** Zod schema for structured git tag output with tag list, plus create/delete support. */
 export const GitTagSchema = z.object({
   tags: z.union([z.array(GitTagEntrySchema), z.array(z.string())]).optional(),
-  total: z.number().optional(),
   /** Present for create/delete actions. */
   success: z.boolean().optional(),
   /** Action performed: create or delete (only present for mutate operations). */
@@ -247,7 +234,6 @@ export type GitTagFull = {
     message?: string;
     tagType?: "lightweight" | "annotated";
   }>;
-  total: number;
 };
 
 export type GitTag = z.infer<typeof GitTagSchema>;
@@ -262,10 +248,9 @@ export const GitStashEntrySchema = z.object({
   summary: z.string().optional(),
 });
 
-/** Zod schema for structured git stash list output with stash entries and total count. */
+/** Zod schema for structured git stash list output with stash entries. */
 export const GitStashListSchema = z.object({
   stashes: z.union([z.array(GitStashEntrySchema), z.array(z.string())]),
-  total: z.number(),
 });
 
 /** Full stash list data (always returned by parser, before compact projection). */
@@ -278,14 +263,12 @@ export type GitStashListFull = {
     files?: number;
     summary?: string;
   }>;
-  total: number;
 };
 
 export type GitStashList = z.infer<typeof GitStashListSchema>;
 
 /** Zod schema for structured git stash push/pop/apply/drop/clear/show output. */
 export const GitStashSchema = z.object({
-  action: z.enum(["push", "pop", "apply", "drop", "clear", "show", "branch"]),
   success: z.boolean(),
   message: z.string(),
   stashRef: z.string().optional(),
@@ -322,10 +305,9 @@ export const GitRemoteEntrySchema = z.object({
   trackedBranches: z.array(z.string()).optional(),
 });
 
-/** Zod schema for structured git remote output with remote list and total count, plus add/remove/rename/set-url/prune/show support. */
+/** Zod schema for structured git remote output with remote list, plus add/remove/rename/set-url/prune/show support. */
 export const GitRemoteSchema = z.object({
   remotes: z.union([z.array(GitRemoteEntrySchema), z.array(z.string())]).optional(),
-  total: z.number().optional(),
   /** Present for mutate actions. */
   success: z.boolean().optional(),
   /** Action performed (only present for mutate operations). */
@@ -363,7 +345,6 @@ export type GitRemoteFull = {
     protocol?: "ssh" | "https" | "http" | "git" | "file" | "unknown";
     trackedBranches?: string[];
   }>;
-  total: number;
 };
 
 export type GitRemote = z.infer<typeof GitRemoteSchema>;
@@ -384,7 +365,6 @@ export const GitBlameSchema = z.object({
     z.array(z.object({ hash: z.string(), lines: z.array(z.number()) })),
   ]),
   file: z.string(),
-  totalLines: z.number(),
 });
 
 /** Full blame data (always returned by parser, before compact projection). */
@@ -397,7 +377,6 @@ export type GitBlameFull = {
     lines: Array<{ lineNumber: number; content: string }>;
   }>;
   file: string;
-  totalLines: number;
 };
 
 export type GitBlame = z.infer<typeof GitBlameSchema>;
@@ -498,10 +477,9 @@ export const GitLogGraphCompactEntrySchema = z.object({
   r: z.string().optional(),
 });
 
-/** Zod schema for structured git log --graph output with commits array and total count. */
+/** Zod schema for structured git log --graph output with commits array. */
 export const GitLogGraphSchema = z.object({
   commits: z.union([z.array(GitLogGraphEntrySchema), z.array(GitLogGraphCompactEntrySchema)]),
-  total: z.number(),
 });
 
 /** Full log-graph data (always returned by parser, before compact projection). */
@@ -515,7 +493,6 @@ export type GitLogGraphFull = {
     parsedRefs?: string[];
     isMerge?: boolean;
   }>;
-  total: number;
 };
 
 export type GitLogGraph = z.infer<typeof GitLogGraphSchema>;
@@ -560,11 +537,9 @@ export const GitReflogEntrySchema = z.object({
   date: z.string(),
 });
 
-/** Zod schema for structured git reflog output with entries array and total count. */
+/** Zod schema for structured git reflog output with entries array. */
 export const GitReflogSchema = z.object({
   entries: z.union([z.array(GitReflogEntrySchema), z.array(z.string())]),
-  total: z.number(),
-  totalAvailable: z.number().optional(),
 });
 
 /** Full reflog data (always returned by parser, before compact projection). */
@@ -581,8 +556,6 @@ export type GitReflogFull = {
     toRef?: string;
     date: string;
   }>;
-  total: number;
-  totalAvailable?: number;
 };
 
 export type GitReflog = z.infer<typeof GitReflogSchema>;
@@ -624,7 +597,6 @@ export const GitWorktreeEntrySchema = z.object({
 /** Zod schema for structured git worktree list output. */
 export const GitWorktreeListSchema = z.object({
   worktrees: z.union([z.array(GitWorktreeEntrySchema), z.array(z.string())]),
-  total: z.number(),
 });
 
 /** Full worktree list data (always returned by parser, before compact projection). */
@@ -638,7 +610,6 @@ export type GitWorktreeListFull = {
     lockReason?: string;
     prunable?: boolean;
   }>;
-  total: number;
 };
 
 export type GitWorktreeList = z.infer<typeof GitWorktreeListSchema>;
@@ -661,8 +632,6 @@ export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
 export const GitWorktreeOutputSchema = z.object({
   /** Present for list action. */
   worktrees: z.union([z.array(GitWorktreeEntrySchema), z.array(z.string())]).optional(),
-  /** Present for list action. */
-  total: z.number().optional(),
   /** Present for mutate actions. */
   success: z.boolean().optional(),
   /** Action performed (only present for mutate operations). */
@@ -729,12 +698,9 @@ export type GitSubmodule = z.infer<typeof GitSubmoduleSchema>;
 
 // ── Archive ─────────────────────────────────────────────────────────────
 
-/** Zod schema for structured git archive output with success status, format, output file, and treeish. */
+/** Zod schema for structured git archive output with success status and message. */
 export const GitArchiveSchema = z.object({
   success: z.boolean(),
-  format: z.string(),
-  outputFile: z.string(),
-  treeish: z.string(),
   message: z.string(),
 });
 
@@ -742,11 +708,9 @@ export type GitArchive = z.infer<typeof GitArchiveSchema>;
 
 // ── Clean ───────────────────────────────────────────────────────────────
 
-/** Zod schema for structured git clean output with dry-run flag, file list, and removed count. */
+/** Zod schema for structured git clean output with file list and message. */
 export const GitCleanSchema = z.object({
-  dryRun: z.boolean(),
   files: z.array(z.string()),
-  removedCount: z.number(),
   message: z.string(),
 });
 

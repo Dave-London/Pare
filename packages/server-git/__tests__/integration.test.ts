@@ -114,7 +114,6 @@ describe("@paretools/git integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(Array.isArray(sc.commits)).toBe(true);
-      expect(sc.total).toEqual(expect.any(Number));
 
       const commits = sc.commits as Record<string, unknown>[];
       expect(commits.length).toBeGreaterThan(0);
@@ -143,7 +142,6 @@ describe("@paretools/git integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(Array.isArray(sc.commits)).toBe(true);
-      expect(sc.total).toEqual(expect.any(Number));
 
       const commits = sc.commits as Record<string, unknown>[];
       // Should have at least one actual commit
@@ -172,7 +170,6 @@ describe("@paretools/git integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(Array.isArray(sc.entries)).toBe(true);
-      expect(sc.total).toEqual(expect.any(Number));
 
       const entries = sc.entries as Record<string, unknown>[];
       expect(entries.length).toBeGreaterThan(0);
@@ -210,7 +207,6 @@ describe("@paretools/git integration", () => {
       expect(result.structuredContent).toBeDefined();
       const sc = result.structuredContent as Record<string, unknown>;
       expect(Array.isArray(sc.worktrees)).toBe(true);
-      expect(sc.total).toEqual(expect.any(Number));
     });
   });
 
@@ -225,9 +221,6 @@ describe("@paretools/git integration", () => {
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
       expect(Array.isArray(sc.files)).toBe(true);
-      expect(sc.totalAdditions).toEqual(expect.any(Number));
-      expect(sc.totalDeletions).toEqual(expect.any(Number));
-      expect(sc.totalFiles).toEqual(expect.any(Number));
     });
   });
 
@@ -273,8 +266,7 @@ describe("@paretools/git integration", () => {
       const diff = sc.diff as Record<string, unknown>;
       expect(diff).toBeDefined();
       expect(Array.isArray(diff.files)).toBe(true);
-      expect(diff.totalAdditions).toEqual(expect.any(Number));
-      expect(diff.totalDeletions).toEqual(expect.any(Number));
+      expect(Array.isArray(diff.files)).toBe(true);
     });
   });
 });
@@ -343,9 +335,8 @@ describe("@paretools/git write-tool integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.staged).toEqual(expect.any(Number));
       expect(Array.isArray(sc.files)).toBe(true);
-      expect(sc.staged as number).toBeGreaterThanOrEqual(1);
+      expect((sc.files as unknown[]).length).toBeGreaterThanOrEqual(1);
     });
 
     it("stages all files with all=true", async () => {
@@ -362,7 +353,7 @@ describe("@paretools/git write-tool integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.staged as number).toBeGreaterThanOrEqual(1);
+      expect((sc.files as unknown[]).length).toBeGreaterThanOrEqual(1);
     });
 
     it("rejects flag-injection in file paths", async () => {
@@ -461,7 +452,7 @@ describe("@paretools/git write-tool integration", () => {
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      expect(sc.ref).toBe("test-branch-integration");
+      expect(sc.success).toBe(true);
       expect(sc.created).toBe(true);
       expect(sc.previousRef).toEqual(expect.any(String));
     });
@@ -486,7 +477,7 @@ describe("@paretools/git write-tool integration", () => {
 
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(sc.ref).toBe(defaultBranch);
+        expect(sc.success).toBe(true);
         expect(sc.created).toBe(false);
       }
     });
