@@ -6,14 +6,14 @@ Shows the Terraform execution plan with resource change counts. Read-only -- doe
 
 ## Input Parameters
 
-| Parameter | Type              | Default | Description                                                  |
-| --------- | ----------------- | ------- | ------------------------------------------------------------ |
-| `path`    | string            | cwd     | Project root path                                            |
-| `out`     | string            | --      | Save the plan to a file for later apply (-out=FILE)          |
-| `target`  | string            | --      | Target a specific resource for planning (-target=RESOURCE)   |
-| `varFile` | string            | --      | Path to a variable definitions file (-var-file=FILE)         |
-| `vars`    | Record<string,string> | --  | Variable overrides as key-value pairs (-var KEY=VALUE)       |
-| `compact` | boolean           | `true`  | Auto-compact when structured output exceeds raw CLI tokens   |
+| Parameter | Type                  | Default | Description                                                |
+| --------- | --------------------- | ------- | ---------------------------------------------------------- |
+| `path`    | string                | cwd     | Project root path                                          |
+| `out`     | string                | --      | Save the plan to a file for later apply (-out=FILE)        |
+| `target`  | string                | --      | Target a specific resource for planning (-target=RESOURCE) |
+| `varFile` | string                | --      | Path to a variable definitions file (-var-file=FILE)       |
+| `vars`    | Record<string,string> | --      | Variable overrides as key-value pairs (-var KEY=VALUE)     |
+| `compact` | boolean               | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Resources to Create
 

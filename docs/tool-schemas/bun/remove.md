@@ -120,10 +120,10 @@ error: "nonexistent-pkg" is not in a package.json file
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Package removed      | ~45        | ~35       | ~15          | 22-67%  |
-| Package not installed | ~50       | ~40       | ~15          | 20-70%  |
+| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------- | ---------- | --------- | ------------ | ------- |
+| Package removed       | ~45        | ~35       | ~15          | 22-67%  |
+| Package not installed | ~50        | ~40       | ~15          | 20-70%  |
 
 ## Notes
 

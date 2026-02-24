@@ -6,19 +6,19 @@ Bazel build system operations: build, test, query, info, run, clean, fetch.
 
 ## Input Parameters
 
-| Parameter         | Type                                                            | Default    | Description                                                |
-| ----------------- | --------------------------------------------------------------- | ---------- | ---------------------------------------------------------- |
-| `action`          | `"build"` \| `"test"` \| `"query"` \| `"info"` \| `"run"` \| `"clean"` \| `"fetch"` | —          | Bazel action (required)                                    |
-| `targets`         | string[]                                                        | —          | Target patterns (e.g. `//src:app`, `//...`)                |
-| `workDir`         | string                                                          | cwd        | Repository / workspace path                                |
-| `queryExpr`       | string                                                          | —          | Query expression for query action                          |
+| Parameter         | Type                                                                                                  | Default    | Description                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------- |
+| `action`          | `"build"` \| `"test"` \| `"query"` \| `"info"` \| `"run"` \| `"clean"` \| `"fetch"`                   | —          | Bazel action (required)                                    |
+| `targets`         | string[]                                                                                              | —          | Target patterns (e.g. `//src:app`, `//...`)                |
+| `workDir`         | string                                                                                                | cwd        | Repository / workspace path                                |
+| `queryExpr`       | string                                                                                                | —          | Query expression for query action                          |
 | `queryOutput`     | `"label"` \| `"label_kind"` \| `"minrank"` \| `"maxrank"` \| `"package"` \| `"location"` \| `"build"` | `"label"`  | Query output format                                        |
-| `keepGoing`       | boolean                                                         | —          | Continue after errors (`-k`)                               |
-| `testOutput`      | `"summary"` \| `"errors"` \| `"all"` \| `"streamed"`           | `"errors"` | Test output mode                                           |
-| `verboseFailures` | boolean                                                         | `true`     | Verbose failure messages                                   |
-| `infoKey`         | string                                                          | —          | Specific info key                                          |
-| `expunge`         | boolean                                                         | —          | Full clean with `--expunge`                                |
-| `compact`         | boolean                                                         | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
+| `keepGoing`       | boolean                                                                                               | —          | Continue after errors (`-k`)                               |
+| `testOutput`      | `"summary"` \| `"errors"` \| `"all"` \| `"streamed"`                                                  | `"errors"` | Test output mode                                           |
+| `verboseFailures` | boolean                                                                                               | `true`     | Verbose failure messages                                   |
+| `infoKey`         | string                                                                                                | —          | Specific info key                                          |
+| `expunge`         | boolean                                                                                               | —          | Full clean with `--expunge`                                |
+| `compact`         | boolean                                                                                               | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Build (3 targets)
 
@@ -274,9 +274,7 @@ FAILED: Build did NOT complete successfully
 {
   "action": "build",
   "success": false,
-  "targets": [
-    { "label": "//src:app", "status": "failed" }
-  ],
+  "targets": [{ "label": "//src:app", "status": "failed" }],
   "summary": {
     "totalTargets": 1,
     "successTargets": 0,
@@ -335,12 +333,12 @@ FAILED: Build did NOT complete successfully
 
 ## Token Savings
 
-| Scenario               | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------------- | ---------- | --------- | ------------ | ------- |
-| Build (3 targets)      | ~180       | ~85       | ~40          | 53-78%  |
-| Test with failures     | ~350       | ~140      | ~65          | 60-81%  |
-| Query (7 deps)         | ~120       | ~65       | ~65          | 46%     |
-| Build failure          | ~280       | ~110      | ~75          | 61-73%  |
+| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------ | ---------- | --------- | ------------ | ------- |
+| Build (3 targets)  | ~180       | ~85       | ~40          | 53-78%  |
+| Test with failures | ~350       | ~140      | ~65          | 60-81%  |
+| Query (7 deps)     | ~120       | ~65       | ~65          | 46%     |
+| Build failure      | ~280       | ~110      | ~75          | 61-73%  |
 
 ## Notes
 

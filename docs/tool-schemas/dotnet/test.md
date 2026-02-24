@@ -6,17 +6,17 @@ Runs dotnet test and returns structured test results (name, status, pass/fail co
 
 ## Input Parameters
 
-| Parameter       | Type    | Default | Description                                                |
-| --------------- | ------- | ------- | ---------------------------------------------------------- |
-| `path`          | string  | cwd     | Project root path                                          |
-| `project`       | string  | --      | Path to the test project or solution file                  |
-| `filter`        | string  | --      | Filter expression to select tests (--filter)               |
-| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                  |
-| `framework`     | string  | --      | Target framework (e.g. net8.0)                             |
-| `noRestore`     | boolean | `false` | Skip automatic restore before testing (--no-restore)       |
-| `noBuild`       | boolean | `false` | Skip build before testing (--no-build)                     |
+| Parameter       | Type    | Default | Description                                                        |
+| --------------- | ------- | ------- | ------------------------------------------------------------------ |
+| `path`          | string  | cwd     | Project root path                                                  |
+| `project`       | string  | --      | Path to the test project or solution file                          |
+| `filter`        | string  | --      | Filter expression to select tests (--filter)                       |
+| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                          |
+| `framework`     | string  | --      | Target framework (e.g. net8.0)                                     |
+| `noRestore`     | boolean | `false` | Skip automatic restore before testing (--no-restore)               |
+| `noBuild`       | boolean | `false` | Skip build before testing (--no-build)                             |
 | `verbosity`     | enum    | --      | MSBuild verbosity level (quiet/minimal/normal/detailed/diagnostic) |
-| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — All Tests Passing
 
@@ -57,10 +57,22 @@ Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4, Duration:
   "failed": 0,
   "skipped": 0,
   "tests": [
-    { "name": "UserServiceTests.CreateUser_ReturnsSuccess", "status": "Passed", "duration": "42 ms" },
-    { "name": "UserServiceTests.DeleteUser_ReturnsNotFound", "status": "Passed", "duration": "12 ms" },
+    {
+      "name": "UserServiceTests.CreateUser_ReturnsSuccess",
+      "status": "Passed",
+      "duration": "42 ms"
+    },
+    {
+      "name": "UserServiceTests.DeleteUser_ReturnsNotFound",
+      "status": "Passed",
+      "duration": "12 ms"
+    },
     { "name": "OrderServiceTests.PlaceOrder_ValidInput", "status": "Passed", "duration": "28 ms" },
-    { "name": "OrderServiceTests.PlaceOrder_InvalidInput_Throws", "status": "Passed", "duration": "8 ms" }
+    {
+      "name": "OrderServiceTests.PlaceOrder_InvalidInput_Throws",
+      "status": "Passed",
+      "duration": "8 ms"
+    }
   ]
 }
 ```
@@ -133,10 +145,28 @@ Failed!  - Failed:     2, Passed:     2, Skipped:     0, Total:     4, Duration:
   "failed": 2,
   "skipped": 0,
   "tests": [
-    { "name": "UserServiceTests.CreateUser_ReturnsSuccess", "status": "Passed", "duration": "42 ms" },
-    { "name": "OrderServiceTests.PlaceOrder_ValidInput", "status": "Failed", "duration": "55 ms", "errorMessage": "Assert.Equal() Failure\n          Expected: 201\n          Actual:   400" },
-    { "name": "UserServiceTests.DeleteUser_ReturnsNotFound", "status": "Passed", "duration": "12 ms" },
-    { "name": "OrderServiceTests.CancelOrder_NotFound", "status": "Failed", "duration": "18 ms", "errorMessage": "System.InvalidOperationException : Order not found" }
+    {
+      "name": "UserServiceTests.CreateUser_ReturnsSuccess",
+      "status": "Passed",
+      "duration": "42 ms"
+    },
+    {
+      "name": "OrderServiceTests.PlaceOrder_ValidInput",
+      "status": "Failed",
+      "duration": "55 ms",
+      "errorMessage": "Assert.Equal() Failure\n          Expected: 201\n          Actual:   400"
+    },
+    {
+      "name": "UserServiceTests.DeleteUser_ReturnsNotFound",
+      "status": "Passed",
+      "duration": "12 ms"
+    },
+    {
+      "name": "OrderServiceTests.CancelOrder_NotFound",
+      "status": "Failed",
+      "duration": "18 ms",
+      "errorMessage": "System.InvalidOperationException : Order not found"
+    }
   ]
 }
 ```

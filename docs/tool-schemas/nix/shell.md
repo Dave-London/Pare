@@ -6,12 +6,12 @@ Makes packages available in the environment and optionally runs a command. Retur
 
 ## Input Parameters
 
-| Parameter  | Type     | Default | Description                                                          |
-| ---------- | -------- | ------- | -------------------------------------------------------------------- |
+| Parameter  | Type     | Default | Description                                                                            |
+| ---------- | -------- | ------- | -------------------------------------------------------------------------------------- |
 | `packages` | string[] | —       | Installable references for packages (e.g. `["nixpkgs#jq", "nixpkgs#curl"]`) (required) |
-| `command`  | string   | —       | Command to run with the packages available (uses `--command`)        |
-| `path`     | string   | cwd     | Project root path                                                    |
-| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens           |
+| `command`  | string   | —       | Command to run with the packages available (uses `--command`)                          |
+| `path`     | string   | cwd     | Project root path                                                                      |
+| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                             |
 
 ## Success — Run Command with Packages
 

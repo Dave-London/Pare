@@ -6,11 +6,11 @@ Shows the current Terraform state or a saved plan file in structured JSON. Retur
 
 ## Input Parameters
 
-| Parameter  | Type    | Default | Description                                                        |
-| ---------- | ------- | ------- | ------------------------------------------------------------------ |
-| `path`     | string  | cwd     | Project root path                                                  |
-| `planFile` | string  | --      | Path to a saved plan file to show instead of the current state     |
-| `compact`  | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
+| Parameter  | Type    | Default | Description                                                    |
+| ---------- | ------- | ------- | -------------------------------------------------------------- |
+| `path`     | string  | cwd     | Project root path                                              |
+| `planFile` | string  | --      | Path to a saved plan file to show instead of the current state |
+| `compact`  | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens     |
 
 ## Success — Show State
 
@@ -38,9 +38,24 @@ Shows the current Terraform state or a saved plan file in structured JSON. Retur
   "terraformVersion": "1.7.0",
   "resourceCount": 3,
   "resources": [
-    { "address": "aws_instance.web", "type": "aws_instance", "name": "web", "provider": "registry.terraform.io/hashicorp/aws" },
-    { "address": "aws_security_group.web_sg", "type": "aws_security_group", "name": "web_sg", "provider": "registry.terraform.io/hashicorp/aws" },
-    { "address": "aws_s3_bucket.assets", "type": "aws_s3_bucket", "name": "assets", "provider": "registry.terraform.io/hashicorp/aws" }
+    {
+      "address": "aws_instance.web",
+      "type": "aws_instance",
+      "name": "web",
+      "provider": "registry.terraform.io/hashicorp/aws"
+    },
+    {
+      "address": "aws_security_group.web_sg",
+      "type": "aws_security_group",
+      "name": "web_sg",
+      "provider": "registry.terraform.io/hashicorp/aws"
+    },
+    {
+      "address": "aws_s3_bucket.assets",
+      "type": "aws_s3_bucket",
+      "name": "assets",
+      "provider": "registry.terraform.io/hashicorp/aws"
+    }
   ],
   "outputs": [
     { "name": "instance_ip", "value": "54.123.45.67" },

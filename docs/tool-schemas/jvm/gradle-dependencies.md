@@ -6,11 +6,11 @@ Shows the Gradle dependency tree with structured output per configuration.
 
 ## Input Parameters
 
-| Parameter       | Type    | Default | Description                                                      |
-| --------------- | ------- | ------- | ---------------------------------------------------------------- |
-| `path`          | string  | cwd     | Project root path                                                |
-| `configuration` | string  | --      | Filter to a specific configuration (e.g. compileClasspath)       |
-| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens       |
+| Parameter       | Type    | Default | Description                                                |
+| --------------- | ------- | ------- | ---------------------------------------------------------- |
+| `path`          | string  | cwd     | Project root path                                          |
+| `configuration` | string  | --      | Filter to a specific configuration (e.g. compileClasspath) |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Dependencies by Configuration
 
@@ -55,7 +55,11 @@ BUILD SUCCESSFUL in 1s
     {
       "configuration": "compileClasspath",
       "dependencies": [
-        { "group": "org.springframework.boot", "artifact": "spring-boot-starter-web", "version": "3.2.1" },
+        {
+          "group": "org.springframework.boot",
+          "artifact": "spring-boot-starter-web",
+          "version": "3.2.1"
+        },
         { "group": "com.google.guava", "artifact": "guava", "version": "32.1.3-jre" }
       ]
     },
@@ -121,7 +125,11 @@ BUILD SUCCESSFUL in 1s
     {
       "configuration": "compileClasspath",
       "dependencies": [
-        { "group": "org.springframework.boot", "artifact": "spring-boot-starter-web", "version": "3.2.1" },
+        {
+          "group": "org.springframework.boot",
+          "artifact": "spring-boot-starter-web",
+          "version": "3.2.1"
+        },
         { "group": "com.google.guava", "artifact": "guava", "version": "32.1.3-jre" }
       ]
     }
@@ -136,10 +144,10 @@ BUILD SUCCESSFUL in 1s
 
 ## Token Savings
 
-| Scenario                 | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------------ | ---------- | --------- | ------------ | ------- |
-| 2 configs, 4 deps        | ~400       | ~100      | ~5           | 75-99%  |
-| Single config, 2 deps    | ~200       | ~50       | ~5           | 75-98%  |
+| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------- | ---------- | --------- | ------------ | ------- |
+| 2 configs, 4 deps     | ~400       | ~100      | ~5           | 75-99%  |
+| Single config, 2 deps | ~200       | ~50       | ~5           | 75-98%  |
 
 ## Notes
 

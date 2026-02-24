@@ -132,10 +132,10 @@ ERROR 1049 (42000): Unknown database 'nonexistent'
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 4-row SELECT   | ~90        | ~80       | ~15          | 11-83%  |
-| Unknown DB     | ~20        | ~20       | ~20          | 0%      |
+| Scenario     | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------ | ---------- | --------- | ------------ | ------- |
+| 4-row SELECT | ~90        | ~80       | ~15          | 11-83%  |
+| Unknown DB   | ~20        | ~20       | ~20          | 0%      |
 
 ## Notes
 

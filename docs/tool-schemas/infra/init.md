@@ -6,13 +6,13 @@ Initializes a Terraform working directory. Downloads providers, configures backe
 
 ## Input Parameters
 
-| Parameter      | Type    | Default | Description                                                          |
-| -------------- | ------- | ------- | -------------------------------------------------------------------- |
-| `path`         | string  | cwd     | Project root path                                                    |
-| `upgrade`      | boolean | --      | Upgrade provider plugins to newest acceptable versions (-upgrade)    |
-| `reconfigure`  | boolean | --      | Reconfigure backend, ignoring saved configuration (-reconfigure)     |
-| `migrateState` | boolean | --      | Migrate state to new backend configuration (-migrate-state)          |
-| `compact`      | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens           |
+| Parameter      | Type    | Default | Description                                                       |
+| -------------- | ------- | ------- | ----------------------------------------------------------------- |
+| `path`         | string  | cwd     | Project root path                                                 |
+| `upgrade`      | boolean | --      | Upgrade provider plugins to newest acceptable versions (-upgrade) |
+| `reconfigure`  | boolean | --      | Reconfigure backend, ignoring saved configuration (-reconfigure)  |
+| `migrateState` | boolean | --      | Migrate state to new backend configuration (-migrate-state)       |
+| `compact`      | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens        |
 
 ## Success — Init with Providers
 
@@ -113,10 +113,10 @@ was recently created, verify the bucket configuration and try again.
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| Init with 2 providers | ~300   | ~60       | ~5           | 80-98%  |
-| Init failure      | ~200       | ~20       | ~20          | 90%     |
+| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------- | ---------- | --------- | ------------ | ------- |
+| Init with 2 providers | ~300       | ~60       | ~5           | 80-98%  |
+| Init failure          | ~200       | ~20       | ~20          | 90%     |
 
 ## Notes
 

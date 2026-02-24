@@ -145,10 +145,10 @@ An argument named "nonexistent_arg" is not expected here.
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| Valid configuration    | ~50        | ~15       | ~15          | 70%     |
-| 2 validation errors   | ~300       | ~80       | ~80          | 73%     |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| Valid configuration | ~50        | ~15       | ~15          | 70%     |
+| 2 validation errors | ~300       | ~80       | ~80          | 73%     |
 
 ## Notes
 

@@ -43,7 +43,11 @@ Computed swift-log at 1.5.4 (0.01s)
   "success": true,
   "exitCode": 0,
   "resolvedPackages": [
-    { "name": "swift-argument-parser", "url": "https://github.com/apple/swift-argument-parser.git", "version": "1.3.0" },
+    {
+      "name": "swift-argument-parser",
+      "url": "https://github.com/apple/swift-argument-parser.git",
+      "version": "1.3.0"
+    },
     { "name": "swift-log", "url": "https://github.com/apple/swift-log.git", "version": "1.5.4" }
   ],
   "duration": 820
@@ -123,10 +127,10 @@ Resolved.
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 2 deps resolved   | ~120       | ~65       | ~15          | 46-88%  |
-| No dependencies   | ~15        | ~15       | ~15          | 0%      |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 2 deps resolved | ~120       | ~65       | ~15          | 46-88%  |
+| No dependencies | ~15        | ~15       | ~15          | 0%      |
 
 ## Notes
 

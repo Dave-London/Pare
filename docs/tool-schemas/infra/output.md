@@ -51,7 +51,12 @@ Shows Terraform output values from the current state. Returns structured name/va
   "success": true,
   "outputs": [
     { "name": "instance_ip", "value": "54.123.45.67", "type": "string", "sensitive": false },
-    { "name": "db_connection_string", "value": "postgresql://db.example.com:5432/myapp", "type": "string", "sensitive": true },
+    {
+      "name": "db_connection_string",
+      "value": "postgresql://db.example.com:5432/myapp",
+      "type": "string",
+      "sensitive": true
+    },
     { "name": "instance_ids", "value": ["i-abc123", "i-def456"], "type": "list" }
   ]
 }
@@ -110,10 +115,10 @@ the `output` keyword and run `terraform refresh` for it to become available.
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 3 output values   | ~200       | ~80       | ~5           | 60-98%  |
-| No state          | ~80        | ~15       | ~15          | 81%     |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 3 output values | ~200       | ~80       | ~5           | 60-98%  |
+| No state        | ~80        | ~15       | ~15          | 81%     |
 
 ## Notes
 

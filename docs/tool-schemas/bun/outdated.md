@@ -123,10 +123,10 @@ All packages are up to date.
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 3 outdated pkgs   | ~120       | ~80       | ~15          | 33-88%  |
-| All up to date    | ~15        | ~15       | ~15          | 0%      |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 3 outdated pkgs | ~120       | ~80       | ~15          | 33-88%  |
+| All up to date  | ~15        | ~15       | ~15          | 0%      |
 
 ## Notes
 

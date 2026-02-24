@@ -6,14 +6,14 @@ Builds a Swift package and returns structured compiler diagnostics.
 
 ## Input Parameters
 
-| Parameter       | Type                         | Default | Description                                                |
-| --------------- | ---------------------------- | ------- | ---------------------------------------------------------- |
-| `configuration` | `"debug"` \| `"release"`    | —       | Build configuration (debug or release)                     |
-| `target`        | string                       | —       | Specific target to build                                   |
-| `product`       | string                       | —       | Specific product to build                                  |
-| `verbose`       | boolean                      | `false` | Enable verbose output (-v)                                 |
-| `path`          | string                       | cwd     | Project root path                                          |
-| `compact`       | boolean                      | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter       | Type                     | Default | Description                                                |
+| --------------- | ------------------------ | ------- | ---------------------------------------------------------- |
+| `configuration` | `"debug"` \| `"release"` | —       | Build configuration (debug or release)                     |
+| `target`        | string                   | —       | Specific target to build                                   |
+| `product`       | string                   | —       | Specific product to build                                  |
+| `verbose`       | boolean                  | `false` | Enable verbose output (-v)                                 |
+| `path`          | string                   | cwd     | Project root path                                          |
+| `compact`       | boolean                  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Clean Build
 

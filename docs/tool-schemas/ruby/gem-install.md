@@ -9,7 +9,7 @@ Installs a Ruby gem using `gem install` and returns structured output with succe
 | Parameter | Type    | Default | Description                                                |
 | --------- | ------- | ------- | ---------------------------------------------------------- |
 | `gem`     | string  | --      | Name of the gem to install                                 |
-| `version` | string  | --      | Specific version to install (e.g., '1.2.3')               |
+| `version` | string  | --      | Specific version to install (e.g., '1.2.3')                |
 | `path`    | string  | cwd     | Working directory                                          |
 | `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
@@ -124,10 +124,10 @@ ERROR:  Could not find a valid gem 'nonexistent-gem-xyz' (>= 0) in any repositor
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Gem installed  | ~40        | ~35       | ~12          | 13-70%  |
-| Gem not found  | ~20        | ~25       | ~12          | 0-40%   |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Gem installed | ~40        | ~35       | ~12          | 13-70%  |
+| Gem not found | ~20        | ~25       | ~12          | 0-40%   |
 
 ## Notes
 

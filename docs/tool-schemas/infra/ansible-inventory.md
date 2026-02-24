@@ -6,14 +6,14 @@ Queries Ansible inventory for hosts, groups, and variables. Returns structured J
 
 ## Input Parameters
 
-| Parameter   | Type    | Default | Description                                                  |
-| ----------- | ------- | ------- | ------------------------------------------------------------ |
-| `inventory` | string  | --      | Inventory file or host list (-i)                             |
-| `graph`     | boolean | --      | Show inventory graph (--graph) instead of JSON list          |
-| `host`      | string  | --      | Show variables for a specific host (--host)                  |
-| `vars`      | boolean | --      | Show host variables in graph mode (--vars)                   |
-| `path`      | string  | cwd     | Project root path                                            |
-| `compact`   | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens   |
+| Parameter   | Type    | Default | Description                                                |
+| ----------- | ------- | ------- | ---------------------------------------------------------- |
+| `inventory` | string  | --      | Inventory file or host list (-i)                           |
+| `graph`     | boolean | --      | Show inventory graph (--graph) instead of JSON list        |
+| `host`      | string  | --      | Show variables for a specific host (--host)                |
+| `vars`      | boolean | --      | Show host variables in graph mode (--vars)                 |
+| `path`      | string  | cwd     | Project root path                                          |
+| `compact`   | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — List Groups
 
@@ -159,11 +159,11 @@ Queries Ansible inventory for hosts, groups, and variables. Returns structured J
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| List 3 groups    | ~400       | ~100      | ~10          | 75-98%  |
-| Graph mode       | ~100       | ~40       | ~10          | 60-90%  |
-| Host variables   | ~100       | ~40       | ~10          | 60-90%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| List 3 groups  | ~400       | ~100      | ~10          | 75-98%  |
+| Graph mode     | ~100       | ~40       | ~10          | 60-90%  |
+| Host variables | ~100       | ~40       | ~10          | 60-90%  |
 
 ## Notes
 

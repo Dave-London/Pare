@@ -10,7 +10,7 @@ Checks Terraform configuration formatting. Lists files that need formatting and 
 | ----------- | ------- | ------- | ---------------------------------------------------------- |
 | `path`      | string  | cwd     | Project root path                                          |
 | `diff`      | boolean | --      | Show formatting differences (-diff)                        |
-| `recursive` | boolean | `true`  | Process files in subdirectories (-recursive, default true)  |
+| `recursive` | boolean | `true`  | Process files in subdirectories (-recursive, default true) |
 | `compact`   | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — All Formatted

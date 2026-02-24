@@ -130,11 +130,11 @@ or include the "-or-create" flag with the "select" subcommand.
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| List 3 workspaces     | ~60        | ~30       | ~10          | 50-83%  |
-| Select workspace      | ~30        | ~15       | ~15          | 50%     |
-| Workspace not found   | ~60        | ~15       | ~15          | 75%     |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| List 3 workspaces   | ~60        | ~30       | ~10          | 50-83%  |
+| Select workspace    | ~30        | ~15       | ~15          | 50%     |
+| Workspace not found | ~60        | ~15       | ~15          | 75%     |
 
 ## Notes
 

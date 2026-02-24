@@ -6,12 +6,12 @@ Executes a command in the context of the Gemfile bundle using `bundle exec` and 
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                                                |
-| --------- | -------- | ------- | ---------------------------------------------------------- |
+| Parameter | Type     | Default | Description                                                                 |
+| --------- | -------- | ------- | --------------------------------------------------------------------------- |
 | `command` | string   | --      | Command to execute in the bundle context (e.g., 'rake', 'rspec', 'rubocop') |
-| `args`    | string[] | `[]`    | Arguments to pass to the command                           |
-| `path`    | string   | cwd     | Working directory                                          |
-| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `args`    | string[] | `[]`    | Arguments to pass to the command                                            |
+| `path`    | string   | cwd     | Working directory                                                           |
+| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                  |
 
 ## Success -- Running RSpec
 
@@ -127,10 +127,10 @@ Install missing gem executables with `bundle install`
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| RSpec passing        | ~60        | ~40       | ~15          | 33-75%  |
-| Command not found    | ~20        | ~25       | ~15          | 0-25%   |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| RSpec passing     | ~60        | ~40       | ~15          | 33-75%  |
+| Command not found | ~20        | ~25       | ~15          | 0-25%   |
 
 ## Notes
 

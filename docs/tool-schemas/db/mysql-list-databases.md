@@ -133,10 +133,10 @@ ERROR 1045 (28000): Access denied for user 'baduser'@'localhost' (using password
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 6 databases    | ~40        | ~50       | ~10          | 0-75%   |
-| Access denied  | ~25        | ~25       | ~25          | 0%      |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| 6 databases   | ~40        | ~50       | ~10          | 0-75%   |
+| Access denied | ~25        | ~25       | ~25          | 0%      |
 
 ## Notes
 

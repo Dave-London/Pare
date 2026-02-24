@@ -145,8 +145,18 @@ java.lang.IllegalStateException: Order not found
   "tests": [
     { "name": "testCreateUser", "className": "com.example.UserServiceTest", "passed": true },
     { "name": "testDeleteUser", "className": "com.example.UserServiceTest", "passed": true },
-    { "name": "testPlaceOrder", "className": "com.example.OrderServiceTest", "passed": false, "failure": "expected: <201> but was: <400>" },
-    { "name": "testCancelOrder", "className": "com.example.OrderServiceTest", "passed": false, "failure": "Order not found" }
+    {
+      "name": "testPlaceOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": false,
+      "failure": "expected: <201> but was: <400>"
+    },
+    {
+      "name": "testCancelOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": false,
+      "failure": "Order not found"
+    }
   ]
 }
 ```
@@ -180,10 +190,10 @@ java.lang.IllegalStateException: Order not found
 
 ## Token Savings
 
-| Scenario               | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------------- | ---------- | --------- | ------------ | ------- |
-| 4 tests passing        | ~400       | ~100      | ~35          | 75-91%  |
-| 4 tests, 1 fail + 1 err | ~600     | ~120      | ~35          | 80-94%  |
+| Scenario                | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------------- | ---------- | --------- | ------------ | ------- |
+| 4 tests passing         | ~400       | ~100      | ~35          | 75-91%  |
+| 4 tests, 1 fail + 1 err | ~600       | ~120      | ~35          | 80-94%  |
 
 ## Notes
 

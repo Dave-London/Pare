@@ -6,16 +6,16 @@ CMake build system operations: configure, build, test, list-presets, install, cl
 
 ## Input Parameters
 
-| Parameter            | Type                                                                              | Default   | Description                                                |
-| -------------------- | --------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------- |
-| `action`             | `"configure"` \| `"build"` \| `"test"` \| `"list-presets"` \| `"install"` \| `"clean"` | —         | CMake action (required)                                    |
-| `sourceDir`          | string                                                                            | cwd       | Source directory containing CMakeLists.txt                  |
-| `buildDir`           | string                                                                            | `"build"` | Build directory                                            |
-| `cacheVars`          | Record\<string, string\>                                                          | —         | CMake cache variables (`-D KEY=VALUE`)                     |
-| `target`             | string[]                                                                          | —         | Build targets                                              |
-| `config`             | `"Debug"` \| `"Release"` \| `"RelWithDebInfo"` \| `"MinSizeRel"`                 | —         | Build configuration                                        |
-| `testOutputOnFailure`| boolean                                                                           | `true`    | Show output for failed tests                               |
-| `compact`            | boolean                                                                           | `true`    | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter             | Type                                                                                   | Default   | Description                                                |
+| --------------------- | -------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------- |
+| `action`              | `"configure"` \| `"build"` \| `"test"` \| `"list-presets"` \| `"install"` \| `"clean"` | —         | CMake action (required)                                    |
+| `sourceDir`           | string                                                                                 | cwd       | Source directory containing CMakeLists.txt                 |
+| `buildDir`            | string                                                                                 | `"build"` | Build directory                                            |
+| `cacheVars`           | Record\<string, string\>                                                               | —         | CMake cache variables (`-D KEY=VALUE`)                     |
+| `target`              | string[]                                                                               | —         | Build targets                                              |
+| `config`              | `"Debug"` \| `"Release"` \| `"RelWithDebInfo"` \| `"MinSizeRel"`                       | —         | Build configuration                                        |
+| `testOutputOnFailure` | boolean                                                                                | `true`    | Show output for failed tests                               |
+| `compact`             | boolean                                                                                | `true`    | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Configure
 
@@ -209,7 +209,7 @@ Errors while running CTest
     "failed": 1,
     "skipped": 0,
     "timeout": 0,
-    "totalDurationSec": 1.30
+    "totalDurationSec": 1.3
   },
   "exitCode": 8
 }

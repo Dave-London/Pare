@@ -6,18 +6,18 @@ Runs `bun build` to bundle JavaScript/TypeScript and returns structured output w
 
 ## Input Parameters
 
-| Parameter     | Type                                 | Default | Description                                                |
-| ------------- | ------------------------------------ | ------- | ---------------------------------------------------------- |
-| `entrypoints` | string[]                             | —       | Entry point files to bundle (required)                     |
-| `outdir`      | string                               | —       | Output directory (--outdir)                                |
-| `outfile`     | string                               | —       | Output file path (--outfile)                               |
-| `target`      | `"browser"` \| `"bun"` \| `"node"`  | —       | Build target environment (--target)                        |
-| `format`      | `"esm"` \| `"cjs"` \| `"iife"`      | —       | Output module format (--format)                            |
-| `minify`      | boolean                              | —       | Minify the output (--minify)                               |
-| `sourcemap`   | `"none"` \| `"inline"` \| `"external"` | —    | Source map generation (--sourcemap)                         |
-| `splitting`   | boolean                              | —       | Enable code splitting (--splitting)                        |
-| `path`        | string                               | cwd     | Project root path                                          |
-| `compact`     | boolean                              | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter     | Type                                   | Default | Description                                                |
+| ------------- | -------------------------------------- | ------- | ---------------------------------------------------------- |
+| `entrypoints` | string[]                               | —       | Entry point files to bundle (required)                     |
+| `outdir`      | string                                 | —       | Output directory (--outdir)                                |
+| `outfile`     | string                                 | —       | Output file path (--outfile)                               |
+| `target`      | `"browser"` \| `"bun"` \| `"node"`     | —       | Build target environment (--target)                        |
+| `format`      | `"esm"` \| `"cjs"` \| `"iife"`         | —       | Output module format (--format)                            |
+| `minify`      | boolean                                | —       | Minify the output (--minify)                               |
+| `sourcemap`   | `"none"` \| `"inline"` \| `"external"` | —       | Source map generation (--sourcemap)                        |
+| `splitting`   | boolean                                | —       | Enable code splitting (--splitting)                        |
+| `path`        | string                                 | cwd     | Project root path                                          |
+| `compact`     | boolean                                | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Bundle Completes
 
@@ -45,9 +45,7 @@ $ bun build src/index.ts --outdir dist
 {
   "success": true,
   "entrypoints": ["src/index.ts"],
-  "artifacts": [
-    { "path": "dist/index.js", "size": "12.4 KB" }
-  ],
+  "artifacts": [{ "path": "dist/index.js", "size": "12.4 KB" }],
   "duration": 8,
   "stdout": "  dist/index.js  12.4 KB\n\n[8ms] bundle 1 modules"
 }

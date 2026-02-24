@@ -6,14 +6,14 @@ Runs `deno test` and returns structured pass/fail output with per-test results.
 
 ## Input Parameters
 
-| Parameter  | Type     | Default | Description                                                         |
-| ---------- | -------- | ------- | ------------------------------------------------------------------- |
-| `files`    | string[] | —       | Test files or directories to run (default: auto-discovered)         |
-| `filter`   | string   | —       | Filter tests by name pattern (--filter)                             |
-| `path`     | string   | cwd     | Project root path                                                   |
-| `allowAll` | boolean  | `true`  | Allow all permissions (-A). Defaults to true for test convenience.  |
-| `failFast` | boolean  | —       | Stop on first failure (--fail-fast)                                 |
-| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens          |
+| Parameter  | Type     | Default | Description                                                        |
+| ---------- | -------- | ------- | ------------------------------------------------------------------ |
+| `files`    | string[] | —       | Test files or directories to run (default: auto-discovered)        |
+| `filter`   | string   | —       | Filter tests by name pattern (--filter)                            |
+| `path`     | string   | cwd     | Project root path                                                  |
+| `allowAll` | boolean  | `true`  | Allow all permissions (-A). Defaults to true for test convenience. |
+| `failFast` | boolean  | —       | Stop on first failure (--fail-fast)                                |
+| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — All Tests Pass
 
@@ -133,7 +133,12 @@ FAILED | 2 passed | 1 failed | 0 ignored | 0 measured | 0 filtered out (85ms)
   "duration": 85,
   "tests": [
     { "name": "add", "status": "passed", "duration": 2 },
-    { "name": "divide", "status": "failed", "duration": 3, "error": "AssertionError: Values are not equal.\n\n    [Diff] Actual / Expected\n\n-   NaN\n+   Infinity" },
+    {
+      "name": "divide",
+      "status": "failed",
+      "duration": 3,
+      "error": "AssertionError: Values are not equal.\n\n    [Diff] Actual / Expected\n\n-   NaN\n+   Infinity"
+    },
     { "name": "subtract", "status": "passed", "duration": 1 }
   ]
 }
@@ -167,10 +172,10 @@ FAILED | 2 passed | 1 failed | 0 ignored | 0 measured | 0 filtered out (85ms)
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| All tests pass  | ~180       | ~120      | ~30          | 33-83%  |
-| Tests fail      | ~250       | ~110      | ~30          | 56-88%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| All tests pass | ~180       | ~120      | ~30          | 33-83%  |
+| Tests fail     | ~250       | ~110      | ~30          | 56-88%  |
 
 ## Notes
 

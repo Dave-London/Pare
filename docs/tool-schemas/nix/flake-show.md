@@ -162,10 +162,10 @@ error: path '/home/user/project' is not a flake (because it doesn't contain a 'f
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| Show flake        | ~200       | ~130      | ~35          | 35-83%  |
-| Not a flake       | ~60        | ~45       | ~25          | 25-58%  |
+| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------- | ---------- | --------- | ------------ | ------- |
+| Show flake  | ~200       | ~130      | ~35          | 35-83%  |
+| Not a flake | ~60        | ~45       | ~25          | 25-58%  |
 
 ## Notes
 

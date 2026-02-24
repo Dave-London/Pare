@@ -6,21 +6,21 @@ Syncs files between local and remote locations using rsync with structured trans
 
 ## Input Parameters
 
-| Parameter      | Type     | Default | Description                                                                           |
-| -------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
-| `source`       | string   | --      | Source path (local path or remote user@host:path). Use trailing / to sync contents.   |
-| `destination`  | string   | --      | Destination path (local path or remote user@host:path)                                |
-| `dryRun`       | boolean  | `true`  | Preview what would be transferred without making changes (default: true for safety)   |
-| `archive`      | boolean  | `true`  | Archive mode: preserves permissions, timestamps, symlinks (rsync -a)                  |
-| `compress`     | boolean  | `true`  | Compress data during transfer (rsync -z)                                              |
-| `verbose`      | boolean  | `true`  | Verbose output showing transferred files (rsync -v)                                   |
-| `delete`       | boolean  | --      | Delete files in destination that don't exist in source. Use with caution!             |
-| `exclude`      | string[] | --      | Patterns to exclude from sync (e.g. node_modules, .git)                               |
-| `include`      | string[] | --      | Patterns to include in sync                                                            |
-| `sshPort`      | number   | --      | SSH port for remote transfers                                                          |
-| `identityFile` | string   | --      | SSH private key file for remote transfers                                              |
-| `path`         | string   | cwd     | Working directory                                                                      |
-| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                             |
+| Parameter      | Type     | Default | Description                                                                         |
+| -------------- | -------- | ------- | ----------------------------------------------------------------------------------- |
+| `source`       | string   | --      | Source path (local path or remote user@host:path). Use trailing / to sync contents. |
+| `destination`  | string   | --      | Destination path (local path or remote user@host:path)                              |
+| `dryRun`       | boolean  | `true`  | Preview what would be transferred without making changes (default: true for safety) |
+| `archive`      | boolean  | `true`  | Archive mode: preserves permissions, timestamps, symlinks (rsync -a)                |
+| `compress`     | boolean  | `true`  | Compress data during transfer (rsync -z)                                            |
+| `verbose`      | boolean  | `true`  | Verbose output showing transferred files (rsync -v)                                 |
+| `delete`       | boolean  | --      | Delete files in destination that don't exist in source. Use with caution!           |
+| `exclude`      | string[] | --      | Patterns to exclude from sync (e.g. node_modules, .git)                             |
+| `include`      | string[] | --      | Patterns to include in sync                                                         |
+| `sshPort`      | number   | --      | SSH port for remote transfers                                                       |
+| `identityFile` | string   | --      | SSH private key file for remote transfers                                           |
+| `path`         | string   | cwd     | Working directory                                                                   |
+| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                          |
 
 ## Success -- Dry Run Sync
 

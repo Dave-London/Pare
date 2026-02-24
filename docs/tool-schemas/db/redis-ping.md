@@ -116,10 +116,10 @@ Could not connect to Redis at badhost:6379: Name or service not known
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| Successful PING   | ~5         | ~15       | ~10          | 0%      |
-| Connection error  | ~15        | ~20       | ~20          | 0%      |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| Successful PING  | ~5         | ~15       | ~10          | 0%      |
+| Connection error | ~15        | ~20       | ~20          | 0%      |
 
 ## Notes
 

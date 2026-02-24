@@ -6,12 +6,12 @@ Runs `deno fmt` to check or write code formatting. Returns structured list of af
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                                                |
-| --------- | -------- | ------- | ---------------------------------------------------------- |
-| `files`   | string[] | —       | Files or directories to format (default: current directory) |
-| `path`    | string   | cwd     | Project root path                                          |
+| Parameter | Type     | Default | Description                                                   |
+| --------- | -------- | ------- | ------------------------------------------------------------- |
+| `files`   | string[] | —       | Files or directories to format (default: current directory)   |
+| `path`    | string   | cwd     | Project root path                                             |
 | `check`   | boolean  | `true`  | Check formatting without writing (--check). Defaults to true. |
-| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact` | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens    |
 
 ## Success — All Files Formatted
 

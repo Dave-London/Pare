@@ -6,15 +6,15 @@ Executes a command on a remote host via SSH and returns structured output with s
 
 ## Input Parameters
 
-| Parameter      | Type     | Default | Description                                                         |
-| -------------- | -------- | ------- | ------------------------------------------------------------------- |
-| `host`         | string   | --      | Remote host to connect to (hostname or IP address)                  |
-| `user`         | string   | --      | SSH username (if not specified, uses SSH config default)             |
-| `command`      | string   | --      | Command to execute on the remote host                               |
-| `port`         | number   | `22`    | SSH port number                                                     |
-| `identityFile` | string   | --      | Path to SSH private key file                                        |
+| Parameter      | Type     | Default | Description                                                                  |
+| -------------- | -------- | ------- | ---------------------------------------------------------------------------- |
+| `host`         | string   | --      | Remote host to connect to (hostname or IP address)                           |
+| `user`         | string   | --      | SSH username (if not specified, uses SSH config default)                     |
+| `command`      | string   | --      | Command to execute on the remote host                                        |
+| `port`         | number   | `22`    | SSH port number                                                              |
+| `identityFile` | string   | --      | Path to SSH private key file                                                 |
 | `options`      | string[] | `[]`    | Additional SSH options as -o key=value pairs (e.g. StrictHostKeyChecking=no) |
-| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens          |
+| `compact`      | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens                   |
 
 ## Success -- Remote Command
 
@@ -136,10 +136,10 @@ ssh: connect to host badhost.example.com port 22: Connection refused
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| Remote command    | ~60        | ~55       | ~20          | 8-67%   |
-| Connection error  | ~20        | ~30       | ~25          | 0%      |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| Remote command   | ~60        | ~55       | ~20          | 8-67%   |
+| Connection error | ~20        | ~30       | ~25          | 0%      |
 
 ## Notes
 

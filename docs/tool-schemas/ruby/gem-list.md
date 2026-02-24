@@ -83,9 +83,9 @@ rake (13.1.0)
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 10 gems listed    | ~100       | ~90       | ~5           | 10-95%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| 10 gems listed | ~100       | ~90       | ~5           | 10-95%  |
 
 ## Notes
 

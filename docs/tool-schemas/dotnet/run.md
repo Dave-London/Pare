@@ -6,18 +6,18 @@ Runs a .NET application and returns structured output (exit code, stdout, stderr
 
 ## Input Parameters
 
-| Parameter       | Type     | Default     | Description                                                  |
-| --------------- | -------- | ----------- | ------------------------------------------------------------ |
-| `path`          | string   | cwd         | Project root path                                            |
-| `project`       | string   | --          | Path to the project file to run                              |
-| `configuration` | string   | --          | Build configuration (e.g. Debug, Release)                    |
-| `framework`     | string   | --          | Target framework (e.g. net8.0)                               |
-| `noBuild`       | boolean  | `false`     | Skip build before running (--no-build)                       |
-| `noRestore`     | boolean  | `false`     | Skip automatic restore before running (--no-restore)         |
-| `args`          | string[] | `[]`        | Arguments to pass to the application (after --)              |
-| `timeout`       | number   | --          | Execution timeout in ms (min: 1000, max: 600000)             |
-| `maxOutputSize` | number   | `1048576`   | Maximum stdout/stderr size in bytes before truncation        |
-| `compact`       | boolean  | `true`      | Auto-compact when structured output exceeds raw CLI tokens   |
+| Parameter       | Type     | Default   | Description                                                |
+| --------------- | -------- | --------- | ---------------------------------------------------------- |
+| `path`          | string   | cwd       | Project root path                                          |
+| `project`       | string   | --        | Path to the project file to run                            |
+| `configuration` | string   | --        | Build configuration (e.g. Debug, Release)                  |
+| `framework`     | string   | --        | Target framework (e.g. net8.0)                             |
+| `noBuild`       | boolean  | `false`   | Skip build before running (--no-build)                     |
+| `noRestore`     | boolean  | `false`   | Skip automatic restore before running (--no-restore)       |
+| `args`          | string[] | `[]`      | Arguments to pass to the application (after --)            |
+| `timeout`       | number   | --        | Execution timeout in ms (min: 1000, max: 600000)           |
+| `maxOutputSize` | number   | `1048576` | Maximum stdout/stderr size in bytes before truncation      |
+| `compact`       | boolean  | `true`    | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Normal Execution
 

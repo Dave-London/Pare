@@ -166,10 +166,10 @@ BUILD FAILED in 2s
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Clean build    | ~200       | ~40       | ~20          | 80-90%  |
-| Build failure  | ~400       | ~80       | ~50          | 80-88%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Clean build   | ~200       | ~40       | ~20          | 80-90%  |
+| Build failure | ~400       | ~80       | ~50          | 80-88%  |
 
 ## Notes
 

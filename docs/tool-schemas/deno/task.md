@@ -128,10 +128,10 @@ error: Connection refused (os error 111)
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Task succeeds  | ~50        | ~50       | ~25          | 0-50%   |
-| Task fails     | ~90        | ~60       | ~25          | 33-72%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Task succeeds | ~50        | ~50       | ~25          | 0-50%   |
+| Task fails    | ~90        | ~60       | ~25          | 33-72%  |
 
 ## Notes
 

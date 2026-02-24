@@ -6,11 +6,11 @@ Evaluates a MongoDB expression via mongosh and returns the output.
 
 ## Input Parameters
 
-| Parameter    | Type    | Default | Description                                                |
-| ------------ | ------- | ------- | ---------------------------------------------------------- |
-| `expression` | string  | --      | JavaScript expression to evaluate in mongosh               |
+| Parameter    | Type    | Default | Description                                                   |
+| ------------ | ------- | ------- | ------------------------------------------------------------- |
+| `expression` | string  | --      | JavaScript expression to evaluate in mongosh                  |
 | `uri`        | string  | --      | MongoDB connection URI (e.g., mongodb://localhost:27017/mydb) |
-| `compact`    | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`    | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens    |
 
 ## Success -- Collection Query
 

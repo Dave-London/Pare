@@ -6,16 +6,16 @@ Runs dotnet build and returns structured diagnostics (file, line, column, code, 
 
 ## Input Parameters
 
-| Parameter       | Type    | Default | Description                                                |
-| --------------- | ------- | ------- | ---------------------------------------------------------- |
-| `path`          | string  | cwd     | Project root path                                          |
-| `project`       | string  | --      | Path to the project or solution file                       |
-| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                  |
-| `framework`     | string  | --      | Target framework (e.g. net8.0)                             |
-| `runtime`       | string  | --      | Target runtime identifier (e.g. win-x64, linux-x64)       |
-| `noRestore`     | boolean | `false` | Skip automatic restore before building (--no-restore)      |
+| Parameter       | Type    | Default | Description                                                        |
+| --------------- | ------- | ------- | ------------------------------------------------------------------ |
+| `path`          | string  | cwd     | Project root path                                                  |
+| `project`       | string  | --      | Path to the project or solution file                               |
+| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                          |
+| `framework`     | string  | --      | Target framework (e.g. net8.0)                                     |
+| `runtime`       | string  | --      | Target runtime identifier (e.g. win-x64, linux-x64)                |
+| `noRestore`     | boolean | `false` | Skip automatic restore before building (--no-restore)              |
 | `verbosity`     | enum    | --      | MSBuild verbosity level (quiet/minimal/normal/detailed/diagnostic) |
-| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — Clean Build
 

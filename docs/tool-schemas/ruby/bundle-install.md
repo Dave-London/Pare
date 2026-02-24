@@ -126,10 +126,10 @@ Could not locate Gemfile
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| 10 gems installed     | ~120       | ~60       | ~10          | 50-92%  |
-| Gemfile not found     | ~15        | ~15       | ~10          | 0-33%   |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| 10 gems installed | ~120       | ~60       | ~10          | 50-92%  |
+| Gemfile not found | ~15        | ~15       | ~10          | 0-33%   |
 
 ## Notes
 

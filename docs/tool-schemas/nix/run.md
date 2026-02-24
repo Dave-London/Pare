@@ -121,10 +121,10 @@ Error: invalid configuration at line 12
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Run success    | ~30        | ~40       | ~25          | 17%     |
-| Non-zero exit  | ~80        | ~55       | ~25          | 31-69%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Run success   | ~30        | ~40       | ~25          | 17%     |
+| Non-zero exit | ~80        | ~55       | ~25          | 31-69%  |
 
 ## Notes
 

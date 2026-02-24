@@ -57,10 +57,30 @@ BUILD SUCCESSFUL in 3s
   "failed": 0,
   "skipped": 0,
   "tests": [
-    { "name": "testCreateUser", "className": "com.example.UserServiceTest", "passed": true, "duration": "0.012s" },
-    { "name": "testDeleteUser", "className": "com.example.UserServiceTest", "passed": true, "duration": "0.008s" },
-    { "name": "testPlaceOrder", "className": "com.example.OrderServiceTest", "passed": true, "duration": "0.025s" },
-    { "name": "testCancelOrder", "className": "com.example.OrderServiceTest", "passed": true, "duration": "0.010s" }
+    {
+      "name": "testCreateUser",
+      "className": "com.example.UserServiceTest",
+      "passed": true,
+      "duration": "0.012s"
+    },
+    {
+      "name": "testDeleteUser",
+      "className": "com.example.UserServiceTest",
+      "passed": true,
+      "duration": "0.008s"
+    },
+    {
+      "name": "testPlaceOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": true,
+      "duration": "0.025s"
+    },
+    {
+      "name": "testCancelOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": true,
+      "duration": "0.010s"
+    }
   ]
 }
 ```
@@ -137,8 +157,18 @@ BUILD FAILED in 3s
   "tests": [
     { "name": "testCreateUser", "className": "com.example.UserServiceTest", "passed": true },
     { "name": "testDeleteUser", "className": "com.example.UserServiceTest", "passed": true },
-    { "name": "testPlaceOrder", "className": "com.example.OrderServiceTest", "passed": false, "failure": "expected: <201> but was: <400>" },
-    { "name": "testCancelOrder", "className": "com.example.OrderServiceTest", "passed": false, "failure": "Order not found" }
+    {
+      "name": "testPlaceOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": false,
+      "failure": "expected: <201> but was: <400>"
+    },
+    {
+      "name": "testCancelOrder",
+      "className": "com.example.OrderServiceTest",
+      "passed": false,
+      "failure": "Order not found"
+    }
   ]
 }
 ```

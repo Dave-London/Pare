@@ -9,7 +9,7 @@ Tests SSH connectivity to a remote host using `ssh -T` and returns whether the h
 | Parameter        | Type    | Default | Description                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------- |
 | `host`           | string  | --      | Remote host to test connectivity to (hostname or IP)       |
-| `user`           | string  | --      | SSH username (if not specified, uses SSH config default)    |
+| `user`           | string  | --      | SSH username (if not specified, uses SSH config default)   |
 | `port`           | number  | `22`    | SSH port number                                            |
 | `identityFile`   | string  | --      | Path to SSH private key file                               |
 | `connectTimeout` | number  | `10`    | Connection timeout in seconds                              |

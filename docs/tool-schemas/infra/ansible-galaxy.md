@@ -6,14 +6,14 @@ Installs or lists Ansible collections and roles from Galaxy or a requirements fi
 
 ## Input Parameters
 
-| Parameter      | Type    | Default | Description                                                       |
-| -------------- | ------- | ------- | ----------------------------------------------------------------- |
+| Parameter      | Type    | Default | Description                                                                 |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------- |
 | `action`       | enum    | --      | Galaxy action: collection-install, role-install, collection-list, role-list |
-| `name`         | string  | --      | Collection or role name to install (e.g. community.general)       |
-| `requirements` | string  | --      | Path to requirements file (-r)                                    |
-| `force`        | boolean | --      | Force overwriting an existing collection or role (--force)        |
-| `path`         | string  | cwd     | Project root path                                                 |
-| `compact`      | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens        |
+| `name`         | string  | --      | Collection or role name to install (e.g. community.general)                 |
+| `requirements` | string  | --      | Path to requirements file (-r)                                              |
+| `force`        | boolean | --      | Force overwriting an existing collection or role (--force)                  |
+| `path`         | string  | cwd     | Project root path                                                           |
+| `compact`      | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens                  |
 
 ## Success — Install Collection
 
@@ -167,11 +167,11 @@ ERROR! Failed to resolve the requested dependencies map. Could not satisfy the f
 
 ## Token Savings
 
-| Scenario                | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------------- | ---------- | --------- | ------------ | ------- |
-| Install 2 collections   | ~200       | ~50       | ~10          | 75-95%  |
-| List 3 collections      | ~150       | ~50       | ~10          | 67-93%  |
-| Install failure         | ~100       | ~20       | ~20          | 80%     |
+| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------------- | ---------- | --------- | ------------ | ------- |
+| Install 2 collections | ~200       | ~50       | ~10          | 75-95%  |
+| List 3 collections    | ~150       | ~50       | ~10          | 67-93%  |
+| Install failure       | ~100       | ~20       | ~20          | 80%     |
 
 ## Notes
 

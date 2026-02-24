@@ -6,11 +6,11 @@ Runs `deno info` to show dependency information for a module. Returns structured
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                        |
-| --------- | ------- | ------- | ------------------------------------------------------------------ |
+| Parameter | Type    | Default | Description                                                            |
+| --------- | ------- | ------- | ---------------------------------------------------------------------- |
 | `module`  | string  | —       | Module specifier or file path to inspect (shows cache info if omitted) |
-| `path`    | string  | cwd     | Project root path                                                  |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
+| `path`    | string  | cwd     | Project root path                                                      |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens             |
 
 ## Success — Module Dependencies
 
@@ -142,10 +142,10 @@ size: 256
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 5 dependencies     | ~200       | ~120      | ~25          | 40-88%  |
-| No dependencies    | ~50        | ~25       | ~25          | 50%     |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 5 dependencies  | ~200       | ~120      | ~25          | 40-88%  |
+| No dependencies | ~50        | ~25       | ~25          | 50%     |
 
 ## Notes
 

@@ -147,10 +147,10 @@ Same as full (output is already minimal on success).
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| Verify passes  | ~500       | ~30       | ~30          | 94%     |
-| Verify fails   | ~600       | ~60       | ~40          | 90-93%  |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| Verify passes | ~500       | ~30       | ~30          | 94%     |
+| Verify fails  | ~600       | ~60       | ~40          | 90-93%  |
 
 ## Notes
 

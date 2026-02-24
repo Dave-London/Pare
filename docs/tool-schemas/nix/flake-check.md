@@ -143,10 +143,10 @@ error: 1 dependency failed to build
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| All checks pass  | ~120       | ~90       | ~30          | 25-75%  |
-| Check failure    | ~180       | ~100      | ~30          | 44-83%  |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| All checks pass | ~120       | ~90       | ~30          | 25-75%  |
+| Check failure   | ~180       | ~100      | ~30          | 44-83%  |
 
 ## Notes
 

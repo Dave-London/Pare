@@ -6,12 +6,12 @@ Manages Vagrant VMs: status, global-status, up, halt, destroy.
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                      |
-| --------- | ------- | ------- | ---------------------------------------------------------------- |
-| `action`  | enum    | --      | Vagrant action: status, global-status, up, halt, destroy         |
-| `machine` | string  | --      | Target machine name                                              |
-| `workDir` | string  | cwd     | Project root path                                                |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens       |
+| Parameter | Type    | Default | Description                                                |
+| --------- | ------- | ------- | ---------------------------------------------------------- |
+| `action`  | enum    | --      | Vagrant action: status, global-status, up, halt, destroy   |
+| `machine` | string  | --      | Target machine name                                        |
+| `workDir` | string  | cwd     | Project root path                                          |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Status
 
@@ -103,8 +103,20 @@ on this machine.
   "action": "global-status",
   "success": true,
   "machines": [
-    { "id": "a1b2c3d", "name": "web", "provider": "virtualbox", "state": "running", "directory": "/home/user/project-a" },
-    { "id": "e4f5g6h", "name": "api", "provider": "virtualbox", "state": "poweroff", "directory": "/home/user/project-b" }
+    {
+      "id": "a1b2c3d",
+      "name": "web",
+      "provider": "virtualbox",
+      "state": "running",
+      "directory": "/home/user/project-a"
+    },
+    {
+      "id": "e4f5g6h",
+      "name": "api",
+      "provider": "virtualbox",
+      "state": "poweroff",
+      "directory": "/home/user/project-b"
+    }
   ],
   "count": 2,
   "exitCode": 0
@@ -157,9 +169,7 @@ on this machine.
 {
   "action": "halt",
   "success": true,
-  "machines": [
-    { "name": "web", "newState": "poweroff" }
-  ],
+  "machines": [{ "name": "web", "newState": "poweroff" }],
   "exitCode": 0
 }
 ```
@@ -170,11 +180,11 @@ on this machine.
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| Status (2 VMs)  | ~150       | ~50       | ~15          | 67-90%  |
-| Global status   | ~200       | ~70       | ~20          | 65-90%  |
-| Halt            | ~80        | ~25       | ~25          | 69%     |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| Status (2 VMs) | ~150       | ~50       | ~15          | 67-90%  |
+| Global status  | ~200       | ~70       | ~20          | 65-90%  |
+| Halt           | ~80        | ~25       | ~25          | 69%     |
 
 ## Notes
 

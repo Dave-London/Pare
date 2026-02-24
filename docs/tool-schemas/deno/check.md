@@ -129,10 +129,10 @@ Found 2 errors.
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| No type errors   | ~15        | ~10       | ~10          | 33%     |
-| 2 type errors    | ~180       | ~70       | ~10          | 61-94%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| No type errors | ~15        | ~10       | ~10          | 33%     |
+| 2 type errors  | ~180       | ~70       | ~10          | 61-94%  |
 
 ## Notes
 

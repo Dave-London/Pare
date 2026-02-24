@@ -135,10 +135,10 @@ psql: error: connection to server at "badhost", port 5432 failed: could not tran
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 5-row SELECT      | ~120       | ~100      | ~15          | 17-88%  |
-| Connection error  | ~40        | ~30       | ~25          | 25-38%  |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| 5-row SELECT     | ~120       | ~100      | ~15          | 17-88%  |
+| Connection error | ~40        | ~30       | ~25          | 25-38%  |
 
 ## Notes
 

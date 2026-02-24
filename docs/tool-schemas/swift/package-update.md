@@ -8,7 +8,7 @@ Updates Swift package dependencies and returns structured update results.
 
 | Parameter  | Type     | Default | Description                                                |
 | ---------- | -------- | ------- | ---------------------------------------------------------- |
-| `packages` | string[] | —       | Specific packages to update (updates all if not specified)  |
+| `packages` | string[] | —       | Specific packages to update (updates all if not specified) |
 | `path`     | string   | cwd     | Project root path                                          |
 | `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 

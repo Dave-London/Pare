@@ -6,17 +6,17 @@ Runs dotnet list package and returns structured NuGet package listings per proje
 
 ## Input Parameters
 
-| Parameter            | Type    | Default | Description                                                  |
-| -------------------- | ------- | ------- | ------------------------------------------------------------ |
-| `path`               | string  | cwd     | Project root path                                            |
-| `project`            | string  | --      | Path to the project or solution file                         |
-| `outdated`           | boolean | `false` | Show outdated packages (--outdated)                          |
-| `deprecated`         | boolean | `false` | Show deprecated packages (--deprecated)                      |
-| `vulnerable`         | boolean | `false` | Show packages with known vulnerabilities (--vulnerable)      |
-| `includeTransitive`  | boolean | `false` | Include transitive packages (--include-transitive)           |
-| `format`             | enum    | --      | Output format: json or text (--format)                       |
-| `source`             | string  | --      | NuGet package source URI for version checks (--source)       |
-| `compact`            | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens   |
+| Parameter           | Type    | Default | Description                                                |
+| ------------------- | ------- | ------- | ---------------------------------------------------------- |
+| `path`              | string  | cwd     | Project root path                                          |
+| `project`           | string  | --      | Path to the project or solution file                       |
+| `outdated`          | boolean | `false` | Show outdated packages (--outdated)                        |
+| `deprecated`        | boolean | `false` | Show deprecated packages (--deprecated)                    |
+| `vulnerable`        | boolean | `false` | Show packages with known vulnerabilities (--vulnerable)    |
+| `includeTransitive` | boolean | `false` | Include transitive packages (--include-transitive)         |
+| `format`            | enum    | --      | Output format: json or text (--format)                     |
+| `source`            | string  | --      | NuGet package source URI for version checks (--source)     |
+| `compact`           | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — List Packages
 
@@ -156,10 +156,10 @@ Project 'MyApp' has the following updates to its packages
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| List 5 packages    | ~350       | ~150      | ~30          | 57-91%  |
-| Outdated packages  | ~250       | ~80       | ~30          | 68-88%  |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| List 5 packages   | ~350       | ~150      | ~30          | 57-91%  |
+| Outdated packages | ~250       | ~80       | ~30          | 68-88%  |
 
 ## Notes
 

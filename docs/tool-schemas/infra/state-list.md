@@ -101,10 +101,10 @@ aws_lambda_function.api
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 5 resources       | ~100       | ~40       | ~10          | 60-90%  |
-| Empty state       | ~5         | ~15       | ~10          | 0%      |
+| Scenario    | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------- | ---------- | --------- | ------------ | ------- |
+| 5 resources | ~100       | ~40       | ~10          | 60-90%  |
+| Empty state | ~5         | ~15       | ~10          | 0%      |
 
 ## Notes
 

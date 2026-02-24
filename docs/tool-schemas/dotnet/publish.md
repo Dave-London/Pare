@@ -6,18 +6,18 @@ Runs dotnet publish for deployment and returns structured output with output pat
 
 ## Input Parameters
 
-| Parameter       | Type    | Default | Description                                                  |
-| --------------- | ------- | ------- | ------------------------------------------------------------ |
-| `path`          | string  | cwd     | Project root path                                            |
-| `project`       | string  | --      | Path to the project or solution file                         |
-| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                    |
-| `framework`     | string  | --      | Target framework (e.g. net8.0)                               |
-| `runtime`       | string  | --      | Target runtime identifier (e.g. win-x64, linux-x64)         |
-| `output`        | string  | --      | Output directory for published files (-o)                    |
-| `selfContained` | boolean | --      | Publish as self-contained deployment (--self-contained)      |
-| `noRestore`     | boolean | `false` | Skip automatic restore before publishing (--no-restore)      |
-| `noBuild`       | boolean | `false` | Skip build before publishing (--no-build)                    |
-| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens   |
+| Parameter       | Type    | Default | Description                                                |
+| --------------- | ------- | ------- | ---------------------------------------------------------- |
+| `path`          | string  | cwd     | Project root path                                          |
+| `project`       | string  | --      | Path to the project or solution file                       |
+| `configuration` | string  | --      | Build configuration (e.g. Debug, Release)                  |
+| `framework`     | string  | --      | Target framework (e.g. net8.0)                             |
+| `runtime`       | string  | --      | Target runtime identifier (e.g. win-x64, linux-x64)        |
+| `output`        | string  | --      | Output directory for published files (-o)                  |
+| `selfContained` | boolean | --      | Publish as self-contained deployment (--self-contained)    |
+| `noRestore`     | boolean | `false` | Skip automatic restore before publishing (--no-restore)    |
+| `noBuild`       | boolean | `false` | Skip build before publishing (--no-build)                  |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Publish Succeeds
 

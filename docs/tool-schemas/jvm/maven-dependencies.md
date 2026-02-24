@@ -42,9 +42,24 @@ Shows the Maven dependency tree with structured output per artifact.
 ```json
 {
   "dependencies": [
-    { "groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.2.1", "scope": "compile" },
-    { "groupId": "com.google.guava", "artifactId": "guava", "version": "32.1.3-jre", "scope": "compile" },
-    { "groupId": "org.junit.jupiter", "artifactId": "junit-jupiter-api", "version": "5.10.1", "scope": "test" },
+    {
+      "groupId": "org.springframework.boot",
+      "artifactId": "spring-boot-starter-web",
+      "version": "3.2.1",
+      "scope": "compile"
+    },
+    {
+      "groupId": "com.google.guava",
+      "artifactId": "guava",
+      "version": "32.1.3-jre",
+      "scope": "compile"
+    },
+    {
+      "groupId": "org.junit.jupiter",
+      "artifactId": "junit-jupiter-api",
+      "version": "5.10.1",
+      "scope": "test"
+    },
     { "groupId": "org.mockito", "artifactId": "mockito-core", "version": "5.8.0", "scope": "test" }
   ],
   "total": 4
@@ -104,10 +119,10 @@ Shows the Maven dependency tree with structured output per artifact.
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 4 dependencies     | ~400       | ~100      | ~5           | 75-99%  |
-| No dependencies    | ~100       | ~10       | ~5           | 90-95%  |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 4 dependencies  | ~400       | ~100      | ~5           | 75-99%  |
+| No dependencies | ~100       | ~10       | ~5           | 90-95%  |
 
 ## Notes
 

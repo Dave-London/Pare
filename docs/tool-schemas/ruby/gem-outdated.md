@@ -115,10 +115,10 @@ $ gem outdated
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 5 outdated gems    | ~50        | ~50       | ~5           | 0-90%   |
-| All up to date     | ~3         | ~5        | ~3           | 0%      |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 5 outdated gems | ~50        | ~50       | ~5           | 0-90%   |
+| All up to date  | ~3         | ~5        | ~3           | 0%      |
 
 ## Notes
 

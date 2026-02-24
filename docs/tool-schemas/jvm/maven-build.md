@@ -167,10 +167,10 @@ Same as full (output is already minimal on success).
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Successful build     | ~400       | ~30       | ~30          | 93%     |
-| Compilation failure  | ~500       | ~80       | ~50          | 84-90%  |
+| Scenario            | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------------- | ---------- | --------- | ------------ | ------- |
+| Successful build    | ~400       | ~30       | ~30          | 93%     |
+| Compilation failure | ~500       | ~80       | ~50          | 84-90%  |
 
 ## Notes
 

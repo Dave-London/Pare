@@ -6,11 +6,11 @@ Shows the dependency tree of a Swift package and returns structured dependency d
 
 ## Input Parameters
 
-| Parameter | Type                                | Default | Description                                                |
-| --------- | ----------------------------------- | ------- | ---------------------------------------------------------- |
-| `format`  | `"text"` \| `"json"` \| `"dot"`    | —       | Output format (text/json/dot)                              |
-| `path`    | string                              | cwd     | Project root path                                          |
-| `compact` | boolean                             | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter | Type                            | Default | Description                                                |
+| --------- | ------------------------------- | ------- | ---------------------------------------------------------- |
+| `format`  | `"text"` \| `"json"` \| `"dot"` | —       | Output format (text/json/dot)                              |
+| `path`    | string                          | cwd     | Project root path                                          |
+| `compact` | boolean                         | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Dependencies Listed
 
@@ -42,7 +42,11 @@ $ swift package show-dependencies
   "success": true,
   "exitCode": 0,
   "dependencies": [
-    { "name": "swift-argument-parser", "url": "https://github.com/apple/swift-argument-parser.git", "version": "1.3.0" },
+    {
+      "name": "swift-argument-parser",
+      "url": "https://github.com/apple/swift-argument-parser.git",
+      "version": "1.3.0"
+    },
     { "name": "swift-log", "url": "https://github.com/apple/swift-log.git", "version": "1.5.4" },
     { "name": "swift-nio", "url": "https://github.com/apple/swift-nio.git", "version": "2.65.0" }
   ]
@@ -119,10 +123,10 @@ $ swift package show-dependencies
 
 ## Token Savings
 
-| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ----------------- | ---------- | --------- | ------------ | ------- |
-| 3 dependencies    | ~150       | ~80       | ~10          | 47-93%  |
-| No dependencies   | ~10        | ~10       | ~10          | 0%      |
+| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
+| --------------- | ---------- | --------- | ------------ | ------- |
+| 3 dependencies  | ~150       | ~80       | ~10          | 47-93%  |
+| No dependencies | ~10        | ~10       | ~10          | 0%      |
 
 ## Notes
 

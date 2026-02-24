@@ -125,10 +125,10 @@ $ bun pm ls
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 5 packages     | ~100       | ~70       | ~15          | 30-85%  |
-| Empty project  | ~20        | ~15       | ~15          | 25%     |
+| Scenario      | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ------------- | ---------- | --------- | ------------ | ------- |
+| 5 packages    | ~100       | ~70       | ~15          | 30-85%  |
+| Empty project | ~20        | ~15       | ~15          | 25%     |
 
 ## Notes
 

@@ -6,13 +6,13 @@ Runs `bun add` to add one or more packages and returns structured output.
 
 ## Input Parameters
 
-| Parameter  | Type     | Default | Description                                                |
-| ---------- | -------- | ------- | ---------------------------------------------------------- |
+| Parameter  | Type     | Default | Description                                                        |
+| ---------- | -------- | ------- | ------------------------------------------------------------------ |
 | `packages` | string[] | —       | Package names to add (required, e.g. `["typescript", "zod@3.22"]`) |
-| `dev`      | boolean  | `false` | Add as devDependency (--dev / -D)                          |
-| `exact`    | boolean  | —       | Add exact version (--exact)                                |
-| `path`     | string   | cwd     | Project root path                                          |
-| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `dev`      | boolean  | `false` | Add as devDependency (--dev / -D)                                  |
+| `exact`    | boolean  | —       | Add exact version (--exact)                                        |
+| `path`     | string   | cwd     | Project root path                                                  |
+| `compact`  | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — Package Added
 

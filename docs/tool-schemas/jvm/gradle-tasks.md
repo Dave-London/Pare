@@ -6,11 +6,11 @@ Lists available Gradle tasks with descriptions and groups. Uses `gradle tasks --
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                    |
-| --------- | ------- | ------- | -------------------------------------------------------------- |
-| `path`    | string  | cwd     | Project root path                                              |
-| `all`     | boolean | `true`  | Include all tasks including subtasks (default: true)           |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens     |
+| Parameter | Type    | Default | Description                                                |
+| --------- | ------- | ------- | ---------------------------------------------------------- |
+| `path`    | string  | cwd     | Project root path                                          |
+| `all`     | boolean | `true`  | Include all tasks including subtasks (default: true)       |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — List Tasks
 
@@ -57,13 +57,25 @@ BUILD SUCCESSFUL in 1s
 ```json
 {
   "tasks": [
-    { "name": "assemble", "description": "Assembles the outputs of this project.", "group": "Build" },
+    {
+      "name": "assemble",
+      "description": "Assembles the outputs of this project.",
+      "group": "Build"
+    },
     { "name": "build", "description": "Assembles and tests this project.", "group": "Build" },
     { "name": "clean", "description": "Deletes the build directory.", "group": "Build" },
     { "name": "check", "description": "Runs all checks.", "group": "Verification" },
     { "name": "test", "description": "Runs the unit tests.", "group": "Verification" },
-    { "name": "dependencies", "description": "Displays all dependencies declared in root project 'myapp'.", "group": "Help" },
-    { "name": "tasks", "description": "Displays the tasks runnable from root project 'myapp'.", "group": "Help" }
+    {
+      "name": "dependencies",
+      "description": "Displays all dependencies declared in root project 'myapp'.",
+      "group": "Help"
+    },
+    {
+      "name": "tasks",
+      "description": "Displays the tasks runnable from root project 'myapp'.",
+      "group": "Help"
+    }
   ],
   "total": 7
 }
@@ -90,9 +102,9 @@ BUILD SUCCESSFUL in 1s
 
 ## Token Savings
 
-| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------- | ---------- | --------- | ------------ | ------- |
-| 7 tasks        | ~400       | ~100      | ~5           | 75-99%  |
+| Scenario | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------- | ---------- | --------- | ------------ | ------- |
+| 7 tasks  | ~400       | ~100      | ~5           | 75-99%  |
 
 ## Notes
 

@@ -135,10 +135,10 @@ getaddrinfo nonexistent.example.com: Name or service not known
 
 ## Token Savings
 
-| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ---------------- | ---------- | --------- | ------------ | ------- |
-| 3 host keys      | ~120       | ~100      | ~10          | 17-92%  |
-| Host not found   | ~15        | ~15       | ~15          | 0%      |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| 3 host keys    | ~120       | ~100      | ~10          | 17-92%  |
+| Host not found | ~15        | ~15       | ~15          | 0%      |
 
 ## Notes
 

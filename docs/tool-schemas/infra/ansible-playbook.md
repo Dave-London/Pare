@@ -6,22 +6,22 @@ Runs an Ansible playbook and returns structured play recap with per-host results
 
 ## Input Parameters
 
-| Parameter     | Type    | Default | Description                                                    |
-| ------------- | ------- | ------- | -------------------------------------------------------------- |
-| `playbook`    | string  | --      | Path to playbook file (required)                               |
-| `inventory`   | string  | --      | Inventory file or host list (-i)                               |
-| `limit`       | string  | --      | Limit to specific hosts or groups (--limit)                    |
-| `tags`        | string  | --      | Only run plays and tasks tagged with these values (--tags)     |
-| `skipTags`    | string  | --      | Skip plays and tasks tagged with these values (--skip-tags)    |
-| `extraVars`   | string  | --      | Extra variables as key=value or JSON string (-e)               |
-| `check`       | boolean | --      | Run in check mode / dry-run (-C)                               |
-| `syntaxCheck` | boolean | --      | Perform a syntax check on the playbook (--syntax-check)        |
-| `listTasks`   | boolean | --      | List all tasks that would be executed (--list-tasks)           |
-| `listTags`    | boolean | --      | List all available tags (--list-tags)                          |
-| `forks`       | number  | --      | Number of parallel processes (-f)                              |
-| `verbose`     | number  | --      | Verbosity level 0-4 (-v through -vvvv)                         |
-| `path`        | string  | cwd     | Project root path                                              |
-| `compact`     | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens     |
+| Parameter     | Type    | Default | Description                                                 |
+| ------------- | ------- | ------- | ----------------------------------------------------------- |
+| `playbook`    | string  | --      | Path to playbook file (required)                            |
+| `inventory`   | string  | --      | Inventory file or host list (-i)                            |
+| `limit`       | string  | --      | Limit to specific hosts or groups (--limit)                 |
+| `tags`        | string  | --      | Only run plays and tasks tagged with these values (--tags)  |
+| `skipTags`    | string  | --      | Skip plays and tasks tagged with these values (--skip-tags) |
+| `extraVars`   | string  | --      | Extra variables as key=value or JSON string (-e)            |
+| `check`       | boolean | --      | Run in check mode / dry-run (-C)                            |
+| `syntaxCheck` | boolean | --      | Perform a syntax check on the playbook (--syntax-check)     |
+| `listTasks`   | boolean | --      | List all tasks that would be executed (--list-tasks)        |
+| `listTags`    | boolean | --      | List all available tags (--list-tags)                       |
+| `forks`       | number  | --      | Number of parallel processes (-f)                           |
+| `verbose`     | number  | --      | Verbosity level 0-4 (-v through -vvvv)                      |
+| `path`        | string  | cwd     | Project root path                                           |
+| `compact`     | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens  |
 
 ## Success — Playbook Run
 
@@ -63,11 +63,33 @@ web2.example.com           : ok=3    changed=1    unreachable=0    failed=0    s
   "success": true,
   "exitCode": 0,
   "plays": [
-    { "name": "Configure web servers", "hosts": ["web1.example.com", "web2.example.com"], "taskCount": 3 }
+    {
+      "name": "Configure web servers",
+      "hosts": ["web1.example.com", "web2.example.com"],
+      "taskCount": 3
+    }
   ],
   "recap": [
-    { "host": "web1.example.com", "ok": 3, "changed": 2, "unreachable": 0, "failed": 0, "skipped": 0, "rescued": 0, "ignored": 0 },
-    { "host": "web2.example.com", "ok": 3, "changed": 1, "unreachable": 0, "failed": 0, "skipped": 0, "rescued": 0, "ignored": 0 }
+    {
+      "host": "web1.example.com",
+      "ok": 3,
+      "changed": 2,
+      "unreachable": 0,
+      "failed": 0,
+      "skipped": 0,
+      "rescued": 0,
+      "ignored": 0
+    },
+    {
+      "host": "web2.example.com",
+      "ok": 3,
+      "changed": 1,
+      "unreachable": 0,
+      "failed": 0,
+      "skipped": 0,
+      "rescued": 0,
+      "ignored": 0
+    }
   ],
   "duration": "12.45s"
 }
@@ -125,11 +147,18 @@ db1.example.com            : ok=1    changed=0    unreachable=0    failed=1    s
 {
   "success": false,
   "exitCode": 2,
-  "plays": [
-    { "name": "Configure database", "hosts": ["db1.example.com"], "taskCount": 2 }
-  ],
+  "plays": [{ "name": "Configure database", "hosts": ["db1.example.com"], "taskCount": 2 }],
   "recap": [
-    { "host": "db1.example.com", "ok": 1, "changed": 0, "unreachable": 0, "failed": 1, "skipped": 0, "rescued": 0, "ignored": 0 }
+    {
+      "host": "db1.example.com",
+      "ok": 1,
+      "changed": 0,
+      "unreachable": 0,
+      "failed": 1,
+      "skipped": 0,
+      "rescued": 0,
+      "ignored": 0
+    }
   ]
 }
 ```
@@ -140,10 +169,10 @@ db1.example.com            : ok=1    changed=0    unreachable=0    failed=1    s
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| 2-host playbook    | ~500       | ~120      | ~10          | 76-98%  |
-| Playbook failure   | ~400       | ~80       | ~10          | 80-98%  |
+| Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ---------------- | ---------- | --------- | ------------ | ------- |
+| 2-host playbook  | ~500       | ~120      | ~10          | 76-98%  |
+| Playbook failure | ~400       | ~80       | ~10          | 80-98%  |
 
 ## Notes
 

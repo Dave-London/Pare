@@ -6,12 +6,12 @@ Initializes a new Swift package and returns structured result with created files
 
 ## Input Parameters
 
-| Parameter | Type                                                     | Default | Description                                                |
-| --------- | -------------------------------------------------------- | ------- | ---------------------------------------------------------- |
+| Parameter | Type                                                   | Default | Description                                                |
+| --------- | ------------------------------------------------------ | ------- | ---------------------------------------------------------- |
 | `type`    | `"library"` \| `"executable"` \| `"tool"` \| `"macro"` | —       | Package type to create                                     |
-| `name`    | string                                                   | —       | Package name                                               |
-| `path`    | string                                                   | cwd     | Project root path                                          |
-| `compact` | boolean                                                  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `name`    | string                                                 | —       | Package name                                               |
+| `path`    | string                                                 | cwd     | Project root path                                          |
+| `compact` | boolean                                                | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success — Package Initialized
 

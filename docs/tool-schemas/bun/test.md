@@ -125,8 +125,13 @@ Ran 2 tests across 1 files. [38.00ms]
   "total": 2,
   "duration": 38,
   "tests": [
-    { "name": "adds two numbers", "passed": true, "duration": 0.10 },
-    { "name": "divides by zero", "passed": false, "duration": 0.08, "error": "expect(received).toBe(expected)\nExpected: Infinity\nReceived: NaN" }
+    { "name": "adds two numbers", "passed": true, "duration": 0.1 },
+    {
+      "name": "divides by zero",
+      "passed": false,
+      "duration": 0.08,
+      "error": "expect(received).toBe(expected)\nExpected: Infinity\nReceived: NaN"
+    }
   ]
 }
 ```
@@ -157,10 +162,10 @@ Ran 2 tests across 1 files. [38.00ms]
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| All tests pass  | ~150       | ~90       | ~25          | 40-83%  |
-| Tests fail      | ~200       | ~85       | ~25          | 58-88%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| All tests pass | ~150       | ~90       | ~25          | 40-83%  |
+| Tests fail     | ~200       | ~85       | ~25          | 58-88%  |
 
 ## Notes
 

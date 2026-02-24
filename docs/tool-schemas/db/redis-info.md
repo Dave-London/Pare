@@ -153,10 +153,10 @@ NOAUTH Authentication required.
 
 ## Token Savings
 
-| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
-| -------------------- | ---------- | --------- | ------------ | ------- |
-| Memory section       | ~200       | ~120      | ~10          | 40-95%  |
-| Auth required        | ~15        | ~15       | ~15          | 0%      |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| Memory section | ~200       | ~120      | ~10          | 40-95%  |
+| Auth required  | ~15        | ~15       | ~15          | 0%      |
 
 ## Notes
 

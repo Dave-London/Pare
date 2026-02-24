@@ -131,10 +131,10 @@ Checked 8 files
 
 ## Token Savings
 
-| Scenario        | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------- | ---------- | --------- | ------------ | ------- |
-| No lint errors  | ~15        | ~15       | ~15          | 0%      |
-| 2 lint errors   | ~200       | ~80       | ~15          | 60-93%  |
+| Scenario       | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------- | ---------- | --------- | ------------ | ------- |
+| No lint errors | ~15        | ~15       | ~15          | 0%      |
+| 2 lint errors  | ~200       | ~80       | ~15          | 60-93%  |
 
 ## Notes
 

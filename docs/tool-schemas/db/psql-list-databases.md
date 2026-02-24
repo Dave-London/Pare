@@ -45,11 +45,46 @@ template1|postgres|UTF8|en_US.UTF-8|en_US.UTF-8|=c/postgres
 {
   "success": true,
   "databases": [
-    { "name": "postgres", "owner": "postgres", "encoding": "UTF8", "collation": "en_US.UTF-8", "ctype": "en_US.UTF-8", "size": "7 MB" },
-    { "name": "myapp_dev", "owner": "appuser", "encoding": "UTF8", "collation": "en_US.UTF-8", "ctype": "en_US.UTF-8", "size": "12 MB" },
-    { "name": "myapp_test", "owner": "appuser", "encoding": "UTF8", "collation": "en_US.UTF-8", "ctype": "en_US.UTF-8", "size": "8 MB" },
-    { "name": "template0", "owner": "postgres", "encoding": "UTF8", "collation": "en_US.UTF-8", "ctype": "en_US.UTF-8", "size": "7 MB" },
-    { "name": "template1", "owner": "postgres", "encoding": "UTF8", "collation": "en_US.UTF-8", "ctype": "en_US.UTF-8", "size": "7 MB" }
+    {
+      "name": "postgres",
+      "owner": "postgres",
+      "encoding": "UTF8",
+      "collation": "en_US.UTF-8",
+      "ctype": "en_US.UTF-8",
+      "size": "7 MB"
+    },
+    {
+      "name": "myapp_dev",
+      "owner": "appuser",
+      "encoding": "UTF8",
+      "collation": "en_US.UTF-8",
+      "ctype": "en_US.UTF-8",
+      "size": "12 MB"
+    },
+    {
+      "name": "myapp_test",
+      "owner": "appuser",
+      "encoding": "UTF8",
+      "collation": "en_US.UTF-8",
+      "ctype": "en_US.UTF-8",
+      "size": "8 MB"
+    },
+    {
+      "name": "template0",
+      "owner": "postgres",
+      "encoding": "UTF8",
+      "collation": "en_US.UTF-8",
+      "ctype": "en_US.UTF-8",
+      "size": "7 MB"
+    },
+    {
+      "name": "template1",
+      "owner": "postgres",
+      "encoding": "UTF8",
+      "collation": "en_US.UTF-8",
+      "ctype": "en_US.UTF-8",
+      "size": "7 MB"
+    }
   ],
   "total": 5,
   "exitCode": 0,

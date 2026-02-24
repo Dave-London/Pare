@@ -6,14 +6,14 @@ Runs dotnet clean to remove build outputs and returns structured results.
 
 ## Input Parameters
 
-| Parameter       | Type    | Default | Description                                                |
-| --------------- | ------- | ------- | ---------------------------------------------------------- |
-| `path`          | string  | cwd     | Project root path                                          |
-| `project`       | string  | --      | Path to the project or solution file                       |
-| `configuration` | string  | --      | Build configuration to clean (e.g. Debug, Release)         |
-| `framework`     | string  | --      | Target framework to clean (e.g. net8.0)                    |
+| Parameter       | Type    | Default | Description                                                        |
+| --------------- | ------- | ------- | ------------------------------------------------------------------ |
+| `path`          | string  | cwd     | Project root path                                                  |
+| `project`       | string  | --      | Path to the project or solution file                               |
+| `configuration` | string  | --      | Build configuration to clean (e.g. Debug, Release)                 |
+| `framework`     | string  | --      | Target framework to clean (e.g. net8.0)                            |
 | `verbosity`     | enum    | --      | MSBuild verbosity level (quiet/minimal/normal/detailed/diagnostic) |
-| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — Clean Succeeds
 

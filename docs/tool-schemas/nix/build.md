@@ -38,9 +38,7 @@ $ nix build .#default --print-out-paths
 {
   "success": true,
   "exitCode": 0,
-  "outputs": [
-    { "path": "/nix/store/abc123def456-myapp-1.0.0" }
-  ],
+  "outputs": [{ "path": "/nix/store/abc123def456-myapp-1.0.0" }],
   "duration": 12450,
   "timedOut": false
 }
@@ -159,9 +157,7 @@ error: builder for '/nix/store/abc123-myapp-1.0.0.drv' failed with exit code 1;
   "success": false,
   "exitCode": 1,
   "outputs": [],
-  "errors": [
-    "builder for '/nix/store/abc123-myapp-1.0.0.drv' failed with exit code 1;"
-  ],
+  "errors": ["builder for '/nix/store/abc123-myapp-1.0.0.drv' failed with exit code 1;"],
   "duration": 8200,
   "timedOut": false
 }

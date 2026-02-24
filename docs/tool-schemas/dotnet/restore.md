@@ -6,14 +6,14 @@ Runs dotnet restore to restore NuGet dependencies and returns structured results
 
 ## Input Parameters
 
-| Parameter   | Type     | Default | Description                                                |
-| ----------- | -------- | ------- | ---------------------------------------------------------- |
-| `path`      | string   | cwd     | Project root path                                          |
-| `project`   | string   | --      | Path to the project or solution file                       |
-| `source`    | string[] | --      | NuGet package source URIs to use (--source)                |
-| `locked`    | boolean  | `false` | Require lock file is up to date (--locked-mode)            |
+| Parameter   | Type     | Default | Description                                                        |
+| ----------- | -------- | ------- | ------------------------------------------------------------------ |
+| `path`      | string   | cwd     | Project root path                                                  |
+| `project`   | string   | --      | Path to the project or solution file                               |
+| `source`    | string[] | --      | NuGet package source URIs to use (--source)                        |
+| `locked`    | boolean  | `false` | Require lock file is up to date (--locked-mode)                    |
 | `verbosity` | enum     | --      | MSBuild verbosity level (quiet/minimal/normal/detailed/diagnostic) |
-| `compact`   | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `compact`   | boolean  | `true`  | Auto-compact when structured output exceeds raw CLI tokens         |
 
 ## Success — Restore Succeeds
 
@@ -91,7 +91,9 @@ Runs dotnet restore to restore NuGet dependencies and returns structured results
 {
   "success": false,
   "exitCode": 1,
-  "errors": ["Unable to find package NonExistentPackage. No packages exist with this id in source(s): nuget.org"]
+  "errors": [
+    "Unable to find package NonExistentPackage. No packages exist with this id in source(s): nuget.org"
+  ]
 }
 ```
 

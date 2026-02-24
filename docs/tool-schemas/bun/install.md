@@ -8,7 +8,7 @@ Runs `bun install` to install project dependencies and returns structured output
 
 | Parameter    | Type    | Default | Description                                                |
 | ------------ | ------- | ------- | ---------------------------------------------------------- |
-| `frozen`     | boolean | —       | Error if lockfile would change (--frozen-lockfile)          |
+| `frozen`     | boolean | —       | Error if lockfile would change (--frozen-lockfile)         |
 | `production` | boolean | —       | Skip devDependencies (--production)                        |
 | `path`       | string  | cwd     | Project root path                                          |
 | `compact`    | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |

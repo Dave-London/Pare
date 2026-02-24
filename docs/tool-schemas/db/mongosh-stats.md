@@ -6,10 +6,10 @@ Gets MongoDB database statistics (collections, objects, data size, storage, inde
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                  |
-| --------- | ------- | ------- | ------------------------------------------------------------ |
+| Parameter | Type    | Default | Description                                                   |
+| --------- | ------- | ------- | ------------------------------------------------------------- |
 | `uri`     | string  | --      | MongoDB connection URI (e.g., mongodb://localhost:27017/mydb) |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens   |
+| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens    |
 
 ## Success -- Database Stats
 

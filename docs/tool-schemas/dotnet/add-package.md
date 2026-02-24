@@ -100,7 +100,9 @@ error: Package 'NonExistentPackage' is not found in the following primary source
   "success": false,
   "exitCode": 1,
   "package": "NonExistentPackage",
-  "errors": ["Package 'NonExistentPackage' is not found in the following primary source(s): 'https://api.nuget.org/v3/index.json'."]
+  "errors": [
+    "Package 'NonExistentPackage' is not found in the following primary source(s): 'https://api.nuget.org/v3/index.json'."
+  ]
 }
 ```
 

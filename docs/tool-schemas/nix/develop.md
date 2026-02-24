@@ -6,12 +6,12 @@ Enters or queries a Nix dev shell. When a command is provided, runs it inside th
 
 ## Input Parameters
 
-| Parameter     | Type    | Default | Description                                                |
-| ------------- | ------- | ------- | ---------------------------------------------------------- |
+| Parameter     | Type    | Default | Description                                                 |
+| ------------- | ------- | ------- | ----------------------------------------------------------- |
 | `installable` | string  | `"."`   | Installable reference for the dev shell (e.g. `.#devShell`) |
-| `command`     | string  | —       | Command to run inside the dev shell (uses `--command`)     |
-| `path`        | string  | cwd     | Project root path                                          |
-| `compact`     | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| `command`     | string  | —       | Command to run inside the dev shell (uses `--command`)      |
+| `path`        | string  | cwd     | Project root path                                           |
+| `compact`     | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens  |
 
 ## Success — Run Command in Dev Shell
 
@@ -125,10 +125,10 @@ make: *** [Makefile:28: test] Error 1
 
 ## Token Savings
 
-| Scenario              | CLI Tokens | Pare Full | Pare Compact | Savings |
-| --------------------- | ---------- | --------- | ------------ | ------- |
-| Command in dev shell  | ~50        | ~50       | ~25          | 50%     |
-| Command fails         | ~70        | ~55       | ~25          | 21-64%  |
+| Scenario             | CLI Tokens | Pare Full | Pare Compact | Savings |
+| -------------------- | ---------- | --------- | ------------ | ------- |
+| Command in dev shell | ~50        | ~50       | ~25          | 50%     |
+| Command fails        | ~70        | ~55       | ~25          | 21-64%  |
 
 ## Notes
 

@@ -142,10 +142,10 @@ error: cannot update flake; it does not have a lock file
 
 ## Token Savings
 
-| Scenario           | CLI Tokens | Pare Full | Pare Compact | Savings |
-| ------------------ | ---------- | --------- | ------------ | ------- |
-| Update all inputs  | ~200       | ~80       | ~25          | 60-88%  |
-| Lock file error    | ~80        | ~50       | ~25          | 38-69%  |
+| Scenario          | CLI Tokens | Pare Full | Pare Compact | Savings |
+| ----------------- | ---------- | --------- | ------------ | ------- |
+| Update all inputs | ~200       | ~80       | ~25          | 60-88%  |
+| Lock file error   | ~80        | ~50       | ~25          | 38-69%  |
 
 ## Notes
 
