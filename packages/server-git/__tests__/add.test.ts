@@ -9,7 +9,7 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(2);
+    expect(result.files).toHaveLength(2);
     expect(result.files).toEqual([
       { file: "src/new-file.ts", status: "added" },
       { file: "src/index.ts", status: "modified" },
@@ -21,14 +21,14 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(0);
+    expect(result.files).toHaveLength(0);
     expect(result.files).toEqual([]);
   });
 
   it("handles empty status output", () => {
     const result = parseAdd("");
 
-    expect(result.staged).toBe(0);
+    expect(result.files).toHaveLength(0);
     expect(result.files).toEqual([]);
   });
 
@@ -37,7 +37,7 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(1);
+    expect(result.files).toHaveLength(1);
     expect(result.files).toEqual([{ file: "new-name.ts", status: "modified" }]);
   });
 
@@ -46,7 +46,7 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(1);
+    expect(result.files).toHaveLength(1);
     expect(result.files).toEqual([{ file: "removed-file.ts", status: "deleted" }]);
   });
 
@@ -61,7 +61,7 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(2);
+    expect(result.files).toHaveLength(2);
     expect(result.files).toEqual([
       { file: "staged.ts", status: "modified" },
       { file: "added.ts", status: "added" },
@@ -73,7 +73,7 @@ describe("parseAdd", () => {
 
     const result = parseAdd(statusOutput);
 
-    expect(result.staged).toBe(4);
+    expect(result.files).toHaveLength(4);
     expect(result.files).toEqual([
       { file: "src/a.ts", status: "added" },
       { file: "src/b.ts", status: "added" },
@@ -86,7 +86,6 @@ describe("parseAdd", () => {
 describe("formatAdd", () => {
   it("formats staged files", () => {
     const data: GitAdd = {
-      staged: 2,
       files: [
         { file: "src/a.ts", status: "added" },
         { file: "src/b.ts", status: "modified" },
@@ -96,12 +95,12 @@ describe("formatAdd", () => {
   });
 
   it("formats no staged files", () => {
-    const data: GitAdd = { staged: 0, files: [] };
+    const data: GitAdd = { files: [] };
     expect(formatAdd(data)).toBe("No files staged");
   });
 
   it("formats single staged file", () => {
-    const data: GitAdd = { staged: 1, files: [{ file: "README.md", status: "added" }] };
+    const data: GitAdd = { files: [{ file: "README.md", status: "added" }] };
     expect(formatAdd(data)).toBe("Staged 1 file(s): a:README.md");
   });
 });

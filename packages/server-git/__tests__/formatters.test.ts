@@ -105,7 +105,6 @@ describe("formatLog", () => {
           message: "Add feature",
         },
       ],
-      total: 2,
     };
     const output = formatLog(log);
 
@@ -121,9 +120,6 @@ describe("formatDiff", () => {
         { file: "src/a.ts", status: "modified", additions: 10, deletions: 3 },
         { file: "src/b.ts", status: "added", additions: 25, deletions: 0 },
       ],
-      totalAdditions: 35,
-      totalDeletions: 3,
-      totalFiles: 2,
     };
     const output = formatDiff(diff);
 
@@ -173,9 +169,6 @@ describe("formatShow", () => {
       message: "Fix parser bug",
       diff: {
         files: [{ file: "src/parser.ts", status: "modified", additions: 5, deletions: 2 }],
-        totalAdditions: 5,
-        totalDeletions: 2,
-        totalFiles: 1,
       },
     };
     const output = formatShow(show);
@@ -196,9 +189,6 @@ describe("formatShow", () => {
           { file: "src/feature.ts", status: "added", additions: 100, deletions: 0 },
           { file: "src/tests.ts", status: "added", additions: 50, deletions: 0 },
         ],
-        totalAdditions: 150,
-        totalDeletions: 0,
-        totalFiles: 2,
       },
     };
     const output = formatShow(show);
@@ -219,9 +209,6 @@ describe("formatShow", () => {
       message: "chore: empty commit",
       diff: {
         files: [],
-        totalAdditions: 0,
-        totalDeletions: 0,
-        totalFiles: 0,
       },
     };
     const output = formatShow(show);
@@ -235,7 +222,7 @@ describe("formatShow", () => {
 
 describe("formatLog (expanded)", () => {
   it("formats empty log", () => {
-    const log: GitLog = { commits: [], total: 0 };
+    const log: GitLog = { commits: [] };
     const output = formatLog(log);
 
     expect(output).toBe("");
@@ -252,7 +239,6 @@ describe("formatLog (expanded)", () => {
           message: "initial",
         },
       ],
-      total: 1,
     };
     const output = formatLog(log);
 
@@ -271,7 +257,6 @@ describe("formatLog (expanded)", () => {
           refs: "HEAD -> main",
         },
       ],
-      total: 1,
     };
     const output = formatLog(log);
 
@@ -287,7 +272,7 @@ describe("formatLog (expanded)", () => {
       date: `${i}d ago`,
       message: `Commit message ${i}`,
     }));
-    const log: GitLog = { commits, total: 10 };
+    const log: GitLog = { commits };
     const output = formatLog(log);
     const lines = output.split("\n").filter(Boolean);
 
@@ -307,7 +292,6 @@ describe("formatLog (expanded)", () => {
           message: 'fix: handle "quotes" & <brackets>',
         },
       ],
-      total: 1,
     };
     const output = formatLog(log);
 
@@ -325,7 +309,6 @@ describe("formatLog (expanded)", () => {
           message: "feat: add feature",
         },
       ],
-      total: 1,
     };
     const output = formatLog(log);
 
@@ -343,7 +326,6 @@ describe("formatLog (expanded)", () => {
           message: "auto-deploy",
         },
       ],
-      total: 1,
     };
     const output = formatLog(log);
 
@@ -355,9 +337,6 @@ describe("formatDiff (expanded)", () => {
   it("formats empty diff", () => {
     const diff: GitDiff = {
       files: [],
-      totalAdditions: 0,
-      totalDeletions: 0,
-      totalFiles: 0,
     };
     const output = formatDiff(diff);
 
@@ -367,9 +346,6 @@ describe("formatDiff (expanded)", () => {
   it("formats diff with binary file (0/0)", () => {
     const diff: GitDiff = {
       files: [{ file: "image.png", status: "modified", additions: 0, deletions: 0 }],
-      totalAdditions: 0,
-      totalDeletions: 0,
-      totalFiles: 1,
     };
     const output = formatDiff(diff);
 
@@ -386,9 +362,6 @@ describe("formatDiff (expanded)", () => {
     }));
     const diff: GitDiff = {
       files,
-      totalAdditions: files.reduce((s, f) => s + f.additions, 0),
-      totalDeletions: files.reduce((s, f) => s + f.deletions, 0),
-      totalFiles: 20,
     };
     const output = formatDiff(diff);
     const lines = output.split("\n").filter(Boolean);
@@ -401,9 +374,6 @@ describe("formatDiff (expanded)", () => {
   it("formats diff with renamed file", () => {
     const diff: GitDiff = {
       files: [{ file: "{old => new}/index.ts", status: "renamed", additions: 3, deletions: 1 }],
-      totalAdditions: 3,
-      totalDeletions: 1,
-      totalFiles: 1,
     };
     const output = formatDiff(diff);
 
@@ -413,9 +383,6 @@ describe("formatDiff (expanded)", () => {
   it("formats diff with only additions", () => {
     const diff: GitDiff = {
       files: [{ file: "src/new.ts", status: "added", additions: 50, deletions: 0 }],
-      totalAdditions: 50,
-      totalDeletions: 0,
-      totalFiles: 1,
     };
     const output = formatDiff(diff);
 
@@ -426,9 +393,6 @@ describe("formatDiff (expanded)", () => {
   it("formats diff with only deletions", () => {
     const diff: GitDiff = {
       files: [{ file: "src/old.ts", status: "deleted", additions: 0, deletions: 100 }],
-      totalAdditions: 0,
-      totalDeletions: 100,
-      totalFiles: 1,
     };
     const output = formatDiff(diff);
 
@@ -547,7 +511,6 @@ describe("formatTag", () => {
         { name: "v1.2.0", date: "2024-01-15T10:30:00+00:00", message: "Release 1.2.0" },
         { name: "v1.1.0", date: "2024-01-01T09:00:00+00:00", message: "Release 1.1.0" },
       ],
-      total: 2,
     };
     const output = formatTag(tags);
 
@@ -558,14 +521,13 @@ describe("formatTag", () => {
   });
 
   it("formats empty tag list", () => {
-    const tags: GitTagFull = { tags: [], total: 0 };
+    const tags: GitTagFull = { tags: [] };
     expect(formatTag(tags)).toBe("No tags found");
   });
 
   it("formats tags without messages", () => {
     const tags: GitTagFull = {
       tags: [{ name: "v1.0.0", date: "2024-01-01T00:00:00+00:00" }],
-      total: 1,
     };
     const output = formatTag(tags);
 
@@ -581,7 +543,6 @@ describe("formatStashList", () => {
         { index: 0, message: "WIP on main: abc1234 Fix bug", date: "2024-01-15 10:30:00 +0000" },
         { index: 1, message: "On main: save progress", date: "2024-01-14 09:00:00 +0000" },
       ],
-      total: 2,
     };
     const output = formatStashList(stashes);
 
@@ -591,7 +552,7 @@ describe("formatStashList", () => {
   });
 
   it("formats empty stash list", () => {
-    const stashes: GitStashListFull = { stashes: [], total: 0 };
+    const stashes: GitStashListFull = { stashes: [] };
     expect(formatStashList(stashes)).toBe("No stashes found");
   });
 });
@@ -599,7 +560,6 @@ describe("formatStashList", () => {
 describe("formatStash", () => {
   it("formats stash push result", () => {
     const stash: GitStash = {
-      action: "push",
       success: true,
       message: "Saved working directory and index state WIP on main: abc1234 Fix bug",
     };
@@ -610,7 +570,6 @@ describe("formatStash", () => {
 
   it("formats stash drop result", () => {
     const stash: GitStash = {
-      action: "drop",
       success: true,
       message: "Dropped stash@{0} (abc1234...)",
     };
@@ -621,20 +580,18 @@ describe("formatStash", () => {
 
   it("formats nothing-to-stash failure", () => {
     const stash: GitStash = {
-      action: "push",
       success: false,
       message: "No local changes to save",
       reason: "no-local-changes",
     };
     const output = formatStash(stash);
 
-    expect(output).toContain("Stash push failed");
+    expect(output).toContain("Stash operation failed");
     expect(output).toContain("[no-local-changes]");
   });
 
   it("formats stash conflict failure", () => {
     const stash: GitStash = {
-      action: "pop",
       success: false,
       message: "CONFLICT (content): Merge conflict in src/index.ts",
       reason: "conflict",
@@ -642,7 +599,7 @@ describe("formatStash", () => {
     };
     const output = formatStash(stash);
 
-    expect(output).toContain("Stash pop failed");
+    expect(output).toContain("Stash operation failed");
     expect(output).toContain("[conflict]");
     expect(output).toContain("Conflicting files: src/index.ts");
   });
@@ -658,7 +615,6 @@ describe("formatRemote", () => {
           pushUrl: "https://github.com/user/repo.git",
         },
       ],
-      total: 1,
     };
     const output = formatRemote(remotes);
 
@@ -669,7 +625,7 @@ describe("formatRemote", () => {
   });
 
   it("formats empty remote list", () => {
-    const remotes: GitRemoteFull = { remotes: [], total: 0 };
+    const remotes: GitRemoteFull = { remotes: [] };
     expect(formatRemote(remotes)).toBe("No remotes configured");
   });
 
@@ -687,7 +643,6 @@ describe("formatRemote", () => {
           pushUrl: "https://github.com/upstream/repo.git",
         },
       ],
-      total: 2,
     };
     const output = formatRemote(remotes);
 
@@ -714,7 +669,6 @@ describe("formatBlame", () => {
         },
       ],
       file: "src/index.ts",
-      totalLines: 2,
     };
     const output = formatBlame(blame);
 
@@ -742,7 +696,6 @@ describe("formatBlame", () => {
         },
       ],
       file: "test.ts",
-      totalLines: 3,
     };
     const output = formatBlame(blame);
     const lines = output.split("\n");
@@ -753,7 +706,7 @@ describe("formatBlame", () => {
   });
 
   it("formats empty blame output", () => {
-    const blame: GitBlameFull = { commits: [], file: "empty.ts", totalLines: 0 };
+    const blame: GitBlameFull = { commits: [], file: "empty.ts" };
     expect(formatBlame(blame)).toBe("No blame data for empty.ts");
   });
 });
@@ -782,7 +735,6 @@ describe("formatLogGraph", () => {
         { graph: "*", hashShort: "abc1234", message: "Latest commit", refs: "HEAD -> main" },
         { graph: "*", hashShort: "def5678", message: "Previous commit" },
       ],
-      total: 2,
     };
     const output = formatLogGraph(data);
 
@@ -798,7 +750,6 @@ describe("formatLogGraph", () => {
         { graph: "|\\", hashShort: "", message: "" },
         { graph: "| *", hashShort: "def5678", message: "Feature commit", refs: "feature" },
       ],
-      total: 2,
     };
     const output = formatLogGraph(data);
     const lines = output.split("\n");
@@ -809,7 +760,7 @@ describe("formatLogGraph", () => {
   });
 
   it("formats empty graph", () => {
-    const data: GitLogGraphFull = { commits: [], total: 0 };
+    const data: GitLogGraphFull = { commits: [] };
     expect(formatLogGraph(data)).toBe("No commits found");
   });
 });
@@ -837,7 +788,6 @@ describe("formatReflog", () => {
           date: "2024-01-14 09:00:00 +0000",
         },
       ],
-      total: 2,
     };
     const output = formatReflog(reflog);
 
@@ -847,7 +797,7 @@ describe("formatReflog", () => {
   });
 
   it("formats empty reflog", () => {
-    const reflog: GitReflogFull = { entries: [], total: 0 };
+    const reflog: GitReflogFull = { entries: [] };
     expect(formatReflog(reflog)).toBe("No reflog entries found");
   });
 
@@ -864,7 +814,6 @@ describe("formatReflog", () => {
           date: "2024-01-01 00:00:00 +0000",
         },
       ],
-      total: 1,
     };
     const output = formatReflog(reflog);
 
@@ -885,7 +834,6 @@ describe("formatWorktreeList", () => {
           bare: false,
         },
       ],
-      total: 2,
     };
     const output = formatWorktreeList(data);
 
@@ -901,7 +849,6 @@ describe("formatWorktreeList", () => {
       worktrees: [
         { path: "/home/user/repo.git", head: "abc1234567890abcdef", branch: "", bare: true },
       ],
-      total: 1,
     };
     const output = formatWorktreeList(data);
 
@@ -909,7 +856,7 @@ describe("formatWorktreeList", () => {
   });
 
   it("formats empty worktree list", () => {
-    const data: GitWorktreeListFull = { worktrees: [], total: 0 };
+    const data: GitWorktreeListFull = { worktrees: [] };
     expect(formatWorktreeList(data)).toBe("No worktrees found");
   });
 });
@@ -933,7 +880,6 @@ describe("formatWorktree", () => {
 describe("formatAdd — per-file status", () => {
   it("formats staged files with status prefix", () => {
     const data: GitAdd = {
-      staged: 3,
       files: [
         { file: "src/new.ts", status: "added" },
         { file: "src/index.ts", status: "modified" },
@@ -946,7 +892,7 @@ describe("formatAdd — per-file status", () => {
   });
 
   it("formats no files staged", () => {
-    const data: GitAdd = { staged: 0, files: [] };
+    const data: GitAdd = { files: [] };
     expect(formatAdd(data)).toBe("No files staged");
   });
 });
@@ -1127,7 +1073,6 @@ describe("formatWorktreeList — locked/prunable in output", () => {
           locked: true,
         },
       ],
-      total: 1,
     };
     const output = formatWorktreeList(data);
 
@@ -1146,7 +1091,6 @@ describe("formatWorktreeList — locked/prunable in output", () => {
           lockReason: "maintenance",
         },
       ],
-      total: 1,
     };
     const output = formatWorktreeList(data);
 
@@ -1164,55 +1108,10 @@ describe("formatWorktreeList — locked/prunable in output", () => {
           prunable: true,
         },
       ],
-      total: 1,
     };
     const output = formatWorktreeList(data);
 
     expect(output).toContain("[prunable]");
-  });
-});
-
-describe("formatReflog — totalAvailable", () => {
-  it("shows entry count when totalAvailable > total", () => {
-    const reflog: GitReflogFull = {
-      entries: [
-        {
-          hash: "abc123full",
-          shortHash: "abc1234",
-          selector: "HEAD@{0}",
-          action: "commit",
-          rawAction: "commit",
-          description: "fix bug",
-          date: "2024-01-15 10:30:00 +0000",
-        },
-      ],
-      total: 1,
-      totalAvailable: 50,
-    };
-    const output = formatReflog(reflog);
-
-    expect(output).toContain("(showing 1 of 50 entries)");
-  });
-
-  it("does not show count when totalAvailable equals total", () => {
-    const reflog: GitReflogFull = {
-      entries: [
-        {
-          hash: "abc123full",
-          shortHash: "abc1234",
-          selector: "HEAD@{0}",
-          action: "commit",
-          rawAction: "commit",
-          description: "fix bug",
-          date: "2024-01-15 10:30:00 +0000",
-        },
-      ],
-      total: 1,
-      totalAvailable: 1,
-    };
-    const output = formatReflog(reflog);
-
-    expect(output).not.toContain("showing");
   });
 });
 
@@ -1296,32 +1195,6 @@ describe("formatTagMutate", () => {
 
 // ── P1 gap formatter tests ──────────────────────────────────────────
 
-describe("formatAdd — newlyStaged (Gap #126)", () => {
-  it("includes newlyStaged count in output", () => {
-    const data: GitAdd = {
-      staged: 3,
-      files: [
-        { file: "a.ts", status: "modified" },
-        { file: "b.ts", status: "added" },
-        { file: "c.ts", status: "modified" },
-      ],
-      newlyStaged: 2,
-    };
-    const output = formatAdd(data);
-    expect(output).toContain("(2 newly staged)");
-    expect(output).toContain("Staged 3 file(s)");
-  });
-
-  it("omits newlyStaged info when undefined", () => {
-    const data: GitAdd = {
-      staged: 1,
-      files: [{ file: "a.ts", status: "modified" }],
-    };
-    const output = formatAdd(data);
-    expect(output).not.toContain("newly staged");
-  });
-});
-
 describe("formatPull — changed files and conflicts (Gaps #131, #132)", () => {
   it("includes changed files in output", () => {
     const data: GitPull = {
@@ -1344,7 +1217,6 @@ describe("formatPull — changed files and conflicts (Gaps #131, #132)", () => {
 describe("formatStash — show action (Gap #139)", () => {
   it("formats stash show with diff stats", () => {
     const data: GitStash = {
-      action: "show",
       success: true,
       message: "Stash show completed",
       diffStat: {
@@ -1448,7 +1320,6 @@ describe("formatStashList — summary fields (Gap #140)", () => {
           summary: "3 files changed, 10 insertions(+), 5 deletions(-)",
         },
       ],
-      total: 1,
     };
     const output = formatStashList(data);
     expect(output).toContain("(3 file(s))");

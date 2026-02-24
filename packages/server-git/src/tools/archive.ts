@@ -84,9 +84,6 @@ export function registerArchiveTool(server: McpServer) {
       return dualOutput(
         {
           success: true,
-          format: resolvedFormat,
-          outputFile: output,
-          treeish,
           message: `Archive created: ${output} (${resolvedFormat}) from ${treeish}`,
         },
         formatArchive,

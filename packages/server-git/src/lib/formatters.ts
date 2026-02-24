@@ -61,8 +61,11 @@ export function formatLog(log: GitLog): string {
 
 /** Formats structured git diff statistics into a human-readable file change summary. */
 export function formatDiff(diff: GitDiff): string {
+  const totalFiles = diff.files.length;
+  const totalAdditions = diff.files.reduce((s, f) => s + f.additions, 0);
+  const totalDeletions = diff.files.reduce((s, f) => s + f.deletions, 0);
   const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${diff.totalFiles} files changed, +${diff.totalAdditions ?? 0} -${diff.totalDeletions ?? 0}\n${files}`;
+  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}\n${files}`;
 }
 
 /** Formats structured git branch data into a human-readable branch listing. */
@@ -90,9 +93,9 @@ export function formatShow(s: GitShow): string {
 
 /** Formats structured git add data into a human-readable summary of staged files. */
 export function formatAdd(a: GitAdd): string {
-  if (a.staged === 0) return "No files staged";
-  const newlyInfo = a.newlyStaged !== undefined ? ` (${a.newlyStaged} newly staged)` : "";
-  return `Staged ${a.staged} file(s)${newlyInfo}: ${a.files.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`;
+  const staged = a.files.length;
+  if (staged === 0) return "No files staged";
+  return `Staged ${staged} file(s): ${a.files.map((f) => `${f.status[0]}:${f.file}`).join(", ")}`;
 }
 
 /** Formats structured git commit data into a human-readable commit summary. */
@@ -106,7 +109,7 @@ export function formatCommit(c: GitCommit): string {
 /** Formats structured git push data into a human-readable push summary. */
 export function formatPush(p: GitPush): string {
   if (!p.success) {
-    const parts = [`Push to ${p.remote}/${p.branch} failed`];
+    const parts = ["Push failed"];
     if (p.errorType) parts.push(`[${p.errorType}]`);
     if (p.rejectedRef) parts.push(`rejected ref: ${p.rejectedRef}`);
     if (p.hint) parts.push(`hint: ${p.hint}`);
@@ -129,7 +132,7 @@ export function formatPush(p: GitPush): string {
     p.objectStats && p.objectStats.total != null
       ? ` (objects=${p.objectStats.total}${p.objectStats.delta != null ? `, delta=${p.objectStats.delta}` : ""})`
       : "";
-  return `Pushed to ${p.remote}/${p.branch}${created}${stats}: ${p.summary}`;
+  return `Push completed${created}${stats}: ${p.summary}`;
 }
 
 /** Formats structured git pull data into a human-readable pull summary. */
@@ -164,16 +167,16 @@ export function formatCheckout(c: GitCheckout): string {
     return parts.join("\n");
   }
   if (c.detached) {
-    return `HEAD is now detached at '${c.ref}' (was ${c.previousRef})`;
+    return `HEAD is now detached (was ${c.previousRef})`;
   }
   if (c.created) {
-    return `Created and switched to new branch '${c.ref}' (was ${c.previousRef})`;
+    return `Created and switched to new branch (was ${c.previousRef})`;
   }
   const modified =
     c.modifiedFiles && c.modifiedFiles.length > 0
       ? ` [${c.modifiedFiles.length} files changed]`
       : "";
-  return `Switched to '${c.ref}' (was ${c.previousRef})${modified}`;
+  return `Checkout completed (was ${c.previousRef})${modified}`;
 }
 
 /** Formats structured git restore data into a human-readable restore summary. */
@@ -208,7 +211,6 @@ export function formatReset(r: GitReset): string {
 export interface GitLogCompact {
   [key: string]: unknown;
   commits: Array<{ hashShort: string; message: string; refs?: string }>;
-  total: number;
 }
 
 export function compactLogMap(log: GitLog): GitLogCompact {
@@ -218,7 +220,6 @@ export function compactLogMap(log: GitLog): GitLogCompact {
       message: c.message,
       ...(c.refs ? { refs: c.refs } : {}),
     })),
-    total: log.total,
   };
 }
 
@@ -237,7 +238,6 @@ export interface GitDiffCompact {
     additions: number;
     deletions: number;
   }>;
-  totalFiles: number;
 }
 
 export function compactDiffMap(diff: GitDiff): GitDiffCompact {
@@ -248,13 +248,13 @@ export function compactDiffMap(diff: GitDiff): GitDiffCompact {
       additions: f.additions,
       deletions: f.deletions,
     })),
-    totalFiles: diff.totalFiles,
   };
 }
 
 export function formatDiffCompact(diff: GitDiffCompact): string {
+  const totalFiles = diff.files.length;
   const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${diff.totalFiles} files changed\n${files}`;
+  return `${totalFiles} files changed\n${files}`;
 }
 
 /** Compact branch: just branch names as string array + current. */
@@ -316,17 +316,15 @@ export function formatTag(t: GitTagFull): string {
     .join("\n");
 }
 
-/** Compact tag: just tag names as string array + total. */
+/** Compact tag: just tag names as string array. */
 export interface GitTagCompact {
   [key: string]: unknown;
   tags: string[];
-  total: number;
 }
 
 export function compactTagMap(t: GitTagFull): GitTagCompact {
   return {
     tags: t.tags.map((tag) => tag.name),
-    total: t.total,
   };
 }
 
@@ -350,17 +348,15 @@ export function formatStashList(s: GitStashListFull): string {
     .join("\n");
 }
 
-/** Compact stash list: just index + message as string array + total. */
+/** Compact stash list: just index + message as string array. */
 export interface GitStashListCompact {
   [key: string]: unknown;
   stashes: string[];
-  total: number;
 }
 
 export function compactStashListMap(s: GitStashListFull): GitStashListCompact {
   return {
     stashes: s.stashes.map((st) => `stash@{${st.index}}: ${st.message}`),
-    total: s.total,
   };
 }
 
@@ -374,7 +370,7 @@ export function formatStashListCompact(s: GitStashListCompact): string {
 /** Formats structured git stash result into a human-readable summary. */
 export function formatStash(s: GitStash): string {
   if (!s.success) {
-    const parts = [`Stash ${s.action} failed`];
+    const parts = ["Stash operation failed"];
     if (s.reason) parts.push(`[${s.reason}]`);
     if (s.conflictFiles && s.conflictFiles.length > 0) {
       parts.push(`Conflicting files: ${s.conflictFiles.join(", ")}`);
@@ -383,7 +379,7 @@ export function formatStash(s: GitStash): string {
     return parts.join("\n");
   }
 
-  if (s.action === "show" && s.diffStat) {
+  if (s.diffStat) {
     const parts = [
       `${s.diffStat.filesChanged} file(s) changed, +${s.diffStat.insertions} -${s.diffStat.deletions}`,
     ];
@@ -416,17 +412,15 @@ export function formatRemote(r: GitRemoteFull): string {
     .join("\n");
 }
 
-/** Compact remote: just name as string array + total. */
+/** Compact remote: just name as string array. */
 export interface GitRemoteCompact {
   [key: string]: unknown;
   remotes: string[];
-  total: number;
 }
 
 export function compactRemoteMap(r: GitRemoteFull): GitRemoteCompact {
   return {
     remotes: r.remotes.map((remote) => remote.name),
-    total: r.total,
   };
 }
 
@@ -439,7 +433,8 @@ export function formatRemoteCompact(r: GitRemoteCompact): string {
 
 /** Formats structured git blame data into a human-readable annotated file view. */
 export function formatBlame(b: GitBlameFull): string {
-  if (b.totalLines === 0) return `No blame data for ${b.file}`;
+  const totalLines = b.commits.reduce((s, c) => s + c.lines.length, 0);
+  if (totalLines === 0) return `No blame data for ${b.file}`;
   // Flatten to per-line for human-readable output, sorted by line number
   const flat: Array<{
     hash: string;
@@ -464,7 +459,6 @@ export interface GitBlameCompact {
   [key: string]: unknown;
   commits: Array<{ hash: string; lines: number[] }>;
   file: string;
-  totalLines: number;
 }
 
 export function compactBlameMap(b: GitBlameFull): GitBlameCompact {
@@ -474,7 +468,6 @@ export function compactBlameMap(b: GitBlameFull): GitBlameCompact {
       lines: c.lines.map((l) => l.lineNumber),
     })),
     file: b.file,
-    totalLines: b.totalLines,
   };
 }
 
@@ -499,7 +492,8 @@ function compressLineRanges(nums: number[]): string {
 }
 
 export function formatBlameCompact(b: GitBlameCompact): string {
-  if (b.totalLines === 0) return `No blame data for ${b.file}`;
+  const totalLines = b.commits.reduce((s, c) => s + c.lines.length, 0);
+  if (totalLines === 0) return `No blame data for ${b.file}`;
   return b.commits.map((c) => `${c.hash}: lines ${compressLineRanges(c.lines)}`).join("\n");
 }
 
@@ -588,7 +582,8 @@ export function formatMerge(m: GitMerge): string {
 
 /** Formats structured git log-graph data into a human-readable graph view. */
 export function formatLogGraph(lg: GitLogGraphFull): string {
-  if (lg.total === 0) return "No commits found";
+  const total = lg.commits.filter((c) => c.hashShort !== "").length;
+  if (total === 0) return "No commits found";
   return lg.commits
     .map((c) => {
       if (c.hashShort === "") return c.graph;
@@ -604,7 +599,6 @@ export function formatLogGraph(lg: GitLogGraphFull): string {
 export interface GitLogGraphCompact {
   [key: string]: unknown;
   commits: Array<{ g: string; h: string; m: string; r?: string }>;
-  total: number;
 }
 
 export function compactLogGraphMap(lg: GitLogGraphFull): GitLogGraphCompact {
@@ -617,12 +611,11 @@ export function compactLogGraphMap(lg: GitLogGraphFull): GitLogGraphCompact {
         m: c.message,
         ...(c.refs ? { r: c.refs } : {}),
       })),
-    total: lg.total,
   };
 }
 
 export function formatLogGraphCompact(lg: GitLogGraphCompact): string {
-  if (lg.total === 0) return "No commits found";
+  if (lg.commits.length === 0) return "No commits found";
   return lg.commits.map((c) => `${c.g} ${c.h} ${c.m}${c.r ? ` (${c.r})` : ""}`).join("\n");
 }
 
@@ -638,19 +631,13 @@ export function formatReflog(r: GitReflogFull): string {
       return `${e.shortHash} ${e.selector} ${e.action}${desc}${move} (${e.date})`;
     })
     .join("\n");
-  const available =
-    r.totalAvailable !== undefined && r.totalAvailable > r.total
-      ? `\n(showing ${r.total} of ${r.totalAvailable} entries)`
-      : "";
-  return `${lines}${available}`;
+  return lines;
 }
 
-/** Compact reflog: selector + action + description as string array + total. */
+/** Compact reflog: selector + action + description as string array. */
 export interface GitReflogCompact {
   [key: string]: unknown;
   entries: string[];
-  total: number;
-  totalAvailable?: number;
 }
 
 export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
@@ -659,8 +646,6 @@ export function compactReflogMap(r: GitReflogFull): GitReflogCompact {
       const desc = e.description ? `: ${e.description}` : "";
       return `${e.shortHash} ${e.selector} ${e.action}${desc}`;
     }),
-    total: r.total,
-    ...(r.totalAvailable !== undefined ? { totalAvailable: r.totalAvailable } : {}),
   };
 }
 
@@ -705,11 +690,10 @@ export function formatWorktreeList(w: GitWorktreeListFull): string {
     .join("\n");
 }
 
-/** Compact worktree list: path + branch as string array + total. */
+/** Compact worktree list: path + branch as string array. */
 export interface GitWorktreeListCompact {
   [key: string]: unknown;
   worktrees: string[];
-  total: number;
 }
 
 export function compactWorktreeListMap(w: GitWorktreeListFull): GitWorktreeListCompact {
@@ -718,7 +702,6 @@ export function compactWorktreeListMap(w: GitWorktreeListFull): GitWorktreeListC
       const branch = wt.branch ? ` (${wt.branch})` : "";
       return `${wt.path}${branch}`;
     }),
-    total: w.total,
   };
 }
 
@@ -836,8 +819,7 @@ export function formatClean(c: GitClean): string {
   if (c.files.length === 0) {
     return c.message;
   }
-  const verb = c.dryRun ? "Would remove" : "Removed";
-  const lines = c.files.map((f) => `  ${verb}: ${f}`);
+  const lines = c.files.map((f) => `  ${f}`);
   return `${c.message}\n${lines.join("\n")}`;
 }
 
