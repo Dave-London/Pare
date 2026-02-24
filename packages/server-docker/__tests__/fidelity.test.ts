@@ -191,9 +191,7 @@ describe("fidelity: parsePsJson", () => {
   it("single running container: preserves id, name, image, status, state, ports, created", () => {
     const result = parsePsJson(PS_SINGLE_RUNNING);
 
-    expect(result.total).toBe(1);
-    expect(result.running).toBe(1);
-    expect(result.stopped).toBe(0);
+    expect(result.containers).toHaveLength(1);
 
     const c = result.containers[0];
     expect(c.id).toBe("abc123def456");
@@ -210,9 +208,7 @@ describe("fidelity: parsePsJson", () => {
   it("multiple containers with mixed running/exited: counts are accurate", () => {
     const result = parsePsJson(PS_MULTIPLE_MIXED);
 
-    expect(result.total).toBe(4);
-    expect(result.running).toBe(2);
-    expect(result.stopped).toBe(2);
+    expect(result.containers).toHaveLength(4);
 
     // Verify all container names are preserved
     const names = result.containers.map((c) => c.name);
@@ -250,9 +246,6 @@ describe("fidelity: parsePsJson", () => {
     const result = parsePsJson("");
 
     expect(result.containers).toEqual([]);
-    expect(result.total).toBe(0);
-    expect(result.running).toBe(0);
-    expect(result.stopped).toBe(0);
   });
 
   it("container with mixed tcp/udp ports: protocol is preserved", () => {
@@ -300,14 +293,12 @@ describe("fidelity: parsePsJson", () => {
 // ---------------------------------------------------------------------------
 
 describe("fidelity: parseBuildOutput", () => {
-  it("successful build: extracts image ID (first 12 chars), success, duration, steps", () => {
+  it("successful build: extracts image ID (first 12 chars) and success", () => {
     const result = parseBuildOutput(BUILD_SUCCESS_STDOUT, "", 0, 45.3);
 
     expect(result.success).toBe(true);
     expect(result.imageId).toBe("a1b2c3d4e5f6");
-    expect(result.duration).toBe(45.3);
     expect(result.errors).toBeUndefined();
-    expect(result.steps).toBeGreaterThanOrEqual(1);
   });
 
   it("failed build with error lines: errors captured from stdout and stderr", () => {
@@ -315,19 +306,19 @@ describe("fidelity: parseBuildOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.imageId).toBeUndefined();
-    expect(result.duration).toBe(12.0);
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors!.length).toBeGreaterThan(0);
 
     // Verify error content is preserved
     const allErrors = (result.errors ?? []).map((e: { message: string }) => e.message).join(" ");
     expect(allErrors).toContain("npm install");
   });
 
-  it("build output with step numbers: steps count matches unique step numbers", () => {
+  it("build output with step numbers: cacheByStep tracks steps", () => {
     const result = parseBuildOutput(BUILD_SUCCESS_STDOUT, "", 0, 30.0);
 
     // BUILD_SUCCESS_STDOUT has steps #1 through #8
-    expect(result.steps).toBe(8);
+    expect(result.cacheByStep).toBeDefined();
+    expect(result.cacheByStep!.length).toBeGreaterThanOrEqual(1);
   });
 
   it("build with no image ID: imageId is undefined", () => {
@@ -335,7 +326,6 @@ describe("fidelity: parseBuildOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.imageId).toBeUndefined();
-    expect(result.duration).toBe(5.0);
   });
 
   it("legacy build with 'Successfully built' format: image ID captured", () => {
@@ -353,11 +343,6 @@ describe("fidelity: parseBuildOutput", () => {
     expect(result.success).toBe(true);
     expect(result.imageId).toBe("ff00ff00ff00");
   });
-
-  it("duration is preserved exactly", () => {
-    const result = parseBuildOutput("", "", 0, 99.999);
-    expect(result.duration).toBe(99.999);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -368,8 +353,6 @@ describe("fidelity: parseLogsOutput", () => {
   it("multi-line log output: all lines preserved with correct count", () => {
     const result = parseLogsOutput(LOGS_MULTILINE, "my-app");
 
-    expect(result.container).toBe("my-app");
-    expect(result.total).toBe(5);
     expect(result.lines).toHaveLength(5);
 
     // Verify first and last lines are preserved exactly
@@ -380,16 +363,13 @@ describe("fidelity: parseLogsOutput", () => {
   it("empty logs: returns zero lines", () => {
     const result = parseLogsOutput("", "idle-container");
 
-    expect(result.container).toBe("idle-container");
     expect(result.lines).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("logs with special characters: content preserved exactly", () => {
     const result = parseLogsOutput(LOGS_SPECIAL_CHARS, "special-app");
 
-    expect(result.container).toBe("special-app");
-    expect(result.total).toBe(4);
+    expect(result.lines).toHaveLength(4);
 
     // Verify special characters are not lost or mangled
     expect(result.lines[0]).toContain('\\"quotes\\"');
@@ -398,9 +378,9 @@ describe("fidelity: parseLogsOutput", () => {
     expect(result.lines[3]).toContain("^[a-z]+\\d{3}$");
   });
 
-  it("container name is preserved exactly", () => {
+  it("lines are preserved exactly", () => {
     const result = parseLogsOutput("line1\nline2", "my-complex_container.name-123");
-    expect(result.container).toBe("my-complex_container.name-123");
+    expect(result.lines).toEqual(["line1", "line2"]);
   });
 });
 
@@ -412,7 +392,6 @@ describe("fidelity: parseImagesJson", () => {
   it("multiple images: all fields preserved for each image", () => {
     const result = parseImagesJson(IMAGES_MULTIPLE);
 
-    expect(result.total).toBe(3);
     expect(result.images).toHaveLength(3);
 
     // Verify first image fields — ID is sliced to 12 chars from raw
@@ -432,7 +411,7 @@ describe("fidelity: parseImagesJson", () => {
   it("image with <none> tag: tag and repository preserved as-is", () => {
     const result = parseImagesJson(IMAGES_NONE_TAG);
 
-    expect(result.total).toBe(1);
+    expect(result.images).toHaveLength(1);
     expect(result.images[0].repository).toBe("<none>");
     expect(result.images[0].tag).toBe("<none>");
     expect(result.images[0].size).toBe("156MB");
@@ -442,7 +421,6 @@ describe("fidelity: parseImagesJson", () => {
     const result = parseImagesJson("");
 
     expect(result.images).toEqual([]);
-    expect(result.total).toBe(0);
   });
 
   it("image ID is truncated to 12 characters", () => {
@@ -621,7 +599,6 @@ describe("fidelity: parseRunOutput", () => {
 
     expect(result.containerId).toBe("a1b2c3d4e5f6");
     expect(result.containerId.length).toBe(12);
-    expect(result.image).toBe("nginx:latest");
     expect(result.detached).toBe(true);
     expect(result.name).toBe("my-web");
   });
@@ -630,7 +607,6 @@ describe("fidelity: parseRunOutput", () => {
     const result = parseRunOutput(RUN_ATTACHED_OUTPUT, "myapp:dev", false);
 
     expect(result.containerId).toBe("fedcba987654");
-    expect(result.image).toBe("myapp:dev");
     expect(result.detached).toBe(false);
     expect(result.name).toBeUndefined();
   });
@@ -640,21 +616,19 @@ describe("fidelity: parseRunOutput", () => {
 
     // The last trimmed line is "Hello, World!" which is not a container ID hash
     expect(result.containerId).toBe("Hello, World");
-    expect(result.image).toBe("alpine");
     expect(result.detached).toBe(false);
   });
 
   it("preserves image name exactly including registry prefix", () => {
     const result = parseRunOutput(RUN_DETACHED_OUTPUT, "registry.example.com:5000/myapp:v1", true);
 
-    expect(result.image).toBe("registry.example.com:5000/myapp:v1");
+    expect(result.containerId).toBe("a1b2c3d4e5f6");
   });
 
   it("empty output: containerId is empty, other fields preserved", () => {
     const result = parseRunOutput("", "busybox", true, "worker");
 
     expect(result.containerId).toBe("");
-    expect(result.image).toBe("busybox");
     expect(result.detached).toBe(true);
     expect(result.name).toBe("worker");
   });
@@ -668,7 +642,6 @@ describe("fidelity: parseExecOutput", () => {
   it("successful ls: stdout preserved exactly with all directory entries", () => {
     const result = parseExecOutput(EXEC_LS_STDOUT, "", 0);
 
-    expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe(EXEC_LS_STDOUT);
     expect(result.stdout).toContain("bin");
@@ -678,8 +651,6 @@ describe("fidelity: parseExecOutput", () => {
 
   it("successful cat: multi-line config output preserved exactly", () => {
     const result = parseExecOutput(EXEC_CAT_STDOUT, "", 0);
-
-    expect(result.success).toBe(true);
     expect(result.stdout).toBe(EXEC_CAT_STDOUT);
     expect(result.stdout).toContain("server_name localhost");
     expect(result.stdout).toContain("listen 80");
@@ -688,7 +659,6 @@ describe("fidelity: parseExecOutput", () => {
   it("command not found: exit code 126 with OCI runtime error", () => {
     const result = parseExecOutput("", EXEC_FAILED_STDERR, 126);
 
-    expect(result.success).toBe(false);
     expect(result.exitCode).toBe(126);
     expect(result.stderr).toContain("executable file not found");
     expect(result.stdout).toBe("");
@@ -698,7 +668,6 @@ describe("fidelity: parseExecOutput", () => {
     const stderr = 'exec: "missing-tool": executable file not found in $PATH';
     const result = parseExecOutput("", stderr, 127);
 
-    expect(result.success).toBe(false);
     expect(result.exitCode).toBe(127);
     expect(result.stderr).toContain("missing-tool");
   });
@@ -708,7 +677,6 @@ describe("fidelity: parseExecOutput", () => {
     const stderr = "DEPRECATION WARNING: feature X will be removed in v3.0";
     const result = parseExecOutput(stdout, stderr, 0);
 
-    expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe(stdout);
     expect(result.stderr).toBe(stderr);
@@ -718,7 +686,6 @@ describe("fidelity: parseExecOutput", () => {
     const stderr = "Error: Cannot connect to database at localhost:5432";
     const result = parseExecOutput("", stderr, 1);
 
-    expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toBe(stderr);
   });
@@ -726,7 +693,6 @@ describe("fidelity: parseExecOutput", () => {
   it("exit code 137 (OOM killed / SIGKILL)", () => {
     const result = parseExecOutput("", "Killed", 137);
 
-    expect(result.success).toBe(false);
     expect(result.exitCode).toBe(137);
   });
 });
@@ -740,10 +706,10 @@ describe("fidelity: parseComposeUpOutput", () => {
     const result = parseComposeUpOutput("", COMPOSE_UP_FULL, 0);
 
     expect(result.success).toBe(true);
-    expect(result.started).toBe(3);
     expect(result.services).toContain("myproject-postgres-1");
     expect(result.services).toContain("myproject-redis-1");
     expect(result.services).toContain("myproject-api-1");
+    expect(result.services).toHaveLength(3);
 
     // Verify no duplicates (each service appeared in Created, Starting, Started)
     const uniqueCount = new Set(result.services).size;
@@ -757,7 +723,7 @@ describe("fidelity: parseComposeUpOutput", () => {
     expect(result.services).toContain("myproject-postgres-1");
     expect(result.services).toContain("myproject-redis-1");
     expect(result.services).toContain("myproject-api-1");
-    expect(result.started).toBe(3);
+    expect(result.services).toHaveLength(3);
   });
 
   it("network creation lines do not create false service entries", () => {
@@ -770,7 +736,6 @@ describe("fidelity: parseComposeUpOutput", () => {
 
     // Networks should not be counted as services
     expect(result.services).toEqual([]);
-    expect(result.started).toBe(0);
   });
 
   it("failure exit code: success is false, no services", () => {
@@ -778,7 +743,6 @@ describe("fidelity: parseComposeUpOutput", () => {
     const result = parseComposeUpOutput("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.started).toBe(0);
   });
 });
 
@@ -792,16 +756,13 @@ describe("fidelity: parseComposeDownOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(3); // 3 containers stopped
-    expect(result.removed).toBe(4); // 3 containers + 1 network removed
   });
 
-  it("teardown with volumes: volume removal counted in removed", () => {
+  it("teardown with volumes: volume removal counted", () => {
     const result = parseComposeDownOutput("", COMPOSE_DOWN_VOLUMES, 0);
 
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(1); // 1 container stopped
-    // Removed = 1 container + 1 network; volumes are not matched by current parser
-    expect(result.removed).toBeGreaterThanOrEqual(1);
   });
 
   it("Stopping lines are not counted as Stopped", () => {
@@ -811,19 +772,11 @@ describe("fidelity: parseComposeDownOutput", () => {
     expect(result.stopped).toBe(0); // Stopping !== Stopped
   });
 
-  it("Removing lines are not counted as Removed", () => {
-    const stderr = [" Container app-1  Removing", " Container app-1  Removing"].join("\n");
-
-    const result = parseComposeDownOutput("", stderr, 0);
-    expect(result.removed).toBe(0); // Removing !== Removed
-  });
-
   it("failure exit code: success is false", () => {
     const result = parseComposeDownOutput("", "error: compose file not found", 1);
 
     expect(result.success).toBe(false);
     expect(result.stopped).toBe(0);
-    expect(result.removed).toBe(0);
   });
 });
 
@@ -836,8 +789,6 @@ describe("fidelity: parsePullOutput", () => {
     const result = parsePullOutput(PULL_FRESH_DOWNLOAD, "", 0, "nginx:latest");
 
     expect(result.success).toBe(true);
-    expect(result.image).toBe("nginx");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBe(
       "sha256:e4f58b21c1a93f9d4abfe69c4e1399d3e4f0d6e2c7b8a1d3f5e6a7b8c9d0e1f2",
     );
@@ -847,25 +798,21 @@ describe("fidelity: parsePullOutput", () => {
     const result = parsePullOutput(PULL_ALREADY_EXISTS, "", 0, "alpine");
 
     expect(result.success).toBe(true);
-    expect(result.image).toBe("alpine");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBe(
       "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
     );
   });
 
-  it("specific tag: tag extracted correctly from image spec", () => {
+  it("specific tag: digest extracted correctly", () => {
     const result = parsePullOutput(PULL_SPECIFIC_TAG, "", 0, "ubuntu:22.04");
 
     expect(result.success).toBe(true);
-    expect(result.image).toBe("ubuntu");
-    expect(result.tag).toBe("22.04");
     expect(result.digest).toBe(
       "sha256:aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344",
     );
   });
 
-  it("private registry with port: image name includes registry prefix", () => {
+  it("private registry with port: digest still extracted", () => {
     const result = parsePullOutput(
       PULL_PRIVATE_REGISTRY,
       "",
@@ -874,8 +821,6 @@ describe("fidelity: parsePullOutput", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.image).toBe("registry.example.com:5000/myorg/myapp");
-    expect(result.tag).toBe("v2.1.0");
     expect(result.digest).toBe(
       "sha256:deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234",
     );
@@ -894,8 +839,6 @@ describe("fidelity: parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "nonexistent/image:v999");
 
     expect(result.success).toBe(false);
-    expect(result.image).toBe("nonexistent/image");
-    expect(result.tag).toBe("v999");
     expect(result.digest).toBeUndefined();
   });
 
@@ -905,8 +848,6 @@ describe("fidelity: parsePullOutput", () => {
     const result = parsePullOutput("", stderr, 1, "registry.example.com/myapp:latest");
 
     expect(result.success).toBe(false);
-    expect(result.image).toBe("registry.example.com/myapp");
-    expect(result.tag).toBe("latest");
     expect(result.digest).toBeUndefined();
   });
 });

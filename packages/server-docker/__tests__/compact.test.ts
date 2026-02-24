@@ -54,16 +54,10 @@ describe("compactPsMap", () => {
           created: "3 hours ago",
         },
       ],
-      total: 2,
-      running: 1,
-      stopped: 1,
     };
 
     const compact = compactPsMap(data);
 
-    expect(compact.total).toBe(2);
-    expect(compact.running).toBe(1);
-    expect(compact.stopped).toBe(1);
     expect(compact.containers).toHaveLength(2);
     expect(compact.containers[0]).toEqual({
       id: "abc123def456",
@@ -90,8 +84,6 @@ describe("formatPsCompact", () => {
       containers: [
         { id: "abc123def456", name: "web", image: "nginx:latest", status: "Up 2 hours" },
       ],
-      total: 1,
-      running: 1,
     };
     const output = formatPsCompact(compact);
     expect(output).toContain("1 containers (1 running)");
@@ -118,12 +110,10 @@ describe("compactImagesMap", () => {
           created: "3 days ago",
         },
       ],
-      total: 2,
     };
 
     const compact = compactImagesMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.images).toHaveLength(2);
     expect(compact.images[0]).toEqual({
       id: "abc123def456",
@@ -141,7 +131,6 @@ describe("formatImagesCompact", () => {
   it("formats compact images without created field", () => {
     const compact = {
       images: [{ id: "abc123", repository: "nginx", tag: "latest", size: "142MB" }],
-      total: 1,
     };
     const output = formatImagesCompact(compact);
     expect(output).toContain("1 images:");
@@ -150,14 +139,13 @@ describe("formatImagesCompact", () => {
   });
 
   it("handles empty images list", () => {
-    const compact = { images: [], total: 0 };
+    const compact = { images: [] };
     expect(formatImagesCompact(compact)).toBe("No images found.");
   });
 
   it("handles <none> tag", () => {
     const compact = {
       images: [{ id: "xyz789", repository: "myapp", tag: "<none>", size: "50MB" }],
-      total: 1,
     };
     const output = formatImagesCompact(compact);
     expect(output).toContain("myapp (50MB)");
@@ -166,13 +154,10 @@ describe("formatImagesCompact", () => {
 });
 
 describe("compactBuildMap", () => {
-  it("keeps success, imageId, duration; replaces errors array with errorCount", () => {
+  it("keeps success and imageId only", () => {
     const data: DockerBuild = {
       success: true,
       imageId: "sha256:abc123",
-      duration: 12.5,
-      steps: 8,
-      errors: [],
     };
 
     const compact = compactBuildMap(data);
@@ -180,38 +165,34 @@ describe("compactBuildMap", () => {
     expect(compact).toEqual({
       success: true,
       imageId: "sha256:abc123",
-      duration: 12.5,
-      errorCount: 0,
     });
-    // Verify dropped fields
-    expect(compact).not.toHaveProperty("steps");
-    expect(compact).not.toHaveProperty("errors");
   });
 
-  it("counts errors", () => {
+  it("keeps success false without imageId", () => {
     const data: DockerBuild = {
       success: false,
-      duration: 3.2,
-      errors: ["COPY failed: file not found", "Dockerfile syntax error at line 5"],
+      errors: [
+        { message: "COPY failed: file not found" },
+        { message: "Dockerfile syntax error at line 5" },
+      ],
     };
 
     const compact = compactBuildMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact.errorCount).toBe(2);
     expect(compact).not.toHaveProperty("imageId");
   });
 });
 
 describe("formatBuildCompact", () => {
   it("formats successful compact build", () => {
-    const compact = { success: true, imageId: "sha256:abc123", duration: 12.5, errorCount: 0 };
-    expect(formatBuildCompact(compact)).toBe("Build succeeded in 12.5s → sha256:abc123");
+    const compact = { success: true, imageId: "sha256:abc123" };
+    expect(formatBuildCompact(compact)).toBe("Build succeeded → sha256:abc123");
   });
 
-  it("formats failed compact build with error count", () => {
-    const compact = { success: false, duration: 3.2, errorCount: 2 };
-    expect(formatBuildCompact(compact)).toBe("Build failed (3.2s, 2 errors)");
+  it("formats failed compact build", () => {
+    const compact = { success: false };
+    expect(formatBuildCompact(compact)).toBe("Build failed");
   });
 });
 
@@ -219,15 +200,11 @@ describe("compactLogsMap", () => {
   it("keeps head and tail for large log sets", () => {
     const lines = Array.from({ length: 50 }, (_, i) => `line ${i + 1}`);
     const data: DockerLogs = {
-      container: "web",
       lines,
-      total: 50,
     };
 
     const compact = compactLogsMap(data);
 
-    expect(compact.container).toBe("web");
-    expect(compact.total).toBe(50);
     expect(compact.head).toEqual(["line 1", "line 2", "line 3", "line 4", "line 5"]);
     expect(compact.tail).toEqual(["line 46", "line 47", "line 48", "line 49", "line 50"]);
     // Verify dropped fields
@@ -236,9 +213,7 @@ describe("compactLogsMap", () => {
 
   it("keeps only head for small log sets (no tail needed)", () => {
     const data: DockerLogs = {
-      container: "app",
       lines: ["line 1", "line 2", "line 3"],
-      total: 3,
     };
 
     const compact = compactLogsMap(data);
@@ -251,13 +226,11 @@ describe("compactLogsMap", () => {
 describe("formatLogsCompact", () => {
   it("formats compact logs with head and tail", () => {
     const compact = {
-      container: "web",
-      total: 50,
       head: ["line 1", "line 2"],
       tail: ["line 49", "line 50"],
     };
     const output = formatLogsCompact(compact);
-    expect(output).toContain("web (50 lines)");
+    expect(output).toContain("4 lines");
     expect(output).toContain("line 1");
     expect(output).toContain("line 2");
     expect(output).toContain("lines omitted");
@@ -267,13 +240,11 @@ describe("formatLogsCompact", () => {
 
   it("formats compact logs without tail when small", () => {
     const compact = {
-      container: "app",
-      total: 2,
       head: ["line 1", "line 2"],
       tail: [],
     };
     const output = formatLogsCompact(compact);
-    expect(output).toContain("app (2 lines)");
+    expect(output).toContain("2 lines");
     expect(output).toContain("line 1");
     expect(output).not.toContain("omitted");
   });
@@ -282,8 +253,6 @@ describe("formatLogsCompact", () => {
 describe("compactPullMap", () => {
   it("preserves digest and status in compact output", () => {
     const data: DockerPull = {
-      image: "nginx",
-      tag: "latest",
       digest: "sha256:abc123def456",
       status: "pulled",
       success: true,
@@ -292,8 +261,6 @@ describe("compactPullMap", () => {
     const compact = compactPullMap(data);
 
     expect(compact).toEqual({
-      image: "nginx",
-      tag: "latest",
       digest: "sha256:abc123def456",
       status: "pulled",
       success: true,
@@ -304,8 +271,6 @@ describe("compactPullMap", () => {
 
   it("preserves up-to-date status", () => {
     const data: DockerPull = {
-      image: "ubuntu",
-      tag: "latest",
       status: "up-to-date",
       success: true,
     };
@@ -320,33 +285,27 @@ describe("compactPullMap", () => {
 describe("formatPullCompact", () => {
   it("formats compact pull", () => {
     const compact = {
-      image: "nginx",
-      tag: "latest",
       status: "pulled" as const,
       success: true,
     };
-    expect(formatPullCompact(compact)).toBe("Pulled nginx:latest");
+    expect(formatPullCompact(compact)).toBe("Pulled");
   });
 
   it("formats compact pull up-to-date", () => {
     const compact = {
-      image: "ubuntu",
-      tag: "latest",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       status: "up-to-date" as const,
       success: true,
     };
-    expect(formatPullCompact(compact)).toBe("ubuntu:latest is up to date (sha256:abc123def456...)");
+    expect(formatPullCompact(compact)).toBe("Image is up to date (sha256:abc123def456...)");
   });
 
   it("formats compact pull failure", () => {
     const compact = {
-      image: "nginx",
-      tag: "latest",
       status: "error" as const,
       success: false,
     };
-    expect(formatPullCompact(compact)).toBe("Pull failed for nginx:latest");
+    expect(formatPullCompact(compact)).toBe("Pull failed");
   });
 });
 
@@ -354,7 +313,6 @@ describe("compactRunMap", () => {
   it("drops name", () => {
     const data: DockerRun = {
       containerId: "abc123def456",
-      image: "nginx:latest",
       detached: true,
       name: "web",
     };
@@ -363,7 +321,6 @@ describe("compactRunMap", () => {
 
     expect(compact).toEqual({
       containerId: "abc123def456",
-      image: "nginx:latest",
       detached: true,
     });
     expect(compact).not.toHaveProperty("name");
@@ -372,8 +329,8 @@ describe("compactRunMap", () => {
 
 describe("formatRunCompact", () => {
   it("formats compact run", () => {
-    const compact = { containerId: "abc123", image: "nginx:latest", detached: true };
-    expect(formatRunCompact(compact)).toBe("Container abc123 from nginx:latest [detached]");
+    const compact = { containerId: "abc123", detached: true };
+    expect(formatRunCompact(compact)).toBe("Container abc123 [detached]");
   });
 });
 
@@ -383,12 +340,11 @@ describe("compactExecMap", () => {
       exitCode: 0,
       stdout: "some output",
       stderr: "",
-      success: true,
     };
 
     const compact = compactExecMap(data);
 
-    expect(compact).toEqual({ exitCode: 0, success: true, stdoutPreview: "some output" });
+    expect(compact).toEqual({ exitCode: 0, stdoutPreview: "some output" });
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
   });
@@ -396,11 +352,11 @@ describe("compactExecMap", () => {
 
 describe("formatExecCompact", () => {
   it("formats compact exec success", () => {
-    expect(formatExecCompact({ exitCode: 0, success: true })).toBe("Exec succeeded");
+    expect(formatExecCompact({ exitCode: 0 })).toBe("Exec succeeded");
   });
 
   it("formats compact exec failure", () => {
-    expect(formatExecCompact({ exitCode: 1, success: false })).toBe("Exec failed (exit code 1)");
+    expect(formatExecCompact({ exitCode: 1 })).toBe("Exec failed (exit code 1)");
   });
 });
 
@@ -409,25 +365,23 @@ describe("compactComposeUpMap", () => {
     const data: DockerComposeUp = {
       success: true,
       services: ["web-1", "db-1"],
-      started: 2,
     };
 
     const compact = compactComposeUpMap(data);
 
-    expect(compact).toEqual({ success: true, started: 2 });
-    expect(compact).not.toHaveProperty("services");
+    expect(compact).toEqual({ success: true, services: ["web-1", "db-1"] });
   });
 });
 
 describe("formatComposeUpCompact", () => {
   it("formats compact compose up", () => {
-    expect(formatComposeUpCompact({ success: true, started: 3 })).toBe(
+    expect(formatComposeUpCompact({ success: true, services: ["a", "b", "c"] })).toBe(
       "Compose up: 3 services started",
     );
   });
 
   it("formats compact compose up failure", () => {
-    expect(formatComposeUpCompact({ success: false, started: 0 })).toBe("Compose up failed");
+    expect(formatComposeUpCompact({ success: false })).toBe("Compose up failed");
   });
 });
 
@@ -436,24 +390,23 @@ describe("compactComposeDownMap", () => {
     const data: DockerComposeDown = {
       success: true,
       stopped: 3,
-      removed: 4,
     };
 
     const compact = compactComposeDownMap(data);
 
-    expect(compact).toEqual({ success: true, stopped: 3, removed: 4 });
+    expect(compact).toEqual({ success: true, stopped: 3 });
   });
 });
 
 describe("formatComposeDownCompact", () => {
   it("formats compact compose down", () => {
-    expect(formatComposeDownCompact({ success: true, stopped: 2, removed: 3 })).toBe(
-      "Compose down: 2 stopped, 3 removed",
+    expect(formatComposeDownCompact({ success: true, stopped: 2 })).toBe(
+      "Compose down: 2 stopped",
     );
   });
 
   it("formats compact compose down failure", () => {
-    expect(formatComposeDownCompact({ success: false, stopped: 0, removed: 0 })).toBe(
+    expect(formatComposeDownCompact({ success: false, stopped: 0 })).toBe(
       "Compose down failed",
     );
   });
@@ -499,12 +452,10 @@ describe("compactComposePsMap", () => {
           status: "Up 2 hours",
         },
       ],
-      total: 2,
     };
 
     const compact = compactComposePsMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.services).toHaveLength(2);
     expect(compact.services[0]).toEqual({
       name: "myapp-web-1",
@@ -528,7 +479,6 @@ describe("formatComposePsCompact", () => {
         { name: "myapp-web-1", service: "web", state: "running" },
         { name: "myapp-db-1", service: "db", state: "exited" },
       ],
-      total: 2,
     };
     const output = formatComposePsCompact(compact);
     expect(output).toContain("2 services:");
@@ -537,7 +487,7 @@ describe("formatComposePsCompact", () => {
   });
 
   it("formats empty compact compose ps", () => {
-    const compact = { services: [], total: 0 };
+    const compact = { services: [] };
     expect(formatComposePsCompact(compact)).toBe("No compose services found.");
   });
 });
@@ -550,15 +500,11 @@ describe("compactComposeLogsMap", () => {
       timestamp: `2024-06-01T10:00:${String(i).padStart(2, "0")}.000Z`,
     }));
     const data: DockerComposeLogs = {
-      services: ["web-1"],
       entries,
-      total: 20,
     };
 
     const compact = compactComposeLogsMap(data);
 
-    expect(compact.services).toEqual(["web-1"]);
-    expect(compact.total).toBe(20);
     expect(compact.head).toHaveLength(5);
     expect(compact.tail).toHaveLength(5);
     expect(compact.head[0].message).toBe("msg 1");
@@ -569,12 +515,10 @@ describe("compactComposeLogsMap", () => {
 
   it("keeps only head for small log entries (no tail needed)", () => {
     const data: DockerComposeLogs = {
-      services: ["web-1"],
       entries: [
         { service: "web-1", message: "msg 1" },
         { service: "web-1", message: "msg 2" },
       ],
-      total: 2,
     };
 
     const compact = compactComposeLogsMap(data);
@@ -585,9 +529,7 @@ describe("compactComposeLogsMap", () => {
 
   it("omits timestamp when not present", () => {
     const data: DockerComposeLogs = {
-      services: ["web-1"],
       entries: [{ service: "web-1", message: "no timestamp" }],
-      total: 1,
     };
 
     const compact = compactComposeLogsMap(data);
@@ -600,8 +542,6 @@ describe("compactComposeLogsMap", () => {
 describe("formatComposeLogsCompact", () => {
   it("formats compact compose logs with head and tail", () => {
     const compact = {
-      services: ["web-1"],
-      total: 20,
       head: [
         { service: "web-1", message: "msg 1", timestamp: "2024-06-01T10:00:00.000Z" },
         { service: "web-1", message: "msg 2" },
@@ -612,7 +552,7 @@ describe("formatComposeLogsCompact", () => {
       ],
     };
     const output = formatComposeLogsCompact(compact);
-    expect(output).toContain("1 services, 20 entries");
+    expect(output).toContain("1 services, 4 entries");
     expect(output).toContain("web-1 | 2024-06-01T10:00:00.000Z msg 1");
     expect(output).toContain("web-1 | msg 2");
     expect(output).toContain("entries omitted");
@@ -622,8 +562,6 @@ describe("formatComposeLogsCompact", () => {
 
   it("formats compact compose logs without tail when small", () => {
     const compact = {
-      services: ["web-1"],
-      total: 2,
       head: [
         { service: "web-1", message: "msg 1" },
         { service: "web-1", message: "msg 2" },
@@ -760,12 +698,10 @@ describe("compactNetworkLsMap + formatNetworkLsCompact", () => {
         { id: "aaa111", name: "bridge", driver: "bridge", scope: "local" },
         { id: "bbb222", name: "mynet", driver: "overlay", scope: "swarm" },
       ],
-      total: 2,
     };
 
     const compact = compactNetworkLsMap(data);
 
-    expect(compact.total).toBe(2);
     expect(compact.networks).toHaveLength(2);
     expect(compact.networks[0]).toEqual({ id: "aaa111", name: "bridge", driver: "bridge" });
     expect(compact.networks[1]).toEqual({ id: "bbb222", name: "mynet", driver: "overlay" });
@@ -775,7 +711,6 @@ describe("compactNetworkLsMap + formatNetworkLsCompact", () => {
   it("maps networks to compact form without id", () => {
     const data: DockerNetworkLs = {
       networks: [{ name: "bridge", driver: "bridge", scope: "local" }],
-      total: 1,
     };
 
     const compact = compactNetworkLsMap(data);
@@ -787,7 +722,6 @@ describe("compactNetworkLsMap + formatNetworkLsCompact", () => {
   it("formats compact network list with id", () => {
     const compact = {
       networks: [{ id: "aaa111", name: "bridge", driver: "bridge" }],
-      total: 1,
     };
     const output = formatNetworkLsCompact(compact);
     expect(output).toContain("1 networks:");
@@ -797,7 +731,6 @@ describe("compactNetworkLsMap + formatNetworkLsCompact", () => {
   it("formats compact network list without id", () => {
     const compact = {
       networks: [{ name: "bridge", driver: "bridge" }],
-      total: 1,
     };
     const output = formatNetworkLsCompact(compact);
     expect(output).toContain("bridge (bridge)");
@@ -805,7 +738,7 @@ describe("compactNetworkLsMap + formatNetworkLsCompact", () => {
   });
 
   it("formats empty compact network list", () => {
-    const compact = { networks: [], total: 0 };
+    const compact = { networks: [] };
     expect(formatNetworkLsCompact(compact)).toBe("No networks found.");
   });
 });
@@ -821,12 +754,11 @@ describe("compactVolumeLsMap + formatVolumeLsCompact", () => {
           scope: "local",
         },
       ],
-      total: 1,
     };
 
     const compact = compactVolumeLsMap(data);
 
-    expect(compact.total).toBe(1);
+    expect(compact.volumes).toHaveLength(1);
     expect(compact.volumes[0]).toEqual({
       name: "my-data",
       driver: "local",
@@ -838,7 +770,6 @@ describe("compactVolumeLsMap + formatVolumeLsCompact", () => {
   it("maps volumes to compact form without mountpoint", () => {
     const data: DockerVolumeLs = {
       volumes: [{ name: "my-data", driver: "local", scope: "local" }],
-      total: 1,
     };
 
     const compact = compactVolumeLsMap(data);
@@ -852,7 +783,6 @@ describe("compactVolumeLsMap + formatVolumeLsCompact", () => {
       volumes: [
         { name: "my-data", driver: "local", mountpoint: "/var/lib/docker/volumes/my-data/_data" },
       ],
-      total: 1,
     };
     const output = formatVolumeLsCompact(compact);
     expect(output).toContain("1 volumes:");
@@ -862,7 +792,6 @@ describe("compactVolumeLsMap + formatVolumeLsCompact", () => {
   it("formats compact volume list without mountpoint", () => {
     const compact = {
       volumes: [{ name: "my-data", driver: "local" }],
-      total: 1,
     };
     const output = formatVolumeLsCompact(compact);
     expect(output).toContain("my-data (local)");
@@ -870,7 +799,7 @@ describe("compactVolumeLsMap + formatVolumeLsCompact", () => {
   });
 
   it("formats empty compact volume list", () => {
-    const compact = { volumes: [], total: 0 };
+    const compact = { volumes: [] };
     expect(formatVolumeLsCompact(compact)).toBe("No volumes found.");
   });
 });

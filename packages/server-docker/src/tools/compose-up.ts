@@ -155,7 +155,7 @@ export function registerComposeUpTool(server: McpServer) {
       const result = await docker(args, path);
       const data = parseComposeUpOutput(result.stdout, result.stderr, result.exitCode);
 
-      if (result.exitCode !== 0 && data.started === 0) {
+      if (result.exitCode !== 0 && (data.services ?? []).length === 0) {
         const errorMsg = result.stderr || result.stdout || "Unknown error";
         throw new Error(`docker compose up failed: ${errorMsg.trim()}`);
       }

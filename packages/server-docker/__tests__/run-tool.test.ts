@@ -9,7 +9,6 @@ describe("parseRunOutput", () => {
     const result = parseRunOutput(stdout, "nginx:latest", true, "my-web");
 
     expect(result.containerId).toBe("a1b2c3d4e5f6");
-    expect(result.image).toBe("nginx:latest");
     expect(result.detached).toBe(true);
     expect(result.name).toBe("my-web");
   });
@@ -19,7 +18,6 @@ describe("parseRunOutput", () => {
     const result = parseRunOutput(stdout, "ubuntu:22.04", true);
 
     expect(result.containerId).toBe("abc123def456");
-    expect(result.image).toBe("ubuntu:22.04");
     expect(result.detached).toBe(true);
     expect(result.name).toBeUndefined();
   });
@@ -36,7 +34,6 @@ describe("parseRunOutput", () => {
     const result = parseRunOutput("", "nginx", true);
 
     expect(result.containerId).toBe("");
-    expect(result.image).toBe("nginx");
     expect(result.detached).toBe(true);
   });
 
@@ -55,7 +52,6 @@ describe("parseRunOutput", () => {
     const result = parseRunOutput(stdout, "invalid!!!image", true);
 
     expect(result.containerId).toBe("");
-    expect(result.image).toBe("invalid!!!image");
     expect(result.detached).toBe(true);
   });
 
@@ -65,7 +61,6 @@ describe("parseRunOutput", () => {
     const result = parseRunOutput(stdout, "alpine", false);
 
     expect(result.containerId).toBe("");
-    expect(result.image).toBe("alpine");
     expect(result.detached).toBe(false);
   });
 
@@ -75,7 +70,6 @@ describe("parseRunOutput", () => {
 
     // Last line after trim is the error message, not a container ID
     expect(result.containerId.length).toBe(12);
-    expect(result.image).toBe("fake:latest");
   });
 
   it("handles multi-line error output (attached mode)", () => {
@@ -87,7 +81,6 @@ describe("parseRunOutput", () => {
 
     // Last line is the error message, sliced to 12 chars
     expect(result.containerId.length).toBe(12);
-    expect(result.image).toBe("ubuntu:22.04");
     expect(result.detached).toBe(false);
   });
 });
@@ -96,21 +89,22 @@ describe("formatRun", () => {
   it("formats detached container with name", () => {
     const data: DockerRun = {
       containerId: "a1b2c3d4e5f6",
-      image: "nginx:latest",
       detached: true,
       name: "my-web",
     };
     const output = formatRun(data);
-    expect(output).toBe("Container a1b2c3d4e5f6 (my-web) started from nginx:latest [detached]");
+    expect(output).toContain("a1b2c3d4e5f6");
+    expect(output).toContain("my-web");
+    expect(output).toContain("detached");
   });
 
   it("formats attached container without name", () => {
     const data: DockerRun = {
       containerId: "abc123def456",
-      image: "ubuntu:22.04",
       detached: false,
     };
     const output = formatRun(data);
-    expect(output).toBe("Container abc123def456 started from ubuntu:22.04 [attached]");
+    expect(output).toContain("abc123def456");
+    expect(output).toContain("attached");
   });
 });

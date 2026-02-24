@@ -63,9 +63,6 @@ describe("formatPs", () => {
           created: "3 hours ago",
         },
       ],
-      total: 2,
-      running: 1,
-      stopped: 1,
     };
     const output = formatPs(data);
     expect(output).toContain("2 containers (1 running, 1 stopped)");
@@ -76,9 +73,6 @@ describe("formatPs", () => {
   it("formats empty container list", () => {
     const data: DockerPs = {
       containers: [],
-      total: 0,
-      running: 0,
-      stopped: 0,
     };
     const output = formatPs(data);
     expect(output).toBe("0 containers (0 running, 0 stopped)");
@@ -97,9 +91,6 @@ describe("formatPs", () => {
           created: "5 minutes ago",
         },
       ],
-      total: 1,
-      running: 1,
-      stopped: 0,
     };
     const output = formatPs(data);
     expect(output).toContain("[3000/tcp]");
@@ -108,38 +99,34 @@ describe("formatPs", () => {
 });
 
 describe("formatBuild", () => {
-  it("formats successful build with image id and steps", () => {
+  it("formats successful build with image id", () => {
     const data: DockerBuild = {
       success: true,
       imageId: "sha256:abc123",
-      duration: 12.5,
-      steps: 8,
-      errors: [],
     };
     const output = formatBuild(data);
-    expect(output).toContain("Build succeeded in 12.5s");
+    expect(output).toContain("Build succeeded");
     expect(output).toContain("sha256:abc123");
-    expect(output).toContain("8 steps");
   });
 
   it("formats successful build without optional fields", () => {
     const data: DockerBuild = {
       success: true,
-      duration: 5.0,
-      errors: [],
     };
     const output = formatBuild(data);
-    expect(output).toBe("Build succeeded in 5s");
+    expect(output).toBe("Build succeeded");
   });
 
   it("formats failed build with errors", () => {
     const data: DockerBuild = {
       success: false,
-      duration: 3.2,
-      errors: ["COPY failed: file not found", "Dockerfile syntax error at line 5"],
+      errors: [
+        { message: "COPY failed: file not found" },
+        { message: "Dockerfile syntax error at line 5" },
+      ],
     };
     const output = formatBuild(data);
-    expect(output).toContain("Build failed (3.2s)");
+    expect(output).toContain("Build failed");
     expect(output).toContain("COPY failed: file not found");
     expect(output).toContain("Dockerfile syntax error at line 5");
   });
@@ -148,12 +135,10 @@ describe("formatBuild", () => {
 describe("formatLogs", () => {
   it("formats container logs", () => {
     const data: DockerLogs = {
-      container: "web",
       lines: ["Starting server...", "Listening on port 3000", "Ready"],
-      total: 3,
     };
     const output = formatLogs(data);
-    expect(output).toContain("web (3 lines)");
+    expect(output).toContain("3 lines");
     expect(output).toContain("Starting server...");
     expect(output).toContain("Listening on port 3000");
     expect(output).toContain("Ready");
@@ -161,24 +146,19 @@ describe("formatLogs", () => {
 
   it("formats empty logs", () => {
     const data: DockerLogs = {
-      container: "idle-app",
       lines: [],
-      total: 0,
     };
     const output = formatLogs(data);
-    expect(output).toContain("idle-app (0 lines)");
+    expect(output).toContain("0 lines");
   });
 
   it("formats truncated logs with truncation indicator", () => {
     const data: DockerLogs = {
-      container: "busy-app",
       lines: ["line 1", "line 2"],
-      total: 2,
       isTruncated: true,
-      totalLines: 500,
     };
     const output = formatLogs(data);
-    expect(output).toContain("busy-app (2 of 500 lines, truncated)");
+    expect(output).toContain("2 lines (truncated)");
     expect(output).toContain("line 1");
     expect(output).toContain("line 2");
   });
@@ -203,7 +183,6 @@ describe("formatImages", () => {
           created: "3 days ago",
         },
       ],
-      total: 2,
     };
     const output = formatImages(data);
     expect(output).toContain("2 images:");
@@ -214,7 +193,6 @@ describe("formatImages", () => {
   it("formats empty image list", () => {
     const data: DockerImages = {
       images: [],
-      total: 0,
     };
     expect(formatImages(data)).toBe("No images found.");
   });
@@ -230,7 +208,6 @@ describe("formatImages", () => {
           created: "1 day ago",
         },
       ],
-      total: 1,
     };
     const output = formatImages(data);
     expect(output).toContain("myapp (50MB)");
@@ -297,7 +274,6 @@ describe("formatNetworkLs", () => {
         { id: "aaa111", name: "bridge", driver: "bridge", scope: "local" },
         { id: "bbb222", name: "mynet", driver: "overlay", scope: "swarm" },
       ],
-      total: 2,
     };
     const output = formatNetworkLs(data);
     expect(output).toContain("2 networks:");
@@ -306,7 +282,7 @@ describe("formatNetworkLs", () => {
   });
 
   it("formats empty network list", () => {
-    const data: DockerNetworkLs = { networks: [], total: 0 };
+    const data: DockerNetworkLs = { networks: [] };
     expect(formatNetworkLs(data)).toBe("No networks found.");
   });
 });
@@ -328,7 +304,6 @@ describe("formatVolumeLs", () => {
           scope: "local",
         },
       ],
-      total: 2,
     };
     const output = formatVolumeLs(data);
     expect(output).toContain("2 volumes:");
@@ -337,7 +312,7 @@ describe("formatVolumeLs", () => {
   });
 
   it("formats empty volume list", () => {
-    const data: DockerVolumeLs = { volumes: [], total: 0 };
+    const data: DockerVolumeLs = { volumes: [] };
     expect(formatVolumeLs(data)).toBe("No volumes found.");
   });
 });
@@ -355,10 +330,9 @@ describe("formatComposePs", () => {
         },
         { name: "myapp-db-1", service: "db", state: "running", status: "Up 2 hours" },
       ],
-      total: 2,
     };
     const output = formatComposePs(data);
-    expect(output).toContain("2 services:");
+    expect(output).toContain("2 services (2 running, 0 stopped):");
     expect(output).toContain("myapp-web-1 (web)");
     expect(output).toContain("[8080->80/tcp]");
     expect(output).toContain("myapp-db-1 (db)");
@@ -375,7 +349,6 @@ describe("formatComposePs", () => {
           ports: [{ container: 3000, protocol: "tcp" }],
         },
       ],
-      total: 1,
     };
     const output = formatComposePs(data);
     expect(output).toContain("[3000/tcp]");
@@ -383,7 +356,7 @@ describe("formatComposePs", () => {
   });
 
   it("formats empty compose service list", () => {
-    const data: DockerComposePs = { services: [], total: 0 };
+    const data: DockerComposePs = { services: [] };
     expect(formatComposePs(data)).toBe("No compose services found.");
   });
 });
@@ -391,12 +364,10 @@ describe("formatComposePs", () => {
 describe("formatComposeLogs", () => {
   it("formats compose logs with timestamps", () => {
     const data: DockerComposeLogs = {
-      services: ["web-1", "db-1"],
       entries: [
         { timestamp: "2024-06-01T10:00:00.000Z", service: "web-1", message: "Starting..." },
         { timestamp: "2024-06-01T10:00:01.000Z", service: "db-1", message: "Ready" },
       ],
-      total: 2,
     };
     const output = formatComposeLogs(data);
     expect(output).toContain("2 services, 2 entries");
@@ -406,9 +377,7 @@ describe("formatComposeLogs", () => {
 
   it("formats compose logs without timestamps", () => {
     const data: DockerComposeLogs = {
-      services: ["web-1"],
       entries: [{ service: "web-1", message: "Hello world" }],
-      total: 1,
     };
     const output = formatComposeLogs(data);
     expect(output).toContain("1 services, 1 entries");
@@ -417,21 +386,16 @@ describe("formatComposeLogs", () => {
 
   it("formats truncated compose logs", () => {
     const data: DockerComposeLogs = {
-      services: ["web-1"],
       entries: [{ service: "web-1", message: "line 1" }],
-      total: 1,
       isTruncated: true,
-      totalEntries: 500,
     };
     const output = formatComposeLogs(data);
-    expect(output).toContain("1 of 500 entries (truncated)");
+    expect(output).toContain("1 entries (truncated)");
   });
 
   it("formats empty compose logs", () => {
     const data: DockerComposeLogs = {
-      services: [],
       entries: [],
-      total: 0,
     };
     const output = formatComposeLogs(data);
     expect(output).toContain("0 services, 0 entries");
@@ -446,12 +410,9 @@ describe("formatComposeBuild", () => {
         { service: "web", success: true, duration: 5.2 },
         { service: "api", success: true, duration: 8.1 },
       ],
-      built: 2,
-      failed: 0,
-      duration: 10.3,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("2 built, 0 failed (10.3s)");
+    expect(output).toContain("2 built, 0 failed");
     expect(output).toContain("web: built");
     expect(output).toContain("api: built");
   });
@@ -463,12 +424,9 @@ describe("formatComposeBuild", () => {
         { service: "web", success: true, duration: 5.2 },
         { service: "worker", success: false, error: "Dockerfile not found" },
       ],
-      built: 1,
-      failed: 1,
-      duration: 6.0,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("1 built, 1 failed (6s)");
+    expect(output).toContain("1 built, 1 failed");
     expect(output).toContain("web: built");
     expect(output).toContain("worker: failed");
     expect(output).toContain("Dockerfile not found");
@@ -478,12 +436,9 @@ describe("formatComposeBuild", () => {
     const data: DockerComposeBuild = {
       success: false,
       services: [{ service: "app", success: false, error: "build context missing" }],
-      built: 0,
-      failed: 1,
-      duration: 1.5,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("Compose build failed (1.5s)");
+    expect(output).toContain("Compose build failed");
     expect(output).toContain("app: build context missing");
   });
 });
@@ -496,30 +451,22 @@ describe("formatComposeBuildCompact", () => {
         { service: "web", success: true, duration: 5.2 },
         { service: "api", success: true, duration: 8.1 },
       ],
-      built: 2,
-      failed: 0,
-      duration: 10.3,
     };
     const compact = compactComposeBuildMap(data);
     const output = formatComposeBuildCompact(compact);
-    expect(output).toBe("Compose build: 2 built, 0 failed (10.3s)");
+    expect(output).toBe("Compose build: 2 built, 0 failed");
     expect(compact.success).toBe(true);
-    expect(compact.built).toBe(2);
-    expect(compact.failed).toBe(0);
-    expect(compact.duration).toBe(10.3);
+    expect(compact.services).toHaveLength(2);
   });
 
   it("formats failed compact compose build", () => {
     const data: DockerComposeBuild = {
       success: false,
       services: [{ service: "app", success: false, error: "error" }],
-      built: 0,
-      failed: 1,
-      duration: 2.0,
     };
     const compact = compactComposeBuildMap(data);
     const output = formatComposeBuildCompact(compact);
-    expect(output).toBe("Compose build failed (2s)");
+    expect(output).toBe("Compose build failed");
   });
 });
 
@@ -550,7 +497,6 @@ describe("formatStats", () => {
           pids: 8,
         },
       ],
-      total: 2,
     };
     const output = formatStats(data);
     expect(output).toContain("2 containers:");
@@ -562,7 +508,7 @@ describe("formatStats", () => {
   });
 
   it("formats empty stats", () => {
-    const data: DockerStats = { containers: [], total: 0 };
+    const data: DockerStats = { containers: [] };
     expect(formatStats(data)).toBe("No container stats available.");
   });
 });
@@ -583,7 +529,6 @@ describe("formatStatsCompact", () => {
           pids: 12,
         },
       ],
-      total: 1,
     };
     const compact = compactStatsMap(data);
     const output = formatStatsCompact(compact);
@@ -599,7 +544,7 @@ describe("formatStatsCompact", () => {
   });
 
   it("formats empty compact stats", () => {
-    const data: DockerStats = { containers: [], total: 0 };
+    const data: DockerStats = { containers: [] };
     const compact = compactStatsMap(data);
     expect(formatStatsCompact(compact)).toBe("No container stats available.");
   });
@@ -611,22 +556,20 @@ describe("formatRun", () => {
   it("formats detached container run with name", () => {
     const data: DockerRun = {
       containerId: "abc123def456",
-      image: "nginx:latest",
       detached: true,
       name: "web",
     };
     const output = formatRun(data);
-    expect(output).toBe("Container abc123def456 (web) started from nginx:latest [detached]");
+    expect(output).toBe("Container abc123def456 (web) started [detached]");
   });
 
   it("formats attached container run without name", () => {
     const data: DockerRun = {
       containerId: "abc123def456",
-      image: "myapp:dev",
       detached: false,
     };
     const output = formatRun(data);
-    expect(output).toBe("Container abc123def456 started from myapp:dev [attached]");
+    expect(output).toBe("Container abc123def456 started [attached]");
   });
 });
 
@@ -636,7 +579,6 @@ describe("formatExec", () => {
       exitCode: 0,
       stdout: "some output text",
       stderr: "",
-      success: true,
     };
     const output = formatExec(data);
     expect(output).toContain("Exec succeeded");
@@ -649,7 +591,6 @@ describe("formatExec", () => {
       exitCode: 1,
       stdout: "",
       stderr: "command not found",
-      success: false,
     };
     const output = formatExec(data);
     expect(output).toContain("Exec failed (exit code 1)");
@@ -657,14 +598,12 @@ describe("formatExec", () => {
     expect(output).not.toContain("some output");
   });
 
-  it("formats exec with duration", () => {
+  it("formats exec with exitCode 0", () => {
     const data: DockerExec = {
       exitCode: 0,
-      success: true,
-      duration: 2.5,
     };
     const output = formatExec(data);
-    expect(output).toBe("Exec succeeded in 2.5s");
+    expect(output).toBe("Exec succeeded");
   });
 
   it("formats exec with both stdout and stderr", () => {
@@ -672,11 +611,9 @@ describe("formatExec", () => {
       exitCode: 1,
       stdout: "partial output",
       stderr: "error occurred",
-      success: false,
-      duration: 1.2,
     };
     const output = formatExec(data);
-    expect(output).toContain("Exec failed (exit code 1) in 1.2s");
+    expect(output).toContain("Exec failed (exit code 1)");
     expect(output).toContain("partial output");
     expect(output).toContain("stderr: error occurred");
   });
@@ -687,7 +624,6 @@ describe("formatComposeUp", () => {
     const data: DockerComposeUp = {
       success: true,
       services: ["web-1", "db-1"],
-      started: 2,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up: 2 services started (web-1, db-1)");
@@ -697,7 +633,6 @@ describe("formatComposeUp", () => {
     const data: DockerComposeUp = {
       success: true,
       services: [],
-      started: 0,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up succeeded (no new services started)");
@@ -706,7 +641,6 @@ describe("formatComposeUp", () => {
   it("formats failed compose up", () => {
     const data: DockerComposeUp = {
       success: false,
-      started: 0,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up failed");
@@ -718,17 +652,15 @@ describe("formatComposeDown", () => {
     const data: DockerComposeDown = {
       success: true,
       stopped: 3,
-      removed: 4,
     };
     const output = formatComposeDown(data);
-    expect(output).toBe("Compose down: 3 stopped, 4 removed");
+    expect(output).toContain("Compose down: 3 stopped");
   });
 
   it("formats failed compose down", () => {
     const data: DockerComposeDown = {
       success: false,
       stopped: 0,
-      removed: 0,
     };
     const output = formatComposeDown(data);
     expect(output).toBe("Compose down failed");
@@ -738,59 +670,49 @@ describe("formatComposeDown", () => {
 describe("formatPull", () => {
   it("formats successful pull with digest", () => {
     const data: DockerPull = {
-      image: "nginx",
-      tag: "latest",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       status: "pulled",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pulled nginx:latest (sha256:abc123def456...)");
+    expect(output).toBe("Pulled (sha256:abc123def456...)");
   });
 
   it("formats successful pull without digest", () => {
     const data: DockerPull = {
-      image: "nginx",
-      tag: "latest",
       status: "pulled",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pulled nginx:latest");
+    expect(output).toBe("Pulled");
   });
 
   it("formats up-to-date pull with digest", () => {
     const data: DockerPull = {
-      image: "ubuntu",
-      tag: "22.04",
       digest: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
       status: "up-to-date",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("ubuntu:22.04 is up to date (sha256:abc123def456...)");
+    expect(output).toBe("Image is up to date (sha256:abc123def456...)");
   });
 
   it("formats up-to-date pull without digest", () => {
     const data: DockerPull = {
-      image: "ubuntu",
-      tag: "22.04",
       status: "up-to-date",
       success: true,
     };
     const output = formatPull(data);
-    expect(output).toBe("ubuntu:22.04 is up to date");
+    expect(output).toBe("Image is up to date");
   });
 
   it("formats failed pull", () => {
     const data: DockerPull = {
-      image: "nonexistent",
-      tag: "latest",
       status: "error",
       success: false,
     };
     const output = formatPull(data);
-    expect(output).toBe("Pull failed for nonexistent:latest");
+    expect(output).toBe("Pull failed");
   });
 });
 

@@ -50,9 +50,11 @@ describe("Docker P2 gaps", () => {
       "#4 [api 1/2] CACHED",
     ].join("\n");
     const result = parseBuildOutput(stdout, "", 0, 2.3);
-    expect(result.cacheHits).toBeGreaterThan(0);
-    expect(result.cacheMisses).toBeGreaterThan(0);
     expect(result.cacheByStep?.length).toBeGreaterThan(0);
+    const hits = result.cacheByStep?.filter((s) => s.cached).length ?? 0;
+    const misses = result.cacheByStep?.filter((s) => !s.cached).length ?? 0;
+    expect(hits).toBeGreaterThan(0);
+    expect(misses).toBeGreaterThan(0);
   });
 
   it("#223 extracts per-service image IDs in compose build", () => {
@@ -88,10 +90,10 @@ describe("Docker P2 gaps", () => {
       exitCode: 0,
     });
 
-    const out = (await handler({ path: "/repo", limit: 2 })) as {
-      structuredContent: { total: number };
+    const out = (await handler({ path: "/repo", limit: 2, compact: false })) as {
+      structuredContent: { entries?: Array<unknown> };
     };
-    expect(out.structuredContent.total).toBe(2);
+    expect(out.structuredContent.entries).toHaveLength(2);
   });
 
   it("#227 parses compose ps exitCode from status", () => {
@@ -132,7 +134,6 @@ describe("Docker P2 gaps", () => {
   it("#230 keeps compact stdout/stderr previews for exec", () => {
     const compact = compactExecMap({
       exitCode: 1,
-      success: false,
       stdout: "some stdout output",
       stderr: "some stderr output",
       isTruncated: true,

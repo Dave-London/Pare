@@ -91,7 +91,7 @@ export function registerComposeDownTool(server: McpServer) {
         trackNetworks: true,
       });
 
-      if (result.exitCode !== 0 && data.stopped === 0 && data.removed === 0) {
+      if (result.exitCode !== 0 && data.stopped === 0 && (data.containers ?? []).length === 0) {
         const errorMsg = result.stderr || result.stdout || "Unknown error";
         throw new Error(`docker compose down failed: ${errorMsg.trim()}`);
       }

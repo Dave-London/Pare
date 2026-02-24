@@ -26,7 +26,7 @@ describe("parseComposeUpOutput", () => {
     expect(result.services).toContain("myapp-db-1");
     expect(result.services).toContain("myapp-web-1");
     expect(result.services).toContain("myapp-redis-1");
-    expect(result.started).toBe(3);
+    expect(result.services).toHaveLength(3);
   });
 
   it("parses compose up with already running services", () => {
@@ -39,7 +39,7 @@ describe("parseComposeUpOutput", () => {
     expect(result.success).toBe(true);
     expect(result.services).toContain("myapp-db-1");
     expect(result.services).toContain("myapp-web-1");
-    expect(result.started).toBe(2);
+    expect(result.services).toHaveLength(2);
   });
 
   it("parses compose up failure", () => {
@@ -48,7 +48,6 @@ describe("parseComposeUpOutput", () => {
     const result = parseComposeUpOutput("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.started).toBe(0);
     expect(result.services).toEqual([]);
   });
 
@@ -59,14 +58,13 @@ describe("parseComposeUpOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.services).toContain("myapp-init-1");
-    expect(result.started).toBe(1);
+    expect(result.services).toHaveLength(1);
   });
 
   it("handles empty output", () => {
     const result = parseComposeUpOutput("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.started).toBe(0);
     expect(result.services).toEqual([]);
   });
 
@@ -93,7 +91,6 @@ describe("parseComposeUpOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.services).toContain("myapp-db-1");
-    expect(result.started).toBeGreaterThanOrEqual(1);
   });
 
   it("parses missing compose file error", () => {
@@ -102,7 +99,6 @@ describe("parseComposeUpOutput", () => {
     const result = parseComposeUpOutput("", stderr, 14);
 
     expect(result.success).toBe(false);
-    expect(result.started).toBe(0);
     expect(result.services).toEqual([]);
   });
 
@@ -133,7 +129,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(2);
-    expect(result.removed).toBe(3); // 2 containers + 1 network
   });
 
   it("parses compose down with no containers", () => {
@@ -143,7 +138,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(0);
-    expect(result.removed).toBe(1);
   });
 
   it("parses compose down failure", () => {
@@ -153,7 +147,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.stopped).toBe(0);
-    expect(result.removed).toBe(0);
   });
 
   it("handles empty output", () => {
@@ -161,7 +154,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(true);
     expect(result.stopped).toBe(0);
-    expect(result.removed).toBe(0);
   });
 
   it("parses compose down with missing compose file (non-zero exit)", () => {
@@ -171,7 +163,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.stopped).toBe(0);
-    expect(result.removed).toBe(0);
   });
 
   it("parses partial failure (some containers stopped, error removing)", () => {
@@ -185,7 +176,6 @@ describe("parseComposeDownOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.stopped).toBe(1);
-    expect(result.removed).toBe(1);
   });
 });
 
@@ -194,7 +184,6 @@ describe("formatComposeUp", () => {
     const data: DockerComposeUp = {
       success: true,
       services: ["myapp-web-1", "myapp-db-1"],
-      started: 2,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up: 2 services started (myapp-web-1, myapp-db-1)");
@@ -204,7 +193,6 @@ describe("formatComposeUp", () => {
     const data: DockerComposeUp = {
       success: true,
       services: [],
-      started: 0,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up succeeded (no new services started)");
@@ -214,7 +202,6 @@ describe("formatComposeUp", () => {
     const data: DockerComposeUp = {
       success: false,
       services: [],
-      started: 0,
     };
     const output = formatComposeUp(data);
     expect(output).toBe("Compose up failed");
@@ -226,27 +213,24 @@ describe("formatComposeDown", () => {
     const data: DockerComposeDown = {
       success: true,
       stopped: 3,
-      removed: 4,
     };
     const output = formatComposeDown(data);
-    expect(output).toBe("Compose down: 3 stopped, 4 removed");
+    expect(output).toContain("Compose down: 3 stopped");
   });
 
   it("formats compose down with nothing to stop", () => {
     const data: DockerComposeDown = {
       success: true,
       stopped: 0,
-      removed: 0,
     };
     const output = formatComposeDown(data);
-    expect(output).toBe("Compose down: 0 stopped, 0 removed");
+    expect(output).toContain("Compose down: 0 stopped");
   });
 
   it("formats failed compose down", () => {
     const data: DockerComposeDown = {
       success: false,
       stopped: 0,
-      removed: 0,
     };
     const output = formatComposeDown(data);
     expect(output).toBe("Compose down failed");
@@ -266,9 +250,6 @@ describe("parseComposeBuildOutput", () => {
     const result = parseComposeBuildOutput("", stderr, 0, 15.3);
 
     expect(result.success).toBe(true);
-    expect(result.built).toBe(3);
-    expect(result.failed).toBe(0);
-    expect(result.duration).toBe(15.3);
     expect(result.services).toHaveLength(3);
     expect(result.services.map((s) => s.service)).toContain("web");
     expect(result.services.map((s) => s.service)).toContain("api");
@@ -282,16 +263,12 @@ describe("parseComposeBuildOutput", () => {
     const result = parseComposeBuildOutput("", stderr, 1, 0.5);
 
     expect(result.success).toBe(false);
-    expect(result.built).toBe(0);
-    expect(result.duration).toBe(0.5);
   });
 
   it("handles empty output with success", () => {
     const result = parseComposeBuildOutput("", "", 0, 1.0);
 
     expect(result.success).toBe(true);
-    expect(result.built).toBe(0);
-    expect(result.failed).toBe(0);
     expect(result.services).toEqual([]);
   });
 
@@ -329,11 +306,6 @@ describe("parseComposeBuildOutput", () => {
 
     expect(result.services.map((s) => s.service)).not.toContain("internal");
   });
-
-  it("records correct duration", () => {
-    const result = parseComposeBuildOutput("", "", 0, 42.7);
-    expect(result.duration).toBe(42.7);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -348,12 +320,9 @@ describe("formatComposeBuild", () => {
         { service: "web", success: true },
         { service: "api", success: true },
       ],
-      built: 2,
-      failed: 0,
-      duration: 15.3,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("Compose build: 2 built, 0 failed (15.3s)");
+    expect(output).toContain("2 built, 0 failed");
     expect(output).toContain("web: built");
     expect(output).toContain("api: built");
   });
@@ -362,12 +331,9 @@ describe("formatComposeBuild", () => {
     const data: DockerComposeBuild = {
       success: false,
       services: [{ service: "web", success: false, error: "Dockerfile not found" }],
-      built: 0,
-      failed: 1,
-      duration: 0.5,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("Compose build failed (0.5s)");
+    expect(output).toContain("Compose build failed");
     expect(output).toContain("web: Dockerfile not found");
   });
 
@@ -378,12 +344,9 @@ describe("formatComposeBuild", () => {
         { service: "web", success: true },
         { service: "api", success: false, error: "build error" },
       ],
-      built: 1,
-      failed: 1,
-      duration: 10.0,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("Compose build: 1 built, 1 failed (10s)");
+    expect(output).toContain("1 built, 1 failed");
     expect(output).toContain("web: built");
     expect(output).toContain("api: failed");
   });
@@ -392,11 +355,8 @@ describe("formatComposeBuild", () => {
     const data: DockerComposeBuild = {
       success: true,
       services: [],
-      built: 0,
-      failed: 0,
-      duration: 1.0,
     };
     const output = formatComposeBuild(data);
-    expect(output).toContain("Compose build: 0 built, 0 failed (1s)");
+    expect(output).toContain("0 built, 0 failed");
   });
 });

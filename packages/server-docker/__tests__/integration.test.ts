@@ -78,9 +78,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.containers)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
-        expect(sc.running).toEqual(expect.any(Number));
-        expect(sc.stopped).toEqual(expect.any(Number));
       }
     });
   });
@@ -103,7 +100,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.images)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -177,7 +173,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(typeof sc.started).toBe("number");
         expect(Array.isArray(sc.services)).toBe(true);
       }
     });
@@ -202,7 +197,6 @@ describe("@paretools/docker integration", () => {
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
         expect(typeof sc.stopped).toBe("number");
-        expect(typeof sc.removed).toBe("number");
       }
     });
   });
@@ -242,7 +236,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.networks)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -265,7 +258,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.volumes)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -287,9 +279,7 @@ describe("@paretools/docker integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(Array.isArray(sc.services)).toBe(true);
         expect(Array.isArray(sc.entries)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -312,9 +302,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(typeof sc.built).toBe("number");
-        expect(typeof sc.failed).toBe("number");
-        expect(typeof sc.duration).toBe("number");
         expect(Array.isArray(sc.services)).toBe(true);
       }
     });
@@ -368,7 +355,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.services)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
   });
@@ -391,7 +377,6 @@ describe("@paretools/docker integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(Array.isArray(sc.containers)).toBe(true);
-        expect(sc.total).toEqual(expect.any(Number));
       }
     });
 

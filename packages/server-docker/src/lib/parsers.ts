@@ -45,13 +45,8 @@ export function parsePsJson(stdout: string): DockerPs {
     };
   });
 
-  const running = containers.filter((c) => c.state === "running").length;
-
   return {
     containers,
-    total: containers.length,
-    running,
-    stopped: containers.length - running,
   };
 }
 
@@ -230,10 +225,8 @@ export function parseBuildOutput(
 
   // #97: Parse structured errors with line numbers
   let errors: BuildError[] | undefined;
-  let errorCount: number | undefined;
   if (exitCode !== 0) {
     errors = parseBuildErrors(stdout, stderr);
-    errorCount = errors.length;
     // Fallback: if no structured errors found, extract raw error lines
     if (errors.length === 0) {
       const errorLines = (stdout + "\n" + stderr)
@@ -243,27 +236,20 @@ export function parseBuildOutput(
         .map((l) => l.trim())
         .filter(Boolean)
         .map((msg) => ({ message: msg }));
-      errorCount = errors.length;
     }
   }
 
-  const stepMatch = stdout.match(/#(\d+) /g);
-  const steps = stepMatch ? new Set(stepMatch).size : undefined;
   const cache = parseBuildCache(stdout, stderr);
 
   return {
     success: exitCode === 0,
     imageId: imageIdMatch?.[1]?.slice(0, 12),
-    duration,
-    ...(steps ? { steps } : {}),
     ...(cache.cacheByStep.length > 0
       ? {
-          cacheHits: cache.cacheHits,
-          cacheMisses: cache.cacheMisses,
           cacheByStep: cache.cacheByStep,
         }
       : {}),
-    ...(errors && errors.length > 0 ? { errors, errorCount } : {}),
+    ...(errors && errors.length > 0 ? { errors } : {}),
   };
 }
 
@@ -296,11 +282,9 @@ export function parseLogsOutput(
   const stderrLines = stderr && stderr.trim() ? stderr.split("\n").filter(Boolean) : undefined;
 
   return {
-    container,
     lines,
     ...(entries.length > 0 ? { entries } : {}),
-    total: lines.length,
-    ...(isTruncated ? { isTruncated: true, totalLines } : {}),
+    ...(isTruncated ? { isTruncated: true } : {}),
     ...(stdoutLines && stdoutLines.length > 0 ? { stdoutLines } : {}),
     ...(stderrLines && stderrLines.length > 0 ? { stderrLines } : {}),
   };
@@ -333,7 +317,7 @@ export function parseImagesJson(stdout: string): DockerImages {
     };
   });
 
-  return { images, total: images.length };
+  return { images };
 }
 
 /** #110: Normalize a Docker timestamp to ISO 8601 format. */
@@ -375,7 +359,6 @@ export function parseRunOutput(
 
   const result: DockerRun = {
     containerId: containerId.slice(0, 12),
-    image,
     detached,
     ...(name ? { name } : {}),
   };
@@ -467,8 +450,6 @@ export function parseExecOutput(
     exitCode,
     stdout: truncatedStdout,
     stderr: truncatedStderr,
-    success: exitCode === 0,
-    ...(duration != null ? { duration } : {}),
     ...(isTruncated ? { isTruncated: true } : {}),
     ...(opts?.timedOut ? { timedOut: true } : {}),
     ...(opts?.parseJson && parsedJson !== undefined ? { json: parsedJson } : {}),
@@ -515,7 +496,6 @@ export function parseComposeUpOutput(
   return {
     success: exitCode === 0,
     services,
-    started: services.length,
     ...(serviceStates.length > 0 ? { serviceStates } : {}),
     ...(networksCreated > 0 ? { networksCreated } : {}),
     ...(volumesCreated > 0 ? { volumesCreated } : {}),
@@ -535,7 +515,6 @@ export function parseComposeDownOutput(
 ): DockerComposeDown {
   const combined = stdout + "\n" + stderr;
   let stopped = 0;
-  let removed = 0;
   let volumesRemoved = 0;
   let networksRemoved = 0;
   const containers: Array<{ name: string; action: string }> = [];
@@ -551,7 +530,6 @@ export function parseComposeDownOutput(
   // Match "Container <name>  Removed"
   const removedPattern = /Container\s+(\S+)\s+Removed/g;
   while ((match = removedPattern.exec(combined)) !== null) {
-    removed++;
     containers.push({ name: match[1], action: "Removed" });
   }
 
@@ -559,20 +537,17 @@ export function parseComposeDownOutput(
   const networkPattern = /Network\s+(\S+)\s+Removed/g;
   while ((match = networkPattern.exec(combined)) !== null) {
     networksRemoved++;
-    removed++; // Still count in total removed for backwards compat
   }
 
   // #101: Count volume removals separately
   const volumePattern = /Volume\s+(\S+)\s+Removed/g;
   while ((match = volumePattern.exec(combined)) !== null) {
     volumesRemoved++;
-    removed++;
   }
 
   return {
     success: exitCode === 0,
     stopped,
-    removed,
     ...(containers.length > 0 ? { containers } : {}),
     ...(volumesRemoved > 0 || opts?.trackVolumes ? { volumesRemoved } : {}),
     ...(networksRemoved > 0 || opts?.trackNetworks ? { networksRemoved } : {}),
@@ -637,8 +612,6 @@ export function parsePullOutput(
   }
 
   return {
-    image: imageName,
-    tag,
     ...(digest ? { digest } : {}),
     status,
     success: exitCode === 0,
@@ -938,7 +911,7 @@ export function parseNetworkLsJson(stdout: string): DockerNetworkLs {
     };
   });
 
-  return { networks, total: networks.length };
+  return { networks };
 }
 
 /** Converts various truthy representations to boolean. */
@@ -971,7 +944,7 @@ export function parseVolumeLsJson(stdout: string): DockerVolumeLs {
     };
   });
 
-  return { volumes, total: volumes.length };
+  return { volumes };
 }
 
 // ── #105/#106: Compose PS with health and counts ─────────────────────
@@ -1002,17 +975,8 @@ export function parseComposePsJson(stdout: string): DockerComposePs {
     };
   });
 
-  // #106: Calculate running/stopped counts
-  const running = services.filter((s) => s.state === "running").length;
-  const stopped = services.filter(
-    (s) => s.state === "exited" || s.state === "dead" || s.state === "removing",
-  ).length;
-
   return {
     services,
-    total: services.length,
-    running,
-    stopped,
   };
 }
 
@@ -1160,17 +1124,9 @@ export function parseComposeLogsOutput(stdout: string, limit?: number): DockerCo
   const isTruncated = limit != null && totalEntries > limit;
   const limited = isTruncated ? entries.slice(0, limit) : entries;
 
-  // Rebuild service set from limited entries
-  if (isTruncated) {
-    serviceSet.clear();
-    for (const e of limited) serviceSet.add(e.service);
-  }
-
   return {
-    services: [...serviceSet],
     entries: limited,
-    total: limited.length,
-    ...(isTruncated ? { isTruncated: true, totalEntries } : {}),
+    ...(isTruncated ? { isTruncated: true } : {}),
   };
 }
 
@@ -1287,15 +1243,9 @@ export function parseComposeBuildOutput(
     };
   });
 
-  const built = services.filter((s) => s.success).length;
-  const failed = services.filter((s) => !s.success).length;
-
   return {
     success: exitCode === 0,
     services,
-    built,
-    failed,
-    duration,
   };
 }
 
@@ -1384,5 +1334,5 @@ export function parseStatsJson(stdout: string): DockerStats {
     };
   });
 
-  return { containers, total: containers.length };
+  return { containers };
 }

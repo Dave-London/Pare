@@ -57,11 +57,12 @@ describe("#97: Build error parsing", () => {
     expect(withLine!.line).toBe(5);
   });
 
-  it("returns errorCount matching errors array length", () => {
+  it("returns errors array for failed builds", () => {
     const stderr = "Error: something went wrong\nAnother error occurred";
     const result = parseBuildOutput("", stderr, 1, 1.0);
 
-    expect(result.errorCount).toBe(result.errors!.length);
+    expect(result.errors).toBeDefined();
+    expect(result.errors!.length).toBeGreaterThan(0);
   });
 
   it("returns errors as objects with message field", () => {
@@ -119,9 +120,6 @@ describe("#99: Compose build per-service duration", () => {
     const data = {
       success: true,
       services: [{ service: "web", success: true, duration: 5.0 }],
-      built: 1,
-      failed: 0,
-      duration: 5.0,
     };
     const output = formatComposeBuild(data);
     expect(output).toContain("5s");
@@ -151,7 +149,6 @@ describe("#100: Compose down per-container details", () => {
     const data = {
       success: true,
       stopped: 1,
-      removed: 1,
       containers: [
         { name: "app-1", action: "Stopped" },
         { name: "app-1", action: "Removed" },
@@ -179,15 +176,12 @@ describe("#101: Separate volume/network counts", () => {
     expect(result.volumesRemoved).toBe(1);
     expect(result.networksRemoved).toBe(1);
     expect(result.stopped).toBe(1);
-    // removed includes containers + volumes + networks for backwards compat
-    expect(result.removed).toBe(3);
   });
 
   it("formats volume and network counts", () => {
     const data = {
       success: true,
       stopped: 2,
-      removed: 5,
       volumesRemoved: 1,
       networksRemoved: 2,
     };
@@ -324,7 +318,6 @@ describe("#105: Compose PS health field", () => {
           health: "healthy",
         },
       ],
-      total: 1,
     };
     const output = formatComposePs(data);
     expect(output).toContain("health=healthy");
@@ -361,8 +354,8 @@ describe("#106: Compose PS running/stopped counts", () => {
 
     const result = parseComposePsJson(stdout);
 
-    expect(result.running).toBe(2);
-    expect(result.stopped).toBe(1);
+    expect(result.services.filter((s) => s.state === "running")).toHaveLength(2);
+    expect(result.services.filter((s) => s.state === "exited")).toHaveLength(1);
   });
 
   it("formats counts in human output", () => {
@@ -371,9 +364,6 @@ describe("#106: Compose PS running/stopped counts", () => {
         { name: "web-1", service: "web", state: "running" as const, status: "Up" },
         { name: "db-1", service: "db", state: "exited" as const, status: "Exited" },
       ],
-      total: 2,
-      running: 1,
-      stopped: 1,
     };
     const output = formatComposePs(data);
     expect(output).toContain("1 running, 1 stopped");
@@ -405,7 +395,6 @@ describe("#107: Compose up per-service state", () => {
     const data = {
       success: true,
       services: ["app-1"],
-      started: 1,
       serviceStates: [
         { name: "app-1", action: "Created" },
         { name: "app-1", action: "Started" },
@@ -449,7 +438,6 @@ describe("#108: Exec output truncation", () => {
       exitCode: 0,
       stdout: "truncated...",
       stderr: "",
-      success: true,
       isTruncated: true,
     };
     const output = formatExec(data);
@@ -653,9 +641,7 @@ describe("#113: Separate stdout/stderr in logs", () => {
 
   it("formats with stream info when available", () => {
     const data = {
-      container: "web",
       lines: ["line 1"],
-      total: 1,
       stdoutLines: ["line 1"],
       stderrLines: ["err 1"],
     };
@@ -672,9 +658,8 @@ describe("#114: Clarify tail vs limit", () => {
     const lines = Array.from({ length: 100 }, (_, i) => `Line ${i + 1}`).join("\n");
     const result = parseLogsOutput(lines, "app", 10);
 
-    expect(result.total).toBe(10);
+    expect(result.lines).toHaveLength(10);
     expect(result.isTruncated).toBe(true);
-    expect(result.totalLines).toBe(100);
   });
 });
 
@@ -759,7 +744,6 @@ describe("#116: Network LS boolean fields", () => {
           attachable: false,
         },
       ],
-      total: 1,
     };
     const output = formatNetworkLs(data);
     expect(output).toContain("[ipv6, internal]");
@@ -849,16 +833,13 @@ describe("#119: Pull digest-only parsing", () => {
 
     const result = parsePullOutput(stdout, "", 0, "nginx@sha256:abc123def456");
 
-    expect(result.image).toBe("nginx");
-    expect(result.tag).toBe("sha256:abc123def456");
     expect(result.success).toBe(true);
   });
 
   it("still parses normal tag references", () => {
     const result = parsePullOutput("Status: Downloaded newer image", "", 0, "nginx:1.25");
 
-    expect(result.image).toBe("nginx");
-    expect(result.tag).toBe("1.25");
+    expect(result.success).toBe(true);
   });
 });
 
@@ -1107,7 +1088,6 @@ describe("#125: Volume LS labels", () => {
       volumes: [
         { name: "vol1", driver: "local", scope: "local", labels: { key1: "val1", key2: "val2" } },
       ],
-      total: 1,
     };
     const output = formatVolumeLs(data);
     expect(output).toContain("labels=2");
