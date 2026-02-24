@@ -174,6 +174,93 @@ describe("Git P2 gaps", () => {
     expect(vi.mocked(git).mock.calls[0][0]).toContain("--patch");
   });
 
+  it("#608 diff full=true returns patch chunks in structuredContent", async () => {
+    const server = new FakeServer();
+    registerDiffTool(server as never);
+    const handler = server.tools.get("diff")!.handler;
+
+    // First call: git diff --numstat (returns file stats)
+    vi.mocked(git).mockResolvedValueOnce({
+      stdout: "3\t1\tsrc/index.ts",
+      stderr: "",
+      exitCode: 0,
+    });
+    // Second call: git diff (returns patch content)
+    vi.mocked(git).mockResolvedValueOnce({
+      stdout:
+        "diff --git a/src/index.ts b/src/index.ts\n" +
+        "--- a/src/index.ts\n" +
+        "+++ b/src/index.ts\n" +
+        "@@ -1,4 +1,6 @@\n" +
+        " line1\n" +
+        "-old line\n" +
+        "+new line\n" +
+        "+added line\n" +
+        "+another line\n" +
+        " line4\n",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const result = (await handler({ full: true })) as {
+      structuredContent: {
+        files: Array<{
+          file: string;
+          chunks?: Array<{ header: string; lines: string }>;
+        }>;
+      };
+    };
+
+    // Verify chunks are present in the structured output
+    expect(result.structuredContent.files).toHaveLength(1);
+    expect(result.structuredContent.files[0].file).toBe("src/index.ts");
+    expect(result.structuredContent.files[0].chunks).toBeDefined();
+    expect(result.structuredContent.files[0].chunks!.length).toBeGreaterThan(0);
+    expect(result.structuredContent.files[0].chunks![0].header).toContain("@@");
+    expect(result.structuredContent.files[0].chunks![0].lines).toContain("+new line");
+  });
+
+  it("#608 diff full=true with atomicFull returns patch chunks", async () => {
+    const server = new FakeServer();
+    registerDiffTool(server as never);
+    const handler = server.tools.get("diff")!.handler;
+
+    // Single call: git diff --numstat --patch (returns both stats and patch)
+    vi.mocked(git).mockResolvedValueOnce({
+      stdout:
+        "3\t1\tsrc/index.ts\n" +
+        "\n" +
+        "diff --git a/src/index.ts b/src/index.ts\n" +
+        "--- a/src/index.ts\n" +
+        "+++ b/src/index.ts\n" +
+        "@@ -1,4 +1,6 @@\n" +
+        " line1\n" +
+        "-old line\n" +
+        "+new line\n" +
+        "+added line\n" +
+        "+another line\n" +
+        " line4\n",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const result = (await handler({ full: true, atomicFull: true })) as {
+      structuredContent: {
+        files: Array<{
+          file: string;
+          chunks?: Array<{ header: string; lines: string }>;
+        }>;
+      };
+    };
+
+    // Verify chunks are present even without compact=false
+    expect(result.structuredContent.files).toHaveLength(1);
+    expect(result.structuredContent.files[0].file).toBe("src/index.ts");
+    expect(result.structuredContent.files[0].chunks).toBeDefined();
+    expect(result.structuredContent.files[0].chunks!.length).toBeGreaterThan(0);
+    expect(result.structuredContent.files[0].chunks![0].header).toContain("@@");
+  });
+
   it("#253 keeps log parsing safe with @@ in messages", () => {
     const stdout =
       "abc\x00123\x00Author <a@b.com>\x00today\x00\x00subject with @@ marker\x00body\x01";
