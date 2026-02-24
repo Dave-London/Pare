@@ -190,7 +190,6 @@ describe("fidelity: pip install", () => {
     const result = parsePipInstall(PIP_INSTALL_SUCCESS, "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(2);
     expect(result.installed).toHaveLength(2);
 
     // Verify both packages are captured with correct name-version split
@@ -216,7 +215,6 @@ describe("fidelity: pip install", () => {
     expect(result.success).toBe(true);
     expect(result.alreadySatisfied).toBe(true);
     expect(result.installed).toHaveLength(0);
-    expect(result.total).toBe(0);
   });
 
   it("reports failure on non-zero exit code", () => {
@@ -224,7 +222,6 @@ describe("fidelity: pip install", () => {
 
     expect(result.success).toBe(false);
     expect(result.installed).toHaveLength(0);
-    expect(result.total).toBe(0);
     expect(result.alreadySatisfied).toBe(false);
   });
 
@@ -242,7 +239,6 @@ describe("fidelity: pip install", () => {
     expect(result.installed).toHaveLength(1);
     expect(result.installed[0].name).toBe("requests");
     expect(result.installed[0].version).toBe("2.31.0");
-    expect(result.total).toBe(1);
   });
 });
 
@@ -251,9 +247,7 @@ describe("fidelity: mypy", () => {
     const result = parseMypyOutput(MYPY_SINGLE_ERROR, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(0);
+    expect(result.diagnostics).toHaveLength(1);
 
     const diag = result.diagnostics[0];
     expect(diag.file).toBe("src/main.py");
@@ -268,9 +262,7 @@ describe("fidelity: mypy", () => {
     const result = parseMypyOutput(MYPY_MULTIPLE_DIAGNOSTICS, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(4);
-    expect(result.errors).toBe(4);
-    expect(result.warnings).toBe(0);
+    expect(result.diagnostics).toHaveLength(4);
 
     // Verify all files are represented
     const files = result.diagnostics.map((d) => d.file);
@@ -294,11 +286,10 @@ describe("fidelity: mypy", () => {
     const result = parseMypyOutput(MYPY_WARNINGS_AND_NOTES, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
-    expect(result.errors).toBe(1);
-    // warnings and notes are now separate counts
-    expect(result.warnings).toBe(1);
-    expect(result.notes).toBe(1);
+    expect(result.diagnostics).toHaveLength(3);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.severity === "note")).toHaveLength(1);
 
     const warning = result.diagnostics.find((d) => d.severity === "warning")!;
     expect(warning.file).toBe("src/main.py");
@@ -321,9 +312,6 @@ describe("fidelity: mypy", () => {
 
     expect(result.success).toBe(true);
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.total).toBe(0);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(0);
   });
 
   it("preserves column as undefined when not present in output", () => {
@@ -339,8 +327,8 @@ describe("fidelity: ruff", () => {
   it("parses single violation with fix available", () => {
     const result = parseRuffJson(RUFF_SINGLE_VIOLATION, 1);
 
-    expect(result.total).toBe(1);
-    expect(result.fixable).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics.filter((d) => d.fixable)).toHaveLength(1);
 
     const diag = result.diagnostics[0];
     expect(diag.file).toBe("src/main.py");
@@ -356,7 +344,7 @@ describe("fidelity: ruff", () => {
   it("parses multiple violations across files", () => {
     const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS, 1);
 
-    expect(result.total).toBe(4);
+    expect(result.diagnostics).toHaveLength(4);
 
     // Verify all files are represented
     const files = [...new Set(result.diagnostics.map((d) => d.file))];
@@ -376,7 +364,6 @@ describe("fidelity: ruff", () => {
     const result = parseRuffJson(RUFF_MULTIPLE_VIOLATIONS, 1);
 
     // F401, F841, and W291 have fix objects; E501 has fix: null
-    expect(result.fixable).toBe(3);
 
     const e501 = result.diagnostics.find((d) => d.code === "E501")!;
     expect(e501.fixable).toBe(false);
@@ -389,8 +376,6 @@ describe("fidelity: ruff", () => {
     const result = parseRuffJson(RUFF_EMPTY, 0);
 
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.total).toBe(0);
-    expect(result.fixable).toBe(0);
   });
 
   it("preserves end_location for range information", () => {
@@ -408,7 +393,6 @@ describe("fidelity: pip-audit", () => {
   it("preserves vulnerabilities with fix versions", () => {
     const result = parsePipAuditJson(PIP_AUDIT_VULNS, 1);
 
-    expect(result.total).toBe(2);
     expect(result.vulnerabilities).toHaveLength(2);
 
     const reqVuln = result.vulnerabilities.find((v) => v.name === "requests")!;
@@ -427,14 +411,12 @@ describe("fidelity: pip-audit", () => {
     const result = parsePipAuditJson(PIP_AUDIT_CLEAN, 0);
 
     expect(result.vulnerabilities).toHaveLength(0);
-    expect(result.total).toBe(0);
   });
 
   it("preserves multiple vulnerabilities for same package", () => {
     const result = parsePipAuditJson(PIP_AUDIT_MULTI_VULN_SAME_PKG, 1);
 
     // Django has 3 vulns, flask has 0
-    expect(result.total).toBe(3);
     expect(result.vulnerabilities).toHaveLength(3);
 
     // All three should reference django
@@ -561,8 +543,6 @@ describe("fidelity: pytest", () => {
     expect(result.failed).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.skipped).toBe(0);
-    expect(result.total).toBe(5);
-    expect(result.duration).toBe(0.32);
     expect(result.failures).toEqual([]);
   });
 
@@ -573,8 +553,6 @@ describe("fidelity: pytest", () => {
     expect(result.passed).toBe(3);
     expect(result.failed).toBe(2);
     expect(result.skipped).toBe(1);
-    expect(result.total).toBe(6);
-    expect(result.duration).toBe(1.24);
 
     // Verify failure details are preserved
     expect(result.failures).toHaveLength(2);
@@ -596,7 +574,6 @@ describe("fidelity: pytest", () => {
     expect(result.failed).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.skipped).toBe(0);
-    expect(result.total).toBe(0);
     expect(result.failures).toEqual([]);
   });
 });
@@ -606,7 +583,6 @@ describe("fidelity: uv install", () => {
     const result = parseUvInstall("", UV_INSTALL_SUCCESS, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(5);
     expect(result.installed).toHaveLength(5);
 
     const names = result.installed.map((p) => p.name);
@@ -628,7 +604,6 @@ describe("fidelity: uv install", () => {
     const result = parseUvInstall("", UV_INSTALL_ALREADY_SATISFIED, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
     expect(result.installed).toEqual([]);
   });
 
@@ -637,7 +612,6 @@ describe("fidelity: uv install", () => {
     const result = parseUvInstall("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
     expect(result.installed).toEqual([]);
   });
 });
@@ -650,7 +624,6 @@ describe("fidelity: uv run", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe(UV_RUN_STDOUT);
     expect(result.stderr).toBe(UV_RUN_STDERR);
-    expect(result.duration).toBe(1.5);
   });
 
   it("preserves mixed stdout and stderr", () => {
@@ -659,7 +632,6 @@ describe("fidelity: uv run", () => {
     expect(result.success).toBe(true);
     expect(result.stdout).toBe(UV_RUN_MIXED_STDOUT);
     expect(result.stderr).toBe(UV_RUN_MIXED_STDERR);
-    expect(result.duration).toBe(0.25);
   });
 
   it("captures failed command exit code and stderr", () => {
@@ -670,7 +642,6 @@ describe("fidelity: uv run", () => {
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("NameError");
-    expect(result.duration).toBe(0.8);
   });
 });
 
@@ -681,7 +652,6 @@ describe("fidelity: black", () => {
     expect(result.success).toBe(false);
     expect(result.filesChanged).toBe(3);
     expect(result.filesUnchanged).toBe(7);
-    expect(result.filesChecked).toBe(10);
 
     expect(result.wouldReformat).toHaveLength(3);
     expect(result.wouldReformat).toContain("src/main.py");
@@ -695,7 +665,6 @@ describe("fidelity: black", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(2);
     expect(result.filesUnchanged).toBe(5);
-    expect(result.filesChecked).toBe(7);
 
     expect(result.wouldReformat).toEqual(["src/main.py", "src/utils.py"]);
   });
@@ -706,7 +675,6 @@ describe("fidelity: black", () => {
     expect(result.success).toBe(true);
     expect(result.filesChanged).toBe(0);
     expect(result.filesUnchanged).toBe(10);
-    expect(result.filesChecked).toBe(10);
     expect(result.wouldReformat).toEqual([]);
   });
 });
@@ -773,7 +741,6 @@ describe("fidelity: pip list", () => {
   it("preserves all package names and versions", () => {
     const result = parsePipListJson(PIP_LIST_JSON, 0);
 
-    expect(result.total).toBe(5);
     expect(result.packages).toHaveLength(5);
 
     const names = result.packages.map((p) => p.name);
@@ -791,7 +758,6 @@ describe("fidelity: pip list", () => {
   it("handles empty package list", () => {
     const result = parsePipListJson(PIP_LIST_EMPTY, 0);
 
-    expect(result.total).toBe(0);
     expect(result.packages).toEqual([]);
   });
 });

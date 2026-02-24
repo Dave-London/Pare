@@ -17,7 +17,7 @@ describe("parseUvInstall", () => {
     const result = parseUvInstall("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
+
     expect(result.installed).toEqual([
       { name: "flask", version: "3.0.0" },
       { name: "jinja2", version: "3.1.2" },
@@ -35,7 +35,7 @@ describe("parseUvInstall", () => {
     const result = parseUvInstall("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(1);
+
     expect(result.installed[0]).toEqual({ name: "requests", version: "2.31.0" });
   });
 
@@ -45,7 +45,7 @@ describe("parseUvInstall", () => {
     const result = parseUvInstall("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+
     expect(result.installed).toEqual([]);
   });
 
@@ -55,7 +55,7 @@ describe("parseUvInstall", () => {
     const result = parseUvInstall("", stderr, 1);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(0);
+
     expect(result.error).toBe("error: Could not find package 'nonexistent-pkg-xyz'");
     expect(result.resolutionConflicts).toBeUndefined();
   });
@@ -64,7 +64,7 @@ describe("parseUvInstall", () => {
     const result = parseUvInstall("", "", 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+
     expect(result.installed).toEqual([]);
   });
 
@@ -94,12 +94,10 @@ describe("formatUvInstall", () => {
         { name: "flask", version: "3.0.0" },
         { name: "jinja2", version: "3.1.2" },
       ],
-      total: 2,
-      duration: 0.5,
     };
     const output = formatUvInstall(data);
 
-    expect(output).toContain("Installed 2 packages in 0.5s");
+    expect(output).toContain("Installed 2 packages:");
     expect(output).toContain("flask==3.0.0");
     expect(output).toContain("jinja2==3.1.2");
   });
@@ -108,8 +106,6 @@ describe("formatUvInstall", () => {
     const data: UvInstall = {
       success: true,
       installed: [],
-      total: 0,
-      duration: 0,
     };
     expect(formatUvInstall(data)).toBe("All requirements already satisfied.");
   });
@@ -118,8 +114,6 @@ describe("formatUvInstall", () => {
     const data: UvInstall = {
       success: false,
       installed: [],
-      total: 0,
-      duration: 0,
     };
     expect(formatUvInstall(data)).toBe("uv install failed.");
   });
@@ -128,8 +122,6 @@ describe("formatUvInstall", () => {
     const data: UvInstall = {
       success: false,
       installed: [],
-      total: 0,
-      duration: 0,
       error: "version solving failed",
       resolutionConflicts: [
         { package: "flask", constraint: ">=3.0" },
@@ -147,8 +139,6 @@ describe("formatUvInstall", () => {
     const data: UvInstall = {
       success: false,
       installed: [],
-      total: 0,
-      duration: 0,
       error: "error: Could not find package 'nonexistent-pkg'",
     };
     const output = formatUvInstall(data);

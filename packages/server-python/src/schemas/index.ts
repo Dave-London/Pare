@@ -14,7 +14,6 @@ export const PipInstallSchema = z.object({
   alreadySatisfied: z.boolean(),
   warnings: z.array(z.string()).optional(),
   dryRun: z.boolean().optional(),
-  total: z.number(),
 });
 
 export type PipInstall = z.infer<typeof PipInstallSchema>;
@@ -29,14 +28,10 @@ export const MypyDiagnosticSchema = z.object({
   code: z.string().optional(),
 });
 
-/** Zod schema for structured mypy output including success status, diagnostics, and error/warning/note counts. */
+/** Zod schema for structured mypy output including success status and diagnostics. */
 export const MypyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(MypyDiagnosticSchema).optional(),
-  total: z.number(),
-  errors: z.number(),
-  warnings: z.number(),
-  notes: z.number().describe("Count of note-level diagnostics, separated from warnings"),
 });
 
 export type MypyResult = z.infer<typeof MypyResultSchema>;
@@ -58,12 +53,10 @@ export const RuffDiagnosticSchema = z.object({
   url: z.string().optional(),
 });
 
-/** Zod schema for structured ruff check output with diagnostics, total count, fixable count, and success. */
+/** Zod schema for structured ruff check output with diagnostics and success. */
 export const RuffResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(RuffDiagnosticSchema).optional(),
-  total: z.number(),
-  fixable: z.number(),
   fixedCount: z.number().optional(),
 });
 
@@ -76,11 +69,6 @@ export const PipAuditVulnSchema = z.object({
   id: z.string(),
   description: z.string(),
   fixVersions: z.array(z.string()),
-  aliases: z
-    .array(z.string())
-    .optional()
-    .describe("Alternative vulnerability IDs (e.g. CVE aliases)"),
-  url: z.string().optional().describe("URL with vulnerability details"),
   severity: z.string().optional().describe("Severity level (e.g. HIGH, CRITICAL)"),
   cvssScore: z.number().optional().describe("CVSS score if available (0.0-10.0)"),
 });
@@ -106,7 +94,6 @@ export const PipAuditResultSchema = z.object({
       }),
     )
     .optional(),
-  total: z.number(),
 });
 
 export type PipAuditResult = z.infer<typeof PipAuditResultSchema>;
@@ -125,8 +112,6 @@ export const PytestResultSchema = z.object({
   errors: z.number(),
   skipped: z.number(),
   warnings: z.number().describe("Count of warnings from pytest warnings summary"),
-  total: z.number(),
-  duration: z.number(),
   failures: z.array(PytestFailureSchema).optional(),
 });
 
@@ -138,7 +123,7 @@ export const UvResolutionConflictSchema = z.object({
   constraint: z.string(),
 });
 
-/** Zod schema for structured uv install output with installed packages and count. */
+/** Zod schema for structured uv install output with installed packages. */
 export const UvInstallSchema = z.object({
   success: z.boolean(),
   installed: z
@@ -149,8 +134,6 @@ export const UvInstallSchema = z.object({
       }),
     )
     .optional(),
-  total: z.number(),
-  duration: z.number(),
   alreadySatisfied: z.boolean().optional(),
   error: z.string().optional(),
   resolutionConflicts: z.array(UvResolutionConflictSchema).optional(),
@@ -167,7 +150,6 @@ export const UvRunSchema = z.object({
   uvDiagnostics: z.array(z.string()).optional(),
   truncated: z.boolean().optional(),
   success: z.boolean(),
-  duration: z.number(),
 });
 
 export type UvRun = z.infer<typeof UvRunSchema>;
@@ -185,7 +167,6 @@ export const BlackDiagnosticSchema = z.object({
 export const BlackResultSchema = z.object({
   filesChanged: z.number(),
   filesUnchanged: z.number(),
-  filesChecked: z.number(),
   success: z.boolean(),
   exitCode: z.number().optional(),
   errorType: z.enum(["check_failed", "internal_error"]).optional(),
@@ -211,11 +192,10 @@ export const PipListPackageSchema = z.object({
     .describe("File type of the latest version (only when outdated=true)"),
 });
 
-/** Zod schema for structured pip list output with packages, total count, and success status. */
+/** Zod schema for structured pip list output with packages and success status. */
 export const PipListSchema = z.object({
   success: z.boolean(),
   packages: z.array(PipListPackageSchema).optional(),
-  total: z.number(),
   error: z.string().optional().describe("Parse error message when JSON parsing fails"),
   rawOutput: z.string().optional().describe("Raw CLI output included when parsing fails"),
 });
@@ -480,21 +460,9 @@ export const PoetryArtifactSchema = z.object({
 /** Zod schema for structured poetry output covering install/add/remove/show/build actions. */
 export const PoetryResultSchema = z.object({
   success: z.boolean(),
-  action: z.enum([
-    "install",
-    "add",
-    "remove",
-    "show",
-    "build",
-    "update",
-    "lock",
-    "check",
-    "export",
-  ]),
   packages: z.array(PoetryPackageSchema).optional(),
   artifacts: z.array(PoetryArtifactSchema).optional(),
   messages: z.array(z.string()).optional(),
-  total: z.number(),
 });
 
 export type PoetryResult = z.infer<typeof PoetryResultSchema>;

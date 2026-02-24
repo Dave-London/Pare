@@ -140,7 +140,7 @@ export function registerPoetryTool(server: McpServer) {
       return compactDualOutput(
         data,
         result.stdout,
-        formatPoetry,
+        (d) => formatPoetry(d, action),
         compactPoetryMap,
         formatPoetryCompact,
         compact === false,
