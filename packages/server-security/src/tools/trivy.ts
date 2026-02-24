@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   INPUT_LIMITS,
   assertAllowedRoot,
@@ -10,7 +10,12 @@ import {
   compactInput,
 } from "@paretools/shared";
 import { parseTrivyJson } from "../lib/parsers.js";
-import { formatTrivyScan, compactTrivyScanMap, formatTrivyScanCompact } from "../lib/formatters.js";
+import {
+  formatTrivyScan,
+  schemaTrivyScanMap,
+  compactTrivyScanMap,
+  formatTrivyScanCompact,
+} from "../lib/formatters.js";
 import { TrivyScanResultSchema } from "../schemas/index.js";
 
 /** Registers the `trivy` tool on the given MCP server. */
@@ -176,10 +181,11 @@ export function registerTrivyTool(server: McpServer) {
       const data = parseTrivyJson(result.stdout, target, scanType);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatTrivyScan,
+        schemaTrivyScanMap,
         compactTrivyScanMap,
         formatTrivyScanCompact,
         compact === false,

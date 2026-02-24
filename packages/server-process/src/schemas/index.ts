@@ -1,20 +1,26 @@
 import { z } from "zod";
 
-/** Zod schema for structured process run output with stdout, stderr, exit code, duration, and timeout/signal info. */
+/** Zod schema for structured process run output with stdout, stderr, exit code, and timeout/signal info.
+ * Removed echo-back: command (agent already knows).
+ * Moved to formatter: duration, userCpuTimeMs, systemCpuTimeMs, stdoutTruncatedLines, stderrTruncatedLines. */
 export const ProcessRunResultSchema = z.object({
-  command: z.string(),
   exitCode: z.number(),
   success: z.boolean(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
-  duration: z.number(),
-  userCpuTimeMs: z.number().optional(),
-  systemCpuTimeMs: z.number().optional(),
   timedOut: z.boolean(),
   truncated: z.boolean().optional(),
   signal: z.string().optional(),
-  stdoutTruncatedLines: z.number().optional(),
-  stderrTruncatedLines: z.number().optional(),
 });
 
 export type ProcessRunResult = z.infer<typeof ProcessRunResultSchema>;
+
+/** Internal type with display-only fields for formatters. */
+export type ProcessRunResultInternal = ProcessRunResult & {
+  command: string;
+  duration: number;
+  userCpuTimeMs?: number;
+  systemCpuTimeMs?: number;
+  stdoutTruncatedLines?: number;
+  stderrTruncatedLines?: number;
+};

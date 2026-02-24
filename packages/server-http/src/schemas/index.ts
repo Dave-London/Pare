@@ -3,25 +3,27 @@ import { z } from "zod";
 /** Zod schema for a single HTTP header key-value pair as a record. */
 export const HttpHeadersSchema = z.record(z.string(), z.string());
 
-/** Zod schema for expanded timing details from curl's -w format variables. */
-export const TimingDetailsSchema = z.object({
-  namelookup: z.number().describe("Time from start until DNS resolution completed (seconds)"),
-  connect: z.number().describe("Time from start until TCP connection established (seconds)"),
-  appconnect: z
-    .number()
-    .optional()
-    .describe("Time from start until TLS handshake completed (seconds)"),
-  pretransfer: z
-    .number()
-    .optional()
-    .describe("Time from start until just before transfer begins (seconds)"),
-  starttransfer: z
-    .number()
-    .optional()
-    .describe("Time from start until first response byte received (seconds)"),
-});
+/** Zod schema for expanded timing details from curl's -w format variables.
+ * Individual phase timings (namelookup, connect, appconnect, pretransfer, starttransfer)
+ * are display-only — moved to human-readable formatter. */
+export const TimingDetailsSchema = z.object({});
 
 export type TimingDetails = z.infer<typeof TimingDetailsSchema>;
+
+/** Internal type with full timing breakdown for formatters. */
+export interface TimingDetailsInternal {
+  namelookup: number;
+  connect: number;
+  appconnect?: number;
+  pretransfer?: number;
+  starttransfer?: number;
+}
+
+/** Internal timing type that carries details for formatters. */
+export interface HttpTimingInternal {
+  total: number;
+  details?: TimingDetailsInternal;
+}
 
 /** Zod schema for HTTP timing information. */
 export const HttpTimingSchema = z.object({
@@ -39,7 +41,9 @@ export const RedirectHopSchema = z.object({
 
 export type RedirectHop = z.infer<typeof RedirectHopSchema>;
 
-/** Zod schema for the full HTTP response result (used by request, get, post). */
+/** Zod schema for the full HTTP response result (used by request, get, post).
+ * Removed: uploadSize (display-only), scheme (display-only).
+ * Replaced: tlsVerifyResult number -> tlsVerified boolean. */
 export const HttpResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
@@ -48,17 +52,26 @@ export const HttpResponseSchema = z.object({
   body: z.string().optional(),
   timing: HttpTimingSchema,
   size: z.number(),
-  uploadSize: z.number().optional(),
   contentType: z.string().optional(),
   redirectChain: z.array(RedirectHopSchema).optional(),
   finalUrl: z.string().optional(),
-  scheme: z.string().optional(),
-  tlsVerifyResult: z.number().optional(),
+  tlsVerified: z.boolean().optional(),
 });
 
 export type HttpResponse = z.infer<typeof HttpResponseSchema>;
 
-/** Zod schema for the HEAD-only HTTP response result (no body). */
+/** Internal type for parser -> formatter data flow (includes display-only fields). */
+export type HttpResponseInternal = Omit<HttpResponse, "timing"> & {
+  uploadSize?: number;
+  scheme?: string;
+  /** Raw TLS verify result code, used by formatter. */
+  tlsVerifyResult?: number;
+  timing: HttpTimingInternal;
+};
+
+/** Zod schema for the HEAD-only HTTP response result (no body).
+ * Removed: scheme (display-only).
+ * Replaced: tlsVerifyResult number -> tlsVerified boolean. */
 export const HttpHeadResponseSchema = z.object({
   status: z.number(),
   statusText: z.string(),
@@ -69,11 +82,18 @@ export const HttpHeadResponseSchema = z.object({
   contentLength: z.number().optional(),
   redirectChain: z.array(RedirectHopSchema).optional(),
   finalUrl: z.string().optional(),
-  scheme: z.string().optional(),
-  tlsVerifyResult: z.number().optional(),
+  tlsVerified: z.boolean().optional(),
 });
 
 export type HttpHeadResponse = z.infer<typeof HttpHeadResponseSchema>;
+
+/** Internal type for HEAD parser -> formatter data flow. */
+export type HttpHeadResponseInternal = Omit<HttpHeadResponse, "timing"> & {
+  scheme?: string;
+  /** Raw TLS verify result code, used by formatter. */
+  tlsVerifyResult?: number;
+  timing: HttpTimingInternal;
+};
 
 /** Compact response: status, timing, size. Drop headers and body. */
 export const HttpResponseCompactSchema = z.object({

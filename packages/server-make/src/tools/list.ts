@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
@@ -20,7 +20,7 @@ import {
   parsePatternRules,
   buildListResult,
 } from "../lib/parsers.js";
-import { formatList, compactListMap, formatListCompact } from "../lib/formatters.js";
+import { formatList, schemaListMap, compactListMap, formatListCompact } from "../lib/formatters.js";
 import { MakeListResultSchema } from "../schemas/index.js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -209,10 +209,11 @@ export function registerListTool(server: McpServer) {
       }
 
       const data = buildListResult(parsed, resolved);
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatList,
+        schemaListMap,
         compactListMap,
         formatListCompact,
         compact === false,

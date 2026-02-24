@@ -1,21 +1,21 @@
 import type {
-  KubectlGetResult,
-  KubectlDescribeResult,
-  KubectlLogsResult,
-  KubectlApplyResult,
+  KubectlGetResultInternal,
+  KubectlDescribeResultInternal,
+  KubectlLogsResultInternal,
+  KubectlApplyResultInternal,
   K8sResource,
   K8sAppliedResource,
   K8sCondition,
   K8sEvent,
   K8sOwnerReference,
-  HelmListResult,
-  HelmStatusResult,
-  HelmInstallResult,
-  HelmUpgradeResult,
-  HelmUninstallResult,
-  HelmRollbackResult,
+  HelmListResultInternal,
+  HelmStatusResultInternal,
+  HelmInstallResultInternal,
+  HelmUpgradeResultInternal,
+  HelmUninstallResultInternal,
+  HelmRollbackResultInternal,
   HelmRelease,
-  HelmHistoryResult,
+  HelmHistoryResultInternal,
   HelmRevision,
   HelmTemplateResult,
 } from "../schemas/index.js";
@@ -29,7 +29,7 @@ export function parseGetOutput(
   exitCode: number,
   resource: string,
   namespace?: string,
-): KubectlGetResult {
+): KubectlGetResultInternal {
   if (exitCode !== 0) {
     return {
       action: "get",
@@ -469,7 +469,7 @@ export function parseDescribeOutput(
   resource: string,
   name: string,
   namespace?: string,
-): KubectlDescribeResult {
+): KubectlDescribeResultInternal {
   const output = stdout.trimEnd();
   const conditions = exitCode === 0 ? parseDescribeConditions(output) : [];
   const events = exitCode === 0 ? parseDescribeEvents(output) : [];
@@ -528,7 +528,7 @@ export function parseLogsOutput(
   tail?: number,
   limitBytes?: number,
   parseJsonLogs?: boolean,
-): KubectlLogsResult {
+): KubectlLogsResultInternal {
   const logs = stdout.trimEnd();
   const lineCount = logs ? logs.split("\n").length : 0;
   const byteLength = logs ? Buffer.byteLength(logs, "utf8") : 0;
@@ -602,7 +602,7 @@ export function parseApplyOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-): KubectlApplyResult {
+): KubectlApplyResultInternal {
   const rawOutput = (exitCode === 0 ? stdout : stderr).trimEnd();
 
   // Parse resource lines from stdout (text mode output)
@@ -638,7 +638,7 @@ export function parseHelmListOutput(
   stderr: string,
   exitCode: number,
   namespace?: string,
-): HelmListResult {
+): HelmListResultInternal {
   if (exitCode !== 0) {
     return {
       action: "list",
@@ -695,7 +695,7 @@ export function parseHelmStatusOutput(
   exitCode: number,
   release: string,
   namespace?: string,
-): HelmStatusResult {
+): HelmStatusResultInternal {
   if (exitCode !== 0) {
     return {
       action: "status",
@@ -742,7 +742,7 @@ export function parseHelmInstallOutput(
   exitCode: number,
   release: string,
   namespace?: string,
-): HelmInstallResult {
+): HelmInstallResultInternal {
   if (exitCode !== 0) {
     return {
       action: "install",
@@ -794,7 +794,7 @@ export function parseHelmUpgradeOutput(
   exitCode: number,
   release: string,
   namespace?: string,
-): HelmUpgradeResult {
+): HelmUpgradeResultInternal {
   if (exitCode !== 0) {
     return {
       action: "upgrade",
@@ -849,7 +849,7 @@ export function parseHelmUninstallOutput(
   exitCode: number,
   release: string,
   namespace?: string,
-): HelmUninstallResult {
+): HelmUninstallResultInternal {
   if (exitCode !== 0) {
     return {
       action: "uninstall",
@@ -888,7 +888,7 @@ export function parseHelmRollbackOutput(
   release: string,
   revision?: number,
   namespace?: string,
-): HelmRollbackResult {
+): HelmRollbackResultInternal {
   if (exitCode !== 0) {
     return {
       action: "rollback",
@@ -929,7 +929,7 @@ export function parseHelmHistoryOutput(
   exitCode: number,
   release: string,
   namespace?: string,
-): HelmHistoryResult {
+): HelmHistoryResultInternal {
   if (exitCode !== 0) {
     return {
       action: "history",

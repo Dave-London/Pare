@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
@@ -9,7 +9,7 @@ import {
 } from "@paretools/shared";
 import { makeCmd, justCmd, resolveTool } from "../lib/make-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
-import { formatRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
+import { formatRun, schemaRunMap, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { MakeRunResultSchema } from "../schemas/index.js";
 
 /** Registers the `run` tool on the given MCP server. */
@@ -165,10 +165,11 @@ export function registerRunTool(server: McpServer) {
         timedOut,
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatRun,
+        schemaRunMap,
         compactRunMap,
         formatRunCompact,
         compact === false,

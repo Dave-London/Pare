@@ -60,3 +60,63 @@ export function compactDualOutput<T, C>(
 
   return dualOutput(data, humanFormat) as ToolOutput<T | C>;
 }
+
+/**
+ * Creates a dual-output response where the formatter receives the full internal
+ * data (with extra fields for human-readable output) while structuredContent
+ * receives a clean projection that matches the output schema.
+ *
+ * Use this instead of `dualOutput` when your parsed data has Internal-only fields
+ * that should appear in human text but NOT in structuredContent.
+ *
+ * @param data - The full internal data (may contain extra fields for formatters).
+ * @param humanFormat - Formatter that receives the full internal data.
+ * @param schemaMap - Projects internal data into the clean schema shape for structuredContent.
+ */
+export function strippedDualOutput<T, S>(
+  data: T,
+  humanFormat: (d: T) => string,
+  schemaMap: (d: T) => S,
+): ToolOutput<S> {
+  return {
+    content: [{ type: "text", text: humanFormat(data) }],
+    structuredContent: schemaMap(data),
+  };
+}
+
+/**
+ * Like `compactDualOutput` but strips Internal-only fields from the full data path
+ * using a schema projection function. This ensures structuredContent only contains
+ * fields defined in the output schema, while formatters still receive all fields.
+ *
+ * @param data - The full internal data parsed from CLI output.
+ * @param rawStdout - The ANSI-stripped stdout from the CLI command.
+ * @param humanFormat - Formatter for full data (used when not compacting).
+ * @param schemaMap - Projects internal data into clean schema shape (for non-compact mode).
+ * @param compactMap - Projects full data into a compact shape (for compact mode).
+ * @param compactFormat - Formatter for compact data.
+ * @param forceFullSchema - When true, skip auto-detection and return full data.
+ */
+export function strippedCompactDualOutput<T, S, C>(
+  data: T,
+  rawStdout: string,
+  humanFormat: (d: T) => string,
+  schemaMap: (d: T) => S,
+  compactMap: (d: T) => C,
+  compactFormat: (d: C) => string,
+  forceFullSchema: boolean,
+): ToolOutput<S | C> {
+  if (forceFullSchema) {
+    return strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+  }
+
+  const structuredTokens = estimateTokens(JSON.stringify(data));
+  const rawTokens = estimateTokens(rawStdout);
+
+  if (structuredTokens >= rawTokens) {
+    const compact = compactMap(data);
+    return dualOutput(compact, compactFormat) as ToolOutput<S | C>;
+  }
+
+  return strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+}

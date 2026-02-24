@@ -1,9 +1,67 @@
-import type { TrivyScanResult, SemgrepScanResult, GitleaksScanResult } from "../schemas/index.js";
+import type {
+  TrivyScanResult,
+  TrivyScanResultInternal,
+  SemgrepScanResult,
+  SemgrepScanResultInternal,
+  GitleaksScanResult,
+  GitleaksScanResultInternal,
+} from "../schemas/index.js";
+
+// -- Schema maps (strip Internal-only fields for structuredContent) -----------
+
+/** Strips Internal-only fields from Trivy scan result for structuredContent. */
+export function schemaTrivyScanMap(data: TrivyScanResultInternal): TrivyScanResult {
+  return {
+    target: data.target,
+    scanType: data.scanType,
+    vulnerabilities: data.vulnerabilities?.map((v) => ({
+      id: v.id,
+      severity: v.severity,
+      package: v.package,
+      installedVersion: v.installedVersion,
+      fixedVersion: v.fixedVersion,
+      cvssScore: v.cvssScore,
+    })),
+    summary: data.summary,
+  };
+}
+
+/** Strips Internal-only fields from Semgrep scan result for structuredContent. */
+export function schemaSemgrepScanMap(data: SemgrepScanResultInternal): SemgrepScanResult {
+  return {
+    findings: data.findings?.map((f) => ({
+      ruleId: f.ruleId,
+      path: f.path,
+      startLine: f.startLine,
+      endLine: f.endLine,
+      message: f.message,
+      severity: f.severity,
+      cwe: f.cwe,
+    })),
+    errors: data.errors,
+    summary: data.summary,
+  };
+}
+
+/** Strips Internal-only fields from Gitleaks scan result for structuredContent. */
+export function schemaGitleaksScanMap(data: GitleaksScanResultInternal): GitleaksScanResult {
+  return {
+    findings: data.findings?.map((f) => ({
+      ruleID: f.ruleID,
+      match: f.match,
+      secret: f.secret,
+      file: f.file,
+      startLine: f.startLine,
+      endLine: f.endLine,
+      commit: f.commit,
+    })),
+  };
+}
 
 // -- Full formatters ----------------------------------------------------------
 
 /** Formats a Trivy scan result into human-readable text. */
-export function formatTrivyScan(data: TrivyScanResult): string {
+export function formatTrivyScan(data: TrivyScanResultInternal): string {
   const lines: string[] = [];
 
   lines.push(`Trivy ${data.scanType} scan: ${data.target}`);
@@ -31,12 +89,11 @@ export function formatTrivyScan(data: TrivyScanResult): string {
 
 // -- Compact types, mappers, and formatters -----------------------------------
 
-/** Compact scan result: summary and total only, no individual vulnerabilities. */
+/** Compact scan result: summary only, no individual vulnerabilities (schema-compatible). */
 export interface TrivyScanCompact {
   [key: string]: unknown;
   target: string;
   scanType: "image" | "fs" | "config";
-  totalVulnerabilities: number;
   summary: {
     critical: number;
     high: number;
@@ -46,19 +103,24 @@ export interface TrivyScanCompact {
   };
 }
 
-export function compactTrivyScanMap(data: TrivyScanResult): TrivyScanCompact {
+export function compactTrivyScanMap(data: TrivyScanResultInternal): TrivyScanCompact {
   return {
     target: data.target,
     scanType: data.scanType,
-    totalVulnerabilities: data.totalVulnerabilities,
     summary: data.summary,
   };
 }
 
 export function formatTrivyScanCompact(data: TrivyScanCompact): string {
+  const total =
+    data.summary.critical +
+    data.summary.high +
+    data.summary.medium +
+    data.summary.low +
+    data.summary.unknown;
   return (
     `Trivy ${data.scanType} scan: ${data.target} -- ` +
-    `${data.totalVulnerabilities} vulnerabilities ` +
+    `${total} vulnerabilities ` +
     `(${data.summary.critical}C/${data.summary.high}H/${data.summary.medium}M/${data.summary.low}L)`
   );
 }
@@ -66,7 +128,7 @@ export function formatTrivyScanCompact(data: TrivyScanCompact): string {
 // -- Semgrep formatters -------------------------------------------------------
 
 /** Formats a Semgrep scan result into human-readable text. */
-export function formatSemgrepScan(data: SemgrepScanResult): string {
+export function formatSemgrepScan(data: SemgrepScanResultInternal): string {
   const lines: string[] = [];
 
   lines.push(`Semgrep scan (config: ${data.config})`);
@@ -101,30 +163,27 @@ export function formatSemgrepScan(data: SemgrepScanResult): string {
 
 // -- Semgrep compact types, mappers, and formatters ---------------------------
 
-/** Compact scan result: summary and total only, no individual findings. */
+/** Compact scan result: summary only, no individual findings (schema-compatible). */
 export interface SemgrepScanCompact {
   [key: string]: unknown;
-  totalFindings: number;
   summary: {
     error: number;
     warning: number;
     info: number;
   };
-  config: string;
 }
 
-export function compactSemgrepScanMap(data: SemgrepScanResult): SemgrepScanCompact {
+export function compactSemgrepScanMap(data: SemgrepScanResultInternal): SemgrepScanCompact {
   return {
-    totalFindings: data.totalFindings,
     summary: data.summary,
-    config: data.config,
   };
 }
 
 export function formatSemgrepScanCompact(data: SemgrepScanCompact): string {
+  const total = data.summary.error + data.summary.warning + data.summary.info;
   return (
-    `Semgrep scan (config: ${data.config}) -- ` +
-    `${data.totalFindings} findings ` +
+    `Semgrep scan -- ` +
+    `${total} findings ` +
     `(${data.summary.error}E/${data.summary.warning}W/${data.summary.info}I)`
   );
 }
@@ -132,7 +191,7 @@ export function formatSemgrepScanCompact(data: SemgrepScanCompact): string {
 // -- Gitleaks formatters ------------------------------------------------------
 
 /** Formats a Gitleaks scan result into human-readable text. */
-export function formatGitleaksScan(data: GitleaksScanResult): string {
+export function formatGitleaksScan(data: GitleaksScanResultInternal): string {
   const lines: string[] = [];
 
   lines.push(`Gitleaks secret detection scan`);
@@ -159,18 +218,16 @@ export function formatGitleaksScan(data: GitleaksScanResult): string {
 
 // -- Gitleaks compact types, mappers, and formatters --------------------------
 
-/** Compact scan result: summary and total only, no individual findings. */
+/** Compact scan result: empty projection, no findings (schema-compatible).
+ * GitleaksScanResultSchema only has `findings`, which compact mode drops. */
 export interface GitleaksScanCompact {
   [key: string]: unknown;
-  totalFindings: number;
 }
 
-export function compactGitleaksScanMap(data: GitleaksScanResult): GitleaksScanCompact {
-  return {
-    totalFindings: data.totalFindings,
-  };
+export function compactGitleaksScanMap(_data: GitleaksScanResultInternal): GitleaksScanCompact {
+  return {};
 }
 
-export function formatGitleaksScanCompact(data: GitleaksScanCompact): string {
-  return `Gitleaks scan -- ${data.totalFindings} secret(s) detected`;
+export function formatGitleaksScanCompact(_data: GitleaksScanCompact): string {
+  return `Gitleaks scan: compact summary`;
 }

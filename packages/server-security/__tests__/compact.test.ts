@@ -8,9 +8,9 @@ import {
   formatGitleaksScanCompact,
 } from "../src/lib/formatters.js";
 import type {
-  TrivyScanResult,
-  SemgrepScanResult,
-  GitleaksScanResult,
+  TrivyScanResultInternal,
+  SemgrepScanResultInternal,
+  GitleaksScanResultInternal,
 } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
@@ -18,8 +18,8 @@ import type {
 // ---------------------------------------------------------------------------
 
 describe("compactTrivyScanMap", () => {
-  it("keeps target, scanType, totalVulnerabilities, summary; drops vulnerabilities array", () => {
-    const data: TrivyScanResult = {
+  it("keeps target, scanType, summary; drops vulnerabilities and totalVulnerabilities", () => {
+    const data: TrivyScanResultInternal = {
       target: "alpine:3.18",
       scanType: "image",
       vulnerabilities: [
@@ -47,14 +47,14 @@ describe("compactTrivyScanMap", () => {
 
     expect(compact.target).toBe("alpine:3.18");
     expect(compact.scanType).toBe("image");
-    expect(compact.totalVulnerabilities).toBe(2);
     expect(compact.summary).toEqual({ critical: 1, high: 1, medium: 0, low: 0, unknown: 0 });
     // Verify dropped fields
     expect(compact).not.toHaveProperty("vulnerabilities");
+    expect(compact).not.toHaveProperty("totalVulnerabilities");
   });
 
   it("handles zero vulnerabilities", () => {
-    const data: TrivyScanResult = {
+    const data: TrivyScanResultInternal = {
       target: "./",
       scanType: "fs",
       vulnerabilities: [],
@@ -64,8 +64,9 @@ describe("compactTrivyScanMap", () => {
 
     const compact = compactTrivyScanMap(data);
 
-    expect(compact.totalVulnerabilities).toBe(0);
+    expect(compact.summary.critical).toBe(0);
     expect(compact).not.toHaveProperty("vulnerabilities");
+    expect(compact).not.toHaveProperty("totalVulnerabilities");
   });
 });
 
@@ -74,7 +75,6 @@ describe("formatTrivyScanCompact", () => {
     const compact = {
       target: "nginx:latest",
       scanType: "image" as const,
-      totalVulnerabilities: 5,
       summary: { critical: 1, high: 2, medium: 1, low: 1, unknown: 0 },
     };
     const output = formatTrivyScanCompact(compact);
@@ -87,7 +87,6 @@ describe("formatTrivyScanCompact", () => {
     const compact = {
       target: "./",
       scanType: "fs" as const,
-      totalVulnerabilities: 0,
       summary: { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 },
     };
     const output = formatTrivyScanCompact(compact);
@@ -100,8 +99,8 @@ describe("formatTrivyScanCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactSemgrepScanMap", () => {
-  it("keeps totalFindings, summary, config; drops findings array", () => {
-    const data: SemgrepScanResult = {
+  it("keeps summary; drops findings, totalFindings, config", () => {
+    const data: SemgrepScanResultInternal = {
       totalFindings: 3,
       findings: [
         {
@@ -136,15 +135,15 @@ describe("compactSemgrepScanMap", () => {
 
     const compact = compactSemgrepScanMap(data);
 
-    expect(compact.totalFindings).toBe(3);
     expect(compact.summary).toEqual({ error: 1, warning: 1, info: 1 });
-    expect(compact.config).toBe("auto");
     // Verify dropped fields
     expect(compact).not.toHaveProperty("findings");
+    expect(compact).not.toHaveProperty("totalFindings");
+    expect(compact).not.toHaveProperty("config");
   });
 
   it("handles zero findings", () => {
-    const data: SemgrepScanResult = {
+    const data: SemgrepScanResultInternal = {
       totalFindings: 0,
       findings: [],
       summary: { error: 0, warning: 0, info: 0 },
@@ -153,21 +152,20 @@ describe("compactSemgrepScanMap", () => {
 
     const compact = compactSemgrepScanMap(data);
 
-    expect(compact.totalFindings).toBe(0);
-    expect(compact.config).toBe("p/security-audit");
+    expect(compact.summary.error).toBe(0);
     expect(compact).not.toHaveProperty("findings");
+    expect(compact).not.toHaveProperty("totalFindings");
+    expect(compact).not.toHaveProperty("config");
   });
 });
 
 describe("formatSemgrepScanCompact", () => {
   it("formats compact semgrep scan output", () => {
     const compact = {
-      totalFindings: 5,
       summary: { error: 2, warning: 2, info: 1 },
-      config: "auto",
     };
     const output = formatSemgrepScanCompact(compact);
-    expect(output).toContain("Semgrep scan (config: auto)");
+    expect(output).toContain("Semgrep scan");
     expect(output).toContain("5 findings");
     expect(output).toContain("2E/2W/1I");
   });
@@ -178,8 +176,8 @@ describe("formatSemgrepScanCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactGitleaksScanMap", () => {
-  it("keeps totalFindings; drops findings array", () => {
-    const data: GitleaksScanResult = {
+  it("returns empty object; drops findings and totalFindings", () => {
+    const data: GitleaksScanResultInternal = {
       totalFindings: 2,
       findings: [
         {
@@ -212,14 +210,14 @@ describe("compactGitleaksScanMap", () => {
 
     const compact = compactGitleaksScanMap(data);
 
-    expect(compact.totalFindings).toBe(2);
-    // Verify dropped fields
+    // Schema only has `findings`, compact mode drops it; result is empty
     expect(compact).not.toHaveProperty("findings");
+    expect(compact).not.toHaveProperty("totalFindings");
     expect(compact).not.toHaveProperty("summary");
   });
 
   it("handles zero findings", () => {
-    const data: GitleaksScanResult = {
+    const data: GitleaksScanResultInternal = {
       totalFindings: 0,
       findings: [],
       summary: { totalFindings: 0 },
@@ -227,22 +225,15 @@ describe("compactGitleaksScanMap", () => {
 
     const compact = compactGitleaksScanMap(data);
 
-    expect(compact.totalFindings).toBe(0);
     expect(compact).not.toHaveProperty("findings");
+    expect(compact).not.toHaveProperty("totalFindings");
   });
 });
 
 describe("formatGitleaksScanCompact", () => {
   it("formats compact gitleaks scan output", () => {
-    const compact = { totalFindings: 3 };
+    const compact = {};
     const output = formatGitleaksScanCompact(compact);
     expect(output).toContain("Gitleaks scan");
-    expect(output).toContain("3 secret(s) detected");
-  });
-
-  it("formats zero findings", () => {
-    const compact = { totalFindings: 0 };
-    const output = formatGitleaksScanCompact(compact);
-    expect(output).toContain("0 secret(s) detected");
   });
 });

@@ -55,9 +55,7 @@ describe("@paretools/process integration", () => {
       expect(sc).toBeDefined();
       expect(sc.success).toBe(true);
       expect(sc.exitCode).toBe(0);
-      expect(typeof sc.duration).toBe("number");
       expect(sc.timedOut).toBe(false);
-      expect(sc.command).toBe("node");
     });
 
     it("returns exit code for a failing command", async () => {

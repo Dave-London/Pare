@@ -1,24 +1,33 @@
 import type {
   KubectlGetResult,
+  KubectlGetResultInternal,
   KubectlDescribeResult,
+  KubectlDescribeResultInternal,
   KubectlLogsResult,
+  KubectlLogsResultInternal,
   KubectlApplyResult,
-  KubectlResult,
+  KubectlApplyResultInternal,
   HelmListResult,
+  HelmListResultInternal,
   HelmStatusResult,
+  HelmStatusResultInternal,
   HelmInstallResult,
+  HelmInstallResultInternal,
   HelmUpgradeResult,
+  HelmUpgradeResultInternal,
   HelmUninstallResult,
+  HelmUninstallResultInternal,
   HelmRollbackResult,
+  HelmRollbackResultInternal,
   HelmHistoryResult,
+  HelmHistoryResultInternal,
   HelmTemplateResult,
-  HelmResult,
 } from "../schemas/index.js";
 
 // ── Full formatters ──────────────────────────────────────────────────
 
 /** Formats a kubectl get result into human-readable text. */
-export function formatGet(data: KubectlGetResult): string {
+export function formatGet(data: KubectlGetResultInternal): string {
   if (!data.success) {
     return `kubectl get ${data.resource}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
   }
@@ -47,7 +56,7 @@ export function formatGet(data: KubectlGetResult): string {
 }
 
 /** Formats a kubectl describe result into human-readable text. */
-export function formatDescribe(data: KubectlDescribeResult): string {
+export function formatDescribe(data: KubectlDescribeResultInternal): string {
   if (!data.success) {
     return `kubectl describe ${data.resource} ${data.name}: failed (exit ${data.exitCode})${data.error ? `\n${data.error}` : ""}`;
   }
@@ -104,7 +113,7 @@ export function formatDescribe(data: KubectlDescribeResult): string {
 }
 
 /** Formats a kubectl logs result into human-readable text. */
-export function formatLogs(data: KubectlLogsResult): string {
+export function formatLogs(data: KubectlLogsResultInternal): string {
   if (!data.success) {
     return `kubectl logs ${data.pod}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -116,7 +125,7 @@ export function formatLogs(data: KubectlLogsResult): string {
 }
 
 /** Formats a kubectl apply result into human-readable text. */
-export function formatApply(data: KubectlApplyResult): string {
+export function formatApply(data: KubectlApplyResultInternal): string {
   if (!data.success) {
     return `kubectl apply: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -130,8 +139,15 @@ export function formatApply(data: KubectlApplyResult): string {
   return `kubectl apply: success${data.output ? `\n${data.output}` : ""}`;
 }
 
+/** Internal union of all kubectl result types. */
+type KubectlResultInternal =
+  | KubectlGetResultInternal
+  | KubectlDescribeResultInternal
+  | KubectlLogsResultInternal
+  | KubectlApplyResultInternal;
+
 /** Dispatches formatting to the correct action formatter. */
-export function formatResult(data: KubectlResult): string {
+export function formatResult(data: KubectlResultInternal): string {
   switch (data.action) {
     case "get":
       return formatGet(data);
@@ -146,102 +162,90 @@ export function formatResult(data: KubectlResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact get: summary without full resource details. */
+/** Compact get: summary without full resource details (schema-compatible). */
 export interface KubectlGetCompact {
   [key: string]: unknown;
   action: "get";
   success: boolean;
-  resource: string;
-  namespace?: string;
-  total: number;
-  names: string[];
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactGetMap(data: KubectlGetResult): KubectlGetCompact {
+export function compactGetMap(data: KubectlGetResultInternal): KubectlGetCompact {
   return {
     action: "get",
     success: data.success,
-    resource: data.resource,
-    namespace: data.namespace,
-    total: data.total,
-    names: (data.items ?? []).map((i) => i.metadata?.name ?? "unknown"),
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatGetCompact(data: KubectlGetCompact): string {
-  if (!data.success) return `kubectl get ${data.resource}: failed`;
-  const ns = data.namespace ? ` -n ${data.namespace}` : "";
-  return `kubectl get ${data.resource}${ns}: ${data.total} item(s)`;
+  if (!data.success) return `kubectl get: failed`;
+  return `kubectl get: success`;
 }
 
-/** Compact describe: success/failure with conditions & events (no full output text). */
+/** Compact describe: conditions & events summary (no full output text, schema-compatible). */
 export interface KubectlDescribeCompact {
   [key: string]: unknown;
   action: "describe";
   success: boolean;
-  resource: string;
-  name: string;
-  namespace?: string;
-  labels?: KubectlDescribeResult["labels"];
-  annotations?: KubectlDescribeResult["annotations"];
-  resourceDetails?: KubectlDescribeResult["resourceDetails"];
-  conditions?: KubectlDescribeResult["conditions"];
-  events?: KubectlDescribeResult["events"];
+  labels?: KubectlDescribeResultInternal["labels"];
+  annotations?: KubectlDescribeResultInternal["annotations"];
+  resourceDetails?: KubectlDescribeResultInternal["resourceDetails"];
+  conditions?: KubectlDescribeResultInternal["conditions"];
+  events?: KubectlDescribeResultInternal["events"];
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactDescribeMap(data: KubectlDescribeResult): KubectlDescribeCompact {
+export function compactDescribeMap(data: KubectlDescribeResultInternal): KubectlDescribeCompact {
   return {
     action: "describe",
     success: data.success,
-    resource: data.resource,
-    name: data.name,
-    namespace: data.namespace,
     labels: data.labels,
     annotations: data.annotations,
     resourceDetails: data.resourceDetails,
     conditions: data.conditions,
     events: data.events,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatDescribeCompact(data: KubectlDescribeCompact): string {
-  if (!data.success) return `kubectl describe ${data.resource} ${data.name}: failed`;
-  const parts = [`kubectl describe ${data.resource} ${data.name}: success`];
+  if (!data.success) return `kubectl describe: failed`;
+  const parts = [`kubectl describe: success`];
   if (data.conditions && data.conditions.length > 0)
     parts.push(`${data.conditions.length} condition(s)`);
   if (data.events && data.events.length > 0) parts.push(`${data.events.length} event(s)`);
   return parts.join(", ");
 }
 
-/** Compact logs: line count, no full log content. */
+/** Compact logs: no full log content (schema-compatible). */
 export interface KubectlLogsCompact {
   [key: string]: unknown;
   action: "logs";
   success: boolean;
-  pod: string;
-  namespace?: string;
-  lineCount: number;
   truncated?: boolean;
-  parsedEntries?: number;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactLogsMap(data: KubectlLogsResult): KubectlLogsCompact {
+export function compactLogsMap(data: KubectlLogsResultInternal): KubectlLogsCompact {
   return {
     action: "logs",
     success: data.success,
-    pod: data.pod,
-    namespace: data.namespace,
-    lineCount: data.lineCount,
     truncated: data.truncated,
-    parsedEntries: data.logEntries?.length,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatLogsCompact(data: KubectlLogsCompact): string {
-  if (!data.success) return `kubectl logs ${data.pod}: failed`;
+  if (!data.success) return `kubectl logs: failed`;
   const truncated = data.truncated ? " [truncated]" : "";
-  const parsed = data.parsedEntries !== undefined ? ` (${data.parsedEntries} parsed entries)` : "";
-  return `kubectl logs ${data.pod}: ${data.lineCount} line(s)${truncated}${parsed}`;
+  return `kubectl logs: success${truncated}`;
 }
 
 /** Compact apply: success/failure status with resources (no raw output text). */
@@ -249,11 +253,11 @@ export interface KubectlApplyCompact {
   [key: string]: unknown;
   action: "apply";
   success: boolean;
-  resources?: KubectlApplyResult["resources"];
+  resources?: KubectlApplyResultInternal["resources"];
   exitCode: number;
 }
 
-export function compactApplyMap(data: KubectlApplyResult): KubectlApplyCompact {
+export function compactApplyMap(data: KubectlApplyResultInternal): KubectlApplyCompact {
   return {
     action: "apply",
     success: data.success,
@@ -269,10 +273,62 @@ export function formatApplyCompact(data: KubectlApplyCompact): string {
   return "kubectl apply: success";
 }
 
+// ── Schema maps (strip Internal-only fields for structuredContent) ──
+
+/** Strips Internal-only fields from get result for structuredContent. */
+export function schemaGetMap(data: KubectlGetResultInternal): KubectlGetResult {
+  return {
+    action: data.action,
+    success: data.success,
+    items: data.items,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from describe result for structuredContent. */
+export function schemaDescribeMap(data: KubectlDescribeResultInternal): KubectlDescribeResult {
+  return {
+    action: data.action,
+    success: data.success,
+    labels: data.labels,
+    annotations: data.annotations,
+    resourceDetails: data.resourceDetails,
+    conditions: data.conditions,
+    events: data.events,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from logs result for structuredContent. */
+export function schemaLogsMap(data: KubectlLogsResultInternal): KubectlLogsResult {
+  return {
+    action: data.action,
+    success: data.success,
+    logs: data.logs,
+    truncated: data.truncated,
+    logEntries: data.logEntries,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from apply result for structuredContent. */
+export function schemaApplyMap(data: KubectlApplyResultInternal): KubectlApplyResult {
+  return {
+    action: data.action,
+    success: data.success,
+    resources: data.resources,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
 // ── Helm formatters ─────────────────────────────────────────────────
 
 /** Formats a helm list result into human-readable text. */
-export function formatHelmList(data: HelmListResult): string {
+export function formatHelmList(data: HelmListResultInternal): string {
   if (!data.success) {
     return `helm list: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -285,7 +341,7 @@ export function formatHelmList(data: HelmListResult): string {
 }
 
 /** Formats a helm status result into human-readable text. */
-export function formatHelmStatus(data: HelmStatusResult): string {
+export function formatHelmStatus(data: HelmStatusResultInternal): string {
   if (!data.success) {
     return `helm status ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -297,7 +353,7 @@ export function formatHelmStatus(data: HelmStatusResult): string {
 }
 
 /** Formats a helm install result into human-readable text. */
-export function formatHelmInstall(data: HelmInstallResult): string {
+export function formatHelmInstall(data: HelmInstallResultInternal): string {
   if (!data.success) {
     return `helm install ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -309,7 +365,7 @@ export function formatHelmInstall(data: HelmInstallResult): string {
 }
 
 /** Formats a helm upgrade result into human-readable text. */
-export function formatHelmUpgrade(data: HelmUpgradeResult): string {
+export function formatHelmUpgrade(data: HelmUpgradeResultInternal): string {
   if (!data.success) {
     return `helm upgrade ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -321,7 +377,7 @@ export function formatHelmUpgrade(data: HelmUpgradeResult): string {
 }
 
 /** Formats a helm history result into human-readable text. */
-export function formatHelmHistory(data: HelmHistoryResult): string {
+export function formatHelmHistory(data: HelmHistoryResultInternal): string {
   if (!data.success) {
     return `helm history ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -345,8 +401,19 @@ export function formatHelmTemplate(data: HelmTemplateResult): string {
   return `${header}\n${data.manifests}`;
 }
 
+/** Internal union of all helm result types. */
+type HelmResultInternal =
+  | HelmListResultInternal
+  | HelmStatusResultInternal
+  | HelmInstallResultInternal
+  | HelmUpgradeResultInternal
+  | HelmUninstallResultInternal
+  | HelmRollbackResultInternal
+  | HelmHistoryResultInternal
+  | HelmTemplateResult;
+
 /** Dispatches formatting to the correct helm action formatter. */
-export function formatHelmResult(data: HelmResult): string {
+export function formatHelmResult(data: HelmResultInternal): string {
   switch (data.action) {
     case "list":
       return formatHelmList(data);
@@ -369,148 +436,153 @@ export function formatHelmResult(data: HelmResult): string {
 
 // ── Helm compact types, mappers, and formatters ─────────────────────
 
-/** Compact list: release names only. */
+/** Compact list: schema-compatible summary. */
 export interface HelmListCompact {
   [key: string]: unknown;
   action: "list";
   success: boolean;
-  namespace?: string;
-  total: number;
-  names: string[];
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmListMap(data: HelmListResult): HelmListCompact {
+export function compactHelmListMap(data: HelmListResultInternal): HelmListCompact {
   return {
     action: "list",
     success: data.success,
-    namespace: data.namespace,
-    total: data.total,
-    names: (data.releases ?? []).map((r) => r.name),
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmListCompact(data: HelmListCompact): string {
   if (!data.success) return "helm list: failed";
-  const ns = data.namespace ? ` -n ${data.namespace}` : "";
-  return `helm list${ns}: ${data.total} release(s)`;
+  return `helm list: success`;
 }
 
-/** Compact status: key fields only, no notes. */
+/** Compact status: key fields only, no notes (schema-compatible). */
 export interface HelmStatusCompact {
   [key: string]: unknown;
   action: "status";
   success: boolean;
-  name: string;
-  namespace?: string;
   status?: string;
   revision?: string;
+  description?: string;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmStatusMap(data: HelmStatusResult): HelmStatusCompact {
+export function compactHelmStatusMap(data: HelmStatusResultInternal): HelmStatusCompact {
   return {
     action: "status",
     success: data.success,
-    name: data.name,
-    namespace: data.namespace,
     status: data.status,
     revision: data.revision,
+    description: data.description,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmStatusCompact(data: HelmStatusCompact): string {
-  if (!data.success) return `helm status ${data.name}: failed`;
-  return `helm status ${data.name}: ${data.status ?? "unknown"}`;
+  if (!data.success) return `helm status: failed`;
+  return `helm status: ${data.status ?? "unknown"}`;
 }
 
-/** Compact install: success/failure only. */
+/** Compact install: success/failure only (schema-compatible). */
 export interface HelmInstallCompact {
   [key: string]: unknown;
   action: "install";
   success: boolean;
-  name: string;
   namespace?: string;
   status?: string;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmInstallMap(data: HelmInstallResult): HelmInstallCompact {
+export function compactHelmInstallMap(data: HelmInstallResultInternal): HelmInstallCompact {
   return {
     action: "install",
     success: data.success,
-    name: data.name,
     namespace: data.namespace,
     status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmInstallCompact(data: HelmInstallCompact): string {
-  if (!data.success) return `helm install ${data.name}: failed`;
-  return `helm install ${data.name}: ${data.status ?? "success"}`;
+  if (!data.success) return `helm install: failed`;
+  return `helm install: ${data.status ?? "success"}`;
 }
 
-/** Compact upgrade: success/failure only. */
+/** Compact upgrade: success/failure only (schema-compatible). */
 export interface HelmUpgradeCompact {
   [key: string]: unknown;
   action: "upgrade";
   success: boolean;
-  name: string;
   namespace?: string;
   status?: string;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmUpgradeMap(data: HelmUpgradeResult): HelmUpgradeCompact {
+export function compactHelmUpgradeMap(data: HelmUpgradeResultInternal): HelmUpgradeCompact {
   return {
     action: "upgrade",
     success: data.success,
-    name: data.name,
     namespace: data.namespace,
     status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmUpgradeCompact(data: HelmUpgradeCompact): string {
-  if (!data.success) return `helm upgrade ${data.name}: failed`;
-  return `helm upgrade ${data.name}: ${data.status ?? "success"}`;
+  if (!data.success) return `helm upgrade: failed`;
+  return `helm upgrade: ${data.status ?? "success"}`;
 }
 
 // ── Helm uninstall formatters ───────────────────────────────────────
 
 /** Formats a helm uninstall result into human-readable text. */
-export function formatHelmUninstall(data: HelmUninstallResult): string {
+export function formatHelmUninstall(data: HelmUninstallResultInternal): string {
   if (!data.success) {
     return `helm uninstall ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
   return `helm uninstall ${data.name}: ${data.status ?? "uninstalled"}`;
 }
 
-/** Compact uninstall: success/failure only. */
+/** Compact uninstall: success/failure only (schema-compatible). */
 export interface HelmUninstallCompact {
   [key: string]: unknown;
   action: "uninstall";
   success: boolean;
-  name: string;
   namespace?: string;
   status?: string;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmUninstallMap(data: HelmUninstallResult): HelmUninstallCompact {
+export function compactHelmUninstallMap(data: HelmUninstallResultInternal): HelmUninstallCompact {
   return {
     action: "uninstall",
     success: data.success,
-    name: data.name,
     namespace: data.namespace,
     status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmUninstallCompact(data: HelmUninstallCompact): string {
-  if (!data.success) return `helm uninstall ${data.name}: failed`;
-  return `helm uninstall ${data.name}: ${data.status ?? "uninstalled"}`;
+  if (!data.success) return `helm uninstall: failed`;
+  return `helm uninstall: ${data.status ?? "uninstalled"}`;
 }
 
 // ── Helm rollback formatters ────────────────────────────────────────
 
 /** Formats a helm rollback result into human-readable text. */
-export function formatHelmRollback(data: HelmRollbackResult): string {
+export function formatHelmRollback(data: HelmRollbackResultInternal): string {
   if (!data.success) {
     return `helm rollback ${data.name}: failed${data.exitCode !== undefined ? ` (exit ${data.exitCode})` : ""}${data.error ? `\n${data.error}` : ""}`;
   }
@@ -518,60 +590,62 @@ export function formatHelmRollback(data: HelmRollbackResult): string {
   return `helm rollback ${data.name}${rev}: ${data.status ?? "success"}`;
 }
 
-/** Compact rollback: success/failure only. */
+/** Compact rollback: success/failure only (schema-compatible). */
 export interface HelmRollbackCompact {
   [key: string]: unknown;
   action: "rollback";
   success: boolean;
-  name: string;
   namespace?: string;
   revision?: string;
   status?: string;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmRollbackMap(data: HelmRollbackResult): HelmRollbackCompact {
+export function compactHelmRollbackMap(data: HelmRollbackResultInternal): HelmRollbackCompact {
   return {
     action: "rollback",
     success: data.success,
-    name: data.name,
     namespace: data.namespace,
     revision: data.revision,
     status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmRollbackCompact(data: HelmRollbackCompact): string {
-  if (!data.success) return `helm rollback ${data.name}: failed`;
+  if (!data.success) return `helm rollback: failed`;
   const rev = data.revision ? ` to revision ${data.revision}` : "";
-  return `helm rollback ${data.name}${rev}: ${data.status ?? "success"}`;
+  return `helm rollback${rev}: ${data.status ?? "success"}`;
 }
 
 // ── Helm history compact formatters ─────────────────────────────────
 
-/** Compact history: name and total only, no revision details. */
+/** Compact history: schema-compatible summary, no revision details. */
 export interface HelmHistoryCompact {
   [key: string]: unknown;
   action: "history";
   success: boolean;
-  name: string;
   namespace?: string;
-  total: number;
+  exitCode?: number;
+  error?: string;
 }
 
-export function compactHelmHistoryMap(data: HelmHistoryResult): HelmHistoryCompact {
+export function compactHelmHistoryMap(data: HelmHistoryResultInternal): HelmHistoryCompact {
   return {
     action: "history",
     success: data.success,
-    name: data.name,
     namespace: data.namespace,
-    total: data.total,
+    exitCode: data.exitCode,
+    error: data.error,
   };
 }
 
 export function formatHelmHistoryCompact(data: HelmHistoryCompact): string {
-  if (!data.success) return `helm history ${data.name}: failed`;
+  if (!data.success) return `helm history: failed`;
   const ns = data.namespace ? ` -n ${data.namespace}` : "";
-  return `helm history ${data.name}${ns}: ${data.total} revision(s)`;
+  return `helm history${ns}: success`;
 }
 
 // ── Helm template compact formatters ────────────────────────────────
@@ -595,4 +669,97 @@ export function compactHelmTemplateMap(data: HelmTemplateResult): HelmTemplateCo
 export function formatHelmTemplateCompact(data: HelmTemplateCompact): string {
   if (!data.success) return "helm template: failed";
   return `helm template: ${data.manifestCount} manifest(s)`;
+}
+
+// ── Helm schema maps (strip Internal-only fields for structuredContent) ──
+
+/** Strips Internal-only fields from helm list result for structuredContent. */
+export function schemaHelmListMap(data: HelmListResultInternal): HelmListResult {
+  return {
+    action: data.action,
+    success: data.success,
+    releases: data.releases,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm status result for structuredContent. */
+export function schemaHelmStatusMap(data: HelmStatusResultInternal): HelmStatusResult {
+  return {
+    action: data.action,
+    success: data.success,
+    revision: data.revision,
+    status: data.status,
+    description: data.description,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm install result for structuredContent. */
+export function schemaHelmInstallMap(data: HelmInstallResultInternal): HelmInstallResult {
+  return {
+    action: data.action,
+    success: data.success,
+    namespace: data.namespace,
+    revision: data.revision,
+    status: data.status,
+    chart: data.chart,
+    appVersion: data.appVersion,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm upgrade result for structuredContent. */
+export function schemaHelmUpgradeMap(data: HelmUpgradeResultInternal): HelmUpgradeResult {
+  return {
+    action: data.action,
+    success: data.success,
+    namespace: data.namespace,
+    revision: data.revision,
+    status: data.status,
+    chart: data.chart,
+    appVersion: data.appVersion,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm uninstall result for structuredContent. */
+export function schemaHelmUninstallMap(data: HelmUninstallResultInternal): HelmUninstallResult {
+  return {
+    action: data.action,
+    success: data.success,
+    namespace: data.namespace,
+    status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm rollback result for structuredContent. */
+export function schemaHelmRollbackMap(data: HelmRollbackResultInternal): HelmRollbackResult {
+  return {
+    action: data.action,
+    success: data.success,
+    namespace: data.namespace,
+    revision: data.revision,
+    status: data.status,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
+}
+
+/** Strips Internal-only fields from helm history result for structuredContent. */
+export function schemaHelmHistoryMap(data: HelmHistoryResultInternal): HelmHistoryResult {
+  return {
+    action: data.action,
+    success: data.success,
+    namespace: data.namespace,
+    revisions: data.revisions,
+    exitCode: data.exitCode,
+    error: data.error,
+  };
 }

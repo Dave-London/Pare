@@ -1,27 +1,31 @@
 import { z } from "zod";
 
-/** Zod schema for structured make/just run output with stdout, stderr, exit code, and duration. */
+/** Zod schema for structured make/just run output with stdout, stderr, exit code, and duration.
+ * Moved to formatter: target (echo-back), tool (echo-back), duration (display-only), errorType (display-only). */
 export const MakeRunResultSchema = z.object({
-  target: z.string(),
   success: z.boolean(),
   exitCode: z.number(),
   stdout: z.string().optional(),
   stderr: z.string().optional(),
-  duration: z.number(),
-  tool: z.enum(["make", "just"]),
   timedOut: z.boolean(),
-  errorType: z.enum(["missing-target", "recipe-failure", "parse-error"]).optional(),
 });
 
 export type MakeRunResult = z.infer<typeof MakeRunResultSchema>;
 
-/** Zod schema for a single target entry with name, optional description, phony flag, and dependencies. */
+/** Internal type with display-only fields for formatters. */
+export type MakeRunResultInternal = MakeRunResult & {
+  target: string;
+  tool: "make" | "just";
+  duration: number;
+  errorType?: "missing-target" | "recipe-failure" | "parse-error";
+};
+
+/** Zod schema for a single target entry with name, optional description, and dependencies.
+ * Moved to formatter: isPhony (display-only), recipe (display-only). */
 export const MakeTargetSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  isPhony: z.boolean().optional(),
   dependencies: z.array(z.string()).optional(),
-  recipe: z.array(z.string()).optional(),
 });
 
 /** Zod schema for a Make pattern rule entry (e.g., `%.o: %.c`). */
@@ -31,12 +35,28 @@ export const MakePatternRuleSchema = z.object({
   recipe: z.array(z.string()).optional(),
 });
 
-/** Zod schema for structured make/just list output with targets and total count. */
+/** Zod schema for structured make/just list output with targets.
+ * Removed derivable: total (= targets.length).
+ * Moved to formatter: tool (echo-back). */
 export const MakeListResultSchema = z.object({
   targets: z.array(MakeTargetSchema).optional(),
   patternRules: z.array(MakePatternRuleSchema).optional(),
-  total: z.number(),
-  tool: z.enum(["make", "just"]),
 });
 
 export type MakeListResult = z.infer<typeof MakeListResultSchema>;
+
+/** Internal target type with display-only fields. */
+export interface MakeTargetInternal {
+  name: string;
+  description?: string;
+  isPhony?: boolean;
+  dependencies?: string[];
+  recipe?: string[];
+}
+
+/** Internal type with display-only fields for formatters. */
+export type MakeListResultInternal = Omit<MakeListResult, "targets"> & {
+  targets?: MakeTargetInternal[];
+  total: number;
+  tool: "make" | "just";
+};

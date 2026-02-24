@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   assertNoFlagInjection,
   INPUT_LIMITS,
@@ -9,7 +9,7 @@ import {
   pathInput,
 } from "@paretools/shared";
 import { parseGetOutput } from "../lib/parsers.js";
-import { formatGet, compactGetMap, formatGetCompact } from "../lib/formatters.js";
+import { formatGet, schemaGetMap, compactGetMap, formatGetCompact } from "../lib/formatters.js";
 import { KubectlGetResultSchema } from "../schemas/index.js";
 
 /** Registers the `get` tool on the given MCP server. */
@@ -152,10 +152,11 @@ export function registerGetTool(server: McpServer) {
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatGet,
+        schemaGetMap,
         compactGetMap,
         formatGetCompact,
         compact === false,

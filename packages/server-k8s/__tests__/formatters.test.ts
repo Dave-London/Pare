@@ -34,24 +34,22 @@ import {
   formatHelmTemplateCompact,
 } from "../src/lib/formatters.js";
 import type {
-  KubectlGetResult,
-  KubectlDescribeResult,
-  KubectlLogsResult,
-  KubectlApplyResult,
-  KubectlResult,
-  HelmListResult,
-  HelmStatusResult,
-  HelmInstallResult,
-  HelmUpgradeResult,
-  HelmHistoryResult,
+  KubectlGetResultInternal,
+  KubectlDescribeResultInternal,
+  KubectlLogsResultInternal,
+  KubectlApplyResultInternal,
+  HelmListResultInternal,
+  HelmStatusResultInternal,
+  HelmInstallResultInternal,
+  HelmUpgradeResultInternal,
+  HelmHistoryResultInternal,
   HelmTemplateResult,
-  HelmResult,
 } from "../src/schemas/index.js";
 // ── Full formatters ──────────────────────────────────────────────────
 
 describe("formatGet", () => {
   it("formats successful get with items", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -70,7 +68,7 @@ describe("formatGet", () => {
   });
 
   it("formats failed get", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: false,
       resource: "foos",
@@ -85,7 +83,7 @@ describe("formatGet", () => {
   });
 
   it("formats get without namespace", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "nodes",
@@ -101,7 +99,7 @@ describe("formatGet", () => {
 
 describe("formatDescribe", () => {
   it("returns full output on success", () => {
-    const data: KubectlDescribeResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -114,7 +112,7 @@ describe("formatDescribe", () => {
   });
 
   it("includes conditions and events counts when present", () => {
-    const data: KubectlDescribeResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -134,7 +132,7 @@ describe("formatDescribe", () => {
   });
 
   it("includes describe metadata and resource details summaries", () => {
-    const data: KubectlDescribeResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -163,7 +161,7 @@ describe("formatDescribe", () => {
   });
 
   it("formats failure", () => {
-    const data: KubectlDescribeResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: false,
       resource: "pod",
@@ -180,7 +178,7 @@ describe("formatDescribe", () => {
 
 describe("formatLogs", () => {
   it("formats logs with content", () => {
-    const data: KubectlLogsResult = {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "nginx-abc",
@@ -194,7 +192,7 @@ describe("formatLogs", () => {
   });
 
   it("formats empty logs", () => {
-    const data: KubectlLogsResult = {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "empty-pod",
@@ -206,7 +204,7 @@ describe("formatLogs", () => {
   });
 
   it("formats logs with truncation and parsed entry count", () => {
-    const data: KubectlLogsResult = {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "json-pod",
@@ -221,7 +219,7 @@ describe("formatLogs", () => {
   });
 
   it("formats failed logs", () => {
-    const data: KubectlLogsResult = {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: false,
       pod: "missing-pod",
@@ -238,7 +236,7 @@ describe("formatLogs", () => {
 
 describe("formatApply", () => {
   it("formats successful apply with resources", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       resources: [
@@ -255,7 +253,7 @@ describe("formatApply", () => {
   });
 
   it("formats successful apply without resources", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       output: "some output",
@@ -267,7 +265,7 @@ describe("formatApply", () => {
   });
 
   it("formats failed apply", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: false,
       output: "error details",
@@ -283,8 +281,8 @@ describe("formatApply", () => {
 // ── Compact mappers and formatters ───────────────────────────────────
 
 describe("compactGetMap", () => {
-  it("keeps summary, drops full item details", () => {
-    const data: KubectlGetResult = {
+  it("keeps action, success; drops items and Internal fields", () => {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -311,9 +309,11 @@ describe("compactGetMap", () => {
 
     expect(compact.action).toBe("get");
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(2);
-    expect(compact.names).toEqual(["nginx-abc", "redis-xyz"]);
     expect(compact).not.toHaveProperty("items");
+    expect(compact).not.toHaveProperty("resource");
+    expect(compact).not.toHaveProperty("namespace");
+    expect(compact).not.toHaveProperty("total");
+    expect(compact).not.toHaveProperty("names");
   });
 });
 
@@ -323,36 +323,18 @@ describe("formatGetCompact", () => {
       formatGetCompact({
         action: "get",
         success: true,
-        resource: "pods",
-        namespace: "default",
-        total: 3,
-        names: [],
       }),
-    ).toBe("kubectl get pods -n default: 3 item(s)");
-  });
-
-  it("formats successful compact get without namespace", () => {
-    expect(
-      formatGetCompact({
-        action: "get",
-        success: true,
-        resource: "nodes",
-        total: 2,
-        names: [],
-      }),
-    ).toBe("kubectl get nodes: 2 item(s)");
+    ).toBe("kubectl get: success");
   });
 
   it("formats failed compact get", () => {
-    expect(
-      formatGetCompact({ action: "get", success: false, resource: "foos", total: 0, names: [] }),
-    ).toBe("kubectl get foos: failed");
+    expect(formatGetCompact({ action: "get", success: false })).toBe("kubectl get: failed");
   });
 });
 
 describe("compactDescribeMap", () => {
-  it("keeps resource, name, conditions, events; drops output", () => {
-    const data: KubectlDescribeResult = {
+  it("keeps conditions, events; drops output, resource, name, namespace", () => {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -368,15 +350,16 @@ describe("compactDescribeMap", () => {
 
     const compact = compactDescribeMap(data);
 
-    expect(compact.resource).toBe("pod");
-    expect(compact.name).toBe("nginx-abc");
     expect(compact.conditions).toHaveLength(1);
     expect(compact.events).toHaveLength(1);
     expect(compact).not.toHaveProperty("output");
+    expect(compact).not.toHaveProperty("resource");
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("namespace");
   });
 
   it("returns undefined conditions/events when absent", () => {
-    const data: KubectlDescribeResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -397,10 +380,8 @@ describe("formatDescribeCompact", () => {
       formatDescribeCompact({
         action: "describe",
         success: true,
-        resource: "pod",
-        name: "nginx",
       }),
-    ).toBe("kubectl describe pod nginx: success");
+    ).toBe("kubectl describe: success");
   });
 
   it("formats success with conditions and events", () => {
@@ -408,8 +389,6 @@ describe("formatDescribeCompact", () => {
       formatDescribeCompact({
         action: "describe",
         success: true,
-        resource: "pod",
-        name: "nginx",
         conditions: [
           { type: "Ready", status: "True" },
           { type: "Initialized", status: "True" },
@@ -426,7 +405,7 @@ describe("formatDescribeCompact", () => {
           { type: "Normal", reason: "Pulled", age: "4m", from: "kubelet", message: "Pulled" },
         ],
       }),
-    ).toBe("kubectl describe pod nginx: success, 3 condition(s), 2 event(s)");
+    ).toBe("kubectl describe: success, 3 condition(s), 2 event(s)");
   });
 
   it("formats failure", () => {
@@ -434,16 +413,14 @@ describe("formatDescribeCompact", () => {
       formatDescribeCompact({
         action: "describe",
         success: false,
-        resource: "pod",
-        name: "missing",
       }),
-    ).toBe("kubectl describe pod missing: failed");
+    ).toBe("kubectl describe: failed");
   });
 });
 
 describe("compactLogsMap", () => {
-  it("keeps line count, drops log content", () => {
-    const data: KubectlLogsResult = {
+  it("keeps action, success, truncated; drops logs, pod, lineCount", () => {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "nginx-abc",
@@ -455,42 +432,37 @@ describe("compactLogsMap", () => {
 
     const compact = compactLogsMap(data);
 
-    expect(compact.pod).toBe("nginx-abc");
-    expect(compact.lineCount).toBe(3);
+    expect(compact.action).toBe("logs");
+    expect(compact.success).toBe(true);
     expect(compact).not.toHaveProperty("logs");
+    expect(compact).not.toHaveProperty("pod");
+    expect(compact).not.toHaveProperty("lineCount");
   });
 });
 
 describe("formatLogsCompact", () => {
-  it("formats success with line count", () => {
-    expect(formatLogsCompact({ action: "logs", success: true, pod: "nginx", lineCount: 42 })).toBe(
-      "kubectl logs nginx: 42 line(s)",
-    );
+  it("formats success", () => {
+    expect(formatLogsCompact({ action: "logs", success: true })).toBe("kubectl logs: success");
   });
 
   it("formats failure", () => {
-    expect(
-      formatLogsCompact({ action: "logs", success: false, pod: "missing", lineCount: 0 }),
-    ).toBe("kubectl logs missing: failed");
+    expect(formatLogsCompact({ action: "logs", success: false })).toBe("kubectl logs: failed");
   });
 
-  it("formats compact logs with truncation and parsed entries", () => {
+  it("formats compact logs with truncation", () => {
     expect(
       formatLogsCompact({
         action: "logs",
         success: true,
-        pod: "json-pod",
-        lineCount: 10,
         truncated: true,
-        parsedEntries: 10,
       }),
-    ).toBe("kubectl logs json-pod: 10 line(s) [truncated] (10 parsed entries)");
+    ).toBe("kubectl logs: success [truncated]");
   });
 });
 
 describe("compactApplyMap", () => {
   it("keeps success, exit code, and resources; drops output", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       resources: [
@@ -510,7 +482,7 @@ describe("compactApplyMap", () => {
   });
 
   it("returns undefined resources when no resources parsed", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       output: "some output",
@@ -555,7 +527,7 @@ describe("formatApplyCompact", () => {
 
 describe("formatHelmList", () => {
   it("formats successful list with releases", () => {
-    const data: HelmListResult = {
+    const data: HelmListResultInternal = {
       action: "list",
       success: true,
       namespace: "default",
@@ -585,7 +557,7 @@ describe("formatHelmList", () => {
   });
 
   it("formats successful list without namespace", () => {
-    const data: HelmListResult = {
+    const data: HelmListResultInternal = {
       action: "list",
       success: true,
       releases: [
@@ -606,7 +578,7 @@ describe("formatHelmList", () => {
   });
 
   it("formats failed list", () => {
-    const data: HelmListResult = {
+    const data: HelmListResultInternal = {
       action: "list",
       success: false,
       releases: [],
@@ -622,7 +594,7 @@ describe("formatHelmList", () => {
 
 describe("formatHelmStatus", () => {
   it("formats successful status", () => {
-    const data: HelmStatusResult = {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: true,
       name: "my-release",
@@ -639,7 +611,7 @@ describe("formatHelmStatus", () => {
   });
 
   it("formats status without optional fields", () => {
-    const data: HelmStatusResult = {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: true,
       name: "my-release",
@@ -653,7 +625,7 @@ describe("formatHelmStatus", () => {
   });
 
   it("formats failed status", () => {
-    const data: HelmStatusResult = {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: false,
       name: "missing",
@@ -668,7 +640,7 @@ describe("formatHelmStatus", () => {
 
 describe("formatHelmInstall", () => {
   it("formats successful install", () => {
-    const data: HelmInstallResult = {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: true,
       name: "my-release",
@@ -683,7 +655,7 @@ describe("formatHelmInstall", () => {
   });
 
   it("formats install with chart and appVersion", () => {
-    const data: HelmInstallResult = {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: true,
       name: "my-release",
@@ -699,7 +671,7 @@ describe("formatHelmInstall", () => {
   });
 
   it("formats failed install", () => {
-    const data: HelmInstallResult = {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: false,
       name: "my-release",
@@ -714,7 +686,7 @@ describe("formatHelmInstall", () => {
 
 describe("formatHelmUpgrade", () => {
   it("formats successful upgrade", () => {
-    const data: HelmUpgradeResult = {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: true,
       name: "my-release",
@@ -728,7 +700,7 @@ describe("formatHelmUpgrade", () => {
   });
 
   it("formats upgrade with chart and appVersion", () => {
-    const data: HelmUpgradeResult = {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: true,
       name: "my-release",
@@ -744,7 +716,7 @@ describe("formatHelmUpgrade", () => {
   });
 
   it("formats failed upgrade", () => {
-    const data: HelmUpgradeResult = {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: false,
       name: "missing",
@@ -759,22 +731,8 @@ describe("formatHelmUpgrade", () => {
 // ── Helm compact mappers and formatters ─────────────────────────────
 
 describe("compactHelmListMap", () => {
-  it("handles undefined releases with fallback", () => {
-    const data: HelmListResult = {
-      action: "list",
-      success: true,
-      total: 0,
-      exitCode: 0,
-    } as HelmListResult;
-
-    const compact = compactHelmListMap(data);
-
-    expect(compact.names).toEqual([]);
-    expect(compact.total).toBe(0);
-  });
-
-  it("keeps names, drops full release details", () => {
-    const data: HelmListResult = {
+  it("keeps action, success; drops releases, namespace, total, names", () => {
+    const data: HelmListResultInternal = {
       action: "list",
       success: true,
       namespace: "default",
@@ -802,9 +760,10 @@ describe("compactHelmListMap", () => {
 
     expect(compact.action).toBe("list");
     expect(compact.success).toBe(true);
-    expect(compact.total).toBe(2);
-    expect(compact.names).toEqual(["nginx", "redis"]);
     expect(compact).not.toHaveProperty("releases");
+    expect(compact).not.toHaveProperty("namespace");
+    expect(compact).not.toHaveProperty("total");
+    expect(compact).not.toHaveProperty("names");
   });
 });
 
@@ -814,34 +773,18 @@ describe("formatHelmListCompact", () => {
       formatHelmListCompact({
         action: "list",
         success: true,
-        namespace: "prod",
-        total: 5,
-        names: [],
       }),
-    ).toBe("helm list -n prod: 5 release(s)");
-  });
-
-  it("formats successful compact list without namespace", () => {
-    expect(
-      formatHelmListCompact({
-        action: "list",
-        success: true,
-        total: 3,
-        names: [],
-      }),
-    ).toBe("helm list: 3 release(s)");
+    ).toBe("helm list: success");
   });
 
   it("formats failed compact list", () => {
-    expect(formatHelmListCompact({ action: "list", success: false, total: 0, names: [] })).toBe(
-      "helm list: failed",
-    );
+    expect(formatHelmListCompact({ action: "list", success: false })).toBe("helm list: failed");
   });
 });
 
 describe("compactHelmStatusMap", () => {
-  it("keeps key fields, drops notes and description", () => {
-    const data: HelmStatusResult = {
+  it("keeps status, revision, description; drops name, namespace, notes", () => {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: true,
       name: "my-release",
@@ -855,11 +798,12 @@ describe("compactHelmStatusMap", () => {
 
     const compact = compactHelmStatusMap(data);
 
-    expect(compact.name).toBe("my-release");
     expect(compact.status).toBe("deployed");
     expect(compact.revision).toBe("2");
+    expect(compact.description).toBe("Upgrade complete");
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("namespace");
     expect(compact).not.toHaveProperty("notes");
-    expect(compact).not.toHaveProperty("description");
   });
 });
 
@@ -869,10 +813,9 @@ describe("formatHelmStatusCompact", () => {
       formatHelmStatusCompact({
         action: "status",
         success: true,
-        name: "nginx",
         status: "deployed",
       }),
-    ).toBe("helm status nginx: deployed");
+    ).toBe("helm status: deployed");
   });
 
   it("formats success without status field", () => {
@@ -880,21 +823,20 @@ describe("formatHelmStatusCompact", () => {
       formatHelmStatusCompact({
         action: "status",
         success: true,
-        name: "nginx",
       }),
-    ).toBe("helm status nginx: unknown");
+    ).toBe("helm status: unknown");
   });
 
   it("formats failure", () => {
-    expect(formatHelmStatusCompact({ action: "status", success: false, name: "missing" })).toBe(
-      "helm status missing: failed",
+    expect(formatHelmStatusCompact({ action: "status", success: false })).toBe(
+      "helm status: failed",
     );
   });
 });
 
 describe("compactHelmInstallMap", () => {
-  it("keeps success and status, drops revision", () => {
-    const data: HelmInstallResult = {
+  it("keeps success, namespace, status; drops name, revision", () => {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: true,
       name: "my-release",
@@ -907,8 +849,9 @@ describe("compactHelmInstallMap", () => {
     const compact = compactHelmInstallMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-release");
+    expect(compact.namespace).toBe("default");
     expect(compact.status).toBe("deployed");
+    expect(compact).not.toHaveProperty("name");
     expect(compact).not.toHaveProperty("revision");
   });
 });
@@ -919,10 +862,9 @@ describe("formatHelmInstallCompact", () => {
       formatHelmInstallCompact({
         action: "install",
         success: true,
-        name: "nginx",
         status: "deployed",
       }),
-    ).toBe("helm install nginx: deployed");
+    ).toBe("helm install: deployed");
   });
 
   it("formats success without status field", () => {
@@ -930,21 +872,20 @@ describe("formatHelmInstallCompact", () => {
       formatHelmInstallCompact({
         action: "install",
         success: true,
-        name: "nginx",
       }),
-    ).toBe("helm install nginx: success");
+    ).toBe("helm install: success");
   });
 
   it("formats failure", () => {
-    expect(formatHelmInstallCompact({ action: "install", success: false, name: "nginx" })).toBe(
-      "helm install nginx: failed",
+    expect(formatHelmInstallCompact({ action: "install", success: false })).toBe(
+      "helm install: failed",
     );
   });
 });
 
 describe("compactHelmUpgradeMap", () => {
-  it("keeps success and status", () => {
-    const data: HelmUpgradeResult = {
+  it("keeps success, namespace, status; drops name, revision", () => {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: true,
       name: "my-release",
@@ -957,8 +898,9 @@ describe("compactHelmUpgradeMap", () => {
     const compact = compactHelmUpgradeMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-release");
+    expect(compact.namespace).toBe("default");
     expect(compact.status).toBe("deployed");
+    expect(compact).not.toHaveProperty("name");
     expect(compact).not.toHaveProperty("revision");
   });
 });
@@ -969,10 +911,9 @@ describe("formatHelmUpgradeCompact", () => {
       formatHelmUpgradeCompact({
         action: "upgrade",
         success: true,
-        name: "nginx",
         status: "deployed",
       }),
-    ).toBe("helm upgrade nginx: deployed");
+    ).toBe("helm upgrade: deployed");
   });
 
   it("formats success without status field", () => {
@@ -980,14 +921,13 @@ describe("formatHelmUpgradeCompact", () => {
       formatHelmUpgradeCompact({
         action: "upgrade",
         success: true,
-        name: "nginx",
       }),
-    ).toBe("helm upgrade nginx: success");
+    ).toBe("helm upgrade: success");
   });
 
   it("formats failure", () => {
-    expect(formatHelmUpgradeCompact({ action: "upgrade", success: false, name: "nginx" })).toBe(
-      "helm upgrade nginx: failed",
+    expect(formatHelmUpgradeCompact({ action: "upgrade", success: false })).toBe(
+      "helm upgrade: failed",
     );
   });
 });
@@ -996,7 +936,7 @@ describe("formatHelmUpgradeCompact", () => {
 
 describe("formatResult", () => {
   it("dispatches get action", () => {
-    const data: KubectlResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -1008,7 +948,7 @@ describe("formatResult", () => {
   });
 
   it("dispatches describe action", () => {
-    const data: KubectlResult = {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -1020,18 +960,18 @@ describe("formatResult", () => {
   });
 
   it("dispatches logs action", () => {
-    const data: KubectlResult = {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "nginx",
-      lines: [],
-      total: 0,
+      logs: "",
+      lineCount: 0,
     };
     expect(formatResult(data)).toContain("kubectl logs nginx");
   });
 
   it("dispatches apply action", () => {
-    const data: KubectlResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       exitCode: 0,
@@ -1043,12 +983,17 @@ describe("formatResult", () => {
 
 describe("formatHelmResult", () => {
   it("dispatches list action", () => {
-    const data: HelmResult = { action: "list", success: true, releases: [] };
+    const data: HelmListResultInternal = {
+      action: "list",
+      success: true,
+      releases: [],
+      total: 0,
+    };
     expect(formatHelmResult(data)).toContain("helm list");
   });
 
   it("dispatches status action", () => {
-    const data: HelmResult = {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: true,
       name: "nginx",
@@ -1059,7 +1004,7 @@ describe("formatHelmResult", () => {
   });
 
   it("dispatches install action", () => {
-    const data: HelmResult = {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: true,
       name: "nginx",
@@ -1069,7 +1014,7 @@ describe("formatHelmResult", () => {
   });
 
   it("dispatches upgrade action", () => {
-    const data: HelmResult = {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: true,
       name: "nginx",
@@ -1089,11 +1034,14 @@ import {
   formatHelmUninstallCompact,
   formatHelmRollbackCompact,
 } from "../src/lib/formatters.js";
-import type { HelmUninstallResult, HelmRollbackResult } from "../src/schemas/index.js";
+import type {
+  HelmUninstallResultInternal,
+  HelmRollbackResultInternal,
+} from "../src/schemas/index.js";
 
 describe("formatHelmUninstall", () => {
   it("formats successful uninstall", () => {
-    const data: HelmUninstallResult = {
+    const data: HelmUninstallResultInternal = {
       action: "uninstall",
       success: true,
       name: "my-release",
@@ -1105,7 +1053,7 @@ describe("formatHelmUninstall", () => {
   });
 
   it("formats failed uninstall", () => {
-    const data: HelmUninstallResult = {
+    const data: HelmUninstallResultInternal = {
       action: "uninstall",
       success: false,
       name: "my-release",
@@ -1120,7 +1068,7 @@ describe("formatHelmUninstall", () => {
 
 describe("formatHelmRollback", () => {
   it("formats successful rollback", () => {
-    const data: HelmRollbackResult = {
+    const data: HelmRollbackResultInternal = {
       action: "rollback",
       success: true,
       name: "my-release",
@@ -1133,7 +1081,7 @@ describe("formatHelmRollback", () => {
   });
 
   it("formats rollback without revision", () => {
-    const data: HelmRollbackResult = {
+    const data: HelmRollbackResultInternal = {
       action: "rollback",
       success: true,
       name: "my-release",
@@ -1144,7 +1092,7 @@ describe("formatHelmRollback", () => {
   });
 
   it("formats failed rollback", () => {
-    const data: HelmRollbackResult = {
+    const data: HelmRollbackResultInternal = {
       action: "rollback",
       success: false,
       name: "my-release",
@@ -1157,8 +1105,8 @@ describe("formatHelmRollback", () => {
 });
 
 describe("compactHelmUninstallMap", () => {
-  it("maps uninstall result to compact form", () => {
-    const data: HelmUninstallResult = {
+  it("maps uninstall result to compact form, drops name", () => {
+    const data: HelmUninstallResultInternal = {
       action: "uninstall",
       success: true,
       name: "my-release",
@@ -1169,13 +1117,15 @@ describe("compactHelmUninstallMap", () => {
     const compact = compactHelmUninstallMap(data);
     expect(compact.action).toBe("uninstall");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-release");
+    expect(compact.namespace).toBe("default");
+    expect(compact.status).toBe("uninstalled");
+    expect(compact).not.toHaveProperty("name");
   });
 });
 
 describe("compactHelmRollbackMap", () => {
-  it("maps rollback result to compact form", () => {
-    const data: HelmRollbackResult = {
+  it("maps rollback result to compact form, drops name", () => {
+    const data: HelmRollbackResultInternal = {
       action: "rollback",
       success: true,
       name: "my-release",
@@ -1186,6 +1136,7 @@ describe("compactHelmRollbackMap", () => {
     const compact = compactHelmRollbackMap(data);
     expect(compact.action).toBe("rollback");
     expect(compact.revision).toBe("2");
+    expect(compact).not.toHaveProperty("name");
   });
 });
 
@@ -1195,10 +1146,9 @@ describe("formatHelmUninstallCompact", () => {
       formatHelmUninstallCompact({
         action: "uninstall",
         success: true,
-        name: "my-release",
         status: "uninstalled",
       }),
-    ).toBe("helm uninstall my-release: uninstalled");
+    ).toBe("helm uninstall: uninstalled");
   });
 
   it("formats compact failure", () => {
@@ -1206,9 +1156,8 @@ describe("formatHelmUninstallCompact", () => {
       formatHelmUninstallCompact({
         action: "uninstall",
         success: false,
-        name: "my-release",
       }),
-    ).toBe("helm uninstall my-release: failed");
+    ).toBe("helm uninstall: failed");
   });
 });
 
@@ -1218,11 +1167,10 @@ describe("formatHelmRollbackCompact", () => {
       formatHelmRollbackCompact({
         action: "rollback",
         success: true,
-        name: "my-release",
         revision: "3",
         status: "success",
       }),
-    ).toBe("helm rollback my-release to revision 3: success");
+    ).toBe("helm rollback to revision 3: success");
   });
 
   it("formats compact failure", () => {
@@ -1230,9 +1178,8 @@ describe("formatHelmRollbackCompact", () => {
       formatHelmRollbackCompact({
         action: "rollback",
         success: false,
-        name: "my-release",
       }),
-    ).toBe("helm rollback my-release: failed");
+    ).toBe("helm rollback: failed");
   });
 });
 
@@ -1240,7 +1187,7 @@ describe("formatHelmRollbackCompact", () => {
 
 describe("formatGet with expanded metadata", () => {
   it("formats resource with uid and resourceVersion", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -1265,7 +1212,7 @@ describe("formatGet with expanded metadata", () => {
   });
 
   it("formats resource with annotations count", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -1286,7 +1233,7 @@ describe("formatGet with expanded metadata", () => {
   });
 
   it("formats resource with ownerReferences", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -1309,7 +1256,7 @@ describe("formatGet with expanded metadata", () => {
   });
 
   it("formats resource with finalizers", () => {
-    const data: KubectlGetResult = {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "namespaces",
@@ -1334,7 +1281,7 @@ describe("formatGet with expanded metadata", () => {
 
 describe("formatHelmHistory", () => {
   it("formats successful history", () => {
-    const data: HelmHistoryResult = {
+    const data: HelmHistoryResultInternal = {
       action: "history",
       success: true,
       name: "my-release",
@@ -1367,7 +1314,7 @@ describe("formatHelmHistory", () => {
   });
 
   it("formats failed history", () => {
-    const data: HelmHistoryResult = {
+    const data: HelmHistoryResultInternal = {
       action: "history",
       success: false,
       name: "missing",
@@ -1382,8 +1329,8 @@ describe("formatHelmHistory", () => {
 });
 
 describe("compactHelmHistoryMap", () => {
-  it("maps history result to compact form", () => {
-    const data: HelmHistoryResult = {
+  it("maps history result to compact form, drops name, total, revisions", () => {
+    const data: HelmHistoryResultInternal = {
       action: "history",
       success: true,
       name: "my-release",
@@ -1395,8 +1342,9 @@ describe("compactHelmHistoryMap", () => {
     const compact = compactHelmHistoryMap(data);
     expect(compact.action).toBe("history");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-release");
-    expect(compact.total).toBe(1);
+    expect(compact.namespace).toBe("default");
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("total");
     expect(compact).not.toHaveProperty("revisions");
   });
 });
@@ -1407,11 +1355,9 @@ describe("formatHelmHistoryCompact", () => {
       formatHelmHistoryCompact({
         action: "history",
         success: true,
-        name: "my-release",
         namespace: "default",
-        total: 3,
       }),
-    ).toBe("helm history my-release -n default: 3 revision(s)");
+    ).toBe("helm history -n default: success");
   });
 
   it("formats compact failure", () => {
@@ -1419,10 +1365,8 @@ describe("formatHelmHistoryCompact", () => {
       formatHelmHistoryCompact({
         action: "history",
         success: false,
-        name: "missing",
-        total: 0,
       }),
-    ).toBe("helm history missing: failed");
+    ).toBe("helm history: failed");
   });
 });
 
@@ -1500,7 +1444,7 @@ describe("formatHelmTemplateCompact", () => {
 
 describe("formatHelmResult dispatches new actions", () => {
   it("dispatches history action", () => {
-    const data: HelmResult = {
+    const data: HelmHistoryResultInternal = {
       action: "history",
       success: true,
       name: "my-release",
@@ -1511,7 +1455,7 @@ describe("formatHelmResult dispatches new actions", () => {
   });
 
   it("dispatches template action", () => {
-    const data: HelmResult = {
+    const data: HelmTemplateResult = {
       action: "template",
       success: true,
       manifests: "---\nkind: Pod",

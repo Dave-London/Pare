@@ -18,14 +18,14 @@ import {
   formatHelmUpgradeCompact,
 } from "../src/lib/formatters.js";
 import type {
-  KubectlGetResult,
-  KubectlDescribeResult,
-  KubectlLogsResult,
-  KubectlApplyResult,
-  HelmListResult,
-  HelmStatusResult,
-  HelmInstallResult,
-  HelmUpgradeResult,
+  KubectlGetResultInternal,
+  KubectlDescribeResultInternal,
+  KubectlLogsResultInternal,
+  KubectlApplyResultInternal,
+  HelmListResultInternal,
+  HelmStatusResultInternal,
+  HelmInstallResultInternal,
+  HelmUpgradeResultInternal,
 } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
@@ -33,8 +33,8 @@ import type {
 // ---------------------------------------------------------------------------
 
 describe("compactGetMap", () => {
-  it("keeps action, success, resource, namespace, total, names; drops items detail", () => {
-    const data: KubectlGetResult = {
+  it("keeps action, success; drops items, resource, namespace, total, names", () => {
+    const data: KubectlGetResultInternal = {
       action: "get",
       success: true,
       resource: "pods",
@@ -69,53 +69,32 @@ describe("compactGetMap", () => {
 
     expect(compact.action).toBe("get");
     expect(compact.success).toBe(true);
-    expect(compact.resource).toBe("pods");
-    expect(compact.namespace).toBe("default");
-    expect(compact.total).toBe(2);
-    expect(compact.names).toEqual(["web-abc123", "db-def456"]);
-    // Verify dropped fields
+    // Verify schema-only fields are present
+    expect(compact.exitCode).toBe(0);
+    // Verify Internal-only and detail fields are dropped
+    expect(compact).not.toHaveProperty("resource");
+    expect(compact).not.toHaveProperty("namespace");
+    expect(compact).not.toHaveProperty("total");
+    expect(compact).not.toHaveProperty("names");
     expect(compact).not.toHaveProperty("items");
-    expect(compact).not.toHaveProperty("exitCode");
-  });
-
-  it("handles items with no metadata name", () => {
-    const data: KubectlGetResult = {
-      action: "get",
-      success: true,
-      resource: "nodes",
-      items: [{ kind: "Node" }],
-      total: 1,
-      exitCode: 0,
-    };
-
-    const compact = compactGetMap(data);
-    expect(compact.names).toEqual(["unknown"]);
   });
 });
 
 describe("formatGetCompact", () => {
-  it("formats compact get output", () => {
+  it("formats compact get success", () => {
     const compact = {
       action: "get" as const,
       success: true,
-      resource: "pods",
-      namespace: "kube-system",
-      total: 5,
-      names: ["coredns-abc", "etcd-xyz"],
     };
     const output = formatGetCompact(compact);
-    expect(output).toContain("kubectl get pods");
-    expect(output).toContain("-n kube-system");
-    expect(output).toContain("5 item(s)");
+    expect(output).toContain("kubectl get");
+    expect(output).toContain("success");
   });
 
   it("formats failed get", () => {
     const compact = {
       action: "get" as const,
       success: false,
-      resource: "pods",
-      total: 0,
-      names: [],
     };
     const output = formatGetCompact(compact);
     expect(output).toContain("failed");
@@ -127,8 +106,8 @@ describe("formatGetCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactDescribeMap", () => {
-  it("keeps action, success, resource, name, namespace, conditions, events; drops output", () => {
-    const data: KubectlDescribeResult = {
+  it("keeps action, success, conditions, events; drops output, resource, name, namespace", () => {
+    const data: KubectlDescribeResultInternal = {
       action: "describe",
       success: true,
       resource: "pod",
@@ -149,15 +128,13 @@ describe("compactDescribeMap", () => {
 
     expect(compact.action).toBe("describe");
     expect(compact.success).toBe(true);
-    expect(compact.resource).toBe("pod");
-    expect(compact.name).toBe("web-abc123");
-    expect(compact.namespace).toBe("default");
     expect(compact.conditions).toHaveLength(2);
     expect(compact.events).toHaveLength(1);
-    // Verify dropped fields
+    // Verify Internal-only and detail fields are dropped
+    expect(compact).not.toHaveProperty("resource");
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("namespace");
     expect(compact).not.toHaveProperty("output");
-    expect(compact).not.toHaveProperty("exitCode");
-    expect(compact).not.toHaveProperty("error");
   });
 });
 
@@ -166,19 +143,14 @@ describe("formatDescribeCompact", () => {
     const compact = {
       action: "describe" as const,
       success: true,
-      resource: "pod",
-      name: "web-abc123",
-      namespace: "default",
     };
-    expect(formatDescribeCompact(compact)).toContain("kubectl describe pod web-abc123: success");
+    expect(formatDescribeCompact(compact)).toContain("kubectl describe: success");
   });
 
   it("formats compact describe with conditions and events", () => {
     const compact = {
       action: "describe" as const,
       success: true,
-      resource: "pod",
-      name: "web-abc123",
       conditions: [
         { type: "Ready", status: "True" },
         { type: "Initialized", status: "True" },
@@ -199,8 +171,6 @@ describe("formatDescribeCompact", () => {
     const compact = {
       action: "describe" as const,
       success: false,
-      resource: "deployment",
-      name: "nonexistent",
     };
     expect(formatDescribeCompact(compact)).toContain("failed");
   });
@@ -211,8 +181,8 @@ describe("formatDescribeCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactLogsMap", () => {
-  it("keeps action, success, pod, namespace, lineCount; drops logs content", () => {
-    const data: KubectlLogsResult = {
+  it("keeps action, success, truncated; drops logs, pod, namespace, lineCount", () => {
+    const data: KubectlLogsResultInternal = {
       action: "logs",
       success: true,
       pod: "web-abc123",
@@ -227,13 +197,12 @@ describe("compactLogsMap", () => {
 
     expect(compact.action).toBe("logs");
     expect(compact.success).toBe(true);
-    expect(compact.pod).toBe("web-abc123");
-    expect(compact.namespace).toBe("default");
-    expect(compact.lineCount).toBe(5);
-    // Verify dropped fields
+    // Verify Internal-only and detail fields are dropped
+    expect(compact).not.toHaveProperty("pod");
+    expect(compact).not.toHaveProperty("namespace");
+    expect(compact).not.toHaveProperty("lineCount");
     expect(compact).not.toHaveProperty("logs");
     expect(compact).not.toHaveProperty("container");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
@@ -242,18 +211,14 @@ describe("formatLogsCompact", () => {
     const compact = {
       action: "logs" as const,
       success: true,
-      pod: "web-abc123",
-      lineCount: 42,
     };
-    expect(formatLogsCompact(compact)).toContain("kubectl logs web-abc123: 42 line(s)");
+    expect(formatLogsCompact(compact)).toContain("kubectl logs: success");
   });
 
   it("formats failed logs", () => {
     const compact = {
       action: "logs" as const,
       success: false,
-      pod: "nonexistent",
-      lineCount: 0,
     };
     expect(formatLogsCompact(compact)).toContain("failed");
   });
@@ -265,7 +230,7 @@ describe("formatLogsCompact", () => {
 
 describe("compactApplyMap", () => {
   it("keeps action, success, exitCode, resources; drops output and error", () => {
-    const data: KubectlApplyResult = {
+    const data: KubectlApplyResultInternal = {
       action: "apply",
       success: true,
       resources: [
@@ -320,8 +285,8 @@ describe("formatApplyCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactHelmListMap", () => {
-  it("keeps action, success, namespace, total, names; drops releases detail", () => {
-    const data: HelmListResult = {
+  it("keeps action, success; drops releases, namespace, total, names", () => {
+    const data: HelmListResultInternal = {
       action: "list",
       success: true,
       namespace: "default",
@@ -351,36 +316,29 @@ describe("compactHelmListMap", () => {
 
     expect(compact.action).toBe("list");
     expect(compact.success).toBe(true);
-    expect(compact.namespace).toBe("default");
-    expect(compact.total).toBe(2);
-    expect(compact.names).toEqual(["nginx", "redis"]);
-    // Verify dropped fields
+    // Verify Internal-only and detail fields are dropped
+    expect(compact).not.toHaveProperty("namespace");
+    expect(compact).not.toHaveProperty("total");
+    expect(compact).not.toHaveProperty("names");
     expect(compact).not.toHaveProperty("releases");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
 describe("formatHelmListCompact", () => {
-  it("formats compact helm list output", () => {
+  it("formats compact helm list success", () => {
     const compact = {
       action: "list" as const,
       success: true,
-      namespace: "production",
-      total: 3,
-      names: ["app", "db", "cache"],
     };
     const output = formatHelmListCompact(compact);
     expect(output).toContain("helm list");
-    expect(output).toContain("-n production");
-    expect(output).toContain("3 release(s)");
+    expect(output).toContain("success");
   });
 
   it("formats failed helm list", () => {
     const compact = {
       action: "list" as const,
       success: false,
-      total: 0,
-      names: [],
     };
     expect(formatHelmListCompact(compact)).toContain("failed");
   });
@@ -391,8 +349,8 @@ describe("formatHelmListCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactHelmStatusMap", () => {
-  it("keeps action, success, name, namespace, status, revision; drops description and notes", () => {
-    const data: HelmStatusResult = {
+  it("keeps action, success, status, revision, description; drops name, namespace, notes", () => {
+    const data: HelmStatusResultInternal = {
       action: "status",
       success: true,
       name: "nginx",
@@ -408,14 +366,13 @@ describe("compactHelmStatusMap", () => {
 
     expect(compact.action).toBe("status");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("nginx");
-    expect(compact.namespace).toBe("default");
     expect(compact.status).toBe("deployed");
     expect(compact.revision).toBe("3");
-    // Verify dropped fields
-    expect(compact).not.toHaveProperty("description");
+    expect(compact.description).toBe("Install complete");
+    // Verify Internal-only fields are dropped
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("namespace");
     expect(compact).not.toHaveProperty("notes");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
@@ -424,17 +381,15 @@ describe("formatHelmStatusCompact", () => {
     const compact = {
       action: "status" as const,
       success: true,
-      name: "nginx",
       status: "deployed",
     };
-    expect(formatHelmStatusCompact(compact)).toContain("helm status nginx: deployed");
+    expect(formatHelmStatusCompact(compact)).toContain("helm status: deployed");
   });
 
   it("formats failed helm status", () => {
     const compact = {
       action: "status" as const,
       success: false,
-      name: "nonexistent",
     };
     expect(formatHelmStatusCompact(compact)).toContain("failed");
   });
@@ -445,8 +400,8 @@ describe("formatHelmStatusCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactHelmInstallMap", () => {
-  it("keeps action, success, name, namespace, status; drops revision and error", () => {
-    const data: HelmInstallResult = {
+  it("keeps action, success, namespace, status; drops name, revision, exitCode", () => {
+    const data: HelmInstallResultInternal = {
       action: "install",
       success: true,
       name: "my-app",
@@ -460,12 +415,11 @@ describe("compactHelmInstallMap", () => {
 
     expect(compact.action).toBe("install");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-app");
     expect(compact.namespace).toBe("staging");
     expect(compact.status).toBe("deployed");
-    // Verify dropped fields
+    // Verify Internal-only fields are dropped
+    expect(compact).not.toHaveProperty("name");
     expect(compact).not.toHaveProperty("revision");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
@@ -474,17 +428,15 @@ describe("formatHelmInstallCompact", () => {
     const compact = {
       action: "install" as const,
       success: true,
-      name: "my-app",
       status: "deployed",
     };
-    expect(formatHelmInstallCompact(compact)).toContain("helm install my-app: deployed");
+    expect(formatHelmInstallCompact(compact)).toContain("helm install: deployed");
   });
 
   it("formats failed helm install", () => {
     const compact = {
       action: "install" as const,
       success: false,
-      name: "my-app",
     };
     expect(formatHelmInstallCompact(compact)).toContain("failed");
   });
@@ -495,8 +447,8 @@ describe("formatHelmInstallCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactHelmUpgradeMap", () => {
-  it("keeps action, success, name, namespace, status; drops revision and error", () => {
-    const data: HelmUpgradeResult = {
+  it("keeps action, success, namespace, status; drops name, revision, exitCode", () => {
+    const data: HelmUpgradeResultInternal = {
       action: "upgrade",
       success: true,
       name: "my-app",
@@ -510,12 +462,11 @@ describe("compactHelmUpgradeMap", () => {
 
     expect(compact.action).toBe("upgrade");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-app");
     expect(compact.namespace).toBe("production");
     expect(compact.status).toBe("deployed");
-    // Verify dropped fields
+    // Verify Internal-only fields are dropped
+    expect(compact).not.toHaveProperty("name");
     expect(compact).not.toHaveProperty("revision");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
@@ -524,17 +475,15 @@ describe("formatHelmUpgradeCompact", () => {
     const compact = {
       action: "upgrade" as const,
       success: true,
-      name: "my-app",
       status: "deployed",
     };
-    expect(formatHelmUpgradeCompact(compact)).toContain("helm upgrade my-app: deployed");
+    expect(formatHelmUpgradeCompact(compact)).toContain("helm upgrade: deployed");
   });
 
   it("formats failed helm upgrade", () => {
     const compact = {
       action: "upgrade" as const,
       success: false,
-      name: "my-app",
     };
     expect(formatHelmUpgradeCompact(compact)).toContain("failed");
   });
@@ -548,11 +497,11 @@ import {
   compactHelmTemplateMap,
   formatHelmTemplateCompact,
 } from "../src/lib/formatters.js";
-import type { HelmHistoryResult, HelmTemplateResult } from "../src/schemas/index.js";
+import type { HelmHistoryResultInternal, HelmTemplateResult } from "../src/schemas/index.js";
 
 describe("compactHelmHistoryMap", () => {
-  it("keeps action, success, name, namespace, total; drops revisions detail", () => {
-    const data: HelmHistoryResult = {
+  it("keeps action, success, namespace; drops name, total, revisions", () => {
+    const data: HelmHistoryResultInternal = {
       action: "history",
       success: true,
       name: "my-release",
@@ -581,12 +530,11 @@ describe("compactHelmHistoryMap", () => {
 
     expect(compact.action).toBe("history");
     expect(compact.success).toBe(true);
-    expect(compact.name).toBe("my-release");
     expect(compact.namespace).toBe("production");
-    expect(compact.total).toBe(2);
-    // Verify dropped fields
+    // Verify Internal-only and detail fields are dropped
+    expect(compact).not.toHaveProperty("name");
+    expect(compact).not.toHaveProperty("total");
     expect(compact).not.toHaveProperty("revisions");
-    expect(compact).not.toHaveProperty("exitCode");
   });
 });
 
@@ -595,33 +543,25 @@ describe("formatHelmHistoryCompact", () => {
     const compact = {
       action: "history" as const,
       success: true,
-      name: "my-release",
       namespace: "staging",
-      total: 4,
     };
-    expect(formatHelmHistoryCompact(compact)).toBe(
-      "helm history my-release -n staging: 4 revision(s)",
-    );
+    expect(formatHelmHistoryCompact(compact)).toBe("helm history -n staging: success");
   });
 
   it("formats compact helm history without namespace", () => {
     const compact = {
       action: "history" as const,
       success: true,
-      name: "my-release",
-      total: 2,
     };
-    expect(formatHelmHistoryCompact(compact)).toBe("helm history my-release: 2 revision(s)");
+    expect(formatHelmHistoryCompact(compact)).toBe("helm history: success");
   });
 
   it("formats failed helm history", () => {
     const compact = {
       action: "history" as const,
       success: false,
-      name: "missing",
-      total: 0,
     };
-    expect(formatHelmHistoryCompact(compact)).toBe("helm history missing: failed");
+    expect(formatHelmHistoryCompact(compact)).toBe("helm history: failed");
   });
 });
 

@@ -1,14 +1,14 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
 } from "@paretools/shared";
 import { parseLogsOutput } from "../lib/parsers.js";
-import { formatLogs, compactLogsMap, formatLogsCompact } from "../lib/formatters.js";
+import { formatLogs, schemaLogsMap, compactLogsMap, formatLogsCompact } from "../lib/formatters.js";
 import { KubectlLogsResultSchema } from "../schemas/index.js";
 
 /** Registers the `logs` tool on the given MCP server. */
@@ -158,10 +158,11 @@ export function registerLogsTool(server: McpServer) {
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatLogs,
+        schemaLogsMap,
         compactLogsMap,
         formatLogsCompact,
         compact === false,

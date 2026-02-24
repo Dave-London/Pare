@@ -66,8 +66,8 @@ describe("@paretools/k8s integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.total).toBe("number");
         expect(typeof sc.success).toBe("boolean");
+        // total was removed from schema (derivable from items.length)
       }
     });
 
@@ -176,7 +176,7 @@ describe("@paretools/k8s integration", () => {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
         expect(typeof sc.success).toBe("boolean");
-        expect(typeof sc.lineCount).toBe("number");
+        // lineCount was removed from schema (derivable from logs.split('\n').length)
       }
     });
 
@@ -250,8 +250,8 @@ describe("@paretools/k8s integration", () => {
       } else {
         const sc = result.structuredContent as Record<string, unknown>;
         expect(sc).toBeDefined();
-        expect(typeof sc.total).toBe("number");
         expect(typeof sc.success).toBe("boolean");
+        // total was removed from schema (derivable from releases.length)
       }
     });
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   run,
   assertNoFlagInjection,
   INPUT_LIMITS,
@@ -9,7 +9,12 @@ import {
   pathInput,
 } from "@paretools/shared";
 import { parseDescribeOutput } from "../lib/parsers.js";
-import { formatDescribe, compactDescribeMap, formatDescribeCompact } from "../lib/formatters.js";
+import {
+  formatDescribe,
+  schemaDescribeMap,
+  compactDescribeMap,
+  formatDescribeCompact,
+} from "../lib/formatters.js";
 import { KubectlDescribeResultSchema } from "../schemas/index.js";
 
 /** Registers the `describe` tool on the given MCP server. */
@@ -102,10 +107,11 @@ export function registerDescribeTool(server: McpServer) {
       );
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatDescribe,
+        schemaDescribeMap,
         compactDescribeMap,
         formatDescribeCompact,
         compact === false,

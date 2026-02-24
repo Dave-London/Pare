@@ -1,4 +1,4 @@
-import type { ProcessRunResult } from "../schemas/index.js";
+import type { ProcessRunResultInternal } from "../schemas/index.js";
 
 /**
  * Truncates a string to a maximum number of lines.
@@ -28,7 +28,7 @@ export function parseRunOutput(
   truncated?: boolean,
   userCpuTimeMicros?: number,
   systemCpuTimeMicros?: number,
-): ProcessRunResult {
+): ProcessRunResultInternal {
   let finalStdout = stdout.trimEnd() || undefined;
   let finalStderr = stderr.trimEnd() || undefined;
   let stdoutTruncatedLines: number | undefined;

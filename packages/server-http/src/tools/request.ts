@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  compactDualOutput,
+  strippedCompactDualOutput,
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
@@ -11,6 +11,7 @@ import { curlCmd } from "../lib/curl-runner.js";
 import { parseCurlOutput, PARE_META_SEPARATOR } from "../lib/parsers.js";
 import {
   formatHttpResponse,
+  schemaResponseMap,
   compactResponseMap,
   formatResponseCompact,
 } from "../lib/formatters.js";
@@ -177,10 +178,11 @@ export function registerRequestTool(server: McpServer) {
       const data = parseCurlOutput(result.stdout, result.stderr, result.exitCode);
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
-      return compactDualOutput(
+      return strippedCompactDualOutput(
         data,
         rawOutput,
         formatHttpResponse,
+        schemaResponseMap,
         compactResponseMap,
         formatResponseCompact,
         compact === false,
