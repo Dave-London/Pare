@@ -330,11 +330,6 @@ export function registerCoverageTool(server: McpServer) {
         await rm(tempDir, { recursive: true, force: true });
       }
 
-      // Add meetsThreshold when failUnder is specified
-      if (failUnder !== undefined) {
-        coverage.meetsThreshold = coverage.summary.lines >= failUnder;
-      }
-
       return compactDualOutput(
         coverage,
         result.stdout,

@@ -37,9 +37,7 @@ describe("parseCargoBuildJson", () => {
     const result = parseCargoBuildJson(stdout, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(1);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics[0]).toEqual({
       file: "src/main.rs",
       line: 10,
@@ -59,7 +57,7 @@ describe("parseCargoBuildJson", () => {
 
     const result = parseCargoBuildJson(stdout, 0);
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
   });
 
   it("ignores non-compiler-message entries", () => {
@@ -69,7 +67,7 @@ describe("parseCargoBuildJson", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 0);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
   });
 });
 
@@ -87,7 +85,6 @@ describe("parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(stdout, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
     expect(result.passed).toBe(2);
     expect(result.failed).toBe(1);
     expect(result.ignored).toBe(0);
@@ -212,15 +209,14 @@ describe("parseCargoClippyJson", () => {
     ].join("\n");
 
     const result = parseCargoClippyJson(stdout, 0);
-    expect(result.total).toBe(1);
-    expect(result.warnings).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].code).toBe("clippy::needless_return");
   });
 
   it("parses clean clippy", () => {
     const stdout = JSON.stringify({ reason: "build-finished", success: true });
     const result = parseCargoClippyJson(stdout, 0);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
   });
 });
 
@@ -244,7 +240,7 @@ describe("parseCompilerMessages error paths", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 101);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("mismatched types");
   });
 
@@ -263,7 +259,7 @@ describe("parseCompilerMessages error paths", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 0);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("unused variable");
   });
 
@@ -290,7 +286,7 @@ describe("parseCompilerMessages error paths", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 101);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("has span");
   });
 
@@ -309,7 +305,7 @@ describe("parseCompilerMessages error paths", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 0);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("valid entry");
   });
 
@@ -325,19 +321,18 @@ describe("parseCompilerMessages error paths", () => {
     });
 
     const result = parseCargoBuildJson(stdout, 101);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].severity).toBe("warning");
   });
 
   it("handles empty string input", () => {
     const result = parseCargoBuildJson("", 0);
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
   it("handles input with only whitespace lines", () => {
     const result = parseCargoBuildJson("  \n  \n  ", 0);
-    expect(result.total).toBe(0);
+    expect(result.diagnostics).toEqual([]);
   });
 });
 
@@ -357,7 +352,7 @@ describe("parseCargoTestOutput edge cases", () => {
 
     const result = parseCargoTestOutput(stdout, 101);
 
-    expect(result.total).toBe(2);
+    expect(result.tests).toHaveLength(2);
     expect(result.tests[0].name).toBe("tests::param::case_1");
     expect(result.tests[0].status).toBe("ok");
     expect(result.tests[1].name).toBe("tests::param::case_2");
@@ -374,7 +369,7 @@ describe("parseCargoTestOutput edge cases", () => {
 
     const result = parseCargoTestOutput(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("a::b::c::d::e::deep_test");
   });
 
@@ -390,7 +385,7 @@ describe("parseCargoTestOutput edge cases", () => {
     const result = parseCargoTestOutput(stdout, 0);
 
     // Only the line starting with "test " should match
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("actual_test");
   });
 });
@@ -488,7 +483,7 @@ describe("parsers handle ANSI color codes", () => {
     });
 
     const result = parseCargoBuildJson(stdout, 101);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].code).toBe("E0308");
   });
 
@@ -502,7 +497,7 @@ describe("parsers handle ANSI color codes", () => {
     ].join("\n");
 
     const result = parseCargoTestOutput(stdout, 0);
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("tests::test_color");
   });
 
@@ -522,7 +517,7 @@ describe("parsers handle ANSI color codes", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 0);
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("valid line");
   });
 });
@@ -571,12 +566,9 @@ describe("parseCargoAuditJson", () => {
       version: "0.24.2",
       severity: "critical",
       title: "Use-after-free in sqlite",
-      url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
       patched: [">=0.25.1"],
       unaffected: [],
       cvssScore: 9.8,
-      cvssVector: "9.8",
-      date: undefined,
     });
     expect(result.vulnerabilities[1].severity).toBe("medium");
     expect(result.vulnerabilities[1].unaffected).toEqual(["<0.9.0"]);
@@ -627,7 +619,6 @@ describe("parseCargoAuditJson", () => {
 
     expect(result.vulnerabilities).toHaveLength(1);
     expect(result.vulnerabilities[0].severity).toBe("unknown");
-    expect(result.vulnerabilities[0].url).toBeUndefined();
     expect(result.vulnerabilities[0].patched).toEqual([]);
     expect(result.summary.unknown).toBe(1);
   });
@@ -818,7 +809,7 @@ describe("parseCargoAddOutput dry-run", () => {
 
     expect(result.success).toBe(true);
     expect(result.dryRun).toBe(true);
-    expect(result.total).toBe(2);
+    expect(result.added).toHaveLength(2);
     expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
     expect(result.added[1]).toEqual({ name: "tokio", version: "1.41.1" });
   });
@@ -829,7 +820,7 @@ describe("parseCargoAddOutput dry-run", () => {
 
     expect(result.success).toBe(true);
     expect(result.dryRun).toBeUndefined();
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
   });
 
   it("parses dry-run with features output", () => {
@@ -845,7 +836,7 @@ describe("parseCargoAddOutput dry-run", () => {
 
     expect(result.success).toBe(true);
     expect(result.dryRun).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({
       name: "serde",
       version: "1.0.217",
@@ -878,7 +869,7 @@ describe("parseCargoAddOutput dry-run", () => {
 
     expect(result.success).toBe(true);
     expect(result.dryRun).toBe(true);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({ name: "serde", version: "1.0.217" });
   });
 });

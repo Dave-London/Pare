@@ -40,9 +40,6 @@ describe("formatCargoBuild", () => {
     const data: CargoBuildResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      errors: 0,
-      warnings: 0,
     };
     expect(formatCargoBuild(data)).toBe("cargo build: success, no diagnostics.");
   });
@@ -60,9 +57,6 @@ describe("formatCargoBuild", () => {
           message: "unused variable: `x`",
         },
       ],
-      total: 1,
-      errors: 0,
-      warnings: 1,
     };
     const output = formatCargoBuild(data);
     expect(output).toContain("cargo build: success (0 errors, 1 warnings)");
@@ -89,9 +83,6 @@ describe("formatCargoBuild", () => {
           message: "cannot find value `foo`",
         },
       ],
-      total: 2,
-      errors: 2,
-      warnings: 0,
     };
     const output = formatCargoBuild(data);
     expect(output).toContain("cargo build: failed (2 errors, 0 warnings)");
@@ -109,7 +100,6 @@ describe("formatCargoTest", () => {
         { name: "test_sub", status: "ok" },
         { name: "test_slow", status: "ignored" },
       ],
-      total: 3,
       passed: 2,
       failed: 0,
       ignored: 1,
@@ -128,7 +118,6 @@ describe("formatCargoTest", () => {
         { name: "test_valid", status: "ok" },
         { name: "test_broken", status: "FAILED", output: "assertion failed: left != right" },
       ],
-      total: 2,
       passed: 1,
       failed: 1,
       ignored: 0,
@@ -144,7 +133,6 @@ describe("formatCargoTest", () => {
     const data: CargoTestResult = {
       success: true,
       tests: [],
-      total: 0,
       passed: 0,
       failed: 0,
       ignored: 0,
@@ -159,9 +147,6 @@ describe("formatCargoClippy", () => {
     const data: CargoClippyResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      errors: 0,
-      warnings: 0,
     };
     expect(formatCargoClippy(data)).toBe("clippy: no warnings.");
   });
@@ -187,9 +172,6 @@ describe("formatCargoClippy", () => {
           message: "unused import: `std::io`",
         },
       ],
-      total: 2,
-      errors: 0,
-      warnings: 2,
     };
     const output = formatCargoClippy(data);
     expect(output).toContain("clippy: 0 errors, 2 warnings");
@@ -225,15 +207,9 @@ describe("compactBuildMap", () => {
           message: "unused variable",
         },
       ],
-      total: 2,
-      errors: 1,
-      warnings: 1,
     };
     const compact = compactBuildMap(data);
     expect(compact.success).toBe(false);
-    expect(compact.errors).toBe(1);
-    expect(compact.warnings).toBe(1);
-    expect(compact.total).toBe(2);
     expect(compact.diagnostics).toEqual(data.diagnostics);
   });
 
@@ -241,9 +217,6 @@ describe("compactBuildMap", () => {
     const data: CargoBuildResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      errors: 0,
-      warnings: 0,
     };
     const compact = compactBuildMap(data);
     expect(compact.success).toBe(true);
@@ -251,12 +224,25 @@ describe("compactBuildMap", () => {
   });
 
   it("formats compact build output", () => {
-    expect(formatBuildCompact({ success: true, errors: 0, warnings: 3, total: 3 })).toBe(
-      "cargo build: success (0 errors, 3 warnings)",
-    );
-    expect(formatBuildCompact({ success: false, errors: 2, warnings: 0, total: 2 })).toBe(
-      "cargo build: failed (2 errors, 0 warnings)",
-    );
+    expect(
+      formatBuildCompact({
+        success: true,
+        diagnostics: [
+          { file: "a.rs", line: 1, column: 1, severity: "warning", message: "w1" },
+          { file: "a.rs", line: 2, column: 1, severity: "warning", message: "w2" },
+          { file: "a.rs", line: 3, column: 1, severity: "warning", message: "w3" },
+        ],
+      }),
+    ).toBe("cargo build: success (0 errors, 3 warnings)");
+    expect(
+      formatBuildCompact({
+        success: false,
+        diagnostics: [
+          { file: "a.rs", line: 1, column: 1, severity: "error", message: "e1" },
+          { file: "a.rs", line: 2, column: 1, severity: "error", message: "e2" },
+        ],
+      }),
+    ).toBe("cargo build: failed (2 errors, 0 warnings)");
   });
 });
 
@@ -269,14 +255,12 @@ describe("compactTestMap", () => {
         { name: "test_b", status: "FAILED", output: "assertion failed" },
         { name: "test_c", status: "ignored" },
       ],
-      total: 3,
       passed: 1,
       failed: 1,
       ignored: 1,
     };
     const compact = compactTestMap(data);
     expect(compact.success).toBe(false);
-    expect(compact.total).toBe(3);
     expect(compact.passed).toBe(1);
     expect(compact.failed).toBe(1);
     expect(compact.ignored).toBe(1);
@@ -293,7 +277,6 @@ describe("compactTestMap", () => {
         { name: "test_a", status: "ok" },
         { name: "test_b", status: "ok" },
       ],
-      total: 2,
       passed: 2,
       failed: 0,
       ignored: 0,
@@ -307,7 +290,6 @@ describe("compactTestMap", () => {
       formatTestCompact({
         success: true,
         tests: [],
-        total: 5,
         passed: 5,
         failed: 0,
         ignored: 0,
@@ -317,7 +299,6 @@ describe("compactTestMap", () => {
       formatTestCompact({
         success: false,
         tests: [],
-        total: 3,
         passed: 1,
         failed: 2,
         ignored: 0,
@@ -340,14 +321,8 @@ describe("compactClippyMap", () => {
           message: "msg",
         },
       ],
-      total: 1,
-      errors: 0,
-      warnings: 1,
     };
     const compact = compactClippyMap(data);
-    expect(compact.errors).toBe(0);
-    expect(compact.warnings).toBe(1);
-    expect(compact.total).toBe(1);
     expect(compact.diagnostics).toEqual(data.diagnostics);
   });
 
@@ -355,21 +330,24 @@ describe("compactClippyMap", () => {
     const data: CargoClippyResult = {
       success: true,
       diagnostics: [],
-      total: 0,
-      errors: 0,
-      warnings: 0,
     };
     const compact = compactClippyMap(data);
     expect(compact).not.toHaveProperty("diagnostics");
   });
 
   it("formats compact clippy output", () => {
-    expect(formatClippyCompact({ success: true, errors: 0, warnings: 0, total: 0 })).toBe(
-      "clippy: no warnings.",
-    );
-    expect(formatClippyCompact({ success: false, errors: 1, warnings: 3, total: 4 })).toBe(
-      "clippy: 1 errors, 3 warnings",
-    );
+    expect(formatClippyCompact({ success: true })).toBe("clippy: no warnings.");
+    expect(
+      formatClippyCompact({
+        success: false,
+        diagnostics: [
+          { file: "a.rs", line: 1, column: 1, severity: "error", message: "e1" },
+          { file: "a.rs", line: 2, column: 1, severity: "warning", message: "w1" },
+          { file: "a.rs", line: 3, column: 1, severity: "warning", message: "w2" },
+          { file: "a.rs", line: 4, column: 1, severity: "warning", message: "w3" },
+        ],
+      }),
+    ).toBe("clippy: 1 errors, 3 warnings");
   });
 });
 
@@ -405,21 +383,20 @@ describe("compactAddMap", () => {
         { name: "serde", version: "1.0.217" },
         { name: "tokio", version: "1.42.0" },
       ],
-      total: 2,
     };
     const compact = compactAddMap(data);
-    expect(compact).toEqual({ success: true, packages: ["serde", "tokio"], total: 2 });
+    expect(compact).toEqual({ success: true, packages: ["serde", "tokio"] });
     expect(compact).not.toHaveProperty("added");
   });
 
   it("formats compact add output", () => {
-    expect(formatAddCompact({ success: true, packages: ["serde", "tokio"], total: 2 })).toBe(
+    expect(formatAddCompact({ success: true, packages: ["serde", "tokio"] })).toBe(
       "cargo add: 2 package(s) added: serde, tokio",
     );
-    expect(formatAddCompact({ success: true, packages: [], total: 0 })).toBe(
+    expect(formatAddCompact({ success: true, packages: [] })).toBe(
       "cargo add: success, no packages added.",
     );
-    expect(formatAddCompact({ success: false, packages: [], total: 0 })).toBe("cargo add: failed");
+    expect(formatAddCompact({ success: false, packages: [] })).toBe("cargo add: failed");
   });
 });
 
@@ -428,22 +405,19 @@ describe("compactRemoveMap", () => {
     const data: CargoRemoveResult = {
       success: true,
       removed: ["serde", "tokio"],
-      total: 2,
     };
     const compact = compactRemoveMap(data);
-    expect(compact).toEqual({ success: true, removed: ["serde", "tokio"], total: 2 });
+    expect(compact).toEqual({ success: true, removed: ["serde", "tokio"] });
   });
 
   it("formats compact remove output", () => {
-    expect(formatRemoveCompact({ success: true, removed: ["serde"], total: 1 })).toBe(
+    expect(formatRemoveCompact({ success: true, removed: ["serde"] })).toBe(
       "cargo remove: 1 package(s) removed: serde",
     );
-    expect(formatRemoveCompact({ success: true, removed: [], total: 0 })).toBe(
+    expect(formatRemoveCompact({ success: true, removed: [] })).toBe(
       "cargo remove: success, no packages removed.",
     );
-    expect(formatRemoveCompact({ success: false, removed: [], total: 0 })).toBe(
-      "cargo remove: failed",
-    );
+    expect(formatRemoveCompact({ success: false, removed: [] })).toBe("cargo remove: failed");
   });
 });
 
@@ -523,7 +497,6 @@ describe("formatCargoAudit", () => {
           version: "0.24.2",
           severity: "critical",
           title: "Use-after-free in sqlite",
-          url: "https://rustsec.org/advisories/RUSTSEC-2022-0090",
           patched: [">=0.25.1"],
           unaffected: [],
         },

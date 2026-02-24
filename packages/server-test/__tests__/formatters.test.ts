@@ -239,31 +239,7 @@ describe("formatCoverage", () => {
     expect(output.split("\n")).toHaveLength(2);
   });
 
-  it("formats coverage with meetsThreshold=true", () => {
-    const cov: Coverage = {
-      framework: "vitest",
-      summary: { lines: 90 },
-      files: [],
-      meetsThreshold: true,
-    };
-    const output = formatCoverage(cov);
-
-    expect(output).toContain("Threshold: PASS");
-  });
-
-  it("formats coverage with meetsThreshold=false", () => {
-    const cov: Coverage = {
-      framework: "pytest",
-      summary: { lines: 60 },
-      files: [],
-      meetsThreshold: false,
-    };
-    const output = formatCoverage(cov);
-
-    expect(output).toContain("Threshold: FAIL");
-  });
-
-  it("does not show threshold status when meetsThreshold is undefined", () => {
+  it("does not show threshold status (meetsThreshold removed from schema)", () => {
     const cov: Coverage = {
       framework: "jest",
       summary: { lines: 80 },
@@ -286,7 +262,6 @@ describe("compactTestRunMap", () => {
           file: "api.test.ts",
           line: 15,
           message: "Expected valid@email.com to be valid",
-          stack: "Error: Expected valid@email.com...\n    at Object.<anonymous> (api.test.ts:15)",
           expected: "true",
           actual: "false",
         },
@@ -321,7 +296,6 @@ describe("compactTestRunMap", () => {
     expect(compact.failures[0]).toHaveProperty("message");
     expect(compact.failures[0]).not.toHaveProperty("file");
     expect(compact.failures[0]).not.toHaveProperty("line");
-    expect(compact.failures[0]).not.toHaveProperty("stack");
     expect(compact.failures[0]).not.toHaveProperty("expected");
     expect(compact.failures[0]).not.toHaveProperty("actual");
   });
@@ -442,33 +416,7 @@ describe("compactCoverageMap", () => {
     expect(compact.totalFiles).toBe(1);
   });
 
-  it("includes meetsThreshold when present", () => {
-    const cov: Coverage = {
-      framework: "vitest",
-      summary: { lines: 90 },
-      files: [],
-      meetsThreshold: true,
-    };
-
-    const compact = compactCoverageMap(cov);
-
-    expect(compact.meetsThreshold).toBe(true);
-  });
-
-  it("includes meetsThreshold=false when present", () => {
-    const cov: Coverage = {
-      framework: "pytest",
-      summary: { lines: 60 },
-      files: [],
-      meetsThreshold: false,
-    };
-
-    const compact = compactCoverageMap(cov);
-
-    expect(compact.meetsThreshold).toBe(false);
-  });
-
-  it("omits meetsThreshold when not present", () => {
+  it("does not include meetsThreshold (removed from schema)", () => {
     const cov: Coverage = {
       framework: "jest",
       summary: { lines: 80 },
@@ -528,34 +476,7 @@ describe("formatCoverageCompact", () => {
     expect(output).toContain("0 file(s) analyzed");
   });
 
-  it("formats compact coverage with meetsThreshold=true", () => {
-    const compact = {
-      framework: "vitest",
-      summary: { lines: 90 },
-      totalFiles: 5,
-      meetsThreshold: true,
-    };
-
-    const output = formatCoverageCompact(compact);
-
-    expect(output).toContain("Threshold: PASS");
-    expect(output).toContain("5 file(s) analyzed");
-  });
-
-  it("formats compact coverage with meetsThreshold=false", () => {
-    const compact = {
-      framework: "pytest",
-      summary: { lines: 60 },
-      totalFiles: 3,
-      meetsThreshold: false,
-    };
-
-    const output = formatCoverageCompact(compact);
-
-    expect(output).toContain("Threshold: FAIL");
-  });
-
-  it("does not show threshold when meetsThreshold is undefined", () => {
+  it("does not show threshold (meetsThreshold removed from schema)", () => {
     const compact = {
       framework: "jest",
       summary: { lines: 80 },

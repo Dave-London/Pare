@@ -25,7 +25,6 @@ describe("formatGoBuild", () => {
     const data: GoBuildResult = {
       success: true,
       errors: [],
-      total: 0,
     };
     expect(formatGoBuild(data)).toBe("go build: success.");
   });
@@ -46,7 +45,6 @@ describe("formatGoBuild", () => {
           message: "syntax error: unexpected newline",
         },
       ],
-      total: 2,
     };
     const output = formatGoBuild(data);
     expect(output).toContain("go build: 2 errors");
@@ -64,7 +62,6 @@ describe("formatGoBuild", () => {
           message: "package declaration missing",
         },
       ],
-      total: 1,
     };
     const output = formatGoBuild(data);
     expect(output).toContain("go build: 1 errors");
@@ -77,7 +74,6 @@ describe("formatGoBuild", () => {
       success: false,
       errors: [],
       rawErrors: ["package myapp/missing is not in GOROOT (/usr/local/go/src/myapp/missing)"],
-      total: 1,
     };
     const output = formatGoBuild(data);
     expect(output).toContain("go build: 1 errors");
@@ -89,7 +85,6 @@ describe("formatGoBuild", () => {
       success: false,
       errors: [{ file: "main.go", line: 5, column: 3, message: "undefined: x" }],
       rawErrors: ["package myapp/missing is not in GOROOT (/usr/local/go/src/myapp/missing)"],
-      total: 2,
     };
     const output = formatGoBuild(data);
     expect(output).toContain("go build: 2 errors");
@@ -107,7 +102,6 @@ describe("formatGoTest", () => {
         { package: "myapp/auth", name: "TestLogout", status: "pass", elapsed: 0.02 },
         { package: "myapp/util", name: "TestSkipped", status: "skip" },
       ],
-      total: 3,
       passed: 2,
       failed: 0,
       skipped: 1,
@@ -126,7 +120,6 @@ describe("formatGoTest", () => {
         { package: "myapp/api", name: "TestHandler", status: "fail", elapsed: 0.1 },
         { package: "myapp/api", name: "TestMiddleware", status: "pass", elapsed: 0.03 },
       ],
-      total: 2,
       passed: 1,
       failed: 1,
       skipped: 0,
@@ -141,7 +134,6 @@ describe("formatGoTest", () => {
     const data: GoTestResult = {
       success: true,
       tests: [],
-      total: 0,
       passed: 0,
       failed: 0,
       skipped: 0,
@@ -162,7 +154,6 @@ describe("formatGoTest", () => {
           output: "    main_test.go:10: expected 42, got 0\n--- FAIL: TestFail (0.01s)",
         },
       ],
-      total: 1,
       passed: 0,
       failed: 1,
       skipped: 0,
@@ -183,7 +174,6 @@ describe("formatGoTest", () => {
           output: "# myapp/broken\n./main.go:5:2: undefined: missingFunc",
         },
       ],
-      total: 0,
       passed: 0,
       failed: 0,
       skipped: 0,
@@ -200,7 +190,6 @@ describe("formatGoVet", () => {
     const data: GoVetResult = {
       success: true,
       diagnostics: [],
-      total: 0,
     };
     expect(formatGoVet(data)).toBe("go vet: no issues found.");
   });
@@ -221,7 +210,6 @@ describe("formatGoVet", () => {
           message: "possible misuse of unsafe.Pointer",
         },
       ],
-      total: 2,
     };
     const output = formatGoVet(data);
     expect(output).toContain("go vet: 2 issues");
@@ -247,7 +235,6 @@ describe("formatGoVet", () => {
           analyzer: "printf",
         },
       ],
-      total: 2,
     };
     const output = formatGoVet(data);
     expect(output).toContain("go vet: 2 issues");
@@ -361,7 +348,7 @@ describe("formatGoEnv", () => {
 
 describe("formatGoList", () => {
   it("formats empty package list", () => {
-    const data: GoListResult = { success: true, packages: [], total: 0 };
+    const data: GoListResult = { success: true, packages: [] };
     expect(formatGoList(data)).toBe("go list: no packages found.");
   });
 
@@ -372,7 +359,6 @@ describe("formatGoList", () => {
         { dir: "/project", importPath: "github.com/user/project", name: "main" },
         { dir: "/project/pkg/util", importPath: "github.com/user/project/pkg/util", name: "util" },
       ],
-      total: 2,
     };
     const output = formatGoList(data);
     expect(output).toContain("go list: 2 packages");
@@ -399,7 +385,6 @@ describe("formatGoList", () => {
           indirect: true,
         },
       ],
-      total: 3,
     };
     const output = formatGoList(data);
     expect(output).toContain("go list: 3 modules");
@@ -413,11 +398,9 @@ describe("formatGoGet", () => {
   it("formats successful go get", () => {
     const data: GoGetResult = {
       success: true,
-      output: "go: downloading github.com/pkg/errors v0.9.1",
     };
     const output = formatGoGet(data);
     expect(output).toContain("go get: success.");
-    expect(output).toContain("github.com/pkg/errors");
   });
 
   it("formats successful go get with no output", () => {
@@ -428,17 +411,14 @@ describe("formatGoGet", () => {
   it("formats failed go get", () => {
     const data: GoGetResult = {
       success: false,
-      output: 'go: module github.com/nonexistent/pkg: no matching versions for query "latest"',
     };
     const output = formatGoGet(data);
     expect(output).toContain("go get: FAIL");
-    expect(output).toContain("no matching versions");
   });
 
   it("formats go get with resolved packages (upgrades)", () => {
     const data: GoGetResult = {
       success: true,
-      output: "go: upgraded golang.org/x/text v0.3.7 => v0.14.0",
       resolvedPackages: [
         { package: "golang.org/x/text", previousVersion: "v0.3.7", newVersion: "v0.14.0" },
       ],
@@ -451,7 +431,6 @@ describe("formatGoGet", () => {
   it("formats go get with added packages", () => {
     const data: GoGetResult = {
       success: true,
-      output: "go: added github.com/pkg/errors v0.9.1",
       resolvedPackages: [{ package: "github.com/pkg/errors", newVersion: "v0.9.1" }],
     };
     const output = formatGoGet(data);
@@ -464,10 +443,8 @@ describe("formatGolangciLint", () => {
   it("formats clean lint result", () => {
     const data: GolangciLintResult = {
       diagnostics: [],
-      total: 0,
       errors: 0,
       warnings: 0,
-      byLinter: [],
     };
     expect(formatGolangciLint(data)).toBe("golangci-lint: no issues found.");
   });
@@ -491,21 +468,13 @@ describe("formatGolangciLint", () => {
           message: "Error return value is not checked",
         },
       ],
-      total: 2,
       errors: 1,
       warnings: 1,
-      byLinter: [
-        { linter: "govet", count: 1 },
-        { linter: "errcheck", count: 1 },
-      ],
     };
     const output = formatGolangciLint(data);
     expect(output).toContain("golangci-lint: 2 issues (1 errors, 1 warnings)");
     expect(output).toContain("main.go:10:5: unreachable code (govet)");
     expect(output).toContain("handler.go:25: Error return value is not checked (errcheck)");
-    expect(output).toContain("By linter:");
-    expect(output).toContain("govet: 1");
-    expect(output).toContain("errcheck: 1");
   });
 });
 
@@ -571,7 +540,6 @@ describe("formatGoList — error field (Gap #155)", () => {
           error: { err: "no Go files" },
         },
       ],
-      total: 1,
     };
     const output = formatGoList(data);
     expect(output).toContain("github.com/user/broken (broken) ERROR: no Go files");
@@ -628,7 +596,6 @@ describe("formatGolangciLint — fix/replacement (Gap #154)", () => {
           fix: { text: "fixed content" },
         },
       ],
-      total: 1,
       errors: 0,
       warnings: 1,
     };
@@ -647,7 +614,6 @@ describe("formatGolangciLint — fix/replacement (Gap #154)", () => {
           message: "unreachable code",
         },
       ],
-      total: 1,
       errors: 0,
       warnings: 1,
     };

@@ -48,9 +48,6 @@ export function parseCargoBuildJson(
   const result: CargoBuildResult = {
     success,
     diagnostics,
-    total: diagnostics.length,
-    errors,
-    warnings,
   };
   const timings = parseTimingsMetadata(stdout, stderr ?? "");
   if (timings) {
@@ -59,14 +56,13 @@ export function parseCargoBuildJson(
   return result;
 }
 
-/** Parses cargo check output using the build parser, with check-specific mode metadata. */
+/** Parses cargo check output using the build parser. */
 export function parseCargoCheckJson(
   stdout: string,
   exitCode: number,
   stderr?: string,
 ): CargoCheckResult {
-  const base = parseCargoBuildJson(stdout, exitCode, stderr);
-  return { ...base, mode: "check" };
+  return parseCargoBuildJson(stdout, exitCode, stderr);
 }
 
 /**
@@ -138,15 +134,10 @@ export function parseCargoTestOutput(
   const result: CargoTestResult = {
     success: exitCode === 0,
     tests,
-    total: tests.length,
     passed,
     failed,
     ignored,
   };
-  const summaryDurationMatch = stdout.match(/test result: .*?finished in ([0-9.]+s)/);
-  if (summaryDurationMatch) {
-    result.duration = summaryDurationMatch[1];
-  }
 
   // Gap #95: Parse compilation diagnostics from JSON message format output
   if (jsonOutput) {
@@ -222,15 +213,10 @@ function parseFailureOutputSections(stdout: string): Map<string, string> {
  */
 export function parseCargoClippyJson(stdout: string, exitCode: number): CargoClippyResult {
   const { diagnostics } = parseCompilerMessages(stdout);
-  const errors = diagnostics.filter((d) => d.severity === "error").length;
-  const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
   return {
     success: exitCode === 0,
     diagnostics,
-    total: diagnostics.length,
-    errors,
-    warnings,
   };
 }
 
@@ -274,10 +260,6 @@ export function parseCargoRunOutput(
   // Gap #94: Determine failure type
   if (exitCode !== 0) {
     result.failureType = detectRunFailureType(stderr, exitCode, timedOut);
-    const signal = detectSignalFromExitCode(exitCode, stderr);
-    if (signal) {
-      result.signal = signal;
-    }
   }
 
   if (stdoutTruncated) result.stdoutTruncated = true;
@@ -420,7 +402,6 @@ export function parseCargoAddOutput(
   const result: CargoAddResult = {
     success: exitCode === 0,
     added,
-    total: added.length,
   };
 
   if (detectedType) {
@@ -491,7 +472,6 @@ export function parseCargoRemoveOutput(
   const result: CargoRemoveResult = {
     success: exitCode === 0,
     removed,
-    total: removed.length,
   };
 
   if (detectedType) {
@@ -677,7 +657,6 @@ export function parseCargoUpdateOutput(
   stderr: string,
   exitCode: number,
 ): CargoUpdateResult {
-  const output = (stdout + "\n" + stderr).trim();
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
   const updated: { name: string; from: string; to: string }[] = [];
@@ -695,7 +674,6 @@ export function parseCargoUpdateOutput(
     success: exitCode === 0,
     updated,
     totalUpdated: updated.length,
-    output,
   };
 }
 
@@ -718,13 +696,11 @@ export function parseCargoTreeOutput(
   if (exitCode !== 0) {
     return {
       success: false,
-      tree: stderr.trim() || undefined,
       packages: 0,
     };
   }
 
-  const tree = stdout.trim();
-  const lines = tree.split("\n").filter(Boolean);
+  const lines = stdout.trim().split("\n").filter(Boolean);
 
   // Extract unique package names and structured dependency list
   const packageNames = new Set<string>();
@@ -757,7 +733,6 @@ export function parseCargoTreeOutput(
   return {
     success: true,
     dependencies,
-    tree,
     packages: packageNames.size,
   };
 }
@@ -1055,31 +1030,25 @@ export function parseCargoAuditJson(
         version: string;
         severity: Severity;
         title: string;
-        url?: string;
-        date?: string;
         patched: string[];
         unaffected?: string[];
         cvssScore?: number;
-        cvssVector?: string;
       } = {
         id: advisory.id ?? "unknown",
         package: pkg.name ?? "unknown",
         version: pkg.version ?? "unknown",
         severity: cvssToSeverity(advisory.cvss) as Severity,
         title: advisory.title ?? "Unknown vulnerability",
-        url: advisory.url || undefined,
-        date: advisory.date || undefined,
         patched: versions.patched ?? [],
         unaffected: versions.unaffected ?? [],
       };
 
-      // Gap #88: Include raw CVSS score and vector
+      // Gap #88: Include raw CVSS score
       if (advisory.cvss) {
         const score = extractCvssScore(advisory.cvss);
         if (score !== undefined) {
           entry.cvssScore = score;
         }
-        entry.cvssVector = advisory.cvss;
       }
 
       return entry;

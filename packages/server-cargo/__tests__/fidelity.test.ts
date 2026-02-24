@@ -206,9 +206,6 @@ describe("fidelity: parseCargoBuildJson", () => {
     const result = parseCargoBuildJson(BUILD_SINGLE_ERROR, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(0);
     expect(result.diagnostics).toHaveLength(1);
 
     const diag = result.diagnostics[0];
@@ -224,10 +221,9 @@ describe("fidelity: parseCargoBuildJson", () => {
     const result = parseCargoBuildJson(BUILD_MULTIPLE_MIXED, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(4);
-    expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(2);
     expect(result.diagnostics).toHaveLength(4);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(2);
 
     // Verify all files are represented
     const files = result.diagnostics.map((d) => d.file);
@@ -250,9 +246,6 @@ describe("fidelity: parseCargoBuildJson", () => {
     const result = parseCargoBuildJson(BUILD_CLEAN, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -284,7 +277,6 @@ describe("fidelity: parseCargoBuildJson", () => {
     ].join("\n");
 
     const result = parseCargoBuildJson(stdout, 0);
-    expect(result.total).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -308,7 +300,6 @@ describe("fidelity: parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(TEST_ALL_PASS, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
     expect(result.passed).toBe(3);
     expect(result.failed).toBe(0);
     expect(result.ignored).toBe(0);
@@ -330,7 +321,6 @@ describe("fidelity: parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(TEST_MIXED, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(5);
     expect(result.passed).toBe(2);
     expect(result.failed).toBe(2);
     expect(result.ignored).toBe(1);
@@ -349,7 +339,6 @@ describe("fidelity: parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(TEST_SINGLE_FAILURE, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(1);
     expect(result.ignored).toBe(0);
@@ -362,7 +351,6 @@ describe("fidelity: parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(TEST_EMPTY, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
     expect(result.ignored).toBe(0);
@@ -373,7 +361,6 @@ describe("fidelity: parseCargoTestOutput", () => {
     const result = parseCargoTestOutput(TEST_ALL_IGNORED, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(2);
     expect(result.passed).toBe(0);
     expect(result.failed).toBe(0);
     expect(result.ignored).toBe(2);
@@ -400,10 +387,9 @@ describe("fidelity: parseCargoClippyJson", () => {
   it("clippy warnings with codes: all codes preserved", () => {
     const result = parseCargoClippyJson(CLIPPY_WARNINGS_WITH_CODES, 0);
 
-    expect(result.total).toBe(2);
-    expect(result.warnings).toBe(2);
-    expect(result.errors).toBe(0);
     expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
 
     expect(result.diagnostics[0].code).toBe("clippy::needless_return");
     expect(result.diagnostics[0].message).toBe("unneeded `return` statement");
@@ -419,9 +405,7 @@ describe("fidelity: parseCargoClippyJson", () => {
   it("mix of errors and warnings: counts are correct", () => {
     const result = parseCargoClippyJson(CLIPPY_MIXED, 0);
 
-    expect(result.total).toBe(3);
-    expect(result.errors).toBe(1);
-    expect(result.warnings).toBe(2);
+    expect(result.diagnostics).toHaveLength(3);
 
     // Verify individual severities
     const errors = result.diagnostics.filter((d) => d.severity === "error");
@@ -436,16 +420,12 @@ describe("fidelity: parseCargoClippyJson", () => {
   it("clean clippy output: zero diagnostics", () => {
     const result = parseCargoClippyJson(CLIPPY_CLEAN, 0);
 
-    expect(result.total).toBe(0);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
   it("multiple diagnostics in same file: all captured with distinct locations", () => {
     const result = parseCargoClippyJson(CLIPPY_SAME_FILE, 0);
 
-    expect(result.total).toBe(4);
     expect(result.diagnostics).toHaveLength(4);
 
     // All diagnostics should reference the same file
@@ -487,7 +467,7 @@ describe("fidelity: parseCargoClippyJson", () => {
 
     const result = parseCargoClippyJson(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].message).toBe("unused variable");
   });
 });
@@ -544,7 +524,6 @@ describe("fidelity: parseCargoAddOutput", () => {
     const result = parseCargoAddOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
     expect(result.added).toHaveLength(3);
 
     const names = result.added.map((p) => p.name);
@@ -562,7 +541,7 @@ describe("fidelity: parseCargoAddOutput", () => {
     const stderr = "      Adding mockall v0.13.1 to dev-dependencies";
     const result = parseCargoAddOutput("", stderr, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
     expect(result.added[0].name).toBe("mockall");
     expect(result.added[0].version).toBe("0.13.1");
   });
@@ -575,7 +554,7 @@ describe("fidelity: parseCargoAddOutput", () => {
     ].join("\n");
 
     const result = parseCargoAddOutput("", stderr, 0);
-    expect(result.total).toBe(1);
+    expect(result.added).toHaveLength(1);
   });
 });
 
@@ -594,7 +573,7 @@ describe("fidelity: parseCargoRemoveOutput", () => {
     const result = parseCargoRemoveOutput("", stderr, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(3);
+    expect(result.removed).toHaveLength(3);
     expect(result.removed).toEqual(["serde", "tokio", "anyhow"]);
   });
 
@@ -602,7 +581,7 @@ describe("fidelity: parseCargoRemoveOutput", () => {
     const stderr = "      Removing mockall from dev-dependencies";
     const result = parseCargoRemoveOutput("", stderr, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.removed).toHaveLength(1);
     expect(result.removed).toEqual(["mockall"]);
   });
 });

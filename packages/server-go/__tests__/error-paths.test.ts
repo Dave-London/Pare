@@ -37,7 +37,7 @@ describe("error paths: parseGoTestJson subtests", () => {
     const result = parseGoTestJson(stdout, 1);
 
     // Parent and subtests are all tracked separately by key (Package/Test)
-    expect(result.total).toBe(3);
+    expect(result.tests).toHaveLength(3);
     expect(result.passed).toBe(1);
     expect(result.failed).toBe(2);
 
@@ -69,7 +69,7 @@ describe("error paths: parseGoTestJson subtests", () => {
 
     const result = parseGoTestJson(stdout, 1);
 
-    expect(result.total).toBe(2);
+    expect(result.tests).toHaveLength(2);
     const getTest = result.tests.find((t) => t.name === "TestAPI/GET/users/200");
     const postTest = result.tests.find((t) => t.name === "TestAPI/POST/users/400");
     expect(getTest?.status).toBe("pass");
@@ -93,7 +93,7 @@ describe("error paths: parseGoTestJson subtests", () => {
 
     const result = parseGoTestJson(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("TestTable/case_with_spaces");
     expect(result.tests[0].status).toBe("pass");
   });
@@ -142,7 +142,7 @@ describe("error paths: non-ASCII characters", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.errors).toHaveLength(1);
     expect(result.errors[0].file).toBe("\u00fcbung.go");
     expect(result.errors[0].line).toBe(5);
     expect(result.errors[0].column).toBe(3);
@@ -154,7 +154,7 @@ describe("error paths: non-ASCII characters", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.errors).toHaveLength(1);
     expect(result.errors[0].message).toContain("\u672a\u5b9a\u7fa9");
   });
 
@@ -162,7 +162,7 @@ describe("error paths: non-ASCII characters", () => {
     const stderr = "caf\u00e9.go:10:2: printf: extra arg";
     const result = parseGoVetOutput("", stderr, 2);
 
-    expect(result.total).toBe(1);
+    expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].file).toBe("caf\u00e9.go");
     expect(result.diagnostics[0].line).toBe(10);
     expect(result.diagnostics[0].column).toBe(2);
@@ -186,7 +186,7 @@ describe("error paths: non-ASCII characters", () => {
 
     const result = parseGoTestJson(stdout, 0);
 
-    expect(result.total).toBe(1);
+    expect(result.tests).toHaveLength(1);
     expect(result.tests[0].name).toBe("Test\u65e5\u672c\u8a9e");
     expect(result.tests[0].status).toBe("pass");
   });
@@ -211,7 +211,7 @@ describe("error paths: parseGoBuildOutput multi-line errors", () => {
 
     // The indented "have/want" lines don't match the regex, so only 2 errors
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.errors).toHaveLength(2);
     expect(result.errors[0].file).toBe("main.go");
     expect(result.errors[0].line).toBe(10);
     expect(result.errors[0].message).toBe(
@@ -233,7 +233,7 @@ describe("error paths: parseGoBuildOutput multi-line errors", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
+    expect(result.errors).toHaveLength(2);
     expect(result.errors[0].message).toBe("undefined: missingFunc");
     expect(result.errors[1].message).toBe("too many arguments in call to fmt.Println");
   });
@@ -243,7 +243,7 @@ describe("error paths: parseGoBuildOutput multi-line errors", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(1);
+    expect(result.errors).toHaveLength(1);
     expect(result.errors[0].file).toBe("main.go");
     expect(result.errors[0].line).toBe(1);
     expect(result.errors[0].column).toBe(1);
@@ -260,7 +260,7 @@ describe("error paths: parseGoBuildOutput multi-line errors", () => {
     const result = parseGoBuildOutput("", stderr, 2);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(3);
+    expect(result.errors).toHaveLength(3);
     expect(result.errors[0].file).toBe("cmd/server/main.go");
     expect(result.errors[1].file).toBe("internal/auth/jwt.go");
     expect(result.errors[2].file).toBe("pkg/util/helper.go");

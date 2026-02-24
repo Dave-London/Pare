@@ -31,7 +31,6 @@ describe("formatSearch", () => {
         },
       ],
       totalMatches: 2,
-      filesSearched: 2,
     };
     const output = formatSearch(data);
     expect(output).toContain("search: 2 matches in 2 files");
@@ -40,7 +39,7 @@ describe("formatSearch", () => {
   });
 
   it("formats no matches", () => {
-    const data: SearchResult = { matches: [], totalMatches: 0, filesSearched: 0 };
+    const data: SearchResult = { matches: [], totalMatches: 0 };
     expect(formatSearch(data)).toBe("search: no matches found.");
   });
 });
@@ -49,10 +48,9 @@ describe("formatFind", () => {
   it("formats file listing", () => {
     const data: FindResult = {
       files: [
-        { path: "src/index.ts", name: "index.ts", ext: "ts", type: "file" },
-        { path: "README.md", name: "README.md", ext: "md", type: "file" },
+        { path: "src/index.ts", type: "file" },
+        { path: "README.md", type: "file" },
       ],
-      total: 2,
     };
     const output = formatFind(data);
     expect(output).toContain("find: 2 files");
@@ -61,7 +59,7 @@ describe("formatFind", () => {
   });
 
   it("formats no files found", () => {
-    const data: FindResult = { files: [], total: 0 };
+    const data: FindResult = { files: [] };
     expect(formatFind(data)).toBe("find: no files found.");
   });
 });
@@ -74,7 +72,6 @@ describe("formatCount", () => {
         { file: "src/lib/parsers.ts", count: 12 },
       ],
       totalMatches: 17,
-      totalFiles: 2,
     };
     const output = formatCount(data);
     expect(output).toContain("count: 17 matches in 2 files");
@@ -83,7 +80,7 @@ describe("formatCount", () => {
   });
 
   it("formats no matches", () => {
-    const data: CountResult = { files: [], totalMatches: 0, totalFiles: 0 };
+    const data: CountResult = { files: [], totalMatches: 0 };
     expect(formatCount(data)).toBe("count: no matches found.");
   });
 });
@@ -97,10 +94,9 @@ describe("compactSearchMap", () => {
         { file: "src/a.ts", line: 1, column: 1, matchText: "foo", lineContent: "const foo = 1;" },
       ],
       totalMatches: 1,
-      filesSearched: 1,
     };
     const compact = compactSearchMap(data);
-    expect(compact).toEqual({ totalMatches: 1, filesSearched: 1 });
+    expect(compact).toEqual({ totalMatches: 1 });
     expect((compact as Record<string, unknown>)["matches"]).toBeUndefined();
   });
 });
@@ -108,11 +104,10 @@ describe("compactSearchMap", () => {
 describe("compactFindMap", () => {
   it("drops individual file entries, keeps total", () => {
     const data: FindResult = {
-      files: [{ path: "a.ts", name: "a.ts", ext: "ts", type: "file" }],
-      total: 1,
+      files: [{ path: "a.ts", type: "file" }],
     };
     const compact = compactFindMap(data);
-    expect(compact).toEqual({ total: 1 });
+    expect(compact).toEqual({ fileCount: 1 });
     expect((compact as Record<string, unknown>)["files"]).toBeUndefined();
   });
 });
@@ -122,10 +117,9 @@ describe("compactCountMap", () => {
     const data: CountResult = {
       files: [{ file: "a.ts", count: 5 }],
       totalMatches: 5,
-      totalFiles: 1,
     };
     const compact = compactCountMap(data);
-    expect(compact).toEqual({ totalMatches: 5, totalFiles: 1 });
+    expect(compact).toEqual({ totalMatches: 5 });
     expect((compact as Record<string, unknown>)["files"]).toBeUndefined();
   });
 });
@@ -134,37 +128,31 @@ describe("compactCountMap", () => {
 
 describe("formatSearchCompact", () => {
   it("formats compact search summary", () => {
-    expect(formatSearchCompact({ totalMatches: 10, filesSearched: 3 })).toBe(
-      "search: 10 matches in 3 files",
-    );
+    expect(formatSearchCompact({ totalMatches: 10 })).toBe("search: 10 matches");
   });
 
   it("formats no matches", () => {
-    expect(formatSearchCompact({ totalMatches: 0, filesSearched: 0 })).toBe(
-      "search: no matches found.",
-    );
+    expect(formatSearchCompact({ totalMatches: 0 })).toBe("search: no matches found.");
   });
 });
 
 describe("formatFindCompact", () => {
   it("formats compact find summary", () => {
-    expect(formatFindCompact({ total: 42 })).toBe("find: 42 files");
+    expect(formatFindCompact({ fileCount: 42 })).toBe("find: 42 files");
   });
 
   it("formats no files", () => {
-    expect(formatFindCompact({ total: 0 })).toBe("find: no files found.");
+    expect(formatFindCompact({ fileCount: 0 })).toBe("find: no files found.");
   });
 });
 
 describe("formatCountCompact", () => {
   it("formats compact count summary", () => {
-    expect(formatCountCompact({ totalMatches: 100, totalFiles: 5 })).toBe(
-      "count: 100 matches in 5 files",
-    );
+    expect(formatCountCompact({ totalMatches: 100 })).toBe("count: 100 matches");
   });
 
   it("formats no matches", () => {
-    expect(formatCountCompact({ totalMatches: 0, totalFiles: 0 })).toBe("count: no matches found.");
+    expect(formatCountCompact({ totalMatches: 0 })).toBe("count: no matches found.");
   });
 });
 

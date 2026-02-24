@@ -28,7 +28,7 @@ describe("parseMochaJson", () => {
     expect(firstFail.message).toBe("expected 0 to equal 1");
     expect(firstFail.expected).toBe("1");
     expect(firstFail.actual).toBe("0");
-    expect(firstFail.stack).toContain("AssertionError");
+    // stack removed from schema — no longer in output
 
     const secondFail = result.failures[1];
     expect(secondFail.name).toBe("Utils should parse config");

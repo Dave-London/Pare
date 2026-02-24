@@ -92,25 +92,11 @@ export function parseRgJsonOutput(stdout: string, maxResults: number): SearchRes
 
   return {
     matches,
-    files: Array.from(fileMatchCounts.entries()).map(([file, matchCount]) => ({
-      file,
-      matchCount,
-    })),
     totalMatches: matches.length,
-    filesSearched,
   };
 }
 
 // ── fd parser ───────────────────────────────────────────────────────
-
-/**
- * Normalizes a file extension by stripping the leading dot.
- * This ensures output format matches the input format used in the `extension` param.
- * e.g., ".ts" -> "ts", ".json" -> "json", "" -> ""
- */
-function normalizeExt(ext: string): string {
-  return ext.startsWith(".") ? ext.slice(1) : ext;
-}
 
 /**
  * Parses `fd` output (one file path per line) into a structured FindResult.
@@ -126,8 +112,6 @@ export function parseFdOutput(stdout: string, maxResults: number, cwd: string): 
     const filePath = line.trim();
     if (!filePath) continue;
 
-    const name = path.basename(filePath);
-    const ext = normalizeExt(path.extname(filePath));
     const resolvedPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     let type: "file" | "directory" | "symlink" | "other" = "other";
     try {
@@ -145,15 +129,12 @@ export function parseFdOutput(stdout: string, maxResults: number, cwd: string): 
 
     files.push({
       path: filePath,
-      name,
-      ext,
       type,
     });
   }
 
   return {
     files,
-    total: files.length,
   };
 }
 
@@ -186,7 +167,6 @@ export function parseRgCountOutput(stdout: string): CountResult {
   return {
     files,
     totalMatches,
-    totalFiles: files.length,
   };
 }
 
@@ -253,19 +233,17 @@ export function parseYqOutput(
   stdout: string,
   stderr: string,
   exitCode: number,
-  outputFormat?: string,
+  _outputFormat?: string,
 ): YqResult {
   if (exitCode !== 0) {
     return {
       output: stderr.trim() || stdout.trim(),
-      outputFormat,
       exitCode,
     };
   }
 
   return {
     output: stdout.trimEnd(),
-    outputFormat,
     exitCode,
   };
 }

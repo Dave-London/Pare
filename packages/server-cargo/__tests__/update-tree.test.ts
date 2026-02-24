@@ -28,8 +28,6 @@ describe("parseCargoUpdateOutput", () => {
       { name: "serde", from: "1.0.200", to: "1.0.217" },
       { name: "tokio", from: "1.40.0", to: "1.41.1" },
     ]);
-    expect(result.output).toContain("Updating serde v1.0.200 -> v1.0.217");
-    expect(result.output).toContain("Updating tokio v1.40.0 -> v1.41.1");
   });
 
   it("parses successful update with no changes", () => {
@@ -38,7 +36,6 @@ describe("parseCargoUpdateOutput", () => {
     expect(result.success).toBe(true);
     expect(result.totalUpdated).toBe(0);
     expect(result.updated).toEqual([]);
-    expect(result.output).toBe("");
   });
 
   it("parses failed update", () => {
@@ -47,14 +44,12 @@ describe("parseCargoUpdateOutput", () => {
 
     expect(result.success).toBe(false);
     expect(result.totalUpdated).toBe(0);
-    expect(result.output).toContain("no package `nonexistent` found");
   });
 
   it("combines stdout and stderr", () => {
     const result = parseCargoUpdateOutput("stdout line", "stderr line", 0);
 
-    expect(result.output).toContain("stdout line");
-    expect(result.output).toContain("stderr line");
+    expect(result.success).toBe(true);
   });
 
   it("parses Locking lines from newer cargo versions", () => {
@@ -110,8 +105,6 @@ describe("parseCargoTreeOutput", () => {
 
     const result = parseCargoTreeOutput(stdout, "", 0);
 
-    expect(result.tree).toContain("my-app v0.1.0");
-    expect(result.tree).toContain("serde v1.0.217");
     expect(result.packages).toBe(8);
 
     // Verify structured dependencies
@@ -155,7 +148,6 @@ describe("parseCargoTreeOutput", () => {
   it("handles empty tree output", () => {
     const result = parseCargoTreeOutput("", "", 0);
 
-    expect(result.tree).toBe("");
     expect(result.packages).toBe(0);
     expect(result.dependencies).toEqual([]);
   });
@@ -164,7 +156,6 @@ describe("parseCargoTreeOutput", () => {
     const stdout = "my-app v0.1.0 (/home/user/project)";
     const result = parseCargoTreeOutput(stdout, "", 0);
 
-    expect(result.tree).toBe("my-app v0.1.0 (/home/user/project)");
     expect(result.packages).toBe(1);
     expect(result.dependencies).toEqual([{ name: "my-app", version: "0.1.0", depth: 0 }]);
   });
@@ -207,7 +198,6 @@ describe("formatCargoUpdate", () => {
         { name: "tokio", from: "1.40.0", to: "1.41.1" },
       ],
       totalUpdated: 2,
-      output: "Updating serde v1.0.200 -> v1.0.217\nUpdating tokio v1.40.0 -> v1.41.1",
     };
     const output = formatCargoUpdate(data);
     expect(output).toContain("cargo update: success (2 package(s) updated)");
@@ -220,7 +210,6 @@ describe("formatCargoUpdate", () => {
       success: true,
       updated: [],
       totalUpdated: 0,
-      output: "",
     };
     expect(formatCargoUpdate(data)).toBe("cargo update: success.");
   });
@@ -230,7 +219,6 @@ describe("formatCargoUpdate", () => {
       success: false,
       updated: [],
       totalUpdated: 0,
-      output: "error: no package found",
     };
     const output = formatCargoUpdate(data);
     expect(output).toContain("cargo update: failed");
@@ -245,7 +233,6 @@ describe("compactUpdateMap", () => {
       success: true,
       updated: [{ name: "serde", from: "1.0.200", to: "1.0.217" }],
       totalUpdated: 1,
-      output: "Updating serde v1.0.200 -> v1.0.217\nUpdating tokio v1.40.0 -> v1.41.1",
     };
     const compact = compactUpdateMap(data);
     expect(compact.success).toBe(true);
@@ -291,17 +278,14 @@ describe("formatCargoTree", () => {
         { name: "my-app", version: "0.1.0", depth: 0 },
         { name: "serde", version: "1.0.217", depth: 1 },
       ],
-      tree: "my-app v0.1.0\n├── serde v1.0.217",
       packages: 2,
     };
     const output = formatCargoTree(data);
     expect(output).toContain("cargo tree: 2 unique packages");
-    expect(output).toContain("my-app v0.1.0");
-    expect(output).toContain("serde v1.0.217");
   });
 
   it("formats tree with empty tree text", () => {
-    const data: CargoTreeResult = { success: true, dependencies: [], tree: "", packages: 0 };
+    const data: CargoTreeResult = { success: true, dependencies: [], packages: 0 };
     expect(formatCargoTree(data)).toBe("cargo tree: 0 unique packages");
   });
 });
@@ -317,14 +301,12 @@ describe("compactTreeMap", () => {
         { name: "serde", version: "1.0.217", depth: 1 },
         { name: "tokio", version: "1.41.1", depth: 1 },
       ],
-      tree: "my-app v0.1.0\n├── serde v1.0.217\n└── tokio v1.41.1",
       packages: 3,
     };
     const compact = compactTreeMap(data);
     expect(compact.success).toBe(true);
     expect(compact.packages).toBe(3);
     expect(compact.dependencies).toHaveLength(3);
-    expect(compact).not.toHaveProperty("tree");
   });
 });
 

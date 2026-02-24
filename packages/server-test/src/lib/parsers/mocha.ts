@@ -71,7 +71,6 @@ export function parseMochaJson(jsonStr: string): TestRun {
       message: test.err.message || "Test failed",
       expected,
       actual,
-      stack: test.err.stack,
     });
   }
 

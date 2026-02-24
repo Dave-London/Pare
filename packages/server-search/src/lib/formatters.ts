@@ -12,13 +12,9 @@ import type {
 export function formatSearch(data: SearchResult): string {
   if (data.totalMatches === 0) return "search: no matches found.";
 
-  const lines = [`search: ${data.totalMatches} matches in ${data.filesSearched} files`];
-  if ((data.files ?? []).length > 0) {
-    lines.push("files:");
-    for (const f of data.files ?? []) {
-      lines.push(`  ${f.file}: ${f.matchCount} matches`);
-    }
-  }
+  // Compute filesSearched locally from matches
+  const filesSearched = new Set((data.matches ?? []).map((m) => m.file)).size;
+  const lines = [`search: ${data.totalMatches} matches in ${filesSearched} files`];
   for (const m of data.matches ?? []) {
     lines.push(`  ${m.file}:${m.line}:${m.column}: ${m.lineContent}`);
   }
@@ -27,9 +23,10 @@ export function formatSearch(data: SearchResult): string {
 
 /** Formats structured find results into a human-readable file listing. */
 export function formatFind(data: FindResult): string {
-  if (data.total === 0) return "find: no files found.";
+  const total = (data.files ?? []).length;
+  if (total === 0) return "find: no files found.";
 
-  const lines = [`find: ${data.total} files`];
+  const lines = [`find: ${total} files`];
   for (const f of data.files ?? []) {
     lines.push(`  ${f.path} [${f.type}]`);
   }
@@ -38,9 +35,10 @@ export function formatFind(data: FindResult): string {
 
 /** Formats structured count results into a human-readable per-file count listing. */
 export function formatCount(data: CountResult): string {
-  if (data.totalFiles === 0) return "count: no matches found.";
+  const totalFiles = (data.files ?? []).length;
+  if (totalFiles === 0) return "count: no matches found.";
 
-  const lines = [`count: ${data.totalMatches} matches in ${data.totalFiles} files`];
+  const lines = [`count: ${data.totalMatches} matches in ${totalFiles} files`];
   for (const f of data.files ?? []) {
     lines.push(`  ${f.file}: ${f.count}`);
   }
@@ -49,59 +47,55 @@ export function formatCount(data: CountResult): string {
 
 // ── Compact types, mappers, and formatters ──────────────────────────
 
-/** Compact search: totals only, drop individual matches. */
+/** Compact search: totalMatches only (filesSearched removed from schema, derivable from matches). */
 export interface SearchCompact {
   [key: string]: unknown;
   totalMatches: number;
-  filesSearched: number;
 }
 
 export function compactSearchMap(data: SearchResult): SearchCompact {
   return {
     totalMatches: data.totalMatches,
-    filesSearched: data.filesSearched,
   };
 }
 
 export function formatSearchCompact(data: SearchCompact): string {
   if (data.totalMatches === 0) return "search: no matches found.";
-  return `search: ${data.totalMatches} matches in ${data.filesSearched} files`;
+  return `search: ${data.totalMatches} matches`;
 }
 
-/** Compact find: total count only, drop individual file entries. */
+/** Compact find: file count only, drop individual file entries (total derived from files.length). */
 export interface FindCompact {
   [key: string]: unknown;
-  total: number;
+  fileCount: number;
 }
 
 export function compactFindMap(data: FindResult): FindCompact {
   return {
-    total: data.total,
+    fileCount: (data.files ?? []).length,
   };
 }
 
 export function formatFindCompact(data: FindCompact): string {
-  if (data.total === 0) return "find: no files found.";
-  return `find: ${data.total} files`;
+  if (data.fileCount === 0) return "find: no files found.";
+  return `find: ${data.fileCount} files`;
 }
 
-/** Compact count: totals only, drop per-file breakdown. */
+/** Compact count: totalMatches only (totalFiles removed from schema, derivable from files.length). */
 export interface CountCompact {
   [key: string]: unknown;
   totalMatches: number;
-  totalFiles: number;
 }
 
 export function compactCountMap(data: CountResult): CountCompact {
   return {
     totalMatches: data.totalMatches,
-    totalFiles: data.totalFiles,
   };
 }
 
 export function formatCountCompact(data: CountCompact): string {
-  if (data.totalFiles === 0) return "count: no matches found.";
-  return `count: ${data.totalMatches} matches in ${data.totalFiles} files`;
+  if (data.totalMatches === 0) return "count: no matches found.";
+  return `count: ${data.totalMatches} matches`;
 }
 
 // ── Jq formatters ───────────────────────────────────────────────────

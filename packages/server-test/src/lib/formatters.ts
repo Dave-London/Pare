@@ -24,10 +24,6 @@ export function formatCoverage(c: Coverage): string {
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
-  if (c.meetsThreshold !== undefined) {
-    parts.push(c.meetsThreshold ? "Threshold: PASS" : "Threshold: FAIL");
-  }
-
   for (const f of c.files ?? []) {
     parts.push(`  ${f.file}: ${f.lines}% lines`);
   }
@@ -75,7 +71,7 @@ export function formatTestRunCompact(r: TestRunCompact): string {
   return parts.join("\n");
 }
 
-/** Compact coverage: summary totals + file count only (no per-file details). */
+/** Compact coverage: summary totals + file count only (no per-file details, meetsThreshold removed from schema). */
 export interface CoverageCompact {
   [key: string]: unknown;
   framework: string;
@@ -86,7 +82,6 @@ export interface CoverageCompact {
     functions?: number;
   };
   totalFiles: number;
-  meetsThreshold?: boolean;
 }
 
 export function compactCoverageMap(c: Coverage): CoverageCompact {
@@ -94,7 +89,6 @@ export function compactCoverageMap(c: Coverage): CoverageCompact {
     framework: c.framework,
     summary: { ...c.summary },
     totalFiles: (c.files ?? []).length,
-    ...(c.meetsThreshold !== undefined ? { meetsThreshold: c.meetsThreshold } : {}),
   };
 }
 
@@ -105,10 +99,6 @@ export function formatCoverageCompact(c: CoverageCompact): string {
 
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
-
-  if (c.meetsThreshold !== undefined) {
-    parts.push(c.meetsThreshold ? "Threshold: PASS" : "Threshold: FAIL");
-  }
 
   parts.push(`${c.totalFiles} file(s) analyzed`);
 

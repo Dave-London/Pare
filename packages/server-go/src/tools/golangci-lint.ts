@@ -201,17 +201,22 @@ export function registerGolangciLintTool(server: McpServer) {
       const data = parseGolangciLintJson(result.stdout, result.exitCode);
 
       // Set resultsTruncated if limits were set (indicates potential truncation)
+      const totalIssues = data.diagnostics?.length ?? 0;
       if (
         maxIssuesPerLinter !== undefined &&
         maxIssuesPerLinter > 0 &&
-        data.total >= maxIssuesPerLinter
+        totalIssues >= maxIssuesPerLinter
       ) {
         data.resultsTruncated = true;
       }
-      if (maxSameIssues !== undefined && maxSameIssues > 0 && data.total > 0) {
-        // Check if any linter hit the maxSameIssues limit
-        for (const entry of data.byLinter ?? []) {
-          if (entry.count >= maxSameIssues) {
+      if (maxSameIssues !== undefined && maxSameIssues > 0 && totalIssues > 0) {
+        // Check if any linter hit the maxSameIssues limit by counting diagnostics per linter
+        const linterCounts = new Map<string, number>();
+        for (const d of data.diagnostics ?? []) {
+          linterCounts.set(d.linter, (linterCounts.get(d.linter) ?? 0) + 1);
+        }
+        for (const count of linterCounts.values()) {
+          if (count >= maxSameIssues) {
             data.resultsTruncated = true;
             break;
           }

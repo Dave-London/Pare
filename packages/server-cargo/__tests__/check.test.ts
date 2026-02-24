@@ -37,9 +37,6 @@ describe("cargo check (reuses parseCargoBuildJson)", () => {
     const result = parseCargoBuildJson(stdout, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(0);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(0);
     expect(result.diagnostics).toEqual([]);
   });
 
@@ -53,9 +50,7 @@ describe("cargo check (reuses parseCargoBuildJson)", () => {
     const result = parseCargoBuildJson(stdout, 101);
 
     expect(result.success).toBe(false);
-    expect(result.total).toBe(2);
-    expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(0);
+    expect(result.diagnostics).toHaveLength(2);
     expect(result.diagnostics[0].code).toBe("E0308");
     expect(result.diagnostics[1].code).toBe("E0425");
   });
@@ -70,9 +65,9 @@ describe("cargo check (reuses parseCargoBuildJson)", () => {
     const result = parseCargoBuildJson(stdout, 0);
 
     expect(result.success).toBe(true);
-    expect(result.total).toBe(2);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(2);
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(2);
   });
 
   it("formats check output with diagnostics", () => {

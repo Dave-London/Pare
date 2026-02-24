@@ -21,7 +21,8 @@ export function formatGoBuild(data: GoBuildResult): string {
     return "go build: success.";
   }
 
-  const lines = [`go build: ${data.total} errors`];
+  const total = (data.errors ?? []).length + (data.rawErrors ?? []).length;
+  const lines = [`go build: ${total} errors`];
   if (data.buildCache) {
     lines.push(
       `  cache hits=${data.buildCache.estimatedHits}, misses=${data.buildCache.estimatedMisses}`,
@@ -69,9 +70,10 @@ export function formatGoTest(data: GoTestResult): string {
 
 /** Formats structured go vet results into a human-readable diagnostic listing. */
 export function formatGoVet(data: GoVetResult): string {
-  if (data.total === 0) return "go vet: no issues found.";
+  const total = (data.diagnostics ?? []).length;
+  if (total === 0 && !data.compilationErrors?.length) return "go vet: no issues found.";
 
-  const lines = [`go vet: ${data.total} issues`];
+  const lines = [`go vet: ${total} issues`];
   if (data.compilationErrors && data.compilationErrors.length > 0) {
     lines.push("Compilation errors:");
     for (const err of data.compilationErrors) {
@@ -90,8 +92,7 @@ export function formatGoVet(data: GoVetResult): string {
 export function formatGoRun(data: GoRunResult): string {
   const lines: string[] = [];
   if (data.timedOut) {
-    const signal = data.signal ? ` (${data.signal})` : "";
-    lines.push(`go run: timed out${signal}.`);
+    lines.push("go run: timed out.");
   } else if (data.success) {
     lines.push("go run: success.");
   } else {
@@ -202,20 +203,18 @@ export function formatGoGenerate(data: GoGenerateResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact build: success + count, with errors preserved when non-empty. */
+/** Compact build: success + errors preserved when non-empty (total derived from errors + rawErrors). */
 export interface GoBuildCompact {
   [key: string]: unknown;
   success: boolean;
   errors?: GoBuildResult["errors"];
   rawErrors?: string[];
   buildCache?: GoBuildResult["buildCache"];
-  total: number;
 }
 
 export function compactBuildMap(data: GoBuildResult): GoBuildCompact {
   const compact: GoBuildCompact = {
     success: data.success,
-    total: data.total,
   };
   if (data.errors?.length) compact.errors = data.errors;
   if (data.rawErrors?.length) compact.rawErrors = data.rawErrors;
@@ -230,14 +229,14 @@ export function formatBuildCompact(data: GoBuildCompact): string {
     }
     return "go build: success.";
   }
-  return `go build: ${data.total} errors`;
+  const total = (data.errors ?? []).length + (data.rawErrors ?? []).length;
+  return `go build: ${total} errors`;
 }
 
-/** Compact test: total, passed, failed, skipped. Drop individual test details but keep package failures. */
+/** Compact test: passed, failed, skipped. Drop individual test details but keep package failures. */
 export interface GoTestCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
   passed: number;
   failed: number;
   skipped: number;
@@ -247,7 +246,6 @@ export interface GoTestCompact {
 export function compactTestMap(data: GoTestResult): GoTestCompact {
   const compact: GoTestCompact = {
     success: data.success,
-    total: data.total,
     passed: data.passed,
     failed: data.failed,
     skipped: data.skipped,
@@ -261,23 +259,25 @@ export function formatTestCompact(data: GoTestCompact): string {
   return `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`;
 }
 
-/** Compact vet: success + diagnostic count only. Drop individual file/line/message entries. */
+/** Compact vet: success + diagnostics preserved when non-empty (total derived from diagnostics). */
 export interface GoVetCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
+  diagnostics?: GoVetResult["diagnostics"];
 }
 
 export function compactVetMap(data: GoVetResult): GoVetCompact {
-  return {
+  const compact: GoVetCompact = {
     success: data.success,
-    total: data.total,
   };
+  if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
+  return compact;
 }
 
 export function formatVetCompact(data: GoVetCompact): string {
-  if (data.total === 0) return "go vet: no issues found.";
-  return `go vet: ${data.total} issues`;
+  const total = (data.diagnostics ?? []).length;
+  if (total === 0) return "go vet: no issues found.";
+  return `go vet: ${total} issues`;
 }
 
 /** Compact fmt: success, file count. Drop individual file list and parse errors. */
@@ -304,13 +304,12 @@ export function formatFmtCompact(data: GoFmtCompact): string {
   return parts.join(", ");
 }
 
-/** Compact run: exitCode, success, truncation flags. Drop stdout/stderr. */
+/** Compact run: exitCode, success, truncation flags. Drop stdout/stderr (signal removed from schema). */
 export interface GoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
   timedOut?: boolean;
-  signal?: string;
   stdoutTruncated?: boolean;
   stderrTruncated?: boolean;
 }
@@ -321,7 +320,6 @@ export function compactRunMap(data: GoRunResult): GoRunCompact {
     success: data.success,
   };
   if (data.timedOut) compact.timedOut = true;
-  if (data.signal) compact.signal = data.signal;
   if (data.stdoutTruncated) compact.stdoutTruncated = true;
   if (data.stderrTruncated) compact.stderrTruncated = true;
   return compact;
@@ -471,7 +469,8 @@ export function formatEnvCompact(data: GoEnvCompact): string {
 export function formatGoList(data: GoListResult): string {
   // Module mode
   if (data.modules && data.modules.length > 0) {
-    const lines = [`go list: ${data.total} modules`];
+    const total = data.modules.length;
+    const lines = [`go list: ${total} modules`];
     for (const mod of data.modules) {
       const version = mod.version ? `@${mod.version}` : "";
       const flags: string[] = [];
@@ -484,9 +483,10 @@ export function formatGoList(data: GoListResult): string {
   }
 
   // Package mode
-  if (data.total === 0) return "go list: no packages found.";
+  const total = (data.packages ?? []).length;
+  if (total === 0) return "go list: no packages found.";
 
-  const lines = [`go list: ${data.total} packages`];
+  const lines = [`go list: ${total} packages`];
   for (const pkg of data.packages ?? []) {
     const importsCount = pkg.imports?.length ?? 0;
     const importsSuffix = importsCount > 0 ? ` [${importsCount} imports]` : "";
@@ -503,23 +503,23 @@ export function formatGoList(data: GoListResult): string {
   return lines.join("\n");
 }
 
-/** Compact list: success + total count only. Drop individual package/module details. */
+/** Compact list: success only (total derived from packages/modules arrays). */
 export interface GoListCompact {
   [key: string]: unknown;
   success: boolean;
-  total: number;
+  packageCount: number;
 }
 
 export function compactListMap(data: GoListResult): GoListCompact {
   return {
     success: data.success,
-    total: data.total,
+    packageCount: (data.packages ?? []).length + (data.modules ?? []).length,
   };
 }
 
 export function formatListCompact(data: GoListCompact): string {
-  if (data.total === 0) return "go list: no packages found.";
-  return `go list: ${data.total} packages`;
+  if (data.packageCount === 0) return "go list: no packages found.";
+  return `go list: ${data.packageCount} packages`;
 }
 
 // ── get ──────────────────────────────────────────────────────────────
@@ -536,8 +536,6 @@ export function formatGoGet(data: GoGetResult): string {
           lines.push(`  ${rp.package} ${rp.newVersion} (added)`);
         }
       }
-    } else if (data.output) {
-      lines.push(data.output);
     }
     // Show per-package errors if any
     if (data.packages) {
@@ -568,27 +566,21 @@ export function formatGoGet(data: GoGetResult): string {
       }
     }
   }
-  if (data.output && (!data.packages || data.packages.length === 0)) {
-    lines.push(data.output);
-  }
   return lines.join("\n");
 }
 
-/** Compact get: success + resolved package count. Drop individual details. */
+/** Compact get: success + resolved package count. Drop individual details (output removed from schema). */
 export interface GoGetCompact {
   [key: string]: unknown;
   success: boolean;
   resolvedCount: number;
-  output?: string;
 }
 
 export function compactGetMap(data: GoGetResult): GoGetCompact {
-  const compact: GoGetCompact = {
+  return {
     success: data.success,
     resolvedCount: data.resolvedPackages?.length ?? 0,
   };
-  if (!data.resolvedPackages?.length && data.output) compact.output = data.output;
-  return compact;
 }
 
 export function formatGetCompact(data: GoGetCompact): string {
@@ -603,38 +595,30 @@ export function formatGetCompact(data: GoGetCompact): string {
 
 /** Formats structured golangci-lint results into a human-readable diagnostic listing. */
 export function formatGolangciLint(data: GolangciLintResult): string {
-  if (data.total === 0) return "golangci-lint: no issues found.";
+  const diagnostics = data.diagnostics ?? [];
+  const total = diagnostics.length;
+  if (total === 0) return "golangci-lint: no issues found.";
 
   const lines = [
-    `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)`,
+    `golangci-lint: ${total} issues (${data.errors} errors, ${data.warnings} warnings)`,
   ];
 
   if (data.resultsTruncated) {
     lines.push("  (results truncated by linter limits)");
   }
 
-  for (const d of data.diagnostics ?? []) {
+  for (const d of diagnostics) {
     const col = d.column ? `:${d.column}` : "";
     const fixNote = d.fix ? " [fix available]" : "";
-    const category = d.category ? ` [${d.category}]` : "";
-    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})${category}${fixNote}`);
-  }
-
-  if (data.byLinter && data.byLinter.length > 0) {
-    lines.push("");
-    lines.push("By linter:");
-    for (const entry of data.byLinter) {
-      lines.push(`  ${entry.linter}: ${entry.count}`);
-    }
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})${fixNote}`);
   }
 
   return lines.join("\n");
 }
 
-/** Compact golangci-lint: total, errors, warnings. Drop individual diagnostics. */
+/** Compact golangci-lint: errors, warnings counts. Drop individual diagnostics (total derived from errors+warnings). */
 export interface GolangciLintCompact {
   [key: string]: unknown;
-  total: number;
   errors: number;
   warnings: number;
   resultsTruncated?: boolean;
@@ -642,7 +626,6 @@ export interface GolangciLintCompact {
 
 export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCompact {
   const compact: GolangciLintCompact = {
-    total: data.total,
     errors: data.errors,
     warnings: data.warnings,
   };
@@ -651,7 +634,8 @@ export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCo
 }
 
 export function formatGolangciLintCompact(data: GolangciLintCompact): string {
-  if (data.total === 0) return "golangci-lint: no issues found.";
+  const total = data.errors + data.warnings;
+  if (total === 0) return "golangci-lint: no issues found.";
   const truncated = data.resultsTruncated ? " (truncated)" : "";
-  return `golangci-lint: ${data.total} issues (${data.errors} errors, ${data.warnings} warnings)${truncated}`;
+  return `golangci-lint: ${total} issues (${data.errors} errors, ${data.warnings} warnings)${truncated}`;
 }

@@ -22,7 +22,6 @@ export const GoBuildResultSchema = z.object({
     })
     .optional()
     .describe("Best-effort build cache estimate derived from go list stale metadata"),
-  total: z.number(),
 });
 
 export type GoBuildResult = z.infer<typeof GoBuildResultSchema>;
@@ -52,7 +51,6 @@ export const GoTestResultSchema = z.object({
   tests: z.array(GoTestCaseSchema).optional(),
   /** Package-level failures (build errors, missing dependencies) where no individual test ran. */
   packageFailures: z.array(GoTestPackageFailureSchema).optional(),
-  total: z.number(),
   passed: z.number(),
   failed: z.number(),
   skipped: z.number(),
@@ -76,7 +74,6 @@ export const GoVetResultSchema = z.object({
   diagnostics: z.array(GoVetDiagnosticSchema).optional(),
   /** Compilation/build errors encountered while running go vet (separate from vet diagnostics). */
   compilationErrors: z.array(z.string()).optional(),
-  total: z.number(),
 });
 
 export type GoVetResult = z.infer<typeof GoVetResultSchema>;
@@ -87,7 +84,6 @@ export const GoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   timedOut: z.boolean().optional(),
-  signal: z.string().optional(),
   /** Whether stdout was truncated due to maxOutput limit. */
   stdoutTruncated: z.boolean().optional(),
   /** Whether stderr was truncated due to maxOutput limit. */
@@ -208,7 +204,6 @@ export const GoListResultSchema = z.object({
   packages: z.array(GoListPackageSchema).optional(),
   /** Module list (populated when modules mode is used). */
   modules: z.array(GoListModuleSchema).optional(),
-  total: z.number(),
 });
 
 export type GoListResult = z.infer<typeof GoListResultSchema>;
@@ -234,10 +229,9 @@ export const GoGetResolvedPackageSchema = z.object({
   newVersion: z.string(),
 });
 
-/** Zod schema for structured go get output with success status, output text, and resolved packages. */
+/** Zod schema for structured go get output with success status and resolved packages. */
 export const GoGetResultSchema = z.object({
   success: z.boolean(),
-  output: z.string().optional(),
   /** Packages resolved/upgraded by go get with version information. */
   resolvedPackages: z.array(GoGetResolvedPackageSchema).optional(),
   /** Per-package status showing success/failure for each requested package. */
@@ -271,12 +265,8 @@ export const GolangciLintDiagnosticSchema = z.object({
   line: z.number(),
   column: z.number().optional(),
   linter: z.string(),
-  category: z
-    .enum(["bug-risk", "style", "performance", "security", "complexity", "other"])
-    .optional(),
   severity: z.enum(["error", "warning", "info"]),
   message: z.string(),
-  sourceLine: z.string().optional(),
   /** Fix/replacement suggestion from the linter, if available. */
   fix: GolangciLintFixSchema.optional(),
 });
@@ -290,11 +280,9 @@ export const GolangciLintLinterSummarySchema = z.object({
 /** Zod schema for structured golangci-lint output with diagnostics and summary counts. */
 export const GolangciLintResultSchema = z.object({
   diagnostics: z.array(GolangciLintDiagnosticSchema).optional(),
-  total: z.number(),
   errors: z.number(),
   warnings: z.number(),
   resultsTruncated: z.boolean().optional(),
-  byLinter: z.array(GolangciLintLinterSummarySchema).optional(),
 });
 
 export type GolangciLintResult = z.infer<typeof GolangciLintResultSchema>;

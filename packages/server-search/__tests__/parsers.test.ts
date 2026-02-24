@@ -46,11 +46,6 @@ describe("parseRgJsonOutput", () => {
     const result = parseRgJsonOutput(stdout, 1000);
 
     expect(result.totalMatches).toBe(2);
-    expect(result.filesSearched).toBe(2);
-    expect(result.files).toEqual([
-      { file: "src/foo.ts", matchCount: 1 },
-      { file: "src/bar.ts", matchCount: 1 },
-    ]);
     expect(result.matches).toHaveLength(2);
     expect(result.matches[0]).toEqual({
       file: "src/foo.ts",
@@ -98,7 +93,6 @@ describe("parseRgJsonOutput", () => {
     const result = parseRgJsonOutput("", 1000);
 
     expect(result.totalMatches).toBe(0);
-    expect(result.filesSearched).toBe(0);
     expect(result.matches).toHaveLength(0);
   });
 
@@ -183,8 +177,7 @@ describe("parseRgJsonOutput", () => {
     const result = parseRgJsonOutput(stdout, 1000);
 
     expect(result.totalMatches).toBe(3);
-    // No summary line, so filesSearched falls back to unique file count
-    expect(result.filesSearched).toBe(2);
+    // filesSearched removed from schema — derivable from matches
   });
 });
 
@@ -195,19 +188,12 @@ describe("parseFdOutput", () => {
     const cwd = process.cwd();
     const result = parseFdOutput(stdout, 1000, cwd);
 
-    expect(result.total).toBe(3);
     expect(result.files).toHaveLength(3);
     expect(result.files[0].path).toBe("src/index.ts");
-    expect(result.files[0].name).toBe("index.ts");
-    expect(result.files[0].ext).toBe("ts");
     expect(["file", "other"]).toContain(result.files[0].type);
     expect(result.files[1].path).toBe("src/lib/parsers.ts");
-    expect(result.files[1].name).toBe("parsers.ts");
-    expect(result.files[1].ext).toBe("ts");
     expect(["file", "other"]).toContain(result.files[1].type);
     expect(result.files[2].path).toBe("README.md");
-    expect(result.files[2].name).toBe("README.md");
-    expect(result.files[2].ext).toBe("md");
     expect(["file", "other"]).toContain(result.files[2].type);
   });
 
@@ -216,23 +202,17 @@ describe("parseFdOutput", () => {
 
     const result = parseFdOutput(stdout, 1000, process.cwd());
 
-    expect(result.total).toBe(3);
+    expect(result.files).toHaveLength(3);
     expect(result.files[0]).toEqual({
       path: "Makefile",
-      name: "Makefile",
-      ext: "",
       type: "other",
     });
     expect(result.files[1]).toEqual({
       path: "Dockerfile",
-      name: "Dockerfile",
-      ext: "",
       type: "other",
     });
     expect(result.files[2]).toEqual({
       path: ".gitignore",
-      name: ".gitignore",
-      ext: "",
       type: "other",
     });
   });
@@ -242,14 +222,12 @@ describe("parseFdOutput", () => {
 
     const result = parseFdOutput(stdout, 3, process.cwd());
 
-    expect(result.total).toBe(3);
     expect(result.files).toHaveLength(3);
   });
 
   it("handles empty output", () => {
     const result = parseFdOutput("", 1000, process.cwd());
 
-    expect(result.total).toBe(0);
     expect(result.files).toHaveLength(0);
   });
 
@@ -258,7 +236,7 @@ describe("parseFdOutput", () => {
 
     const result = parseFdOutput(stdout, 1000, process.cwd());
 
-    expect(result.total).toBe(2);
+    expect(result.files).toHaveLength(2);
     expect(result.files[0].path).toBe("src/index.ts");
     expect(result.files[1].path).toBe("src/lib/foo.ts");
   });
@@ -274,8 +252,8 @@ describe("parseFdOutput", () => {
     const result = parseFdOutput(stdout, 1000, root);
 
     expect(result.files).toEqual([
-      { path: "a.ts", name: "a.ts", ext: "ts", type: "file" },
-      { path: "nested", name: "nested", ext: "", type: "directory" },
+      { path: "a.ts", type: "file" },
+      { path: "nested", type: "directory" },
     ]);
   });
 });
@@ -286,7 +264,7 @@ describe("parseRgCountOutput", () => {
 
     const result = parseRgCountOutput(stdout);
 
-    expect(result.totalFiles).toBe(3);
+    expect(result.files.length).toBe(3);
     expect(result.totalMatches).toBe(18);
     expect(result.files).toHaveLength(3);
     expect(result.files[0]).toEqual({ file: "src/index.ts", count: 5 });
@@ -299,14 +277,14 @@ describe("parseRgCountOutput", () => {
 
     const result = parseRgCountOutput(stdout);
 
-    expect(result.totalFiles).toBe(1);
+    expect(result.files.length).toBe(1);
     expect(result.files[0]).toEqual({ file: "C:\\Users\\code\\file.ts", count: 3 });
   });
 
   it("handles empty output", () => {
     const result = parseRgCountOutput("");
 
-    expect(result.totalFiles).toBe(0);
+    expect(result.files.length).toBe(0);
     expect(result.totalMatches).toBe(0);
     expect(result.files).toHaveLength(0);
   });
@@ -316,7 +294,7 @@ describe("parseRgCountOutput", () => {
 
     const result = parseRgCountOutput(stdout);
 
-    expect(result.totalFiles).toBe(2);
+    expect(result.files.length).toBe(2);
     expect(result.totalMatches).toBe(7);
   });
 
@@ -325,7 +303,7 @@ describe("parseRgCountOutput", () => {
 
     const result = parseRgCountOutput(stdout);
 
-    expect(result.totalFiles).toBe(1);
+    expect(result.files.length).toBe(1);
     expect(result.totalMatches).toBe(10);
     expect(result.files[0]).toEqual({ file: "other.ts", count: 10 });
   });

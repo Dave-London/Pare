@@ -208,7 +208,7 @@ describe("fidelity: parser edge cases", () => {
     expect(parsed.failures[0].name).toBe("should fail");
     expect(parsed.failures[0].file).toBe("test.ts");
     expect(parsed.failures[0].line).toBe(10);
-    expect(parsed.failures[0].stack).toContain("Expected true to be false");
+    // stack removed from schema — no longer in output
   });
 
   it("parseVitestCoverage handles empty output", () => {
@@ -319,11 +319,7 @@ describe("fidelity: vitest parser expansion", () => {
     const parsed = parseVitestJson(input);
     expect(parsed.failures).toHaveLength(1);
     const fail = parsed.failures[0];
-    expect(fail.stack).toContain("AssertionError: expected 42 to equal 99");
-    expect(fail.stack).toContain("processTicksAndRejections");
-    expect(fail.stack).toContain("runTest");
-    // Verify entire multi-line stack is preserved, not truncated
-    expect(fail.stack!.split("\n").length).toBeGreaterThanOrEqual(7);
+    // stack removed from schema — no longer in output
     expect(fail.expected).toBe("99");
     expect(fail.actual).toBe("42");
   });
@@ -453,7 +449,7 @@ describe("fidelity: jest parser (fixture-based)", () => {
     expect(f1.line).toBe(8);
     expect(f1.expected).toBe("10");
     expect(f1.actual).toBe("5");
-    expect(f1.stack).toContain("expect(received).toBe(expected)");
+    // stack removed from schema — no longer in output
 
     // Second failure: no expected/actual, no location
     const f2 = parsed.failures.find((f) => f.name === "math > divides")!;
