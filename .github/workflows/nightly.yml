@@ -99,9 +99,9 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
 
-          # Determine if any required job failed
+          # Determine if any job failed (including audit — nightly should alert on vulnerabilities)
           FAILED="false"
-          for result in "${{ needs.build-and-test.result }}" "${{ needs.lint.result }}" "${{ needs.smoke.result }}"; do
+          for result in "${{ needs.build-and-test.result }}" "${{ needs.lint.result }}" "${{ needs.smoke.result }}" "${{ needs.audit.result }}"; do
             if [[ "$result" != "success" ]]; then
               FAILED="true"
             fi
