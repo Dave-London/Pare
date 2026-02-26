@@ -2,7 +2,7 @@
   "name": "@paretools/process",
   "version": "0.12.0",
   "mcpName": "io.github.Dave-London/pare-process",
-  "description": "MCP server for running commands with structured output, timeout, and signal support",
+  "description": "MCP server for running commands and reloading MCP servers, with structured output, timeout, and signal support",
   "license": "MIT",
   "keywords": [
     "mcp",
