@@ -26,6 +26,30 @@ import { resolveProfile, _resetProfileCache } from "./profiles.js";
 export { _resetProfileCache };
 
 /**
+ * Returns `true` when lazy tool loading is enabled.
+ *
+ * Lazy mode is activated by setting `PARE_LAZY=true` (case-insensitive).
+ * When active, only core tools are registered at startup; extended tools
+ * are deferred and discoverable via the `discover-tools` meta-tool.
+ *
+ * Lazy mode is NOT active when `PARE_PROFILE=full` is explicitly set,
+ * or when any explicit tool filter (`PARE_TOOLS`, `PARE_{SERVER}_TOOLS`)
+ * is in use — those filters already provide precise control.
+ */
+export function isLazyEnabled(): boolean {
+  // Explicit tool filters take precedence — no lazy behavior.
+  if (process.env.PARE_TOOLS !== undefined) return false;
+
+  // Explicit "full" profile means load everything.
+  const profile = process.env.PARE_PROFILE;
+  if (profile !== undefined && profile.trim().toLowerCase() === "full") return false;
+
+  const raw = process.env.PARE_LAZY;
+  if (raw === undefined) return false;
+  return raw.trim().toLowerCase() === "true";
+}
+
+/**
  * Determines whether a tool should be registered based on environment variables.
  *
  * @param serverName - The server identifier (e.g., "git", "npm", "docker").

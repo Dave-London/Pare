@@ -25,9 +25,15 @@ export {
   filePatternsInput,
 } from "./input-schemas.js";
 export { sanitizeErrorOutput } from "./sanitize.js";
-export { shouldRegisterTool, _resetProfileCache } from "./tool-filter.js";
-export { PROFILES, resolveProfile } from "./profiles.js";
+export { shouldRegisterTool, isLazyEnabled, _resetProfileCache } from "./tool-filter.js";
+export { PROFILES, CORE_TOOLS, resolveProfile, isCoreToolForServer } from "./profiles.js";
 export type { ProfileName } from "./profiles.js";
+export {
+  createLazyToolManager,
+  type LazyToolDefinition,
+  type LazyToolManager,
+} from "./lazy-tools.js";
+export { registerDiscoverTool } from "./discover-tool.js";
 export {
   assertAllowedByPolicy,
   assertAllowedRoot,
