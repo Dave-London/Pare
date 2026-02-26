@@ -16,6 +16,7 @@ status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash, 
 ### pare-github (replaces `gh`)
 
 Use `pare-github <tool>` instead of `gh`:
+
 - PR: pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff
 - Issues: issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update
 - CI: run-view, run-list, run-rerun
@@ -28,49 +29,49 @@ install, audit, outdated, list, run, test, init, info, search, nvm
 
 ### pare-search (replaces search/filter tools)
 
-| CLI | MCP Tool |
-|---|---|
+| CLI           | MCP Tool             |
+| ------------- | -------------------- |
 | `grep` / `rg` | `pare-search search` |
-| `find` / `fd` | `pare-search find` |
-| `wc` | `pare-search count` |
-| `jq` | `pare-search jq` |
-| `yq` | `pare-search yq` |
+| `find` / `fd` | `pare-search find`   |
+| `wc`          | `pare-search count`  |
+| `jq`          | `pare-search jq`     |
+| `yq`          | `pare-search yq`     |
 
 ### pare-lint (replaces linters/formatters)
 
-| CLI | MCP Tool |
-|---|---|
-| `eslint` | `pare-lint lint` |
-| `prettier --check` | `pare-lint format-check` |
+| CLI                | MCP Tool                    |
+| ------------------ | --------------------------- |
+| `eslint`           | `pare-lint lint`            |
+| `prettier --check` | `pare-lint format-check`    |
 | `prettier --write` | `pare-lint prettier-format` |
-| `biome check` | `pare-lint biome-check` |
-| `biome format` | `pare-lint biome-format` |
-| `stylelint` | `pare-lint stylelint` |
-| `oxlint` | `pare-lint oxlint` |
-| `shellcheck` | `pare-lint shellcheck` |
-| `hadolint` | `pare-lint hadolint` |
+| `biome check`      | `pare-lint biome-check`     |
+| `biome format`     | `pare-lint biome-format`    |
+| `stylelint`        | `pare-lint stylelint`       |
+| `oxlint`           | `pare-lint oxlint`          |
+| `shellcheck`       | `pare-lint shellcheck`      |
+| `hadolint`         | `pare-lint hadolint`        |
 
 ### pare-build (replaces build tools)
 
-| CLI | MCP Tool |
-|---|---|
-| `tsc` | `pare-build tsc` |
-| `npm run build` | `pare-build build` |
-| `esbuild` | `pare-build esbuild` |
-| `vite build` | `pare-build vite-build` |
-| `webpack` | `pare-build webpack` |
-| `turbo` | `pare-build turbo` |
-| `nx` | `pare-build nx` |
-| `lerna` | `pare-build lerna` |
-| `rollup` | `pare-build rollup` |
+| CLI             | MCP Tool                |
+| --------------- | ----------------------- |
+| `tsc`           | `pare-build tsc`        |
+| `npm run build` | `pare-build build`      |
+| `esbuild`       | `pare-build esbuild`    |
+| `vite build`    | `pare-build vite-build` |
+| `webpack`       | `pare-build webpack`    |
+| `turbo`         | `pare-build turbo`      |
+| `nx`            | `pare-build nx`         |
+| `lerna`         | `pare-build lerna`      |
+| `rollup`        | `pare-build rollup`     |
 
 ### pare-test (replaces test runners)
 
-| CLI | MCP Tool |
-|---|---|
-| `vitest`/`jest`/`mocha`/`pytest` | `pare-test run` |
-| `vitest --coverage` | `pare-test coverage` |
-| `playwright test` | `pare-test playwright` |
+| CLI                              | MCP Tool               |
+| -------------------------------- | ---------------------- |
+| `vitest`/`jest`/`mocha`/`pytest` | `pare-test run`        |
+| `vitest --coverage`              | `pare-test coverage`   |
+| `playwright test`                | `pare-test playwright` |
 
 ### pare-docker (replaces `docker`)
 
@@ -88,16 +89,16 @@ build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint
 
 ### pare-python (replaces Python tools)
 
-| CLI | MCP Tool |
-|---|---|
+| CLI                     | MCP Tool                                    |
+| ----------------------- | ------------------------------------------- |
 | `pip install/list/show` | `pare-python pip-install/pip-list/pip-show` |
-| `pip-audit` | `pare-python pip-audit` |
-| `mypy` | `pare-python mypy` |
-| `ruff check/format` | `pare-python ruff-check/ruff-format` |
-| `black` | `pare-python black` |
-| `pytest` | `pare-python pytest` |
-| `uv install/run` | `pare-python uv-install/uv-run` |
-| `conda/pyenv/poetry` | `pare-python conda/pyenv/poetry` |
+| `pip-audit`             | `pare-python pip-audit`                     |
+| `mypy`                  | `pare-python mypy`                          |
+| `ruff check/format`     | `pare-python ruff-check/ruff-format`        |
+| `black`                 | `pare-python black`                         |
+| `pytest`                | `pare-python pytest`                        |
+| `uv install/run`        | `pare-python uv-install/uv-run`             |
+| `conda/pyenv/poetry`    | `pare-python conda/pyenv/poetry`            |
 
 ### pare-k8s (replaces `kubectl`, `helm`)
 

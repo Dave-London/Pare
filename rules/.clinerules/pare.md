@@ -10,14 +10,14 @@ Always prefer Pare MCP tools over raw CLI commands. Do not use shell/terminal to
 
 ### pare-git (replaces `git`)
 
-| Git Subcommand | MCP Tool |
-|---|---|
-| status, log, diff, branch, show | `pare-git <subcommand>` |
-| add, commit, push, pull, checkout | `pare-git <subcommand>` |
-| tag, stash, remote, blame, restore | `pare-git <subcommand>` |
-| reset, cherry-pick, merge, rebase | `pare-git <subcommand>` |
+| Git Subcommand                      | MCP Tool                |
+| ----------------------------------- | ----------------------- |
+| status, log, diff, branch, show     | `pare-git <subcommand>` |
+| add, commit, push, pull, checkout   | `pare-git <subcommand>` |
+| tag, stash, remote, blame, restore  | `pare-git <subcommand>` |
+| reset, cherry-pick, merge, rebase   | `pare-git <subcommand>` |
 | reflog, bisect, worktree, submodule | `pare-git <subcommand>` |
-| archive, clean, config | `pare-git <subcommand>` |
+| archive, clean, config              | `pare-git <subcommand>` |
 
 ### pare-github (replaces `gh`)
 
