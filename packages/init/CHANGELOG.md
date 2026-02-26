@@ -1,5 +1,11 @@
 # @paretools/init
 
+## 0.13.0
+
+### Patch Changes
+
+- [#614](https://github.com/Dave-London/Pare/pull/614) [`7e2e014`](https://github.com/Dave-London/Pare/commit/7e2e014ec471b03855d186f1a9158e85afc8bc3c) Thanks [@Dave-London](https://github.com/Dave-London)! - Add package name allowlist for doctor health checks and backup creation for config file modifications
+
 ## 0.2.0
 
 ### Minor Changes
