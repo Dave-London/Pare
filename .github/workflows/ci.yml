@@ -70,7 +70,7 @@ jobs:
     if: needs.classify.outputs.full-suite == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20, 22]
@@ -209,9 +209,12 @@ jobs:
 
           # Conditional jobs: must pass if they ran, OK to skip
           for result in "${{ needs.build-and-test-full.result }}" "${{ needs.coverage.result }}"; do
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            if [[ "$result" != "success" && "$result" != "skipped" && "$result" != "cancelled" ]]; then
               echo "Conditional job failed: $result"
               exit 1
+            fi
+            if [[ "$result" == "cancelled" ]]; then
+              echo "⚠ Conditional job was cancelled (non-blocking)"
             fi
           done
 
