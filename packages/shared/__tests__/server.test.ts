@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { _resetProfileCache } from "../src/tool-filter.js";
 
 // Mock the MCP SDK modules before importing createServer
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
@@ -7,6 +8,7 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
       this._info = info;
       this._opts = opts;
       this.connect = vi.fn().mockResolvedValue(undefined);
+      this.sendToolListChanged = vi.fn();
     }),
   };
 });
@@ -24,8 +26,28 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 describe("createServer", () => {
+  const savedEnv: Record<string, string | undefined> = {};
+
   beforeEach(() => {
     vi.clearAllMocks();
+    savedEnv.PARE_LAZY = process.env.PARE_LAZY;
+    savedEnv.PARE_TOOLS = process.env.PARE_TOOLS;
+    savedEnv.PARE_PROFILE = process.env.PARE_PROFILE;
+    delete process.env.PARE_LAZY;
+    delete process.env.PARE_TOOLS;
+    delete process.env.PARE_PROFILE;
+    _resetProfileCache();
+  });
+
+  afterEach(() => {
+    for (const [key, val] of Object.entries(savedEnv)) {
+      if (val === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = val;
+      }
+    }
+    _resetProfileCache();
   });
 
   it("creates McpServer with name, version, and instructions", async () => {
@@ -44,7 +66,7 @@ describe("createServer", () => {
     );
   });
 
-  it("calls registerTools with the server instance", async () => {
+  it("calls registerTools with server and undefined when lazy is off", async () => {
     const registerTools = vi.fn();
 
     const server = await createServer({
@@ -55,7 +77,28 @@ describe("createServer", () => {
     });
 
     expect(registerTools).toHaveBeenCalledTimes(1);
-    expect(registerTools).toHaveBeenCalledWith(server);
+    expect(registerTools).toHaveBeenCalledWith(server, undefined);
+  });
+
+  it("passes a LazyToolManager when PARE_LAZY=true", async () => {
+    process.env.PARE_LAZY = "true";
+    const registerTools = vi.fn();
+
+    const server = await createServer({
+      name: "@paretools/foo",
+      version: "0.0.1",
+      instructions: "Foo server",
+      registerTools,
+    });
+
+    expect(registerTools).toHaveBeenCalledTimes(1);
+    const [srv, lazyMgr] = registerTools.mock.calls[0];
+    expect(srv).toBe(server);
+    expect(lazyMgr).toBeDefined();
+    expect(typeof lazyMgr.registerLazy).toBe("function");
+    expect(typeof lazyMgr.loadTool).toBe("function");
+    expect(typeof lazyMgr.loadAll).toBe("function");
+    expect(typeof lazyMgr.listLazy).toBe("function");
   });
 
   it("connects StdioServerTransport", async () => {

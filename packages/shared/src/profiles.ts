@@ -321,6 +321,65 @@ export const PROFILES: Record<ProfileName, readonly string[] | null> = {
   full: null,
 };
 
+/**
+ * Core tools per server — the most commonly used tools that should always
+ * load immediately, even when lazy mode (`PARE_LAZY=true`) is active.
+ *
+ * Tools not listed here will be deferred and discoverable via the
+ * `discover-tools` meta-tool.
+ */
+export const CORE_TOOLS: Record<string, readonly string[]> = {
+  git: ["status", "log", "diff", "commit", "push", "pull", "checkout", "branch", "add"],
+  github: [
+    "pr-view",
+    "pr-list",
+    "pr-create",
+    "pr-checks",
+    "issue-view",
+    "issue-list",
+    "issue-create",
+  ],
+  npm: ["install", "run", "test", "audit", "list"],
+  docker: ["ps", "build", "logs", "images", "compose-up", "compose-down"],
+  build: ["tsc", "build"],
+  test: ["run", "coverage"],
+  lint: ["lint", "format-check", "prettier-format"],
+  search: ["search", "find", "count"],
+  cargo: ["build", "test", "clippy", "run", "check"],
+  go: ["build", "test", "vet", "run", "mod-tidy", "fmt"],
+  python: ["pip-install", "pip-list", "pytest", "ruff-check", "uv-run"],
+  k8s: ["get", "describe", "logs"],
+  http: ["get", "post", "request"],
+  security: ["trivy", "semgrep"],
+  make: ["run", "list"],
+  process: ["run"],
+  bun: ["run", "test", "build", "install"],
+  deno: ["run", "test", "fmt", "lint"],
+  dotnet: ["build", "test", "run"],
+  infra: ["plan", "validate", "init"],
+  jvm: ["gradle-build", "gradle-test", "maven-build", "maven-test"],
+  nix: ["build", "run", "develop"],
+  remote: ["ssh-run", "ssh-test"],
+  ruby: ["run", "check", "bundle-install", "bundle-exec"],
+  swift: ["build", "test", "run"],
+  db: ["psql-query", "psql-list-databases", "mysql-query", "mysql-list-databases"],
+  bazel: ["bazel"],
+  cmake: ["cmake"],
+};
+
+/**
+ * Checks whether a tool is in the core set for a given server.
+ *
+ * @param serverName - The server identifier (e.g., "git", "npm").
+ * @param toolName - The tool name (e.g., "status", "install").
+ * @returns `true` if the tool is a core tool, `false` otherwise.
+ */
+export function isCoreToolForServer(serverName: string, toolName: string): boolean {
+  const core = CORE_TOOLS[serverName];
+  if (!core) return true; // Unknown server — treat all as core.
+  return core.includes(toolName);
+}
+
 /** Module-level cache for the resolved profile Set. */
 let profileCache: Set<string> | null | undefined;
 
