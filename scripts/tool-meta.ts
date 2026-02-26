@@ -26,8 +26,12 @@ export interface PackageMeta {
   tools: string[];
 }
 
-/** Match `if (s("toolName"))` — the registration guard used in every package. */
-const TOOL_RE = /if\s*\(\s*s\(\s*"([^"]+)"\s*\)\s*\)/g;
+/**
+ * Match tool names in TOOL_DEFS arrays: `name: "toolName"`.
+ * Also falls back to the legacy `if (s("toolName"))` guard pattern.
+ */
+const TOOL_DEFS_RE = /^\s+\{?\s*name:\s*"([^"]+)"/gm;
+const LEGACY_TOOL_RE = /if\s*\(\s*s\(\s*"([^"]+)"\s*\)\s*\)/g;
 
 function scanPackage(dir: string): PackageMeta | null {
   const indexPath = resolve(PACKAGES_DIR, dir, "src/tools/index.ts");
@@ -39,8 +43,14 @@ function scanPackage(dir: string): PackageMeta | null {
   }
 
   const tools: string[] = [];
-  for (const m of src.matchAll(TOOL_RE)) {
+  // Prefer TOOL_DEFS-style declarations; fall back to legacy pattern
+  for (const m of src.matchAll(TOOL_DEFS_RE)) {
     tools.push(m[1]);
+  }
+  if (tools.length === 0) {
+    for (const m of src.matchAll(LEGACY_TOOL_RE)) {
+      tools.push(m[1]);
+    }
   }
 
   // Extract the package short name from `shouldRegisterTool("name", …)`

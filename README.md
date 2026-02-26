@@ -42,26 +42,38 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
-## Available Servers (149 tools, 17 packages)
+## Available Servers (240 tools, 28 packages)
 
-| Package                                             | Tools                                                                                                                                                                                                                                                      | Wraps                                                            |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`@paretools/git`](./packages/server-git)           | status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree                                                                 | git                                                              |
-| [`@paretools/github`](./packages/server-github)     | pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, api, release-create, release-list, gist-create | gh                                                               |
-| [`@paretools/search`](./packages/server-search)     | search, find, count, jq                                                                                                                                                                                                                                    | ripgrep, fd, jq                                                  |
-| [`@paretools/test`](./packages/server-test)         | run, coverage, playwright                                                                                                                                                                                                                                  | pytest, jest, vitest, mocha, playwright                          |
-| [`@paretools/npm`](./packages/server-npm)           | install, audit, outdated, list, run, test, init, info, search, nvm                                                                                                                                                                                         | npm, nvm                                                         |
-| [`@paretools/docker`](./packages/server-docker)     | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats                                                                                                         | docker, docker compose                                           |
-| [`@paretools/build`](./packages/server-build)       | tsc, build, esbuild, vite-build, webpack, turbo, nx                                                                                                                                                                                                        | tsc, esbuild, vite, webpack, turbo, nx                           |
-| [`@paretools/lint`](./packages/server-lint)         | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint                                                                                                                                                    | eslint, prettier, biome, stylelint, oxlint, shellcheck, hadolint |
-| [`@paretools/http`](./packages/server-http)         | request, get, post, head                                                                                                                                                                                                                                   | curl                                                             |
-| [`@paretools/make`](./packages/server-make)         | run, list                                                                                                                                                                                                                                                  | make, just                                                       |
-| [`@paretools/python`](./packages/server-python)     | pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format, conda, pyenv, poetry                                                                                                                         | pip, mypy, ruff, pytest, uv, black, conda, pyenv, poetry         |
-| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit                                                                                                                                                                                | cargo                                                            |
-| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint                                                                                                                                                                              | go, gofmt, golangci-lint                                         |
-| [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                   | trivy, semgrep, gitleaks                                         |
-| [`@paretools/k8s`](./packages/server-k8s)           | kubectl-get, kubectl-describe, kubectl-logs, kubectl-apply, helm                                                                                                                                                                                           | kubectl, helm                                                    |
-| [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                        | child_process                                                    |
+| Package                                             | Tools                                                                                                                                                                                                                                                                                                                        | Wraps                                                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`@paretools/git`](./packages/server-git)           | status, log, log-graph, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config                                                                                                | git                                                              |
+| [`@paretools/github`](./packages/server-github)     | pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api | gh                                                               |
+| [`@paretools/search`](./packages/server-search)     | search, find, count, jq, yq                                                                                                                                                                                                                                                                                                  | ripgrep, fd, jq, yq                                              |
+| [`@paretools/test`](./packages/server-test)         | run, coverage, playwright                                                                                                                                                                                                                                                                                                    | pytest, jest, vitest, mocha, playwright                          |
+| [`@paretools/npm`](./packages/server-npm)           | install, audit, outdated, list, run, test, init, info, search, nvm                                                                                                                                                                                                                                                           | npm, nvm                                                         |
+| [`@paretools/docker`](./packages/server-docker)     | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats                                                                                                                                                                           | docker, docker compose                                           |
+| [`@paretools/build`](./packages/server-build)       | tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup                                                                                                                                                                                                                                                           | tsc, esbuild, vite, webpack, turbo, nx, lerna, rollup            |
+| [`@paretools/lint`](./packages/server-lint)         | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint                                                                                                                                                                                                                      | eslint, prettier, biome, stylelint, oxlint, shellcheck, hadolint |
+| [`@paretools/http`](./packages/server-http)         | request, get, post, head                                                                                                                                                                                                                                                                                                     | curl                                                             |
+| [`@paretools/make`](./packages/server-make)         | run, list                                                                                                                                                                                                                                                                                                                    | make, just                                                       |
+| [`@paretools/python`](./packages/server-python)     | pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry                                                                                                                                                                                           | pip, mypy, ruff, pytest, uv, black, conda, pyenv, poetry         |
+| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit                                                                                                                                                                                                                                                  | cargo                                                            |
+| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint                                                                                                                                                                                                                                                | go, gofmt, golangci-lint                                         |
+| [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                                                                                     | trivy, semgrep, gitleaks                                         |
+| [`@paretools/k8s`](./packages/server-k8s)           | get, describe, logs, apply, helm                                                                                                                                                                                                                                                                                             | kubectl, helm                                                    |
+| [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                                                                                          | child_process                                                    |
+| [`@paretools/infra`](./packages/server-infra)       | init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy                                                                                                                                                                                                 | terraform, vagrant, ansible                                      |
+| [`@paretools/jvm`](./packages/server-jvm)           | gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify                                                                                                                                                                                                      | gradle, maven                                                    |
+| [`@paretools/db`](./packages/server-db)             | psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats                                                                                                                                                                                       | psql, mysql, redis-cli, mongosh                                  |
+| [`@paretools/deno`](./packages/server-deno)         | run, test, fmt, lint, check, task, info                                                                                                                                                                                                                                                                                      | deno                                                             |
+| [`@paretools/bun`](./packages/server-bun)           | run, test, build, install, add, remove, outdated, pm-ls                                                                                                                                                                                                                                                                      | bun                                                              |
+| [`@paretools/nix`](./packages/server-nix)           | build, run, develop, shell, flake-show, flake-check, flake-update                                                                                                                                                                                                                                                            | nix                                                              |
+| [`@paretools/dotnet`](./packages/server-dotnet)     | build, test, run, publish, restore, clean, add-package, list-package                                                                                                                                                                                                                                                         | dotnet                                                           |
+| [`@paretools/ruby`](./packages/server-ruby)         | run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check                                                                                                                                                                                                                                   | ruby, gem, bundler                                               |
+| [`@paretools/remote`](./packages/server-remote)     | ssh-run, ssh-test, ssh-keyscan, rsync                                                                                                                                                                                                                                                                                        | ssh, rsync                                                       |
+| [`@paretools/swift`](./packages/server-swift)       | build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init                                                                                                                                                                                                                    | swift                                                            |
+| [`@paretools/cmake`](./packages/server-cmake)       | cmake                                                                                                                                                                                                                                                                                                                        | cmake                                                            |
+| [`@paretools/bazel`](./packages/server-bazel)       | bazel                                                                                                                                                                                                                                                                                                                        | bazel                                                            |
 
 ## Quick Setup
 
@@ -289,19 +301,34 @@ When Pare MCP tools are available (prefixed with mcp\_\_pare-\*), prefer them ov
 running raw CLI commands via Bash. Pare tools return structured JSON with ~85%
 fewer tokens than CLI output.
 
-- Git: mcp**pare-git**status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame
-- GitHub: mcp**pare-github**pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list
-- Search: mcp**pare-search**search, find, count
-- Tests: mcp**pare-test**run, mcp**pare-test**coverage (pytest, jest, vitest, mocha)
-- Builds: mcp**pare-build**tsc, build, esbuild, vite-build, webpack
-- Linting: mcp**pare-lint**lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint
-- npm: mcp**pare-npm**install, audit, outdated, list, run, test, init, info, search
-- Docker: mcp**pare-docker**ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps
+- Git: mcp**pare-git**status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config
+- GitHub: mcp**pare-github**pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api
+- Search: mcp**pare-search**search, find, count, jq, yq
+- Tests: mcp**pare-test**run, coverage, playwright (pytest, jest, vitest, mocha, playwright)
+- Builds: mcp**pare-build**tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup
+- Linting: mcp**pare-lint**lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint
+- npm: mcp**pare-npm**install, audit, outdated, list, run, test, init, info, search, nvm
+- Docker: mcp**pare-docker**ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats
 - HTTP: mcp**pare-http**request, get, post, head
 - Make: mcp**pare-make**run, list
-- Python: mcp**pare-python**pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format
-- Cargo: mcp**pare-cargo**build, test, clippy, run, add, remove, fmt, doc, check, update, tree
-- Go: mcp**pare-go**build, test, vet, run, mod-tidy, fmt, generate, env, list, get
+- Python: mcp**pare-python**pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry
+- Cargo: mcp**pare-cargo**build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit
+- Go: mcp**pare-go**build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint
+- Security: mcp**pare-security**trivy, semgrep, gitleaks
+- K8s: mcp**pare-k8s**get, describe, logs, apply, helm
+- Process: mcp**pare-process**run
+- Infra: mcp**pare-infra**init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy
+- JVM: mcp**pare-jvm**gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify
+- DB: mcp**pare-db**psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats
+- Deno: mcp**pare-deno**run, test, fmt, lint, check, task, info
+- Bun: mcp**pare-bun**run, test, build, install, add, remove, outdated, pm-ls
+- Nix: mcp**pare-nix**build, run, develop, shell, flake-show, flake-check, flake-update
+- .NET: mcp**pare-dotnet**build, test, run, publish, restore, clean, add-package, list-package
+- Ruby: mcp**pare-ruby**run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check
+- Remote: mcp**pare-remote**ssh-run, ssh-test, ssh-keyscan, rsync
+- Swift: mcp**pare-swift**build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init
+- CMake: mcp**pare-cmake**cmake
+- Bazel: mcp**pare-bazel**bazel
 ```
 
 </details>
@@ -312,8 +339,8 @@ fewer tokens than CLI output.
 ```markdown
 ## MCP Servers
 
-This project uses Pare MCP servers (149 tools) for structured, token-efficient dev tool output.
-Prefer Pare MCP tools over raw CLI commands for git, testing, building, linting, npm, docker, python, cargo, and go.
+This project uses Pare MCP servers (240 tools across 28 packages) for structured, token-efficient dev tool output.
+Prefer Pare MCP tools over raw CLI commands for git, github, search, testing, building, linting, npm, docker, http, make, python, cargo, go, security, k8s, process, infra, jvm, db, deno, bun, nix, dotnet, ruby, remote, swift, cmake, and bazel.
 Pare tools return typed JSON, saving tokens and preventing parsing errors.
 ```
 
@@ -330,8 +357,7 @@ alwaysApply: true
 ---
 
 When Pare MCP tools are available, prefer them over running CLI commands in the
-terminal. Pare tools (pare-git, pare-test, pare-build, pare-lint, pare-npm,
-pare-docker, pare-python, pare-cargo, pare-go, pare-github, pare-search, pare-http, pare-make — 149 tools total) return
+terminal. Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go, pare-security, pare-k8s, pare-process, pare-infra, pare-jvm, pare-db, pare-deno, pare-bun, pare-nix, pare-dotnet, pare-ruby, pare-remote, pare-swift, pare-cmake, pare-bazel — 240 tools total) return
 structured JSON with up to 95% fewer tokens than raw CLI output.
 ```
 
@@ -344,7 +370,7 @@ structured JSON with up to 95% fewer tokens than raw CLI output.
 ## Tool Preferences
 
 This project uses Pare MCP servers (@paretools/\*) for structured dev tool output.
-When available, prefer Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go) over raw CLI commands.
+When available, prefer Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go, pare-security, pare-k8s, pare-process, pare-infra, pare-jvm, pare-db, pare-deno, pare-bun, pare-nix, pare-dotnet, pare-ruby, pare-remote, pare-swift, pare-cmake, pare-bazel) over raw CLI commands.
 ```
 
 </details>
@@ -356,19 +382,34 @@ When available, prefer Pare tools (pare-git, pare-github, pare-search, pare-test
 When Pare MCP tools are available, prefer them over raw CLI commands.
 Pare tools return structured JSON with fewer tokens than CLI output.
 
-- pare-git: status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame
-- pare-github: pr-view, pr-list, pr-create, issue-view, issue-list, issue-create, run-view, run-list
-- pare-search: search, find, count (ripgrep + fd)
-- pare-test: run, coverage (pytest, jest, vitest, mocha)
-- pare-build: tsc, build, esbuild, vite-build, webpack
-- pare-lint: lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint
-- pare-npm: install, audit, outdated, list, run, test, init, info, search
-- pare-docker: ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps
+- pare-git: status, log, log-graph, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config
+- pare-github: pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api
+- pare-search: search, find, count, jq, yq (ripgrep + fd + jq + yq)
+- pare-test: run, coverage, playwright (pytest, jest, vitest, mocha, playwright)
+- pare-build: tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup
+- pare-lint: lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint
+- pare-npm: install, audit, outdated, list, run, test, init, info, search, nvm
+- pare-docker: ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats
 - pare-http: request, get, post, head
 - pare-make: run, list (make + just)
-- pare-python: pip-install, mypy, ruff-check, pip-audit, pytest, uv-install, uv-run, black, pip-list, pip-show, ruff-format
-- pare-cargo: build, test, clippy, run, add, remove, fmt, doc, check, update, tree
-- pare-go: build, test, vet, run, mod-tidy, fmt, generate, env, list, get
+- pare-python: pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry
+- pare-cargo: build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit
+- pare-go: build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint
+- pare-security: trivy, semgrep, gitleaks
+- pare-k8s: get, describe, logs, apply, helm
+- pare-process: run
+- pare-infra: init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy
+- pare-jvm: gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify
+- pare-db: psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats
+- pare-deno: run, test, fmt, lint, check, task, info
+- pare-bun: run, test, build, install, add, remove, outdated, pm-ls
+- pare-nix: build, run, develop, shell, flake-show, flake-check, flake-update
+- pare-dotnet: build, test, run, publish, restore, clean, add-package, list-package
+- pare-ruby: run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check
+- pare-remote: ssh-run, ssh-test, ssh-keyscan, rsync
+- pare-swift: build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init
+- pare-cmake: cmake
+- pare-bazel: bazel
 ```
 
 </details>
