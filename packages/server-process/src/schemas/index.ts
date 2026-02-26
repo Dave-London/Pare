@@ -24,3 +24,20 @@ export type ProcessRunResultInternal = ProcessRunResult & {
   stdoutTruncatedLines?: number;
   stderrTruncatedLines?: number;
 };
+
+/** Zod schema for structured reload tool output.
+ * Moved to formatter: buildOutput, buildDuration. */
+export const ReloadResultSchema = z.object({
+  rebuilt: z.boolean(),
+  notificationSent: z.boolean(),
+  error: z.string().optional(),
+});
+
+export type ReloadResult = z.infer<typeof ReloadResultSchema>;
+
+/** Internal type with display-only fields for reload formatters. */
+export type ReloadResultInternal = ReloadResult & {
+  buildCommand: string;
+  buildDuration: number;
+  buildOutput?: string;
+};
