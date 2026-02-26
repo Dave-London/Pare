@@ -1,4 +1,9 @@
-import type { ProcessRunResult, ProcessRunResultInternal } from "../schemas/index.js";
+import type {
+  ProcessRunResult,
+  ProcessRunResultInternal,
+  ReloadResult,
+  ReloadResultInternal,
+} from "../schemas/index.js";
 
 // ── Schema maps (strip Internal-only fields for structuredContent) ──
 
@@ -90,4 +95,42 @@ export function formatRunCompact(data: ProcessRunCompact): string {
   }
 
   return parts.join("\n");
+}
+
+// ── Reload schema maps ──────────────────────────────────────────────
+
+/** Strips Internal-only fields from reload result for structuredContent. */
+export function schemaReloadMap(data: ReloadResultInternal): ReloadResult {
+  return {
+    rebuilt: data.rebuilt,
+    notificationSent: data.notificationSent,
+    error: data.error,
+  };
+}
+
+// ── Reload formatters ───────────────────────────────────────────────
+
+/** Formats structured reload results into a human-readable output summary. */
+export function formatReload(data: ReloadResultInternal): string {
+  const lines: string[] = [];
+
+  if (data.rebuilt) {
+    lines.push(`reload: rebuilt via "${data.buildCommand}" (${data.buildDuration}ms).`);
+  } else {
+    lines.push(`reload: build failed via "${data.buildCommand}" (${data.buildDuration}ms).`);
+  }
+
+  if (data.notificationSent) {
+    lines.push("  notifications/tools/list_changed sent.");
+  }
+
+  if (data.error) {
+    lines.push(`  error: ${data.error}`);
+  }
+
+  if (data.buildOutput) {
+    lines.push(data.buildOutput);
+  }
+
+  return lines.join("\n");
 }

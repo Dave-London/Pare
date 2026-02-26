@@ -6,6 +6,7 @@ import {
   type LazyToolManager,
 } from "@paretools/shared";
 import { registerRunTool } from "./run.js";
+import { registerReloadTool } from "./reload.js";
 
 const TOOL_DEFS: Array<{
   name: string;
@@ -17,6 +18,12 @@ const TOOL_DEFS: Array<{
     description:
       "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status).",
     register: registerRunTool,
+  },
+  {
+    name: "reload",
+    description:
+      "Rebuilds MCP server and sends tool list changed notification to refresh tool definitions.",
+    register: registerReloadTool,
   },
 ];
 

@@ -7,6 +7,6 @@ await createServer({
   name: "@paretools/process",
   version: "0.8.1",
   instructions:
-    "Structured process execution (run). Runs commands with timeout, environment, and signal support. Returns typed JSON with exit code, stdout, stderr, duration, and timeout status.",
+    "Structured process execution (run, reload). Runs commands with timeout, environment, and signal support. Returns typed JSON with exit code, stdout, stderr, duration, and timeout status.",
   registerTools: registerAllTools,
 });

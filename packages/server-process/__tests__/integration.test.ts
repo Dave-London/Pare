@@ -27,10 +27,10 @@ describe("@paretools/process integration", () => {
     await transport.close();
   });
 
-  it("lists 1 tool", async () => {
+  it("lists 2 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(["run"]);
+    expect(names).toEqual(["run", "reload"]);
   });
 
   it("tool has an outputSchema", async () => {
