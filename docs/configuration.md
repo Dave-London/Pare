@@ -60,6 +60,93 @@ PARE_PROFILE=python
 
 ---
 
+## Lazy Tool Loading (`PARE_LAZY`)
+
+By default, every server registers all of its tools at startup. For servers with many tools, this can increase the token cost of the initial tool schema sent to LLM clients. Lazy mode defers non-essential tools so they load on demand.
+
+```bash
+PARE_LAZY=true npx @paretools/git
+```
+
+When `PARE_LAZY=true` is set, each server only registers its **core tools** at startup. Extended tools are held back and made available through a `discover-tools` meta-tool that is automatically added to every server.
+
+### How it works
+
+1. **Startup** -- Core tools (the most commonly used tools per server) are registered immediately.
+2. **Discovery** -- The `discover-tools` tool is registered on the server. Calling it lists all available but not-yet-loaded tools.
+3. **Loading** -- Pass tool names to the `load` parameter of `discover-tools` to register them on demand. Clients receive a `notifications/tools/list_changed` notification and re-fetch the tool list.
+
+### Core tools per server
+
+Each server defines a set of core tools that always load, even in lazy mode. For example:
+
+| Server | Core Tools                                                                   |
+| ------ | ---------------------------------------------------------------------------- |
+| git    | status, log, diff, commit, push, pull, checkout, branch, add                 |
+| github | pr-view, pr-list, pr-create, pr-checks, issue-view, issue-list, issue-create |
+| npm    | install, run, test, audit, list                                              |
+| build  | tsc, build                                                                   |
+| test   | run, coverage                                                                |
+| docker | ps, build, logs, images, compose-up, compose-down                            |
+
+The full core tool map is defined in `packages/shared/src/profiles.ts`.
+
+### The `discover-tools` meta-tool
+
+When lazy mode is active and a server has deferred tools, a `discover-tools` tool is automatically registered.
+
+**Input:**
+
+| Parameter | Type       | Required | Description                    |
+| --------- | ---------- | -------- | ------------------------------ |
+| `load`    | `string[]` | No       | Tool names to load immediately |
+
+**Output:**
+
+```json
+{
+  "available": [
+    { "name": "rebase", "description": "Rebases the current branch onto a target branch..." },
+    { "name": "bisect", "description": "Binary search for the commit that introduced a bug..." }
+  ],
+  "loaded": ["cherry-pick"],
+  "totalAvailable": 2
+}
+```
+
+- `available` -- Tools that are still deferred and can be loaded.
+- `loaded` -- Tools that were just loaded in this call (via the `load` parameter).
+- `totalAvailable` -- Count of remaining deferred tools after any loads.
+
+Calling `discover-tools` with no arguments simply lists what is available. Passing `load: ["rebase", "bisect"]` immediately registers those tools on the server.
+
+### Overrides
+
+Lazy mode is automatically **disabled** when:
+
+- `PARE_TOOLS` is set -- Explicit tool lists already provide precise control.
+- `PARE_PROFILE=full` is set -- The "full" profile means all tools should load.
+
+Per-server tool filters (`PARE_{SERVER}_TOOLS`) are applied before lazy mode, so filtered-out tools are never registered regardless of lazy mode.
+
+### Configuration example
+
+```json
+{
+  "mcpServers": {
+    "pare-git": {
+      "command": "npx",
+      "args": ["-y", "@paretools/git"],
+      "env": {
+        "PARE_LAZY": "true"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Security Hardening
 
 Opt-in controls that restrict what commands can be executed and where tools can operate. These are designed for deployments where agents may operate in less-trusted environments.
@@ -156,14 +243,15 @@ Server names in env vars use uppercase with hyphens replaced by underscores:
 
 ## Quick Reference
 
-| Variable                         | Type              | Default      | Description                          |
-| -------------------------------- | ----------------- | ------------ | ------------------------------------ |
-| `PARE_TOOLS`                     | `server:tool,...` | all enabled  | Global tool filter                   |
-| `PARE_PROFILE`                   | profile name      | `full`       | Preset tool profile                  |
-| `PARE_{SERVER}_TOOLS`            | `tool,...`        | all enabled  | Per-server tool filter               |
-| `PARE_ALLOWED_COMMANDS`          | `cmd,...`         | unrestricted | Global command allowlist             |
-| `PARE_{SERVER}_ALLOWED_COMMANDS` | `cmd,...`         | unrestricted | Per-server command allowlist         |
-| `PARE_ALLOWED_ROOTS`             | `path,...`        | unrestricted | Global root confinement              |
-| `PARE_{SERVER}_ALLOWED_ROOTS`    | `path,...`        | unrestricted | Per-server root confinement          |
-| `PARE_BUILD_STRICT_PATH`         | `true`            | disabled     | Reject path-qualified build commands |
-| `PARE_SANITIZE_ALL_PATHS`        | `true`            | disabled     | Broad absolute path redaction        |
+| Variable                         | Type              | Default      | Description                                   |
+| -------------------------------- | ----------------- | ------------ | --------------------------------------------- |
+| `PARE_TOOLS`                     | `server:tool,...` | all enabled  | Global tool filter                            |
+| `PARE_PROFILE`                   | profile name      | `full`       | Preset tool profile                           |
+| `PARE_{SERVER}_TOOLS`            | `tool,...`        | all enabled  | Per-server tool filter                        |
+| `PARE_LAZY`                      | `true`            | disabled     | Defer non-core tools; load via discover-tools |
+| `PARE_ALLOWED_COMMANDS`          | `cmd,...`         | unrestricted | Global command allowlist                      |
+| `PARE_{SERVER}_ALLOWED_COMMANDS` | `cmd,...`         | unrestricted | Per-server command allowlist                  |
+| `PARE_ALLOWED_ROOTS`             | `path,...`        | unrestricted | Global root confinement                       |
+| `PARE_{SERVER}_ALLOWED_ROOTS`    | `path,...`        | unrestricted | Per-server root confinement                   |
+| `PARE_BUILD_STRICT_PATH`         | `true`            | disabled     | Reject path-qualified build commands          |
+| `PARE_SANITIZE_ALL_PATHS`        | `true`            | disabled     | Broad absolute path redaction                 |

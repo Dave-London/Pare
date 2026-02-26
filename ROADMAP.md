@@ -1,6 +1,6 @@
 # Pare CLI Tools Roadmap
 
-**Last updated**: 2026-02-14 | **Current**: v0.8.2 — 149 tools across 16 packages
+**Last updated**: 2026-02-14 | **Current**: v0.8.2 — 240 tools across 28 packages
 
 This roadmap tracks CLI tools and capabilities we plan to wrap with structured, token-efficient MCP output in future Pare releases. Priorities are based on real-world coding agent usage patterns, ecosystem gap analysis, and implementation complexity.
 
