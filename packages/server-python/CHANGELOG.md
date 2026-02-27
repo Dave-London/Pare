@@ -1,5 +1,12 @@
 # @paretools/python
 
+## 0.13.1
+
+### Patch Changes
+
+- Updated dependencies [[`79d528d`](https://github.com/Dave-London/Pare/commit/79d528d6bba90ac1f3bda016ab57058fda293a4d), [`d2be342`](https://github.com/Dave-London/Pare/commit/d2be34264a37b92a29d1ef74c201e99e07df7485)]:
+  - @paretools/shared@0.13.1
+
 ## 0.13.0
 
 ### Minor Changes

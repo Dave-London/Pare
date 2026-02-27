@@ -1,6 +1,6 @@
 {
   "name": "@paretools/remote",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "mcpName": "io.github.Dave-London/pare-remote",
   "description": "MCP server for remote operations (SSH, rsync) with structured, token-efficient output",
   "license": "MIT",
