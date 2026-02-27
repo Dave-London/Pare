@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createLazyToolManager, type LazyToolManager } from "./lazy-tools.js";
 import { isLazyEnabled } from "./tool-filter.js";
+import { strictifyInputSchema } from "./strict-input.js";
 
 export interface CreateServerOptions {
   /** Package name, e.g. "@paretools/git" */
@@ -22,6 +23,30 @@ export interface CreateServerOptions {
 }
 
 /**
+ * Wraps an McpServer so that every `registerTool` call automatically applies
+ * strict input validation (rejects unknown parameters) to the tool's
+ * inputSchema. This prevents AI agents from silently passing wrong-but-
+ * plausible parameter names (e.g. `branch` instead of `ref`).
+ */
+function applyStrictInputSchemas(server: McpServer): void {
+  const original = server.registerTool.bind(server);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (server as any).registerTool = function (...args: any[]) {
+    // The config-based overload: registerTool(name, config, callback)
+    // config is always the second argument and contains inputSchema
+    if (args.length >= 2 && typeof args[1] === "object" && args[1] !== null) {
+      const config = args[1];
+      if (config.inputSchema) {
+        config.inputSchema = strictifyInputSchema(config.inputSchema);
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return (original as (...a: unknown[]) => unknown)(...args);
+  };
+}
+
+/**
  * Creates an MCP server with the standard Pare boilerplate:
  * instantiates McpServer, registers tools via callback, connects StdioServerTransport.
  *
@@ -31,6 +56,7 @@ export async function createServer(options: CreateServerOptions): Promise<McpSer
   const { name, version, instructions, registerTools } = options;
 
   const server = new McpServer({ name, version }, { instructions });
+  applyStrictInputSchemas(server);
 
   const lazy = isLazyEnabled();
   const lazyManager = lazy ? createLazyToolManager(server) : undefined;

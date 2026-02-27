@@ -9,6 +9,7 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
       this._opts = opts;
       this.connect = vi.fn().mockResolvedValue(undefined);
       this.sendToolListChanged = vi.fn();
+      this.registerTool = vi.fn();
     }),
   };
 });
@@ -147,6 +148,7 @@ describe("createServer", () => {
     ) {
       this._info = info;
       this._opts = opts;
+      this.registerTool = vi.fn();
       this.connect = vi.fn().mockImplementation(() => {
         callOrder.push("connect");
         return Promise.resolve();
