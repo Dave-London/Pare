@@ -2,6 +2,38 @@ import { spawn, execFileSync } from "node:child_process";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
+/**
+ * Resolves a command name to its absolute path using `where` (Windows) or
+ * `which` (Unix). This satisfies CodeQL's "shell command built from
+ * environment values" alert by ensuring we pass an absolute path to `spawn`
+ * when `shell: true`, rather than relying on PATH resolution inside the shell.
+ *
+ * Returns the original command string if resolution fails (e.g., the command
+ * is already an absolute path, or `which`/`where` is unavailable).
+ */
+function resolveCommand(cmd: string): string {
+  // Skip resolution if cmd is already an absolute path
+  if (cmd.startsWith("/") || /^[A-Za-z]:[/\\]/.test(cmd)) {
+    return cmd;
+  }
+  try {
+    const resolver = process.platform === "win32" ? "where" : "which";
+    const resolved = execFileSync(resolver, [cmd], {
+      timeout: 5_000,
+      stdio: ["ignore", "pipe", "ignore"],
+      windowsHide: true,
+    })
+      .toString("utf-8")
+      .split(/\r?\n/)[0]
+      .trim();
+    return resolved || cmd;
+  } catch {
+    // Resolution failed — fall back to the bare command name so existing
+    // behavior (PATH lookup by the shell/OS) is preserved.
+    return cmd;
+  }
+}
+
 /** Options for the command runner, including working directory, timeout, and environment overrides. */
 export interface RunOptions {
   cwd?: string;
@@ -143,7 +175,17 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // See escapeCmdArg() for details on what is escaped and why.
     const safeArgs = useShell && process.platform === "win32" ? args.map(escapeCmdArg) : args;
 
-    const child = spawn(cmd, safeArgs, {
+    // Resolve the command to an absolute path so that `spawn` does not rely
+    // on shell-level PATH resolution — satisfies CodeQL alert #15.
+    let resolvedCmd = useShell ? resolveCommand(cmd) : cmd;
+
+    // On Windows with shell mode, absolute paths containing spaces must be
+    // double-quoted so cmd.exe treats them as a single token.
+    if (useShell && process.platform === "win32" && resolvedCmd.includes(" ")) {
+      resolvedCmd = `"${resolvedCmd}"`;
+    }
+
+    const child = spawn(resolvedCmd, safeArgs, {
       cwd: opts?.cwd,
       env: opts?.env ? (opts.replaceEnv ? opts.env : { ...process.env, ...opts.env }) : undefined,
       shell: useShell,
