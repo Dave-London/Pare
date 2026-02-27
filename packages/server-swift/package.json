@@ -1,6 +1,6 @@
 {
   "name": "@paretools/swift",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "mcpName": "io.github.Dave-London/pare-swift",
   "description": "MCP server for Swift build, test, and package operations with structured, token-efficient output",
   "license": "MIT",

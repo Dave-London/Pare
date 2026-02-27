@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.13.1
+
+### Patch Changes
+
+- [#641](https://github.com/Dave-London/Pare/pull/641) [`79d528d`](https://github.com/Dave-London/Pare/commit/79d528d6bba90ac1f3bda016ab57058fda293a4d) Thanks [@Dave-London](https://github.com/Dave-London)! - Resolve CLI commands to absolute paths before spawning to prevent shell interpretation of PATH (fixes CodeQL alert #15)
+
+- [#643](https://github.com/Dave-London/Pare/pull/643) [`d2be342`](https://github.com/Dave-London/Pare/commit/d2be34264a37b92a29d1ef74c201e99e07df7485) Thanks [@Dave-London](https://github.com/Dave-London)! - Add strict input validation to reject unknown tool parameters instead of silently ignoring them
+
 ## 0.13.0
 
 ### Minor Changes
