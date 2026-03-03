@@ -21,8 +21,8 @@ importers:
         specifier: ^2.27.0
         version: 2.29.8(@types/node@25.3.0)
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.56.1
         version: 8.56.1(@typescript-eslint/parser@8.56.1(eslint@10.0.2)(typescript@5.9.3))(eslint@10.0.2)(typescript@5.9.3)
@@ -78,8 +78,8 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0(@types/node@25.3.0)
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       smol-toml:
         specifier: ^1.3.1
         version: 1.6.0
@@ -103,8 +103,8 @@ importers:
   packages/server-bazel:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -128,8 +128,8 @@ importers:
   packages/server-build:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -159,8 +159,8 @@ importers:
   packages/server-bun:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -184,8 +184,8 @@ importers:
   packages/server-cargo:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -209,8 +209,8 @@ importers:
   packages/server-cmake:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -234,8 +234,8 @@ importers:
   packages/server-db:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -259,8 +259,8 @@ importers:
   packages/server-deno:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -284,8 +284,8 @@ importers:
   packages/server-docker:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -309,8 +309,8 @@ importers:
   packages/server-dotnet:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -334,8 +334,8 @@ importers:
   packages/server-git:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -359,8 +359,8 @@ importers:
   packages/server-github:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -384,8 +384,8 @@ importers:
   packages/server-go:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -409,8 +409,8 @@ importers:
   packages/server-http:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -434,8 +434,8 @@ importers:
   packages/server-infra:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -459,8 +459,8 @@ importers:
   packages/server-jvm:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -484,8 +484,8 @@ importers:
   packages/server-k8s:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -509,8 +509,8 @@ importers:
   packages/server-lint:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -534,8 +534,8 @@ importers:
   packages/server-make:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -559,8 +559,8 @@ importers:
   packages/server-nix:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -584,8 +584,8 @@ importers:
   packages/server-npm:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -609,8 +609,8 @@ importers:
   packages/server-process:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -634,8 +634,8 @@ importers:
   packages/server-python:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -659,8 +659,8 @@ importers:
   packages/server-remote:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -684,8 +684,8 @@ importers:
   packages/server-ruby:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -709,8 +709,8 @@ importers:
   packages/server-search:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -734,8 +734,8 @@ importers:
   packages/server-security:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -759,8 +759,8 @@ importers:
   packages/server-swift:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -784,8 +784,8 @@ importers:
   packages/server-test:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       '@paretools/shared':
         specifier: workspace:*
         version: link:../shared
@@ -809,8 +809,8 @@ importers:
   packages/shared:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@4.3.6)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -1298,8 +1298,8 @@ packages:
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
 
-  '@modelcontextprotocol/sdk@1.27.0':
-    resolution: {integrity: sha512-qOdO524oPMkUsOJTrsH9vz/HN3B5pKyW+9zIW51A9kDMVe7ON70drz1ouoyoyOcfzc+oxhkQ6jWmbyKnlWmYqA==}
+  '@modelcontextprotocol/sdk@1.27.1':
+    resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -2229,8 +2229,8 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
-  hono@4.12.2:
-    resolution: {integrity: sha512-gJnaDHXKDayjt8ue0n8Gs0A007yKXj4Xzb8+cNjZeYsSzzwKc0Lr+OZgYwVfB0pHfUs17EPoLvrOsEaJ9mj+Tg==}
+  hono@4.12.3:
+    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
     engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
@@ -3489,9 +3489,9 @@ snapshots:
       '@shikijs/types': 3.22.0
       '@shikijs/vscode-textmate': 10.0.2
 
-  '@hono/node-server@1.19.9(hono@4.12.2)':
+  '@hono/node-server@1.19.9(hono@4.12.3)':
     dependencies:
-      hono: 4.12.2
+      hono: 4.12.3
 
   '@humanfs/core@0.19.1': {}
 
@@ -3665,9 +3665,9 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@modelcontextprotocol/sdk@1.27.0(zod@4.3.6)':
+  '@modelcontextprotocol/sdk@1.27.1(zod@4.3.6)':
     dependencies:
-      '@hono/node-server': 1.19.9(hono@4.12.2)
+      '@hono/node-server': 1.19.9(hono@4.12.3)
       ajv: 8.18.0
       ajv-formats: 3.0.1(ajv@8.18.0)
       content-type: 1.0.5
@@ -3677,7 +3677,7 @@ snapshots:
       eventsource-parser: 3.0.6
       express: 5.2.1
       express-rate-limit: 8.2.1(express@5.2.1)
-      hono: 4.12.2
+      hono: 4.12.3
       jose: 6.1.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -4624,7 +4624,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.12.2: {}
+  hono@4.12.3: {}
 
   html-escaper@2.0.2: {}
 
