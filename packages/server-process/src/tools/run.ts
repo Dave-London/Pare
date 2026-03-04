@@ -54,7 +54,11 @@ export function registerRunTool(server: McpServer) {
         command: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
-          .describe("Command to run (e.g., 'node', 'python', 'echo')"),
+          .describe(
+            "Executable name to run (e.g., 'node', 'python', 'echo'). " +
+              "This must be the executable only — pass arguments via the 'args' array. " +
+              "Do NOT include arguments here (e.g., 'echo hello' will fail).",
+          ),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

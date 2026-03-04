@@ -62,7 +62,7 @@ export const GradleTaskSchema = z.object({
 export type GradleTask = z.infer<typeof GradleTaskSchema>;
 
 export const GradleTasksResultSchema = z.object({
-  tasks: z.array(GradleTaskSchema),
+  tasks: z.array(GradleTaskSchema).optional(),
   total: z.number(),
 });
 
@@ -84,7 +84,7 @@ export const GradleDependencyConfigSchema = z.object({
 export type GradleDependencyConfig = z.infer<typeof GradleDependencyConfigSchema>;
 
 export const GradleDependenciesResultSchema = z.object({
-  configurations: z.array(GradleDependencyConfigSchema),
+  configurations: z.array(GradleDependencyConfigSchema).optional(),
   totalDependencies: z.number(),
 });
 
@@ -140,7 +140,7 @@ export const MavenDependencySchema = z.object({
 export type MavenDependency = z.infer<typeof MavenDependencySchema>;
 
 export const MavenDependenciesResultSchema = z.object({
-  dependencies: z.array(MavenDependencySchema),
+  dependencies: z.array(MavenDependencySchema).optional(),
   total: z.number(),
 });
 

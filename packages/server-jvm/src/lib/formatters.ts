@@ -60,7 +60,7 @@ export function formatGradleTasks(data: GradleTasksResult): string {
   if (data.total === 0) return "gradle: no tasks found.";
   const lines = [`gradle: ${data.total} tasks`];
   let lastGroup: string | undefined;
-  for (const t of data.tasks) {
+  for (const t of data.tasks ?? []) {
     if (t.group && t.group !== lastGroup) {
       lines.push(`\n${t.group} tasks`);
       lastGroup = t.group;
@@ -73,7 +73,7 @@ export function formatGradleTasks(data: GradleTasksResult): string {
 export function formatGradleDependencies(data: GradleDependenciesResult): string {
   if (data.totalDependencies === 0) return "gradle: no dependencies found.";
   const lines = [`gradle: ${data.totalDependencies} dependencies`];
-  for (const config of data.configurations) {
+  for (const config of data.configurations ?? []) {
     lines.push(`\n${config.configuration}:`);
     for (const d of config.dependencies) {
       lines.push(`  ${d.group}:${d.artifact}${d.version ? `:${d.version}` : ""}`);
@@ -130,7 +130,7 @@ export function formatMavenTest(data: MavenTestResult): string {
 export function formatMavenDependencies(data: MavenDependenciesResult): string {
   if (data.total === 0) return "maven: no dependencies found.";
   const lines = [`maven: ${data.total} dependencies`];
-  for (const d of data.dependencies) {
+  for (const d of data.dependencies ?? []) {
     const parts = [`  ${d.groupId}:${d.artifactId}`];
     if (d.version) parts.push(`:${d.version}`);
     if (d.scope) parts.push(` (${d.scope})`);
@@ -250,7 +250,7 @@ export interface GradleDepsCompact {
 export function compactGradleDepsMap(data: GradleDependenciesResult): GradleDepsCompact {
   return {
     totalDependencies: data.totalDependencies,
-    configurationCount: data.configurations.length,
+    configurationCount: (data.configurations ?? []).length,
   };
 }
 
