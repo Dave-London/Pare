@@ -436,6 +436,48 @@ describe("@paretools/git write-tool integration", () => {
     });
   });
 
+  describe("branch forceDelete", () => {
+    it("force-deletes with forceDelete=true and delete=branchName", async () => {
+      // Create an unmerged branch so only -D works
+      gitInTemp(["branch", "fd-bool-test"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: { path: tempDir, delete: "fd-bool-test", forceDelete: true },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      // The deleted branch should no longer appear in the list
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "fd-bool-test")).toBeUndefined();
+    });
+
+    it("force-deletes with forceDelete=branchName (string)", async () => {
+      // Create an unmerged branch so only -D works
+      gitInTemp(["branch", "fd-string-test"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: { path: tempDir, forceDelete: "fd-string-test" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      // The deleted branch should no longer appear in the list
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "fd-string-test")).toBeUndefined();
+    });
+  });
+
   describe("checkout", () => {
     it("creates a new branch and returns structured checkout data", async () => {
       const result = await client.callTool(
