@@ -31,6 +31,18 @@ export const PARETOOLS_PACKAGES = new Set([
   "@paretools/k8s",
   "@paretools/security",
   "@paretools/process",
+  "@paretools/jvm",
+  "@paretools/bazel",
+  "@paretools/bun",
+  "@paretools/cmake",
+  "@paretools/db",
+  "@paretools/deno",
+  "@paretools/dotnet",
+  "@paretools/infra",
+  "@paretools/nix",
+  "@paretools/remote",
+  "@paretools/ruby",
+  "@paretools/swift",
   "@paretools/init",
 ]);
 

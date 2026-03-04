@@ -5,7 +5,19 @@ import { SERVER_MAP } from "../src/lib/servers.js";
 describe("presets", () => {
   it("has all expected presets", () => {
     const ids = PRESETS.map((p) => p.id);
-    expect(ids).toEqual(["web", "python", "rust", "go", "devops", "full"]);
+    expect(ids).toEqual([
+      "web",
+      "python",
+      "rust",
+      "go",
+      "devops",
+      "jvm",
+      "dotnet",
+      "ruby",
+      "swift",
+      "mobile",
+      "full",
+    ]);
   });
 
   it("every preset references valid server IDs", () => {

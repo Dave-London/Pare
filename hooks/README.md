@@ -4,7 +4,7 @@ Pre-built hooks that enforce Pare MCP tool usage in coding agents.
 
 ## `pare-prefer-mcp.sh` — Claude Code PreToolUse Hook
 
-This hook intercepts Bash tool calls that have Pare MCP equivalents and blocks them with a message pointing to the correct MCP tool. It covers all 16 Pare server packages.
+This hook intercepts Bash tool calls that have Pare MCP equivalents and blocks them with a message pointing to the correct MCP tool. It covers all 28 Pare server packages.
 
 ### Quick Setup
 

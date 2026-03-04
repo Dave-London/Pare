@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-24
 **Branch**: `schema-optimizations`
-**Scope**: All 30 Pare MCP server packages
+**Scope**: All 28 Pare MCP server packages
 
 ## Executive Summary
 

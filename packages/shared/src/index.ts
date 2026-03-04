@@ -15,6 +15,7 @@ export {
 } from "./runner.js";
 export { stripAnsi } from "./ansi.js";
 export {
+  coerceJsonArray,
   assertNoFlagInjection,
   assertValidSortKey,
   assertValidLogOpts,

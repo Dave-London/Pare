@@ -8,6 +8,7 @@ import {
   assertAllowedRoot,
   cwdPathInput,
   compactInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { parseSemgrepJson } from "../lib/parsers.js";
 import {
@@ -28,8 +29,10 @@ export function registerSemgrepTool(server: McpServer) {
         "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary.",
       inputSchema: {
         patterns: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default(["."])
           .describe("File patterns or paths to scan (default: ['.'])"),
@@ -48,20 +51,26 @@ export function registerSemgrepTool(server: McpServer) {
           .optional()
           .describe("Severity filter. Default: all severities"),
         exclude: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe("Glob patterns to exclude from scanning (--exclude)"),
         include: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.PATH_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe("Glob patterns to include in scanning (--include)"),
         excludeRule: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe("Rule IDs to suppress (--exclude-rule, for known false positives)"),

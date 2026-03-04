@@ -5,6 +5,7 @@ import {
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseBuildOutput } from "../lib/parsers.js";
@@ -47,8 +48,10 @@ export function registerBuildTool(server: McpServer) {
           .default(false)
           .describe("Always attempt to pull a newer version of the base image (default: false)"),
         buildArgs: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe(
@@ -65,40 +68,52 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .describe('Target platform for multi-arch builds (e.g., "linux/amd64", "linux/arm64")'),
         label: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe('Image metadata labels (e.g., ["version=1.0", "maintainer=team"])'),
         cacheFrom: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe('External cache sources for CI optimization (e.g., ["type=registry,ref=img"])'),
         cacheTo: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe(
             'Cache export destinations paired with cacheFrom (e.g., ["type=registry,ref=img"])',
           ),
         secret: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe('Build secrets (e.g., ["id=mysecret,src=secret.txt"])'),
         ssh: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe('SSH agent socket/keys for private repo access (e.g., ["default"])'),
         args: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe("Additional build arguments"),

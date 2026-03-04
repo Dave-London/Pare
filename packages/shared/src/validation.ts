@@ -1,4 +1,20 @@
 /**
+ * Preprocess function for Zod schemas that coerces a JSON string to an array.
+ * Handles the case where MCP clients serialize array parameters as JSON strings
+ * before the tool schema is fully loaded.
+ *
+ * Usage: `z.preprocess(coerceJsonArray, z.array(z.string()))`
+ */
+export function coerceJsonArray(val: unknown): unknown {
+  if (typeof val !== "string") return val;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return val;
+  }
+}
+
+/**
  * Validates that a string argument is safe to pass as a positional argument to a CLI tool.
  * Prevents flag injection attacks (e.g., passing "--output=/etc/passwd" as a ref name).
  * See: [CVE-2025-68144](https://nvd.nist.gov/vuln/detail/CVE-2025-68144), [CVE-2025-68145](https://nvd.nist.gov/vuln/detail/CVE-2025-68145)

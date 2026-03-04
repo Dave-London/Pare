@@ -68,8 +68,9 @@ export function registerCheckoutTool(server: McpServer) {
 
       // Handle orphan branch creation
       if (orphan) {
-        const args = [preferSwitch ? "switch" : "checkout", "--orphan", orphan];
-        if (force) args.push("--force");
+        const orphanCmd = preferSwitch ? "switch" : "checkout";
+        const args = [orphanCmd, "--orphan", orphan];
+        if (force) args.push(orphanCmd === "switch" ? "--discard-changes" : "--force");
         const result = await git(args, cwd);
         if (result.exitCode !== 0) {
           const checkoutResult = parseCheckoutError(
@@ -90,11 +91,25 @@ export function registerCheckoutTool(server: McpServer) {
         return dualOutput(checkoutResult, formatCheckout);
       }
 
-      // Build branch switch args; prefer git switch for modern branch operations.
-      const args = [preferSwitch ? "switch" : "checkout"];
-      if (force) args.push("--force");
-      if (forceCreate) args.push(preferSwitch ? "-C" : "-B");
-      else if (create) args.push(preferSwitch ? "-c" : "-b");
+      // When startPoint is provided, git switch -c may reject tags ("a branch is expected, got tag").
+      // Use git checkout -b directly in that case for full compatibility.
+      const needsCheckoutForStartPoint = Boolean(
+        startPoint && (create || forceCreate) && preferSwitch,
+      );
+      let cmd: string;
+      let createFlag: string | undefined;
+      if (needsCheckoutForStartPoint || !preferSwitch) {
+        cmd = "checkout";
+        if (forceCreate) createFlag = "-B";
+        else if (create) createFlag = "-b";
+      } else {
+        cmd = "switch";
+        if (forceCreate) createFlag = "-C";
+        else if (create) createFlag = "-c";
+      }
+      const args = [cmd];
+      if (force) args.push(cmd === "switch" ? "--discard-changes" : "--force");
+      if (createFlag) args.push(createFlag);
       if (track) args.push("--track");
       if (detach) args.push("--detach");
       args.push(ref);

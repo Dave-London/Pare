@@ -1,5 +1,7 @@
 /** Preset server groupings for common workflows. */
 
+import { SERVERS } from "./servers.js";
+
 export interface Preset {
   id: string;
   label: string;
@@ -39,27 +41,40 @@ export const PRESETS: Preset[] = [
     serverIds: ["pare-git", "pare-docker", "pare-k8s", "pare-security"],
   },
   {
+    id: "jvm",
+    label: "JVM",
+    description: "git, jvm, test",
+    serverIds: ["pare-git", "pare-jvm", "pare-test"],
+  },
+  {
+    id: "dotnet",
+    label: ".NET",
+    description: "git, dotnet, test",
+    serverIds: ["pare-git", "pare-dotnet", "pare-test"],
+  },
+  {
+    id: "ruby",
+    label: "Ruby",
+    description: "git, ruby, test",
+    serverIds: ["pare-git", "pare-ruby", "pare-test"],
+  },
+  {
+    id: "swift",
+    label: "Swift",
+    description: "git, swift, test",
+    serverIds: ["pare-git", "pare-swift", "pare-test"],
+  },
+  {
+    id: "mobile",
+    label: "Mobile",
+    description: "git, jvm, swift, test",
+    serverIds: ["pare-git", "pare-jvm", "pare-swift", "pare-test"],
+  },
+  {
     id: "full",
     label: "Full (all servers)",
-    description: "All 16 Pare servers",
-    serverIds: [
-      "pare-git",
-      "pare-github",
-      "pare-npm",
-      "pare-build",
-      "pare-lint",
-      "pare-test",
-      "pare-search",
-      "pare-http",
-      "pare-make",
-      "pare-python",
-      "pare-cargo",
-      "pare-go",
-      "pare-docker",
-      "pare-k8s",
-      "pare-security",
-      "pare-process",
-    ],
+    description: `All ${SERVERS.length} Pare servers`,
+    serverIds: SERVERS.map((s) => s.id),
   },
 ];
 
