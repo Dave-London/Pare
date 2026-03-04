@@ -854,15 +854,16 @@ describe("Smoke: git.checkout", () => {
     expect(parsed.created).toBe(true);
   });
 
-  // S7: Force checkout
-  it("S7 [P1] force checkout passes --force flag", async () => {
+  // S7: Force checkout — git switch uses --discard-changes, not --force
+  it("S7 [P1] force checkout passes --discard-changes flag for git switch", async () => {
     mockGit("feature\n");
     mockGit("", "Switched to branch 'main'");
     mockGit("main\n");
     mockGit("src/index.ts\n");
     await callAndValidate({ ...DEFAULTS, ref: "main", force: true });
     const switchArgs = vi.mocked(git).mock.calls[1][0];
-    expect(switchArgs).toContain("--force");
+    expect(switchArgs).toContain("--discard-changes");
+    expect(switchArgs).not.toContain("--force");
   });
 
   // S8: Create with start point
