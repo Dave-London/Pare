@@ -1,12 +1,13 @@
 import { spawn, execFileSync } from "node:child_process";
+import { normalize } from "node:path";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
 /**
  * Resolves a command name to its absolute path using `where` (Windows) or
- * `which` (Unix). This satisfies CodeQL's "shell command built from
- * environment values" alert by ensuring we pass an absolute path to `spawn`
- * when `shell: true`, rather than relying on PATH resolution inside the shell.
+ * `which` (Unix). On Windows this is used to detect whether a command is a
+ * .cmd/.bat wrapper so the runner can invoke it via cmd.exe without using
+ * `shell: true` (which triggers CodeQL alert #16).
  *
  * Returns the original command string if resolution fails (e.g., the command
  * is already an absolute path, or `which`/`where` is unavailable).
@@ -18,15 +19,27 @@ function resolveCommand(cmd: string): string {
   }
   try {
     const resolver = process.platform === "win32" ? "where" : "which";
-    const resolved = execFileSync(resolver, [cmd], {
+    const output = execFileSync(resolver, [cmd], {
       timeout: 5_000,
       stdio: ["ignore", "pipe", "ignore"],
       windowsHide: true,
-    })
-      .toString("utf-8")
-      .split(/\r?\n/)[0]
-      .trim();
-    return resolved || cmd;
+    }).toString("utf-8");
+
+    const lines = output
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    if (process.platform === "win32" && lines.length > 1) {
+      // On Windows, `where` returns multiple matches (e.g., `npx` and `npx.cmd`).
+      // Prefer .cmd/.bat entries so _buildSpawnConfig routes them through the
+      // cmd.exe wrapper path (Branch 2) instead of trying to execute an
+      // extensionless shell script with shell: false (which would fail).
+      const cmdLine = lines.find((l) => /\.(cmd|bat)$/i.test(l));
+      if (cmdLine) return cmdLine;
+    }
+
+    return lines[0] || cmd;
   } catch {
     // Resolution failed — fall back to the bare command name so existing
     // behavior (PATH lookup by the shell/OS) is preserved.
@@ -43,9 +56,9 @@ export interface RunOptions {
    *  (e.g., `git commit --file -`) instead of passing it as a command arg,
    *  which avoids cmd.exe argument-length and newline limitations on Windows. */
   stdin?: string;
-  /** Override shell mode. Defaults to `true` on Windows (for .cmd/.bat wrappers)
-   *  and `false` elsewhere. Set to `false` for native executables (e.g., git)
-   *  whose args contain characters that cmd.exe would misinterpret (like `<>`). */
+  /** Override shell mode. Defaults to `false` on all platforms. On Windows,
+   *  .cmd/.bat wrappers are automatically handled via cmd.exe invocation without
+   *  shell mode. Set to `true` only when you need shell features (pipes, globs). */
   shell?: boolean;
   /** Maximum combined stdout+stderr buffer size in bytes. Defaults to 10 MB. */
   maxBuffer?: number;
@@ -151,44 +164,148 @@ export function escapeCmdArg(arg: string): string {
   return escaped;
 }
 
+// ---------------------------------------------------------------------------
+// Verbatim-mode escaping helpers (cross-spawn pattern)
+//
+// These are used when spawning .cmd/.bat files via cmd.exe with
+// windowsVerbatimArguments: true, where libuv performs NO quoting.
+// Algorithm ported from cross-spawn (https://github.com/moxystudio/node-cross-spawn).
+// ---------------------------------------------------------------------------
+
+/** cmd.exe metacharacters that need caret-escaping. */
+const META_CHARS_RE = /([()\][%!^"`<>&|;, *?])/g;
+
+/** Caret-escape cmd.exe metacharacters in a command path. */
+function escapeCommandForVerbatim(cmd: string): string {
+  return cmd.replace(META_CHARS_RE, "^$1");
+}
+
+/**
+ * Escapes a single argument for cmd.exe in windowsVerbatimArguments mode.
+ *
+ * Based on https://qntm.org/cmd (same algorithm as cross-spawn):
+ * 1. Handle backslash+quote sequences for MSVC C runtime parsing
+ * 2. Wrap in double quotes
+ * 3. Caret-escape cmd.exe metacharacters on the quoted result
+ */
+function escapeArgForVerbatim(arg: string): string {
+  // Sequence of backslashes followed by a double quote:
+  // double up all the backslashes and escape the double quote.
+  // The outer `?` makes the capture group optional so bare `"` (zero
+  // preceding backslashes) is also matched — matching cross-spawn exactly.
+  let escaped = arg.replace(/(?=(\\+?)?)\1"/g, '$1$1\\"');
+
+  // Sequence of backslashes at end of string (will be followed by our closing quote):
+  // double up all the backslashes
+  escaped = escaped.replace(/(?=(\\+?)?)\1$/, "$1$1");
+
+  // Wrap in double quotes, then caret-escape metacharacters
+  escaped = `"${escaped}"`;
+  escaped = escaped.replace(META_CHARS_RE, "^$1");
+
+  return escaped;
+}
+
+// ---------------------------------------------------------------------------
+// Spawn configuration
+// ---------------------------------------------------------------------------
+
+/** Configuration for how to invoke `spawn()`. @internal — exported for testing only. */
+export interface SpawnConfig {
+  command: string;
+  args: string[];
+  shell: boolean;
+  windowsVerbatimArguments: boolean;
+}
+
+/**
+ * Determines how to spawn a command, handling Windows .cmd/.bat wrappers
+ * without using `shell: true` (which triggers CodeQL alert #16).
+ *
+ * @internal — Exported for unit testing only. Use `run()` instead.
+ *
+ * Branches:
+ *   1. Explicit `shell: true` — pass cmd directly, don't resolve (caller wants shell features)
+ *   2. Windows native .exe/.com — spawn resolved path directly
+ *   3. Windows non-exe (cmd/bat/extensionless/bare) — cmd.exe /d /s /c with windowsVerbatimArguments
+ *   4. Unix — spawn cmd directly, execvp handles PATH
+ */
+export function _buildSpawnConfig(
+  cmd: string,
+  args: string[],
+  opts?: { shell?: boolean },
+  platform: string = process.platform,
+  resolver: (cmd: string) => string = resolveCommand,
+): SpawnConfig {
+  // Branch 1: Explicit shell: true — caller wants shell features (pipes, globs).
+  // Pass cmd directly to spawn with shell: true — do NOT call resolveCommand,
+  // which breaks the taint flow that CodeQL flags (environment → shell command).
+  if (opts?.shell === true) {
+    const safeArgs = platform === "win32" ? args.map(escapeCmdArg) : args;
+    return { command: cmd, args: safeArgs, shell: true, windowsVerbatimArguments: false };
+  }
+
+  // Branches 2+3: Windows without shell
+  if (platform === "win32") {
+    const resolved = resolver(cmd);
+
+    // Branch 2: Native .exe/.com — spawn resolved path directly.
+    // Only these extensions are true PE executables that CreateProcessW can run
+    // without a shell. This matches cross-spawn's isExecutableRegExp check.
+    if (/\.(exe|com)$/i.test(resolved)) {
+      return { command: resolved, args, shell: false, windowsVerbatimArguments: false };
+    }
+
+    // Branch 3: Everything else (.cmd, .bat, extensionless, bare names) needs
+    // cmd.exe to interpret it. Use cross-spawn pattern:
+    //   cmd.exe /d /s /c "escaped-command escaped-args"
+    // with windowsVerbatimArguments: true so libuv doesn't re-quote.
+    // shell: false ensures resolveCommand output never enters a shell command
+    // string from Node's perspective — satisfying CodeQL.
+    // Normalize posix slashes to Windows backslashes (cross-spawn does this too).
+    const normalizedCmd = normalize(resolved);
+    const escapedParts = [
+      escapeCommandForVerbatim(normalizedCmd),
+      ...args.map((a) => escapeArgForVerbatim(a)),
+    ];
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", `"${escapedParts.join(" ")}"`],
+      shell: false,
+      windowsVerbatimArguments: true,
+    };
+  }
+
+  // Branch 4: Unix — spawn cmd directly with shell: false.
+  // execvp handles PATH lookup natively, no resolution needed.
+  return { command: cmd, args, shell: false, windowsVerbatimArguments: false };
+}
+
 /**
  * Executes a command and returns cleaned output with ANSI codes stripped.
  * Uses spawn (not exec) to avoid shell injection. The child is spawned in its
  * own process group (`detached: true` on Unix) so that on timeout we can kill
  * the entire group — preventing orphaned grandchild processes.
  *
- * On Windows, shell is enabled so that .cmd/.bat wrappers (like npx) can be
- * executed — args are still passed as an array so they remain properly escaped.
+ * Shell mode defaults to `false` on all platforms. On Windows, .cmd/.bat
+ * wrappers (like npm, npx) are automatically handled via cmd.exe invocation
+ * with windowsVerbatimArguments (cross-spawn pattern), avoiding shell injection.
+ *
+ * Callers can opt in to `shell: true` for shell features (pipes, globs),
+ * but this bypasses security protections — use only with trusted input.
  *
  * Throws on system-level errors (command not found, permission denied, timeout).
  * Normal non-zero exit codes are returned in the result, not thrown.
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    // Determine shell mode: default to true on Windows (for .cmd/.bat wrappers),
-    // but allow callers to override (e.g., git uses shell:false to avoid cmd.exe
-    // mangling format strings that contain < > characters).
-    const useShell = opts?.shell ?? process.platform === "win32";
+    const config = _buildSpawnConfig(cmd, args, { shell: opts?.shell });
 
-    // On Windows with shell mode, escape cmd.exe metacharacters to prevent
-    // environment variable expansion and command injection via special chars.
-    // See escapeCmdArg() for details on what is escaped and why.
-    const safeArgs = useShell && process.platform === "win32" ? args.map(escapeCmdArg) : args;
-
-    // Resolve the command to an absolute path so that `spawn` does not rely
-    // on shell-level PATH resolution — satisfies CodeQL alert #15.
-    let resolvedCmd = useShell ? resolveCommand(cmd) : cmd;
-
-    // On Windows with shell mode, absolute paths containing spaces must be
-    // double-quoted so cmd.exe treats them as a single token.
-    if (useShell && process.platform === "win32" && resolvedCmd.includes(" ")) {
-      resolvedCmd = `"${resolvedCmd}"`;
-    }
-
-    const child = spawn(resolvedCmd, safeArgs, {
+    const child = spawn(config.command, config.args, {
       cwd: opts?.cwd,
       env: opts?.env ? (opts.replaceEnv ? opts.env : { ...process.env, ...opts.env }) : undefined,
-      shell: useShell,
+      shell: config.shell,
+      windowsVerbatimArguments: config.windowsVerbatimArguments,
       // Unix: creates a new process group via setsid(2) so we can kill the
       // entire group on timeout (prevents orphaned grandchild processes).
       // Windows: skip — detached on Windows creates a visible console window,

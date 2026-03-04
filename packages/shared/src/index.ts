@@ -5,7 +5,14 @@ export {
   strippedDualOutput,
   strippedCompactDualOutput,
 } from "./output.js";
-export { run, escapeCmdArg, type RunResult, type RunOptions } from "./runner.js";
+export {
+  run,
+  escapeCmdArg,
+  _buildSpawnConfig,
+  type RunResult,
+  type RunOptions,
+  type SpawnConfig,
+} from "./runner.js";
 export { stripAnsi } from "./ansi.js";
 export {
   assertNoFlagInjection,
