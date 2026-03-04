@@ -57,7 +57,12 @@ export function registerBranchTool(server: McpServer) {
           .optional()
           .describe("Filter branches matching a pattern (<pattern>)"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
-        forceDelete: z.boolean().optional().describe("Force-delete unmerged branches (-D)"),
+        forceDelete: z
+          .union([z.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
+          .optional()
+          .describe(
+            "Force-delete unmerged branches (-D). Pass true (requires `delete` param) or a branch name string.",
+          ),
         merged: z.boolean().optional().describe("Filter to branches merged into HEAD (--merged)"),
         noMerged: z
           .boolean()
@@ -139,10 +144,15 @@ export function registerBranchTool(server: McpServer) {
       }
 
       // Delete branch
-      if (deleteBranch) {
-        assertNoFlagInjection(deleteBranch, "branch name");
-        const deleteFlag = forceDelete ? "-D" : "-d";
-        const result = await git(["branch", deleteFlag, deleteBranch], cwd);
+      // forceDelete can be true (use `delete` param as branch name) or a string (branch name to force-delete)
+      const forceDeleteBranch = typeof forceDelete === "string" ? forceDelete : undefined;
+      const isForceDelete = forceDelete === true || typeof forceDelete === "string";
+      const branchToDelete = deleteBranch ?? forceDeleteBranch;
+
+      if (branchToDelete) {
+        assertNoFlagInjection(branchToDelete, "branch name");
+        const deleteFlag = isForceDelete ? "-D" : "-d";
+        const result = await git(["branch", deleteFlag, branchToDelete], cwd);
         if (result.exitCode !== 0) {
           throw new Error(`Failed to delete branch: ${result.stderr}`);
         }
