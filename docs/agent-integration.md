@@ -459,7 +459,7 @@ Do not bypass Pare by running the raw CLI command in a shell. This defeats the p
 
 Claude Code, Cursor, Windsurf, Cline, and GitHub Copilot all support MCP tool servers. Aider and some other agents do not have native MCP support.
 
-### Do I need all 16 Pare servers?
+### Do I need all 28 Pare servers?
 
 No. Install only the servers you need. The rule files cover all servers, but agents will simply skip tools that are not available.
 

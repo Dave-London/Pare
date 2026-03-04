@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
+import {
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  repoPathInput,
+  coerceJsonArray,
+} from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseCherryPick } from "../lib/parsers.js";
 import { formatCherryPick } from "../lib/formatters.js";
@@ -18,14 +24,7 @@ export function registerCherryPickTool(server: McpServer) {
         path: repoPathInput,
         commits: z
           .preprocess(
-            (val) => {
-              if (typeof val !== "string") return val;
-              try {
-                return JSON.parse(val);
-              } catch {
-                return val;
-              }
-            },
+            coerceJsonArray,
             z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
           )
           .default([])

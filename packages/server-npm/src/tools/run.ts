@@ -5,6 +5,7 @@ import {
   assertNoFlagInjection,
   INPUT_LIMITS,
   projectPathInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
@@ -29,8 +30,10 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("The package.json script name to run"),
         args: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            coerceJsonArray,
+            z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .optional()
           .default([])
           .describe("Additional arguments passed after -- to the script"),

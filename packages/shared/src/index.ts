@@ -8,6 +8,7 @@ export {
 export { run, escapeCmdArg, type RunResult, type RunOptions } from "./runner.js";
 export { stripAnsi } from "./ansi.js";
 export {
+  coerceJsonArray,
   assertNoFlagInjection,
   assertValidSortKey,
   assertValidLogOpts,

@@ -68,8 +68,9 @@ export function registerCheckoutTool(server: McpServer) {
 
       // Handle orphan branch creation
       if (orphan) {
-        const args = [preferSwitch ? "switch" : "checkout", "--orphan", orphan];
-        if (force) args.push("--force");
+        const orphanCmd = preferSwitch ? "switch" : "checkout";
+        const args = [orphanCmd, "--orphan", orphan];
+        if (force) args.push(orphanCmd === "switch" ? "--discard-changes" : "--force");
         const result = await git(args, cwd);
         if (result.exitCode !== 0) {
           const checkoutResult = parseCheckoutError(
@@ -107,7 +108,7 @@ export function registerCheckoutTool(server: McpServer) {
         else if (create) createFlag = "-c";
       }
       const args = [cmd];
-      if (force) args.push("--force");
+      if (force) args.push(cmd === "switch" ? "--discard-changes" : "--force");
       if (createFlag) args.push(createFlag);
       if (track) args.push("--track");
       if (detach) args.push("--detach");
