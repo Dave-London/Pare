@@ -17,8 +17,17 @@ export function registerCherryPickTool(server: McpServer) {
       inputSchema: {
         path: repoPathInput,
         commits: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
+          .preprocess(
+            (val) => {
+              if (typeof val !== "string") return val;
+              try {
+                return JSON.parse(val);
+              } catch {
+                return val;
+              }
+            },
+            z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX),
+          )
           .default([])
           .describe("Commit hashes to cherry-pick"),
         abort: z.boolean().optional().default(false).describe("Abort in-progress cherry-pick"),

@@ -26,6 +26,18 @@ export const SERVERS: ServerEntry[] = [
   { id: "pare-k8s", pkg: "@paretools/k8s", label: "Kubernetes" },
   { id: "pare-security", pkg: "@paretools/security", label: "Security" },
   { id: "pare-process", pkg: "@paretools/process", label: "Process" },
+  { id: "pare-jvm", pkg: "@paretools/jvm", label: "JVM (Gradle/Maven)" },
+  { id: "pare-bazel", pkg: "@paretools/bazel", label: "Bazel" },
+  { id: "pare-bun", pkg: "@paretools/bun", label: "Bun" },
+  { id: "pare-cmake", pkg: "@paretools/cmake", label: "CMake" },
+  { id: "pare-db", pkg: "@paretools/db", label: "Database" },
+  { id: "pare-deno", pkg: "@paretools/deno", label: "Deno" },
+  { id: "pare-dotnet", pkg: "@paretools/dotnet", label: ".NET" },
+  { id: "pare-infra", pkg: "@paretools/infra", label: "Infrastructure" },
+  { id: "pare-nix", pkg: "@paretools/nix", label: "Nix" },
+  { id: "pare-remote", pkg: "@paretools/remote", label: "Remote" },
+  { id: "pare-ruby", pkg: "@paretools/ruby", label: "Ruby" },
+  { id: "pare-swift", pkg: "@paretools/swift", label: "Swift" },
 ];
 
 export const SERVER_MAP = new Map(SERVERS.map((s) => [s.id, s]));
