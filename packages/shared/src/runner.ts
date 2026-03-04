@@ -1,4 +1,5 @@
 import { spawn, execFileSync } from "node:child_process";
+import { normalize } from "node:path";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
@@ -18,15 +19,27 @@ function resolveCommand(cmd: string): string {
   }
   try {
     const resolver = process.platform === "win32" ? "where" : "which";
-    const resolved = execFileSync(resolver, [cmd], {
+    const output = execFileSync(resolver, [cmd], {
       timeout: 5_000,
       stdio: ["ignore", "pipe", "ignore"],
       windowsHide: true,
-    })
-      .toString("utf-8")
-      .split(/\r?\n/)[0]
-      .trim();
-    return resolved || cmd;
+    }).toString("utf-8");
+
+    const lines = output
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    if (process.platform === "win32" && lines.length > 1) {
+      // On Windows, `where` returns multiple matches (e.g., `npx` and `npx.cmd`).
+      // Prefer .cmd/.bat entries so _buildSpawnConfig routes them through the
+      // cmd.exe wrapper path (Branch 2) instead of trying to execute an
+      // extensionless shell script with shell: false (which would fail).
+      const cmdLine = lines.find((l) => /\.(cmd|bat)$/i.test(l));
+      if (cmdLine) return cmdLine;
+    }
+
+    return lines[0] || cmd;
   } catch {
     // Resolution failed — fall back to the bare command name so existing
     // behavior (PATH lookup by the shell/OS) is preserved.
@@ -177,12 +190,14 @@ function escapeCommandForVerbatim(cmd: string): string {
  */
 function escapeArgForVerbatim(arg: string): string {
   // Sequence of backslashes followed by a double quote:
-  // double up all the backslashes and escape the double quote
-  let escaped = arg.replace(/(?=(\\+?))\1"/g, '$1$1\\"');
+  // double up all the backslashes and escape the double quote.
+  // The outer `?` makes the capture group optional so bare `"` (zero
+  // preceding backslashes) is also matched — matching cross-spawn exactly.
+  let escaped = arg.replace(/(?=(\\+?)?)\1"/g, '$1$1\\"');
 
   // Sequence of backslashes at end of string (will be followed by our closing quote):
   // double up all the backslashes
-  escaped = escaped.replace(/(?=(\\+?))\1$/, "$1$1");
+  escaped = escaped.replace(/(?=(\\+?)?)\1$/, "$1$1");
 
   // Wrap in double quotes, then caret-escape metacharacters
   escaped = `"${escaped}"`;
@@ -211,8 +226,8 @@ export interface SpawnConfig {
  *
  * Branches:
  *   1. Explicit `shell: true` — pass cmd directly, don't resolve (caller wants shell features)
- *   2. Windows .cmd/.bat detected — cmd.exe /d /s /c "..." with windowsVerbatimArguments
- *   3. Windows native .exe — spawn resolved path directly
+ *   2. Windows native .exe/.com — spawn resolved path directly
+ *   3. Windows non-exe (cmd/bat/extensionless/bare) — cmd.exe /d /s /c with windowsVerbatimArguments
  *   4. Unix — spawn cmd directly, execvp handles PATH
  */
 export function _buildSpawnConfig(
@@ -230,28 +245,35 @@ export function _buildSpawnConfig(
     return { command: cmd, args: safeArgs, shell: true, windowsVerbatimArguments: false };
   }
 
-  // Branches 2+3: Windows without shell — detect .cmd/.bat wrappers
+  // Branches 2+3: Windows without shell
   if (platform === "win32") {
     const resolved = resolver(cmd);
-    if (/\.(cmd|bat)$/i.test(resolved)) {
-      // Branch 2: .cmd/.bat files need cmd.exe to interpret them.
-      // Use cross-spawn pattern: cmd.exe /d /s /c "escaped-command escaped-args"
-      // with windowsVerbatimArguments: true so libuv doesn't re-quote.
-      // shell: false ensures resolveCommand output never enters a shell command
-      // string from Node's perspective — satisfying CodeQL.
-      const escapedParts = [
-        escapeCommandForVerbatim(resolved),
-        ...args.map((a) => escapeArgForVerbatim(a)),
-      ];
-      return {
-        command: "cmd.exe",
-        args: ["/d", "/s", "/c", `"${escapedParts.join(" ")}"`],
-        shell: false,
-        windowsVerbatimArguments: true,
-      };
+
+    // Branch 2: Native .exe/.com — spawn resolved path directly.
+    // Only these extensions are true PE executables that CreateProcessW can run
+    // without a shell. This matches cross-spawn's isExecutableRegExp check.
+    if (/\.(exe|com)$/i.test(resolved)) {
+      return { command: resolved, args, shell: false, windowsVerbatimArguments: false };
     }
-    // Branch 3: Native .exe on Windows — spawn resolved path directly
-    return { command: resolved, args, shell: false, windowsVerbatimArguments: false };
+
+    // Branch 3: Everything else (.cmd, .bat, extensionless, bare names) needs
+    // cmd.exe to interpret it. Use cross-spawn pattern:
+    //   cmd.exe /d /s /c "escaped-command escaped-args"
+    // with windowsVerbatimArguments: true so libuv doesn't re-quote.
+    // shell: false ensures resolveCommand output never enters a shell command
+    // string from Node's perspective — satisfying CodeQL.
+    // Normalize posix slashes to Windows backslashes (cross-spawn does this too).
+    const normalizedCmd = normalize(resolved);
+    const escapedParts = [
+      escapeCommandForVerbatim(normalizedCmd),
+      ...args.map((a) => escapeArgForVerbatim(a)),
+    ];
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", `"${escapedParts.join(" ")}"`],
+      shell: false,
+      windowsVerbatimArguments: true,
+    };
   }
 
   // Branch 4: Unix — spawn cmd directly with shell: false.

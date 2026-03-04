@@ -377,7 +377,37 @@ describe("_buildSpawnConfig", () => {
     });
   });
 
-  describe("Branch 2: Windows .cmd/.bat detection", () => {
+  describe("Branch 2: Windows native .exe/.com (direct spawn)", () => {
+    it("spawns resolved .exe path directly with shell:false", () => {
+      const config = _buildSpawnConfig("git", ["status"], {}, "win32", winResolver);
+      expect(config.command).toBe("C:\\Program Files\\Git\\cmd\\git.exe");
+      expect(config.args).toEqual(["status"]);
+      expect(config.shell).toBe(false);
+      expect(config.windowsVerbatimArguments).toBe(false);
+    });
+
+    it("passes args unmodified for native executables", () => {
+      const config = _buildSpawnConfig(
+        "docker",
+        ["ps", "--format", "{{.Names}}"],
+        {},
+        "win32",
+        winResolver,
+      );
+      expect(config.args).toEqual(["ps", "--format", "{{.Names}}"]);
+    });
+
+    it("detects .com files as native executables", () => {
+      const comResolver = () => "C:\\Windows\\System32\\find.com";
+      const config = _buildSpawnConfig("find", ["/V", "test"], {}, "win32", comResolver);
+      expect(config.command).toBe("C:\\Windows\\System32\\find.com");
+      expect(config.args).toEqual(["/V", "test"]);
+      expect(config.shell).toBe(false);
+      expect(config.windowsVerbatimArguments).toBe(false);
+    });
+  });
+
+  describe("Branch 3: Windows non-exe commands (cmd.exe wrapper)", () => {
     it("detects .cmd and uses cmd.exe with shell:false", () => {
       const config = _buildSpawnConfig("npm", ["install"], {}, "win32", winResolver);
       expect(config.command).toBe("cmd.exe");
@@ -446,36 +476,27 @@ describe("_buildSpawnConfig", () => {
       expect(shellCmd).toContain("--fix");
       expect(shellCmd).toContain("--quiet");
     });
-  });
 
-  describe("Branch 3: Windows native .exe", () => {
-    it("spawns resolved .exe path directly with shell:false", () => {
-      const config = _buildSpawnConfig("git", ["status"], {}, "win32", winResolver);
-      expect(config.command).toBe("C:\\Program Files\\Git\\cmd\\git.exe");
-      expect(config.args).toEqual(["status"]);
-      expect(config.shell).toBe(false);
-      expect(config.windowsVerbatimArguments).toBe(false);
-    });
-
-    it("passes args unmodified for native executables", () => {
-      const config = _buildSpawnConfig(
-        "docker",
-        ["ps", "--format", "{{.Names}}"],
-        {},
-        "win32",
-        winResolver,
-      );
-      expect(config.args).toEqual(["ps", "--format", "{{.Names}}"]);
-    });
-
-    it("falls back to bare name when resolver fails", () => {
-      // Resolver returns the bare name (simulating `where` failure)
+    it("routes extensionless commands through cmd.exe (bare name fallback)", () => {
+      // Resolver returns the bare name (simulating `where` failure) — on Windows,
+      // extensionless commands can't be executed directly with shell:false, so they
+      // must go through cmd.exe which searches PATHEXT.
       const failResolver = (cmd: string) => cmd;
       const config = _buildSpawnConfig("unknown-tool", ["arg"], {}, "win32", failResolver);
-      // No .cmd/.bat/.exe extension → treated as native executable
-      expect(config.command).toBe("unknown-tool");
+      expect(config.command).toBe("cmd.exe");
       expect(config.shell).toBe(false);
-      expect(config.windowsVerbatimArguments).toBe(false);
+      expect(config.windowsVerbatimArguments).toBe(true);
+      expect(config.args[3]).toContain("unknown-tool");
+    });
+
+    it("routes extensionless resolved paths through cmd.exe", () => {
+      // Some Windows tools (like npx) exist as extensionless shell scripts.
+      // They can only be executed through cmd.exe which finds the .cmd wrapper.
+      const extlessResolver = () => "C:\\hostedtoolcache\\node\\20\\x64\\npx";
+      const config = _buildSpawnConfig("npx", ["eslint"], {}, "win32", extlessResolver);
+      expect(config.command).toBe("cmd.exe");
+      expect(config.shell).toBe(false);
+      expect(config.windowsVerbatimArguments).toBe(true);
     });
   });
 
