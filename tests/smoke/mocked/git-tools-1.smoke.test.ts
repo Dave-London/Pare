@@ -839,6 +839,21 @@ describe("Smoke: git.checkout", () => {
     expect(parsed.detached).toBe(true);
     const args = vi.mocked(git).mock.calls[1][0];
     expect(args).toContain("--detach");
+    // Must use git checkout --detach, not git switch --detach (switch rejects tags on older git)
+    expect(args[0]).toBe("checkout");
+  });
+
+  // S5b: Detach HEAD at tag — must use git checkout, not git switch (#669)
+  it("S5b [P1] detach HEAD at tag uses git checkout", async () => {
+    mockGit("main\n");
+    mockGit("", "HEAD is now at abc1234 v1.2.3");
+    mockGit("HEAD\n");
+    mockGit("");
+    await callAndValidate({ ...DEFAULTS, ref: "v1.2.3", detach: true });
+    const args = vi.mocked(git).mock.calls[1][0];
+    expect(args[0]).toBe("checkout");
+    expect(args).toContain("--detach");
+    expect(args).not.toContain("switch");
   });
 
   // S6: Orphan branch creation

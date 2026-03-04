@@ -91,14 +91,17 @@ export function registerCheckoutTool(server: McpServer) {
         return dualOutput(checkoutResult, formatCheckout);
       }
 
-      // When startPoint is provided, git switch -c may reject tags ("a branch is expected, got tag").
-      // Use git checkout -b directly in that case for full compatibility.
+      // git switch has two tag-related incompatibilities vs git checkout:
+      //   1. `git switch -c <branch> <tag>` → "a branch is expected, got tag" (#666)
+      //   2. `git switch --detach <tag>` → "reference is not a branch" on older git (#669)
+      // Use git checkout for both cases; it handles all ref types universally.
       const needsCheckoutForStartPoint = Boolean(
         startPoint && (create || forceCreate) && preferSwitch,
       );
+      const needsCheckoutForDetach = Boolean(detach && preferSwitch);
       let cmd: string;
       let createFlag: string | undefined;
-      if (needsCheckoutForStartPoint || !preferSwitch) {
+      if (needsCheckoutForStartPoint || needsCheckoutForDetach || !preferSwitch) {
         cmd = "checkout";
         if (forceCreate) createFlag = "-B";
         else if (create) createFlag = "-b";
