@@ -1,5 +1,11 @@
 # @paretools/init
 
+## 0.13.1
+
+### Patch Changes
+
+- [#668](https://github.com/Dave-London/Pare/pull/668) [`b63707c`](https://github.com/Dave-London/Pare/commit/b63707cbecdb34067c38ea6e3370a1eab0e76e46) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix cherry-pick commits array coercion (#667), checkout branch-from-tag via git switch (#666), and add 12 missing servers to init registry and presets (#660)
+
 ## 0.13.0
 
 ### Patch Changes

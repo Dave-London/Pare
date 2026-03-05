@@ -1,6 +1,6 @@
 {
   "name": "@paretools/cmake",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "mcpName": "io.github.Dave-London/pare-cmake",
   "description": "MCP server for CMake build system operations with structured, token-efficient output",
   "license": "MIT",

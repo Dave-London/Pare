@@ -1,5 +1,25 @@
 # @paretools/shared
 
+## 0.13.1
+
+### Patch Changes
+
+- [#672](https://github.com/Dave-London/Pare/pull/672) [`9076e2b`](https://github.com/Dave-London/Pare/commit/9076e2bd83424de221b397bd6220c79d6573f4b4) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: register stub resource handlers to suppress spurious -32603 errors in OpenCode
+
+  Some MCP clients (e.g. OpenCode) fire a `resources/read` request after every tool call that returns `structuredContent`. Because Pare servers register no resource handlers, the SDK responded with `-32601 Method Not Found` (displayed as `-32603` by OpenCode). Now `createServer()` registers empty `resources/list` and `resources/read` handlers so these requests receive a clean `-32602 InvalidParams` ("Resource not found") response instead.
+
+- [#663](https://github.com/Dave-London/Pare/pull/663) [`eb5a5a2`](https://github.com/Dave-London/Pare/commit/eb5a5a2da1b1de22035abbf53a15fdba52cb8bd5) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(shared): eliminate shell:true default to resolve CodeQL alert #16
+
+  Default `shell` to `false` on all platforms. On Windows, `.cmd`/`.bat` wrappers
+  are automatically detected and spawned via `cmd.exe` with `windowsVerbatimArguments`
+  (cross-spawn pattern), avoiding shell command injection from environment-resolved paths.
+
+- [#665](https://github.com/Dave-London/Pare/pull/665) [`b120c9b`](https://github.com/Dave-London/Pare/commit/b120c9b8d8c597022dfeec32806f52c49cf11ba8) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: read serverInfo.version from package.json instead of hardcoding
+
+- [#641](https://github.com/Dave-London/Pare/pull/641) [`79d528d`](https://github.com/Dave-London/Pare/commit/79d528d6bba90ac1f3bda016ab57058fda293a4d) Thanks [@Dave-London](https://github.com/Dave-London)! - Resolve CLI commands to absolute paths before spawning to prevent shell interpretation of PATH (fixes CodeQL alert #15)
+
+- [#643](https://github.com/Dave-London/Pare/pull/643) [`d2be342`](https://github.com/Dave-London/Pare/commit/d2be34264a37b92a29d1ef74c201e99e07df7485) Thanks [@Dave-London](https://github.com/Dave-London)! - Add strict input validation to reject unknown tool parameters instead of silently ignoring them
+
 ## 0.13.0
 
 ### Minor Changes

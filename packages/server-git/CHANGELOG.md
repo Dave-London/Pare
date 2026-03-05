@@ -1,5 +1,20 @@
 # @paretools/git
 
+## 0.13.1
+
+### Patch Changes
+
+- [#668](https://github.com/Dave-London/Pare/pull/668) [`b63707c`](https://github.com/Dave-London/Pare/commit/b63707cbecdb34067c38ea6e3370a1eab0e76e46) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix cherry-pick commits array coercion (#667), checkout branch-from-tag via git switch (#666), and add 12 missing servers to init registry and presets (#660)
+
+- [#671](https://github.com/Dave-London/Pare/pull/671) [`dd560eb`](https://github.com/Dave-London/Pare/commit/dd560eb4c586b29e473145fbd0ad9237bd4e11a1) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix checkout: use git checkout --detach instead of git switch --detach to support tag refs on all git versions (#669)
+
+- [#664](https://github.com/Dave-London/Pare/pull/664) [`d5cef2e`](https://github.com/Dave-London/Pare/commit/d5cef2e8dcdb4b4d2b32082c294cb1cc8ea05800) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): accept string branch name in `forceDelete` param, matching `delete` behavior
+
+- [#665](https://github.com/Dave-London/Pare/pull/665) [`b120c9b`](https://github.com/Dave-London/Pare/commit/b120c9b8d8c597022dfeec32806f52c49cf11ba8) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: read serverInfo.version from package.json instead of hardcoding
+
+- Updated dependencies [[`9076e2b`](https://github.com/Dave-London/Pare/commit/9076e2bd83424de221b397bd6220c79d6573f4b4), [`eb5a5a2`](https://github.com/Dave-London/Pare/commit/eb5a5a2da1b1de22035abbf53a15fdba52cb8bd5), [`b120c9b`](https://github.com/Dave-London/Pare/commit/b120c9b8d8c597022dfeec32806f52c49cf11ba8), [`79d528d`](https://github.com/Dave-London/Pare/commit/79d528d6bba90ac1f3bda016ab57058fda293a4d), [`d2be342`](https://github.com/Dave-London/Pare/commit/d2be34264a37b92a29d1ef74c201e99e07df7485)]:
+  - @paretools/shared@0.13.1
+
 ## 0.13.0
 
 ### Minor Changes

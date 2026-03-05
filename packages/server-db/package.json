@@ -1,6 +1,6 @@
 {
   "name": "@paretools/db",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "mcpName": "io.github.Dave-London/pare-db",
   "description": "MCP server for database CLI operations with structured, token-efficient output",
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "@paretools/git",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "mcpName": "io.github.Dave-London/pare-git",
   "description": "MCP server for git with structured, token-efficient output",
   "license": "MIT",
