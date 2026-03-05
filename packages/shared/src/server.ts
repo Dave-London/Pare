@@ -1,5 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  ErrorCode,
+  ListResourcesRequestSchema,
+  McpError,
+  ReadResourceRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import { createLazyToolManager, type LazyToolManager } from "./lazy-tools.js";
 import { isLazyEnabled } from "./tool-filter.js";
 import { strictifyInputSchema } from "./strict-input.js";
@@ -62,6 +68,17 @@ export async function createServer(options: CreateServerOptions): Promise<McpSer
   const lazyManager = lazy ? createLazyToolManager(server) : undefined;
 
   registerTools(server, lazyManager);
+
+  // Pare servers are tool-only and register no resources. Some MCP clients
+  // (e.g. OpenCode) fire `resources/read` after every structured tool call,
+  // which causes a -32603 InternalError because no resource handler exists.
+  // Register stub handlers so those requests receive a clean -32602 response
+  // ("Resource not found") instead of the confusing generic error.
+  server.server.registerCapabilities({ resources: {} });
+  server.server.setRequestHandler(ListResourcesRequestSchema, () => ({ resources: [] }));
+  server.server.setRequestHandler(ReadResourceRequestSchema, (request) => {
+    throw new McpError(ErrorCode.InvalidParams, `Resource not found: ${request.params.uri}`);
+  });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
