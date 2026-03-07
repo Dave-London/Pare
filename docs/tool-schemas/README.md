@@ -35,6 +35,10 @@ Structured JSON responses returned by Pare MCP tools compared to raw CLI output.
 | [swift](swift/)       | `@paretools/swift`    | build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init                                                                                                                                                  |
 | [test](test/)         | `@paretools/test`     | [run](test/run.md), [coverage](test/coverage.md), [playwright](test/playwright.md)                                                                                                                                                                         |
 
+## Error Handling
+
+Pare tools use two distinct error patterns — **thrown errors** (MCP-level, when the command cannot run at all) and **structured error payloads** (tool-level, when the command runs but reports failures like test errors or build diagnostics). See [Error Handling](../error-handling.md) for full details, examples, and a quick-reference table.
+
 ## Page Format
 
 Each tool page contains a comparison table:
