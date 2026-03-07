@@ -69,7 +69,7 @@ describe("assertNoFlagInjection", () => {
   });
 
   it("includes the invalid value in the error message", () => {
-    expect(() => assertNoFlagInjection("--force", "ref")).toThrow(/--force/);
+    expect(() => assertNoFlagInjection("--force", "branch")).toThrow(/--force/);
     expect(() => assertNoFlagInjection("-rf", "file path")).toThrow(/-rf/);
   });
 });
@@ -122,10 +122,10 @@ describe("security: pull tool — remote and branch validation", () => {
   });
 });
 
-describe("security: checkout tool — ref validation", () => {
-  it("rejects flag-like refs", () => {
+describe("security: checkout tool — branch validation", () => {
+  it("rejects flag-like branch values", () => {
     for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "ref")).toThrow(/must not start with "-"/);
+      expect(() => assertNoFlagInjection(malicious, "branch")).toThrow(/must not start with "-"/);
     }
   });
 });
