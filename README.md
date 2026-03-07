@@ -87,7 +87,9 @@ Untracked files:
 
 50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
 
-## Available Servers (240 tools, 28 packages)
+## Available Servers (28 packages, 240 tools)
+
+Install only the servers relevant to your stack — most projects need just 2–4. The full catalog covers a wide range of ecosystems so Pare works wherever you do.
 
 | Category             | Servers                                                                                                                                                                                                                                                                                                                                                        | Tools | Wraps                                                                      |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----: | -------------------------------------------------------------------------- |
@@ -118,7 +120,7 @@ npx @paretools/doctor
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full`
 
-**Setup guides by client** — each includes config, agent rules, and validation:
+### Setup Guides by Client
 
 |                                              |                                                  |                                           |
 | -------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
@@ -127,9 +129,11 @@ npx @paretools/doctor
 | [OpenAI Codex](./docs/setup/codex.md)        | [Gemini CLI](./docs/setup/gemini-cli.md)         | [Zed](./docs/setup/zed.md)                |
 | [Continue.dev](./docs/setup/continue-dev.md) |                                                  |                                           |
 
-> **[Full Quickstart Guide](./docs/quickstart.md)** — preset selection, ecosystem mapping, merge strategy for existing config, and validation.
-> **[Manual Configuration](./docs/manual-configuration.md)** — config file paths and JSON/TOML/YAML formats for all clients.
-> **[Agent Integration Guide](./docs/agent-integration.md)** — rule files, enforcement hooks, CLI-to-MCP mapping reference.
+> **[Full Quickstart Guide](./docs/quickstart.md)** — presets, ecosystem mapping, validation
+>
+> **[Manual Configuration](./docs/manual-configuration.md)** — config paths and formats for all clients
+>
+> **[Agent Integration Guide](./docs/agent-integration.md)** — rule files, hooks, CLI-to-MCP mapping
 
 ## Configuration
 
