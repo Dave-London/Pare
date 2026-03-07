@@ -1,5 +1,7 @@
 # Agent Integration Guide
 
+> **New to Pare?** Start with the [Quickstart Guide](./quickstart.md) for a step-by-step setup walkthrough. This page covers advanced integration details.
+
 This guide covers how to configure coding agents to use Pare MCP tools instead of raw CLI commands.
 
 ## Why Structured Output Matters
@@ -53,6 +55,8 @@ chmod +x .claude/hooks/pare-prefer-mcp.sh
 ```
 
 See [Claude Code Hooks Deep Dive](#claude-code-hooks-deep-dive) for details.
+
+> **Hook path note**: The hook path `./.claude/hooks/pare-prefer-mcp.sh` is project-relative. Claude Code must be invoked from the project root directory for the hook to be found.
 
 ### Cursor
 

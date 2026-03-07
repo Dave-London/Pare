@@ -1,5 +1,7 @@
 # Pare Configuration Reference
 
+> **New to Pare?** Start with the [Quickstart Guide](./quickstart.md) for initial setup. This page covers advanced configuration.
+
 Pare servers are configured via environment variables. All controls are opt-in — by default, no restrictions are applied.
 
 ## Tool Filtering

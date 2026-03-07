@@ -77,29 +77,23 @@ This uses MCP's `structuredContent` and `outputSchema` features to provide type-
 
 ## Quick Setup
 
-The fastest way to configure Pare in any supported AI client:
-
 ```bash
-npx @paretools/init
-```
-
-This auto-detects your installed clients, lets you pick a preset (web, python, rust, go, devops, full), and writes the correct config.
-
-**Flag mode** (non-interactive):
-
-```bash
+# 1. Configure MCP servers (non-interactive)
 npx @paretools/init --client claude-code --preset web
-npx @paretools/init --client vscode --all
-npx @paretools/init --client cursor --preset python --dry-run
-```
 
-**Health check** — verify configured servers are working:
+# 2. Add agent rules to your project
+#    (append to existing CLAUDE.md, or copy if new)
+cat node_modules/@paretools/init/rules/CLAUDE.md >> CLAUDE.md
 
-```bash
+# 3. Restart your client session
+
+# 4. Validate
 npx @paretools/doctor
 ```
 
-> **Note:** After running `pare-init`, restart your client session for the new servers to take effect.
+**Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full`
+
+> **[Full Quickstart Guide](./docs/quickstart.md)** — complete setup walkthrough including preset selection, ecosystem mapping, merge strategy for existing CLAUDE.md, gitignore guidance, and validation.
 
 ## Manual Configuration
 
@@ -121,7 +115,7 @@ If you prefer manual setup, add the JSON/TOML/YAML entries below to your client'
 
 > **Tip:** Use `npx @paretools/init` instead of manual configuration — it handles platform differences (e.g. Windows `cmd /c` wrapper) and merges safely with existing config.
 
-## Quick Start
+## Client-Specific Examples
 
 **Claude Code:**
 
@@ -289,7 +283,9 @@ Untracked files:
 
 ## Telling Agents to Use Pare
 
-Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands:
+Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands. See the [Quickstart Guide](./docs/quickstart.md) for step-by-step instructions including how to merge with an existing CLAUDE.md.
+
+> **Merge strategy**: If your project already has a `CLAUDE.md`, append the Pare rules section rather than overwriting. The Pare rules are self-contained under a `## MCP Tools` heading.
 
 <details>
 <summary><strong>CLAUDE.md</strong> (Claude Code)</summary>
