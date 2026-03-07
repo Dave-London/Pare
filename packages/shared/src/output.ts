@@ -1,4 +1,34 @@
+import type { ZodType } from "zod";
 import type { ToolOutput } from "./types.js";
+
+/**
+ * Returns true when dev-mode validation should run.
+ * Active when NODE_ENV is NOT 'production' or PARE_DEBUG is set.
+ */
+function isDevMode(): boolean {
+  return process.env.NODE_ENV !== "production" || !!process.env.PARE_DEBUG;
+}
+
+/**
+ * Validates `data` against a Zod `outputSchema` in dev mode.
+ * Throws a descriptive error when the data does not match the schema,
+ * helping developers catch compact-map / schema mismatches early.
+ *
+ * No-ops in production (NODE_ENV=production without PARE_DEBUG).
+ */
+function devValidate<T>(data: T, outputSchema: ZodType | undefined, label: string): void {
+  if (!outputSchema || !isDevMode()) return;
+  const result = outputSchema.safeParse(data);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `compactDualOutput (${label}): structured output does not match outputSchema.\n` +
+        `Validation errors:\n${issues}`,
+    );
+  }
+}
 
 /**
  * Creates the dual-output response that every pare tool returns.
@@ -37,6 +67,9 @@ export function estimateTokens(text: string): number {
  * @param compactMap - Projects full data into a compact shape.
  * @param compactFormat - Formatter for compact data.
  * @param forceFullSchema - When true, skip auto-detection and return full data.
+ * @param outputSchema - Optional Zod schema. In dev mode (NODE_ENV !== 'production' or PARE_DEBUG set),
+ *   the structured output is validated against this schema before returning. Mismatches throw a
+ *   descriptive error, catching compact-map bugs during development/testing rather than in production.
  */
 export function compactDualOutput<T, C>(
   data: T,
@@ -45,9 +78,12 @@ export function compactDualOutput<T, C>(
   compactMap: (d: T) => C,
   compactFormat: (d: C) => string,
   forceFullSchema: boolean,
+  outputSchema?: ZodType,
 ): ToolOutput<T | C> {
   if (forceFullSchema) {
-    return dualOutput(data, humanFormat) as ToolOutput<T | C>;
+    const out = dualOutput(data, humanFormat) as ToolOutput<T | C>;
+    devValidate(out.structuredContent, outputSchema, "full");
+    return out;
   }
 
   const structuredTokens = estimateTokens(JSON.stringify(data));
@@ -55,10 +91,14 @@ export function compactDualOutput<T, C>(
 
   if (structuredTokens >= rawTokens) {
     const compact = compactMap(data);
-    return dualOutput(compact, compactFormat) as ToolOutput<T | C>;
+    const out = dualOutput(compact, compactFormat) as ToolOutput<T | C>;
+    devValidate(out.structuredContent, outputSchema, "compact");
+    return out;
   }
 
-  return dualOutput(data, humanFormat) as ToolOutput<T | C>;
+  const out = dualOutput(data, humanFormat) as ToolOutput<T | C>;
+  devValidate(out.structuredContent, outputSchema, "full");
+  return out;
 }
 
 /**
@@ -96,6 +136,7 @@ export function strippedDualOutput<T, S>(
  * @param compactMap - Projects full data into a compact shape (for compact mode).
  * @param compactFormat - Formatter for compact data.
  * @param forceFullSchema - When true, skip auto-detection and return full data.
+ * @param outputSchema - Optional Zod schema for dev-mode validation (see compactDualOutput).
  */
 export function strippedCompactDualOutput<T, S, C>(
   data: T,
@@ -105,9 +146,12 @@ export function strippedCompactDualOutput<T, S, C>(
   compactMap: (d: T) => C,
   compactFormat: (d: C) => string,
   forceFullSchema: boolean,
+  outputSchema?: ZodType,
 ): ToolOutput<S | C> {
   if (forceFullSchema) {
-    return strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+    const out = strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+    devValidate(out.structuredContent, outputSchema, "full");
+    return out;
   }
 
   const structuredTokens = estimateTokens(JSON.stringify(data));
@@ -115,8 +159,12 @@ export function strippedCompactDualOutput<T, S, C>(
 
   if (structuredTokens >= rawTokens) {
     const compact = compactMap(data);
-    return dualOutput(compact, compactFormat) as ToolOutput<S | C>;
+    const out = dualOutput(compact, compactFormat) as ToolOutput<S | C>;
+    devValidate(out.structuredContent, outputSchema, "compact");
+    return out;
   }
 
-  return strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+  const out = strippedDualOutput(data, humanFormat, schemaMap) as ToolOutput<S | C>;
+  devValidate(out.structuredContent, outputSchema, "full");
+  return out;
 }
