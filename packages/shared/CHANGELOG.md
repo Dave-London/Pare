@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.14.0
+
+### Patch Changes
+
+- [#685](https://github.com/Dave-London/Pare/pull/685) [`e5ef841`](https://github.com/Dave-London/Pare/commit/e5ef841d7c9b7ec67a52c3943bc346cebf75b6eb) Thanks [@Dave-London](https://github.com/Dave-London)! - Add dev-mode runtime validation for compactDualOutput and strippedCompactDualOutput. When an optional `outputSchema` (Zod) is passed and `NODE_ENV !== 'production'` (or `PARE_DEBUG` is set), the structured output is validated against the schema before returning. Mismatches throw a descriptive error with field paths, catching compact-map / schema bugs during development and testing rather than in production.
+
 ## 0.13.1
 
 ### Patch Changes
