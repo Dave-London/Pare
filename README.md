@@ -42,38 +42,63 @@ Each Pare tool returns two outputs:
 
 This uses MCP's `structuredContent` and `outputSchema` features to provide type-safe, validated data that agents can rely on without custom parsing.
 
+## Example: `git status`
+
+**Raw git output (~118 tokens):**
+
+```
+On branch main
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   src/index.ts
+        new file:   src/utils.ts
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   README.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        temp.log
+```
+
+**Pare structured output (~59 tokens):**
+
+```json
+{
+  "branch": "main",
+  "upstream": "origin/main",
+  "ahead": 2,
+  "staged": [
+    { "file": "src/index.ts", "status": "modified" },
+    { "file": "src/utils.ts", "status": "added" }
+  ],
+  "modified": ["README.md"],
+  "deleted": [],
+  "untracked": ["temp.log"],
+  "conflicts": [],
+  "clean": false
+}
+```
+
+50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
+
 ## Available Servers (240 tools, 28 packages)
 
-| Package                                             | Tools                                                                                                                                                                                                                                                                                                                        | Wraps                                                            |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`@paretools/git`](./packages/server-git)           | status, log, log-graph, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config                                                                                                | git                                                              |
-| [`@paretools/github`](./packages/server-github)     | pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api | gh                                                               |
-| [`@paretools/search`](./packages/server-search)     | search, find, count, jq, yq                                                                                                                                                                                                                                                                                                  | ripgrep, fd, jq, yq                                              |
-| [`@paretools/test`](./packages/server-test)         | run, coverage, playwright                                                                                                                                                                                                                                                                                                    | pytest, jest, vitest, mocha, playwright                          |
-| [`@paretools/npm`](./packages/server-npm)           | install, audit, outdated, list, run, test, init, info, search, nvm                                                                                                                                                                                                                                                           | npm, nvm                                                         |
-| [`@paretools/docker`](./packages/server-docker)     | ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats                                                                                                                                                                           | docker, docker compose                                           |
-| [`@paretools/build`](./packages/server-build)       | tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup                                                                                                                                                                                                                                                           | tsc, esbuild, vite, webpack, turbo, nx, lerna, rollup            |
-| [`@paretools/lint`](./packages/server-lint)         | lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint                                                                                                                                                                                                                      | eslint, prettier, biome, stylelint, oxlint, shellcheck, hadolint |
-| [`@paretools/http`](./packages/server-http)         | request, get, post, head                                                                                                                                                                                                                                                                                                     | curl                                                             |
-| [`@paretools/make`](./packages/server-make)         | run, list                                                                                                                                                                                                                                                                                                                    | make, just                                                       |
-| [`@paretools/python`](./packages/server-python)     | pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry                                                                                                                                                                                           | pip, mypy, ruff, pytest, uv, black, conda, pyenv, poetry         |
-| [`@paretools/cargo`](./packages/server-cargo)       | build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit                                                                                                                                                                                                                                                  | cargo                                                            |
-| [`@paretools/go`](./packages/server-go)             | build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint                                                                                                                                                                                                                                                | go, gofmt, golangci-lint                                         |
-| [`@paretools/security`](./packages/server-security) | trivy, semgrep, gitleaks                                                                                                                                                                                                                                                                                                     | trivy, semgrep, gitleaks                                         |
-| [`@paretools/k8s`](./packages/server-k8s)           | get, describe, logs, apply, helm                                                                                                                                                                                                                                                                                             | kubectl, helm                                                    |
-| [`@paretools/process`](./packages/server-process)   | run                                                                                                                                                                                                                                                                                                                          | child_process                                                    |
-| [`@paretools/infra`](./packages/server-infra)       | init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy                                                                                                                                                                                                 | terraform, vagrant, ansible                                      |
-| [`@paretools/jvm`](./packages/server-jvm)           | gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify                                                                                                                                                                                                      | gradle, maven                                                    |
-| [`@paretools/db`](./packages/server-db)             | psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats                                                                                                                                                                                       | psql, mysql, redis-cli, mongosh                                  |
-| [`@paretools/deno`](./packages/server-deno)         | run, test, fmt, lint, check, task, info                                                                                                                                                                                                                                                                                      | deno                                                             |
-| [`@paretools/bun`](./packages/server-bun)           | run, test, build, install, add, remove, outdated, pm-ls                                                                                                                                                                                                                                                                      | bun                                                              |
-| [`@paretools/nix`](./packages/server-nix)           | build, run, develop, shell, flake-show, flake-check, flake-update                                                                                                                                                                                                                                                            | nix                                                              |
-| [`@paretools/dotnet`](./packages/server-dotnet)     | build, test, run, publish, restore, clean, add-package, list-package                                                                                                                                                                                                                                                         | dotnet                                                           |
-| [`@paretools/ruby`](./packages/server-ruby)         | run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check                                                                                                                                                                                                                                   | ruby, gem, bundler                                               |
-| [`@paretools/remote`](./packages/server-remote)     | ssh-run, ssh-test, ssh-keyscan, rsync                                                                                                                                                                                                                                                                                        | ssh, rsync                                                       |
-| [`@paretools/swift`](./packages/server-swift)       | build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init                                                                                                                                                                                                                    | swift                                                            |
-| [`@paretools/cmake`](./packages/server-cmake)       | cmake                                                                                                                                                                                                                                                                                                                        | cmake                                                            |
-| [`@paretools/bazel`](./packages/server-bazel)       | bazel                                                                                                                                                                                                                                                                                                                        | bazel                                                            |
+| Category             | Servers                                                                                                                                                                                                                                                                                                                                                        | Tools | Wraps                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----: | -------------------------------------------------------------------------- |
+| Version Control      | [git](./packages/server-git), [github](./packages/server-github)                                                                                                                                                                                                                                                                                               |    55 | git, gh                                                                    |
+| Languages & Packages | [npm](./packages/server-npm), [python](./packages/server-python), [cargo](./packages/server-cargo), [go](./packages/server-go), [deno](./packages/server-deno), [bun](./packages/server-bun), [nix](./packages/server-nix), [dotnet](./packages/server-dotnet), [ruby](./packages/server-ruby), [swift](./packages/server-swift), [jvm](./packages/server-jvm) |   101 | npm, pip, cargo, go, deno, bun, nix, dotnet, gem, swift, gradle, maven     |
+| Build, Lint & Test   | [build](./packages/server-build), [lint](./packages/server-lint), [test](./packages/server-test), [cmake](./packages/server-cmake), [bazel](./packages/server-bazel)                                                                                                                                                                                           |    23 | tsc, esbuild, vite, webpack, eslint, prettier, biome, vitest, pytest, jest |
+| Infrastructure       | [docker](./packages/server-docker), [k8s](./packages/server-k8s), [infra](./packages/server-infra), [security](./packages/server-security), [remote](./packages/server-remote)                                                                                                                                                                                 |    40 | docker, kubectl, helm, terraform, ansible, trivy, ssh                      |
+| Utilities            | [search](./packages/server-search), [http](./packages/server-http), [make](./packages/server-make), [process](./packages/server-process), [db](./packages/server-db)                                                                                                                                                                                           |    21 | ripgrep, fd, curl, make, just, psql, mysql, redis, mongosh                 |
+
+> **[Tool Schemas](./docs/tool-schemas/)** — detailed response examples and field descriptions for every tool.
+> See also **[Tool Response Examples](./docs/tool-response-examples.md)** for quick JSON samples.
 
 ## Quick Setup
 
@@ -232,55 +257,6 @@ On Windows, wrap `npx` with `cmd /c`:
 ```
 
 </details>
-
-## Example: `git status`
-
-**Raw git output (~118 tokens):**
-
-```
-On branch main
-Your branch is ahead of 'origin/main' by 2 commits.
-  (use "git push" to publish your local commits)
-
-Changes to be committed:
-  (use "git restore --staged <file>..." to unstage)
-        modified:   src/index.ts
-        new file:   src/utils.ts
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-        modified:   README.md
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-        temp.log
-```
-
-**Pare structured output (~59 tokens):**
-
-```json
-{
-  "branch": "main",
-  "upstream": "origin/main",
-  "ahead": 2,
-  "staged": [
-    { "file": "src/index.ts", "status": "modified" },
-    { "file": "src/utils.ts", "status": "added" }
-  ],
-  "modified": ["README.md"],
-  "deleted": [],
-  "untracked": ["temp.log"],
-  "conflicts": [],
-  "clean": false
-}
-```
-
-50% fewer tokens. Zero information lost. Fully typed. Savings scale with output verbosity — test runners and build logs see 80–92% reduction.
-
-> [!TIP]
-> **[Tool Schemas](./docs/tool-schemas/)** — detailed response examples and token comparisons for every tool.
-> See also **[Tool Response Examples](./docs/tool-response-examples.md)** for quick JSON samples of the most commonly used tools.
 
 ## Telling Agents to Use Pare
 
