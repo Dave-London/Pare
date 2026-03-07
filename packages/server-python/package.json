@@ -1,6 +1,6 @@
 {
   "name": "@paretools/python",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "mcpName": "io.github.Dave-London/pare-python",
   "description": "MCP server for Python — structured pip, mypy, ruff, and pytest output for AI agents",
   "license": "MIT",
