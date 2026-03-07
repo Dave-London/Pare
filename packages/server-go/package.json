@@ -1,6 +1,6 @@
 {
   "name": "@paretools/go",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "mcpName": "io.github.Dave-London/pare-go",
   "description": "MCP server for Go — structured build, test, vet, and module data for AI agents",
   "license": "MIT",

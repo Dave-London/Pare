@@ -1,5 +1,11 @@
 # @paretools/init
 
+## 0.14.1
+
+### Patch Changes
+
+- [#686](https://github.com/Dave-London/Pare/pull/686) [`00e5f23`](https://github.com/Dave-London/Pare/commit/00e5f236a63e2ef4dee04d13d00b5ff0678b1ae6) Thanks [@Dave-London](https://github.com/Dave-London)! - Add doctor tip after successful init — suggests running `npx @paretools/doctor` to verify setup
+
 ## 0.14.0
 
 ## 0.13.1
