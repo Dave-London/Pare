@@ -178,7 +178,7 @@ describe("Recorded: git.checkout", () => {
     mockGit("feature-branch");
     // Call 4: diff --name-only main..feature-branch
     mockGit("src/feature.ts\n");
-    const { parsed } = await callAndValidate({ ref: "feature-branch", create: false });
+    const { parsed } = await callAndValidate({ branch: "feature-branch", create: false });
     expect(parsed.success).toBe(true);
     expect(parsed.previousRef).toBe("main");
   });
@@ -192,7 +192,7 @@ describe("Recorded: git.checkout", () => {
     mockGit("new-branch");
     // Call 4: diff (same commit so no diff)
     mockGit("");
-    const { parsed } = await callAndValidate({ ref: "new-branch", create: true });
+    const { parsed } = await callAndValidate({ branch: "new-branch", create: true });
     expect(parsed.success).toBe(true);
     expect(parsed.created).toBe(true);
   });
@@ -200,7 +200,7 @@ describe("Recorded: git.checkout", () => {
   it("S3 [recorded] checkout nonexistent ref", async () => {
     mockGit("main");
     mockGit("", "error: pathspec 'nonexistent' did not match any file(s) known to git", 1);
-    const { parsed } = await callAndValidate({ ref: "nonexistent" });
+    const { parsed } = await callAndValidate({ branch: "nonexistent" });
     expect(parsed.success).toBe(false);
   });
 });

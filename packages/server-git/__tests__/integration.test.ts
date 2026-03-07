@@ -483,7 +483,7 @@ describe("@paretools/git write-tool integration", () => {
       const result = await client.callTool(
         {
           name: "checkout",
-          arguments: { path: tempDir, ref: "test-branch-integration", create: true },
+          arguments: { path: tempDir, branch: "test-branch-integration", create: true },
         },
         undefined,
         { timeout: CALL_TIMEOUT },
@@ -511,7 +511,7 @@ describe("@paretools/git write-tool integration", () => {
         const result = await client.callTool(
           {
             name: "checkout",
-            arguments: { path: tempDir, ref: defaultBranch },
+            arguments: { path: tempDir, branch: defaultBranch },
           },
           undefined,
           { timeout: CALL_TIMEOUT },
@@ -524,11 +524,11 @@ describe("@paretools/git write-tool integration", () => {
       }
     });
 
-    it("rejects flag-injection in ref", async () => {
+    it("rejects flag-injection in branch", async () => {
       const result = await client.callTool(
         {
           name: "checkout",
-          arguments: { path: tempDir, ref: "--force" },
+          arguments: { path: tempDir, branch: "--force" },
         },
         undefined,
         { timeout: CALL_TIMEOUT },

@@ -796,7 +796,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("main\n");
     // git diff --name-only feature..main
     mockGit("src/index.ts\n");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "main" });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "main" });
     expect(parsed.success).toBe(true);
     expect(parsed.previousRef).toBe("feature");
   });
@@ -808,7 +808,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("feat\n");
     // diff: no files differing on new branch from same point
     mockGit("");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "feat", create: true });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "feat", create: true });
     expect(parsed.success).toBe(true);
     expect(parsed.created).toBe(true);
   });
@@ -817,14 +817,14 @@ describe("Smoke: git.checkout", () => {
   it("S3 [P0] checkout nonexistent ref returns error", async () => {
     mockGit("main\n");
     mockGit("", "fatal: invalid reference: nonexistent", 1);
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "nonexistent" });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "nonexistent" });
     expect(parsed.success).toBe(false);
     expect(parsed.errorType).toBeDefined();
   });
 
   // S4: Flag injection in ref
   it("S4 [P0] flag injection in ref is blocked", async () => {
-    await expect(callAndValidate({ ...DEFAULTS, ref: "--exec=evil" })).rejects.toThrow();
+    await expect(callAndValidate({ ...DEFAULTS, branch: "--exec=evil" })).rejects.toThrow();
   });
 
   // S5: Detach HEAD at commit
@@ -834,7 +834,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("HEAD\n");
     // diff: HEAD vs main — different refs so diff runs
     mockGit("file.ts\n");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "abc1234", detach: true });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "abc1234", detach: true });
     expect(parsed.success).toBe(true);
     expect(parsed.detached).toBe(true);
     const args = vi.mocked(git).mock.calls[1][0];
@@ -849,7 +849,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "HEAD is now at abc1234 v1.2.3");
     mockGit("HEAD\n");
     mockGit("");
-    await callAndValidate({ ...DEFAULTS, ref: "v1.2.3", detach: true });
+    await callAndValidate({ ...DEFAULTS, branch: "v1.2.3", detach: true });
     const args = vi.mocked(git).mock.calls[1][0];
     expect(args[0]).toBe("checkout");
     expect(args).toContain("--detach");
@@ -862,7 +862,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to a new branch 'orphan-branch'");
     const { parsed } = await callAndValidate({
       ...DEFAULTS,
-      ref: "x",
+      branch: "x",
       orphan: "orphan-branch",
     });
     expect(parsed.success).toBe(true);
@@ -875,7 +875,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to branch 'main'");
     mockGit("main\n");
     mockGit("src/index.ts\n");
-    await callAndValidate({ ...DEFAULTS, ref: "main", force: true });
+    await callAndValidate({ ...DEFAULTS, branch: "main", force: true });
     const switchArgs = vi.mocked(git).mock.calls[1][0];
     expect(switchArgs).toContain("--discard-changes");
     expect(switchArgs).not.toContain("--force");
@@ -889,7 +889,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("");
     await callAndValidate({
       ...DEFAULTS,
-      ref: "feat",
+      branch: "feat",
       create: true,
       startPoint: "HEAD~3",
     });
@@ -903,7 +903,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to branch 'existing'");
     mockGit("existing\n");
     mockGit("file.ts\n");
-    await callAndValidate({ ...DEFAULTS, ref: "existing", forceCreate: true });
+    await callAndValidate({ ...DEFAULTS, branch: "existing", forceCreate: true });
     const switchArgs = vi.mocked(git).mock.calls[1][0];
     // With useSwitch=true (default), forceCreate uses -C
     expect(switchArgs).toContain("-C");
@@ -915,7 +915,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to branch 'other-branch'");
     mockGit("other-branch\n");
     mockGit("src/a.ts\nsrc/b.ts\n");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "other-branch" });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "other-branch" });
     expect(parsed.success).toBe(true);
     expect(parsed.modifiedFiles).toContain("src/a.ts");
     expect(parsed.modifiedFiles).toContain("src/b.ts");
@@ -927,7 +927,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to branch 'main'");
     mockGit("main\n");
     mockGit("file.ts\n");
-    await callAndValidate({ ...DEFAULTS, ref: "main", useSwitch: false });
+    await callAndValidate({ ...DEFAULTS, branch: "main", useSwitch: false });
     const checkoutArgs = vi.mocked(git).mock.calls[1][0];
     expect(checkoutArgs[0]).toBe("checkout");
   });
@@ -938,7 +938,7 @@ describe("Smoke: git.checkout", () => {
     mockGit("", "Switched to branch 'develop'");
     mockGit("develop\n");
     mockGit("");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, ref: "develop" });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, branch: "develop" });
     expect(typeof parsed.success).toBe("boolean");
     expect(typeof parsed.previousRef).toBe("string");
     expect(typeof parsed.created).toBe("boolean");
@@ -947,7 +947,7 @@ describe("Smoke: git.checkout", () => {
   // S13: Flag injection in startPoint
   it("S13 [P0] flag injection in startPoint is blocked", async () => {
     await expect(
-      callAndValidate({ ...DEFAULTS, ref: "feat", create: true, startPoint: "--exec=evil" }),
+      callAndValidate({ ...DEFAULTS, branch: "feat", create: true, startPoint: "--exec=evil" }),
     ).rejects.toThrow();
   });
 });

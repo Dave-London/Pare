@@ -16,10 +16,10 @@ export function registerCheckoutTool(server: McpServer) {
         "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status.",
       inputSchema: {
         path: repoPathInput,
-        ref: z
+        branch: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
-          .describe("Branch name, tag, or commit to checkout"),
+          .describe("Branch name, tag, or commit SHA to checkout"),
         create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
         startPoint: z
           .string()
@@ -45,7 +45,7 @@ export function registerCheckoutTool(server: McpServer) {
     },
     async ({
       path,
-      ref,
+      branch,
       create,
       startPoint,
       orphan,
@@ -58,7 +58,7 @@ export function registerCheckoutTool(server: McpServer) {
       const cwd = path || process.cwd();
       const preferSwitch = useSwitch !== false;
 
-      assertNoFlagInjection(ref, "ref");
+      assertNoFlagInjection(branch, "branch");
       if (startPoint) assertNoFlagInjection(startPoint, "startPoint");
       if (orphan) assertNoFlagInjection(orphan, "orphan");
 
@@ -115,13 +115,18 @@ export function registerCheckoutTool(server: McpServer) {
       if (createFlag) args.push(createFlag);
       if (track) args.push("--track");
       if (detach) args.push("--detach");
-      args.push(ref);
+      args.push(branch);
       if (startPoint && (create || forceCreate)) args.push(startPoint);
 
       const result = await git(args, cwd);
 
       if (result.exitCode !== 0) {
-        const checkoutResult = parseCheckoutError(result.stdout, result.stderr, ref, previousRef);
+        const checkoutResult = parseCheckoutError(
+          result.stdout,
+          result.stderr,
+          branch,
+          previousRef,
+        );
         return dualOutput(checkoutResult, formatCheckout);
       }
 
@@ -143,7 +148,7 @@ export function registerCheckoutTool(server: McpServer) {
       const checkoutResult = parseCheckout(
         result.stdout,
         result.stderr,
-        ref,
+        branch,
         previousRef,
         create,
         modifiedFiles,
