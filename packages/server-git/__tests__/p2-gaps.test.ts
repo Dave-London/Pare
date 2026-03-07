@@ -121,7 +121,7 @@ describe("Git P2 gaps", () => {
       .mockResolvedValueOnce({ stdout: "dev\n", stderr: "", exitCode: 0 })
       .mockResolvedValueOnce({ stdout: "a.ts\nb.ts\n", stderr: "", exitCode: 0 });
 
-    const out = (await handler({ ref: "dev" })) as {
+    const out = (await handler({ branch: "dev" })) as {
       structuredContent: { modifiedFiles?: string[] };
     };
     expect(out.structuredContent.modifiedFiles).toEqual(["a.ts", "b.ts"]);
@@ -137,7 +137,7 @@ describe("Git P2 gaps", () => {
       .mockResolvedValueOnce({ stdout: "dev\n", stderr: "", exitCode: 0 })
       .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 
-    await handler({ ref: "dev" });
+    await handler({ branch: "dev" });
     expect(vi.mocked(git).mock.calls[1][0][0]).toBe("switch");
   });
 
