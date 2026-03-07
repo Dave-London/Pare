@@ -10,15 +10,15 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Dave-London/Pare/badge)](https://scorecard.dev/viewer/?uri=github.com/Dave-London/Pare)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11962/badge)](https://www.bestpractices.dev/projects/11962)
 
-**Dev tools for AI agents: 100% structured output, up to 90% fewer tokens.**
+**Reliable, structured CLI output for AI agents — no more parsing fragile terminal text.**
 
-Pare provides [MCP](https://modelcontextprotocol.io) servers that wrap common developer tools (git, npm, docker, test runners, etc.) and return clean, schema-validated JSON instead of raw terminal text — letting AI coding agents consume tool output more efficiently and reliably.
+Pare provides [MCP](https://modelcontextprotocol.io) servers that wrap common developer tools (git, npm, docker, test runners, etc.) and return clean, schema-validated JSON instead of raw terminal text. Agents get typed data they can act on directly, without brittle string parsing.
 
 ## The Problem
 
-AI agents often deal with CLI output meant for humans: ANSI colors, progress bars, verbose warnings, help text, and formatting. Parsing this reliably costs tokens and can lead to errors or fragile workarounds.
+Parsing CLI output is fragile. Raw terminal text includes ANSI escape codes, decorative headers, progress bars, locale-specific formatting, and platform differences that break agent workflows in subtle ways. An agent that works fine with `git status` on macOS may fail on Windows because the output format changed. A test runner's summary line might shift between versions, silently breaking a regex.
 
-Here are some real examples of token usage:
+Pare eliminates this entire class of errors by returning schema-validated JSON with consistent field names, regardless of platform, tool version, or locale. As a bonus, structured output is significantly smaller — agents use fewer tokens per tool call:
 
 | Tool Command                              | Raw Tokens | Pare Tokens | Reduction |
 | ----------------------------------------- | ---------: | ----------: | --------: |
@@ -280,135 +280,23 @@ Untracked files:
 
 > [!TIP]
 > **[Tool Schemas](./docs/tool-schemas/)** — detailed response examples and token comparisons for every tool.
+> See also **[Tool Response Examples](./docs/tool-response-examples.md)** for quick JSON samples of the most commonly used tools.
 
 ## Telling Agents to Use Pare
 
-Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands. See the [Quickstart Guide](./docs/quickstart.md) for step-by-step instructions including how to merge with an existing CLAUDE.md.
+Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands. Each snippet tells the agent which `mcp__pare-*` tools are available and to use them instead of raw Bash. See the [Quickstart Guide](./docs/quickstart.md) for step-by-step instructions including how to merge with an existing `CLAUDE.md`.
 
-> **Merge strategy**: If your project already has a `CLAUDE.md`, append the Pare rules section rather than overwriting. The Pare rules are self-contained under a `## MCP Tools` heading.
-
-<details>
-<summary><strong>CLAUDE.md</strong> (Claude Code)</summary>
+**Claude Code** — append to your project's `CLAUDE.md`:
 
 ```markdown
 ## MCP Tools
 
 When Pare MCP tools are available (prefixed with mcp\_\_pare-\*), prefer them over
-running raw CLI commands via Bash. Pare tools return structured JSON with ~85%
-fewer tokens than CLI output.
-
-- Git: mcp**pare-git**status, log, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, log-graph, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config
-- GitHub: mcp**pare-github**pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api
-- Search: mcp**pare-search**search, find, count, jq, yq
-- Tests: mcp**pare-test**run, coverage, playwright (pytest, jest, vitest, mocha, playwright)
-- Builds: mcp**pare-build**tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup
-- Linting: mcp**pare-lint**lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint
-- npm: mcp**pare-npm**install, audit, outdated, list, run, test, init, info, search, nvm
-- Docker: mcp**pare-docker**ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats
-- HTTP: mcp**pare-http**request, get, post, head
-- Make: mcp**pare-make**run, list
-- Python: mcp**pare-python**pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry
-- Cargo: mcp**pare-cargo**build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit
-- Go: mcp**pare-go**build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint
-- Security: mcp**pare-security**trivy, semgrep, gitleaks
-- K8s: mcp**pare-k8s**get, describe, logs, apply, helm
-- Process: mcp**pare-process**run
-- Infra: mcp**pare-infra**init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy
-- JVM: mcp**pare-jvm**gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify
-- DB: mcp**pare-db**psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats
-- Deno: mcp**pare-deno**run, test, fmt, lint, check, task, info
-- Bun: mcp**pare-bun**run, test, build, install, add, remove, outdated, pm-ls
-- Nix: mcp**pare-nix**build, run, develop, shell, flake-show, flake-check, flake-update
-- .NET: mcp**pare-dotnet**build, test, run, publish, restore, clean, add-package, list-package
-- Ruby: mcp**pare-ruby**run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check
-- Remote: mcp**pare-remote**ssh-run, ssh-test, ssh-keyscan, rsync
-- Swift: mcp**pare-swift**build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init
-- CMake: mcp**pare-cmake**cmake
-- Bazel: mcp**pare-bazel**bazel
+running raw CLI commands via Bash. Pare tools return structured JSON — reliable,
+typed data with up to 95% fewer tokens than CLI output.
 ```
 
-</details>
-
-<details>
-<summary><strong>AGENTS.md</strong> (OpenAI Codex, Gemini CLI, Claude Code)</summary>
-
-```markdown
-## MCP Servers
-
-This project uses Pare MCP servers (240 tools across 28 packages) for structured, token-efficient dev tool output.
-Prefer Pare MCP tools over raw CLI commands for git, github, search, testing, building, linting, npm, docker, http, make, python, cargo, go, security, k8s, process, infra, jvm, db, deno, bun, nix, dotnet, ruby, remote, swift, cmake, and bazel.
-Pare tools return typed JSON, saving tokens and preventing parsing errors.
-```
-
-</details>
-
-<details>
-<summary><strong>.cursor/rules/pare.mdc</strong> (Cursor)</summary>
-
-```markdown
----
-description: Use Pare MCP tools for structured dev tool output
-globs: ["**/*"]
-alwaysApply: true
----
-
-When Pare MCP tools are available, prefer them over running CLI commands in the
-terminal. Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go, pare-security, pare-k8s, pare-process, pare-infra, pare-jvm, pare-db, pare-deno, pare-bun, pare-nix, pare-dotnet, pare-ruby, pare-remote, pare-swift, pare-cmake, pare-bazel — 240 tools total) return
-structured JSON with up to 95% fewer tokens than raw CLI output.
-```
-
-</details>
-
-<details>
-<summary><strong>.github/copilot-instructions.md</strong> (GitHub Copilot)</summary>
-
-```markdown
-## Tool Preferences
-
-This project uses Pare MCP servers (@paretools/\*) for structured dev tool output.
-When available, prefer Pare tools (pare-git, pare-github, pare-search, pare-test, pare-build, pare-lint, pare-npm, pare-docker, pare-http, pare-make, pare-python, pare-cargo, pare-go, pare-security, pare-k8s, pare-process, pare-infra, pare-jvm, pare-db, pare-deno, pare-bun, pare-nix, pare-dotnet, pare-ruby, pare-remote, pare-swift, pare-cmake, pare-bazel) over raw CLI commands.
-```
-
-</details>
-
-<details>
-<summary><strong>GEMINI.md / .windsurfrules / .clinerules / .amazonq/rules/</strong></summary>
-
-```markdown
-When Pare MCP tools are available, prefer them over raw CLI commands.
-Pare tools return structured JSON with fewer tokens than CLI output.
-
-- pare-git: status, log, log-graph, diff, branch, show, add, commit, push, pull, checkout, tag, stash-list, stash, remote, blame, restore, reset, cherry-pick, merge, rebase, reflog, bisect, worktree, submodule, archive, clean, config
-- pare-github: pr-view, pr-list, pr-create, pr-merge, pr-comment, pr-review, pr-update, pr-checks, pr-diff, issue-view, issue-list, issue-create, issue-close, issue-comment, issue-update, run-view, run-list, run-rerun, release-create, gist-create, release-list, label-list, label-create, repo-view, repo-clone, discussion-list, api
-- pare-search: search, find, count, jq, yq (ripgrep + fd + jq + yq)
-- pare-test: run, coverage, playwright (pytest, jest, vitest, mocha, playwright)
-- pare-build: tsc, build, esbuild, vite-build, webpack, turbo, nx, lerna, rollup
-- pare-lint: lint, format-check, prettier-format, biome-check, biome-format, stylelint, oxlint, shellcheck, hadolint
-- pare-npm: install, audit, outdated, list, run, test, init, info, search, nvm
-- pare-docker: ps, build, logs, images, run, exec, compose-up, compose-down, pull, inspect, network-ls, volume-ls, compose-ps, compose-logs, compose-build, stats
-- pare-http: request, get, post, head
-- pare-make: run, list (make + just)
-- pare-python: pip-install, pip-list, pip-show, mypy, ruff-check, ruff-format, pip-audit, pytest, uv-install, uv-run, black, conda, pyenv, poetry
-- pare-cargo: build, test, clippy, run, add, remove, fmt, doc, check, update, tree, audit
-- pare-go: build, test, vet, run, mod-tidy, fmt, generate, env, list, get, golangci-lint
-- pare-security: trivy, semgrep, gitleaks
-- pare-k8s: get, describe, logs, apply, helm
-- pare-process: run
-- pare-infra: init, plan, validate, fmt, output, state-list, workspace, show, vagrant, ansible-playbook, ansible-inventory, ansible-galaxy
-- pare-jvm: gradle-build, gradle-test, gradle-tasks, gradle-dependencies, maven-build, maven-test, maven-dependencies, maven-verify
-- pare-db: psql-query, psql-list-databases, mysql-query, mysql-list-databases, redis-ping, redis-info, redis-command, mongosh-eval, mongosh-stats
-- pare-deno: run, test, fmt, lint, check, task, info
-- pare-bun: run, test, build, install, add, remove, outdated, pm-ls
-- pare-nix: build, run, develop, shell, flake-show, flake-check, flake-update
-- pare-dotnet: build, test, run, publish, restore, clean, add-package, list-package
-- pare-ruby: run, check, gem-list, gem-install, gem-outdated, bundle-install, bundle-exec, bundle-check
-- pare-remote: ssh-run, ssh-test, ssh-keyscan, rsync
-- pare-swift: build, test, run, package-resolve, package-update, package-show-dependencies, package-clean, package-init
-- pare-cmake: cmake
-- pare-bazel: bazel
-```
-
-</details>
+**Other agents**: Copy the ready-made rule file for your agent from the [`rules/`](./rules/) folder, or see the [Agent Integration Guide](./docs/agent-integration.md) for Cursor, Windsurf, Cline, Copilot, Gemini CLI, and others.
 
 ## Configuration
 

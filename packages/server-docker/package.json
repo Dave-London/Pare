@@ -2,7 +2,7 @@
   "name": "@paretools/docker",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-docker",
-  "description": "MCP server for Docker with structured, token-efficient output",
+  "description": "MCP server for Docker — structured container, image, and compose data for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

@@ -2,7 +2,7 @@
   "name": "@paretools/swift",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-swift",
-  "description": "MCP server for Swift build, test, and package operations with structured, token-efficient output",
+  "description": "MCP server for Swift — structured build, test, and package manager data for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

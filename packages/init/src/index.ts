@@ -78,6 +78,7 @@ async function main(): Promise<void> {
     console.log(`\nWrote ${result.serverCount} Pare servers to: ${result.configPath}`);
     console.log(`\nServers added: ${servers.map((s) => s.id).join(", ")}`);
     console.log(`\nRestart your ${client.name} session to activate the new servers.`);
+    console.log(`\nTip: Run 'npx @paretools/doctor' to verify your setup.`);
   }
 }
 
