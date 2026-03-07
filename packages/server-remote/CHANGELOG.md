@@ -1,5 +1,16 @@
 # @paretools/remote
 
+## 0.14.0
+
+### Minor Changes
+
+- [#681](https://github.com/Dave-London/Pare/pull/681) [`2f49211`](https://github.com/Dave-London/Pare/commit/2f49211fd5a3916e230beb06789de92300758aef) Thanks [@Dave-London](https://github.com/Dave-London)! - Add MCP tool annotations (readOnlyHint, destructiveHint, openWorldHint) across all server packages to help AI agents understand tool behavior and safety characteristics
+
+### Patch Changes
+
+- Updated dependencies [[`e5ef841`](https://github.com/Dave-London/Pare/commit/e5ef841d7c9b7ec67a52c3943bc346cebf75b6eb)]:
+  - @paretools/shared@0.14.0
+
 ## 0.13.1
 
 ### Patch Changes
