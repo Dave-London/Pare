@@ -17,6 +17,7 @@ export function registerGradleTasksTool(server: McpServer) {
       title: "Gradle Tasks",
       description:
         "Lists available Gradle tasks with descriptions and groups. Uses `gradle tasks --all`.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         all: z

@@ -24,6 +24,7 @@ export function registerAddPackageTool(server: McpServer) {
       title: ".NET Add Package",
       description:
         "Runs dotnet add package to add a NuGet package and returns structured results. WARNING: may execute untrusted code.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         project: z

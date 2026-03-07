@@ -13,6 +13,7 @@ export function registerValidateTool(server: McpServer) {
       title: "Terraform Validate",
       description:
         "Validates Terraform configuration files for syntax and consistency errors. Returns structured diagnostics.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

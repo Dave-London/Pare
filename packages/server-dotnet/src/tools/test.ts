@@ -20,6 +20,7 @@ export function registerTestTool(server: McpServer) {
       title: ".NET Test",
       description:
         "Runs dotnet test and returns structured test results (name, status, pass/fail counts).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         project: z

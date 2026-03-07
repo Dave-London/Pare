@@ -21,6 +21,7 @@ export function registerEnvTool(server: McpServer) {
       title: "Go Env",
       description:
         "Returns Go environment variables as structured JSON. Optionally request specific variables.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         vars: z

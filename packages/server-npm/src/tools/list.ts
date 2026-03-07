@@ -25,6 +25,7 @@ export function registerListTool(server: McpServer) {
       description:
         "Lists installed packages as structured dependency data. " +
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         depth: z

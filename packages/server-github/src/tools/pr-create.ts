@@ -25,6 +25,7 @@ export function registerPrCreateTool(server: McpServer) {
     {
       title: "PR Create",
       description: "Creates a new pull request. Returns structured data with PR number and URL.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pull request title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Pull request body/description"),

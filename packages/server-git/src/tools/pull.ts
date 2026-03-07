@@ -14,6 +14,7 @@ export function registerPullTool(server: McpServer) {
       title: "Git Pull",
       description:
         "Pulls changes from a remote repository. Returns structured data with success status, summary, change statistics, conflicts, up-to-date and fast-forward indicators.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: repoPathInput,
         remote: z

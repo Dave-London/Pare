@@ -24,6 +24,7 @@ export function registerFlakeUpdateTool(server: McpServer) {
       title: "Nix Flake Update",
       description:
         "Updates flake lock file inputs and returns structured information about what was updated.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         inputs: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

@@ -20,6 +20,7 @@ export function registerJqTool(server: McpServer) {
       title: "JSON Processor",
       description:
         "Processes and transforms JSON using jq expressions. Accepts JSON from a file path or inline string. Returns the transformed result.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         expression: z
           .string()

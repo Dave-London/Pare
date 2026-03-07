@@ -23,6 +23,7 @@ export function registerInfoTool(server: McpServer) {
       description:
         "Shows detailed package metadata from the npm registry. " +
         "Works with npm, pnpm, and yarn (all query the same registry).",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         package: z
           .string()

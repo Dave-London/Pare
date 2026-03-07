@@ -24,6 +24,7 @@ export function registerDescribeTool(server: McpServer) {
     {
       title: "Kubectl Describe",
       description: "Describes a Kubernetes resource with detailed information.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         resource: z
           .string()

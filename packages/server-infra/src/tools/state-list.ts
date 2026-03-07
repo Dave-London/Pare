@@ -13,6 +13,7 @@ export function registerStateListTool(server: McpServer) {
       title: "Terraform State List",
       description:
         "Lists all resources tracked in the Terraform state. Returns resource addresses.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

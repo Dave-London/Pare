@@ -21,6 +21,7 @@ export function registerShowTool(server: McpServer) {
     {
       title: "Git Show",
       description: "Shows commit details and diff statistics for a given ref.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         ref: z

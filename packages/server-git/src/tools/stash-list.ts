@@ -15,6 +15,7 @@ export function registerStashListTool(server: McpServer) {
       title: "Git Stash List",
       description:
         "Lists all stash entries with index, message, date, branch, and optional file change summary. Returns structured stash data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         maxCount: z.number().optional().describe("Limit number of stash entries (-n/--max-count)"),

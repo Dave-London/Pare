@@ -20,6 +20,7 @@ export function registerPsqlQueryTool(server: McpServer) {
       description:
         "Executes a PostgreSQL query via psql and returns structured tabular output. " +
         "WARNING: The query is executed as-is against the target database — do not pass untrusted input.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.STRING_MAX).describe("SQL query to execute"),
         database: z

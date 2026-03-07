@@ -21,6 +21,7 @@ export function registerLintTool(server: McpServer) {
       title: "Deno Lint",
       description:
         "Runs `deno lint` and returns structured diagnostics with file, line, column, code, and message.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         files: filePatternsInput("Files or directories to lint (default: current directory)"),
         path: projectPathInput,

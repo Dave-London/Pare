@@ -15,6 +15,7 @@ export function registerMavenDependenciesTool(server: McpServer) {
     {
       title: "Maven Dependencies",
       description: "Shows the Maven dependency tree with structured output per artifact.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

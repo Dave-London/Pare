@@ -18,6 +18,7 @@ export function registerComposeUpTool(server: McpServer) {
     {
       title: "Docker Compose Up",
       description: "Starts Docker Compose services and returns structured status.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: z
           .string()

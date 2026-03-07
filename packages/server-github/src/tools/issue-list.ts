@@ -23,6 +23,7 @@ export function registerIssueListTool(server: McpServer) {
       title: "Issue List",
       description:
         "Lists issues with optional filters. Returns structured list with issue number, state, title, labels, assignees, author, creation date, and milestone.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         state: z
           .enum(["open", "closed", "all"])

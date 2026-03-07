@@ -29,6 +29,7 @@ export function registerPostTool(server: McpServer) {
       title: "HTTP POST",
       description:
         "Makes an HTTP POST request via curl and returns structured response data. Convenience wrapper for the request tool with required body.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         url: z
           .string()

@@ -14,6 +14,7 @@ export function registerInstallTool(server: McpServer) {
       title: "Bun Install",
       description:
         "Runs `bun install` to install project dependencies and returns structured output with package count.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         frozen: z
           .boolean()

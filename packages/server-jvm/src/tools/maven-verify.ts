@@ -17,6 +17,7 @@ export function registerMavenVerifyTool(server: McpServer) {
       title: "Maven Verify",
       description:
         "Runs `mvn verify` to execute all checks (compile, test, integration-test, verify phases) and returns structured results.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         args: z

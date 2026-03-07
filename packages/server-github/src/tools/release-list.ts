@@ -27,6 +27,7 @@ export function registerReleaseListTool(server: McpServer) {
       title: "Release List",
       description:
         "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, creation date, and URL.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         // S-gap P1: Align default limit to CLI default (30)
         limit: z

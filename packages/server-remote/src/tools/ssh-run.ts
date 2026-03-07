@@ -19,6 +19,7 @@ export function registerSshRunTool(server: McpServer) {
       title: "SSH Run Command",
       description:
         "Executes a command on a remote host via SSH. WARNING: This runs commands on a remote machine. Ensure the host and command are correct before executing. Returns structured output with stdout, stderr, exit code, and duration.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         host: z
           .string()

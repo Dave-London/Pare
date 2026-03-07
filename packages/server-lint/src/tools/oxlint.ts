@@ -21,6 +21,7 @@ export function registerOxlintTool(server: McpServer) {
       title: "Oxlint Check",
       description:
         "Runs Oxlint and returns structured diagnostics (file, line, column, rule, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

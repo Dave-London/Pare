@@ -14,6 +14,7 @@ export function registerInitTool(server: McpServer) {
       title: "Terraform Init",
       description:
         "Initializes a Terraform working directory. Downloads providers, configures backend, and prepares for plan/apply.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         upgrade: z

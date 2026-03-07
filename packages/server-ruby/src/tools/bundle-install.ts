@@ -17,6 +17,7 @@ export function registerBundleInstallTool(server: McpServer) {
       title: "Bundle Install",
       description:
         "Installs Gemfile dependencies using `bundle install` and returns structured output with success status and duration.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

@@ -20,6 +20,7 @@ export function registerGemListTool(server: McpServer) {
       title: "Gem List",
       description:
         "Lists installed Ruby gems with version information. Returns structured JSON with gem names and versions.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         filter: z
           .string()

@@ -23,6 +23,7 @@ export function registerIssueCreateTool(server: McpServer) {
       title: "Issue Create",
       description:
         "Creates a new issue. Returns structured data with issue number, URL, and labels applied.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         title: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Issue title"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue body/description"),

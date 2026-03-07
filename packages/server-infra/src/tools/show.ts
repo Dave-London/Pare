@@ -20,6 +20,7 @@ export function registerShowTool(server: McpServer) {
       title: "Terraform Show",
       description:
         "Shows the current Terraform state or a saved plan file in structured JSON. Returns resources, outputs, and version info.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         planFile: z

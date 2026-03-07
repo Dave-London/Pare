@@ -24,6 +24,7 @@ export function registerRedisCommandTool(server: McpServer) {
       description:
         "Executes a Redis command via redis-cli and returns the response. " +
         "WARNING: The command is executed as-is — do not pass untrusted input.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         command: z
           .string()

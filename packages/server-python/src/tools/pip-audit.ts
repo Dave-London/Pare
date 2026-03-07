@@ -19,6 +19,7 @@ export function registerPipAuditTool(server: McpServer) {
     {
       title: "pip Audit",
       description: "Runs pip-audit and returns a structured vulnerability report.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         requirements: z

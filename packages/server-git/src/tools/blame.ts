@@ -20,6 +20,7 @@ export function registerBlameTool(server: McpServer) {
       title: "Git Blame",
       description:
         "Shows commit annotations for a file, grouped by commit. Returns structured blame data with deduplicated commit metadata (hash, author, email, date) and their attributed lines.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),

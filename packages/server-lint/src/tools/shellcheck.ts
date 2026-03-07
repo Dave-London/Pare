@@ -26,6 +26,7 @@ export function registerShellcheckTool(server: McpServer) {
       title: "ShellCheck",
       description:
         "Runs ShellCheck (shell script linter) and returns structured diagnostics (file, line, column, rule, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

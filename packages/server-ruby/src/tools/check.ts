@@ -20,6 +20,7 @@ export function registerCheckTool(server: McpServer) {
       title: "Ruby Syntax Check",
       description:
         "Checks a Ruby file for syntax errors using `ruby -c` and returns structured validation results.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         file: z
           .string()

@@ -25,6 +25,7 @@ export function registerFormatCheckTool(server: McpServer) {
       title: "Prettier Check",
       description:
         "Checks if files are formatted and returns a structured list of files needing formatting.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

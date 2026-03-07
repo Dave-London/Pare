@@ -24,6 +24,7 @@ export function registerPrUpdateTool(server: McpServer) {
       title: "PR Update",
       description:
         "Updates pull request metadata (title, body, labels, assignees, reviewers, milestone, base branch, projects). Returns structured data with PR number and URL.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         number: z
           .string()

@@ -21,6 +21,7 @@ export function registerPipShowTool(server: McpServer) {
       description:
         "Runs pip show and returns structured package metadata (name, version, summary, dependencies). " +
         "Supports multiple packages in a single call.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         package: z
           .string()

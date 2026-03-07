@@ -20,6 +20,7 @@ export function registerTestTool(server: McpServer) {
       title: "Swift Test",
       description:
         "Runs swift test and returns structured test results (name, status, pass/fail counts).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         filter: z
           .string()

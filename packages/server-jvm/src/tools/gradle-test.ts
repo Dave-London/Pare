@@ -23,6 +23,7 @@ export function registerGradleTestTool(server: McpServer) {
       title: "Gradle Test",
       description:
         "Runs `gradle test` and returns structured test results with pass/fail counts and individual test outcomes.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         filter: z

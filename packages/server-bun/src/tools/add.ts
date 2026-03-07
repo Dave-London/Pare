@@ -19,6 +19,7 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Bun Add",
       description: "Runs `bun add` to add one or more packages and returns structured output.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

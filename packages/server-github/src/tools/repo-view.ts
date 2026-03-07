@@ -30,6 +30,7 @@ export function registerRepoViewTool(server: McpServer) {
       title: "Repo View",
       description:
         "Views repository details. Returns structured data with name, owner, description, stars, forks, languages, topics, license, and dates.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         repo: z
           .string()

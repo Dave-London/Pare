@@ -19,6 +19,7 @@ export function registerMavenTestTool(server: McpServer) {
       title: "Maven Test",
       description:
         "Runs `mvn test` and returns structured Surefire test results with pass/fail/error counts.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         filter: z

@@ -13,6 +13,7 @@ export function registerOutdatedTool(server: McpServer) {
       title: "Bun Outdated",
       description:
         "Runs `bun outdated` to check for outdated packages and returns structured version info.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

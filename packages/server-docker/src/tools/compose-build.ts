@@ -23,6 +23,7 @@ export function registerComposeBuildTool(server: McpServer) {
       title: "Docker Compose Build",
       description:
         "Builds Docker Compose service images and returns structured per-service build status.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: z
           .string()

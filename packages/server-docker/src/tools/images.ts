@@ -18,6 +18,7 @@ export function registerImagesTool(server: McpServer) {
     {
       title: "Docker Images",
       description: "Lists Docker images with structured repository, tag, size, and creation info.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         all: z
           .boolean()

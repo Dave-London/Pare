@@ -19,6 +19,7 @@ export function registerCleanTool(server: McpServer) {
     {
       title: ".NET Clean",
       description: "Runs dotnet clean to remove build outputs and returns structured results.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         path: projectPathInput,
         project: z

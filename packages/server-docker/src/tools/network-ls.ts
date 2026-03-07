@@ -19,6 +19,7 @@ export function registerNetworkLsTool(server: McpServer) {
     {
       title: "Docker Network LS",
       description: "Lists Docker networks with structured driver and scope information.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: cwdPathInput,
         filter: z

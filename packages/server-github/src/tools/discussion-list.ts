@@ -61,6 +61,7 @@ export function registerDiscussionListTool(server: McpServer) {
       title: "Discussion List",
       description:
         "Lists GitHub Discussions for a repository via GraphQL. Returns structured list with discussion number, title, author, category, answered status, and comment count.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         repo: z
           .string()

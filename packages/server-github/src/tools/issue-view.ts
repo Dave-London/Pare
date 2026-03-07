@@ -24,6 +24,7 @@ export function registerIssueViewTool(server: McpServer) {
       title: "Issue View",
       description:
         "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comments: z

@@ -14,6 +14,7 @@ export function registerSubmoduleTool(server: McpServer) {
       title: "Git Submodule",
       description:
         "Manages git submodules. Supports list (default), add, update, sync, and deinit actions. List returns structured submodule data with path, SHA, branch, and status.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: repoPathInput,
         action: z

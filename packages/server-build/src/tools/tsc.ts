@@ -21,6 +21,7 @@ export function registerTscTool(server: McpServer) {
       description:
         "Runs the TypeScript compiler and returns structured diagnostics (file, line, column, code, message). " +
         "Note: In compact mode, diagnostics are trimmed to file, line, and code — column and message fields are omitted to save tokens.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         noEmit: z

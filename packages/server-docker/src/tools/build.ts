@@ -20,6 +20,7 @@ export function registerBuildTool(server: McpServer) {
       title: "Docker Build",
       description:
         "Builds a Docker image and returns structured build results including image ID, duration, and errors.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: z.string().max(INPUT_LIMITS.PATH_MAX).optional().describe("Build context path"),
         /** #98: Support multiple tags — accepts string or string[] for multiple -t flags. */

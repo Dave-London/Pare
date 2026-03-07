@@ -24,6 +24,7 @@ export function registerPrCommentTool(server: McpServer) {
       title: "PR Comment",
       description:
         "Adds, edits, or deletes a comment on a pull request. Returns structured data with the comment URL, operation type, comment ID, and body echo.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         number: z
           .string()

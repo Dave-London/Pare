@@ -29,6 +29,7 @@ export function registerHeadTool(server: McpServer) {
       title: "HTTP HEAD",
       description:
         "Makes an HTTP HEAD request via curl and returns structured response headers (no body). Use to check resource existence, content type, or cache headers.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         url: z
           .string()

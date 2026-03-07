@@ -21,6 +21,7 @@ export function registerTestTool(server: McpServer) {
       title: "Deno Test",
       description:
         "Runs `deno test` and returns structured pass/fail output with per-test results.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         files: filePatternsInput("Test files or directories to run (default: auto-discovered)"),
         filter: z

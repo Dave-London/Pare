@@ -22,6 +22,7 @@ export function registerAuditTool(server: McpServer) {
       description:
         "Runs npm/pnpm/yarn audit and returns structured vulnerability data. " +
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         level: z

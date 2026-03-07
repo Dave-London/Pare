@@ -20,6 +20,7 @@ export function registerRsyncTool(server: McpServer) {
       title: "Rsync File Sync",
       description:
         "Syncs files between local and remote locations using rsync. WARNING: Defaults to dry-run mode for safety — set dryRun=false to actually transfer files. Returns structured transfer statistics.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         source: z
           .string()

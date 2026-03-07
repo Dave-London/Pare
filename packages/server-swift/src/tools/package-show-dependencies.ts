@@ -18,6 +18,7 @@ export function registerPackageShowDependenciesTool(server: McpServer) {
       title: "Swift Package Show Dependencies",
       description:
         "Shows the dependency tree of a Swift package and returns structured dependency data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         format: z
           .enum(["text", "json", "dot"])

@@ -31,6 +31,7 @@ export function registerPrChecksTool(server: McpServer) {
       title: "PR Checks",
       description:
         "Lists check/status results for a pull request. Returns structured data with check names, states, URLs, and summary counts (passed, failed, pending).",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         number: z
           .string()

@@ -19,6 +19,7 @@ export function registerUpdateTool(server: McpServer) {
     {
       title: "Cargo Update",
       description: "Updates dependencies in the lock file. Optionally updates a single package.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         package: z

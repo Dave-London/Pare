@@ -14,6 +14,7 @@ export function registerCleanTool(server: McpServer) {
       title: "Git Clean",
       description:
         "Removes untracked files from the working tree. DEFAULTS TO DRY-RUN MODE for safety — shows what would be removed without actually deleting. Set force=true AND dryRun=false to actually remove files.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         path: repoPathInput,
         dryRun: z

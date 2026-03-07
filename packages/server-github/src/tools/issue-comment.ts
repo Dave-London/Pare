@@ -24,6 +24,7 @@ export function registerIssueCommentTool(server: McpServer) {
       title: "Issue Comment",
       description:
         "Adds, edits, or deletes a comment on an issue. Returns structured data with the comment URL, operation type, comment ID, issue number, and body echo.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         body: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Comment text"),

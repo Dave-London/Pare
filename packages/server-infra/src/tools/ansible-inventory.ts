@@ -28,6 +28,7 @@ export function registerAnsibleInventoryTool(server: McpServer) {
       title: "Ansible Inventory",
       description:
         "Queries Ansible inventory for hosts, groups, and variables. Returns structured JSON for --list or tree text for --graph.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         inventory: z
           .string()

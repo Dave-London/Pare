@@ -24,6 +24,7 @@ export function registerPipInstallTool(server: McpServer) {
       title: "pip Install",
       description:
         "Runs pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

@@ -19,6 +19,7 @@ export function registerClippyTool(server: McpServer) {
     {
       title: "Cargo Clippy",
       description: "Runs cargo clippy and returns structured lint diagnostics.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         noDeps: z

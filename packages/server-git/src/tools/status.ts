@@ -14,6 +14,7 @@ export function registerStatusTool(server: McpServer) {
       title: "Git Status",
       description:
         "Returns the working tree status as structured data (branch, staged, modified, untracked, conflicts).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         pathspec: z

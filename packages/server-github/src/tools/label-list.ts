@@ -21,6 +21,7 @@ export function registerLabelListTool(server: McpServer) {
       title: "Label List",
       description:
         "Lists repository labels. Returns structured data with label name, description, color, and default status.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         limit: z
           .number()

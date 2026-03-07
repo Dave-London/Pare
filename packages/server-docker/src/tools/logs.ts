@@ -18,6 +18,7 @@ export function registerLogsTool(server: McpServer) {
     {
       title: "Docker Logs",
       description: "Retrieves container logs as structured line arrays.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         container: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Container name or ID"),
         tail: z

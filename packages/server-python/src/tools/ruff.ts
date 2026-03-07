@@ -22,6 +22,7 @@ export function registerRuffTool(server: McpServer) {
       title: "ruff Lint",
       description:
         "Runs ruff check and returns structured lint diagnostics (file, line, code, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         targets: z

@@ -20,6 +20,7 @@ export function registerInfoTool(server: McpServer) {
       title: "Deno Info",
       description:
         "Runs `deno info` to show dependency information for a module. Returns structured dependency data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         module: z
           .string()

@@ -23,6 +23,7 @@ export function registerMongoshStatsTool(server: McpServer) {
       title: "MongoDB Stats",
       description:
         "Gets MongoDB database statistics (collections, objects, data size, storage, indexes) via mongosh.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         uri: z
           .string()

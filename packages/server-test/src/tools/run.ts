@@ -260,6 +260,7 @@ export function registerRunTool(server: McpServer) {
       title: "Run Tests",
       description:
         "Auto-detects test framework (pytest/jest/vitest/mocha), runs tests, returns structured results with failures.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         framework: z

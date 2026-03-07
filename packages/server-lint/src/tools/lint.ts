@@ -22,6 +22,7 @@ export function registerLintTool(server: McpServer) {
       title: "ESLint Check",
       description:
         "Runs ESLint and returns structured diagnostics (file, line, column, rule, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

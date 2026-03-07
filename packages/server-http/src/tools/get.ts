@@ -29,6 +29,7 @@ export function registerGetTool(server: McpServer) {
       title: "HTTP GET",
       description:
         "Makes an HTTP GET request via curl and returns structured response data. Convenience wrapper for the request tool.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         url: z
           .string()

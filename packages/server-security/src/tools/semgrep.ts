@@ -27,6 +27,7 @@ export function registerSemgrepTool(server: McpServer) {
       title: "Semgrep Static Analysis",
       description:
         "Runs Semgrep static analysis with structured rules and findings. Returns structured finding data with severity summary.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         patterns: z
           .preprocess(

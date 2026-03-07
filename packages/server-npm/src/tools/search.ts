@@ -21,6 +21,7 @@ export function registerSearchTool(server: McpServer) {
       description:
         "Searches the npm registry for packages matching a query. " +
         "Note: pnpm and yarn do not have a search command, so this always uses npm.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         query: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Search query string"),
         path: projectPathInput,

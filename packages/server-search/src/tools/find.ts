@@ -20,6 +20,7 @@ export function registerFindTool(server: McpServer) {
       title: "Find Files",
       description:
         "Finds files and directories using fd with structured output. Returns file paths, names, and extensions.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         pattern: z
           .string()

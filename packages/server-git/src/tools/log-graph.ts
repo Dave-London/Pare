@@ -15,6 +15,7 @@ export function registerLogGraphTool(server: McpServer) {
       title: "Git Log Graph",
       description:
         "Returns visual branch topology as structured data. Wraps `git log --graph --oneline --decorate`.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         maxCount: z
