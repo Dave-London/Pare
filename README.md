@@ -118,161 +118,18 @@ npx @paretools/doctor
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full`
 
-> **[Full Quickstart Guide](./docs/quickstart.md)** — complete setup walkthrough including preset selection, ecosystem mapping, merge strategy for existing CLAUDE.md, gitignore guidance, and validation.
+**Setup guides by client** — each includes config, agent rules, and validation:
 
-## Manual Configuration
+|                                              |                                                  |                                           |
+| -------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
+| [Claude Code](./docs/setup/claude-code.md)   | [Claude Desktop](./docs/setup/claude-desktop.md) | [Cursor](./docs/setup/cursor.md)          |
+| [VS Code / Copilot](./docs/setup/vscode.md)  | [Windsurf](./docs/setup/windsurf.md)             | [Cline / Roo Code](./docs/setup/cline.md) |
+| [OpenAI Codex](./docs/setup/codex.md)        | [Gemini CLI](./docs/setup/gemini-cli.md)         | [Zed](./docs/setup/zed.md)                |
+| [Continue.dev](./docs/setup/continue-dev.md) |                                                  |                                           |
 
-If you prefer manual setup, add the JSON/TOML/YAML entries below to your client's config file.
-
-**Config file paths:**
-
-| Client            | Config Path                                                                                                            |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Claude Code       | `{project}/.claude/settings.local.json`                                                                                |
-| Claude Desktop    | `~/.config/Claude/claude_desktop_config.json` (macOS/Linux) or `%APPDATA%/Claude/claude_desktop_config.json` (Windows) |
-| Cursor            | `~/.cursor/mcp.json`                                                                                                   |
-| VS Code / Copilot | `{project}/.vscode/mcp.json`                                                                                           |
-| Windsurf          | `~/.codeium/windsurf/mcp_config.json`                                                                                  |
-| Zed               | `~/.config/zed/settings.json`                                                                                          |
-| OpenAI Codex      | `{project}/.codex/config.toml`                                                                                         |
-| Continue.dev      | `{project}/.continue/mcpServers/pare.yaml`                                                                             |
-| Gemini CLI        | `~/.gemini/settings.json`                                                                                              |
-
-> **Tip:** Use `npx @paretools/init` instead of manual configuration — it handles platform differences (e.g. Windows `cmd /c` wrapper) and merges safely with existing config.
-
-## Client-Specific Examples
-
-**Claude Code:**
-
-```bash
-claude mcp add --transport stdio pare-git -- npx -y @paretools/git
-claude mcp add --transport stdio pare-test -- npx -y @paretools/test
-```
-
-**Claude Code / Claude Desktop / Cursor / Windsurf / Cline / Roo Code / Gemini CLI** (`mcpServers` format):
-
-```json
-{
-  "mcpServers": {
-    "pare-git": {
-      "command": "npx",
-      "args": ["-y", "@paretools/git"]
-    },
-    "pare-test": {
-      "command": "npx",
-      "args": ["-y", "@paretools/test"]
-    }
-  }
-}
-```
-
-<details>
-<summary><strong>VS Code / GitHub Copilot</strong> (<code>.vscode/mcp.json</code>)</summary>
-
-```json
-{
-  "servers": {
-    "pare-git": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@paretools/git"]
-    },
-    "pare-test": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@paretools/test"]
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Zed</strong> (<code>settings.json</code>)</summary>
-
-```json
-{
-  "context_servers": {
-    "pare-git": {
-      "command": "npx",
-      "args": ["-y", "@paretools/git"],
-      "env": {}
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>OpenAI Codex</strong> (<code>.codex/config.toml</code>)</summary>
-
-```toml
-[mcp_servers.pare-git]
-command = "npx"
-args = ["-y", "@paretools/git"]
-
-[mcp_servers.pare-test]
-command = "npx"
-args = ["-y", "@paretools/test"]
-```
-
-</details>
-
-<details>
-<summary><strong>Continue.dev</strong> (<code>.continue/mcpServers/pare.yaml</code>)</summary>
-
-```yaml
-name: Pare Tools
-version: 0.0.1
-schema: v1
-mcpServers:
-  - name: pare-git
-    type: stdio
-    command: npx
-    args: ["-y", "@paretools/git"]
-  - name: pare-test
-    type: stdio
-    command: npx
-    args: ["-y", "@paretools/test"]
-```
-
-</details>
-
-<details>
-<summary><strong>Windows (all JSON clients)</strong></summary>
-
-On Windows, wrap `npx` with `cmd /c`:
-
-```json
-{
-  "mcpServers": {
-    "pare-git": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@paretools/git"]
-    }
-  }
-}
-```
-
-</details>
-
-## Telling Agents to Use Pare
-
-Add a snippet to your project's agent instruction file so AI agents prefer Pare tools over raw CLI commands. Each snippet tells the agent which `mcp__pare-*` tools are available and to use them instead of raw Bash. See the [Quickstart Guide](./docs/quickstart.md) for step-by-step instructions including how to merge with an existing `CLAUDE.md`.
-
-**Claude Code** — append to your project's `CLAUDE.md`:
-
-```markdown
-## MCP Tools
-
-When Pare MCP tools are available (prefixed with mcp\_\_pare-\*), prefer them over
-running raw CLI commands via Bash. Pare tools return structured JSON — reliable,
-typed data with up to 95% fewer tokens than CLI output.
-```
-
-**Other agents**: Copy the ready-made rule file for your agent from the [`rules/`](./rules/) folder, or see the [Agent Integration Guide](./docs/agent-integration.md) for Cursor, Windsurf, Cline, Copilot, Gemini CLI, and others.
+> **[Full Quickstart Guide](./docs/quickstart.md)** — preset selection, ecosystem mapping, merge strategy for existing config, and validation.
+> **[Manual Configuration](./docs/manual-configuration.md)** — config file paths and JSON/TOML/YAML formats for all clients.
+> **[Agent Integration Guide](./docs/agent-integration.md)** — rule files, enforcement hooks, CLI-to-MCP mapping reference.
 
 ## Configuration
 
@@ -345,7 +202,7 @@ In JSON MCP config, set via the `env` key:
 
 | Issue                               | Solution                                                                                            |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see Windows config above)                                                 |
+| `npx` not found / ENOENT on Windows | Use `cmd /c npx` wrapper (see your [client's setup guide](./docs/setup/))                           |
 | Slow first start                    | Run `npx -y @paretools/git` once to cache, or install globally: `npm i -g @paretools/git`           |
 | Node.js version error               | Pare requires Node.js >= 20                                                                         |
 | NVM/fnm PATH issues                 | Use absolute path to `npx`: e.g., `~/.nvm/versions/node/v22/bin/npx`                                |
