@@ -2,7 +2,7 @@
   "name": "@paretools/k8s",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-k8s",
-  "description": "MCP server for Kubernetes kubectl with structured, token-efficient output",
+  "description": "MCP server for Kubernetes — structured kubectl and Helm output for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

@@ -2,7 +2,7 @@
   "name": "@paretools/http",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-http",
-  "description": "MCP server for HTTP requests (curl) with structured, token-efficient output",
+  "description": "MCP server for HTTP — structured request/response data with headers and status for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

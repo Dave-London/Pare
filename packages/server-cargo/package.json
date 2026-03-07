@@ -2,7 +2,7 @@
   "name": "@paretools/cargo",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-cargo",
-  "description": "MCP server for Rust cargo (build, test, clippy, run, add, remove, fmt, doc, check) with structured, token-efficient output",
+  "description": "MCP server for Rust/Cargo — structured build, test, clippy, and dependency data for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

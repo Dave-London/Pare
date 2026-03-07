@@ -2,7 +2,7 @@
   "name": "@paretools/test",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-test",
-  "description": "MCP server for test runners with structured, token-efficient output",
+  "description": "MCP server for test runners — structured pass/fail results with failure details for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

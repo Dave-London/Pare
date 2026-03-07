@@ -2,7 +2,7 @@
   "name": "@paretools/deno",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-deno",
-  "description": "MCP server for Deno runtime operations with structured, token-efficient output",
+  "description": "MCP server for Deno — structured run, test, lint, and fmt output for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",

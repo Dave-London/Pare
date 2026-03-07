@@ -2,7 +2,7 @@
   "name": "@paretools/bun",
   "version": "0.14.0",
   "mcpName": "io.github.Dave-London/pare-bun",
-  "description": "MCP server for Bun runtime operations with structured, token-efficient output",
+  "description": "MCP server for Bun — structured run, test, build, and package data for AI agents",
   "license": "MIT",
   "keywords": [
     "mcp",
