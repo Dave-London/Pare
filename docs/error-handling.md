@@ -99,17 +99,17 @@ When the CLI command runs but reports a failure — tests fail, a build has erro
 
 ## Quick Reference
 
-| Failure Type | Error Pattern | `isError` | Has `structuredContent` | Key Fields |
-| --- | --- | --- | --- | --- |
-| Command not found | Thrown | `true` | No | Error message in `content` |
-| Not a git repo / bad path | Thrown | `true` | No | Error message in `content` |
-| Validation (missing param) | Thrown | `true` | No | Error message in `content` |
-| Permission denied | Thrown | `true` | No | Error message in `content` |
-| Tests fail | Structured | `false` | Yes | `success`, `failed`, `tests` |
-| Build errors | Structured | `false` | Yes | `success`, `errors`, `diagnostics` |
-| Lint violations | Structured | `false` | Yes | `errors`, `warnings`, `diagnostics` |
-| Script non-zero exit | Structured | `false` | Yes | `success`, `exitCode`, `stderr` |
-| Push rejected | Thrown | `true` | No | Error message in `content` |
+| Failure Type               | Error Pattern | `isError` | Has `structuredContent` | Key Fields                          |
+| -------------------------- | ------------- | --------- | ----------------------- | ----------------------------------- |
+| Command not found          | Thrown        | `true`    | No                      | Error message in `content`          |
+| Not a git repo / bad path  | Thrown        | `true`    | No                      | Error message in `content`          |
+| Validation (missing param) | Thrown        | `true`    | No                      | Error message in `content`          |
+| Permission denied          | Thrown        | `true`    | No                      | Error message in `content`          |
+| Tests fail                 | Structured    | `false`   | Yes                     | `success`, `failed`, `tests`        |
+| Build errors               | Structured    | `false`   | Yes                     | `success`, `errors`, `diagnostics`  |
+| Lint violations            | Structured    | `false`   | Yes                     | `errors`, `warnings`, `diagnostics` |
+| Script non-zero exit       | Structured    | `false`   | Yes                     | `success`, `exitCode`, `stderr`     |
+| Push rejected              | Thrown        | `true`    | No                      | Error message in `content`          |
 
 ## How Individual Tool Pages Document Errors
 
