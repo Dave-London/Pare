@@ -14,6 +14,7 @@ export function registerPrReviewTool(server: McpServer) {
       title: "PR Review",
       description:
         "Submits a review on a pull request (approve, request-changes, or comment). Returns structured data with the review event, URL, and body echo.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         number: z
           .string()

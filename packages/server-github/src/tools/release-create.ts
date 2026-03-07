@@ -24,6 +24,7 @@ export function registerReleaseCreateTool(server: McpServer) {
       title: "Release Create",
       description:
         "Creates a new GitHub release with optional asset uploads. Returns structured data with tag, URL, draft, prerelease status, and assets uploaded count.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         tag: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Tag name for the release"),
         title: z

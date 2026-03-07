@@ -20,6 +20,7 @@ export function registerCheckTool(server: McpServer) {
       title: "Cargo Check",
       description:
         "Runs cargo check (type check without full build) and returns structured diagnostics. Faster than build for error checking.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         package: z

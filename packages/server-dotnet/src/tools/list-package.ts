@@ -24,6 +24,7 @@ export function registerListPackageTool(server: McpServer) {
       title: ".NET List Packages",
       description:
         "Runs dotnet list package and returns structured NuGet package listings per project and framework.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         project: z

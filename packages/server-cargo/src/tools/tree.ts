@@ -19,6 +19,7 @@ export function registerTreeTool(server: McpServer) {
     {
       title: "Cargo Tree",
       description: "Displays the dependency tree for a Rust project.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         depth: z.number().optional().describe("Maximum depth of the dependency tree to display"),

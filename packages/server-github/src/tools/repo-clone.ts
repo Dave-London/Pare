@@ -24,6 +24,7 @@ export function registerRepoCloneTool(server: McpServer) {
       title: "Repo Clone",
       description:
         "Clones a GitHub repository. Returns structured data with success status, repo name, target directory, and message.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         repo: z
           .string()

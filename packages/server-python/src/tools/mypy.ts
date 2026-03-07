@@ -21,6 +21,7 @@ export function registerMypyTool(server: McpServer) {
       title: "mypy Type Check",
       description:
         "Runs mypy and returns structured type-check diagnostics (file, line, severity, message, code).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         targets: z

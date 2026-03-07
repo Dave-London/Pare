@@ -24,6 +24,7 @@ export function registerAnsiblePlaybookTool(server: McpServer) {
       title: "Ansible Playbook",
       description:
         "Runs an Ansible playbook and returns structured play recap with per-host results.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         playbook: z.string().max(INPUT_LIMITS.PATH_MAX).describe("Path to playbook file"),
         inventory: z

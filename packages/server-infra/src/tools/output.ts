@@ -13,6 +13,7 @@ export function registerOutputTool(server: McpServer) {
       title: "Terraform Output",
       description:
         "Shows Terraform output values from the current state. Returns structured name/value/type/sensitive data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

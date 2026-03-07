@@ -16,6 +16,7 @@ export function registerPackageResolveTool(server: McpServer) {
     {
       title: "Swift Package Resolve",
       description: "Resolves Swift package dependencies and returns structured resolution results.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

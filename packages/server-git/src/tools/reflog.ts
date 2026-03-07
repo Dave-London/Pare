@@ -17,6 +17,7 @@ export function registerReflogTool(server: McpServer) {
       title: "Git Reflog",
       description:
         "Returns reference log entries as structured data, useful for recovery operations. Also supports checking if a reflog exists.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         action: z

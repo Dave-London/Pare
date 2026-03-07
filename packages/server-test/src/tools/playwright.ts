@@ -117,6 +117,7 @@ export function registerPlaywrightTool(server: McpServer) {
       title: "Playwright Tests",
       description:
         "Runs Playwright tests with JSON reporter and returns structured results with pass/fail status, duration, and error messages.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         filter: z

@@ -20,6 +20,7 @@ export function registerTestTool(server: McpServer) {
       title: "Bun Test",
       description:
         "Runs `bun test` and returns structured pass/fail results with per-test details.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         files: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))

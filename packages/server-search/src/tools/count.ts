@@ -21,6 +21,7 @@ export function registerCountTool(server: McpServer) {
       title: "Match Count",
       description:
         "Counts pattern matches per file using ripgrep. Returns per-file match counts and totals.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         pattern: z
           .string()

@@ -19,6 +19,7 @@ export function registerSshTestTool(server: McpServer) {
       title: "SSH Test Connection",
       description:
         "Tests SSH connectivity to a remote host using `ssh -T`. Returns whether the host is reachable and any banner message.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         host: z
           .string()

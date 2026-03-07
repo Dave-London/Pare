@@ -16,6 +16,7 @@ export function registerGemOutdatedTool(server: McpServer) {
     {
       title: "Gem Outdated",
       description: "Lists outdated Ruby gems showing current and latest available versions.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

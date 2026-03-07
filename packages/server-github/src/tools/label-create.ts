@@ -24,6 +24,7 @@ export function registerLabelCreateTool(server: McpServer) {
       title: "Label Create",
       description:
         "Creates a new repository label. Returns structured data with label name, description, color, and URL.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         name: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Label name"),
         description: z

@@ -25,6 +25,7 @@ export function registerPrViewTool(server: McpServer) {
       title: "PR View",
       description:
         "Views a pull request by number, URL, or branch. Returns structured data with state, checks, review decision, diff stats, author, labels, draft status, assignees, milestone, and timestamps.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         number: z
           .string()

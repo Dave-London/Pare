@@ -22,6 +22,7 @@ export function registerGradleDependenciesTool(server: McpServer) {
     {
       title: "Gradle Dependencies",
       description: "Shows the Gradle dependency tree with structured output per configuration.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         configuration: z

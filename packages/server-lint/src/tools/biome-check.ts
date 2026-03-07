@@ -21,6 +21,7 @@ export function registerBiomeCheckTool(server: McpServer) {
       title: "Biome Check",
       description:
         "Runs Biome check (lint + format) and returns structured diagnostics (file, line, rule, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

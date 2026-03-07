@@ -20,6 +20,7 @@ export function registerYqTool(server: McpServer) {
       title: "YAML/JSON/XML/TOML Processor",
       description:
         "Processes and transforms YAML, JSON, XML, TOML, and properties files using yq expressions. Accepts input from a file path or inline string. Returns the transformed result.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         expression: z
           .string()

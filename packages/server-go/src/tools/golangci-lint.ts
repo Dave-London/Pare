@@ -25,6 +25,7 @@ export function registerGolangciLintTool(server: McpServer) {
       title: "golangci-lint",
       description:
         "Runs golangci-lint and returns structured lint diagnostics (file, line, linter, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

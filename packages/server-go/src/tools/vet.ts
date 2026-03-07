@@ -20,6 +20,7 @@ export function registerVetTool(server: McpServer) {
       title: "Go Vet",
       description:
         "Runs go vet and returns structured static analysis diagnostics with analyzer names. Uses -json flag for native JSON output with automatic text fallback.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

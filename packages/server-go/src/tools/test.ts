@@ -20,6 +20,7 @@ export function registerTestTool(server: McpServer) {
       title: "Go Test",
       description:
         "Runs go test and returns structured test results (name, status, package, elapsed).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

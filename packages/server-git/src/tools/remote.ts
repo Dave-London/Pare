@@ -26,6 +26,7 @@ export function registerRemoteTool(server: McpServer) {
       title: "Git Remote",
       description:
         "Manages remote repositories. Supports list (default), add, remove, rename, set-url, prune, and show actions. Returns structured remote data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         action: z

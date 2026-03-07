@@ -22,6 +22,7 @@ export function registerMysqlListDatabasesTool(server: McpServer) {
     {
       title: "MySQL List Databases",
       description: "Lists all MySQL databases with structured output.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         host: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Database host"),
         port: z.number().optional().describe("Database port (default: 3306)"),

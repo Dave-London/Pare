@@ -18,6 +18,7 @@ export function registerLogsTool(server: McpServer) {
     {
       title: "Kubectl Logs",
       description: "Gets logs from a Kubernetes pod.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         pod: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Pod name"),
         namespace: z

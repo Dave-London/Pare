@@ -18,6 +18,7 @@ export function registerRedisPingTool(server: McpServer) {
     {
       title: "Redis Ping",
       description: "Tests Redis connectivity by sending a PING command.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         host: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Redis host"),
         port: z.number().optional().describe("Redis port (default: 6379)"),

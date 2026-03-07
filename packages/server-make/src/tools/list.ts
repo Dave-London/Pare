@@ -61,6 +61,7 @@ export function registerListTool(server: McpServer) {
       title: "Make/Just List Targets",
       description:
         "Lists available make or just targets with optional descriptions. Auto-detects make vs just.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         tool: z

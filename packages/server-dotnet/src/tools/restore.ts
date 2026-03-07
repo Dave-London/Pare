@@ -20,6 +20,7 @@ export function registerRestoreTool(server: McpServer) {
       title: ".NET Restore",
       description:
         "Runs dotnet restore to restore NuGet dependencies and returns structured results.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         project: z

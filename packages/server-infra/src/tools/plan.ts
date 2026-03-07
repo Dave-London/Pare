@@ -20,6 +20,7 @@ export function registerPlanTool(server: McpServer) {
       title: "Terraform Plan",
       description:
         "Shows the Terraform execution plan with resource change counts. Read-only — does not modify infrastructure.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         out: z

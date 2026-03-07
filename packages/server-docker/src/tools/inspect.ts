@@ -20,6 +20,7 @@ export function registerInspectTool(server: McpServer) {
       title: "Docker Inspect",
       description:
         "Shows detailed container or image information with structured state, image, and platform data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         target: z
           .union([

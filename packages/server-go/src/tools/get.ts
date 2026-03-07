@@ -21,6 +21,7 @@ export function registerGetTool(server: McpServer) {
     {
       title: "Go Get",
       description: "Downloads and installs Go packages and their dependencies.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

@@ -20,6 +20,7 @@ export function registerFlakeShowTool(server: McpServer) {
       title: "Nix Flake Show",
       description:
         "Shows the outputs of a Nix flake as a structured tree. Uses --json for machine-parseable output by default.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         flakeRef: z
           .string()

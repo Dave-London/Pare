@@ -23,6 +23,7 @@ export function registerPackageUpdateTool(server: McpServer) {
     {
       title: "Swift Package Update",
       description: "Updates Swift package dependencies and returns structured update results.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         packages: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

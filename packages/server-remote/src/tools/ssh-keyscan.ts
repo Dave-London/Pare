@@ -23,6 +23,7 @@ export function registerSshKeyscanTool(server: McpServer) {
       title: "SSH Keyscan",
       description:
         "Retrieves public host keys from a remote SSH server using `ssh-keyscan`. Useful for populating known_hosts or verifying host key fingerprints.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         host: z
           .string()

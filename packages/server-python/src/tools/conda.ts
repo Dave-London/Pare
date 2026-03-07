@@ -28,6 +28,7 @@ export function registerCondaTool(server: McpServer) {
       title: "Conda",
       description:
         "Runs conda commands (list, info, env-list, create, remove, update) and returns structured JSON output.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         action: z
           .enum(["list", "info", "env-list", "create", "remove", "update"])

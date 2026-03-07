@@ -24,6 +24,7 @@ export function registerFlakeCheckTool(server: McpServer) {
       title: "Nix Flake Check",
       description:
         "Checks a Nix flake for errors and returns structured check results, warnings, and errors.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         flakeRef: z
           .string()

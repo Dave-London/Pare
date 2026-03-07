@@ -17,6 +17,7 @@ export function registerBundleCheckTool(server: McpServer) {
       title: "Bundle Check",
       description:
         "Verifies that the Gemfile's dependencies are satisfied without installing them.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

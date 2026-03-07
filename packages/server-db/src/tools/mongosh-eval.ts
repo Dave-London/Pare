@@ -24,6 +24,7 @@ export function registerMongoshEvalTool(server: McpServer) {
       description:
         "Evaluates a MongoDB expression via mongosh and returns the output. " +
         "WARNING: The expression is executed as-is — do not pass untrusted input.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         expression: z
           .string()

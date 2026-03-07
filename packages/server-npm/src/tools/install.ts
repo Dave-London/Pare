@@ -26,6 +26,7 @@ export function registerInstallTool(server: McpServer) {
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
         "Lifecycle scripts (preinstall/postinstall) are skipped by default for safety. " +
         "Set ignoreScripts to false if packages need postinstall scripts to work (e.g., esbuild, sharp).",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         args: z

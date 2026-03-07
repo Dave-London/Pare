@@ -14,6 +14,7 @@ export function registerBisectTool(server: McpServer) {
       title: "Git Bisect",
       description:
         "Binary search for the commit that introduced a bug. Returns structured data with action taken, current commit, remaining steps estimate, and result.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         action: z

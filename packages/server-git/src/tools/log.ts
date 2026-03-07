@@ -20,6 +20,7 @@ export function registerLogTool(server: McpServer) {
     {
       title: "Git Log",
       description: "Returns commit history as structured data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         maxCount: z

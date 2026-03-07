@@ -20,6 +20,7 @@ export function registerCheckTool(server: McpServer) {
       title: "Deno Check",
       description:
         "Runs `deno check` for type-checking without execution. Returns structured type errors.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         files: filePatternsInput("Files to type-check (at least one required)", []),
         path: projectPathInput,

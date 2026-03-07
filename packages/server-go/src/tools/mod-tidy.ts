@@ -32,6 +32,7 @@ export function registerModTidyTool(server: McpServer) {
     {
       title: "Go Mod Tidy",
       description: "Runs go mod tidy to add missing and remove unused module dependencies.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         diff: z

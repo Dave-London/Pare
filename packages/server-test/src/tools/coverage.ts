@@ -208,6 +208,7 @@ export function registerCoverageTool(server: McpServer) {
     {
       title: "Test Coverage",
       description: "Runs tests with coverage and returns structured coverage summary per file.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         framework: z

@@ -20,6 +20,7 @@ export function registerUvInstallTool(server: McpServer) {
       title: "uv Install",
       description:
         "Runs uv pip install and returns a structured summary of installed packages. WARNING: may execute untrusted code.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: cwdPathInput,
         packages: z

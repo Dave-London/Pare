@@ -19,6 +19,7 @@ export function registerRedisInfoTool(server: McpServer) {
       title: "Redis Info",
       description:
         "Gets Redis server info with structured sections (server, clients, memory, etc.).",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         section: z
           .string()

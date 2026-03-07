@@ -19,6 +19,7 @@ export function registerAuditTool(server: McpServer) {
     {
       title: "Cargo Audit",
       description: "Runs cargo audit and returns structured vulnerability data.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         fix: z

@@ -23,6 +23,7 @@ export function registerApplyTool(server: McpServer) {
     {
       title: "Kubectl Apply",
       description: "Applies a Kubernetes manifest file.",
+      annotations: { openWorldHint: true, destructiveHint: true },
       inputSchema: {
         file: z
           .union([

@@ -20,6 +20,7 @@ export function registerVolumeLsTool(server: McpServer) {
       title: "Docker Volume LS",
       description:
         "Lists Docker volumes with structured driver, mountpoint, and scope information.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: cwdPathInput,
         filter: z

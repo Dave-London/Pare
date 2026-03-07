@@ -28,6 +28,7 @@ export function registerIssueUpdateTool(server: McpServer) {
         "For list fields (labels, assignees, projects), use `add*` to append and `remove*` to " +
         "delete specific items without affecting others. " +
         "Returns structured data with issue number and URL.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         // ── Target ──────────────────────────────────────────────────
         /** Issue number (integer) or full GitHub issue URL. */

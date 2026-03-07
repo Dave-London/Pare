@@ -20,6 +20,7 @@ export function registerStatsTool(server: McpServer) {
       title: "Docker Stats",
       description:
         "Returns a snapshot of container resource usage (CPU, memory, network/block I/O, PIDs) as structured data.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         containers: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))

@@ -18,6 +18,7 @@ export function registerComposePsTool(server: McpServer) {
     {
       title: "Docker Compose PS",
       description: "Lists Docker Compose services with structured state and status information.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: z
           .string()

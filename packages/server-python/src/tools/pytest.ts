@@ -26,6 +26,7 @@ export function registerPytestTool(server: McpServer) {
       title: "pytest",
       description:
         "Runs pytest and returns structured test results (passed, failed, errors, skipped, failures).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         targets: z

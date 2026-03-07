@@ -27,6 +27,7 @@ export function registerAnsibleGalaxyTool(server: McpServer) {
       title: "Ansible Galaxy",
       description:
         "Installs or lists Ansible collections and roles from Galaxy or a requirements file.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         action: z
           .enum(["collection-install", "role-install", "collection-list", "role-list"])

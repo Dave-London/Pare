@@ -14,6 +14,7 @@ export function registerApiTool(server: McpServer) {
       title: "GitHub API",
       description:
         "Makes arbitrary GitHub API calls via `gh api`. Supports all HTTP methods, request bodies, field parameters, pagination, and jq filtering. Returns structured data with status, parsed JSON body, endpoint, and method.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         endpoint: z
           .string()

@@ -19,6 +19,7 @@ export function registerPipListTool(server: McpServer) {
     {
       title: "pip List",
       description: "Runs pip list and returns a structured list of installed packages.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: cwdPathInput,
         local: z

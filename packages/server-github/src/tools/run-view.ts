@@ -31,6 +31,7 @@ export function registerRunViewTool(server: McpServer) {
       title: "Run View",
       description:
         "Views a workflow run by ID. Returns structured data with status, conclusion, jobs (with steps), and workflow details.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         id: z.number().describe("Workflow run ID"),
         logFailed: z

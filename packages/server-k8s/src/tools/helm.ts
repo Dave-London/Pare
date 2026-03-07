@@ -70,6 +70,7 @@ export function registerHelmTool(server: McpServer) {
       title: "Helm",
       description:
         "Manages Helm releases (install, upgrade, list, status, history, template). Returns structured JSON output.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         action: z
           .enum([

@@ -22,6 +22,7 @@ export function registerPsqlListDatabasesTool(server: McpServer) {
     {
       title: "PostgreSQL List Databases",
       description: "Lists all PostgreSQL databases via psql with owner, encoding, and size info.",
+      annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         host: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Database host"),
         port: z.number().optional().describe("Database port (default: 5432)"),

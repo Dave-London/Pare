@@ -15,6 +15,7 @@ export function registerDiffTool(server: McpServer) {
       title: "Git Diff",
       description:
         "Returns file-level diff statistics as structured data. Use full=true for patch content.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),

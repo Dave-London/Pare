@@ -14,6 +14,7 @@ export function registerConfigTool(server: McpServer) {
       title: "Git Config",
       description:
         "Manages git configuration values. Supports get, set, list, and unset actions. Operates at local, global, system, or worktree scope.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         action: z

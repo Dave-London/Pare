@@ -22,6 +22,7 @@ export function registerOutdatedTool(server: McpServer) {
       description:
         "Checks for outdated packages and returns structured update information. " +
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

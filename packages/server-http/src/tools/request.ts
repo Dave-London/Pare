@@ -29,6 +29,7 @@ export function registerRequestTool(server: McpServer) {
       title: "HTTP Request",
       description:
         "Makes an HTTP request via curl and returns structured response data (status, headers, body, timing).",
+      annotations: { openWorldHint: true },
       inputSchema: {
         url: z
           .string()

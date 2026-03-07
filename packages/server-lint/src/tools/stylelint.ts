@@ -22,6 +22,7 @@ export function registerStylelintTool(server: McpServer) {
       title: "Stylelint Check",
       description:
         "Runs Stylelint and returns structured diagnostics (file, line, column, rule, severity, message).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         patterns: z

@@ -24,6 +24,7 @@ export function registerGemInstallTool(server: McpServer) {
       title: "Gem Install",
       description:
         "Installs a Ruby gem using `gem install` and returns structured output with success status and duration.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         gem: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Name of the gem to install"),
         version: z

@@ -21,6 +21,7 @@ export function registerPoetryTool(server: McpServer) {
       description:
         "Runs Poetry commands and returns structured output. " +
         "Supports install, add, remove, show, build, update, lock, check, and export actions.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         action: z
           .enum(["install", "add", "remove", "show", "build", "update", "lock", "check", "export"])

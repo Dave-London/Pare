@@ -16,6 +16,7 @@ export function registerPackageCleanTool(server: McpServer) {
     {
       title: "Swift Package Clean",
       description: "Cleans Swift package build artifacts and returns structured result.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         path: projectPathInput,
         compact: compactInput,

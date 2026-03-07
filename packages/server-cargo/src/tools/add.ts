@@ -20,6 +20,7 @@ export function registerAddTool(server: McpServer) {
       title: "Cargo Add",
       description:
         "Adds dependencies to a Rust project and returns structured output. WARNING: may execute untrusted code.",
+      annotations: { openWorldHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

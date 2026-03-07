@@ -31,6 +31,7 @@ export function registerPrMergeTool(server: McpServer) {
       title: "PR Merge",
       description:
         "Merges a pull request by number, URL, or branch. Returns structured data with merge status, method, URL, and branch deletion status.",
+      annotations: { openWorldHint: true, destructiveHint: true },
       inputSchema: {
         number: z
           .string()

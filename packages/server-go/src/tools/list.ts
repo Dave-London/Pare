@@ -20,6 +20,7 @@ export function registerListTool(server: McpServer) {
       title: "Go List",
       description:
         "Lists Go packages or modules and returns structured information. When `modules` is true, lists modules (with path, version, dir); otherwise lists packages (with dir, importPath, name, goFiles, testGoFiles).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

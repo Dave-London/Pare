@@ -20,6 +20,7 @@ export function registerTestTool(server: McpServer) {
       title: "Cargo Test",
       description:
         "Runs cargo test and returns structured test results (name, status, pass/fail counts).",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         filter: z
