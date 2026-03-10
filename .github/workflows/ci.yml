@@ -36,7 +36,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
@@ -55,7 +55,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
@@ -87,7 +87,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
@@ -106,7 +106,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
@@ -129,7 +129,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
@@ -144,7 +144,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
@@ -160,7 +160,7 @@ jobs:
 
       - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
           cache: pnpm
