@@ -34,8 +34,8 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.5.2",
-    "@changesets/cli": "^2.27.0",
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
@@ -45,7 +45,7 @@
     "lint-staged": "^16.3.1",
     "prettier": "^3.4.0",
     "tsx": "^4.21.0",
-    "turbo": "^2.8.12",
+    "turbo": "^2.8.15",
     "typedoc": "^0.28.17",
     "typedoc-plugin-markdown": "^4.10.0",
     "vitest": "^4.0.18"
