@@ -30,6 +30,7 @@ export function registerPyenvTool(server: McpServer) {
     {
       title: "pyenv",
       description: "Manages Python versions via pyenv.",
+      annotations: { readOnlyHint: false, openWorldHint: true },
       inputSchema: {
         action: z.enum(ACTIONS).describe("The pyenv action to perform"),
         version: z

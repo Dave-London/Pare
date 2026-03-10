@@ -20,6 +20,7 @@ export function registerLernaTool(server: McpServer) {
       title: "lerna",
       description:
         "Runs Lerna monorepo commands (list, run, changed, version) and returns structured package information.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         action: z
           .enum(["list", "run", "changed", "version"])

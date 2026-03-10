@@ -50,6 +50,7 @@ export function registerRunTool(server: McpServer) {
         "(e.g., /bin/sh or cmd.exe), enabling features like glob expansion, piping, " +
         "and variable substitution — but also exposing the command to shell injection risks. " +
         "Only use shell=true when you trust the input and need shell features.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         command: z
           .string()

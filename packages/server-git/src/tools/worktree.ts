@@ -26,6 +26,7 @@ export function registerWorktreeTool(server: McpServer) {
       title: "Git Worktree",
       description:
         "Lists, adds, removes, locks, unlocks, or prunes git worktrees for managing multiple working trees. Returns structured data with worktree paths, branches, and HEAD commits.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         action: z

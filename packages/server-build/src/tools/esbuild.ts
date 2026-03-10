@@ -24,6 +24,7 @@ export function registerEsbuildTool(server: McpServer) {
       title: "esbuild",
       description:
         "Runs the esbuild bundler and returns structured errors, warnings, and output files.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         entryPoints: z

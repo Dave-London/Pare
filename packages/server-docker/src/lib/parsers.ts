@@ -1008,13 +1008,13 @@ function parseComposePorts(
           const hostPort = arrowParts[0].split(":").pop();
           const containerPort = arrowParts[1].replace(/\/(tcp|udp)/, "");
           return {
-            host: parseInt(hostPort ?? "0", 10),
-            container: parseInt(containerPort, 10),
+            host: parseInt(hostPort ?? "0", 10) || 0,
+            container: parseInt(containerPort, 10) || 0,
             protocol,
           };
         }
 
-        const port = parseInt(p.replace(/\/(tcp|udp)/, ""), 10);
+        const port = parseInt(p.replace(/\/(tcp|udp)/, ""), 10) || 0;
         return { container: port, protocol };
       });
   }

@@ -19,6 +19,7 @@ export function registerDocTool(server: McpServer) {
     {
       title: "Cargo Doc",
       description: "Generates Rust documentation and returns structured output with warning count.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         open: z

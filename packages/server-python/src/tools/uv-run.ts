@@ -19,6 +19,7 @@ export function registerUvRunTool(server: McpServer) {
     {
       title: "uv Run",
       description: "Runs a command in a uv-managed environment and returns structured output.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: cwdPathInput,
         command: z

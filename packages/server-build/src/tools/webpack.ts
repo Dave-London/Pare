@@ -20,6 +20,7 @@ export function registerWebpackTool(server: McpServer) {
       title: "webpack",
       description:
         "Runs webpack build with JSON stats output and returns structured assets, errors, and warnings.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         config: z

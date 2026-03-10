@@ -25,6 +25,7 @@ export function registerTestTool(server: McpServer) {
         "Auto-detects package manager via lock files (pnpm-lock.yaml → pnpm, yarn.lock → yarn, otherwise npm). " +
         "Shorthand for running the test script defined in package.json. " +
         "Automatically parses test framework output (jest, vitest, mocha, tap) to extract pass/fail/skip counts.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
         args: z

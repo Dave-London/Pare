@@ -19,6 +19,7 @@ export function registerRemoveTool(server: McpServer) {
     {
       title: "Cargo Remove",
       description: "Removes dependencies from a Rust project and returns structured output.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         path: projectPathInput,
         packages: z

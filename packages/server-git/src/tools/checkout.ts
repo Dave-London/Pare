@@ -14,6 +14,7 @@ export function registerCheckoutTool(server: McpServer) {
       title: "Git Checkout",
       description:
         "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         branch: z

@@ -14,6 +14,7 @@ export function registerStashTool(server: McpServer) {
       title: "Git Stash",
       description:
         "Pushes, pops, applies, drops, shows, or clears stash entries. Returns structured result with action, success, message, and stash reference.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         action: z

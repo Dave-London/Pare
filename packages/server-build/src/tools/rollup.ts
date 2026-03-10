@@ -20,6 +20,7 @@ export function registerRollupTool(server: McpServer) {
       title: "rollup",
       description:
         "Runs Rollup bundler and returns structured bundle output with errors and warnings.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         config: z
           .string()

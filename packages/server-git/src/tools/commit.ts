@@ -14,6 +14,7 @@ export function registerCommitTool(server: McpServer) {
       title: "Git Commit",
       description:
         "Creates a commit with the given message. Returns structured data with hash, message, and change statistics.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         message: z.string().max(INPUT_LIMITS.MESSAGE_MAX).describe("Commit message"),

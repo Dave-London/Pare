@@ -16,6 +16,7 @@ export function registerReloadTool(server: McpServer) {
         "notification so the host re-fetches tool definitions. Useful during local development when code " +
         "changes require a rebuild without restarting the session.\n\n" +
         "Default build command: `pnpm build`. Override with `buildCommand` for custom setups.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         buildCommand: z
           .string()
