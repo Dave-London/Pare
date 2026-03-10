@@ -273,11 +273,46 @@ export function parseLog(stdout: string): GitLog {
 }
 
 /** Parses `git diff --numstat` output into structured file-level diff statistics. */
+/** Status letters used by git --name-status output. */
+const NAME_STATUS_LETTERS = new Set(["A", "M", "D", "R", "C", "T", "U", "X"]);
+
 export function parseDiffStat(stdout: string): GitDiff {
   // Parse --numstat output: additions\tdeletions\tfilename
+  // Also handles --name-status output: STATUS\tfilename (when --name-status overrides --numstat)
   const lines = stdout.trim().split("\n").filter(Boolean);
   const files = lines.map((line) => {
-    const [add, del, ...fileParts] = line.split("\t");
+    const parts = line.split("\t");
+
+    // Detect --name-status format: first field is a single status letter (A, M, D, R, C, T, U, X)
+    // In --numstat format, the first field is always a number or "-"
+    const isNameStatus =
+      parts.length >= 2 && parts[0].length <= 4 && NAME_STATUS_LETTERS.has(parts[0][0]);
+
+    if (isNameStatus) {
+      const statusLetter = parts[0][0];
+      const filePath = parts.slice(1).join("\t");
+      // R and C status include a score (e.g., R100) and have oldFile\tnewFile
+      const isRename = statusLetter === "R" || statusLetter === "C";
+      const statusMap: Record<string, GitDiff["files"][number]["status"]> = {
+        A: "added",
+        M: "modified",
+        D: "deleted",
+        R: "renamed",
+        C: "copied",
+        T: "modified",
+        U: "modified",
+        X: "modified",
+      };
+      return {
+        file: isRename && parts.length >= 3 ? parts[2] : filePath,
+        status: statusMap[statusLetter] ?? "modified",
+        additions: 0,
+        deletions: 0,
+        ...(isRename && parts.length >= 3 ? { oldFile: parts[1] } : {}),
+      };
+    }
+
+    const [add, del, ...fileParts] = parts;
     const filePath = fileParts.join("\t");
     // Detect renames: "old => new" or "{old => new}/path"
     const renameMatch =
@@ -288,17 +323,21 @@ export function parseDiffStat(stdout: string): GitDiff {
     const additions = add === "-" ? 0 : parseInt(add, 10);
     const deletions = del === "-" ? 0 : parseInt(del, 10);
 
+    // Guard against NaN from unexpected input formats
+    const safeAdditions = Number.isNaN(additions) ? 0 : additions;
+    const safeDeletions = Number.isNaN(deletions) ? 0 : deletions;
+
     return {
       file: filePath,
-      status: (additions > 0 && deletions === 0 && !isRename
+      status: (safeAdditions > 0 && safeDeletions === 0 && !isRename
         ? "added"
         : isRename
           ? "renamed"
-          : deletions > 0 && additions === 0
+          : safeDeletions > 0 && safeAdditions === 0
             ? "deleted"
             : "modified") as GitDiff["files"][number]["status"],
-      additions,
-      deletions,
+      additions: safeAdditions,
+      deletions: safeDeletions,
       ...(isBinary ? { binary: true } : {}),
       ...(isRename && renameMatch ? { oldFile: renameMatch[1] ?? renameMatch[0] } : {}),
     };

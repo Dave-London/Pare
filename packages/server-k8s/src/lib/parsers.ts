@@ -949,7 +949,7 @@ export function parseHelmHistoryOutput(
     if (Array.isArray(parsed)) {
       revisions = parsed.map((r: Record<string, unknown>) => {
         const rev: HelmRevision = {
-          revision: Number(r.revision ?? 0),
+          revision: Number(r.revision ?? 0) || 0,
           updated: String(r.updated ?? ""),
           status: String(r.status ?? ""),
           chart: String(r.chart ?? ""),

@@ -375,6 +375,74 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
   });
 });
 
+describe("parseDiffStat — name-status format (nameStatus: true)", () => {
+  it("parses --name-status output with modified files", () => {
+    const stdout = ["M\tsrc/index.ts", "M\tsrc/utils.ts"].join("\n");
+    const result = parseDiffStat(stdout);
+
+    expect(result.files).toHaveLength(2);
+    expect(result.files[0]).toEqual({
+      file: "src/index.ts",
+      status: "modified",
+      additions: 0,
+      deletions: 0,
+    });
+    expect(result.files[1].file).toBe("src/utils.ts");
+    expect(result.files[1].status).toBe("modified");
+  });
+
+  it("parses --name-status output with added and deleted files", () => {
+    const stdout = ["A\tnew-file.ts", "D\told-file.ts"].join("\n");
+    const result = parseDiffStat(stdout);
+
+    expect(result.files[0].status).toBe("added");
+    expect(result.files[0].additions).toBe(0);
+    expect(result.files[0].deletions).toBe(0);
+    expect(result.files[1].status).toBe("deleted");
+  });
+
+  it("parses --name-status output with renamed files (R100)", () => {
+    const stdout = "R100\told-name.ts\tnew-name.ts";
+    const result = parseDiffStat(stdout);
+
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].status).toBe("renamed");
+    expect(result.files[0].file).toBe("new-name.ts");
+    expect(result.files[0].oldFile).toBe("old-name.ts");
+    expect(result.files[0].additions).toBe(0);
+    expect(result.files[0].deletions).toBe(0);
+  });
+
+  it("parses --name-status output with copied files (C100)", () => {
+    const stdout = "C100\toriginal.ts\tcopy.ts";
+    const result = parseDiffStat(stdout);
+
+    expect(result.files[0].status).toBe("copied");
+    expect(result.files[0].file).toBe("copy.ts");
+    expect(result.files[0].oldFile).toBe("original.ts");
+  });
+
+  it("parses mixed --name-status output (three-dot ref scenario)", () => {
+    const stdout = [
+      "A\t.changeset/tool-annotations.md",
+      "M\tpackages/server-build/src/tools/tsc.ts",
+      "D\tpackages/old-file.ts",
+    ].join("\n");
+    const result = parseDiffStat(stdout);
+
+    expect(result.files).toHaveLength(3);
+    expect(result.files[0].status).toBe("added");
+    expect(result.files[0].file).toBe(".changeset/tool-annotations.md");
+    expect(result.files[1].status).toBe("modified");
+    expect(result.files[2].status).toBe("deleted");
+    // All should have numeric additions/deletions (not NaN)
+    for (const f of result.files) {
+      expect(Number.isNaN(f.additions)).toBe(false);
+      expect(Number.isNaN(f.deletions)).toBe(false);
+    }
+  });
+});
+
 describe("parseTagOutput", () => {
   it("parses tag list with dates and messages", () => {
     const stdout = [
