@@ -12,6 +12,7 @@ import {
   compactInput,
   projectPathInput,
   configInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
@@ -309,7 +310,7 @@ export function registerRunTool(server: McpServer) {
             "Exit successfully when no tests are found (maps to --passWithNoTests for jest/vitest)",
           ),
         bail: z
-          .union([z.number().int().min(1), z.boolean()])
+          .union([z.coerce.number().int().min(1), z.boolean()])
           .optional()
           .describe(
             "Fail fast after N failures (maps to --maxfail=N for pytest, --bail=N for jest/vitest, --bail for mocha). Pass true for 1.",
@@ -321,7 +322,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Filter tests by name pattern (maps to -k for pytest, --testNamePattern for jest, --grep for vitest/mocha)",
           ),
-        workers: z
+        workers: z.coerce
           .number()
           .int()
           .min(1)
@@ -329,7 +330,7 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Number of parallel workers (maps to -n for pytest-xdist, --maxWorkers for jest, --pool.threads.maxThreads for vitest, --jobs for mocha)",
           ),
-        timeout: z
+        timeout: z.coerce
           .number()
           .int()
           .min(0)
@@ -337,12 +338,15 @@ export function registerRunTool(server: McpServer) {
           .describe(
             "Per-test timeout in milliseconds (maps to --timeout for pytest-timeout, --testTimeout for jest/vitest, --timeout for mocha)",
           ),
-        args: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe("Additional arguments to pass to the test runner"),
+        args: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe("Additional arguments to pass to the test runner"),
+        ),
         compact: compactInput,
       },
       outputSchema: TestRunSchema,

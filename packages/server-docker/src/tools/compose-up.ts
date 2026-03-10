@@ -31,7 +31,7 @@ export function registerComposeUpTool(server: McpServer) {
           .default([])
           .describe("Specific services to start (default: all)"),
         scale: z
-          .record(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX), z.number().int().min(0))
+          .record(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX), z.coerce.number().int().min(0))
           .optional()
           .describe("Per-service scale map, mapped to repeated --scale service=num"),
         detach: z.boolean().optional().default(true).describe("Run in background (default: true)"),
@@ -59,7 +59,7 @@ export function registerComposeUpTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Force recreate containers even if config has not changed (default: false)"),
-        timeout: z.number().optional().describe("Timeout in seconds for container startup"),
+        timeout: z.coerce.number().optional().describe("Timeout in seconds for container startup"),
         noRecreate: z
           .boolean()
           .optional()
@@ -77,7 +77,7 @@ export function registerComposeUpTool(server: McpServer) {
           .describe(
             "Remove containers for services not defined in the Compose file (default: false)",
           ),
-        waitTimeout: z
+        waitTimeout: z.coerce
           .number()
           .optional()
           .describe("Maximum time in seconds to wait for services when using --wait"),

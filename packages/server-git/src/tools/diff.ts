@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
+import {
+  compactDualOutput,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+  coerceJsonArray,
+} from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git, resolveFilePath, resolveFilePaths } from "../lib/git-runner.js";
 import { parseDiffStat } from "../lib/parsers.js";
@@ -29,11 +35,14 @@ export function registerDiffTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Limit diff to a specific file"),
-        files: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Limit diff to multiple file paths"),
+        files: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Limit diff to multiple file paths"),
+        ),
         full: z
           .boolean()
           .optional()
@@ -57,12 +66,12 @@ export function registerDiffTool(server: McpServer) {
           .enum(["myers", "minimal", "patience", "histogram"])
           .optional()
           .describe("Select diff algorithm (--diff-algorithm)"),
-        findRenames: z
+        findRenames: z.coerce
           .number()
           .optional()
           .describe("Rename detection threshold percentage (-M<n>), e.g. 50 for 50%"),
         ignoreWhitespace: z.boolean().optional().describe("Ignore all whitespace changes (-w)"),
-        contextLines: z.number().optional().describe("Number of context lines (-U<n>)"),
+        contextLines: z.coerce.number().optional().describe("Number of context lines (-U<n>)"),
         nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
         ignoreSpaceChange: z.boolean().optional().describe("Ignore space amount changes (-b)"),
         reverse: z.boolean().optional().describe("Reverse diff direction (-R)"),

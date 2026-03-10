@@ -29,12 +29,12 @@ export function registerSshKeyscanTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Remote host to scan for public keys (hostname or IP address)"),
-        port: z.number().optional().describe("SSH port number (default: 22)"),
+        port: z.coerce.number().optional().describe("SSH port number (default: 22)"),
         keyType: z
           .enum(["rsa", "ecdsa", "ed25519"])
           .optional()
           .describe("Specific key type to request (default: all types)"),
-        timeout: z
+        timeout: z.coerce
           .number()
           .optional()
           .describe("Timeout in seconds for the keyscan operation (default: 5)"),

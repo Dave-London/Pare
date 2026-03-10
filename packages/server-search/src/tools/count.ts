@@ -38,7 +38,7 @@ export function registerCountTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Case-sensitive search (default: true)"),
-        maxResults: z
+        maxResults: z.coerce
           .number()
           .optional()
           .describe(
@@ -73,7 +73,10 @@ export function registerCountTool(server: McpServer) {
           .describe(
             "Sort results: 'path' for alphabetical by file path, 'count' for descending match count",
           ),
-        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        maxDepth: z.coerce
+          .number()
+          .optional()
+          .describe("Maximum directory depth to search (--max-depth)"),
         noIgnore: z
           .boolean()
           .optional()

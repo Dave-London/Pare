@@ -23,7 +23,7 @@ export function registerLogTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
-        maxCount: z
+        maxCount: z.coerce
           .number()
           .optional()
           .default(10)
@@ -74,7 +74,7 @@ export function registerLogTool(server: McpServer) {
           .optional()
           .describe("Filter by change type (--diff-filter), e.g. A, M, D"),
         noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
-        skip: z.number().optional().describe("Skip N commits for pagination (--skip)"),
+        skip: z.coerce.number().optional().describe("Skip N commits for pagination (--skip)"),
         follow: z.boolean().optional().describe("Follow file renames (--follow)"),
         firstParent: z.boolean().optional().describe("Follow only first parent (--first-parent)"),
         all: z.boolean().optional().describe("Show all refs (--all)"),

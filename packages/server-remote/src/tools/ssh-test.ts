@@ -30,13 +30,13 @@ export function registerSshTestTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("SSH username (if not specified, uses SSH config default)"),
-        port: z.number().optional().describe("SSH port number (default: 22)"),
+        port: z.coerce.number().optional().describe("SSH port number (default: 22)"),
         identityFile: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to SSH private key file"),
-        connectTimeout: z
+        connectTimeout: z.coerce
           .number()
           .optional()
           .describe("Connection timeout in seconds (default: 10)"),

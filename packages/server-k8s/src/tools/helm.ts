@@ -7,6 +7,7 @@ import {
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import {
   parseHelmListOutput,
@@ -101,10 +102,13 @@ export function registerHelmTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Kubernetes namespace (omit for default)"),
-        setValues: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .optional()
-          .describe("Values to set via --set (e.g., ['key1=val1', 'key2=val2'])"),
+        setValues: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .optional()
+            .describe("Values to set via --set (e.g., ['key1=val1', 'key2=val2'])"),
+        ),
         values: z
           .union([
             z.string().max(INPUT_LIMITS.PATH_MAX),
@@ -129,7 +133,7 @@ export function registerHelmTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Keep release history after uninstall (--keep-history, uninstall action only)"),
-        revision: z
+        revision: z.coerce
           .number()
           .optional()
           .describe("Revision number to rollback to (rollback action only)"),
@@ -173,7 +177,7 @@ export function registerHelmTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Show resources in status output (--show-resources, status action only)"),
-        statusRevision: z
+        statusRevision: z.coerce
           .number()
           .optional()
           .describe(

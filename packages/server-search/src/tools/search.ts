@@ -38,12 +38,12 @@ export function registerSearchTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Case-sensitive search (default: true)"),
-        maxResults: z
+        maxResults: z.coerce
           .number()
           .optional()
           .default(1000)
           .describe("Maximum number of matches to return (default: 1000)"),
-        maxCount: z
+        maxCount: z.coerce
           .number()
           .optional()
           .describe("Maximum matches per file to stop rg early (--max-count)"),
@@ -70,7 +70,10 @@ export function registerSearchTool(server: McpServer) {
           .enum(["path", "modified", "accessed", "created"])
           .optional()
           .describe("Sort results by the specified criterion (maps to --sort TYPE)"),
-        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        maxDepth: z.coerce
+          .number()
+          .optional()
+          .describe("Maximum directory depth to search (--max-depth)"),
         followSymlinks: z.boolean().optional().describe("Follow symbolic links (--follow)"),
         noIgnore: z
           .boolean()

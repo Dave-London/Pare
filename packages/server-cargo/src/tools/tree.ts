@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { cargo } from "../lib/cargo-runner.js";
 import { parseCargoTreeOutput } from "../lib/parsers.js";
@@ -22,7 +23,10 @@ export function registerTreeTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
-        depth: z.number().optional().describe("Maximum depth of the dependency tree to display"),
+        depth: z.coerce
+          .number()
+          .optional()
+          .describe("Maximum depth of the dependency tree to display"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -75,11 +79,14 @@ export function registerTreeTool(server: McpServer) {
             "Filter dependency edges by kind (--edges <KINDS>). " +
               "Example: 'normal' to exclude dev/build deps.",
           ),
-        features: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Space or comma separated list of features to activate (--features)"),
+        features: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Space or comma separated list of features to activate (--features)"),
+        ),
         allFeatures: z
           .boolean()
           .optional()

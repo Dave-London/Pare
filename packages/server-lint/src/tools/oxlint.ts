@@ -7,6 +7,7 @@ import {
   compactInput,
   projectPathInput,
   configInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { oxlintCmd } from "../lib/lint-runner.js";
 import { parseOxlintJson } from "../lib/parsers.js";
@@ -39,31 +40,46 @@ export function registerOxlintTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Apply suggestion-level fixes (maps to --fix-suggestions)"),
-        threads: z.number().optional().describe("Number of threads to use for parallel linting"),
+        threads: z.coerce
+          .number()
+          .optional()
+          .describe("Number of threads to use for parallel linting"),
         noIgnore: z.boolean().optional().describe("Disable ignore patterns (maps to --no-ignore)"),
         config: configInput("Path to Oxlint configuration file (maps to --config)"),
-        deny: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Rules to deny (error level) (maps to -D)"),
-        warn: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Rules to warn on (maps to -W)"),
-        allow: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Rules to allow (disable) (maps to -A)"),
-        plugins: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe(
-            "Plugin categories to enable (e.g., 'import', 'jest', 'jsx-a11y') (maps to --<plugin>-plugin)",
-          ),
+        deny: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Rules to deny (error level) (maps to -D)"),
+        ),
+        warn: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Rules to warn on (maps to -W)"),
+        ),
+        allow: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Rules to allow (disable) (maps to -A)"),
+        ),
+        plugins: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe(
+              "Plugin categories to enable (e.g., 'import', 'jest', 'jsx-a11y') (maps to --<plugin>-plugin)",
+            ),
+        ),
         tsconfig: configInput("Path to tsconfig.json for type-aware rules (maps to --tsconfig)"),
         ignorePath: configInput("Path to an alternate ignore file (maps to --ignore-path)"),
         compact: compactInput,

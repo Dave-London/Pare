@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
+import {
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  repoPathInput,
+  coerceJsonArray,
+} from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBisect, parseBisectRun } from "../lib/parsers.js";
 import { formatBisect, formatBisectRun } from "../lib/formatters.js";
@@ -46,11 +52,14 @@ export function registerBisectTool(server: McpServer) {
           .describe(
             "Script/command to run for automated bisection (used with run action). Must return exit code 0 for good, 1-124/126-127 for bad, 125 to skip.",
           ),
-        paths: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Restrict bisection to changes affecting specific paths (-- <paths>)"),
+        paths: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Restrict bisection to changes affecting specific paths (-- <paths>)"),
+        ),
         noCheckout: z
           .boolean()
           .optional()

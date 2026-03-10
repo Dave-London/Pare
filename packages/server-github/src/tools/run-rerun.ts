@@ -26,7 +26,7 @@ export function registerRunRerunTool(server: McpServer) {
         "Re-runs a workflow run by ID. Optionally re-runs only failed jobs or a specific job. Returns structured result with run ID, status, and URL.",
       annotations: { openWorldHint: true },
       inputSchema: {
-        runId: z.number().describe("Workflow run ID to re-run"),
+        runId: z.coerce.number().describe("Workflow run ID to re-run"),
         failedOnly: z
           .boolean()
           .optional()

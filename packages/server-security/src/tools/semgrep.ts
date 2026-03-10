@@ -91,11 +91,14 @@ export function registerSemgrepTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Preview autofix changes without applying them (--dryrun)"),
-        maxTargetBytes: z
+        maxTargetBytes: z.coerce
           .number()
           .optional()
           .describe("Maximum file size in bytes to scan, skip larger files (--max-target-bytes)"),
-        jobs: z.number().optional().describe("Number of parallel jobs for scanning (--jobs)"),
+        jobs: z.coerce
+          .number()
+          .optional()
+          .describe("Number of parallel jobs for scanning (--jobs)"),
         path: cwdPathInput,
         compact: compactInput,
       },
