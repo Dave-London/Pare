@@ -19,6 +19,7 @@ export function registerExecTool(server: McpServer) {
       title: "Docker Exec",
       description:
         "Executes arbitrary commands inside a running Docker container and returns structured output. WARNING: may execute untrusted code.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         container: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Container name or ID"),
         command: z

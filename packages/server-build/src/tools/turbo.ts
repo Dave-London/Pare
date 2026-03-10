@@ -22,6 +22,7 @@ export function registerTurboTool(server: McpServer) {
       title: "turbo",
       description:
         "Runs Turborepo tasks and returns structured per-package results with cache hit/miss info.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         task: z
           .string()

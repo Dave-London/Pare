@@ -21,6 +21,7 @@ export function registerTagTool(server: McpServer) {
       title: "Git Tag",
       description:
         "Manages git tags. Supports list (default), create, and delete actions. List returns structured tag data with name, date, and message. Create supports lightweight and annotated tags.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         action: z

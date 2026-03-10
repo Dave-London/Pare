@@ -20,6 +20,7 @@ export function registerGenerateTool(server: McpServer) {
       title: "Go Generate",
       description:
         "Runs go generate directives in Go source files. WARNING: may execute untrusted code.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         patterns: z

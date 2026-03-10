@@ -24,6 +24,7 @@ export function registerRuffFormatTool(server: McpServer) {
     {
       title: "ruff Format",
       description: "Runs ruff format and returns structured results (files changed, file list).",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         patterns: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))

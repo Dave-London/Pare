@@ -20,6 +20,7 @@ export function registerFmtTool(server: McpServer) {
     {
       title: "Cargo Fmt",
       description: "Checks or fixes Rust formatting and returns structured output.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         check: z

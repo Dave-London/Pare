@@ -29,6 +29,7 @@ export function registerBuildTool(server: McpServer) {
       description:
         "Runs a build command and returns structured success/failure with errors and warnings. " +
         "Allowed commands: ant, bazel, bun, bunx, cargo, cmake, dotnet, esbuild, go, gradle, gradlew, make, msbuild, mvn, npm, npx, nx, pnpm, rollup, tsc, turbo, vite, webpack, yarn.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         command: z
           .string()

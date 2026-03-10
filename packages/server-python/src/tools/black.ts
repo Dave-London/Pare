@@ -21,6 +21,7 @@ export function registerBlackTool(server: McpServer) {
       title: "Black Formatter",
       description:
         "Runs Black code formatter and returns structured results (files changed, unchanged, would reformat).",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         targets: z

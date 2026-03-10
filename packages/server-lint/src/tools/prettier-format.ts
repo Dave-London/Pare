@@ -29,6 +29,7 @@ export function registerPrettierFormatTool(server: McpServer) {
       title: "Prettier Format",
       description:
         "Formats files with Prettier (--write) and returns a structured list of changed files.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         patterns: z

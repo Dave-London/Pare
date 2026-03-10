@@ -20,6 +20,7 @@ export function registerFmtTool(server: McpServer) {
       title: "Go Fmt",
       description:
         "Checks or fixes Go source formatting using gofmt. In check mode (-l), lists unformatted files. In fix mode (-w), rewrites files.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         patterns: z

@@ -13,6 +13,7 @@ export function registerArchiveTool(server: McpServer) {
       title: "Git Archive",
       description:
         "Creates an archive of files from a git repository. Supports tar, tar.gz, and zip formats. Returns structured data with success status, format, output file, and treeish.",
+      annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
         treeish: z

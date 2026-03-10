@@ -28,6 +28,7 @@ export function registerNvmTool(server: McpServer) {
         "Supports listing installed versions, showing the current version, listing remote versions, " +
         "and executing commands with a specific Node.js version. " +
         "Supports both Unix nvm and nvm-windows.",
+      annotations: { readOnlyHint: false, openWorldHint: true },
       inputSchema: {
         action: z
           .enum(["list", "current", "ls-remote", "exec", "version"])

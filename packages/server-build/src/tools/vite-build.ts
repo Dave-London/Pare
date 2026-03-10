@@ -19,6 +19,7 @@ export function registerViteBuildTool(server: McpServer) {
     {
       title: "Vite Build",
       description: "Runs Vite production build and returns structured output files with sizes.",
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
         mode: z

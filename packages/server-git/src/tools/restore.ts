@@ -14,6 +14,7 @@ export function registerRestoreTool(server: McpServer) {
       title: "Git Restore",
       description:
         "Discards working tree changes or restores files from a specific commit. Returns structured data with restored files, source ref, and staged flag.",
+      annotations: { destructiveHint: true },
       inputSchema: {
         path: repoPathInput,
         files: z
