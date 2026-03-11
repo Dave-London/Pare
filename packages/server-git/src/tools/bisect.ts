@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   dualOutput,
   assertNoFlagInjection,
+  assertAllowedByPolicy,
   INPUT_LIMITS,
   repoPathInput,
   coerceJsonArray,
@@ -50,7 +51,7 @@ export function registerBisectTool(server: McpServer) {
           .max(INPUT_LIMITS.MESSAGE_MAX)
           .optional()
           .describe(
-            "Script/command to run for automated bisection (used with run action). Must return exit code 0 for good, 1-124/126-127 for bad, 125 to skip.",
+            "Script/command to run for automated bisection (used with run action). Must return exit code 0 for good, 1-124/126-127 for bad, 125 to skip. Security: the executable is validated against the ALLOWED_COMMANDS policy when configured.",
           ),
         paths: z.preprocess(
           coerceJsonArray,
@@ -113,6 +114,7 @@ export function registerBisectTool(server: McpServer) {
         // Split the command into executable and args for execFile safety
         // git bisect run expects the command as separate args
         const cmdParts = command.split(/\s+/).filter(Boolean);
+        assertAllowedByPolicy(cmdParts[0], "git");
         assertNoFlagInjection(cmdParts[0], "command");
 
         const args = ["bisect", "run", ...cmdParts];
