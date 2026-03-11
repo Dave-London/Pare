@@ -49,7 +49,7 @@ export function registerBiomeFormatTool(server: McpServer) {
           .enum(["tab", "space"])
           .optional()
           .describe("Indent style override (tab or space)"),
-        lineWidth: z.number().optional().describe("Line width override"),
+        lineWidth: z.coerce.number().optional().describe("Line width override"),
         quoteStyle: z
           .enum(["single", "double"])
           .optional()

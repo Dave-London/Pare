@@ -74,7 +74,10 @@ export function registerJqTool(server: McpServer) {
           .describe(
             "Named JSON variables for parameterized expressions (maps to repeated --argjson NAME VALUE)",
           ),
-        indent: z.number().optional().describe("Number of spaces for indentation (--indent)"),
+        indent: z.coerce
+          .number()
+          .optional()
+          .describe("Number of spaces for indentation (--indent)"),
         joinOutput: z
           .boolean()
           .optional()

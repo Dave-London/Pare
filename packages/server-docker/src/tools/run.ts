@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   compactInput,
   cwdPathInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { docker } from "../lib/docker-runner.js";
 import { parseRunOutput } from "../lib/parsers.js";
@@ -28,24 +29,33 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Docker image to run (e.g., nginx:latest)"),
         name: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).optional().describe("Container name"),
-        ports: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe('Port mappings (e.g., ["8080:80", "443:443"])'),
-        volumes: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe('Volume mounts (e.g., ["/host/path:/container/path"])'),
-        env: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe('Environment variables (e.g., ["KEY=VALUE"])'),
+        ports: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe('Port mappings (e.g., ["8080:80", "443:443"])'),
+        ),
+        volumes: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe('Volume mounts (e.g., ["/host/path:/container/path"])'),
+        ),
+        env: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe('Environment variables (e.g., ["KEY=VALUE"])'),
+        ),
         envFile: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -61,12 +71,15 @@ export function registerRunTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Remove container after exit (default: false)"),
-        command: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe("Command to run in the container"),
+        command: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe("Command to run in the container"),
+        ),
         workdir: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
@@ -115,7 +128,7 @@ export function registerRunTool(server: McpServer) {
           .enum(["always", "missing", "never"])
           .optional()
           .describe('Pull image policy: "always", "missing", or "never" (--pull)'),
-        cpus: z.number().optional().describe("Number of CPUs to allocate (e.g., 1.5)"),
+        cpus: z.coerce.number().optional().describe("Number of CPUs to allocate (e.g., 1.5)"),
         readOnly: z
           .boolean()
           .optional()

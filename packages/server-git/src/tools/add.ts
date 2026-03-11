@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
+import {
+  dualOutput,
+  assertNoFlagInjection,
+  INPUT_LIMITS,
+  repoPathInput,
+  coerceJsonArray,
+} from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
 import { parseAdd } from "../lib/parsers.js";
 import { formatAdd } from "../lib/formatters.js";
@@ -17,11 +23,14 @@ export function registerAddTool(server: McpServer) {
       annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
-        files: z
-          .array(z.string().max(INPUT_LIMITS.PATH_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("File paths to stage (required unless all is true)"),
+        files: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.PATH_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("File paths to stage (required unless all is true)"),
+        ),
         all: z.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
         dryRun: z
           .boolean()

@@ -50,7 +50,10 @@ export function registerRunTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Preview commands without executing (make -n / just --dry-run)"),
-        jobs: z.number().optional().describe("Number of parallel jobs (make -j N, make only)"),
+        jobs: z.coerce
+          .number()
+          .optional()
+          .describe("Number of parallel jobs (make -j N, make only)"),
         silent: z
           .boolean()
           .optional()

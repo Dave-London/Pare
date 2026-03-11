@@ -58,12 +58,15 @@ export function registerFindTool(server: McpServer) {
           .describe(
             "Filter by modification time (maps to --changed-within, e.g., '1d', '2h', '30min')",
           ),
-        maxResults: z
+        maxResults: z.coerce
           .number()
           .optional()
           .default(1000)
           .describe("Maximum number of results to return (default: 1000)"),
-        maxDepth: z.number().optional().describe("Maximum directory depth to search (--max-depth)"),
+        maxDepth: z.coerce
+          .number()
+          .optional()
+          .describe("Maximum directory depth to search (--max-depth)"),
         hidden: z.boolean().optional().describe("Include hidden files and directories (--hidden)"),
         absolutePath: z
           .boolean()

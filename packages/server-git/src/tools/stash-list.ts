@@ -18,7 +18,10 @@ export function registerStashListTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
-        maxCount: z.number().optional().describe("Limit number of stash entries (-n/--max-count)"),
+        maxCount: z.coerce
+          .number()
+          .optional()
+          .describe("Limit number of stash entries (-n/--max-count)"),
         grep: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

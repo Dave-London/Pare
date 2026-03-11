@@ -33,13 +33,16 @@ export function registerRunViewTool(server: McpServer) {
         "Views a workflow run by ID. Returns structured data with status, conclusion, jobs (with steps), and workflow details.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
-        id: z.number().describe("Workflow run ID"),
+        id: z.coerce.number().describe("Workflow run ID"),
         logFailed: z
           .boolean()
           .optional()
           .describe("Retrieve logs for failed steps only (--log-failed)"),
         log: z.boolean().optional().describe("Retrieve full run logs (--log)"),
-        attempt: z.number().optional().describe("View a specific rerun attempt (-a/--attempt)"),
+        attempt: z.coerce
+          .number()
+          .optional()
+          .describe("View a specific rerun attempt (-a/--attempt)"),
         exitStatus: z
           .boolean()
           .optional()

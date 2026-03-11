@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   compactInput,
   pathInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { yqCmd } from "../lib/search-runner.js";
 import { parseYqOutput } from "../lib/parsers.js";
@@ -27,12 +28,15 @@ export function registerYqTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("yq expression (e.g., '.name', '.items[] | .id', 'select(.enabled == true)')"),
         file: pathInput("Path to an input file to process"),
-        files: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .optional()
-          .describe(
-            "Multiple file paths for eval-all mode (evaluates expression across all files)",
-          ),
+        files: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .optional()
+            .describe(
+              "Multiple file paths for eval-all mode (evaluates expression across all files)",
+            ),
+        ),
         input: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -76,7 +80,10 @@ export function registerYqTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Evaluate expression across all files (eval-all mode)"),
-        indent: z.number().optional().describe("Number of spaces for indentation (--indent)"),
+        indent: z.coerce
+          .number()
+          .optional()
+          .describe("Number of spaces for indentation (--indent)"),
         compact: compactInput,
       },
       outputSchema: YqResultSchema,

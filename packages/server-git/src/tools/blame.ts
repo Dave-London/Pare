@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   compactInput,
   repoPathInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { git, resolveFilePath } from "../lib/git-runner.js";
 import { parseBlameOutput } from "../lib/parsers.js";
@@ -24,8 +25,8 @@ export function registerBlameTool(server: McpServer) {
       inputSchema: {
         path: repoPathInput,
         file: z.string().max(INPUT_LIMITS.PATH_MAX).describe("File path to blame"),
-        startLine: z.number().optional().describe("Start line number for blame range"),
-        endLine: z.number().optional().describe("End line number for blame range"),
+        startLine: z.coerce.number().optional().describe("Start line number for blame range"),
+        endLine: z.coerce.number().optional().describe("End line number for blame range"),
         funcname: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -43,11 +44,14 @@ export function registerBlameTool(server: McpServer) {
           .describe(
             "Path to file listing revisions to ignore (--ignore-revs-file), e.g. .git-blame-ignore-revs",
           ),
-        ignoreRev: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Specific commit(s) to ignore (--ignore-rev, repeated)"),
+        ignoreRev: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Specific commit(s) to ignore (--ignore-rev, repeated)"),
+        ),
         since: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

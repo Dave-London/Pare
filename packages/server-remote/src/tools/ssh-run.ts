@@ -5,6 +5,7 @@ import {
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { sshCmd } from "../lib/remote-runner.js";
 import { parseSshRunOutput } from "../lib/parsers.js";
@@ -34,18 +35,23 @@ export function registerSshRunTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Command to execute on the remote host"),
-        port: z.number().optional().describe("SSH port number (default: 22)"),
+        port: z.coerce.number().optional().describe("SSH port number (default: 22)"),
         identityFile: z
           .string()
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Path to SSH private key file"),
-        options: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .default([])
-          .describe("Additional SSH options as -o key=value pairs (e.g. StrictHostKeyChecking=no)"),
+        options: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .default([])
+            .describe(
+              "Additional SSH options as -o key=value pairs (e.g. StrictHostKeyChecking=no)",
+            ),
+        ),
         compact: compactInput,
       },
       outputSchema: SshRunResultSchema,

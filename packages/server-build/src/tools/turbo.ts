@@ -6,6 +6,7 @@ import {
   INPUT_LIMITS,
   projectPathInput,
   compactInput,
+  coerceJsonArray,
 } from "@paretools/shared";
 import { turboCmd } from "../lib/build-runner.js";
 import { parseTurboOutput } from "../lib/parsers.js";
@@ -29,17 +30,20 @@ export function registerTurboTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Turbo task to run (e.g., 'build', 'test', 'lint')."),
-        tasks: z
-          .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe("Multiple Turbo tasks to run in one invocation (e.g., ['build','test'])"),
+        tasks: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe("Multiple Turbo tasks to run in one invocation (e.g., ['build','test'])"),
+        ),
         filter: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Package filter (e.g., '@scope/pkg' or 'pkg...')"),
-        concurrency: z.number().optional().describe("Maximum number of concurrent tasks"),
+        concurrency: z.coerce.number().optional().describe("Maximum number of concurrent tasks"),
         force: z
           .boolean()
           .optional()
@@ -84,13 +88,16 @@ export function registerTurboTool(server: McpServer) {
           .describe(
             "Control which task logs are shown (default: 'new-only'). Maps to --output-logs.",
           ),
-        args: z
-          .array(z.string().max(INPUT_LIMITS.STRING_MAX))
-          .max(INPUT_LIMITS.ARRAY_MAX)
-          .optional()
-          .describe(
-            "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']).",
-          ),
+        args: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe(
+              "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']).",
+            ),
+        ),
         path: projectPathInput,
         compact: compactInput,
       },

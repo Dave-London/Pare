@@ -50,7 +50,7 @@ export function registerPullTool(server: McpServer) {
         ffOnly: z.boolean().optional().describe("Only fast-forward pulls (--ff-only)"),
         autostash: z.boolean().optional().describe("Stash/unstash around pull (--autostash)"),
         noCommit: z.boolean().optional().describe("Pull without auto-committing (--no-commit)"),
-        depth: z.number().optional().describe("Shallow fetch depth (--depth)"),
+        depth: z.coerce.number().optional().describe("Shallow fetch depth (--depth)"),
         noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
         squash: z.boolean().optional().describe("Squash pull (--squash)"),
       },

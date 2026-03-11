@@ -1,6 +1,6 @@
 {
   "name": "@paretools/jvm",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "mcpName": "io.github.Dave-London/pare-jvm",
   "description": "MCP server for JVM — structured Gradle and Maven build, test, and dependency data for AI agents",
   "license": "MIT",

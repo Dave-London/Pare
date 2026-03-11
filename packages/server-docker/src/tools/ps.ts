@@ -25,7 +25,10 @@ export function registerPsTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Show all containers (default: true, includes stopped)"),
-        last: z.number().optional().describe("Show only the N most recently created containers"),
+        last: z.coerce
+          .number()
+          .optional()
+          .describe("Show only the N most recently created containers"),
         size: z
           .boolean()
           .optional()

@@ -25,7 +25,7 @@ export function registerReflogTool(server: McpServer) {
           .optional()
           .default("show")
           .describe("Reflog action: show (list entries) or exists (check if reflog exists)"),
-        maxCount: z
+        maxCount: z.coerce
           .number()
           .optional()
           .default(20)
@@ -50,7 +50,7 @@ export function registerReflogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter entries before this date (--until)"),
-        skip: z.number().optional().describe("Skip N entries for pagination (--skip)"),
+        skip: z.coerce.number().optional().describe("Skip N entries for pagination (--skip)"),
         all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
         reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
         compact: compactInput,

@@ -51,7 +51,7 @@ export function registerCherryPickTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Apply changes without committing (-n)"),
-        mainline: z
+        mainline: z.coerce
           .number()
           .optional()
           .describe("Parent number for cherry-picking merge commits (-m/--mainline)"),
