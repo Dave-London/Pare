@@ -17,8 +17,11 @@ describe("assertSafeUrl", () => {
     ];
 
     for (const url of validUrls) {
-      it(`accepts "${url}"`, () => {
-        expect(() => assertSafeUrl(url)).not.toThrow();
+      it(`accepts "${url}"`, async () => {
+        // Private IPs allowed here because we're testing scheme validation
+        process.env.PARE_HTTP_ALLOW_PRIVATE = "true";
+        await expect(assertSafeUrl(url)).resolves.toBeUndefined();
+        delete process.env.PARE_HTTP_ALLOW_PRIVATE;
       });
     }
   });
@@ -37,37 +40,41 @@ describe("assertSafeUrl", () => {
     ];
 
     for (const url of dangerousUrls) {
-      it(`rejects "${url}"`, () => {
-        expect(() => assertSafeUrl(url)).toThrow(/Unsafe URL scheme/);
+      it(`rejects "${url}"`, async () => {
+        await expect(assertSafeUrl(url)).rejects.toThrow(/Unsafe URL scheme/);
       });
     }
   });
 
   describe("rejects malformed inputs", () => {
-    it("rejects empty string", () => {
-      expect(() => assertSafeUrl("")).toThrow(/must not be empty/);
+    it("rejects empty string", async () => {
+      await expect(assertSafeUrl("")).rejects.toThrow(/must not be empty/);
     });
 
-    it("rejects whitespace-only string", () => {
-      expect(() => assertSafeUrl("   ")).toThrow(/must not be empty/);
+    it("rejects whitespace-only string", async () => {
+      await expect(assertSafeUrl("   ")).rejects.toThrow(/must not be empty/);
     });
 
-    it("rejects string without scheme", () => {
-      expect(() => assertSafeUrl("example.com")).toThrow(/Unsafe URL scheme/);
+    it("rejects string without scheme", async () => {
+      await expect(assertSafeUrl("example.com")).rejects.toThrow(/Unsafe URL scheme/);
     });
 
-    it("rejects relative path", () => {
-      expect(() => assertSafeUrl("/path/to/file")).toThrow(/Unsafe URL scheme/);
+    it("rejects relative path", async () => {
+      await expect(assertSafeUrl("/path/to/file")).rejects.toThrow(/Unsafe URL scheme/);
     });
   });
 
-  it("trims whitespace before validation", () => {
-    expect(() => assertSafeUrl("  https://example.com  ")).not.toThrow();
+  it("trims whitespace before validation", async () => {
+    process.env.PARE_HTTP_ALLOW_PRIVATE = "true";
+    await expect(assertSafeUrl("  https://example.com  ")).resolves.toBeUndefined();
+    delete process.env.PARE_HTTP_ALLOW_PRIVATE;
   });
 
-  it("is case-insensitive for scheme", () => {
-    expect(() => assertSafeUrl("HTTPS://example.com")).not.toThrow();
-    expect(() => assertSafeUrl("Http://example.com")).not.toThrow();
+  it("is case-insensitive for scheme", async () => {
+    process.env.PARE_HTTP_ALLOW_PRIVATE = "true";
+    await expect(assertSafeUrl("HTTPS://example.com")).resolves.toBeUndefined();
+    await expect(assertSafeUrl("Http://example.com")).resolves.toBeUndefined();
+    delete process.env.PARE_HTTP_ALLOW_PRIVATE;
   });
 });
 
