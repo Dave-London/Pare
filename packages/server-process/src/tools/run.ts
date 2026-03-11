@@ -45,12 +45,18 @@ export function registerRunTool(server: McpServer) {
       title: "Process Run",
       description:
         "Runs a command and returns structured output (stdout, stderr, exit code, duration, timeout status).\n\n" +
-        "**Security note**: The `shell` parameter enables shell-mode execution. " +
+        "**Security warning**: This tool executes arbitrary commands on the host system. " +
+        "Configure `PARE_PROCESS_ALLOWED_COMMANDS` (comma-separated list of allowed executables) " +
+        "to restrict which commands can be run. Without this configuration, ANY command is permitted.\n\n" +
+        "Configure `PARE_PROCESS_ALLOWED_ROOTS` to restrict working directories.\n\n" +
+        "**Shell mode**: The `shell` parameter enables shell-mode execution. " +
         "When shell=true, the command string is passed through the system shell " +
         "(e.g., /bin/sh or cmd.exe), enabling features like glob expansion, piping, " +
         "and variable substitution — but also exposing the command to shell injection risks. " +
-        "Only use shell=true when you trust the input and need shell features.",
-      annotations: { readOnlyHint: false },
+        "Only use shell=true when you trust the input and need shell features. " +
+        "Note: shell=true bypasses the ALLOWED_COMMANDS check on arguments, so the entire " +
+        "shell expression is executed if the base command is allowed.",
+      annotations: { readOnlyHint: false, destructiveHint: true },
       inputSchema: {
         command: z
           .string()
