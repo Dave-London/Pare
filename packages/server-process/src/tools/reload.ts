@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { strippedDualOutput, run, INPUT_LIMITS, cwdPathInput } from "@paretools/shared";
+import {
+  strippedDualOutput,
+  run,
+  INPUT_LIMITS,
+  cwdPathInput,
+  assertAllowedByPolicy,
+  assertAllowedRoot,
+} from "@paretools/shared";
 import { formatReload, schemaReloadMap } from "../lib/formatters.js";
 import { ReloadResultSchema } from "../schemas/index.js";
 import type { ReloadResultInternal } from "../schemas/index.js";
@@ -15,8 +22,11 @@ export function registerReloadTool(server: McpServer) {
         "Rebuilds the MCP server (or a specified project) and sends a `notifications/tools/list_changed` " +
         "notification so the host re-fetches tool definitions. Useful during local development when code " +
         "changes require a rebuild without restarting the session.\n\n" +
-        "Default build command: `pnpm build`. Override with `buildCommand` for custom setups.",
-      annotations: { readOnlyHint: false },
+        "Default build command: `pnpm build`. Override with `buildCommand` for custom setups.\n\n" +
+        "**Security warning**: The `buildCommand` parameter executes arbitrary commands. " +
+        "Configure `PARE_PROCESS_ALLOWED_COMMANDS` to restrict which executables are permitted. " +
+        "When not configured, any command is allowed.",
+      annotations: { readOnlyHint: false, destructiveHint: true },
       inputSchema: {
         buildCommand: z
           .string()
@@ -41,13 +51,20 @@ export function registerReloadTool(server: McpServer) {
       const cmd = buildCommand ?? "pnpm build";
       const timeoutMs = timeout ?? 120_000;
 
+      // Security: validate the executable against the allowed-commands policy
+      const parts = cmd.split(/\s+/);
+      const executable = parts[0]!;
+      const args = parts.slice(1);
+      assertAllowedByPolicy(executable, "process");
+      assertAllowedRoot(cwd, "process");
+
       const start = Date.now();
       let rebuilt = false;
       let buildOutput: string | undefined;
       let error: string | undefined;
 
       try {
-        const result = await run("sh", ["-c", cmd], {
+        const result = await run(executable, args, {
           cwd,
           timeout: timeoutMs,
           shell: false,
