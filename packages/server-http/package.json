@@ -1,6 +1,6 @@
 {
   "name": "@paretools/http",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "mcpName": "io.github.Dave-London/pare-http",
   "description": "MCP server for HTTP — structured request/response data with headers and status for AI agents",
   "license": "MIT",
