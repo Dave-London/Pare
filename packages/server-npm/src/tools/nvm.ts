@@ -2,7 +2,13 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, run, assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import {
+  dualOutput,
+  run,
+  assertNoFlagInjection,
+  assertAllowedByPolicy,
+  INPUT_LIMITS,
+} from "@paretools/shared";
 import {
   parseNvmOutput,
   parseNvmLsRemoteOutput,
@@ -27,7 +33,9 @@ export function registerNvmTool(server: McpServer) {
         "Manages Node.js versions via nvm. " +
         "Supports listing installed versions, showing the current version, listing remote versions, " +
         "and executing commands with a specific Node.js version. " +
-        "Supports both Unix nvm and nvm-windows.",
+        "Supports both Unix nvm and nvm-windows. " +
+        "SECURITY: The 'exec' action runs arbitrary commands under a specific Node version. " +
+        "Use PARE_NPM_ALLOWED_COMMANDS or PARE_ALLOWED_COMMANDS to restrict which commands can be executed.",
       annotations: { readOnlyHint: false, openWorldHint: true },
       inputSchema: {
         action: z
@@ -96,6 +104,9 @@ export function registerNvmTool(server: McpServer) {
         if (!command) {
           throw new Error("'command' is required for 'exec' action");
         }
+
+        // Gate command behind ALLOWED_COMMANDS policy to prevent arbitrary command execution
+        assertAllowedByPolicy(command, "npm");
 
         // nvm exec <version> <command> [args...]
         const nvmArgs = ["exec", version, command, ...(args ?? [])];
