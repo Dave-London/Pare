@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { assertNoDangerousGoFlags } from "../src/lib/go-runner.js";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -126,6 +127,47 @@ describe("security: go run — buildArgs validation", () => {
         /must not start with "-"/,
       );
     }
+  });
+});
+
+describe("security: go run — dangerous Go flags in buildArgs", () => {
+  it("blocks -exec flag", () => {
+    expect(() => assertNoDangerousGoFlags(["-exec"])).toThrow(/blocked in buildArgs/);
+  });
+
+  it("blocks -exec= flag with value", () => {
+    expect(() => assertNoDangerousGoFlags(["-exec=/usr/bin/evil"])).toThrow(/blocked in buildArgs/);
+  });
+
+  it("blocks -toolexec flag", () => {
+    expect(() => assertNoDangerousGoFlags(["-toolexec"])).toThrow(/blocked in buildArgs/);
+  });
+
+  it("blocks -toolexec= flag with value", () => {
+    expect(() => assertNoDangerousGoFlags(["-toolexec=evil"])).toThrow(/blocked in buildArgs/);
+  });
+
+  it("blocks case-insensitive variants", () => {
+    expect(() => assertNoDangerousGoFlags(["-EXEC"])).toThrow(/blocked in buildArgs/);
+    expect(() => assertNoDangerousGoFlags(["-Toolexec"])).toThrow(/blocked in buildArgs/);
+  });
+
+  it("allows safe build flags", () => {
+    expect(() => assertNoDangerousGoFlags(["-race"])).not.toThrow();
+    expect(() => assertNoDangerousGoFlags(["-tags=integration"])).not.toThrow();
+    expect(() => assertNoDangerousGoFlags(["-ldflags=-s -w"])).not.toThrow();
+    expect(() => assertNoDangerousGoFlags(["-v"])).not.toThrow();
+    expect(() => assertNoDangerousGoFlags(["-gcflags=-N -l"])).not.toThrow();
+  });
+});
+
+describe("security: go build — ldflags/gcflags validation", () => {
+  it("rejects flag-like ldflags value", () => {
+    expect(() => assertNoFlagInjection("--evil", "ldflags")).toThrow(/must not start with "-"/);
+  });
+
+  it("rejects flag-like gcflags value", () => {
+    expect(() => assertNoFlagInjection("--evil", "gcflags")).toThrow(/must not start with "-"/);
   });
 });
 

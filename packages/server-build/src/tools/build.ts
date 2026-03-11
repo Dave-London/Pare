@@ -15,6 +15,17 @@ import { parseBuildCommandOutput } from "../lib/parsers.js";
 import { formatBuildCommand, compactBuildMap, formatBuildCompact } from "../lib/formatters.js";
 import { BuildResultSchema } from "../schemas/index.js";
 
+/** Environment variable keys that must not be overridden via the env parameter. */
+const DANGEROUS_ENV_KEYS = new Set([
+  "PATH",
+  "LD_PRELOAD",
+  "DYLD_INSERT_LIBRARIES",
+  "NODE_OPTIONS",
+  "PYTHONPATH",
+  "LD_LIBRARY_PATH",
+  "DYLD_LIBRARY_PATH",
+]);
+
 /** Max timeout cap in milliseconds (10 minutes). */
 const MAX_TIMEOUT_MS = 600_000;
 /** Default timeout in milliseconds (5 minutes). */
@@ -39,7 +50,9 @@ export function registerBuildTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .default([])
-          .describe("Arguments for the build command (e.g., ['run', 'build'])"),
+          .describe(
+            "Arguments for the build command (e.g., ['run', 'build']). Each element is validated to prevent flag injection.",
+          ),
         path: cwdPathInput,
         timeout: z
           .number()
@@ -63,10 +76,20 @@ export function registerBuildTool(server: McpServer) {
     async ({ command, args, path, timeout, env, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
-      // Validate env values to prevent flag injection
+      if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
+      }
+      // Validate env keys and values
       const envRecord = env as Record<string, string> | undefined;
       if (envRecord) {
         for (const [key, value] of Object.entries(envRecord)) {
+          if (DANGEROUS_ENV_KEYS.has(key.toUpperCase())) {
+            throw new Error(
+              `Environment variable "${key}" is blocked because it can alter process execution.`,
+            );
+          }
           assertNoFlagInjection(String(key), "env key");
           assertNoFlagInjection(String(value), "env value");
         }

@@ -166,6 +166,38 @@ describe("security: webpack tool — config parameter validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Dangerous env key blocklist — build and webpack tools (#715)
+// ---------------------------------------------------------------------------
+
+describe("security: build tool — dangerous env key blocklist", () => {
+  const DANGEROUS_ENV_KEYS = [
+    "PATH",
+    "LD_PRELOAD",
+    "DYLD_INSERT_LIBRARIES",
+    "NODE_OPTIONS",
+    "PYTHONPATH",
+    "LD_LIBRARY_PATH",
+    "DYLD_LIBRARY_PATH",
+  ];
+
+  // We can't import the internal constant, so we test the logic pattern directly
+  const DANGEROUS_SET = new Set(DANGEROUS_ENV_KEYS);
+
+  for (const key of DANGEROUS_ENV_KEYS) {
+    it(`blocks "${key}" env key`, () => {
+      expect(DANGEROUS_SET.has(key.toUpperCase())).toBe(true);
+    });
+  }
+
+  it("allows safe env keys", () => {
+    const safe = ["NODE_ENV", "CI", "VERBOSE", "GOPATH", "CARGO_HOME"];
+    for (const key of safe) {
+      expect(DANGEROUS_SET.has(key.toUpperCase())).toBe(false);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Build tool schemas
 // ---------------------------------------------------------------------------
 

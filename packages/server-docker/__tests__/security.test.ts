@@ -358,9 +358,9 @@ describe("assertSafeVolumeMount", () => {
   describe("accepts valid (safe) volume mounts", () => {
     const validMounts = [
       { value: "./data:/app/data", label: "relative host path" },
-      { value: "/home/user/project:/app", label: "absolute safe host path" },
+      { value: "/opt/myproject:/app", label: "absolute safe host path" },
       { value: "myvolume:/data", label: "named volume" },
-      { value: "/tmp/work:/work:ro", label: "host path with options" },
+      { value: "/srv/work:/work:ro", label: "host path with options" },
     ];
 
     for (const { value, label } of validMounts) {
@@ -379,6 +379,13 @@ describe("assertSafeVolumeMount", () => {
       { value: "/root:/root", label: "/root" },
       { value: "/sys:/sys", label: "/sys" },
       { value: "/dev:/dev", label: "/dev" },
+      { value: "/home:/home", label: "/home" },
+      { value: "/home/user:/data", label: "/home child path" },
+      { value: "/var/lib/docker:/data", label: "/var/lib/docker" },
+      { value: "/tmp:/tmp", label: "/tmp" },
+      { value: "/boot:/boot", label: "/boot" },
+      { value: "/usr:/usr", label: "/usr" },
+      { value: "/usr/local/bin:/bin", label: "/usr child path" },
     ];
 
     for (const { value, label } of blockedMounts) {
@@ -439,6 +446,25 @@ describe("assertSafeVolumeMount", () => {
     it("blocks Windows root mount C:/", () => {
       expect(() => assertSafeVolumeMount("C:/:/host")).toThrow(/Dangerous volume mount blocked/);
     });
+  });
+
+  describe("blocks sensitive credential path segments", () => {
+    const sensitivePathMounts = [
+      { value: "/opt/user/.ssh:/keys", label: ".ssh directory" },
+      { value: "/opt/user/.aws:/aws", label: ".aws directory" },
+      { value: "/opt/user/.gnupg:/gpg", label: ".gnupg directory" },
+      { value: "/opt/user/.kube:/kube", label: ".kube directory" },
+      { value: "/opt/user/.config/gcloud:/gcloud", label: ".config/gcloud directory" },
+      { value: "/opt/user/.docker/config.json:/cfg", label: ".docker/config.json" },
+      { value: "/opt/user/.npmrc:/npm", label: ".npmrc file" },
+      { value: "/opt/user/.gitconfig:/git", label: ".gitconfig file" },
+    ];
+
+    for (const { value, label } of sensitivePathMounts) {
+      it(`blocks "${value}" (${label})`, () => {
+        expect(() => assertSafeVolumeMount(value)).toThrow(/Dangerous volume mount blocked/);
+      });
+    }
   });
 });
 

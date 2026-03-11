@@ -93,6 +93,8 @@ export function registerBuildTool(server: McpServer) {
         assertNoFlagInjection(p, "packages");
       }
       if (output) assertNoFlagInjection(output, "output");
+      if (ldflags) assertNoFlagInjection(ldflags, "ldflags");
+      if (gcflags) assertNoFlagInjection(gcflags, "gcflags");
       const args = ["build"];
       if (race) args.push("-race");
       if (trimpath) args.push("-trimpath");

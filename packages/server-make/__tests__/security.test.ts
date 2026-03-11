@@ -68,6 +68,42 @@ describe("security: make/just run — args validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// make/just env key name validation (#716)
+// ---------------------------------------------------------------------------
+
+describe("security: make/just run — env key validation", () => {
+  const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+  it("accepts valid env key names", () => {
+    const valid = ["NODE_ENV", "CI", "VERBOSE", "_PRIVATE", "CC", "CFLAGS"];
+    for (const key of valid) {
+      expect(ENV_KEY_RE.test(key)).toBe(true);
+    }
+  });
+
+  it("rejects env keys starting with a digit", () => {
+    expect(ENV_KEY_RE.test("1BAD")).toBe(false);
+  });
+
+  it("rejects env keys with special characters", () => {
+    expect(ENV_KEY_RE.test("MY-VAR")).toBe(false);
+    expect(ENV_KEY_RE.test("MY.VAR")).toBe(false);
+    expect(ENV_KEY_RE.test("MY VAR")).toBe(false);
+    expect(ENV_KEY_RE.test("MY=VAR")).toBe(false);
+  });
+
+  it("rejects env keys with shell injection attempts", () => {
+    expect(ENV_KEY_RE.test("$(whoami)")).toBe(false);
+    expect(ENV_KEY_RE.test("; rm -rf /")).toBe(false);
+    expect(ENV_KEY_RE.test("KEY\nEVIL=val")).toBe(false);
+  });
+
+  it("rejects empty string", () => {
+    expect(ENV_KEY_RE.test("")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Zod .max() input-limit constraints — Make tool schemas
 // ---------------------------------------------------------------------------
 

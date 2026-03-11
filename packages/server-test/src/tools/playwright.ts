@@ -193,7 +193,9 @@ export function registerPlaywrightTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional arguments to pass to Playwright test runner"),
+          .describe(
+            "Additional arguments to pass to Playwright test runner. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: PlaywrightResultSchema,
@@ -237,6 +239,11 @@ export function registerPlaywrightTool(server: McpServer) {
       }
       if (config) {
         assertNoFlagInjection(config, "config");
+      }
+      if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
       }
 
       const cwd = path || process.cwd();
