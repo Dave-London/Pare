@@ -25,6 +25,7 @@
   },
   "type": "module",
   "bin": {
+    "@paretools/init": "./dist/index.js",
     "pare-init": "./dist/index.js",
     "pare-doctor": "./dist/doctor.js"
   },
