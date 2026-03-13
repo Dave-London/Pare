@@ -1,5 +1,25 @@
 # @paretools/git
 
+## 0.15.0
+
+### Patch Changes
+
+- [#735](https://github.com/Dave-London/Pare/pull/735) [`2e4d5ac`](https://github.com/Dave-London/Pare/commit/2e4d5acfd3a1ca0694869385550dc86dd555e619) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): add security hardening for rebase exec, bisect run, and config set
+  - Gate rebase --exec parameter behind assertAllowedByPolicy
+  - Gate bisect run command behind assertAllowedByPolicy
+  - Block dangerous git config keys that execute commands (core.fsmonitor, core.editor, etc.)
+
+- [#737](https://github.com/Dave-London/Pare/pull/737) [`9f9c3f2`](https://github.com/Dave-London/Pare/commit/9f9c3f2b8866d862a3b5f17100075e5362b4e454) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: harden input validation across npm, git, search, and remote servers
+  - npm install: validate args array elements and restrict registry URLs to https://
+  - nvm exec: gate command behind ALLOWED_COMMANDS policy
+  - npm run: restrict scriptShell to known safe shells
+  - git submodule add: restrict URLs to http/https schemes by default
+  - rsync: validate exclude/include array elements
+  - jq: validate arg/argjson record keys
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

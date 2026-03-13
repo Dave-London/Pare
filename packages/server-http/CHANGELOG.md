@@ -1,5 +1,21 @@
 # @paretools/http
 
+## 0.15.0
+
+### Minor Changes
+
+- [#736](https://github.com/Dave-London/Pare/pull/736) [`2de5461`](https://github.com/Dave-London/Pare/commit/2de5461e4ba43d17660698c531083cd29f4f1ad5) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(http): add SSRF protection, file exfiltration guards, and security warnings
+  - Block private/reserved IP ranges in URL validation (opt-out via PARE_HTTP_ALLOW_PRIVATE)
+  - Validate resolve parameter IPs against private ranges
+  - Block @filepath in form values (opt-in via PARE_HTTP_ALLOW_FILE_UPLOAD)
+  - Validate cookie values contain = (reject file paths)
+  - Add security warnings for proxy parameter
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes
