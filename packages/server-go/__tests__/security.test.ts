@@ -161,15 +161,8 @@ describe("security: go run — dangerous Go flags in buildArgs", () => {
   });
 });
 
-describe("security: go build — ldflags/gcflags validation", () => {
-  it("rejects flag-like ldflags value", () => {
-    expect(() => assertNoFlagInjection("--evil", "ldflags")).toThrow(/must not start with "-"/);
-  });
-
-  it("rejects flag-like gcflags value", () => {
-    expect(() => assertNoFlagInjection("--evil", "gcflags")).toThrow(/must not start with "-"/);
-  });
-});
+// ldflags and gcflags legitimately start with "-" (e.g., "-X main.version=1.0", "-N -l")
+// and are always passed as values to -ldflags/-gcflags, so assertNoFlagInjection is not applicable.
 
 describe("security: go list — packages validation", () => {
   it("rejects flag-like package patterns", () => {
