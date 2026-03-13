@@ -116,7 +116,9 @@ export function registerEsbuildTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional esbuild flags"),
+          .describe(
+            "Additional esbuild flags. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: EsbuildResultSchema,
@@ -218,6 +220,9 @@ export function registerEsbuildTool(server: McpServer) {
       }
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 

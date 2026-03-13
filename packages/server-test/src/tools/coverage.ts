@@ -257,7 +257,9 @@ export function registerCoverageTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional arguments to pass to the coverage runner"),
+          .describe(
+            "Additional arguments to pass to the coverage runner. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: CoverageSchema,
@@ -270,6 +272,11 @@ export function registerCoverageTool(server: McpServer) {
         assertNoFlagInjection(e, "exclude");
       }
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
+      }
 
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));

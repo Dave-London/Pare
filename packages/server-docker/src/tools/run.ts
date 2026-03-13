@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  assertAllowedRoot,
   INPUT_LIMITS,
   compactInput,
   cwdPathInput,
@@ -174,7 +175,13 @@ export function registerRunTool(server: McpServer) {
       if (memory) assertNoFlagInjection(memory, "memory");
       if (hostname) assertNoFlagInjection(hostname, "hostname");
       if (shmSize) assertNoFlagInjection(shmSize, "shmSize");
-      if (envFile) assertNoFlagInjection(envFile, "envFile");
+      if (envFile) {
+        assertNoFlagInjection(envFile, "envFile");
+        // Validate envFile is within the project directory to prevent arbitrary host file reads
+        const { resolve } = await import("node:path");
+        const resolvedEnvFile = resolve(path || process.cwd(), envFile);
+        assertAllowedRoot(resolvedEnvFile, "docker");
+      }
       // Validate first element of command array (the binary name) to prevent flag injection.
       // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
       if (command && command.length > 0) {

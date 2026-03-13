@@ -25,7 +25,35 @@ export function assertValidPortMapping(value: string): void {
  * Dangerous host paths that must never be bind-mounted into a container.
  * Each entry is checked as an exact match or as a prefix (with trailing `/`).
  */
-const DANGEROUS_PATHS = ["/", "/etc", "/var/run/docker.sock", "/proc", "/sys", "/dev", "/root"];
+const DANGEROUS_PATHS = [
+  "/",
+  "/etc",
+  "/var/run/docker.sock",
+  "/proc",
+  "/sys",
+  "/dev",
+  "/root",
+  "/home",
+  "/var/lib/docker",
+  "/tmp",
+  "/boot",
+  "/usr",
+];
+
+/**
+ * Path segments that indicate sensitive credential or config directories.
+ * If any segment of the normalized host path matches, the mount is blocked.
+ */
+const SENSITIVE_PATH_SEGMENTS = [
+  ".ssh",
+  ".aws",
+  ".gnupg",
+  ".kube",
+  ".config/gcloud",
+  ".docker/config.json",
+  ".npmrc",
+  ".gitconfig",
+];
 
 /**
  * Windows root paths that must be blocked (case-insensitive).
@@ -111,6 +139,15 @@ export function assertSafeVolumeMount(value: string): void {
           `Dangerous volume mount blocked: "${value}". Mounting "${dangerous}" or its children is not allowed.`,
         );
       }
+    }
+  }
+
+  // Check for sensitive credential/config path segments
+  for (const segment of SENSITIVE_PATH_SEGMENTS) {
+    if (normalized.includes("/" + segment) || normalized.endsWith("/" + segment)) {
+      throw new Error(
+        `Dangerous volume mount blocked: "${value}". Paths containing "${segment}" are not allowed because they may expose credentials.`,
+      );
     }
   }
 }

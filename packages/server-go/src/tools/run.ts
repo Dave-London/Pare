@@ -7,7 +7,7 @@ import {
   compactInput,
   projectPathInput,
 } from "@paretools/shared";
-import { goCmd } from "../lib/go-runner.js";
+import { goCmd, assertNoDangerousGoFlags } from "../lib/go-runner.js";
 import { parseGoRunOutput } from "../lib/parsers.js";
 import { formatGoRun, compactRunMap, formatRunCompact } from "../lib/formatters.js";
 import { GoRunResultSchema } from "../schemas/index.js";
@@ -115,8 +115,10 @@ export function registerRunTool(server: McpServer) {
       const target = file || ".";
       assertNoFlagInjection(target, "file");
       if (execWrapper) assertNoFlagInjection(execWrapper, "exec");
-      // buildArgs are intentionally build flags (e.g., -race, -tags, -ldflags)
-      // so assertNoFlagInjection is not applied to them.
+      // buildArgs are intentionally build flags but some flags allow arbitrary command execution
+      if (buildArgs && buildArgs.length > 0) {
+        assertNoDangerousGoFlags(buildArgs);
+      }
       const cmdArgs = ["run"];
       if (race) cmdArgs.push("-race");
       if (tags && tags.length > 0) {

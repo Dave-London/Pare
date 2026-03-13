@@ -58,6 +58,7 @@ export function registerSubmoduleTool(server: McpServer) {
           throw new Error("The 'url' parameter is required for submodule add");
         }
         assertNoFlagInjection(url, "url");
+        assertSafeGitUrl(url);
         if (submodulePath) assertNoFlagInjection(submodulePath, "submodulePath");
         if (branch) assertNoFlagInjection(branch, "branch");
 
@@ -174,4 +175,14 @@ export function registerSubmoduleTool(server: McpServer) {
       );
     },
   );
+}
+
+function assertSafeGitUrl(url: string): void {
+  if (process.env.PARE_GIT_ALLOW_ALL_URL_SCHEMES === "true") return;
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error(
+      `URL scheme not allowed: "${url}". Only http:// and https:// URLs are permitted for security. ` +
+        `Set PARE_GIT_ALLOW_ALL_URL_SCHEMES=true to allow other schemes.`,
+    );
+  }
 }

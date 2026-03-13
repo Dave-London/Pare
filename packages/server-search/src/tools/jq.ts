@@ -138,6 +138,7 @@ export function registerJqTool(server: McpServer) {
       // Add named string variables
       if (arg) {
         for (const [name, value] of Object.entries(arg)) {
+          assertNoFlagInjection(name, "arg key");
           args.push("--arg", name, value);
         }
       }
@@ -145,6 +146,7 @@ export function registerJqTool(server: McpServer) {
       // Add named JSON variables
       if (argjson) {
         for (const [name, value] of Object.entries(argjson)) {
+          assertNoFlagInjection(name, "argjson key");
           args.push("--argjson", name, value);
         }
       }

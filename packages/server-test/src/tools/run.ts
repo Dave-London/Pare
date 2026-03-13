@@ -345,7 +345,9 @@ export function registerRunTool(server: McpServer) {
             .max(INPUT_LIMITS.ARRAY_MAX)
             .optional()
             .default([])
-            .describe("Additional arguments to pass to the test runner"),
+            .describe(
+              "Additional arguments to pass to the test runner. Each element is validated to prevent flag injection.",
+            ),
         ),
         compact: compactInput,
       },
@@ -380,6 +382,11 @@ export function registerRunTool(server: McpServer) {
       }
       if (testNamePattern) {
         assertNoFlagInjection(testNamePattern, "testNamePattern");
+      }
+      if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
       }
 
       const cwd = path || process.cwd();
