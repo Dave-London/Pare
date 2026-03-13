@@ -1,5 +1,12 @@
 # @paretools/python
 
+## 0.15.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

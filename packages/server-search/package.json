@@ -1,6 +1,6 @@
 {
   "name": "@paretools/search",
-  "version": "0.14.2",
+  "version": "0.15.0",
   "mcpName": "io.github.Dave-London/pare-search",
   "description": "MCP server for code search — structured ripgrep, fd, jq, and yq results for AI agents",
   "license": "MIT",

@@ -1,5 +1,20 @@
 # @paretools/remote
 
+## 0.15.0
+
+### Patch Changes
+
+- [#737](https://github.com/Dave-London/Pare/pull/737) [`9f9c3f2`](https://github.com/Dave-London/Pare/commit/9f9c3f2b8866d862a3b5f17100075e5362b4e454) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: harden input validation across npm, git, search, and remote servers
+  - npm install: validate args array elements and restrict registry URLs to https://
+  - nvm exec: gate command behind ALLOWED_COMMANDS policy
+  - npm run: restrict scriptShell to known safe shells
+  - git submodule add: restrict URLs to http/https schemes by default
+  - rsync: validate exclude/include array elements
+  - jq: validate arg/argjson record keys
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

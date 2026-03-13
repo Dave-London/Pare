@@ -1,6 +1,6 @@
 {
   "name": "@paretools/process",
-  "version": "0.14.2",
+  "version": "0.15.0",
   "mcpName": "io.github.Dave-London/pare-process",
   "description": "MCP server for command execution — structured process output with timeout and signal support for AI agents",
   "license": "MIT",
