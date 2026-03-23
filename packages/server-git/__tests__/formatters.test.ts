@@ -5,6 +5,7 @@ import {
   formatDiff,
   formatBranch,
   formatShow,
+  formatShowBlob,
   formatTag,
   formatStashList,
   formatStash,
@@ -215,6 +216,40 @@ describe("formatShow", () => {
 
     expect(output).toContain("aaa11122 chore: empty commit");
     expect(output).toContain("0 files changed, +0 -0");
+  });
+});
+
+describe("formatShowBlob", () => {
+  it("formats blob extraction with file header and content", () => {
+    const show: GitShow = {
+      objectType: "blob",
+      objectName: "HEAD:src/index.ts",
+      objectSize: 42,
+      file: "src/index.ts",
+      fileContent: 'export const hello = "world";',
+      message: "blob HEAD:src/index.ts",
+    };
+    const output = formatShowBlob(show);
+
+    expect(output).toContain("src/index.ts");
+    expect(output).toContain("HEAD:src/index.ts");
+    expect(output).toContain("42 bytes");
+    expect(output).toContain('export const hello = "world";');
+  });
+
+  it("handles missing size gracefully", () => {
+    const show: GitShow = {
+      objectType: "blob",
+      objectName: "abc123:README.md",
+      file: "README.md",
+      fileContent: "# Hello",
+      message: "blob abc123:README.md",
+    };
+    const output = formatShowBlob(show);
+
+    expect(output).toContain("README.md");
+    expect(output).not.toContain("bytes");
+    expect(output).toContain("# Hello");
   });
 });
 

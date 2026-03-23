@@ -88,7 +88,8 @@ export type GitBranchFull = {
 
 export type GitBranch = z.infer<typeof GitBranchSchema>;
 
-/** Zod schema for structured git show output with commit metadata and diff statistics. */
+/** Zod schema for structured git show output with commit metadata and diff statistics.
+ *  When `file` is provided (blob extraction via `ref:file`), only blob-specific fields are returned. */
 export const GitShowSchema = z.object({
   hash: z.string().optional(),
   hashShort: z.string().optional(),
@@ -98,6 +99,10 @@ export const GitShowSchema = z.object({
   objectName: z.string().optional(),
   objectSize: z.number().optional(),
   message: z.string(),
+  /** File path extracted from the ref (only present for blob extraction). */
+  file: z.string().optional(),
+  /** Raw file content at the given ref (only present for blob extraction). */
+  fileContent: z.string().optional(),
   diff: z
     .object({
       files: z.array(GitDiffFileSchema),
