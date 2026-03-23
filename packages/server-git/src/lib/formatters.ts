@@ -79,6 +79,13 @@ export function formatBranch(b: GitBranchFull): string {
     .join("\n");
 }
 
+/** Formats a blob extraction result into a human-readable view with file header. */
+export function formatShowBlob(s: GitShow): string {
+  const size = s.objectSize !== undefined ? ` (${s.objectSize} bytes)` : "";
+  const header = `── ${s.file ?? s.objectName ?? "blob"} @ ${s.objectName ?? "unknown"}${size} ──`;
+  return `${header}\n${s.fileContent ?? ""}`;
+}
+
 /** Formats structured git show data into a human-readable commit detail view with diff summary. */
 export function formatShow(s: GitShow): string {
   if (s.objectType && s.objectType !== "commit") {
