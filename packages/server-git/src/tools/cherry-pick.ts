@@ -20,7 +20,7 @@ export function registerCherryPickTool(server: McpServer) {
       title: "Git Cherry-Pick",
       description:
         "Applies specific commits to the current branch. Returns structured data with applied commits, any conflicts, and new commit hash.",
-      annotations: { destructiveHint: true },
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         commits: z

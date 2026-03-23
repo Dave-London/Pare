@@ -29,6 +29,7 @@ export function registerRemoveTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: BunRemoveResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ packages, path, compact }) => {
       const cwd = path || process.cwd();

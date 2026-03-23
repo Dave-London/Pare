@@ -26,7 +26,7 @@ export function registerReloadTool(server: McpServer) {
         "**Security warning**: The `buildCommand` parameter executes arbitrary commands. " +
         "Configure `PARE_PROCESS_ALLOWED_COMMANDS` to restrict which executables are permitted. " +
         "When not configured, any command is allowed.",
-      annotations: { readOnlyHint: false, destructiveHint: true },
+      annotations: { readOnlyHint: false },
       inputSchema: {
         buildCommand: z
           .string()

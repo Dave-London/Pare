@@ -70,6 +70,7 @@ export function registerBazelTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: BazelOutputSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({
       action,

@@ -39,6 +39,7 @@ export function registerBundleExecTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: BundleExecResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ command, args, path, compact }) => {
       assertNoFlagInjection(command, "command");

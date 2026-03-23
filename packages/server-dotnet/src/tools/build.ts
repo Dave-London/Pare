@@ -54,6 +54,7 @@ export function registerBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DotnetBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ path, project, configuration, framework, runtime, noRestore, verbosity, compact }) => {
       const cwd = path || process.cwd();

@@ -46,6 +46,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DenoRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ file, args, path, allowRead, allowWrite, allowNet, allowEnv, allowAll, compact }) => {
       const cwd = path || process.cwd();

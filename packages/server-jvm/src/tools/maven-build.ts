@@ -40,6 +40,7 @@ export function registerMavenBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: MavenBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ path, goals, args, compact }) => {
       const cwd = path || process.cwd();

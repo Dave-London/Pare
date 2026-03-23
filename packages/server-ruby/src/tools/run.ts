@@ -32,6 +32,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: RubyRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ file, args, path, compact }) => {
       assertNoFlagInjection(file, "file");

@@ -36,6 +36,7 @@ export function registerShellTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: NixShellResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ packages, command, path, compact }) => {
       const cwd = path || process.cwd();

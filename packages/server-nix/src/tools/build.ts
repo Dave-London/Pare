@@ -36,6 +36,7 @@ export function registerBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: NixBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ installable, outLink, noLink, path, compact }) => {
       const cwd = path || process.cwd();

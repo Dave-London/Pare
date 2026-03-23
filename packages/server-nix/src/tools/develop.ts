@@ -36,6 +36,7 @@ export function registerDevelopTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: NixDevelopResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ installable, command, path, compact }) => {
       const cwd = path || process.cwd();

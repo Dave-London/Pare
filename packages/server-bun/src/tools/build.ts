@@ -53,6 +53,7 @@ export function registerBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: BunBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({
       entrypoints,

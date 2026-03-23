@@ -56,7 +56,7 @@ export function registerRunTool(server: McpServer) {
         "Only use shell=true when you trust the input and need shell features. " +
         "Note: shell=true bypasses the ALLOWED_COMMANDS check on arguments, so the entire " +
         "shell expression is executed if the base command is allowed.",
-      annotations: { readOnlyHint: false, destructiveHint: true },
+      annotations: { readOnlyHint: false },
       inputSchema: {
         command: z
           .string()

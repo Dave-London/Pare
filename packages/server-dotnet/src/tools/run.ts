@@ -75,6 +75,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DotnetRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({
       path,

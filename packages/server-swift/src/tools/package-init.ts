@@ -34,6 +34,7 @@ export function registerPackageInitTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: SwiftPackageInitResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ type, name, path, compact }) => {
       const cwd = path || process.cwd();

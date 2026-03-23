@@ -35,6 +35,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: BunRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ script, args, path, compact }) => {
       const cwd = path || process.cwd();
