@@ -2,7 +2,7 @@ import { select, checkbox } from "@inquirer/prompts";
 import { getClients, type ClientEntry } from "./clients.js";
 import { PRESETS } from "./presets.js";
 import { SERVERS, type ServerEntry } from "./servers.js";
-import { detectClients } from "./detect.js";
+import { detectClients, detectProjectType } from "./detect.js";
 
 /** Prompt user to select a target client. Pre-selects detected ones. */
 export async function promptClient(): Promise<ClientEntry> {
@@ -28,9 +28,24 @@ export async function promptClient(): Promise<ClientEntry> {
 }
 
 /** Prompt user to select a preset or custom server set. */
-export async function promptServers(): Promise<ServerEntry[]> {
+export async function promptServers(projectDir?: string): Promise<ServerEntry[]> {
+  const detection = detectProjectType(projectDir);
+
+  if (detection.suggestedPreset && detection.ecosystems.length > 0) {
+    const presetLabel =
+      PRESETS.find((p) => p.id === detection.suggestedPreset)?.label ?? detection.suggestedPreset;
+    const ecosystemNames = detection.ecosystems.join(", ");
+    // eslint-disable-next-line no-console
+    console.log(`Detected: ${ecosystemNames} project. Suggested preset: ${presetLabel}`);
+  }
+
+  const defaultPreset = detection.suggestedPreset ?? "web";
+
   const presetChoices = PRESETS.map((p) => ({
-    name: `${p.label} — ${p.description}`,
+    name:
+      p.id === detection.suggestedPreset
+        ? `${p.label} — ${p.description} (detected)`
+        : `${p.label} — ${p.description}`,
     value: p.id,
   }));
   presetChoices.push({ name: "Custom — pick individual servers", value: "custom" });
@@ -38,7 +53,7 @@ export async function promptServers(): Promise<ServerEntry[]> {
   const selection = await select({
     message: "Which servers do you want to install?",
     choices: presetChoices,
-    default: "web",
+    default: defaultPreset,
   });
 
   if (selection === "custom") {
