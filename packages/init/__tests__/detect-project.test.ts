@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
-import { detectProjectType, type Ecosystem } from "../src/lib/detect.js";
+import { detectProjectType } from "../src/lib/detect.js";
 
 /**
  * Helper: create a mock `existsSync` that returns true for a given set of
