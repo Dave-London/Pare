@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse as parseToml } from "smol-toml";
-import YAML from "yaml";
 import { parseDoctorArgs, DOCTOR_HELP } from "./lib/args.js";
-import { CLIENT_MAP, resolveConfigPath, type ClientEntry } from "./lib/clients.js";
+import { CLIENT_MAP } from "./lib/clients.js";
 import { checkServer, validateServerPackage } from "./lib/doctor/health-check.js";
 import { formatReport } from "./lib/doctor/report.js";
 import { detectClients } from "./lib/detect.js";
 import { promptClient } from "./lib/prompts.js";
-import { parseJsonc } from "./lib/parse-utils.js";
+import { extractPareServers } from "./lib/extract-servers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -23,83 +21,6 @@ function getVersion(): string {
   } catch {
     return "0.0.0";
   }
-}
-
-interface ServerConfig {
-  command: string;
-  args: string[];
-}
-
-/** Extract Pare server entries from a client's config file. */
-function extractPareServers(client: ClientEntry, projectDir: string): Map<string, ServerConfig> {
-  const configPath = resolveConfigPath(client.configPath, projectDir);
-  if (!existsSync(configPath)) {
-    return new Map();
-  }
-
-  const raw = readFileSync(configPath, "utf-8");
-  const servers = new Map<string, ServerConfig>();
-
-  try {
-    if (client.format === "json-mcpservers") {
-      const config = parseJsonc(raw) as { mcpServers?: Record<string, ServerConfig> };
-      if (config?.mcpServers) {
-        for (const [key, val] of Object.entries(config.mcpServers)) {
-          if (key.startsWith("pare-")) {
-            servers.set(key, val);
-          }
-        }
-      }
-    } else if (client.format === "json-vscode") {
-      const config = parseJsonc(raw) as {
-        servers?: Record<string, { type: string; command: string; args: string[] }>;
-      };
-      if (config?.servers) {
-        for (const [key, val] of Object.entries(config.servers)) {
-          if (key.startsWith("pare-")) {
-            servers.set(key, { command: val.command, args: val.args });
-          }
-        }
-      }
-    } else if (client.format === "json-zed") {
-      const config = parseJsonc(raw) as {
-        context_servers?: Record<string, { command: string; args: string[] }>;
-      };
-      if (config?.context_servers) {
-        for (const [key, val] of Object.entries(config.context_servers)) {
-          if (key.startsWith("pare-")) {
-            servers.set(key, { command: val.command, args: val.args });
-          }
-        }
-      }
-    } else if (client.format === "toml-codex") {
-      const config = parseToml(raw) as unknown as {
-        mcp_servers?: Record<string, ServerConfig>;
-      };
-      if (config?.mcp_servers) {
-        for (const [key, val] of Object.entries(config.mcp_servers)) {
-          if (key.startsWith("pare-")) {
-            servers.set(key, val);
-          }
-        }
-      }
-    } else if (client.format === "yaml-continue") {
-      const config = YAML.parse(raw) as {
-        mcpServers?: Array<{ name: string; command: string; args: string[] }>;
-      };
-      if (config?.mcpServers) {
-        for (const entry of config.mcpServers) {
-          if (entry.name.startsWith("pare-")) {
-            servers.set(entry.name, { command: entry.command, args: entry.args });
-          }
-        }
-      }
-    }
-  } catch {
-    console.warn(`Warning: Could not parse ${configPath}`);
-  }
-
-  return servers;
 }
 
 async function main(): Promise<void> {
