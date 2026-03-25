@@ -1,5 +1,11 @@
 # @paretools/init
 
+## 0.16.0
+
+### Minor Changes
+
+- [#757](https://github.com/Dave-London/Pare/pull/757) [`5038f8f`](https://github.com/Dave-London/Pare/commit/5038f8fb8a71cad405ccd953578143038120170a) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(init): auto-detect project type to suggest preset during setup
+
 ## 0.15.0
 
 ## 0.14.2
