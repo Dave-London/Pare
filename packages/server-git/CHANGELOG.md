@@ -1,5 +1,18 @@
 # @paretools/git
 
+## 0.16.0
+
+### Minor Changes
+
+- [#759](https://github.com/Dave-London/Pare/pull/759) [`20ce7ca`](https://github.com/Dave-London/Pare/commit/20ce7ca99af786348bd43053fe5f33f96f860736) Thanks [@Dave-London](https://github.com/Dave-London)! - feat: refine MCP tool annotations (readOnlyHint, destructiveHint) across all servers
+
+- [#758](https://github.com/Dave-London/Pare/pull/758) [`e7a37d9`](https://github.com/Dave-London/Pare/commit/e7a37d9b16afc89e544a7c91838bfed207d3b567) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): support extracting raw file blobs via show tool
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.0
+
 ## 0.15.0
 
 ### Patch Changes

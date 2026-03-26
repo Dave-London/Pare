@@ -1,5 +1,16 @@
 # @paretools/lint
 
+## 0.16.0
+
+### Minor Changes
+
+- [#759](https://github.com/Dave-London/Pare/pull/759) [`20ce7ca`](https://github.com/Dave-London/Pare/commit/20ce7ca99af786348bd43053fe5f33f96f860736) Thanks [@Dave-London](https://github.com/Dave-London)! - feat: refine MCP tool annotations (readOnlyHint, destructiveHint) across all servers
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.0
+
 ## 0.15.0
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@paretools/nix",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "mcpName": "io.github.Dave-London/pare-nix",
   "description": "MCP server for Nix — structured build, develop, and flake output for AI agents",
   "license": "MIT",

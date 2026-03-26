@@ -1,6 +1,6 @@
 {
   "name": "@paretools/test",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "mcpName": "io.github.Dave-London/pare-test",
   "description": "MCP server for test runners — structured pass/fail results with failure details for AI agents",
   "license": "MIT",
