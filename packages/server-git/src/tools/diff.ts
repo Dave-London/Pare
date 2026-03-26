@@ -165,7 +165,8 @@ export function registerDiffTool(server: McpServer) {
 
         const filePatches = atomicResult.stdout.split(/^diff --git /m).filter(Boolean);
         for (const patch of filePatches) {
-          const fileMatch = patch.match(/b\/(.+?)\r?\n/);
+          // RegEx anchored to header to prevent matching `b/` within source paths
+          const fileMatch = patch.match(/^a\/[^\n]*\s+b\/(.+?)\r?$/m);
           if (!fileMatch) continue;
           const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
           if (!matchedFile) continue;
@@ -175,8 +176,9 @@ export function registerDiffTool(server: McpServer) {
             const chunks = patch.split(/^@@/m).slice(1);
             matchedFile.chunks = chunks.map((chunk) => {
               const headerEnd = chunk.indexOf("\n");
+              const rawHeader = chunk.slice(0, headerEnd);
               return {
-                header: `@@${chunk.slice(0, headerEnd)}`,
+                header: `@@${rawHeader.replace(/\r$/, "")}`,
                 lines: chunk.slice(headerEnd + 1),
               };
             });
@@ -235,7 +237,8 @@ export function registerDiffTool(server: McpServer) {
           // Split patch into per-file chunks
           const filePatches = patchResult.stdout.split(/^diff --git /m).filter(Boolean);
           for (const patch of filePatches) {
-            const fileMatch = patch.match(/b\/(.+?)\r?\n/);
+            // RegEx anchored to header to prevent matching `b/` within source paths
+            const fileMatch = patch.match(/^a\/[^\n]*\s+b\/(.+?)\r?$/m);
             if (fileMatch) {
               const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
               if (matchedFile) {
@@ -246,8 +249,9 @@ export function registerDiffTool(server: McpServer) {
                   const chunks = patch.split(/^@@/m).slice(1);
                   matchedFile.chunks = chunks.map((chunk) => {
                     const headerEnd = chunk.indexOf("\n");
+                    const rawHeader = chunk.slice(0, headerEnd);
                     return {
-                      header: `@@${chunk.slice(0, headerEnd)}`,
+                      header: `@@${rawHeader.replace(/\r$/, "")}`,
                       lines: chunk.slice(headerEnd + 1),
                     };
                   });
