@@ -1,6 +1,6 @@
 {
   "name": "@paretools/bazel",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "mcpName": "io.github.Dave-London/pare-bazel",
   "description": "MCP server for Bazel — structured build and test output for AI agents",
   "license": "MIT",

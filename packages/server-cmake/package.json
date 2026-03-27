@@ -1,6 +1,6 @@
 {
   "name": "@paretools/cmake",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "mcpName": "io.github.Dave-London/pare-cmake",
   "description": "MCP server for CMake — structured configure and build output for AI agents",
   "license": "MIT",
