@@ -64,8 +64,19 @@ export function formatDiff(diff: GitDiff): string {
   const totalFiles = diff.files.length;
   const totalAdditions = diff.files.reduce((s, f) => s + f.additions, 0);
   const totalDeletions = diff.files.reduce((s, f) => s + f.deletions, 0);
-  const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}\n${files}`;
+
+  const fileStats = diff.files
+    .map((f) => {
+      let out = `  ${f.file} +${f.additions} -${f.deletions}`;
+      if (f.chunks && f.chunks.length > 0) {
+        const patch = f.chunks.map((c) => `${c.header}\n${c.lines}`).join("\n");
+        out += `\n${patch}`;
+      }
+      return out;
+    })
+    .join("\n");
+
+  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}\n${fileStats}`;
 }
 
 /** Formats structured git branch data into a human-readable branch listing. */
