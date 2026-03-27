@@ -1,6 +1,6 @@
 {
   "name": "@paretools/infra",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "mcpName": "io.github.Dave-London/pare-infra",
   "description": "MCP server for infrastructure — structured Terraform, Vagrant, and Ansible output for AI agents",
   "license": "MIT",
