@@ -98,7 +98,7 @@ function markerExists(dir: string, marker: string, checkExists: (p: string) => b
 
   // For glob patterns like *.csproj, do a simple directory listing check.
   try {
-    const ext = marker.replace("*", "");
+    const ext = marker.replace(/\*/g, "");
     const entries = readdirSync(dir);
     return entries.some((e) => e.endsWith(ext));
   } catch {
