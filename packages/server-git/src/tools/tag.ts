@@ -29,6 +29,13 @@ export function registerTagTool(server: McpServer) {
           .optional()
           .default("list")
           .describe("Tag action to perform (default: list)"),
+        create: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Shorthand to create a tag with this name (sets action=create). Consistent with branch tool's create parameter.",
+          ),
         name: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -78,8 +85,9 @@ export function registerTagTool(server: McpServer) {
     },
     async ({
       path,
-      action,
-      name,
+      action: rawAction,
+      create: createShorthand,
+      name: rawName,
       message,
       commit,
       pattern,
@@ -94,6 +102,10 @@ export function registerTagTool(server: McpServer) {
       compact,
     }) => {
       const cwd = path || process.cwd();
+
+      // Support `create` shorthand parameter (consistent with branch tool)
+      const action = createShorthand ? "create" : rawAction;
+      const name = createShorthand || rawName;
 
       if (action === "create") {
         if (!name) {
