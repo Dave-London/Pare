@@ -56,8 +56,8 @@
   },
   "devDependencies": {
     "@paretools/tsconfig": "workspace:*",
-    "@types/node": "^25.4.0",
+    "@types/node": "^25.5.2",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.2"
   }
 }
