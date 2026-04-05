@@ -64,6 +64,7 @@ export function registerPublishTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DotnetPublishResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({
       path,

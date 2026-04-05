@@ -1,6 +1,31 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
+
+const DANGEROUS_CONFIG_KEYS = new Set([
+  "core.fsmonitor",
+  "core.pager",
+  "core.editor",
+  "core.sshcommand",
+  "core.hookspath",
+  "core.askpass",
+  "diff.external",
+  "merge.tool",
+  "credential.helper",
+  "filter.lfs.clean",
+  "filter.lfs.smudge",
+  "filter.lfs.process",
+]);
+
+function assertSafeConfigKey(key: string): void {
+  const lower = key.toLowerCase();
+  if (DANGEROUS_CONFIG_KEYS.has(lower)) {
+    throw new Error(
+      `Setting "${key}" is blocked because it can execute arbitrary commands. ` +
+        `Blocked keys: ${[...DANGEROUS_CONFIG_KEYS].sort().join(", ")}`,
+    );
+  }
+}
 import { git } from "../lib/git-runner.js";
 import { parseConfigList } from "../lib/parsers.js";
 import { formatConfig } from "../lib/formatters.js";
@@ -53,6 +78,7 @@ export function registerConfigTool(server: McpServer) {
         }
         assertNoFlagInjection(key, "key");
         assertNoFlagInjection(value, "value");
+        assertSafeConfigKey(key);
 
         const args = ["config"];
         if (scopeFlag) args.push(scopeFlag);

@@ -117,7 +117,9 @@ export function registerBuildTool(server: McpServer) {
           )
           .optional()
           .default([])
-          .describe("Additional build arguments"),
+          .describe(
+            "Additional build arguments. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: DockerBuildSchema,
@@ -195,7 +197,12 @@ export function registerBuildTool(server: McpServer) {
       for (const s of ssh ?? []) {
         dockerArgs.push("--ssh", s);
       }
-      if (args) dockerArgs.push(...args);
+      if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
+        dockerArgs.push(...args);
+      }
 
       const start = Date.now();
       const result = await docker(dockerArgs, cwd);

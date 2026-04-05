@@ -16,7 +16,13 @@ import {
   formatResponseCompact,
 } from "../lib/formatters.js";
 import { HttpResponseSchema } from "../schemas/index.js";
-import { assertSafeUrl, assertSafeHeader } from "../lib/url-validation.js";
+import {
+  assertSafeUrl,
+  assertSafeHeader,
+  assertSafeResolve,
+  assertSafeCookie,
+  assertSafeFormValues,
+} from "../lib/url-validation.js";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 const HTTP_VERSIONS = ["1.0", "1.1", "2"] as const;
@@ -28,7 +34,10 @@ export function registerRequestTool(server: McpServer) {
     {
       title: "HTTP Request",
       description:
-        "Makes an HTTP request via curl and returns structured response data (status, headers, body, timing).",
+        "Makes an HTTP request via curl and returns structured response data (status, headers, body, timing). " +
+        "SECURITY: URLs targeting private/reserved IPs are blocked (SSRF protection). " +
+        "The proxy parameter routes traffic through an external proxy — use only with trusted proxies. " +
+        "File uploads via form @filepath are blocked by default (set PARE_HTTP_ALLOW_FILE_UPLOAD=true to allow).",
       annotations: { openWorldHint: true },
       inputSchema: {
         url: z
@@ -55,7 +64,7 @@ export function registerRequestTool(server: McpServer) {
           )
           .optional()
           .describe(
-            "Multipart form data as key-value pairs (-F). Each pair maps to `-F key=value`. For file uploads use `@filepath` as the value.",
+            "Multipart form data as key-value pairs (-F). Each pair maps to `-F key=value`. File uploads via @filepath are blocked by default — set PARE_HTTP_ALLOW_FILE_UPLOAD=true to allow.",
           ),
         timeout: z
           .number()
@@ -100,7 +109,9 @@ export function registerRequestTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("Proxy URL (e.g., http://proxy:8080) (-x)"),
+          .describe(
+            "Proxy URL (e.g., http://proxy:8080) (-x). SECURITY WARNING: Routes all traffic through this proxy. Only use trusted proxies — a malicious proxy can intercept and modify all request/response data (MitM).",
+          ),
         httpVersion: z
           .enum(HTTP_VERSIONS)
           .optional()
@@ -110,7 +121,7 @@ export function registerRequestTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe(
-            "Cookie string or cookie jar file path for session-based APIs (-b). Format: 'name=value; name2=value2'",
+            "Cookie string for session-based APIs (-b). Format: 'name=value; name2=value2'. Must contain '=' — file-based cookie jars are not supported.",
           ),
         resolve: z
           .string()
@@ -144,15 +155,22 @@ export function registerRequestTool(server: McpServer) {
       compact,
       path,
     }) => {
-      assertSafeUrl(url);
+      await assertSafeUrl(url);
       if (basicAuth) assertNoFlagInjection(basicAuth, "basicAuth");
       if (proxy) assertNoFlagInjection(proxy, "proxy");
-      if (cookie) assertNoFlagInjection(cookie, "cookie");
-      if (resolve) assertNoFlagInjection(resolve, "resolve");
+      if (cookie) {
+        assertNoFlagInjection(cookie, "cookie");
+        assertSafeCookie(cookie);
+      }
+      if (resolve) {
+        assertNoFlagInjection(resolve, "resolve");
+        assertSafeResolve(resolve);
+      }
       if (form) {
         for (const value of Object.values(form)) {
           assertNoFlagInjection(value, "form value");
         }
+        assertSafeFormValues(form);
       }
 
       const args = buildCurlArgs({

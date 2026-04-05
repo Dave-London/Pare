@@ -51,6 +51,7 @@ export function registerVagrantTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: VagrantResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ action, machine, workDir, compact }) => {
       const cwd = workDir || process.cwd();

@@ -268,6 +268,26 @@ describe("@paretools/git integration", () => {
       expect(Array.isArray(diff.files)).toBe(true);
       expect(Array.isArray(diff.files)).toBe(true);
     });
+
+    it("extracts raw file blob at HEAD when file param is provided", async () => {
+      const result = await client.callTool(
+        {
+          name: "show",
+          arguments: { ref: "HEAD", file: "package.json", compact: false },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.objectType).toBe("blob");
+      expect(sc.file).toBe("package.json");
+      expect(sc.fileContent).toEqual(expect.any(String));
+      expect((sc.fileContent as string).length).toBeGreaterThan(0);
+      expect(sc.objectSize).toEqual(expect.any(Number));
+      expect(sc.objectName).toBe("HEAD:package.json");
+    });
   });
 });
 

@@ -24,7 +24,7 @@ export function registerIssueCloseTool(server: McpServer) {
       title: "Issue Close",
       description:
         "Closes an issue with an optional comment and reason. Returns structured data with issue number, state, URL, reason, and comment URL.",
-      annotations: { openWorldHint: true },
+      annotations: { openWorldHint: true, destructiveHint: true },
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
         comment: z.string().max(INPUT_LIMITS.STRING_MAX).optional().describe("Closing comment"),

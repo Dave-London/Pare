@@ -52,7 +52,7 @@ export function registerLernaTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional lerna flags"),
+          .describe("Additional lerna flags. Each element is validated to prevent flag injection."),
         path: projectPathInput,
         compact: compactInput,
       },
@@ -89,6 +89,9 @@ export function registerLernaTool(server: McpServer) {
       if (dryRun || action === "version") cliArgs.push("--dry-run");
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 

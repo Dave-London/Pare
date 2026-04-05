@@ -25,6 +25,7 @@ export function registerFmtTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: TerraformFmtResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ path, diff, recursive, compact }) => {
       const cwd = path || process.cwd();

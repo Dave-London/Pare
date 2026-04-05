@@ -103,7 +103,10 @@ export function registerRunTool(server: McpServer) {
       const cwd = path || process.cwd();
       assertNoFlagInjection(script, "script");
       if (filter) assertNoFlagInjection(filter, "filter");
-      if (scriptShell) assertNoFlagInjection(scriptShell, "scriptShell");
+      if (scriptShell) {
+        assertNoFlagInjection(scriptShell, "scriptShell");
+        assertAllowedShell(scriptShell);
+      }
 
       // Validate workspace values
       const workspaces = workspace ? (Array.isArray(workspace) ? workspace : [workspace]) : [];
@@ -175,4 +178,29 @@ export function registerRunTool(server: McpServer) {
       return dualOutput({ ...data, packageManager: pm }, (d) => formatRun(d, script, duration));
     },
   );
+}
+
+const ALLOWED_SHELLS = new Set([
+  "/bin/sh",
+  "/bin/bash",
+  "/bin/zsh",
+  "/usr/bin/sh",
+  "/usr/bin/bash",
+  "/usr/bin/zsh",
+  "cmd.exe",
+  "powershell.exe",
+  "pwsh.exe",
+  "pwsh",
+]);
+
+function assertAllowedShell(shell: string): void {
+  // Normalize: extract basename for comparison
+  const base = shell.replace(/\\/g, "/").split("/").pop() ?? "";
+
+  if (!ALLOWED_SHELLS.has(shell) && !ALLOWED_SHELLS.has(base)) {
+    throw new Error(
+      `Shell "${shell}" is not in the allowed shells list. ` +
+        `Allowed: ${[...ALLOWED_SHELLS].sort().join(", ")}`,
+    );
+  }
 }

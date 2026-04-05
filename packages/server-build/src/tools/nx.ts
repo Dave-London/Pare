@@ -97,7 +97,9 @@ export function registerNxTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional arguments to pass to nx"),
+          .describe(
+            "Additional arguments to pass to nx. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: NxResultSchema,
@@ -166,6 +168,9 @@ export function registerNxTool(server: McpServer) {
       if (graph) cliArgs.push("--graph");
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 
