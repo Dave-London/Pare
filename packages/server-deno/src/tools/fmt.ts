@@ -31,6 +31,7 @@ export function registerFmtTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DenoFmtResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ files, path, check, compact }) => {
       const cwd = path || process.cwd();

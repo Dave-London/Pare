@@ -64,8 +64,19 @@ export function formatDiff(diff: GitDiff): string {
   const totalFiles = diff.files.length;
   const totalAdditions = diff.files.reduce((s, f) => s + f.additions, 0);
   const totalDeletions = diff.files.reduce((s, f) => s + f.deletions, 0);
-  const files = diff.files.map((f) => `  ${f.file} +${f.additions} -${f.deletions}`).join("\n");
-  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}\n${files}`;
+
+  const fileStats = diff.files
+    .map((f) => {
+      let out = `  ${f.file} +${f.additions} -${f.deletions}`;
+      if (f.chunks && f.chunks.length > 0) {
+        const patch = f.chunks.map((c) => `${c.header}\n${c.lines}`).join("\n");
+        out += `\n${patch}`;
+      }
+      return out;
+    })
+    .join("\n");
+
+  return `${totalFiles} files changed, +${totalAdditions} -${totalDeletions}\n${fileStats}`;
 }
 
 /** Formats structured git branch data into a human-readable branch listing. */
@@ -77,6 +88,13 @@ export function formatBranch(b: GitBranchFull): string {
       return `${prefix}${br.name}${upstream}`;
     })
     .join("\n");
+}
+
+/** Formats a blob extraction result into a human-readable view with file header. */
+export function formatShowBlob(s: GitShow): string {
+  const size = s.objectSize !== undefined ? ` (${s.objectSize} bytes)` : "";
+  const header = `── ${s.file ?? s.objectName ?? "blob"} @ ${s.objectName ?? "unknown"}${size} ──`;
+  return `${header}\n${s.fileContent ?? ""}`;
 }
 
 /** Formats structured git show data into a human-readable commit detail view with diff summary. */

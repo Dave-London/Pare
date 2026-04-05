@@ -39,6 +39,7 @@ export function registerBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: SwiftBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ configuration, target, product, verbose, path, compact }) => {
       const cwd = path || process.cwd();

@@ -35,6 +35,7 @@ export function registerTaskTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: DenoTaskResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ name, args, path, compact }) => {
       const cwd = path || process.cwd();

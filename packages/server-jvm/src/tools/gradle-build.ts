@@ -40,6 +40,7 @@ export function registerGradleBuildTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: GradleBuildResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ path, tasks, args, compact }) => {
       const cwd = path || process.cwd();

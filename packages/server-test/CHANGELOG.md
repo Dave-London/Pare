@@ -1,5 +1,30 @@
 # @paretools/test
 
+## 0.16.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.1
+
+## 0.16.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.0
+
+## 0.15.0
+
+### Patch Changes
+
+- [#737](https://github.com/Dave-London/Pare/pull/737) [`9f9c3f2`](https://github.com/Dave-London/Pare/commit/9f9c3f2b8866d862a3b5f17100075e5362b4e454) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: validate args array elements with assertNoFlagInjection
+
+  Added per-element flag injection validation to args arrays in build, docker, and test tools to prevent flag injection bypassing structured parameter validation.
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

@@ -16,7 +16,7 @@ import {
   formatResponseCompact,
 } from "../lib/formatters.js";
 import { HttpResponseSchema } from "../schemas/index.js";
-import { assertSafeUrl } from "../lib/url-validation.js";
+import { assertSafeUrl, assertSafeResolve } from "../lib/url-validation.js";
 import { buildCurlArgs } from "./request.js";
 
 const HTTP_VERSIONS = ["1.0", "1.1", "2"] as const;
@@ -28,7 +28,9 @@ export function registerGetTool(server: McpServer) {
     {
       title: "HTTP GET",
       description:
-        "Makes an HTTP GET request via curl and returns structured response data. Convenience wrapper for the request tool.",
+        "Makes an HTTP GET request via curl and returns structured response data. Convenience wrapper for the request tool. " +
+        "SECURITY: URLs targeting private/reserved IPs are blocked (SSRF protection). " +
+        "The proxy parameter routes traffic through an external proxy — use only with trusted proxies.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         url: z
@@ -85,7 +87,9 @@ export function registerGetTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("Proxy URL (e.g., http://proxy:8080) (-x)"),
+          .describe(
+            "Proxy URL (e.g., http://proxy:8080) (-x). SECURITY WARNING: Routes all traffic through this proxy. Only use trusted proxies — a malicious proxy can intercept and modify all request/response data (MitM).",
+          ),
         queryParams: z
           .record(
             z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
@@ -139,10 +143,13 @@ export function registerGetTool(server: McpServer) {
         finalUrl = `${url}${separator}${params.toString()}`;
       }
 
-      assertSafeUrl(finalUrl);
+      await assertSafeUrl(finalUrl);
       if (basicAuth) assertNoFlagInjection(basicAuth, "basicAuth");
       if (proxy) assertNoFlagInjection(proxy, "proxy");
-      if (resolve) assertNoFlagInjection(resolve, "resolve");
+      if (resolve) {
+        assertNoFlagInjection(resolve, "resolve");
+        assertSafeResolve(resolve);
+      }
 
       const args = buildCurlArgs({
         url: finalUrl,

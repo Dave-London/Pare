@@ -81,7 +81,9 @@ export function registerViteBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional Vite build flags"),
+          .describe(
+            "Additional Vite build flags. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: ViteBuildResultSchema,
@@ -134,6 +136,9 @@ export function registerViteBuildTool(server: McpServer) {
       if (reportCompressedSize === false) cliArgs.push("--no-reportCompressedSize");
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 

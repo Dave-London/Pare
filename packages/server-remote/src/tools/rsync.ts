@@ -105,6 +105,14 @@ export function registerRsyncTool(server: McpServer) {
       assertNoFlagInjection(destination, "destination");
       if (identityFile) assertNoFlagInjection(identityFile, "identityFile");
 
+      // Validate exclude/include array elements to prevent flag injection
+      for (const pattern of exclude || []) {
+        assertNoFlagInjection(pattern, "exclude");
+      }
+      for (const pattern of include || []) {
+        assertNoFlagInjection(pattern, "include");
+      }
+
       const cwd = path || process.cwd();
       const args: string[] = [];
 

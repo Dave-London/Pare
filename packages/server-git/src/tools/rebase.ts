@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
+import {
+  dualOutput,
+  assertNoFlagInjection,
+  assertAllowedByPolicy,
+  INPUT_LIMITS,
+  repoPathInput,
+} from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseRebase } from "../lib/parsers.js";
 import { formatRebase } from "../lib/formatters.js";
@@ -57,7 +63,9 @@ export function registerRebaseTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("Run command after each commit (--exec)"),
+          .describe(
+            "Run command after each commit (--exec). Security: the executable is validated against the ALLOWED_COMMANDS policy when configured.",
+          ),
         empty: z
           .enum(["drop", "keep", "ask"])
           .optional()
@@ -165,7 +173,10 @@ export function registerRebaseTool(server: McpServer) {
       if (params.onto) assertNoFlagInjection(params.onto, "onto");
       if (params.strategy) assertNoFlagInjection(params.strategy, "strategy");
       if (params.strategyOption) assertNoFlagInjection(params.strategyOption, "strategyOption");
-      if (params.exec) assertNoFlagInjection(params.exec, "exec");
+      if (params.exec) {
+        assertAllowedByPolicy(params.exec.split(/\s+/)[0], "git");
+        assertNoFlagInjection(params.exec, "exec");
+      }
 
       // Count commits that will be rebased using git log
       const logResult = await git(["log", "--oneline", `${branch}..HEAD`], cwd);

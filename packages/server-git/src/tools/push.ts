@@ -14,7 +14,7 @@ export function registerPushTool(server: McpServer) {
       title: "Git Push",
       description:
         "Pushes commits to a remote repository. Returns structured data with success status, remote, branch, summary, and whether the remote branch was newly created.",
-      annotations: { openWorldHint: true, destructiveHint: true },
+      annotations: { readOnlyHint: false, openWorldHint: true },
       inputSchema: {
         path: repoPathInput,
         remote: z

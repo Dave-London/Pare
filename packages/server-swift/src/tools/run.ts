@@ -35,6 +35,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: SwiftRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ executable, args, path, compact }) => {
       const cwd = path || process.cwd();
