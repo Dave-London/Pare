@@ -12,6 +12,9 @@ import { ensureBuiltArtifacts } from "./ensure-built.js";
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 
+/** MCP SDK defaults to 60 s request timeout; override for CI where process spawning is slow. */
+const CALL_TIMEOUT = { timeout: 300_000 };
+
 describe("tool parameter handling", () => {
   let client: Client;
   let transport: StdioClientTransport;
@@ -37,10 +40,14 @@ describe("tool parameter handling", () => {
     it("accepts filter parameter and passes it to the framework", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
       // Use a filter that matches a specific test file pattern
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: gitPkgPath, framework: "vitest", filter: "parsers" },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { path: gitPkgPath, framework: "vitest", filter: "parsers" },
+        },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -56,10 +63,14 @@ describe("tool parameter handling", () => {
     it("accepts custom args parameter and passes them through", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
       // Pass a safe (non-flag) arg — file path pattern to limit test scope
-      const result = await client.callTool({
-        name: "run",
-        arguments: { path: gitPkgPath, framework: "vitest", args: ["parsers"] },
-      });
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: { path: gitPkgPath, framework: "vitest", args: ["parsers"] },
+        },
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
@@ -72,15 +83,19 @@ describe("tool parameter handling", () => {
     it("rejects flag-like args to prevent flag injection", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
       // args[] elements are validated with assertNoFlagInjection to prevent injection
-      const result = await client.callTool({
-        name: "run",
-        arguments: {
-          path: gitPkgPath,
-          framework: "vitest",
-          filter: "parsers",
-          args: ["--bail", "1"],
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            path: gitPkgPath,
+            framework: "vitest",
+            filter: "parsers",
+            args: ["--bail", "1"],
+          },
         },
-      });
+        undefined,
+        CALL_TIMEOUT,
+      );
 
       // Should error — flag-like args are blocked by assertNoFlagInjection
       expect(result.isError).toBe(true);
