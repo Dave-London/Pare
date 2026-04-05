@@ -30,7 +30,10 @@ export function registerBiomeCheckTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to check (default: ['.'])"),
-        apply: z.boolean().optional().describe("Apply safe fixes automatically (maps to --apply)"),
+        apply: z.coerce
+          .boolean()
+          .optional()
+          .describe("Apply safe fixes automatically (maps to --apply)"),
         applyUnsafe: z
           .boolean()
           .optional()
@@ -43,7 +46,10 @@ export function registerBiomeCheckTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Only check VCS-changed files (maps to --changed)"),
-        staged: z.boolean().optional().describe("Only check staged files (maps to --staged)"),
+        staged: z.coerce
+          .boolean()
+          .optional()
+          .describe("Only check staged files (maps to --staged)"),
         since: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)

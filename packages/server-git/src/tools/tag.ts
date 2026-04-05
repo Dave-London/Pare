@@ -74,7 +74,10 @@ export function registerTagTool(server: McpServer) {
         force: z.boolean().optional().describe("Force tag creation (-f)"),
         sign: z.boolean().optional().describe("Sign tag with GPG (-s)"),
         verify: z.boolean().optional().describe("Verify tag signature (-v)"),
-        merged: z.boolean().optional().describe("Filter to tags merged into HEAD (--merged)"),
+        merged: z.coerce
+          .boolean()
+          .optional()
+          .describe("Filter to tags merged into HEAD (--merged)"),
         noMerged: z
           .boolean()
           .optional()

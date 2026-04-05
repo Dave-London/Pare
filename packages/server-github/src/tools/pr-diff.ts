@@ -33,7 +33,10 @@ export function registerPrDiffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Include full patch content in chunks"),
-        nameOnly: z.boolean().optional().describe("List only changed file names (--name-only)"),
+        nameOnly: z.coerce
+          .boolean()
+          .optional()
+          .describe("List only changed file names (--name-only)"),
         compact: compactInput,
       },
       outputSchema: PrDiffResultSchema,

@@ -72,7 +72,10 @@ export function registerRunTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Enable verbose output (just --verbose, just only)"),
-        trace: z.boolean().optional().describe("Trace execution order (make --trace, make only)"),
+        trace: z.coerce
+          .boolean()
+          .optional()
+          .describe("Trace execution order (make --trace, make only)"),
         question: z
           .boolean()
           .optional()

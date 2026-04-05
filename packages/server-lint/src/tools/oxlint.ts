@@ -44,7 +44,10 @@ export function registerOxlintTool(server: McpServer) {
           .number()
           .optional()
           .describe("Number of threads to use for parallel linting"),
-        noIgnore: z.boolean().optional().describe("Disable ignore patterns (maps to --no-ignore)"),
+        noIgnore: z.coerce
+          .boolean()
+          .optional()
+          .describe("Disable ignore patterns (maps to --no-ignore)"),
         config: configInput("Path to Oxlint configuration file (maps to --config)"),
         deny: z.preprocess(
           coerceJsonArray,

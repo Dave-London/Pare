@@ -32,7 +32,10 @@ export function registerInitTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("npm scope for the package (e.g., '@myorg')"),
-        force: z.boolean().optional().describe("Overwrite existing package.json (maps to --force)"),
+        force: z.coerce
+          .boolean()
+          .optional()
+          .describe("Overwrite existing package.json (maps to --force)"),
         private: z
           .boolean()
           .optional()

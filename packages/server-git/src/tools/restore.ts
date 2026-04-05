@@ -21,13 +21,20 @@ export function registerRestoreTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("File paths to restore"),
-        staged: z.boolean().optional().default(false).describe("Restore staged changes (--staged)"),
+        staged: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Restore staged changes (--staged)"),
         source: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Restore from specific ref (--source)"),
-        ours: z.boolean().optional().describe("Restore ours version during conflicts (--ours)"),
+        ours: z.coerce
+          .boolean()
+          .optional()
+          .describe("Restore ours version during conflicts (--ours)"),
         theirs: z
           .boolean()
           .optional()

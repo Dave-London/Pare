@@ -38,7 +38,11 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be added without modifying Cargo.toml (--dry-run)"),
-        build: z.boolean().optional().default(false).describe("Add as build dependency (--build)"),
+        build: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Add as build dependency (--build)"),
         optional: z
           .boolean()
           .optional()

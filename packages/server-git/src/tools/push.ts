@@ -34,9 +34,19 @@ export function registerPushTool(server: McpServer) {
           .optional()
           .describe("Explicit refspec (e.g. 'HEAD:refs/heads/branch')"),
         force: z.boolean().optional().default(false).describe("Force push (--force)"),
-        setUpstream: z.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
-        dryRun: z.boolean().optional().describe("Preview push without executing (--dry-run)"),
-        forceWithLease: z.boolean().optional().describe("Safe force push (--force-with-lease)"),
+        setUpstream: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Set upstream tracking (-u)"),
+        dryRun: z.coerce
+          .boolean()
+          .optional()
+          .describe("Preview push without executing (--dry-run)"),
+        forceWithLease: z.coerce
+          .boolean()
+          .optional()
+          .describe("Safe force push (--force-with-lease)"),
         tags: z.boolean().optional().describe("Push all tags (--tags)"),
         followTags: z
           .boolean()

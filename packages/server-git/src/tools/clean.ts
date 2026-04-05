@@ -29,7 +29,10 @@ export function registerCleanTool(server: McpServer) {
           .describe(
             "Force removal (-f). Must be true and dryRun must be false to actually remove files.",
           ),
-        directories: z.boolean().optional().describe("Also remove untracked directories (-d)"),
+        directories: z.coerce
+          .boolean()
+          .optional()
+          .describe("Also remove untracked directories (-d)"),
         ignored: z.boolean().optional().describe("Also remove ignored files (-x)"),
         onlyIgnored: z.boolean().optional().describe("Only remove ignored files (-X)"),
         exclude: z

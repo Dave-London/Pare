@@ -41,7 +41,10 @@ export function registerSubmoduleTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Fetch from remote (--remote, used with update action)"),
-        force: z.boolean().optional().describe("Force operation (-f, used with deinit action)"),
+        force: z.coerce
+          .boolean()
+          .optional()
+          .describe("Force operation (-f, used with deinit action)"),
         branch: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

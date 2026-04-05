@@ -71,4 +71,45 @@ describe("strictifyInputSchema", () => {
     const strict = strictifyInputSchema(shape);
     expect(strict).toHaveProperty("_zod");
   });
+
+  it("coerces string 'true'/'false' to booleans for boolean fields", () => {
+    const shape = {
+      compact: z.boolean().optional().default(true),
+      force: z.boolean().optional(),
+    };
+
+    const strict = strictifyInputSchema(shape);
+
+    // String "false" should be coerced to boolean false
+    const r1 = z.safeParse(strict as z.ZodType, { compact: "false" });
+    expect(r1.success).toBe(true);
+    if (r1.success) expect(r1.data.compact).toBe(false);
+
+    // String "true" should be coerced to boolean true
+    const r2 = z.safeParse(strict as z.ZodType, { force: "true" });
+    expect(r2.success).toBe(true);
+    if (r2.success) expect(r2.data.force).toBe(true);
+
+    // Actual booleans still work
+    const r3 = z.safeParse(strict as z.ZodType, { compact: false, force: true });
+    expect(r3.success).toBe(true);
+    if (r3.success) {
+      expect(r3.data.compact).toBe(false);
+      expect(r3.data.force).toBe(true);
+    }
+  });
+
+  it("does not coerce strings for non-boolean fields", () => {
+    const shape = {
+      name: z.string(),
+      count: z.number(),
+    };
+
+    const strict = strictifyInputSchema(shape);
+
+    // Strings should remain strings, not be coerced
+    const r = z.safeParse(strict as z.ZodType, { name: "true", count: 5 });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.name).toBe("true");
+  });
 });

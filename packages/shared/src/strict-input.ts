@@ -13,6 +13,40 @@
 import { z } from "zod";
 
 /**
+ * Coerce string "true"/"false" to actual booleans.
+ * Unlike z.coerce.boolean() which uses JS Boolean() (where "false" → true),
+ * this correctly maps the string "false" → false.
+ */
+function coerceBool(val: unknown): unknown {
+  if (typeof val === "string") {
+    const lower = val.toLowerCase();
+    if (lower === "false" || lower === "0" || lower === "") return false;
+    if (lower === "true" || lower === "1") return true;
+  }
+  return val;
+}
+
+/**
+ * Checks whether a Zod schema is a boolean type (possibly wrapped in optional/default).
+ * Handles both Zod v4 (_zod.def.type / _zod.def.innerType) and v3 (_def.typeName / _def.innerType).
+ */
+function isBooleanSchema(schema: z.ZodType): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let s: any = schema;
+  const maxDepth = 10;
+  for (let i = 0; i < maxDepth && s; i++) {
+    // Zod v4: check _zod.def.type or _zod.type
+    const type = s._zod?.def?.type ?? s._zod?.type ?? s._def?.typeName;
+    if (type === "boolean" || type === "ZodBoolean") return true;
+    // Unwrap optional/default/nullable/preprocess wrappers
+    const inner = s._zod?.def?.innerType ?? s._def?.innerType ?? s._def?.schema;
+    if (!inner || inner === s) break;
+    s = inner;
+  }
+  return false;
+}
+
+/**
  * Checks whether a value is a Zod schema instance (has `_zod` for v4).
  */
 function isZodSchema(value: unknown): boolean {
@@ -45,10 +79,19 @@ export function strictifyInputSchema<T>(schema: T): T {
   if (!schema) return schema;
 
   if (isRawShape(schema)) {
+    // Wrap boolean fields with preprocess to coerce "true"/"false" strings.
+    // MCP clients sometimes send booleans as strings.
+    const shape = schema as Record<string, z.ZodType>;
+    const coerced: Record<string, z.ZodType> = {};
+    for (const [key, fieldSchema] of Object.entries(shape)) {
+      coerced[key] = isBooleanSchema(fieldSchema)
+        ? z.preprocess(coerceBool, fieldSchema)
+        : fieldSchema;
+    }
     // Convert raw shape to strict object schema.
     // The MCP SDK's normalizeObjectSchema will recognize this as a pre-built
     // Zod v4 schema and use it directly instead of wrapping in z.object().
-    return z.strictObject(schema as Record<string, z.ZodType>) as unknown as T;
+    return z.strictObject(coerced) as unknown as T;
   }
 
   // If it's already a Zod object schema, apply .strict()

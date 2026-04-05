@@ -25,7 +25,11 @@ export function registerAddTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Package names to add (e.g. ['typescript', 'zod@3.22'])"),
-        dev: z.boolean().optional().default(false).describe("Add as devDependency (--dev / -D)"),
+        dev: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Add as devDependency (--dev / -D)"),
         exact: z.boolean().optional().describe("Add exact version (--exact)"),
         path: projectPathInput,
         compact: compactInput,

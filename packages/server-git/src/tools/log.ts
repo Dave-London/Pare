@@ -76,7 +76,10 @@ export function registerLogTool(server: McpServer) {
         noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
         skip: z.coerce.number().optional().describe("Skip N commits for pagination (--skip)"),
         follow: z.boolean().optional().describe("Follow file renames (--follow)"),
-        firstParent: z.boolean().optional().describe("Follow only first parent (--first-parent)"),
+        firstParent: z.coerce
+          .boolean()
+          .optional()
+          .describe("Follow only first parent (--first-parent)"),
         all: z.boolean().optional().describe("Show all refs (--all)"),
         pickaxe: z
           .string()

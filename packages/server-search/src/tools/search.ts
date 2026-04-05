@@ -51,7 +51,10 @@ export function registerSearchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Treat pattern as a literal string instead of regex (--fixed-strings)"),
-        wordRegexp: z.boolean().optional().describe("Only match whole words (--word-regexp)"),
+        wordRegexp: z.coerce
+          .boolean()
+          .optional()
+          .describe("Only match whole words (--word-regexp)"),
         invertMatch: z
           .boolean()
           .optional()
@@ -60,7 +63,10 @@ export function registerSearchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Allow patterns to span multiple lines (--multiline)"),
-        hidden: z.boolean().optional().describe("Search hidden files and directories (--hidden)"),
+        hidden: z.coerce
+          .boolean()
+          .optional()
+          .describe("Search hidden files and directories (--hidden)"),
         type: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
