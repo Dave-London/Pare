@@ -65,7 +65,7 @@
   "devDependencies": {
     "@paretools/tsconfig": "workspace:*",
     "@types/node": "^25.4.0",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.2",
     "vitest": "^4.1.1"
   }
 }
