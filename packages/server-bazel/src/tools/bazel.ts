@@ -54,19 +54,19 @@ export function registerBazelTool(server: McpServer) {
           .optional()
           .default("label")
           .describe("Query output format"),
-        keepGoing: z.boolean().optional().describe("Continue after errors (-k)"),
+        keepGoing: z.coerce.boolean().optional().describe("Continue after errors (-k)"),
         testOutput: z
           .enum(["summary", "errors", "all", "streamed"])
           .optional()
           .default("errors")
           .describe("Test output mode"),
-        verboseFailures: z.boolean().optional().default(true).describe("Verbose failure messages"),
+        verboseFailures: z.coerce.boolean().optional().default(true).describe("Verbose failure messages"),
         infoKey: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Specific info key"),
-        expunge: z.boolean().optional().describe("Full clean with --expunge"),
+        expunge: z.coerce.boolean().optional().describe("Full clean with --expunge"),
         compact: compactInput,
       },
       outputSchema: BazelOutputSchema,

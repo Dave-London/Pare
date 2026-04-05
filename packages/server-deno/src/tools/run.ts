@@ -32,17 +32,17 @@ export function registerRunTool(server: McpServer) {
           .default([])
           .describe("Additional arguments to pass to the script"),
         path: projectPathInput,
-        allowRead: z.boolean().optional().describe("Allow file system read access (--allow-read)"),
+        allowRead: z.coerce.boolean().optional().describe("Allow file system read access (--allow-read)"),
         allowWrite: z
           .boolean()
           .optional()
           .describe("Allow file system write access (--allow-write)"),
-        allowNet: z.boolean().optional().describe("Allow network access (--allow-net)"),
+        allowNet: z.coerce.boolean().optional().describe("Allow network access (--allow-net)"),
         allowEnv: z
           .boolean()
           .optional()
           .describe("Allow environment variable access (--allow-env)"),
-        allowAll: z.boolean().optional().describe("Allow all permissions (-A). Use with caution."),
+        allowAll: z.coerce.boolean().optional().describe("Allow all permissions (-A). Use with caution."),
         compact: compactInput,
       },
       outputSchema: DenoRunResultSchema,

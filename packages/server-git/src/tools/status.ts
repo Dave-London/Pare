@@ -30,14 +30,14 @@ export function registerStatusTool(server: McpServer) {
           .enum(["none", "untracked", "dirty", "all"])
           .optional()
           .describe("Ignore submodule changes (--ignore-submodules)"),
-        showStash: z.boolean().optional().describe("Include stash count (--show-stash)"),
+        showStash: z.coerce.boolean().optional().describe("Include stash count (--show-stash)"),
         renames: z
           .boolean()
           .optional()
           .describe("Enable rename detection (--renames). Set to false with noRenames."),
-        noRenames: z.boolean().optional().describe("Disable rename detection (--no-renames)"),
-        noLockIndex: z.boolean().optional().describe("Do not lock the index (--no-lock-index)"),
-        showIgnored: z.boolean().optional().describe("Show ignored files (--ignored)"),
+        noRenames: z.coerce.boolean().optional().describe("Disable rename detection (--no-renames)"),
+        noLockIndex: z.coerce.boolean().optional().describe("Do not lock the index (--no-lock-index)"),
+        showIgnored: z.coerce.boolean().optional().describe("Show ignored files (--ignored)"),
         porcelainVersion: z
           .enum(["v1", "v2"])
           .optional()

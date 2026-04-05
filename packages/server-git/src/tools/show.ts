@@ -53,14 +53,14 @@ export function registerShowTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter diff output by change type (--diff-filter), e.g. A, M, D"),
-        patch: z.boolean().optional().describe("Include patch content in output (-p/--patch)"),
-        ignoreWhitespace: z.boolean().optional().describe("Filter whitespace-only changes (-w)"),
-        nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
+        patch: z.coerce.boolean().optional().describe("Include patch content in output (-p/--patch)"),
+        ignoreWhitespace: z.coerce.boolean().optional().describe("Filter whitespace-only changes (-w)"),
+        nameStatus: z.coerce.boolean().optional().describe("Show file status with name (--name-status)"),
         showSignature: z
           .boolean()
           .optional()
           .describe("GPG signature verification (--show-signature)"),
-        notes: z.boolean().optional().describe("Include git notes (--notes)"),
+        notes: z.coerce.boolean().optional().describe("Include git notes (--notes)"),
         compact: compactInput,
       },
       outputSchema: GitShowSchema,

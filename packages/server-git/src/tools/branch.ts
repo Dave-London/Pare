@@ -57,21 +57,21 @@ export function registerBranchTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter branches matching a pattern (<pattern>)"),
-        all: z.boolean().optional().default(false).describe("Include remote branches"),
+        all: z.coerce.boolean().optional().default(false).describe("Include remote branches"),
         forceDelete: z
-          .union([z.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
+          .union([z.coerce.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
           .optional()
           .describe(
             "Force-delete unmerged branches (-D). Pass true (requires `delete` param) or a branch name string.",
           ),
-        merged: z.boolean().optional().describe("Filter to branches merged into HEAD (--merged)"),
+        merged: z.coerce.boolean().optional().describe("Filter to branches merged into HEAD (--merged)"),
         noMerged: z
           .boolean()
           .optional()
           .describe("Filter to branches not merged into HEAD (--no-merged)"),
-        remotes: z.boolean().optional().describe("List remote branches only (-r)"),
-        verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
-        force: z.boolean().optional().describe("Force branch creation even if it exists (-f)"),
+        remotes: z.coerce.boolean().optional().describe("List remote branches only (-r)"),
+        verbose: z.coerce.boolean().optional().describe("Verbose branch listing (-v)"),
+        force: z.coerce.boolean().optional().describe("Force branch creation even if it exists (-f)"),
         switchAfterCreate: z
           .boolean()
           .optional()

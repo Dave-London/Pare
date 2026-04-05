@@ -33,18 +33,18 @@ export function registerPushTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Explicit refspec (e.g. 'HEAD:refs/heads/branch')"),
-        force: z.boolean().optional().default(false).describe("Force push (--force)"),
-        setUpstream: z.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
-        dryRun: z.boolean().optional().describe("Preview push without executing (--dry-run)"),
-        forceWithLease: z.boolean().optional().describe("Safe force push (--force-with-lease)"),
-        tags: z.boolean().optional().describe("Push all tags (--tags)"),
+        force: z.coerce.boolean().optional().default(false).describe("Force push (--force)"),
+        setUpstream: z.coerce.boolean().optional().default(false).describe("Set upstream tracking (-u)"),
+        dryRun: z.coerce.boolean().optional().describe("Preview push without executing (--dry-run)"),
+        forceWithLease: z.coerce.boolean().optional().describe("Safe force push (--force-with-lease)"),
+        tags: z.coerce.boolean().optional().describe("Push all tags (--tags)"),
         followTags: z
           .boolean()
           .optional()
           .describe("Push annotated tags with commits (--follow-tags)"),
-        delete: z.boolean().optional().describe("Delete remote branch/tag (--delete)"),
-        noVerify: z.boolean().optional().describe("Bypass pre-push hook (--no-verify)"),
-        atomic: z.boolean().optional().describe("Atomic push (--atomic)"),
+        delete: z.coerce.boolean().optional().describe("Delete remote branch/tag (--delete)"),
+        noVerify: z.coerce.boolean().optional().describe("Bypass pre-push hook (--no-verify)"),
+        atomic: z.coerce.boolean().optional().describe("Atomic push (--atomic)"),
         pushOption: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

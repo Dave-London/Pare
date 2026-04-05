@@ -24,7 +24,7 @@ export function registerCheckTool(server: McpServer) {
       inputSchema: {
         files: filePatternsInput("Files to type-check (at least one required)", []),
         path: projectPathInput,
-        all: z.boolean().optional().describe("Type-check all modules including remote (--all)"),
+        all: z.coerce.boolean().optional().describe("Type-check all modules including remote (--all)"),
         compact: compactInput,
       },
       outputSchema: DenoCheckResultSchema,

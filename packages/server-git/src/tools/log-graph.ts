@@ -28,7 +28,7 @@ export function registerLogGraphTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Branch, tag, or commit to start from"),
-        all: z.boolean().optional().default(false).describe("Show all branches (--all)"),
+        all: z.coerce.boolean().optional().default(false).describe("Show all branches (--all)"),
         since: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -48,13 +48,13 @@ export function registerLogGraphTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Simplify graph to first parents only (--first-parent)"),
-        noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
+        noMerges: z.coerce.boolean().optional().describe("Exclude merge commits (--no-merges)"),
         simplifyByDecoration: z
           .boolean()
           .optional()
           .describe("Show only decorated commits (--simplify-by-decoration)"),
-        branches: z.boolean().optional().describe("Show all branches (--branches)"),
-        remotes: z.boolean().optional().describe("Show remote branches (--remotes)"),
+        branches: z.coerce.boolean().optional().describe("Show all branches (--branches)"),
+        remotes: z.coerce.boolean().optional().describe("Show remote branches (--remotes)"),
         compact: compactInput,
       },
       outputSchema: GitLogGraphSchema,

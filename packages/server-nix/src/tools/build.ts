@@ -31,7 +31,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Output link path (--out-link)"),
-        noLink: z.boolean().optional().describe("Do not create output link (--no-link)"),
+        noLink: z.coerce.boolean().optional().describe("Do not create output link (--no-link)"),
         path: projectPathInput,
         compact: compactInput,
       },

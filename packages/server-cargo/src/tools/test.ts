@@ -43,7 +43,7 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Test in release mode with optimizations (--release)"),
-        doc: z.boolean().optional().default(false).describe("Run only documentation tests (--doc)"),
+        doc: z.coerce.boolean().optional().default(false).describe("Run only documentation tests (--doc)"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

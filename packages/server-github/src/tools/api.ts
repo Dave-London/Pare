@@ -58,8 +58,8 @@ export function registerApiTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include response headers in output (-i/--include)"),
-        silent: z.boolean().optional().describe("Suppress response body output (--silent)"),
-        verbose: z.boolean().optional().describe("Show verbose debug output (--verbose)"),
+        silent: z.coerce.boolean().optional().describe("Suppress response body output (--silent)"),
+        verbose: z.coerce.boolean().optional().describe("Show verbose debug output (--verbose)"),
         // S-gap P0: Add headers param
         headers: z
           .record(z.string(), z.string())

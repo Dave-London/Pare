@@ -48,8 +48,8 @@ export function registerPytestTool(server: McpServer) {
           .enum(["short", "long", "line", "no", "native", "auto"])
           .optional()
           .describe("Traceback output style (default: short)"),
-        verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
-        exitFirst: z.boolean().optional().default(false).describe("Stop on first failure (-x)"),
+        verbose: z.coerce.boolean().optional().default(false).describe("Enable verbose output"),
+        exitFirst: z.coerce.boolean().optional().default(false).describe("Stop on first failure (-x)"),
         maxFail: z
           .number()
           .int()

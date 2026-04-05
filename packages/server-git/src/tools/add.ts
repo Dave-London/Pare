@@ -31,7 +31,7 @@ export function registerAddTool(server: McpServer) {
             .optional()
             .describe("File paths to stage (required unless all is true)"),
         ),
-        all: z.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
+        all: z.coerce.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
         dryRun: z
           .boolean()
           .optional()
@@ -40,7 +40,7 @@ export function registerAddTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Stage only modifications to tracked files, excluding untracked files (-u)"),
-        force: z.boolean().optional().describe("Allow staging of ignored files (-f)"),
+        force: z.coerce.boolean().optional().describe("Allow staging of ignored files (-f)"),
         intentToAdd: z
           .boolean()
           .optional()

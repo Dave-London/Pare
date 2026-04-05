@@ -37,7 +37,7 @@ export function registerJqTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Output raw strings without JSON quotes (-r flag)"),
-        sortKeys: z.boolean().optional().default(false).describe("Sort object keys (-S flag)"),
+        sortKeys: z.coerce.boolean().optional().default(false).describe("Sort object keys (-S flag)"),
         nullInput: z
           .boolean()
           .optional()

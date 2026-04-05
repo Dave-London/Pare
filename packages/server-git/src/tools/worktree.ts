@@ -63,9 +63,9 @@ export function registerWorktreeTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Allow checking out already-checked-out branch on add (-f)"),
-        detach: z.boolean().optional().describe("Detach HEAD on add (-d/--detach)"),
-        noCheckout: z.boolean().optional().describe("Skip checkout on add (--no-checkout)"),
-        forceBranch: z.boolean().optional().describe("Create/reset branch on add (-B)"),
+        detach: z.coerce.boolean().optional().describe("Detach HEAD on add (-d/--detach)"),
+        noCheckout: z.coerce.boolean().optional().describe("Skip checkout on add (--no-checkout)"),
+        forceBranch: z.coerce.boolean().optional().describe("Create/reset branch on add (-B)"),
         guessRemote: z
           .boolean()
           .optional()

@@ -23,7 +23,7 @@ export function registerBuildTool(server: McpServer) {
       annotations: { readOnlyHint: false },
       inputSchema: {
         path: projectPathInput,
-        release: z.boolean().optional().default(false).describe("Build in release mode"),
+        release: z.coerce.boolean().optional().default(false).describe("Build in release mode"),
         keepGoing: z
           .boolean()
           .optional()
@@ -64,7 +64,7 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .describe("Build with a custom profile (--profile <NAME>)"),
         timings: z
-          .union([z.boolean(), z.enum(["html", "json"])])
+          .union([z.coerce.boolean(), z.enum(["html", "json"])])
           .optional()
           .describe(
             "Enable cargo timing report generation (--timings[=html|json]) and expose timing metadata in output.",

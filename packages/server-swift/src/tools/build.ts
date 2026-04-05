@@ -34,7 +34,7 @@ export function registerBuildTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Specific product to build"),
-        verbose: z.boolean().optional().default(false).describe("Enable verbose output (-v)"),
+        verbose: z.coerce.boolean().optional().default(false).describe("Enable verbose output (-v)"),
         path: projectPathInput,
         compact: compactInput,
       },

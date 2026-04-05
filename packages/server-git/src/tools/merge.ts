@@ -18,8 +18,8 @@ export function registerMergeTool(server: McpServer) {
       inputSchema: {
         path: repoPathInput,
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),
-        noFf: z.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
-        abort: z.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),
+        noFf: z.coerce.boolean().optional().default(false).describe("Force merge commit (--no-ff)"),
+        abort: z.coerce.boolean().optional().default(false).describe("Abort in-progress merge (--abort)"),
         continue: z
           .boolean()
           .optional()
@@ -45,16 +45,16 @@ export function registerMergeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Strategy-specific option (-X), e.g. theirs, ours, patience"),
-        ffOnly: z.boolean().optional().describe("Only fast-forward merges (--ff-only)"),
-        squash: z.boolean().optional().describe("Squash merge (--squash)"),
-        noCommit: z.boolean().optional().describe("Merge without auto-committing (--no-commit)"),
+        ffOnly: z.coerce.boolean().optional().describe("Only fast-forward merges (--ff-only)"),
+        squash: z.coerce.boolean().optional().describe("Squash merge (--squash)"),
+        noCommit: z.coerce.boolean().optional().describe("Merge without auto-committing (--no-commit)"),
         allowUnrelatedHistories: z
           .boolean()
           .optional()
           .describe("Allow merging unrelated histories (--allow-unrelated-histories)"),
-        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
-        autostash: z.boolean().optional().describe("Stash/unstash around merge (--autostash)"),
-        noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
+        signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
+        autostash: z.coerce.boolean().optional().describe("Stash/unstash around merge (--autostash)"),
+        noVerify: z.coerce.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
       },
       outputSchema: GitMergeSchema,
     },

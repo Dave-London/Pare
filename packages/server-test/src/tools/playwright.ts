@@ -150,7 +150,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .optional()
           .describe("Trace recording mode (--trace)"),
         config: configInput("Path to non-default Playwright config file (--config)"),
-        headed: z.boolean().optional().default(false).describe("Run tests in headed browser mode"),
+        headed: z.coerce.boolean().optional().default(false).describe("Run tests in headed browser mode"),
         updateSnapshots: z
           .boolean()
           .optional()

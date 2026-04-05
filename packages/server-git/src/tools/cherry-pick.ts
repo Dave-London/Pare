@@ -30,7 +30,7 @@ export function registerCherryPickTool(server: McpServer) {
           )
           .default([])
           .describe("Commit hashes to cherry-pick"),
-        abort: z.boolean().optional().default(false).describe("Abort in-progress cherry-pick"),
+        abort: z.coerce.boolean().optional().default(false).describe("Abort in-progress cherry-pick"),
         continue: z
           .boolean()
           .optional()
@@ -59,8 +59,8 @@ export function registerCherryPickTool(server: McpServer) {
           .boolean()
           .optional()
           .describe('Append "(cherry picked from commit ...)" to message (-x)'),
-        allowEmpty: z.boolean().optional().describe("Allow empty commits (--allow-empty)"),
-        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
+        allowEmpty: z.coerce.boolean().optional().describe("Allow empty commits (--allow-empty)"),
+        signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
         keepRedundantCommits: z
           .boolean()
           .optional()

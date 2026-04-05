@@ -14,8 +14,8 @@ import { INPUT_LIMITS } from "./limits.js";
 // Constants (zero variation across servers)
 // ---------------------------------------------------------------------------
 
-/** `compact: z.boolean().optional().default(true).describe("Prefer compact output")` */
-export const compactInput = z.boolean().optional().default(true).describe("Prefer compact output");
+/** `compact: z.coerce.boolean().optional().default(true).describe("Prefer compact output")` */
+export const compactInput = z.coerce.boolean().optional().default(true).describe("Prefer compact output");
 
 /** `path` for servers whose root concept is a project (go, lint, build, make, cargo, python, test, npm). */
 export const projectPathInput = z
@@ -38,8 +38,8 @@ export const cwdPathInput = z
   .optional()
   .describe("Working directory");
 
-/** `fix: z.boolean().optional().default(false).describe("Auto-fix problems")` */
-export const fixInput = z.boolean().optional().default(false).describe("Auto-fix problems");
+/** `fix: z.coerce.boolean().optional().default(false).describe("Auto-fix problems")` */
+export const fixInput = z.coerce.boolean().optional().default(false).describe("Auto-fix problems");
 
 // ---------------------------------------------------------------------------
 // Factories (same shape, varied descriptions)

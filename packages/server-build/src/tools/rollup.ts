@@ -46,8 +46,8 @@ export function registerRollupTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Name for UMD/IIFE bundle (maps to --name)"),
-        sourcemap: z.boolean().optional().describe("Generate source maps (maps to --sourcemap)"),
-        watch: z.boolean().optional().describe("Run in watch mode (maps to --watch)"),
+        sourcemap: z.coerce.boolean().optional().describe("Generate source maps (maps to --sourcemap)"),
+        watch: z.coerce.boolean().optional().describe("Run in watch mode (maps to --watch)"),
         args: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

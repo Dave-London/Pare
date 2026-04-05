@@ -36,12 +36,12 @@ export function registerSubmoduleTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Initialize submodules (--init, used with update action)"),
-        recursive: z.boolean().optional().describe("Recurse into submodules (--recursive)"),
+        recursive: z.coerce.boolean().optional().describe("Recurse into submodules (--recursive)"),
         remote: z
           .boolean()
           .optional()
           .describe("Fetch from remote (--remote, used with update action)"),
-        force: z.boolean().optional().describe("Force operation (-f, used with deinit action)"),
+        force: z.coerce.boolean().optional().describe("Force operation (-f, used with deinit action)"),
         branch: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

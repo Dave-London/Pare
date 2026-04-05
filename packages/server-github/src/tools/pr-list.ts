@@ -48,7 +48,7 @@ export function registerPrListTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Filter by multiple labels (each maps to --label)"),
-        draft: z.boolean().optional().describe("Filter by draft status (-d/--draft)"),
+        draft: z.coerce.boolean().optional().describe("Filter by draft status (-d/--draft)"),
         // S-gap P0: Add base branch filter
         base: z
           .string()

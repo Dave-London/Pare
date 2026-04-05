@@ -20,7 +20,7 @@ export function registerInstallTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Error if lockfile would change (--frozen-lockfile)"),
-        production: z.boolean().optional().describe("Skip devDependencies (--production)"),
+        production: z.coerce.boolean().optional().describe("Skip devDependencies (--production)"),
         path: projectPathInput,
         compact: compactInput,
       },

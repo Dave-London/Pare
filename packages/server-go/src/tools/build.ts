@@ -28,7 +28,7 @@ export function registerBuildTool(server: McpServer) {
           .optional()
           .default(["./..."])
           .describe("Packages to build (default: ./...)"),
-        race: z.boolean().optional().default(false).describe("Enable data race detection (-race)"),
+        race: z.coerce.boolean().optional().default(false).describe("Enable data race detection (-race)"),
         trimpath: z
           .boolean()
           .optional()

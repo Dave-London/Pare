@@ -51,8 +51,8 @@ export function registerReflogTool(server: McpServer) {
           .optional()
           .describe("Filter entries before this date (--until)"),
         skip: z.coerce.number().optional().describe("Skip N entries for pagination (--skip)"),
-        all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
-        reverse: z.boolean().optional().describe("Show entries in reverse order (--reverse)"),
+        all: z.coerce.boolean().optional().describe("Show all refs' reflogs (--all)"),
+        reverse: z.coerce.boolean().optional().describe("Show entries in reverse order (--reverse)"),
         compact: compactInput,
       },
       outputSchema: GitReflogSchema,

@@ -38,7 +38,7 @@ export function registerRunViewTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Retrieve logs for failed steps only (--log-failed)"),
-        log: z.boolean().optional().describe("Retrieve full run logs (--log)"),
+        log: z.coerce.boolean().optional().describe("Retrieve full run logs (--log)"),
         attempt: z.coerce
           .number()
           .optional()

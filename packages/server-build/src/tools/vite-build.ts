@@ -39,7 +39,7 @@ export function registerViteBuildTool(server: McpServer) {
           .optional()
           .describe("Path to Vite config file (maps to --config)"),
         sourcemap: z
-          .union([z.boolean(), z.enum(["inline", "hidden"])])
+          .union([z.coerce.boolean(), z.enum(["inline", "hidden"])])
           .optional()
           .describe(
             "Generate source maps. true for default, 'inline' for inline, 'hidden' for hidden source maps.",

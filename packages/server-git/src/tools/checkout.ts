@@ -21,7 +21,7 @@ export function registerCheckoutTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Branch name, tag, or commit SHA to checkout"),
-        create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
+        create: z.coerce.boolean().optional().default(false).describe("Create a new branch (-b)"),
         startPoint: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -32,10 +32,10 @@ export function registerCheckoutTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Create a new orphan branch with this name (--orphan)"),
-        force: z.boolean().optional().describe("Force checkout discarding local changes (-f)"),
-        track: z.boolean().optional().describe("Set up tracking for remote branches (--track)"),
-        forceCreate: z.boolean().optional().describe("Force-create branch even if it exists (-B)"),
-        detach: z.boolean().optional().describe("Detach HEAD at target (--detach)"),
+        force: z.coerce.boolean().optional().describe("Force checkout discarding local changes (-f)"),
+        track: z.coerce.boolean().optional().describe("Set up tracking for remote branches (--track)"),
+        forceCreate: z.coerce.boolean().optional().describe("Force-create branch even if it exists (-B)"),
+        detach: z.coerce.boolean().optional().describe("Detach HEAD at target (--detach)"),
         useSwitch: z
           .boolean()
           .optional()

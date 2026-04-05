@@ -73,11 +73,11 @@ export function registerLogTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter by change type (--diff-filter), e.g. A, M, D"),
-        noMerges: z.boolean().optional().describe("Exclude merge commits (--no-merges)"),
+        noMerges: z.coerce.boolean().optional().describe("Exclude merge commits (--no-merges)"),
         skip: z.coerce.number().optional().describe("Skip N commits for pagination (--skip)"),
-        follow: z.boolean().optional().describe("Follow file renames (--follow)"),
-        firstParent: z.boolean().optional().describe("Follow only first parent (--first-parent)"),
-        all: z.boolean().optional().describe("Show all refs (--all)"),
+        follow: z.coerce.boolean().optional().describe("Follow file renames (--follow)"),
+        firstParent: z.coerce.boolean().optional().describe("Follow only first parent (--first-parent)"),
+        all: z.coerce.boolean().optional().describe("Show all refs (--all)"),
         pickaxe: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

@@ -33,14 +33,14 @@ export function registerStashTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Stash untracked files (-u/--include-untracked)"),
-        staged: z.boolean().optional().describe("Stash only staged changes (--staged)"),
-        keepIndex: z.boolean().optional().describe("Keep staged changes in index (--keep-index)"),
+        staged: z.coerce.boolean().optional().describe("Stash only staged changes (--staged)"),
+        keepIndex: z.coerce.boolean().optional().describe("Keep staged changes in index (--keep-index)"),
         pathspec: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Stash specific files (-- <pathspec>)"),
-        all: z.boolean().optional().describe("Include ignored files (-a/--all)"),
+        all: z.coerce.boolean().optional().describe("Include ignored files (-a/--all)"),
         reinstateIndex: z
           .boolean()
           .optional()

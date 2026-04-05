@@ -67,7 +67,7 @@ export function registerFindTool(server: McpServer) {
           .number()
           .optional()
           .describe("Maximum directory depth to search (--max-depth)"),
-        hidden: z.boolean().optional().describe("Include hidden files and directories (--hidden)"),
+        hidden: z.coerce.boolean().optional().describe("Include hidden files and directories (--hidden)"),
         absolutePath: z
           .boolean()
           .optional()
@@ -84,7 +84,7 @@ export function registerFindTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        follow: z.boolean().optional().describe("Follow symbolic links (--follow)"),
+        follow: z.coerce.boolean().optional().describe("Follow symbolic links (--follow)"),
         compact: compactInput,
       },
       outputSchema: FindResultSchema,

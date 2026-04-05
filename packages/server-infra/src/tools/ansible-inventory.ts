@@ -44,7 +44,7 @@ export function registerAnsibleInventoryTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Show variables for a specific host (--host)"),
-        vars: z.boolean().optional().describe("Show host variables in graph mode (--vars)"),
+        vars: z.coerce.boolean().optional().describe("Show host variables in graph mode (--vars)"),
         path: projectPathInput,
         compact: compactInput,
       },

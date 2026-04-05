@@ -37,7 +37,7 @@ export function registerRunRerunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: detected from git remote)"),
-        debug: z.boolean().optional().describe("Enable runner diagnostic logging (-d/--debug)"),
+        debug: z.coerce.boolean().optional().describe("Enable runner diagnostic logging (-d/--debug)"),
         // S-gap P1: Add job for rerunning a specific job
         job: z
           .string()

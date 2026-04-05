@@ -33,7 +33,7 @@ export function registerRebaseTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Rebase onto a different base (--onto)"),
-        abort: z.boolean().optional().default(false).describe("Abort in-progress rebase"),
+        abort: z.coerce.boolean().optional().default(false).describe("Abort in-progress rebase"),
         continue: z
           .boolean()
           .optional()
@@ -70,7 +70,7 @@ export function registerRebaseTool(server: McpServer) {
           .enum(["drop", "keep", "ask"])
           .optional()
           .describe("Control empty commit handling (--empty)"),
-        autostash: z.boolean().optional().describe("Stash/unstash around rebase (--autostash)"),
+        autostash: z.coerce.boolean().optional().describe("Stash/unstash around rebase (--autostash)"),
         autosquash: z
           .boolean()
           .optional()
@@ -79,9 +79,9 @@ export function registerRebaseTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Force rebase even if up-to-date (--force-rebase)"),
-        rebaseMerges: z.boolean().optional().describe("Preserve merge commits (--rebase-merges)"),
-        updateRefs: z.boolean().optional().describe("Update dependent branches (--update-refs)"),
-        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
+        rebaseMerges: z.coerce.boolean().optional().describe("Preserve merge commits (--rebase-merges)"),
+        updateRefs: z.coerce.boolean().optional().describe("Update dependent branches (--update-refs)"),
+        signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
       },
       outputSchema: GitRebaseSchema,
     },

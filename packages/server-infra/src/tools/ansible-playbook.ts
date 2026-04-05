@@ -52,7 +52,7 @@ export function registerAnsiblePlaybookTool(server: McpServer) {
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
           .describe("Extra variables as key=value or JSON string (-e)"),
-        check: z.boolean().optional().describe("Run in check mode / dry-run (-C)"),
+        check: z.coerce.boolean().optional().describe("Run in check mode / dry-run (-C)"),
         syntaxCheck: z
           .boolean()
           .optional()
@@ -61,7 +61,7 @@ export function registerAnsiblePlaybookTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("List all tasks that would be executed (--list-tasks)"),
-        listTags: z.boolean().optional().describe("List all available tags (--list-tags)"),
+        listTags: z.coerce.boolean().optional().describe("List all available tags (--list-tags)"),
         forks: z
           .number()
           .int()

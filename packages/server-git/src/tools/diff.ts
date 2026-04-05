@@ -24,7 +24,7 @@ export function registerDiffTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
-        staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
+        staged: z.coerce.boolean().optional().default(false).describe("Show staged changes (--cached)"),
         ref: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -70,13 +70,13 @@ export function registerDiffTool(server: McpServer) {
           .number()
           .optional()
           .describe("Rename detection threshold percentage (-M<n>), e.g. 50 for 50%"),
-        ignoreWhitespace: z.boolean().optional().describe("Ignore all whitespace changes (-w)"),
+        ignoreWhitespace: z.coerce.boolean().optional().describe("Ignore all whitespace changes (-w)"),
         contextLines: z.coerce.number().optional().describe("Number of context lines (-U<n>)"),
-        nameStatus: z.boolean().optional().describe("Show file status with name (--name-status)"),
-        ignoreSpaceChange: z.boolean().optional().describe("Ignore space amount changes (-b)"),
-        reverse: z.boolean().optional().describe("Reverse diff direction (-R)"),
-        wordDiff: z.boolean().optional().describe("Word-level diff (--word-diff)"),
-        relative: z.boolean().optional().describe("Show relative paths (--relative)"),
+        nameStatus: z.coerce.boolean().optional().describe("Show file status with name (--name-status)"),
+        ignoreSpaceChange: z.coerce.boolean().optional().describe("Ignore space amount changes (-b)"),
+        reverse: z.coerce.boolean().optional().describe("Reverse diff direction (-R)"),
+        wordDiff: z.coerce.boolean().optional().describe("Word-level diff (--word-diff)"),
+        relative: z.coerce.boolean().optional().describe("Show relative paths (--relative)"),
         ignoreBlankLines: z
           .boolean()
           .optional()

@@ -27,7 +27,7 @@ export function registerAddTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe('Packages to add (e.g. ["serde", "tokio@1.0"])'),
-        dev: z.boolean().optional().default(false).describe("Add as dev dependency (--dev)"),
+        dev: z.coerce.boolean().optional().default(false).describe("Add as dev dependency (--dev)"),
         features: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -38,7 +38,7 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Preview what would be added without modifying Cargo.toml (--dry-run)"),
-        build: z.boolean().optional().default(false).describe("Add as build dependency (--build)"),
+        build: z.coerce.boolean().optional().default(false).describe("Add as build dependency (--build)"),
         optional: z
           .boolean()
           .optional()

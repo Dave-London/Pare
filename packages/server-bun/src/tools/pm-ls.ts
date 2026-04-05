@@ -16,7 +16,7 @@ export function registerPmLsTool(server: McpServer) {
         "Runs `bun pm ls` to list installed packages and returns structured package info.",
       annotations: { readOnlyHint: true },
       inputSchema: {
-        all: z.boolean().optional().describe("Show all transitive dependencies (--all)"),
+        all: z.coerce.boolean().optional().describe("Show all transitive dependencies (--all)"),
         path: projectPathInput,
         compact: compactInput,
       },
