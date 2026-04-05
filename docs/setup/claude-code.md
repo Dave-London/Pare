@@ -12,7 +12,7 @@ cat node_modules/@paretools/init/rules/CLAUDE.md >> CLAUDE.md
 # 3. Restart Claude Code
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -119,7 +119,7 @@ See the [Agent Integration Guide](../agent-integration.md#claude-code-hooks-deep
 ## Verify
 
 ```bash
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 A successful run confirms all configured servers are reachable and tools are registered.

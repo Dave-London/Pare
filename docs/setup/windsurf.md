@@ -12,7 +12,7 @@ cp node_modules/@paretools/init/rules/.windsurfrules .windsurfrules
 # 3. Restart Windsurf
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -66,4 +66,4 @@ The file must stay under 6,000 characters (it currently uses ~1,800).
 
 ## Verify
 
-Restart Windsurf after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Windsurf after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

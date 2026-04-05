@@ -27,4 +27,4 @@ Add to your Zed settings:
 
 ## Verify
 
-Restart Zed after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Zed after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

@@ -18,4 +18,4 @@ Add more servers as needed — each follows the same pattern with `@paretools/<s
 
 ## Verify
 
-Restart Codex after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Codex after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

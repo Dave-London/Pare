@@ -9,7 +9,7 @@ npx @paretools/init --client claude-desktop --preset web
 # 2. Restart Claude Desktop
 
 # 3. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -58,4 +58,4 @@ On Windows, wrap `npx` with `cmd /c`:
 
 ## Verify
 
-Restart Claude Desktop after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Claude Desktop after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

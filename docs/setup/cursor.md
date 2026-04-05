@@ -13,7 +13,7 @@ cp node_modules/@paretools/init/rules/.cursor/rules/pare.mdc .cursor/rules/pare.
 # 3. Restart Cursor
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -68,4 +68,4 @@ The `alwaysApply: true` frontmatter ensures the rules are active for every conve
 
 ## Verify
 
-Restart Cursor after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Cursor after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

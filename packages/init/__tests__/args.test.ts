@@ -60,6 +60,22 @@ describe("parseInitArgs", () => {
   it("throws on unknown flags", () => {
     expect(() => parseInitArgs(["--unknown"])).toThrow();
   });
+
+  it("parses 'doctor' subcommand as positional", () => {
+    const args = parseInitArgs(["doctor"]);
+    expect(args.subcommand).toBe("doctor");
+  });
+
+  it("parses 'doctor' subcommand with flags", () => {
+    const args = parseInitArgs(["doctor", "--client", "cursor"]);
+    expect(args.subcommand).toBe("doctor");
+    expect(args.client).toBe("cursor");
+  });
+
+  it("has no subcommand when none provided", () => {
+    const args = parseInitArgs(["--client", "cursor"]);
+    expect(args.subcommand).toBeUndefined();
+  });
 });
 
 describe("parseDoctorArgs", () => {
