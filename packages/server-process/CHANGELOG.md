@@ -1,5 +1,14 @@
 # @paretools/process
 
+## 0.16.2
+
+### Patch Changes
+
+- [#784](https://github.com/Dave-London/Pare/pull/784) [`2cc1f32`](https://github.com/Dave-London/Pare/commit/2cc1f326d6600a1f5f1164e6f6351cfc0ba32a57) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix boolean input parameters rejecting string values ("true"/"false") by switching from z.boolean() to z.coerce.boolean() across all tool schemas
+
+- Updated dependencies [[`2cc1f32`](https://github.com/Dave-London/Pare/commit/2cc1f326d6600a1f5f1164e6f6351cfc0ba32a57)]:
+  - @paretools/shared@0.16.2
+
 ## 0.16.1
 
 ### Patch Changes

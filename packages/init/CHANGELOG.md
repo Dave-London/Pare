@@ -1,5 +1,11 @@
 # @paretools/init
 
+## 0.16.2
+
+### Patch Changes
+
+- [#778](https://github.com/Dave-London/Pare/pull/778) [`3ad8951`](https://github.com/Dave-London/Pare/commit/3ad8951e2a1c730b0457277a995aaaf78e2ab6d0) Thanks [@Dave-London](https://github.com/Dave-London)! - Add `doctor` subcommand so `npx @paretools/init doctor` runs the health check (previously suggested `npx @paretools/doctor` which 404'd)
+
 ## 0.16.1
 
 ## 0.16.0
