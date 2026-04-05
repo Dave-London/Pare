@@ -1261,6 +1261,72 @@ describe("@paretools/git write-tool integration", () => {
       }
     });
 
+    it("creates a lightweight tag via create shorthand", async () => {
+      const result = await client.callTool(
+        {
+          name: "tag",
+          arguments: { path: tempDir, create: "v1.1.0-shorthand" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toBeDefined();
+
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      expect(textContent.length).toBeGreaterThan(0);
+      expect(textContent[0].text).toContain("v1.1.0-shorthand");
+
+      if (result.structuredContent) {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc.success).toBe(true);
+        expect(sc.action).toBe("create");
+        expect(sc.name).toBe("v1.1.0-shorthand");
+        expect(sc.annotated).toBe(false);
+      }
+    });
+
+    it("creates an annotated tag via create shorthand with message", async () => {
+      const result = await client.callTool(
+        {
+          name: "tag",
+          arguments: {
+            path: tempDir,
+            create: "v1.2.0-shorthand",
+            message: "Shorthand annotated release",
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toBeDefined();
+
+      const textContent = result.content as Array<{ type: string; text: string }>;
+      expect(textContent[0].text).toContain("v1.2.0-shorthand");
+
+      if (result.structuredContent) {
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc.success).toBe(true);
+        expect(sc.annotated).toBe(true);
+      }
+    });
+
+    it("rejects flag-injection in create shorthand", async () => {
+      const result = await client.callTool(
+        {
+          name: "tag",
+          arguments: { path: tempDir, create: "--force" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBe(true);
+    });
+
     it("creates an annotated tag with message", async () => {
       const result = await client.callTool(
         {
