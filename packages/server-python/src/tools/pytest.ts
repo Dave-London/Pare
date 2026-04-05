@@ -48,7 +48,7 @@ export function registerPytestTool(server: McpServer) {
           .enum(["short", "long", "line", "no", "native", "auto"])
           .optional()
           .describe("Traceback output style (default: short)"),
-        verbose: z.coerce.boolean().optional().default(false).describe("Enable verbose output"),
+        verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
         exitFirst: z.coerce
           .boolean()
           .optional()

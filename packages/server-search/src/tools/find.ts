@@ -87,7 +87,7 @@ export function registerFindTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Don't respect .gitignore and other ignore files (--no-ignore)"),
-        follow: z.coerce.boolean().optional().describe("Follow symbolic links (--follow)"),
+        follow: z.boolean().optional().describe("Follow symbolic links (--follow)"),
         compact: compactInput,
       },
       outputSchema: FindResultSchema,

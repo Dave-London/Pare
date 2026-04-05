@@ -40,7 +40,7 @@ export function registerRunTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Allow file system write access (--allow-write)"),
-        allowNet: z.coerce.boolean().optional().describe("Allow network access (--allow-net)"),
+        allowNet: z.boolean().optional().describe("Allow network access (--allow-net)"),
         allowEnv: z
           .boolean()
           .optional()

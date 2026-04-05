@@ -21,7 +21,7 @@ export function registerCheckoutTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Branch name, tag, or commit SHA to checkout"),
-        create: z.coerce.boolean().optional().default(false).describe("Create a new branch (-b)"),
+        create: z.boolean().optional().default(false).describe("Create a new branch (-b)"),
         startPoint: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -44,7 +44,7 @@ export function registerCheckoutTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Force-create branch even if it exists (-B)"),
-        detach: z.coerce.boolean().optional().describe("Detach HEAD at target (--detach)"),
+        detach: z.boolean().optional().describe("Detach HEAD at target (--detach)"),
         useSwitch: z
           .boolean()
           .optional()

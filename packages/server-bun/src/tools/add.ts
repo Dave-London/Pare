@@ -30,7 +30,7 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Add as devDependency (--dev / -D)"),
-        exact: z.coerce.boolean().optional().describe("Add exact version (--exact)"),
+        exact: z.boolean().optional().describe("Add exact version (--exact)"),
         path: projectPathInput,
         compact: compactInput,
       },

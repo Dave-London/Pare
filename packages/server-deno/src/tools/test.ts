@@ -35,7 +35,7 @@ export function registerTestTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Allow all permissions (-A). Defaults to true for test convenience."),
-        failFast: z.coerce.boolean().optional().describe("Stop on first failure (--fail-fast)"),
+        failFast: z.boolean().optional().describe("Stop on first failure (--fail-fast)"),
         compact: compactInput,
       },
       outputSchema: DenoTestResultSchema,

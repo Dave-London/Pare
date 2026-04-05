@@ -87,9 +87,9 @@ export function registerDiffTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Ignore space amount changes (-b)"),
-        reverse: z.coerce.boolean().optional().describe("Reverse diff direction (-R)"),
-        wordDiff: z.coerce.boolean().optional().describe("Word-level diff (--word-diff)"),
-        relative: z.coerce.boolean().optional().describe("Show relative paths (--relative)"),
+        reverse: z.boolean().optional().describe("Reverse diff direction (-R)"),
+        wordDiff: z.boolean().optional().describe("Word-level diff (--word-diff)"),
+        relative: z.boolean().optional().describe("Show relative paths (--relative)"),
         ignoreBlankLines: z
           .boolean()
           .optional()

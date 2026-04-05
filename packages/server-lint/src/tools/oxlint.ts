@@ -31,7 +31,7 @@ export function registerOxlintTool(server: McpServer) {
           .optional()
           .default(["."])
           .describe("File patterns to lint (default: ['.'])"),
-        fix: z.coerce.boolean().optional().describe("Auto-fix problems (maps to --fix)"),
+        fix: z.boolean().optional().describe("Auto-fix problems (maps to --fix)"),
         quiet: z
           .boolean()
           .optional()

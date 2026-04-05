@@ -69,7 +69,7 @@ export function registerShowTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("GPG signature verification (--show-signature)"),
-        notes: z.coerce.boolean().optional().describe("Include git notes (--notes)"),
+        notes: z.boolean().optional().describe("Include git notes (--notes)"),
         compact: compactInput,
       },
       outputSchema: GitShowSchema,

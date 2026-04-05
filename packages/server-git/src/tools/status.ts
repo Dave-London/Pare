@@ -30,7 +30,7 @@ export function registerStatusTool(server: McpServer) {
           .enum(["none", "untracked", "dirty", "all"])
           .optional()
           .describe("Ignore submodule changes (--ignore-submodules)"),
-        showStash: z.coerce.boolean().optional().describe("Include stash count (--show-stash)"),
+        showStash: z.boolean().optional().describe("Include stash count (--show-stash)"),
         renames: z
           .boolean()
           .optional()
@@ -43,7 +43,7 @@ export function registerStatusTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Do not lock the index (--no-lock-index)"),
-        showIgnored: z.coerce.boolean().optional().describe("Show ignored files (--ignored)"),
+        showIgnored: z.boolean().optional().describe("Show ignored files (--ignored)"),
         porcelainVersion: z
           .enum(["v1", "v2"])
           .optional()

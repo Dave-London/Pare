@@ -195,8 +195,8 @@ export function registerHelmTool(server: McpServer) {
           .describe(
             "Custom description for the release (--description). Added to the release metadata.",
           ),
-        noHooks: z.coerce.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
-        skipCrds: z.coerce.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
+        noHooks: z.boolean().optional().describe("Skip execution of hooks (--no-hooks)"),
+        skipCrds: z.boolean().optional().describe("Skip CRD installation (--skip-crds)"),
         compact: compactInput,
       },
       outputSchema: z.union([

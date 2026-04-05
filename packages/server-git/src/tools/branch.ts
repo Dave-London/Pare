@@ -57,9 +57,9 @@ export function registerBranchTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Filter branches matching a pattern (<pattern>)"),
-        all: z.coerce.boolean().optional().default(false).describe("Include remote branches"),
+        all: z.boolean().optional().default(false).describe("Include remote branches"),
         forceDelete: z
-          .union([z.coerce.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
+          .union([z.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
           .optional()
           .describe(
             "Force-delete unmerged branches (-D). Pass true (requires `delete` param) or a branch name string.",
@@ -72,8 +72,8 @@ export function registerBranchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to branches not merged into HEAD (--no-merged)"),
-        remotes: z.coerce.boolean().optional().describe("List remote branches only (-r)"),
-        verbose: z.coerce.boolean().optional().describe("Verbose branch listing (-v)"),
+        remotes: z.boolean().optional().describe("List remote branches only (-r)"),
+        verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
         force: z.coerce
           .boolean()
           .optional()

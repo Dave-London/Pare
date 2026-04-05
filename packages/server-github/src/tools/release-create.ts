@@ -33,8 +33,8 @@ export function registerReleaseCreateTool(server: McpServer) {
           .optional()
           .describe("Release title (default: tag name)"),
         notes: z.string().max(INPUT_LIMITS.STRING_MAX).optional().describe("Release notes/body"),
-        draft: z.coerce.boolean().optional().default(false).describe("Create as draft release"),
-        prerelease: z.coerce.boolean().optional().default(false).describe("Mark as prerelease"),
+        draft: z.boolean().optional().default(false).describe("Create as draft release"),
+        prerelease: z.boolean().optional().default(false).describe("Mark as prerelease"),
         target: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

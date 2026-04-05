@@ -27,7 +27,7 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .describe("Arguments to pass to the binary (after --)"),
-        release: z.coerce.boolean().optional().default(false).describe("Run in release mode"),
+        release: z.boolean().optional().default(false).describe("Run in release mode"),
         package: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

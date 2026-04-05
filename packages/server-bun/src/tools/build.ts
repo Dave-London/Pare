@@ -43,12 +43,12 @@ export function registerBuildTool(server: McpServer) {
           .enum(["esm", "cjs", "iife"])
           .optional()
           .describe("Output module format (--format)"),
-        minify: z.coerce.boolean().optional().describe("Minify the output (--minify)"),
+        minify: z.boolean().optional().describe("Minify the output (--minify)"),
         sourcemap: z
           .enum(["none", "inline", "external"])
           .optional()
           .describe("Source map generation (--sourcemap)"),
-        splitting: z.coerce.boolean().optional().describe("Enable code splitting (--splitting)"),
+        splitting: z.boolean().optional().describe("Enable code splitting (--splitting)"),
         path: projectPathInput,
         compact: compactInput,
       },

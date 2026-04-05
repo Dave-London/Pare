@@ -39,13 +39,13 @@ export function registerRestoreTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Restore theirs version during conflicts (--theirs)"),
-        worktree: z.coerce.boolean().optional().describe("Restore working tree files (--worktree)"),
-        merge: z.coerce.boolean().optional().describe("Recreate conflicted merge (--merge)"),
+        worktree: z.boolean().optional().describe("Restore working tree files (--worktree)"),
+        merge: z.boolean().optional().describe("Recreate conflicted merge (--merge)"),
         ignoreUnmerged: z
           .boolean()
           .optional()
           .describe("Ignore unmerged entries (--ignore-unmerged)"),
-        noOverlay: z.coerce.boolean().optional().describe("Remove extra files (--no-overlay)"),
+        noOverlay: z.boolean().optional().describe("Remove extra files (--no-overlay)"),
         conflict: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

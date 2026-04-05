@@ -16,7 +16,7 @@ export function registerFmtTool(server: McpServer) {
         "Checks Terraform configuration formatting. Lists files that need formatting and optionally shows diffs.",
       inputSchema: {
         path: projectPathInput,
-        diff: z.coerce.boolean().optional().describe("Show formatting differences (-diff)"),
+        diff: z.boolean().optional().describe("Show formatting differences (-diff)"),
         recursive: z
           .boolean()
           .optional()

@@ -310,7 +310,7 @@ export function registerRunTool(server: McpServer) {
             "Exit successfully when no tests are found (maps to --passWithNoTests for jest/vitest)",
           ),
         bail: z
-          .union([z.coerce.number().int().min(1), z.coerce.boolean()])
+          .union([z.coerce.number().int().min(1), z.boolean()])
           .optional()
           .describe(
             "Fail fast after N failures (maps to --maxfail=N for pytest, --bail=N for jest/vitest, --bail for mocha). Pass true for 1.",

@@ -33,8 +33,8 @@ export function registerCleanTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Also remove untracked directories (-d)"),
-        ignored: z.coerce.boolean().optional().describe("Also remove ignored files (-x)"),
-        onlyIgnored: z.coerce.boolean().optional().describe("Only remove ignored files (-X)"),
+        ignored: z.boolean().optional().describe("Also remove ignored files (-x)"),
+        onlyIgnored: z.boolean().optional().describe("Only remove ignored files (-X)"),
         exclude: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

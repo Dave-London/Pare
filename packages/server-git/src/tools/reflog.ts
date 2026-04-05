@@ -51,7 +51,7 @@ export function registerReflogTool(server: McpServer) {
           .optional()
           .describe("Filter entries before this date (--until)"),
         skip: z.coerce.number().optional().describe("Skip N entries for pagination (--skip)"),
-        all: z.coerce.boolean().optional().describe("Show all refs' reflogs (--all)"),
+        all: z.boolean().optional().describe("Show all refs' reflogs (--all)"),
         reverse: z.coerce
           .boolean()
           .optional()

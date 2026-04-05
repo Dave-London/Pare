@@ -36,7 +36,7 @@ export function registerSubmoduleTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Initialize submodules (--init, used with update action)"),
-        recursive: z.coerce.boolean().optional().describe("Recurse into submodules (--recursive)"),
+        recursive: z.boolean().optional().describe("Recurse into submodules (--recursive)"),
         remote: z
           .boolean()
           .optional()

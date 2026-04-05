@@ -62,7 +62,7 @@ export function registerApplyTool(server: McpServer) {
           .describe(
             "Timeout for --wait (--timeout). E.g., '30s', '5m', '1h'. Only effective when wait is true.",
           ),
-        recursive: z.coerce.boolean().optional().describe("Process directories recursively (-R)"),
+        recursive: z.boolean().optional().describe("Process directories recursively (-R)"),
         kustomize: z
           .boolean()
           .optional()

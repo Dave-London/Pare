@@ -54,7 +54,7 @@ export function registerBazelTool(server: McpServer) {
           .optional()
           .default("label")
           .describe("Query output format"),
-        keepGoing: z.coerce.boolean().optional().describe("Continue after errors (-k)"),
+        keepGoing: z.boolean().optional().describe("Continue after errors (-k)"),
         testOutput: z
           .enum(["summary", "errors", "all", "streamed"])
           .optional()
@@ -70,7 +70,7 @@ export function registerBazelTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Specific info key"),
-        expunge: z.coerce.boolean().optional().describe("Full clean with --expunge"),
+        expunge: z.boolean().optional().describe("Full clean with --expunge"),
         compact: compactInput,
       },
       outputSchema: BazelOutputSchema,

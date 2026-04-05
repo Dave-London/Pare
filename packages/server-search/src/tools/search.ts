@@ -80,7 +80,7 @@ export function registerSearchTool(server: McpServer) {
           .number()
           .optional()
           .describe("Maximum directory depth to search (--max-depth)"),
-        followSymlinks: z.coerce.boolean().optional().describe("Follow symbolic links (--follow)"),
+        followSymlinks: z.boolean().optional().describe("Follow symbolic links (--follow)"),
         noIgnore: z
           .boolean()
           .optional()

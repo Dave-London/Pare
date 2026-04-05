@@ -18,7 +18,7 @@ export function registerCommitTool(server: McpServer) {
       inputSchema: {
         path: repoPathInput,
         message: z.string().max(INPUT_LIMITS.MESSAGE_MAX).describe("Commit message"),
-        amend: z.coerce.boolean().optional().default(false).describe("Amend the previous commit"),
+        amend: z.boolean().optional().default(false).describe("Amend the previous commit"),
         noVerify: z
           .boolean()
           .optional()
@@ -31,7 +31,7 @@ export function registerCommitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Auto-stage tracked modified/deleted files (-a/--all)"),
-        signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
         noEdit: z.coerce
           .boolean()
           .optional()
@@ -40,7 +40,7 @@ export function registerCommitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Preview commit without executing (--dry-run)"),
-        gpgSign: z.coerce.boolean().optional().describe("GPG sign the commit (-S/--gpg-sign)"),
+        gpgSign: z.boolean().optional().describe("GPG sign the commit (-S/--gpg-sign)"),
         resetAuthor: z
           .boolean()
           .optional()

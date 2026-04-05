@@ -71,9 +71,9 @@ export function registerTagTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Sort tag list (--sort), e.g. -creatordate, version:refname"),
-        force: z.coerce.boolean().optional().describe("Force tag creation (-f)"),
-        sign: z.coerce.boolean().optional().describe("Sign tag with GPG (-s)"),
-        verify: z.coerce.boolean().optional().describe("Verify tag signature (-v)"),
+        force: z.boolean().optional().describe("Force tag creation (-f)"),
+        sign: z.boolean().optional().describe("Sign tag with GPG (-s)"),
+        verify: z.boolean().optional().describe("Verify tag signature (-v)"),
         merged: z.coerce
           .boolean()
           .optional()

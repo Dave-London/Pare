@@ -65,8 +65,8 @@ export function registerBlameTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Detect lines copied from other files (-C)"),
-        ignoreWhitespace: z.coerce.boolean().optional().describe("Ignore whitespace changes (-w)"),
-        reverse: z.coerce.boolean().optional().describe("Find when lines were removed (--reverse)"),
+        ignoreWhitespace: z.boolean().optional().describe("Ignore whitespace changes (-w)"),
+        reverse: z.boolean().optional().describe("Find when lines were removed (--reverse)"),
         showStats: z.coerce
           .boolean()
           .optional()

@@ -47,7 +47,7 @@ export function registerPullTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Strategy-specific option (-X), e.g. theirs, ours"),
-        ffOnly: z.coerce.boolean().optional().describe("Only fast-forward pulls (--ff-only)"),
+        ffOnly: z.boolean().optional().describe("Only fast-forward pulls (--ff-only)"),
         autostash: z.coerce
           .boolean()
           .optional()
@@ -57,8 +57,8 @@ export function registerPullTool(server: McpServer) {
           .optional()
           .describe("Pull without auto-committing (--no-commit)"),
         depth: z.coerce.number().optional().describe("Shallow fetch depth (--depth)"),
-        noVerify: z.coerce.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
-        squash: z.coerce.boolean().optional().describe("Squash pull (--squash)"),
+        noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
+        squash: z.boolean().optional().describe("Squash pull (--squash)"),
       },
       outputSchema: GitPullSchema,
     },

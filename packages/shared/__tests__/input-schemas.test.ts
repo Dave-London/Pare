@@ -28,7 +28,7 @@ describe("compactInput", () => {
     expect(compactInput.parse(true)).toBe(true);
   });
 
-  it("rejects non-boolean", () => {
+  it("rejects non-boolean (coercion handled by strictifyInputSchema)", () => {
     expect(compactInput.safeParse("yes").success).toBe(false);
   });
 
@@ -100,7 +100,7 @@ describe("fixInput", () => {
     expect(fixInput.parse(true)).toBe(true);
   });
 
-  it("rejects non-boolean", () => {
+  it("rejects non-boolean (coercion handled by strictifyInputSchema)", () => {
     expect(fixInput.safeParse(1).success).toBe(false);
   });
 

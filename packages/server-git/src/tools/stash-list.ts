@@ -37,7 +37,7 @@ export function registerStashListTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Control date format (--date), e.g. short, iso, relative"),
-        stat: z.coerce.boolean().optional().describe("Include diffstat per stash (--stat)"),
+        stat: z.boolean().optional().describe("Include diffstat per stash (--stat)"),
         includeSummary: z
           .boolean()
           .optional()

@@ -33,7 +33,7 @@ export function registerRebaseTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Rebase onto a different base (--onto)"),
-        abort: z.coerce.boolean().optional().default(false).describe("Abort in-progress rebase"),
+        abort: z.boolean().optional().default(false).describe("Abort in-progress rebase"),
         continue: z
           .boolean()
           .optional()
@@ -90,7 +90,7 @@ export function registerRebaseTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Update dependent branches (--update-refs)"),
-        signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
+        signoff: z.boolean().optional().describe("Add Signed-off-by trailer (--signoff)"),
       },
       outputSchema: GitRebaseSchema,
     },

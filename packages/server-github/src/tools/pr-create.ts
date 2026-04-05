@@ -39,7 +39,7 @@ export function registerPrCreateTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Head branch (default: current branch)"),
-        draft: z.coerce.boolean().optional().default(false).describe("Create as draft PR"),
+        draft: z.boolean().optional().default(false).describe("Create as draft PR"),
         fill: z.coerce
           .boolean()
           .optional()

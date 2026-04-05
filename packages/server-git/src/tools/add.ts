@@ -44,7 +44,7 @@ export function registerAddTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Stage only modifications to tracked files, excluding untracked files (-u)"),
-        force: z.coerce.boolean().optional().describe("Allow staging of ignored files (-f)"),
+        force: z.boolean().optional().describe("Allow staging of ignored files (-f)"),
         intentToAdd: z
           .boolean()
           .optional()
