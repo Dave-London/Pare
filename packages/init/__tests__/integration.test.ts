@@ -10,7 +10,7 @@ const DOCTOR_PATH = resolve(__dirname, "../dist/doctor.js");
 describe("pare-init CLI", () => {
   it("shows help with --help", () => {
     const output = execFileSync("node", [INIT_PATH, "--help"], { encoding: "utf-8" });
-    expect(output).toContain("Usage: pare-init");
+    expect(output).toContain("Usage: npx @paretools/init");
     expect(output).toContain("--client");
     expect(output).toContain("--preset");
     expect(output).toContain("--dry-run");

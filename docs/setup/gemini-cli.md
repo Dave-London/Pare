@@ -12,7 +12,7 @@ cp node_modules/@paretools/init/rules/GEMINI.md GEMINI.md
 # 3. Restart Gemini CLI
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -46,4 +46,4 @@ cp node_modules/@paretools/init/rules/GEMINI.md GEMINI.md
 
 ## Verify
 
-Restart Gemini CLI after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart Gemini CLI after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

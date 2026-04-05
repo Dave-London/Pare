@@ -23,4 +23,4 @@ Add more servers as needed — each follows the same pattern with `@paretools/<s
 
 ## Verify
 
-Restart your editor after saving the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart your editor after saving the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

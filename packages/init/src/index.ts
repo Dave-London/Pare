@@ -25,6 +25,20 @@ function getVersion(): string {
 async function main(): Promise<void> {
   const args = parseInitArgs(process.argv.slice(2));
 
+  // Route "doctor" subcommand to the doctor entry point
+  if (args.subcommand === "doctor") {
+    const doctorArgv = process.argv.slice(3); // strip "doctor" positional
+    const { runDoctor } = await import("./doctor-run.js");
+    await runDoctor(doctorArgv);
+    return;
+  }
+
+  if (args.subcommand) {
+    console.error(`Unknown subcommand: ${args.subcommand}`);
+    console.error(`Available subcommands: doctor`);
+    process.exit(1);
+  }
+
   if (args.help) {
     console.log(INIT_HELP);
     return;
@@ -78,7 +92,7 @@ async function main(): Promise<void> {
     console.log(`\nWrote ${result.serverCount} Pare servers to: ${result.configPath}`);
     console.log(`\nServers added: ${servers.map((s) => s.id).join(", ")}`);
     console.log(`\nRestart your ${client.name} session to activate the new servers.`);
-    console.log(`\nTip: Run 'npx @paretools/doctor' to verify your setup.`);
+    console.log(`\nTip: Run 'npx @paretools/init doctor' to verify your setup.`);
   }
 }
 

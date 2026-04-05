@@ -115,7 +115,7 @@ cat node_modules/@paretools/init/rules/CLAUDE.md >> CLAUDE.md
 # 3. Restart your client session
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full`

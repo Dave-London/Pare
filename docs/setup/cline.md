@@ -13,7 +13,7 @@ cp node_modules/@paretools/init/rules/.clinerules/pare.md .clinerules/pare.md
 # 3. Restart your editor
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 **Available presets:** `web`, `python`, `rust`, `go`, `jvm`, `dotnet`, `ruby`, `swift`, `mobile`, `devops`, `full` — see the [Quickstart Guide](../quickstart.md) for preset details.
@@ -66,4 +66,4 @@ cp node_modules/@paretools/init/rules/.clinerules/pare.md .clinerules/pare.md
 
 ## Verify
 
-Restart your editor after editing the config. Use `npx @paretools/doctor` to confirm servers are reachable.
+Restart your editor after editing the config. Use `npx @paretools/init doctor` to confirm servers are reachable.

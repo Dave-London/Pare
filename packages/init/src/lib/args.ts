@@ -15,8 +15,8 @@ export interface DoctorArgs {
   version: boolean;
 }
 
-export function parseInitArgs(argv: string[]): InitArgs {
-  const { values } = parseArgs({
+export function parseInitArgs(argv: string[]): InitArgs & { subcommand?: string } {
+  const { values, positionals } = parseArgs({
     args: argv,
     options: {
       client: { type: "string", short: "c" },
@@ -27,10 +27,11 @@ export function parseInitArgs(argv: string[]): InitArgs {
       version: { type: "boolean", short: "v", default: false },
     },
     strict: true,
-    allowPositionals: false,
+    allowPositionals: true,
   });
 
   return {
+    subcommand: positionals[0],
     client: values.client,
     preset: values.all ? "full" : values.preset,
     all: values.all ?? false,
@@ -60,9 +61,13 @@ export function parseDoctorArgs(argv: string[]): DoctorArgs {
 }
 
 export const INIT_HELP = `
-Usage: pare-init [options]
+Usage: npx @paretools/init [options]
+       npx @paretools/init doctor [options]
 
 Setup Pare MCP servers in your AI coding client.
+
+Subcommands:
+  doctor              Check the health of configured Pare servers
 
 Options:
   -c, --client <id>   Target client (skip detection prompt)

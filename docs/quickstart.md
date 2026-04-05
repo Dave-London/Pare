@@ -150,7 +150,7 @@ After running `pare-init` and copying rules, **restart your AI client session** 
 Verify that all configured Pare servers are running correctly:
 
 ```bash
-npx @paretools/doctor
+npx @paretools/init doctor
 ```
 
 Doctor checks each configured server, reports which tools loaded successfully, and flags any connection issues.
@@ -191,7 +191,7 @@ cp hooks/pare-prefer-mcp.sh .claude/hooks/
 chmod +x .claude/hooks/pare-prefer-mcp.sh
 
 # 4. Validate
-npx @paretools/doctor
+npx @paretools/init doctor
 
 # 5. Commit the config
 git add .mcp.json CLAUDE.md .claude/
