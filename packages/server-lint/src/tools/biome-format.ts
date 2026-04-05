@@ -38,7 +38,10 @@ export function registerBiomeFormatTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Only format VCS-changed files (maps to --changed)"),
-        staged: z.coerce.boolean().optional().describe("Only format staged files (maps to --staged)"),
+        staged: z.coerce
+          .boolean()
+          .optional()
+          .describe("Only format staged files (maps to --staged)"),
         since: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)

@@ -56,7 +56,11 @@ export function registerBlackTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Skip string quote normalization (-S)"),
-        preview: z.coerce.boolean().optional().default(false).describe("Enable preview style (--preview)"),
+        preview: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable preview style (--preview)"),
         config: configInput("Path to explicit Black config file (--config)"),
         compact: compactInput,
       },

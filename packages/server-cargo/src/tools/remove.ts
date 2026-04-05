@@ -26,7 +26,11 @@ export function registerRemoveTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .describe("Package names to remove"),
-        dev: z.coerce.boolean().optional().default(false).describe("Remove from dev dependencies (--dev)"),
+        dev: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Remove from dev dependencies (--dev)"),
         build: z
           .boolean()
           .optional()

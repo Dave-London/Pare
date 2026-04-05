@@ -57,7 +57,10 @@ export function registerRunListTool(server: McpServer) {
           ])
           .optional()
           .describe("Filter by run status"),
-        all: z.coerce.boolean().optional().describe("Include runs from disabled workflows (-a/--all)"),
+        all: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include runs from disabled workflows (-a/--all)"),
         // S-gap P0: Add workflow filter
         workflow: z
           .string()

@@ -23,14 +23,23 @@ export function registerCommitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Bypass pre-commit and commit-msg hooks (--no-verify)"),
-        allowEmpty: z.coerce.boolean().optional().describe("Allow commit with no changes (--allow-empty)"),
+        allowEmpty: z.coerce
+          .boolean()
+          .optional()
+          .describe("Allow commit with no changes (--allow-empty)"),
         all: z
           .boolean()
           .optional()
           .describe("Auto-stage tracked modified/deleted files (-a/--all)"),
         signoff: z.coerce.boolean().optional().describe("Add Signed-off-by trailer (-s/--signoff)"),
-        noEdit: z.coerce.boolean().optional().describe("Keep existing message with --amend (--no-edit)"),
-        dryRun: z.coerce.boolean().optional().describe("Preview commit without executing (--dry-run)"),
+        noEdit: z.coerce
+          .boolean()
+          .optional()
+          .describe("Keep existing message with --amend (--no-edit)"),
+        dryRun: z.coerce
+          .boolean()
+          .optional()
+          .describe("Preview commit without executing (--dry-run)"),
         gpgSign: z.coerce.boolean().optional().describe("GPG sign the commit (-S/--gpg-sign)"),
         resetAuthor: z
           .boolean()

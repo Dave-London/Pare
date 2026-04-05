@@ -40,7 +40,10 @@ export function registerPrCreateTool(server: McpServer) {
           .optional()
           .describe("Head branch (default: current branch)"),
         draft: z.coerce.boolean().optional().default(false).describe("Create as draft PR"),
-        fill: z.coerce.boolean().optional().describe("Auto-fill title and body from commits (-f/--fill)"),
+        fill: z.coerce
+          .boolean()
+          .optional()
+          .describe("Auto-fill title and body from commits (-f/--fill)"),
         fillFirst: z
           .boolean()
           .optional()

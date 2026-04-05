@@ -34,7 +34,11 @@ export function registerComposeUpTool(server: McpServer) {
           .record(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX), z.coerce.number().int().min(0))
           .optional()
           .describe("Per-service scale map, mapped to repeated --scale service=num"),
-        detach: z.coerce.boolean().optional().default(true).describe("Run in background (default: true)"),
+        detach: z.coerce
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Run in background (default: true)"),
         build: z
           .boolean()
           .optional()

@@ -94,7 +94,10 @@ export function registerPrUpdateTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Set milestone (--milestone)"),
-        removeMilestone: z.coerce.boolean().optional().describe("Remove milestone (--remove-milestone)"),
+        removeMilestone: z.coerce
+          .boolean()
+          .optional()
+          .describe("Remove milestone (--remove-milestone)"),
         // S-gap P1: Add repo for cross-repo updates
         repo: z
           .string()

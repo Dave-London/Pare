@@ -42,7 +42,11 @@ export function registerEsbuildTool(server: McpServer) {
           .optional()
           .default(true)
           .describe("Bundle dependencies (default: true)"),
-        minify: z.coerce.boolean().optional().default(false).describe("Minify output (default: false)"),
+        minify: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Minify output (default: false)"),
         format: z
           .enum(["esm", "cjs", "iife"])
           .optional()

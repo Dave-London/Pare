@@ -52,7 +52,10 @@ export function registerHadolintTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Enforce strict label schema (maps to --strict-labels)"),
-        verbose: z.coerce.boolean().optional().describe("Enable verbose output (maps to --verbose)"),
+        verbose: z.coerce
+          .boolean()
+          .optional()
+          .describe("Enable verbose output (maps to --verbose)"),
         config: configInput("Path to Hadolint configuration file (maps to --config)"),
         requireLabel: z
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))

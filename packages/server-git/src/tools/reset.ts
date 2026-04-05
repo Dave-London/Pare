@@ -40,7 +40,10 @@ export function registerResetTool(server: McpServer) {
           .describe(
             "Safety confirmation required when mode is 'hard'. Must be set to true to proceed with --hard reset, which permanently discards uncommitted changes.",
           ),
-        intentToAdd: z.coerce.boolean().optional().describe("Keep paths in index as intent-to-add (-N)"),
+        intentToAdd: z.coerce
+          .boolean()
+          .optional()
+          .describe("Keep paths in index as intent-to-add (-N)"),
         recurseSubmodules: z
           .boolean()
           .optional()

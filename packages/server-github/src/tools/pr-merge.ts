@@ -42,7 +42,11 @@ export function registerPrMergeTool(server: McpServer) {
           .optional()
           .default("squash")
           .describe("Merge method (default: squash)"),
-        deleteBranch: z.coerce.boolean().optional().default(false).describe("Delete branch after merge"),
+        deleteBranch: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Delete branch after merge"),
         admin: z
           .boolean()
           .optional()

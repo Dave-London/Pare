@@ -86,7 +86,10 @@ export function registerSemgrepTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include dataflow traces for taint analysis findings (--dataflow-traces)"),
-        autofix: z.coerce.boolean().optional().describe("Automatically apply suggested fixes (--autofix)"),
+        autofix: z.coerce
+          .boolean()
+          .optional()
+          .describe("Automatically apply suggested fixes (--autofix)"),
         dryrun: z
           .boolean()
           .optional()

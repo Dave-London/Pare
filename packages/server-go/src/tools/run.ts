@@ -45,7 +45,11 @@ export function registerRunTool(server: McpServer) {
               "but can also be passed here. Flag injection checks are not applied to buildArgs " +
               "since they are intentionally build flags.",
           ),
-        race: z.coerce.boolean().optional().default(false).describe("Enable data race detection (-race)"),
+        race: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable data race detection (-race)"),
         tags: z
           .array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)

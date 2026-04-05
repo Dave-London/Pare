@@ -31,7 +31,11 @@ export function registerAddTool(server: McpServer) {
             .optional()
             .describe("File paths to stage (required unless all is true)"),
         ),
-        all: z.coerce.boolean().optional().default(false).describe("Stage all changes (git add -A)"),
+        all: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Stage all changes (git add -A)"),
         dryRun: z
           .boolean()
           .optional()

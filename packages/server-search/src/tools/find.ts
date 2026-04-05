@@ -67,7 +67,10 @@ export function registerFindTool(server: McpServer) {
           .number()
           .optional()
           .describe("Maximum directory depth to search (--max-depth)"),
-        hidden: z.coerce.boolean().optional().describe("Include hidden files and directories (--hidden)"),
+        hidden: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include hidden files and directories (--hidden)"),
         absolutePath: z
           .boolean()
           .optional()

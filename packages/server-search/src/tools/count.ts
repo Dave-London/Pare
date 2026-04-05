@@ -52,12 +52,18 @@ export function registerCountTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Treat pattern as a literal string instead of regex (--fixed-strings)"),
-        wordRegexp: z.coerce.boolean().optional().describe("Only match whole words (--word-regexp)"),
+        wordRegexp: z.coerce
+          .boolean()
+          .optional()
+          .describe("Only match whole words (--word-regexp)"),
         invertMatch: z
           .boolean()
           .optional()
           .describe("Count non-matching lines instead of matching lines (--invert-match)"),
-        hidden: z.coerce.boolean().optional().describe("Search hidden files and directories (--hidden)"),
+        hidden: z.coerce
+          .boolean()
+          .optional()
+          .describe("Search hidden files and directories (--hidden)"),
         includeZero: z
           .boolean()
           .optional()

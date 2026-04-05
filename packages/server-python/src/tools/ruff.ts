@@ -42,14 +42,22 @@ export function registerRuffTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show diff of fixes without applying (--diff)"),
-        preview: z.coerce.boolean().optional().default(false).describe("Enable preview rules (--preview)"),
+        preview: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Enable preview rules (--preview)"),
         lineLength: z
           .number()
           .int()
           .positive()
           .optional()
           .describe("Override the configured line length (--line-length)"),
-        noCache: z.coerce.boolean().optional().default(false).describe("Disable cache (--no-cache)"),
+        noCache: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disable cache (--no-cache)"),
         statistics: z
           .boolean()
           .optional()

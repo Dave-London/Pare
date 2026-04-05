@@ -71,7 +71,10 @@ export function registerApplyTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Prune resources not in the manifest for GitOps workflows (--prune)"),
-        force: z.coerce.boolean().optional().describe("Force resource recreation if needed (--force)"),
+        force: z.coerce
+          .boolean()
+          .optional()
+          .describe("Force resource recreation if needed (--force)"),
         forceConflicts: z
           .boolean()
           .optional()

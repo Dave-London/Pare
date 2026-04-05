@@ -52,7 +52,10 @@ export function registerReflogTool(server: McpServer) {
           .describe("Filter entries before this date (--until)"),
         skip: z.coerce.number().optional().describe("Skip N entries for pagination (--skip)"),
         all: z.coerce.boolean().optional().describe("Show all refs' reflogs (--all)"),
-        reverse: z.coerce.boolean().optional().describe("Show entries in reverse order (--reverse)"),
+        reverse: z.coerce
+          .boolean()
+          .optional()
+          .describe("Show entries in reverse order (--reverse)"),
         compact: compactInput,
       },
       outputSchema: GitReflogSchema,

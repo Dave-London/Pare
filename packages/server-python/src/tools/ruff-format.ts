@@ -53,7 +53,11 @@ export function registerRuffFormatTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Enable preview formatting rules (--preview)"),
-        noCache: z.coerce.boolean().optional().default(false).describe("Disable cache (--no-cache)"),
+        noCache: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Disable cache (--no-cache)"),
         isolated: z
           .boolean()
           .optional()

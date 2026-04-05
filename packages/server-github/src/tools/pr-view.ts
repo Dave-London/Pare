@@ -31,7 +31,10 @@ export function registerPrViewTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .describe("Pull request number, URL, or branch name"),
-        comments: z.coerce.boolean().optional().describe("Include PR comments in output (-c/--comments)"),
+        comments: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include PR comments in output (-c/--comments)"),
         // S-gap P1: Add repo for cross-repo inspection
         repo: z
           .string()

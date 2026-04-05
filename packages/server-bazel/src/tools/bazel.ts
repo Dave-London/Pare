@@ -60,7 +60,11 @@ export function registerBazelTool(server: McpServer) {
           .optional()
           .default("errors")
           .describe("Test output mode"),
-        verboseFailures: z.coerce.boolean().optional().default(true).describe("Verbose failure messages"),
+        verboseFailures: z.coerce
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Verbose failure messages"),
         infoKey: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)

@@ -35,8 +35,14 @@ export function registerStatusTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Enable rename detection (--renames). Set to false with noRenames."),
-        noRenames: z.coerce.boolean().optional().describe("Disable rename detection (--no-renames)"),
-        noLockIndex: z.coerce.boolean().optional().describe("Do not lock the index (--no-lock-index)"),
+        noRenames: z.coerce
+          .boolean()
+          .optional()
+          .describe("Disable rename detection (--no-renames)"),
+        noLockIndex: z.coerce
+          .boolean()
+          .optional()
+          .describe("Do not lock the index (--no-lock-index)"),
         showIgnored: z.coerce.boolean().optional().describe("Show ignored files (--ignored)"),
         porcelainVersion: z
           .enum(["v1", "v2"])

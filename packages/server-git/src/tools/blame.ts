@@ -57,11 +57,20 @@ export function registerBlameTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Limit blame history to a date range (--since)"),
-        detectMoves: z.coerce.boolean().optional().describe("Detect moved lines within a file (-M)"),
-        detectCopies: z.coerce.boolean().optional().describe("Detect lines copied from other files (-C)"),
+        detectMoves: z.coerce
+          .boolean()
+          .optional()
+          .describe("Detect moved lines within a file (-M)"),
+        detectCopies: z.coerce
+          .boolean()
+          .optional()
+          .describe("Detect lines copied from other files (-C)"),
         ignoreWhitespace: z.coerce.boolean().optional().describe("Ignore whitespace changes (-w)"),
         reverse: z.coerce.boolean().optional().describe("Find when lines were removed (--reverse)"),
-        showStats: z.coerce.boolean().optional().describe("Include work-amount statistics (--show-stats)"),
+        showStats: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include work-amount statistics (--show-stats)"),
         compact: compactInput,
       },
       outputSchema: GitBlameSchema,

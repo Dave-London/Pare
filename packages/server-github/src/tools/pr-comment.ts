@@ -35,7 +35,10 @@ export function registerPrCommentTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Edit the last comment instead of creating a new one (--edit-last)"),
-        deleteLast: z.coerce.boolean().optional().describe("Delete the last comment (--delete-last)"),
+        deleteLast: z.coerce
+          .boolean()
+          .optional()
+          .describe("Delete the last comment (--delete-last)"),
         createIfNone: z
           .boolean()
           .optional()

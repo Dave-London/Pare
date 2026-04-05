@@ -32,9 +32,18 @@ export function registerCheckoutTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Create a new orphan branch with this name (--orphan)"),
-        force: z.coerce.boolean().optional().describe("Force checkout discarding local changes (-f)"),
-        track: z.coerce.boolean().optional().describe("Set up tracking for remote branches (--track)"),
-        forceCreate: z.coerce.boolean().optional().describe("Force-create branch even if it exists (-B)"),
+        force: z.coerce
+          .boolean()
+          .optional()
+          .describe("Force checkout discarding local changes (-f)"),
+        track: z.coerce
+          .boolean()
+          .optional()
+          .describe("Set up tracking for remote branches (--track)"),
+        forceCreate: z.coerce
+          .boolean()
+          .optional()
+          .describe("Force-create branch even if it exists (-B)"),
         detach: z.coerce.boolean().optional().describe("Detach HEAD at target (--detach)"),
         useSwitch: z
           .boolean()

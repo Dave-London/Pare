@@ -30,7 +30,11 @@ export function registerCherryPickTool(server: McpServer) {
           )
           .default([])
           .describe("Commit hashes to cherry-pick"),
-        abort: z.coerce.boolean().optional().default(false).describe("Abort in-progress cherry-pick"),
+        abort: z.coerce
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Abort in-progress cherry-pick"),
         continue: z
           .boolean()
           .optional()

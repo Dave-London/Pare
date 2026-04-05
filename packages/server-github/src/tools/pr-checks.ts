@@ -42,7 +42,10 @@ export function registerPrChecksTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
-        watch: z.coerce.boolean().optional().describe("Poll checks until they complete (-w/--watch)"),
+        watch: z.coerce
+          .boolean()
+          .optional()
+          .describe("Poll checks until they complete (-w/--watch)"),
         // S-gap P0: Add required filter
         required: z
           .boolean()

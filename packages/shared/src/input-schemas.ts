@@ -15,7 +15,11 @@ import { INPUT_LIMITS } from "./limits.js";
 // ---------------------------------------------------------------------------
 
 /** `compact: z.coerce.boolean().optional().default(true).describe("Prefer compact output")` */
-export const compactInput = z.coerce.boolean().optional().default(true).describe("Prefer compact output");
+export const compactInput = z.coerce
+  .boolean()
+  .optional()
+  .default(true)
+  .describe("Prefer compact output");
 
 /** `path` for servers whose root concept is a project (go, lint, build, make, cargo, python, test, npm). */
 export const projectPathInput = z

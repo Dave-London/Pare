@@ -32,7 +32,10 @@ export function registerRunTool(server: McpServer) {
           .default([])
           .describe("Additional arguments to pass to the script"),
         path: projectPathInput,
-        allowRead: z.coerce.boolean().optional().describe("Allow file system read access (--allow-read)"),
+        allowRead: z.coerce
+          .boolean()
+          .optional()
+          .describe("Allow file system read access (--allow-read)"),
         allowWrite: z
           .boolean()
           .optional()
@@ -42,7 +45,10 @@ export function registerRunTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Allow environment variable access (--allow-env)"),
-        allowAll: z.coerce.boolean().optional().describe("Allow all permissions (-A). Use with caution."),
+        allowAll: z.coerce
+          .boolean()
+          .optional()
+          .describe("Allow all permissions (-A). Use with caution."),
         compact: compactInput,
       },
       outputSchema: DenoRunResultSchema,
