@@ -95,7 +95,7 @@ export function registerTurboTool(server: McpServer) {
             .max(INPUT_LIMITS.ARRAY_MAX)
             .optional()
             .describe(
-              "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']).",
+              "Additional turbo flags passed directly to turbo (e.g., ['--env-mode=strict']). Each element is validated to prevent flag injection.",
             ),
         ),
         path: projectPathInput,
@@ -146,6 +146,9 @@ export function registerTurboTool(server: McpServer) {
       if (summarize) cliArgs.push("--summarize");
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 

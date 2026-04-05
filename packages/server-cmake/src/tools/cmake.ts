@@ -82,6 +82,7 @@ export function registerCMakeTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: CMakeResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({
       action,

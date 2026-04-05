@@ -12,6 +12,17 @@ import { parseWebpackOutput } from "../lib/parsers.js";
 import { formatWebpack, compactWebpackMap, formatWebpackCompact } from "../lib/formatters.js";
 import { WebpackResultSchema } from "../schemas/index.js";
 
+/** Environment variable keys that must not be overridden via the env parameter. */
+const DANGEROUS_ENV_KEYS = new Set([
+  "PATH",
+  "LD_PRELOAD",
+  "DYLD_INSERT_LIBRARIES",
+  "NODE_OPTIONS",
+  "PYTHONPATH",
+  "LD_LIBRARY_PATH",
+  "DYLD_LIBRARY_PATH",
+]);
+
 /** Registers the `webpack` tool on the given MCP server. */
 export function registerWebpackTool(server: McpServer) {
   server.registerTool(
@@ -82,7 +93,9 @@ export function registerWebpackTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe("Additional webpack flags"),
+          .describe(
+            "Additional webpack flags. Each element is validated to prevent flag injection.",
+          ),
         compact: compactInput,
       },
       outputSchema: WebpackResultSchema,
@@ -112,6 +125,11 @@ export function registerWebpackTool(server: McpServer) {
       const envRecord = env as Record<string, string> | undefined;
       if (envRecord) {
         for (const [key, value] of Object.entries(envRecord)) {
+          if (DANGEROUS_ENV_KEYS.has(key.toUpperCase())) {
+            throw new Error(
+              `Environment variable "${key}" is blocked because it can alter process execution.`,
+            );
+          }
           assertNoFlagInjection(String(key), "env key");
           assertNoFlagInjection(String(value), "env value");
         }
@@ -141,6 +159,9 @@ export function registerWebpackTool(server: McpServer) {
       cliArgs.push("--no-color");
 
       if (args) {
+        for (const arg of args) {
+          assertNoFlagInjection(arg, "args");
+        }
         cliArgs.push(...args);
       }
 

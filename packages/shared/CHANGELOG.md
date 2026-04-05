@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.16.1
+
+## 0.16.0
+
+## 0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

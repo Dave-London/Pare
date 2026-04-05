@@ -63,6 +63,7 @@ async function main(): Promise<void> {
   }
 
   // 2. Resolve servers
+  const projectDir = process.cwd();
   let servers;
   if (args.preset) {
     const preset = PRESET_MAP.get(args.preset);
@@ -73,11 +74,10 @@ async function main(): Promise<void> {
     }
     servers = resolveServers(preset.serverIds);
   } else {
-    servers = await promptServers();
+    servers = await promptServers(projectDir);
   }
 
   // 3. Merge config
-  const projectDir = process.cwd();
   const fs = args.dryRun ? memoryFs() : realFs();
   const result = mergeConfig(client, servers, projectDir, fs);
 

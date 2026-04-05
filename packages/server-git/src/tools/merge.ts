@@ -14,7 +14,7 @@ export function registerMergeTool(server: McpServer) {
       title: "Git Merge",
       description:
         "Merges a branch into the current branch. Supports abort, continue, and quit actions. Returns structured data with merge status, fast-forward detection, conflicts, and commit hash.",
-      annotations: { destructiveHint: true },
+      annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,
         branch: z.string().max(INPUT_LIMITS.SHORT_STRING_MAX).describe("Branch to merge"),

@@ -24,36 +24,38 @@ const MALICIOUS_FLAG_INPUTS = [
 ];
 
 describe("security: URL scheme validation", () => {
-  it("allows http:// and https:// only", () => {
-    expect(() => assertSafeUrl("http://api.example.com")).not.toThrow();
-    expect(() => assertSafeUrl("https://api.example.com")).not.toThrow();
+  it("allows http:// and https:// only", async () => {
+    process.env.PARE_HTTP_ALLOW_PRIVATE = "true";
+    await expect(assertSafeUrl("http://api.example.com")).resolves.toBeUndefined();
+    await expect(assertSafeUrl("https://api.example.com")).resolves.toBeUndefined();
+    delete process.env.PARE_HTTP_ALLOW_PRIVATE;
   });
 
-  it("blocks file:// scheme (SSRF / LFI)", () => {
-    expect(() => assertSafeUrl("file:///etc/passwd")).toThrow(/Unsafe URL scheme/);
-    expect(() => assertSafeUrl("FILE:///etc/passwd")).toThrow(/Unsafe URL scheme/);
+  it("blocks file:// scheme (SSRF / LFI)", async () => {
+    await expect(assertSafeUrl("file:///etc/passwd")).rejects.toThrow(/Unsafe URL scheme/);
+    await expect(assertSafeUrl("FILE:///etc/passwd")).rejects.toThrow(/Unsafe URL scheme/);
   });
 
-  it("blocks ftp:// scheme", () => {
-    expect(() => assertSafeUrl("ftp://evil.com/file")).toThrow(/Unsafe URL scheme/);
+  it("blocks ftp:// scheme", async () => {
+    await expect(assertSafeUrl("ftp://evil.com/file")).rejects.toThrow(/Unsafe URL scheme/);
   });
 
-  it("blocks gopher:// scheme (SSRF)", () => {
-    expect(() => assertSafeUrl("gopher://evil.com/")).toThrow(/Unsafe URL scheme/);
+  it("blocks gopher:// scheme (SSRF)", async () => {
+    await expect(assertSafeUrl("gopher://evil.com/")).rejects.toThrow(/Unsafe URL scheme/);
   });
 
-  it("blocks dict:// scheme", () => {
-    expect(() => assertSafeUrl("dict://evil.com/")).toThrow(/Unsafe URL scheme/);
+  it("blocks dict:// scheme", async () => {
+    await expect(assertSafeUrl("dict://evil.com/")).rejects.toThrow(/Unsafe URL scheme/);
   });
 
-  it("blocks data: scheme (XSS vector)", () => {
-    expect(() => assertSafeUrl("data:text/html,<script>alert(1)</script>")).toThrow(
+  it("blocks data: scheme (XSS vector)", async () => {
+    await expect(assertSafeUrl("data:text/html,<script>alert(1)</script>")).rejects.toThrow(
       /Unsafe URL scheme/,
     );
   });
 
-  it("blocks javascript: scheme", () => {
-    expect(() => assertSafeUrl("javascript:alert(1)")).toThrow(/Unsafe URL scheme/);
+  it("blocks javascript: scheme", async () => {
+    await expect(assertSafeUrl("javascript:alert(1)")).rejects.toThrow(/Unsafe URL scheme/);
   });
 });
 

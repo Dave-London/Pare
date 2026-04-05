@@ -56,10 +56,19 @@ function applyStrictInputSchemas(server: McpServer): void {
  * Creates an MCP server with the standard Pare boilerplate:
  * instantiates McpServer, registers tools via callback, connects StdioServerTransport.
  *
+ * Installs global error handlers so that uncaught exceptions and unhandled
+ * rejections are written to stderr before the process exits — making "Connection
+ * closed" failures diagnosable instead of silent.
+ *
  * @returns The connected McpServer instance (for testing or advanced use).
  */
 export async function createServer(options: CreateServerOptions): Promise<McpServer> {
   const { name, version, instructions, registerTools } = options;
+
+  // Install global error handlers so startup/runtime crashes are visible on
+  // stderr instead of silently killing the process (which MCP clients report
+  // as "Connection closed" with no diagnostic info).
+  installGlobalErrorHandlers(name);
 
   const server = new McpServer({ name, version }, { instructions });
   applyStrictInputSchemas(server);
@@ -84,4 +93,31 @@ export async function createServer(options: CreateServerOptions): Promise<McpSer
   await server.connect(transport);
 
   return server;
+}
+
+/**
+ * Installs process-level error handlers that write to stderr before exiting.
+ *
+ * Without these, an uncaught exception or unhandled rejection during server
+ * startup (e.g., a broken import, a Zod schema conversion failure, or a
+ * missing dependency) causes a silent exit. MCP clients then report
+ * "Connection closed" with no useful diagnostic information.
+ *
+ * These handlers are installed once per process and are idempotent.
+ */
+let globalHandlersInstalled = false;
+function installGlobalErrorHandlers(serverName: string): void {
+  if (globalHandlersInstalled) return;
+  globalHandlersInstalled = true;
+
+  process.on("uncaughtException", (err) => {
+    process.stderr.write(`[${serverName}] Fatal uncaught exception: ${err.stack ?? err.message}\n`);
+    process.exit(1);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    const msg = reason instanceof Error ? (reason.stack ?? reason.message) : String(reason);
+    process.stderr.write(`[${serverName}] Fatal unhandled rejection: ${msg}\n`);
+    process.exit(1);
+  });
 }

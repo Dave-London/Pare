@@ -33,6 +33,7 @@ export function registerWorkspaceTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: TerraformWorkspaceResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ path, action, name, compact }) => {
       const cwd = path || process.cwd();

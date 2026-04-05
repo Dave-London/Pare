@@ -4,7 +4,12 @@ import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@p
 import { assertNoFlagInjection } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseShow } from "../lib/parsers.js";
-import { formatShow, compactShowMap, formatShowCompact } from "../lib/formatters.js";
+import {
+  formatShow,
+  compactShowMap,
+  formatShowCompact,
+  formatShowBlob,
+} from "../lib/formatters.js";
 import type { GitShow } from "../schemas/index.js";
 import { GitShowSchema } from "../schemas/index.js";
 
@@ -20,7 +25,8 @@ export function registerShowTool(server: McpServer) {
     "show",
     {
       title: "Git Show",
-      description: "Shows commit details and diff statistics for a given ref.",
+      description:
+        "Shows commit details and diff statistics for a given ref. When `file` is provided, extracts raw file content at that ref (e.g., `git show HEAD:src/index.ts`).",
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
@@ -30,6 +36,13 @@ export function registerShowTool(server: McpServer) {
           .optional()
           .default("HEAD")
           .describe("Commit hash, branch, or tag (default: HEAD)"),
+        file: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "File path to extract from the ref (e.g., 'src/index.ts'). Returns raw file content at that ref.",
+          ),
         dateFormat: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -55,6 +68,7 @@ export function registerShowTool(server: McpServer) {
     async ({
       path,
       ref,
+      file,
       dateFormat,
       diffFilter,
       patch,
@@ -67,8 +81,39 @@ export function registerShowTool(server: McpServer) {
       const cwd = path || process.cwd();
       const commitRef = ref || "HEAD";
       assertNoFlagInjection(commitRef, "ref");
+      if (file) assertNoFlagInjection(file, "file");
       if (dateFormat) assertNoFlagInjection(dateFormat, "dateFormat");
       if (diffFilter) assertNoFlagInjection(diffFilter, "diffFilter");
+
+      // ── Blob extraction: git show <ref>:<file> ──────────────────────
+      if (file) {
+        const blobRef = `${commitRef}:${file}`;
+        const result = await git(["show", blobRef], cwd);
+        if (result.exitCode !== 0) {
+          throw new Error(`git show failed for ${blobRef}: ${result.stderr}`);
+        }
+        const content = result.stdout;
+        const sizeResult = await git(["cat-file", "-s", blobRef], cwd);
+        const objectSize =
+          sizeResult.exitCode === 0 ? parseInt(sizeResult.stdout.trim(), 10) : undefined;
+
+        const show: GitShow = {
+          objectType: "blob",
+          objectName: blobRef,
+          ...(Number.isFinite(objectSize) ? { objectSize } : {}),
+          file,
+          fileContent: content,
+          message: `blob ${blobRef}`,
+        };
+        return compactDualOutput(
+          show,
+          content,
+          formatShowBlob,
+          compactShowMap,
+          formatShowCompact,
+          compact === false,
+        );
+      }
 
       const typeResult = await git(["cat-file", "-t", commitRef], cwd);
       const objectType: GitShow["objectType"] =

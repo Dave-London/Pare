@@ -1,6 +1,6 @@
 {
   "name": "@paretools/swift",
-  "version": "0.14.2",
+  "version": "0.16.1",
   "mcpName": "io.github.Dave-London/pare-swift",
   "description": "MCP server for Swift — structured build, test, and package manager data for AI agents",
   "license": "MIT",
@@ -60,7 +60,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@paretools/shared": "workspace:*",
     "zod": "^4.3.6"
   },
@@ -68,6 +68,6 @@
     "@paretools/tsconfig": "workspace:*",
     "@types/node": "^25.4.0",
     "typescript": "^5.7.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.1"
   }
 }

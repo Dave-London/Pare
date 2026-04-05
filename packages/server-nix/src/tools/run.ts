@@ -37,6 +37,7 @@ export function registerRunTool(server: McpServer) {
         compact: compactInput,
       },
       outputSchema: NixRunResultSchema,
+      annotations: { readOnlyHint: false },
     },
     async ({ installable, args, path, compact }) => {
       const cwd = path || process.cwd();

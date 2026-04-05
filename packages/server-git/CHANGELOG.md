@@ -1,5 +1,54 @@
 # @paretools/git
 
+## 0.16.1
+
+### Patch Changes
+
+- [#765](https://github.com/Dave-London/Pare/pull/765) [`3064c7b`](https://github.com/Dave-London/Pare/commit/3064c7b1610ff72d03b6eb4fcd67ac09d76b77cd) Thanks [@MergingMonkey](https://github.com/MergingMonkey)! - fix(git): strip CRLF from diff patch output on Windows and show chunks in text summary
+
+  On Windows, git emits `\r\n` line endings. The patch-splitting regex
+  captured a trailing `\r` in the filename, preventing a match against the
+  `parseDiffStat` result and leaving `chunks` empty when `full: true` was used.
+
+  This fix also updates `formatDiff` to include code chunks in the human-readable
+  text output, ensuring patch visibility in MCP clients that rely on the summary.
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.1
+
+## 0.16.0
+
+### Minor Changes
+
+- [#759](https://github.com/Dave-London/Pare/pull/759) [`20ce7ca`](https://github.com/Dave-London/Pare/commit/20ce7ca99af786348bd43053fe5f33f96f860736) Thanks [@Dave-London](https://github.com/Dave-London)! - feat: refine MCP tool annotations (readOnlyHint, destructiveHint) across all servers
+
+- [#758](https://github.com/Dave-London/Pare/pull/758) [`e7a37d9`](https://github.com/Dave-London/Pare/commit/e7a37d9b16afc89e544a7c91838bfed207d3b567) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(git): support extracting raw file blobs via show tool
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.0
+
+## 0.15.0
+
+### Patch Changes
+
+- [#735](https://github.com/Dave-London/Pare/pull/735) [`2e4d5ac`](https://github.com/Dave-London/Pare/commit/2e4d5acfd3a1ca0694869385550dc86dd555e619) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): add security hardening for rebase exec, bisect run, and config set
+  - Gate rebase --exec parameter behind assertAllowedByPolicy
+  - Gate bisect run command behind assertAllowedByPolicy
+  - Block dangerous git config keys that execute commands (core.fsmonitor, core.editor, etc.)
+
+- [#737](https://github.com/Dave-London/Pare/pull/737) [`9f9c3f2`](https://github.com/Dave-London/Pare/commit/9f9c3f2b8866d862a3b5f17100075e5362b4e454) Thanks [@Dave-London](https://github.com/Dave-London)! - fix: harden input validation across npm, git, search, and remote servers
+  - npm install: validate args array elements and restrict registry URLs to https://
+  - nvm exec: gate command behind ALLOWED_COMMANDS policy
+  - npm run: restrict scriptShell to known safe shells
+  - git submodule add: restrict URLs to http/https schemes by default
+  - rsync: validate exclude/include array elements
+  - jq: validate arg/argjson record keys
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

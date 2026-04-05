@@ -1,5 +1,38 @@
 # @paretools/process
 
+## 0.16.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.1
+
+## 0.16.0
+
+### Minor Changes
+
+- [#759](https://github.com/Dave-London/Pare/pull/759) [`20ce7ca`](https://github.com/Dave-London/Pare/commit/20ce7ca99af786348bd43053fe5f33f96f860736) Thanks [@Dave-London](https://github.com/Dave-London)! - feat: refine MCP tool annotations (readOnlyHint, destructiveHint) across all servers
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.16.0
+
+## 0.15.0
+
+### Patch Changes
+
+- [#734](https://github.com/Dave-London/Pare/pull/734) [`2bb333a`](https://github.com/Dave-London/Pare/commit/2bb333a62eb39e465d4b27a100db46be88b52618) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(process): add security hardening to reload and run tools
+  - Add assertAllowedByPolicy check to reload tool buildCommand parameter
+  - Add assertAllowedRoot check to reload tool path parameter
+  - Replace sh -c shell execution with direct executable + args in reload tool
+  - Add destructiveHint annotation to both reload and run tools
+  - Add security warnings about arbitrary command execution in tool descriptions
+  - Document PARE_PROCESS_ALLOWED_COMMANDS and PARE_PROCESS_ALLOWED_ROOTS configuration
+
+- Updated dependencies []:
+  - @paretools/shared@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes

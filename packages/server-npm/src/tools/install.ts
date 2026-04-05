@@ -116,7 +116,15 @@ export function registerInstallTool(server: McpServer) {
       filter,
     }) => {
       if (filter) assertNoFlagInjection(filter, "filter");
-      if (registry) assertNoFlagInjection(registry, "registry");
+      if (registry) {
+        assertNoFlagInjection(registry, "registry");
+        assertSafeRegistryUrl(registry);
+      }
+
+      // Validate each element of the args array to prevent flag injection
+      for (const arg of args || []) {
+        assertNoFlagInjection(arg, "args");
+      }
 
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
@@ -156,6 +164,17 @@ export function registerInstallTool(server: McpServer) {
         formatInstall(d, duration),
       );
     },
+  );
+}
+
+function assertSafeRegistryUrl(url: string): void {
+  if (/^https:\/\//i.test(url)) return;
+  if (/^http:\/\//i.test(url) && process.env.PARE_NPM_ALLOW_HTTP_REGISTRY === "true") {
+    return;
+  }
+  throw new Error(
+    `Registry URL scheme not allowed: "${url}". Only https:// URLs are permitted by default. ` +
+      `Set PARE_NPM_ALLOW_HTTP_REGISTRY=true to allow http:// URLs.`,
   );
 }
 
