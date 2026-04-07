@@ -45,7 +45,7 @@
     "lint-staged": "^16.4.0",
     "prettier": "^3.4.0",
     "tsx": "^4.21.0",
-    "turbo": "^2.9.3",
+    "turbo": "^2.9.4",
     "typedoc": "^0.28.18",
     "typedoc-plugin-markdown": "^4.11.0",
     "vitest": "^4.1.2"
