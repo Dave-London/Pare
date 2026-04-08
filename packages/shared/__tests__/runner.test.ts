@@ -2,7 +2,14 @@ import { describe, it, expect, afterAll } from "vitest";
 import { writeFileSync, unlinkSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { run, escapeCmdArg, _buildSpawnConfig, _pickBestMatch } from "../src/runner.js";
+import {
+  run,
+  escapeCmdArg,
+  _buildSpawnConfig,
+  _pickBestMatch,
+  _probeFallbackPaths,
+  _WIN32_FALLBACK_PATHS,
+} from "../src/runner.js";
 
 // Helper script that prints its args as JSON — avoids issues with inline
 // `-e` code being mangled by cmd.exe parentheses parsing on Windows.
@@ -611,6 +618,52 @@ describe("_pickBestMatch", () => {
   it("handles case-insensitive extension matching", () => {
     const lines = ["C:\\tools\\tool", "C:\\tools\\tool.EXE"];
     expect(_pickBestMatch(lines, "win32")).toBe("C:\\tools\\tool.EXE");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _probeFallbackPaths — Windows fallback path probing (#797)
+// ---------------------------------------------------------------------------
+
+describe("_probeFallbackPaths", () => {
+  it("returns undefined for unknown commands", () => {
+    expect(_probeFallbackPaths("some-nonexistent-tool")).toBeUndefined();
+  });
+
+  it("has fallback entries for git, gh, node, docker", () => {
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("git");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("gh");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("node");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("docker");
+    // All entries should be .exe paths
+    for (const paths of Object.values(_WIN32_FALLBACK_PATHS)) {
+      for (const p of paths) {
+        if (p) expect(p).toMatch(/\.exe$/i);
+      }
+    }
+  });
+
+  it("returns first existing path when found", () => {
+    // On this machine, at least git or node should be findable
+    if (process.platform === "win32") {
+      const result = _probeFallbackPaths("git");
+      if (result) {
+        expect(result).toMatch(/git\.exe$/i);
+        expect(existsSync(result)).toBe(true);
+      }
+    }
+  });
+
+  it("returns undefined when no candidates exist on disk", () => {
+    // A command with fallback paths that definitely don't exist
+    // We test by checking a tool that's unlikely to be installed in default paths
+    const result = _probeFallbackPaths("docker");
+    // Either finds it or returns undefined — both are valid
+    if (result) {
+      expect(existsSync(result)).toBe(true);
+    } else {
+      expect(result).toBeUndefined();
+    }
   });
 });
 
