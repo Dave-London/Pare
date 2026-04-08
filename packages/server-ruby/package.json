@@ -1,6 +1,6 @@
 {
   "name": "@paretools/ruby",
-  "version": "0.16.3",
+  "version": "0.17.0",
   "mcpName": "io.github.Dave-London/pare-ruby",
   "description": "MCP server for Ruby — structured gem, bundler, and script output for AI agents",
   "license": "MIT",
