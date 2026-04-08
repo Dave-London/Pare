@@ -550,7 +550,6 @@ describe("formatGetCompact", () => {
 });
 
 // ─── Gap #150: env compact mode with queried vars ───────────────────
-import { compactEnvMap } from "../src/lib/formatters.js";
 
 describe("compactEnvMap — queried vars (Gap #150)", () => {
   it("includes queried variables in compact output", () => {
@@ -631,7 +630,6 @@ describe("compactEnvMap — queried vars (Gap #150)", () => {
 });
 
 // ─── Gap #151: fmt compact with parse error count ───────────────────
-import { compactFmtMap, formatFmtCompact } from "../src/lib/formatters.js";
 
 describe("compactFmtMap — parseErrorCount (Gap #151)", () => {
   it("includes parseErrorCount when parse errors present", () => {
@@ -669,11 +667,6 @@ describe("formatFmtCompact — parseErrorCount (Gap #151)", () => {
 });
 
 // ─── Gap #152: generate compact with directiveCount ─────────────────
-import {
-  compactGenerateMap,
-  compactModTidyMap,
-  formatModTidyCompact,
-} from "../src/lib/formatters.js";
 
 describe("compactGenerateMap — directiveCount (Gap #152)", () => {
   it("includes directiveCount when directives present", () => {
