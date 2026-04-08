@@ -1,5 +1,6 @@
 import { spawn, execFileSync } from "node:child_process";
-import { normalize } from "node:path";
+import { existsSync } from "node:fs";
+import { join, normalize } from "node:path";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
 
@@ -30,6 +31,50 @@ export function _pickBestMatch(lines: string[], platform: string): string {
   return lines[0];
 }
 
+/**
+ * Well-known installation directories for common dev tools on Windows.
+ * Used as a fallback when `where` fails (e.g., MSYS2/Git Bash PATH not
+ * inherited by the MCP server process). Only `.exe` entries are probed.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export const _WIN32_FALLBACK_PATHS: Record<string, string[]> = {
+  git: [
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Git", "cmd", "git.exe"),
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Git", "mingw64", "bin", "git.exe"),
+    join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Git", "cmd", "git.exe"),
+    join(process.env.LOCALAPPDATA ?? "", "Programs", "Git", "cmd", "git.exe"),
+  ],
+  gh: [
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "GitHub CLI", "gh.exe"),
+    join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "GitHub CLI", "gh.exe"),
+    join(process.env.LOCALAPPDATA ?? "", "Programs", "GitHub CLI", "gh.exe"),
+  ],
+  node: [join(process.env.PROGRAMFILES ?? "C:\\Program Files", "nodejs", "node.exe")],
+  docker: [
+    join(
+      process.env.PROGRAMFILES ?? "C:\\Program Files",
+      "Docker",
+      "Docker",
+      "resources",
+      "bin",
+      "docker.exe",
+    ),
+  ],
+};
+
+/**
+ * Probes well-known Windows installation paths for a command when `where` fails.
+ * Returns the first existing `.exe` path, or `undefined` if none found.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _probeFallbackPaths(cmd: string): string | undefined {
+  const candidates = _WIN32_FALLBACK_PATHS[cmd];
+  if (!candidates) return undefined;
+  return candidates.find((p) => p && existsSync(p));
+}
+
 function resolveCommand(cmd: string): string {
   // Skip resolution if cmd is already an absolute path
   if (cmd.startsWith("/") || /^[A-Za-z]:[/\\]/.test(cmd)) {
@@ -50,8 +95,15 @@ function resolveCommand(cmd: string): string {
 
     return _pickBestMatch(lines, process.platform) || cmd;
   } catch {
-    // Resolution failed — fall back to the bare command name so existing
-    // behavior (PATH lookup by the shell/OS) is preserved.
+    // Resolution failed — on Windows, probe well-known installation paths
+    // as a fallback. This handles MSYS2/Git Bash environments where the
+    // MCP server process may not inherit the shell's PATH.
+    if (process.platform === "win32") {
+      const fallback = _probeFallbackPaths(cmd);
+      if (fallback) return fallback;
+    }
+    // Fall back to the bare command name so existing behavior
+    // (PATH lookup by the shell/OS) is preserved.
     return cmd;
   }
 }
