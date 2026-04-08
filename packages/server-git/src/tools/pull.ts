@@ -59,6 +59,10 @@ export function registerPullTool(server: McpServer) {
         depth: z.coerce.number().optional().describe("Shallow fetch depth (--depth)"),
         noVerify: z.boolean().optional().describe("Bypass pre-merge hooks (--no-verify)"),
         squash: z.boolean().optional().describe("Squash pull (--squash)"),
+        prune: z
+          .boolean()
+          .optional()
+          .describe("Remove stale remote-tracking refs before pulling (--prune)"),
       },
       outputSchema: GitPullSchema,
     },
@@ -76,6 +80,7 @@ export function registerPullTool(server: McpServer) {
       depth,
       noVerify,
       squash,
+      prune,
     }) => {
       const cwd = path || process.cwd();
 
@@ -98,6 +103,7 @@ export function registerPullTool(server: McpServer) {
       if (depth !== undefined) args.push(`--depth=${depth}`);
       if (noVerify) args.push("--no-verify");
       if (squash) args.push("--squash");
+      if (prune) args.push("--prune");
       if (strategy) args.push(`--strategy=${strategy}`);
       if (strategyOption) args.push(`-X${strategyOption}`);
       args.push(remote);
