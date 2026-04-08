@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { writeFileSync, unlinkSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { run, escapeCmdArg, _buildSpawnConfig } from "../src/runner.js";
+import { run, escapeCmdArg, _buildSpawnConfig, _pickBestMatch } from "../src/runner.js";
 
 // Helper script that prints its args as JSON — avoids issues with inline
 // `-e` code being mangled by cmd.exe parentheses parsing on Windows.
@@ -558,6 +558,59 @@ describe("_buildSpawnConfig", () => {
       );
       expect(config.shell).toBe(false);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _pickBestMatch — regression tests for Windows command resolution (#789/#790)
+// ---------------------------------------------------------------------------
+
+describe("_pickBestMatch", () => {
+  it("prefers .cmd/.bat over .exe and extensionless on Windows", () => {
+    const lines = [
+      "C:\\Program Files\\nodejs\\npx",
+      "C:\\Program Files\\nodejs\\npx.cmd",
+      "C:\\Program Files\\nodejs\\npx.exe",
+    ];
+    expect(_pickBestMatch(lines, "win32")).toBe("C:\\Program Files\\nodejs\\npx.cmd");
+  });
+
+  it("prefers .exe over extensionless when no .cmd/.bat exists (#789)", () => {
+    // Docker Desktop installs an extensionless shell script + docker.exe.
+    // The extensionless file cannot be executed by cmd.exe.
+    const lines = [
+      "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker",
+      "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+    ];
+    expect(_pickBestMatch(lines, "win32")).toBe(
+      "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+    );
+  });
+
+  it("prefers .com over extensionless on Windows", () => {
+    const lines = ["C:\\Windows\\System32\\find", "C:\\Windows\\System32\\find.com"];
+    expect(_pickBestMatch(lines, "win32")).toBe("C:\\Windows\\System32\\find.com");
+  });
+
+  it("returns first entry on Unix regardless of extensions", () => {
+    const lines = ["/usr/local/bin/docker", "/usr/bin/docker"];
+    expect(_pickBestMatch(lines, "linux")).toBe("/usr/local/bin/docker");
+    expect(_pickBestMatch(lines, "darwin")).toBe("/usr/local/bin/docker");
+  });
+
+  it("returns first entry when only one result on Windows", () => {
+    const lines = ["C:\\tools\\mytool"];
+    expect(_pickBestMatch(lines, "win32")).toBe("C:\\tools\\mytool");
+  });
+
+  it("returns first entry when all entries are extensionless on Windows", () => {
+    const lines = ["C:\\tools\\mytool", "C:\\other\\mytool"];
+    expect(_pickBestMatch(lines, "win32")).toBe("C:\\tools\\mytool");
+  });
+
+  it("handles case-insensitive extension matching", () => {
+    const lines = ["C:\\tools\\tool", "C:\\tools\\tool.EXE"];
+    expect(_pickBestMatch(lines, "win32")).toBe("C:\\tools\\tool.EXE");
   });
 });
 

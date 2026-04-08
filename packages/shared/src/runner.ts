@@ -12,6 +12,24 @@ import { sanitizeErrorOutput } from "./sanitize.js";
  * Returns the original command string if resolution fails (e.g., the command
  * is already an absolute path, or `which`/`where` is unavailable).
  */
+/**
+ * Picks the best match from multiple `where` results on Windows.
+ * Priority: .cmd/.bat (need cmd.exe wrapper) > .exe/.com (direct spawn)
+ * > first entry. Extensionless entries (often shell scripts) are deprioritized
+ * because cmd.exe cannot execute them correctly — see #789/#790.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _pickBestMatch(lines: string[], platform: string): string {
+  if (platform === "win32" && lines.length > 1) {
+    const cmdLine = lines.find((l) => /\.(cmd|bat)$/i.test(l));
+    if (cmdLine) return cmdLine;
+    const exeLine = lines.find((l) => /\.(exe|com)$/i.test(l));
+    if (exeLine) return exeLine;
+  }
+  return lines[0];
+}
+
 function resolveCommand(cmd: string): string {
   // Skip resolution if cmd is already an absolute path
   if (cmd.startsWith("/") || /^[A-Za-z]:[/\\]/.test(cmd)) {
@@ -30,16 +48,7 @@ function resolveCommand(cmd: string): string {
       .map((l) => l.trim())
       .filter(Boolean);
 
-    if (process.platform === "win32" && lines.length > 1) {
-      // On Windows, `where` returns multiple matches (e.g., `npx` and `npx.cmd`).
-      // Prefer .cmd/.bat entries so _buildSpawnConfig routes them through the
-      // cmd.exe wrapper path (Branch 2) instead of trying to execute an
-      // extensionless shell script with shell: false (which would fail).
-      const cmdLine = lines.find((l) => /\.(cmd|bat)$/i.test(l));
-      if (cmdLine) return cmdLine;
-    }
-
-    return lines[0] || cmd;
+    return _pickBestMatch(lines, process.platform) || cmd;
   } catch {
     // Resolution failed — fall back to the bare command name so existing
     // behavior (PATH lookup by the shell/OS) is preserved.
