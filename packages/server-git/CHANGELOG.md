@@ -1,5 +1,16 @@
 # @paretools/git
 
+## 0.17.0
+
+### Minor Changes
+
+- [#799](https://github.com/Dave-London/Pare/pull/799) [`8c0c1c2`](https://github.com/Dave-London/Pare/commit/8c0c1c2e96cc2b8e712355454c9f20248a0aff07) Thanks [@Dave-London](https://github.com/Dave-London)! - Add `prune` option to the pull tool for removing stale remote-tracking refs during pull (--prune)
+
+### Patch Changes
+
+- Updated dependencies [[`e67ced8`](https://github.com/Dave-London/Pare/commit/e67ced845a2d50fb677c056eb95bbe51655d7f2b)]:
+  - @paretools/shared@0.17.0
+
 ## 0.16.3
 
 ### Patch Changes

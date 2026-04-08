@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.17.0
+
+### Patch Changes
+
+- [#798](https://github.com/Dave-London/Pare/pull/798) [`e67ced8`](https://github.com/Dave-London/Pare/commit/e67ced845a2d50fb677c056eb95bbe51655d7f2b) Thanks [@Dave-London](https://github.com/Dave-London)! - Add fallback PATH probing for Windows MSYS2/Git Bash environments where the MCP server process does not inherit the shell PATH, causing commands like git and gh to fail with "Command not found"
+
 ## 0.16.3
 
 ### Patch Changes
