@@ -1,5 +1,12 @@
 # @paretools/remote
 
+## 0.16.3
+
+### Patch Changes
+
+- Updated dependencies [[`a20439f`](https://github.com/Dave-London/Pare/commit/a20439fd634aed6ff257028e3a9f5e255ce9ccc4)]:
+  - @paretools/shared@0.16.3
+
 ## 0.16.2
 
 ### Patch Changes

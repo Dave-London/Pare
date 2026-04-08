@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.16.3
+
+### Patch Changes
+
+- [#793](https://github.com/Dave-London/Pare/pull/793) [`a20439f`](https://github.com/Dave-London/Pare/commit/a20439fd634aed6ff257028e3a9f5e255ce9ccc4) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix Windows command resolution preferring extensionless shell scripts over .exe binaries, which caused docker compose tools to fail on Docker Desktop for Windows
+
 ## 0.16.2
 
 ### Patch Changes
