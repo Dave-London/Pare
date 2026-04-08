@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseBisect } from "../src/lib/parsers.js";
-import { formatBisect } from "../src/lib/formatters.js";
+import { parseBisect, parseBisectRun } from "../src/lib/parsers.js";
+import { formatBisect, formatBisectRun } from "../src/lib/formatters.js";
 import type { GitBisect } from "../src/schemas/index.js";
 
 describe("parseBisect", () => {
@@ -145,9 +145,6 @@ describe("formatBisect", () => {
 });
 
 // ── parseBisectRun tests ────────────────────────────────────────────────
-
-import { parseBisectRun } from "../src/lib/parsers.js";
-import { formatBisectRun } from "../src/lib/formatters.js";
 
 describe("parseBisectRun", () => {
   it("parses bisect run output that found the culprit", () => {

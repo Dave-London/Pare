@@ -8,6 +8,9 @@ import {
   parseGoListModulesOutput,
   parseGoGetOutput,
   parseGolangciLintJson,
+  parseGoFmtOutput,
+  parseGoGenerateOutput,
+  parseGoModTidyOutput,
 } from "../src/lib/parsers.js";
 
 describe("parseGoBuildOutput", () => {
@@ -870,7 +873,6 @@ describe("parseGolangciLintJson", () => {
 });
 
 // ─── Gap #151: fmt parse errors ─────────────────────────────────────
-import { parseGoFmtOutput } from "../src/lib/parsers.js";
 
 describe("parseGoFmtOutput — stderr parse errors (Gap #151)", () => {
   it("captures parse errors from stderr", () => {
@@ -924,7 +926,6 @@ describe("parseGoFmtOutput — stderr parse errors (Gap #151)", () => {
 });
 
 // ─── Gap #152: generate directives ──────────────────────────────────
-import { parseGoGenerateOutput } from "../src/lib/parsers.js";
 
 describe("parseGoGenerateOutput — per-directive parsing (Gap #152)", () => {
   it("parses -v verbose output with running directives", () => {
@@ -1185,7 +1186,6 @@ describe("parseGoListOutput — Error field (Gap #155)", () => {
 });
 
 // ─── Gap #156: mod-tidy madeChanges ─────────────────────────────────
-import { parseGoModTidyOutput } from "../src/lib/parsers.js";
 
 describe("parseGoModTidyOutput — madeChanges detection (Gap #156)", () => {
   it("detects changes when go.mod hash differs", () => {
