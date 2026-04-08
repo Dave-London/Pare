@@ -9,6 +9,7 @@ export {
   run,
   escapeCmdArg,
   _buildSpawnConfig,
+  _pickBestMatch,
   type RunResult,
   type RunOptions,
   type SpawnConfig,
