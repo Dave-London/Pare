@@ -93,9 +93,7 @@ export function registerWebpackTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe(
-            "Additional webpack flags. Each element is validated to prevent flag injection.",
-          ),
+          .describe("Additional webpack flags."),
         compact: compactInput,
       },
       outputSchema: WebpackResultSchema,
@@ -159,9 +157,6 @@ export function registerWebpackTool(server: McpServer) {
       cliArgs.push("--no-color");
 
       if (args) {
-        for (const arg of args) {
-          assertNoFlagInjection(arg, "args");
-        }
         cliArgs.push(...args);
       }
 
