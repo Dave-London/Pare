@@ -1,8 +1,81 @@
 import { spawn, execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, normalize } from "node:path";
 import { stripAnsi } from "./ansi.js";
 import { sanitizeErrorOutput } from "./sanitize.js";
+
+// ---------------------------------------------------------------------------
+// Unix PATH augmentation
+//
+// MCP clients (Codex, Claude Desktop, etc.) often launch server processes with
+// a stripped PATH that omits common tool directories like /opt/homebrew/bin.
+// This mirrors the Windows _WIN32_FALLBACK_PATHS approach: detect missing
+// directories and prepend them so spawned commands can find tools like fd, rg,
+// docker, etc.
+// ---------------------------------------------------------------------------
+
+/**
+ * Common Unix directories where dev tools are installed.
+ * Evaluated lazily (HOME resolved at call time, not import time).
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _unixExtraPaths(): string[] {
+  const home = homedir();
+  return [
+    "/opt/homebrew/bin", // macOS Apple Silicon Homebrew
+    "/opt/homebrew/sbin",
+    "/usr/local/bin", // Intel Mac Homebrew / general
+    "/usr/local/sbin",
+    join(home, ".cargo", "bin"), // Rust
+    join(home, ".local", "bin"), // Python / pipx
+  ];
+}
+
+/** Cached result — `undefined` means not yet computed. */
+let _augmented = false;
+
+/**
+ * Prepends well-known Unix tool directories to `process.env.PATH` if they
+ * exist on disk but are not already present. No-op on Windows.
+ *
+ * Safe to call multiple times — computes once and caches.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _augmentUnixPath(
+  platform: string = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  if (platform === "win32") return;
+  if (_augmented) return;
+  _augmented = true;
+
+  const currentPath = env.PATH ?? "";
+  const currentDirs = new Set(currentPath.split(":").filter(Boolean));
+  const toAdd: string[] = [];
+
+  for (const dir of _unixExtraPaths()) {
+    if (!currentDirs.has(dir) && existsSync(dir)) {
+      toAdd.push(dir);
+    }
+  }
+
+  if (toAdd.length > 0) {
+    env.PATH = [...toAdd, currentPath].filter(Boolean).join(":");
+  }
+}
+
+/**
+ * Resets the augmentation cache so `_augmentUnixPath` can run again.
+ * Only needed in tests.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _resetAugmentCache(): void {
+  _augmented = false;
+}
 
 /**
  * Resolves a command name to its absolute path using `where` (Windows) or
@@ -359,6 +432,10 @@ export function _buildSpawnConfig(
  * Normal non-zero exit codes are returned in the result, not thrown.
  */
 export function run(cmd: string, args: string[], opts?: RunOptions): Promise<RunResult> {
+  // Ensure common Unix tool directories are on PATH before spawning.
+  // Computed once and cached — safe to call on every invocation.
+  _augmentUnixPath();
+
   return new Promise((resolve, reject) => {
     const config = _buildSpawnConfig(cmd, args, { shell: opts?.shell });
 
