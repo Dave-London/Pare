@@ -1,5 +1,18 @@
 # @paretools/git
 
+## 0.18.0
+
+### Minor Changes
+
+- [#807](https://github.com/Dave-London/Pare/pull/807) [`203b643`](https://github.com/Dave-London/Pare/commit/203b643a5aa556c128c7ca2b7dcbc4ca6bf4d43d) Thanks [@Dave-London](https://github.com/Dave-London)! - Add batch branch deletion — pass an array of branch names to `delete` param
+
+### Patch Changes
+
+- [#809](https://github.com/Dave-London/Pare/pull/809) [`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix flaky integration test timeout and improve test coverage for batch branch deletion, build args, and PATH augmentation
+
+- Updated dependencies [[`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47), [`2756547`](https://github.com/Dave-London/Pare/commit/2756547b77bab4441032c3d618bc157561ea0bc9)]:
+  - @paretools/shared@0.18.0
+
 ## 0.17.0
 
 ### Minor Changes

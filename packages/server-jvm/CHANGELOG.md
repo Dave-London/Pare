@@ -1,5 +1,12 @@
 # @paretools/jvm
 
+## 0.18.0
+
+### Patch Changes
+
+- Updated dependencies [[`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47), [`2756547`](https://github.com/Dave-London/Pare/commit/2756547b77bab4441032c3d618bc157561ea0bc9)]:
+  - @paretools/shared@0.18.0
+
 ## 0.17.0
 
 ### Patch Changes

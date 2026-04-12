@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.18.0
+
+### Patch Changes
+
+- [#809](https://github.com/Dave-London/Pare/pull/809) [`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix flaky integration test timeout and improve test coverage for batch branch deletion, build args, and PATH augmentation
+
+- [#808](https://github.com/Dave-London/Pare/pull/808) [`2756547`](https://github.com/Dave-London/Pare/commit/2756547b77bab4441032c3d618bc157561ea0bc9) Thanks [@Dave-London](https://github.com/Dave-London)! - Augment PATH with common Unix tool locations on macOS/Linux to fix ENOENT when MCP clients launch servers with stripped environment
+
 ## 0.17.0
 
 ### Patch Changes
