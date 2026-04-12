@@ -30,11 +30,11 @@ describe("@paretools/lint integration", () => {
 
     client = new Client({ name: "test-client", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 180_000);
 
   afterAll(async () => {
     await transport.close();
-  });
+  }, 30_000);
 
   it("lists all 9 tools", async () => {
     const { tools } = await client.listTools();

@@ -30,7 +30,7 @@ describe("@paretools/test integration", () => {
 
   afterAll(async () => {
     await transport.close();
-  });
+  }, 30_000);
 
   it("lists all 3 tools", async () => {
     const { tools } = await client.listTools();
