@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
+import {
+  compactDualOutput,
+  INPUT_LIMITS,
+  compactInput,
+  repoPathInput,
+  coerceJsonArray,
+} from "@paretools/shared";
 import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch } from "../lib/parsers.js";
@@ -28,10 +34,12 @@ export function registerBranchTool(server: McpServer) {
           .optional()
           .describe("Start point for branch creation (commit, tag, or branch)"),
         delete: z
-          .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .union([
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.preprocess(coerceJsonArray, z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))),
+          ])
           .optional()
-          .describe("Delete branch with this name"),
+          .describe("Delete branch(es) — pass a single name or an array of names"),
         rename: z
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
@@ -59,10 +67,14 @@ export function registerBranchTool(server: McpServer) {
           .describe("Filter branches matching a pattern (<pattern>)"),
         all: z.boolean().optional().default(false).describe("Include remote branches"),
         forceDelete: z
-          .union([z.boolean(), z.string().max(INPUT_LIMITS.SHORT_STRING_MAX)])
+          .union([
+            z.boolean(),
+            z.string().max(INPUT_LIMITS.SHORT_STRING_MAX),
+            z.preprocess(coerceJsonArray, z.array(z.string().max(INPUT_LIMITS.SHORT_STRING_MAX))),
+          ])
           .optional()
           .describe(
-            "Force-delete unmerged branches (-D). Pass true (requires `delete` param) or a branch name string.",
+            "Force-delete unmerged branches (-D). Pass true (requires `delete` param), a branch name string, or an array of branch names.",
           ),
         merged: z.coerce
           .boolean()
@@ -150,18 +162,34 @@ export function registerBranchTool(server: McpServer) {
         }
       }
 
-      // Delete branch
-      // forceDelete can be true (use `delete` param as branch name) or a string (branch name to force-delete)
-      const forceDeleteBranch = typeof forceDelete === "string" ? forceDelete : undefined;
-      const isForceDelete = forceDelete === true || typeof forceDelete === "string";
-      const branchToDelete = deleteBranch ?? forceDeleteBranch;
+      // Delete branch(es)
+      // Normalize deleteBranch and forceDelete into a list of branches to delete
+      const isForceDelete =
+        forceDelete === true || typeof forceDelete === "string" || Array.isArray(forceDelete);
+      const deleteFlag = isForceDelete ? "-D" : "-d";
 
-      if (branchToDelete) {
-        assertNoFlagInjection(branchToDelete, "branch name");
-        const deleteFlag = isForceDelete ? "-D" : "-d";
-        const result = await git(["branch", deleteFlag, branchToDelete], cwd);
+      // Collect branch names to delete from both params
+      let branchesToDelete: string[] = [];
+      if (deleteBranch) {
+        if (Array.isArray(deleteBranch)) {
+          branchesToDelete.push(...deleteBranch);
+        } else {
+          branchesToDelete.push(deleteBranch);
+        }
+      }
+      if (typeof forceDelete === "string") {
+        branchesToDelete.push(forceDelete);
+      } else if (Array.isArray(forceDelete)) {
+        branchesToDelete.push(...(forceDelete as string[]));
+      }
+
+      if (branchesToDelete.length > 0) {
+        for (const name of branchesToDelete) {
+          assertNoFlagInjection(name, "branch name");
+        }
+        const result = await git(["branch", deleteFlag, ...branchesToDelete], cwd);
         if (result.exitCode !== 0) {
-          throw new Error(`Failed to delete branch: ${result.stderr}`);
+          throw new Error(`Failed to delete branch(es): ${result.stderr}`);
         }
       }
 
