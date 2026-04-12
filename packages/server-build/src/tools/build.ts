@@ -50,9 +50,7 @@ export function registerBuildTool(server: McpServer) {
           .array(z.string().max(INPUT_LIMITS.STRING_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
           .default([])
-          .describe(
-            "Arguments for the build command (e.g., ['run', 'build']). Each element is validated to prevent flag injection.",
-          ),
+          .describe("Arguments for the build command (e.g., ['run', 'build'])."),
         path: cwdPathInput,
         timeout: z
           .number()
@@ -76,11 +74,6 @@ export function registerBuildTool(server: McpServer) {
     async ({ command, args, path, timeout, env, compact }) => {
       assertAllowedCommand(command);
       assertNoPathQualifiedCommand(command);
-      if (args) {
-        for (const arg of args) {
-          assertNoFlagInjection(arg, "args");
-        }
-      }
       // Validate env keys and values
       const envRecord = env as Record<string, string> | undefined;
       if (envRecord) {

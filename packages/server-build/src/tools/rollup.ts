@@ -56,9 +56,7 @@ export function registerRollupTool(server: McpServer) {
           .max(INPUT_LIMITS.ARRAY_MAX)
           .optional()
           .default([])
-          .describe(
-            "Additional rollup flags. Each element is validated to prevent flag injection.",
-          ),
+          .describe("Additional rollup flags."),
         path: projectPathInput,
         compact: compactInput,
       },
@@ -88,9 +86,6 @@ export function registerRollupTool(server: McpServer) {
       if (watch) cliArgs.push("--watch");
 
       if (args) {
-        for (const arg of args) {
-          assertNoFlagInjection(arg, "args");
-        }
         cliArgs.push(...args);
       }
 

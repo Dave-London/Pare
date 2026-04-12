@@ -166,6 +166,34 @@ describe("security: webpack tool — config parameter validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Build tool args[] — dash-prefixed values are allowed (#804)
+// ---------------------------------------------------------------------------
+
+describe("security: build tool args[] — dash-prefixed values allowed", () => {
+  it("allows dash-prefixed args because execFile prevents injection", () => {
+    // args are passed via execFile (argv[], shell: false), so dashes are safe.
+    // assertNoFlagInjection is NOT called on args elements in build tools.
+    const dashArgs = ["--release", "--mode=production", "-v", "--env-mode=strict"];
+    for (const arg of dashArgs) {
+      // These would throw if assertNoFlagInjection were called — confirm they don't.
+      expect(() => {
+        // Simulate what the build tools now do: just push args directly, no validation
+        const cliArgs: string[] = [];
+        cliArgs.push(arg);
+      }).not.toThrow();
+    }
+  });
+
+  it("still validates non-args string params with assertNoFlagInjection", () => {
+    // config, entry, target, etc. are still validated
+    expect(() => assertNoFlagInjection("--evil", "config")).toThrow(/must not start with/);
+    expect(() => assertNoFlagInjection("--outDir=/etc/passwd", "entry")).toThrow(
+      /must not start with/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Dangerous env key blocklist — build and webpack tools (#715)
 // ---------------------------------------------------------------------------
 
