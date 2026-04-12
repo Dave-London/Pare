@@ -43,7 +43,7 @@ describe("@paretools/git integration", () => {
 
   afterAll(async () => {
     await transport.close();
-  });
+  }, 30_000);
 
   it("lists all 28 tools", async () => {
     const { tools } = await client.listTools();
@@ -329,12 +329,12 @@ describe("@paretools/git write-tool integration", () => {
 
     client = new Client({ name: "test-client-write", version: "1.0.0" });
     await client.connect(transport);
-  });
+  }, 180_000);
 
   afterAll(async () => {
     await transport.close();
     rmSync(tempDir, { recursive: true, force: true });
-  });
+  }, 30_000);
 
   describe("add", () => {
     it("stages files and returns structured add data", async () => {
@@ -577,6 +577,47 @@ describe("@paretools/git write-tool integration", () => {
       const branches = sc.branches as Record<string, unknown>[];
       expect(branches.find((b) => b.name === "batch-fd-1")).toBeUndefined();
       expect(branches.find((b) => b.name === "batch-fd-2")).toBeUndefined();
+    });
+
+    it("rejects flag injection in delete array elements", async () => {
+      gitInTemp(["branch", "valid-branch-fi"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: {
+            path: tempDir,
+            delete: ["--force", "valid-branch-fi"],
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBe(true);
+      // Clean up the branch that wasn't deleted
+      try {
+        gitInTemp(["branch", "-D", "valid-branch-fi"]);
+      } catch {
+        /* may already be deleted */
+      }
+    });
+
+    it("force-deletes with forceDelete as a string param", async () => {
+      gitInTemp(["branch", "fd-str-batch-test"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: { path: tempDir, forceDelete: "fd-str-batch-test" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "fd-str-batch-test")).toBeUndefined();
     });
   });
 

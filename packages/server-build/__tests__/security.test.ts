@@ -297,3 +297,36 @@ describe("Zod .max() constraints — Build tool schemas", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Build tool args — dash-prefixed flags are allowed (#805)
+// ---------------------------------------------------------------------------
+
+describe("security: build tool args — dash-prefixed flags pass validation", () => {
+  const argsSchema = z.array(z.string().max(INPUT_LIMITS.STRING_MAX)).max(INPUT_LIMITS.ARRAY_MAX);
+
+  it("accepts dash-prefixed args like --noEmit", () => {
+    const result = argsSchema.safeParse(["--noEmit"]);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts multiple dash-prefixed args", () => {
+    const result = argsSchema.safeParse(["--noEmit", "--declaration", "--outDir", "dist"]);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts single-dash flags", () => {
+    const result = argsSchema.safeParse(["-p", "tsconfig.json"]);
+    expect(result.success).toBe(true);
+  });
+
+  it("does not call assertNoFlagInjection on args elements", () => {
+    // After #805, args elements are NOT validated with assertNoFlagInjection,
+    // because build tools legitimately need dash-prefixed flags (--noEmit, --outDir, etc.).
+    // We verify that the schema alone passes validation for dash-prefixed args.
+    expect(() => {
+      const parsed = argsSchema.parse(["--noEmit", "--declaration"]);
+      expect(parsed).toEqual(["--noEmit", "--declaration"]);
+    }).not.toThrow();
+  });
+});

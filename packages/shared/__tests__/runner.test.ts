@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, afterEach } from "vitest";
 import { writeFileSync, unlinkSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -756,6 +756,38 @@ describe("_augmentUnixPath", () => {
     // Should not crash; on macOS test machines /usr/local/bin likely exists
     expect(env.PATH).toContain("/usr/bin");
   });
+
+  it.skipIf(process.platform === "win32")("does not add non-existent paths", () => {
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("darwin", env);
+    // A path like /nonexistent/homebrew/bin should never be added
+    expect(env.PATH).not.toContain("/nonexistent/homebrew/bin");
+    // Verify that all paths in the result actually exist on disk (or were already in PATH)
+    const dirs = (env.PATH as string).split(":");
+    for (const dir of dirs) {
+      if (dir === "/usr/bin") continue; // original path, skip
+      expect(existsSync(dir)).toBe(true);
+    }
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "end-to-end: augmented paths are present in env after augmentation",
+    () => {
+      const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+      _augmentUnixPath(process.platform, env);
+      const pathDirs = (env.PATH as string).split(":");
+      // At minimum, /usr/bin should still be there
+      expect(pathDirs).toContain("/usr/bin");
+      // If /usr/local/bin exists on this machine, it should be in PATH
+      if (existsSync("/usr/local/bin")) {
+        expect(pathDirs).toContain("/usr/local/bin");
+      }
+      // If /opt/homebrew/bin exists (Apple Silicon Mac), it should be in PATH
+      if (existsSync("/opt/homebrew/bin")) {
+        expect(pathDirs).toContain("/opt/homebrew/bin");
+      }
+    },
+  );
 });
 
 describe("_unixExtraPaths", () => {
