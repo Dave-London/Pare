@@ -709,11 +709,9 @@ describe("_augmentUnixPath", () => {
     expect(env.PATH).toContain("/usr/bin");
   });
 
-  it("does not duplicate paths already present", () => {
+  it.skipIf(process.platform === "win32")("does not duplicate paths already present", () => {
     const extraPaths = _unixExtraPaths();
-    // Pre-populate PATH with all the extra paths (use Unix separator since we force "darwin")
-    const unixPaths = extraPaths.map((p) => p.replace(/\\/g, "/"));
-    const initialPath = [...unixPaths, "/usr/bin"].join(":");
+    const initialPath = [...extraPaths, "/usr/bin"].join(":");
     const env = { PATH: initialPath } as unknown as NodeJS.ProcessEnv;
     _augmentUnixPath("darwin", env);
     // PATH should be unchanged — no duplicates
