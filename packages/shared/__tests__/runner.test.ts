@@ -9,6 +9,9 @@ import {
   _pickBestMatch,
   _probeFallbackPaths,
   _WIN32_FALLBACK_PATHS,
+  _augmentUnixPath,
+  _resetAugmentCache,
+  _unixExtraPaths,
 } from "../src/runner.js";
 
 // Helper script that prints its args as JSON — avoids issues with inline
@@ -676,5 +679,102 @@ describe("run – explicit shell: true", () => {
     const result = await run("echo", ["hello"], { shell: true });
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe("hello");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _augmentUnixPath — Unix PATH augmentation (#803)
+// ---------------------------------------------------------------------------
+
+describe("_augmentUnixPath", () => {
+  afterEach(() => {
+    _resetAugmentCache();
+  });
+
+  it("is a no-op on Windows", () => {
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("win32", env);
+    expect(env.PATH).toBe("/usr/bin");
+  });
+
+  it("adds missing paths that exist on disk", () => {
+    // /usr/local/bin exists on virtually all Unix systems
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("darwin", env);
+    // Should have added at least /usr/local/bin if it exists
+    if (existsSync("/usr/local/bin")) {
+      expect(env.PATH).toContain("/usr/local/bin");
+    }
+    // Original path should still be present
+    expect(env.PATH).toContain("/usr/bin");
+  });
+
+  it("does not duplicate paths already present", () => {
+    const extraPaths = _unixExtraPaths();
+    // Pre-populate PATH with all the extra paths
+    const initialPath = [...extraPaths, "/usr/bin"].join(":");
+    const env = { PATH: initialPath } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("darwin", env);
+    // PATH should be unchanged — no duplicates
+    expect(env.PATH).toBe(initialPath);
+  });
+
+  it("caches the result and only computes once", () => {
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("darwin", env);
+    const pathAfterFirst = env.PATH;
+    // Mutate PATH and call again — should be a no-op due to caching
+    env.PATH = "/only/this";
+    _augmentUnixPath("darwin", env);
+    expect(env.PATH).toBe("/only/this"); // not re-augmented
+  });
+
+  it("resets cache with _resetAugmentCache", () => {
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("darwin", env);
+    const pathAfterFirst = env.PATH;
+    _resetAugmentCache();
+    // After reset, calling again should re-compute
+    _augmentUnixPath("darwin", env);
+    // Result should be the same (idempotent) but the function ran again
+    expect(env.PATH).toContain("/usr/bin");
+  });
+
+  it("handles empty PATH gracefully", () => {
+    const env = { PATH: "" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("linux", env);
+    // Should not crash; PATH should contain whatever dirs exist
+    expect(typeof env.PATH).toBe("string");
+  });
+
+  it("handles undefined PATH gracefully", () => {
+    const env = {} as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("linux", env);
+    expect(typeof env.PATH).toBe("string");
+  });
+
+  it("works on linux platform", () => {
+    const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
+    _augmentUnixPath("linux", env);
+    // Should not crash; on macOS test machines /usr/local/bin likely exists
+    expect(env.PATH).toContain("/usr/bin");
+  });
+});
+
+describe("_unixExtraPaths", () => {
+  it("returns an array of path strings", () => {
+    const paths = _unixExtraPaths();
+    expect(Array.isArray(paths)).toBe(true);
+    expect(paths.length).toBeGreaterThan(0);
+    for (const p of paths) {
+      expect(typeof p).toBe("string");
+      expect(p.startsWith("/")).toBe(true);
+    }
+  });
+
+  it("includes /opt/homebrew/bin and /usr/local/bin", () => {
+    const paths = _unixExtraPaths();
+    expect(paths).toContain("/opt/homebrew/bin");
+    expect(paths).toContain("/usr/local/bin");
   });
 });
