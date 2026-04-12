@@ -1,5 +1,16 @@
 # @paretools/build
 
+## 0.18.0
+
+### Patch Changes
+
+- [#805](https://github.com/Dave-London/Pare/pull/805) [`ca9c8a8`](https://github.com/Dave-London/Pare/commit/ca9c8a893966718b021233819246d9ea3e2dc347) Thanks [@Dave-London](https://github.com/Dave-London)! - Allow dash-prefixed arguments in build tool args arrays — execFile already prevents injection
+
+- [#809](https://github.com/Dave-London/Pare/pull/809) [`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix flaky integration test timeout and improve test coverage for batch branch deletion, build args, and PATH augmentation
+
+- Updated dependencies [[`30ce521`](https://github.com/Dave-London/Pare/commit/30ce521c205093b7daa248f7f57227d1b4ef1f47), [`2756547`](https://github.com/Dave-London/Pare/commit/2756547b77bab4441032c3d618bc157561ea0bc9)]:
+  - @paretools/shared@0.18.0
+
 ## 0.17.0
 
 ### Patch Changes
