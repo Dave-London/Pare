@@ -498,6 +498,88 @@ describe("@paretools/git write-tool integration", () => {
     });
   });
 
+  describe("branch batch delete", () => {
+    it("deletes a single branch (backward compat)", async () => {
+      gitInTemp(["branch", "single-del-test"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: { path: tempDir, delete: "single-del-test" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "single-del-test")).toBeUndefined();
+    });
+
+    it("deletes an array of branches", async () => {
+      gitInTemp(["branch", "batch-del-1"]);
+      gitInTemp(["branch", "batch-del-2"]);
+      gitInTemp(["branch", "batch-del-3"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: {
+            path: tempDir,
+            delete: ["batch-del-1", "batch-del-2", "batch-del-3"],
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "batch-del-1")).toBeUndefined();
+      expect(branches.find((b) => b.name === "batch-del-2")).toBeUndefined();
+      expect(branches.find((b) => b.name === "batch-del-3")).toBeUndefined();
+    });
+
+    it("fails when one branch in an array does not exist", async () => {
+      gitInTemp(["branch", "batch-mixed-1"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: {
+            path: tempDir,
+            delete: ["batch-mixed-1", "nonexistent-branch-xyz"],
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBe(true);
+    });
+
+    it("force-deletes an array of branches with forceDelete as array", async () => {
+      gitInTemp(["branch", "batch-fd-1"]);
+      gitInTemp(["branch", "batch-fd-2"]);
+      const result = await client.callTool(
+        {
+          name: "branch",
+          arguments: {
+            path: tempDir,
+            forceDelete: ["batch-fd-1", "batch-fd-2"],
+          },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      const branches = sc.branches as Record<string, unknown>[];
+      expect(branches.find((b) => b.name === "batch-fd-1")).toBeUndefined();
+      expect(branches.find((b) => b.name === "batch-fd-2")).toBeUndefined();
+    });
+  });
+
   describe("checkout", () => {
     it("creates a new branch and returns structured checkout data", async () => {
       const result = await client.callTool(
