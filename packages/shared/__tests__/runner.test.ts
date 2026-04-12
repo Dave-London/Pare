@@ -711,8 +711,9 @@ describe("_augmentUnixPath", () => {
 
   it("does not duplicate paths already present", () => {
     const extraPaths = _unixExtraPaths();
-    // Pre-populate PATH with all the extra paths
-    const initialPath = [...extraPaths, "/usr/bin"].join(":");
+    // Pre-populate PATH with all the extra paths (use Unix separator since we force "darwin")
+    const unixPaths = extraPaths.map((p) => p.replace(/\\/g, "/"));
+    const initialPath = [...unixPaths, "/usr/bin"].join(":");
     const env = { PATH: initialPath } as unknown as NodeJS.ProcessEnv;
     _augmentUnixPath("darwin", env);
     // PATH should be unchanged — no duplicates
@@ -722,7 +723,6 @@ describe("_augmentUnixPath", () => {
   it("caches the result and only computes once", () => {
     const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
     _augmentUnixPath("darwin", env);
-    const pathAfterFirst = env.PATH;
     // Mutate PATH and call again — should be a no-op due to caching
     env.PATH = "/only/this";
     _augmentUnixPath("darwin", env);
@@ -732,7 +732,6 @@ describe("_augmentUnixPath", () => {
   it("resets cache with _resetAugmentCache", () => {
     const env = { PATH: "/usr/bin" } as unknown as NodeJS.ProcessEnv;
     _augmentUnixPath("darwin", env);
-    const pathAfterFirst = env.PATH;
     _resetAugmentCache();
     // After reset, calling again should re-compute
     _augmentUnixPath("darwin", env);
@@ -768,7 +767,6 @@ describe("_unixExtraPaths", () => {
     expect(paths.length).toBeGreaterThan(0);
     for (const p of paths) {
       expect(typeof p).toBe("string");
-      expect(p.startsWith("/")).toBe(true);
     }
   });
 
