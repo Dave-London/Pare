@@ -181,6 +181,53 @@ function resolveCommand(cmd: string): string {
   }
 }
 
+/**
+ * Builds a multi-line diagnostic suffix appended to "Command not found" errors
+ * so failures are self-debugging in the wild — see #820 (subagent PATH not
+ * inherited) where the original message gave no hint why lookup failed.
+ *
+ * Includes: platform, the first few PATH entries the runner saw, and on
+ * Windows the fallback paths that were probed plus whether each exists on disk.
+ *
+ * @internal — Exported for unit testing only.
+ */
+export function _diagnoseLookup(
+  cmd: string,
+  platform: string = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const lines: string[] = [];
+  lines.push(`  platform: ${platform}`);
+
+  const sep = platform === "win32" ? ";" : ":";
+  const pathEntries = (env.PATH ?? "").split(sep).filter(Boolean);
+  if (pathEntries.length === 0) {
+    lines.push(`  PATH: (empty)`);
+  } else {
+    const preview = pathEntries.slice(0, 8);
+    lines.push(`  PATH (${pathEntries.length} entries):`);
+    for (const entry of preview) lines.push(`    - ${entry}`);
+    if (pathEntries.length > preview.length) {
+      lines.push(`    ... (${pathEntries.length - preview.length} more)`);
+    }
+  }
+
+  if (platform === "win32") {
+    const fallbacks = _WIN32_FALLBACK_PATHS[cmd];
+    if (fallbacks && fallbacks.length > 0) {
+      lines.push(`  fallback paths probed:`);
+      for (const p of fallbacks) {
+        if (!p) continue;
+        lines.push(`    - ${p} (${existsSync(p) ? "exists" : "missing"})`);
+      }
+    } else {
+      lines.push(`  fallback paths: (none registered for "${cmd}")`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
 /** Options for the command runner, including working directory, timeout, and environment overrides. */
 export interface RunOptions {
   cwd?: string;
@@ -504,7 +551,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
       if (err.code === "ENOENT") {
         reject(
           new Error(
-            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.\n${_diagnoseLookup(cmd)}`,
           ),
         );
         return;
@@ -562,7 +609,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
       if (code !== 0 && stderr.includes("is not recognized")) {
         reject(
           new Error(
-            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.`,
+            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.\n${_diagnoseLookup(cmd)}`,
           ),
         );
         return;

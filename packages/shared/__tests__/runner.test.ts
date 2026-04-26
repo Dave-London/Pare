@@ -12,6 +12,7 @@ import {
   _augmentUnixPath,
   _resetAugmentCache,
   _unixExtraPaths,
+  _diagnoseLookup,
 } from "../src/runner.js";
 
 // Helper script that prints its args as JSON — avoids issues with inline
@@ -667,6 +668,71 @@ describe("_probeFallbackPaths", () => {
     } else {
       expect(result).toBeUndefined();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _diagnoseLookup — diagnostic message for "Command not found" errors (#820)
+// ---------------------------------------------------------------------------
+
+describe("_diagnoseLookup", () => {
+  it("includes the platform", () => {
+    const out = _diagnoseLookup("git", "linux", { PATH: "/usr/bin" } as NodeJS.ProcessEnv);
+    expect(out).toContain("platform: linux");
+  });
+
+  it("lists PATH entries the runner saw", () => {
+    const out = _diagnoseLookup("git", "linux", {
+      PATH: "/usr/bin:/usr/local/bin:/opt/homebrew/bin",
+    } as NodeJS.ProcessEnv);
+    expect(out).toContain("PATH (3 entries)");
+    expect(out).toContain("/usr/bin");
+    expect(out).toContain("/usr/local/bin");
+    expect(out).toContain("/opt/homebrew/bin");
+  });
+
+  it("uses ; as PATH separator on Windows", () => {
+    const out = _diagnoseLookup("git", "win32", {
+      PATH: "C:\\Windows;C:\\Program Files\\Git\\cmd",
+    } as NodeJS.ProcessEnv);
+    expect(out).toContain("PATH (2 entries)");
+    expect(out).toContain("C:\\Windows");
+    expect(out).toContain("C:\\Program Files\\Git\\cmd");
+  });
+
+  it("truncates PATH preview when over 8 entries", () => {
+    const dirs = Array.from({ length: 12 }, (_, i) => `/dir${i}`);
+    const out = _diagnoseLookup("git", "linux", {
+      PATH: dirs.join(":"),
+    } as NodeJS.ProcessEnv);
+    expect(out).toContain("PATH (12 entries)");
+    expect(out).toContain("/dir0");
+    expect(out).toContain("/dir7");
+    expect(out).toContain("(4 more)");
+    expect(out).not.toContain("/dir8");
+  });
+
+  it("reports empty PATH cleanly", () => {
+    const out = _diagnoseLookup("git", "linux", { PATH: "" } as NodeJS.ProcessEnv);
+    expect(out).toContain("PATH: (empty)");
+  });
+
+  it("on Windows, lists fallback paths and existence for known commands", () => {
+    const out = _diagnoseLookup("git", "win32", { PATH: "C:\\Windows" } as NodeJS.ProcessEnv);
+    expect(out).toContain("fallback paths probed");
+    expect(out).toMatch(/git\.exe \((exists|missing)\)/);
+  });
+
+  it("on Windows, notes when no fallback registered for a command", () => {
+    const out = _diagnoseLookup("some-unknown-tool", "win32", {
+      PATH: "C:\\Windows",
+    } as NodeJS.ProcessEnv);
+    expect(out).toContain('fallback paths: (none registered for "some-unknown-tool")');
+  });
+
+  it("on Unix, omits the fallback-paths section", () => {
+    const out = _diagnoseLookup("git", "linux", { PATH: "/usr/bin" } as NodeJS.ProcessEnv);
+    expect(out).not.toContain("fallback paths");
   });
 });
 
