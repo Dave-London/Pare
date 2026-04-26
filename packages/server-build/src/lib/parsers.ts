@@ -591,23 +591,37 @@ function parseWebpackText(
 // turbo
 // ---------------------------------------------------------------------------
 
-// Turbo task line format: <package>#<task>
-// e.g. "@paretools/shared#build: cache hit, replaying logs abc123 (100ms)"
-// or   "@paretools/git#build: cache miss, executing abc123 (2.5s)"
-// or   "web#build: computed xyz ... (1.2s)"
-// Summary line: "Tasks:    5 successful, 5 total"
-// Cached line:  "Cached:   3 cached, 5 total"
-// Duration line:"Duration:  2.5s"
+// Turbo task line format: <package>:<task> (modern turbo 2.x) or <package>#<task> (legacy).
+// Modern turbo (2.x) prefixes log lines with "<pkg>:<task>:" and emits the
+// status line as part of the same prefix:
+//   "@paretools/shared:build: cache hit, replaying logs abc123"
+//   "@paretools/shared:build: cache miss, executing abc123"
+//   "@paretools/shared:build: cache bypass, force executing abc123"
+// Older turbo versions used "#" and frequently appended a "(duration)" suffix:
+//   "@scope/pkg#test: cache miss, executing abc123 (2.5s)"
+//   "myapp#lint: cache bypass (5.1s)"
+// Failure summary lines (still emitted with "#" today):
+//   " ERROR  @scope/pkg#build: command (...) ... exited (1)"
+//   " Failed:    @scope/pkg#build"
+// Summary lines:
+//   "Tasks:    5 successful, 5 total"
+//   "Cached:   3 cached, 5 total"
 
-// Match task status lines like:
-//   @paretools/shared#build: cache hit, replaying logs ... (100ms)
-//   @scope/pkg#test: cache miss, executing ... (2.5s)
-//   myapp#lint: cache bypass (5.1s)
-const TURBO_TASK_RE = /^(.+?)#(\S+):\s+cache\s+(hit|miss|bypass)(?:,\s+\w+[^(]*)?\(([^)]+)\)/;
+// Match per-task status lines. Accepts either ":" or "#" between package and
+// task name and treats the trailing "(duration)" as optional, so it works for
+// both legacy and modern turbo CLIs.
+const TURBO_TASK_RE = /^(.+?)[#:](\S+):\s+cache\s+(hit|miss|bypass)(?:,[^(]*)?(?:\(([^)]+)\))?/;
 
-// Match task failure lines:
-//   @scope/pkg#build: command ... exited (1)
-//   pkg#test: ERROR ... (500ms)
+// Failure lines from the per-task ERROR summary that turbo prints near the end
+// of a failed run. Modern turbo emits:
+//   " ERROR  @scope/pkg#build: command (...) ... exited (2)"
+// and a one-per-line "Failed:" listing:
+//   " Failed:    @scope/pkg#build"
+const TURBO_ERROR_LINE_RE = /(?:^|\s)ERROR\s+(.+?)#(\S+):.*exited\s*\(\d+\)/;
+const TURBO_FAILED_LIST_RE = /^\s*Failed:\s+(.+?)#(\S+)\s*$/;
+// Legacy/inline task failure lines:
+//   "@scope/pkg#build: command ... exited (1)"
+//   "pkg#test: ERROR ... (500ms)"
 const TURBO_TASK_FAIL_RE = /^(.+?)#(\S+):.*(?:exited\s*\(\d+\)|ERROR)/;
 
 // Summary lines
@@ -645,57 +659,83 @@ export function parseTurboOutput(
   duration: number,
   summaryJsonContent?: string,
 ): TurboResult {
-  const tasks: TurboTask[] = [];
-  const seenTasks = new Set<string>();
+  const taskMap = new Map<string, TurboTask>();
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
 
   let summaryTotal = 0;
+  let summarySuccessful = 0;
   let summaryCached = 0;
+  let sawSummaryLine = false;
+
+  const upsertTask = (pkg: string, task: string, patch: Partial<TurboTask>) => {
+    const key = `${pkg}#${task}`;
+    const existing = taskMap.get(key);
+    if (existing) {
+      // Failure information takes precedence over a previously-seen success line.
+      if (patch.status === "fail") existing.status = "fail";
+      if (patch.cache !== undefined && existing.cache === undefined) existing.cache = patch.cache;
+      if (patch.duration !== undefined && existing.duration === undefined)
+        existing.duration = patch.duration;
+      if (patch.durationMs !== undefined && existing.durationMs === undefined)
+        existing.durationMs = patch.durationMs;
+      return;
+    }
+    taskMap.set(key, {
+      package: pkg,
+      task: task,
+      status: patch.status ?? "pass",
+      duration: patch.duration,
+      durationMs: patch.durationMs,
+      cache: patch.cache,
+    });
+  };
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Check for task status lines
+    // Check for failure lines first so the ERROR/Failed prefix wins over any
+    // earlier "cache bypass" status line for the same task.
+    const errorMatch = trimmed.match(TURBO_ERROR_LINE_RE);
+    if (errorMatch) {
+      upsertTask(errorMatch[1], errorMatch[2], { status: "fail", cache: "miss" });
+      continue;
+    }
+
+    const failedListMatch = trimmed.match(TURBO_FAILED_LIST_RE);
+    if (failedListMatch) {
+      upsertTask(failedListMatch[1], failedListMatch[2], { status: "fail", cache: "miss" });
+      continue;
+    }
+
+    // Per-task status line (covers both legacy "#" and modern ":" separators).
     const taskMatch = trimmed.match(TURBO_TASK_RE);
     if (taskMatch) {
-      const key = `${taskMatch[1]}#${taskMatch[2]}`;
-      if (!seenTasks.has(key)) {
-        seenTasks.add(key);
-        const durationStr = taskMatch[4];
-        const durationMs = parseDurationToMs(durationStr);
-        tasks.push({
-          package: taskMatch[1],
-          task: taskMatch[2],
-          status: "pass",
-          duration: durationStr,
-          durationMs,
-          cache: taskMatch[3] === "hit" ? "hit" : "miss",
-        });
-      }
+      const durationStr = taskMatch[4];
+      const durationMs = durationStr ? parseDurationToMs(durationStr) : undefined;
+      upsertTask(taskMatch[1], taskMatch[2], {
+        status: "pass",
+        duration: durationStr,
+        durationMs,
+        // Treat both "miss" and "bypass" as a cache miss for accounting.
+        cache: taskMatch[3] === "hit" ? "hit" : "miss",
+      });
       continue;
     }
 
-    // Check for failure lines
+    // Inline failure line (legacy turbo format).
     const failMatch = trimmed.match(TURBO_TASK_FAIL_RE);
     if (failMatch) {
-      const key = `${failMatch[1]}#${failMatch[2]}`;
-      if (!seenTasks.has(key)) {
-        seenTasks.add(key);
-        tasks.push({
-          package: failMatch[1],
-          task: failMatch[2],
-          status: "fail",
-          cache: "miss",
-        });
-      }
+      upsertTask(failMatch[1], failMatch[2], { status: "fail", cache: "miss" });
       continue;
     }
 
-    // Check for summary lines
+    // Summary lines
     const summaryMatch = trimmed.match(TURBO_TASKS_SUMMARY_RE);
     if (summaryMatch) {
+      summarySuccessful = parseInt(summaryMatch[1], 10);
       summaryTotal = parseInt(summaryMatch[2], 10);
+      sawSummaryLine = true;
       continue;
     }
 
@@ -705,10 +745,27 @@ export function parseTurboOutput(
     }
   }
 
-  const passed = tasks.filter((t) => t.status === "pass").length;
-  const failed = tasks.filter((t) => t.status === "fail").length;
-  const cached = tasks.filter((t) => t.cache === "hit").length;
-  const totalTasks = summaryTotal || tasks.length;
+  const tasks = Array.from(taskMap.values());
+
+  // Prefer the explicit summary line counts when available — they are the
+  // ground truth from turbo and let us preserve the
+  // `passed + failed === totalTasks` invariant even if individual per-task
+  // status lines couldn't be matched (e.g. log truncation, future format
+  // changes).
+  let passed = tasks.filter((t) => t.status === "pass").length;
+  let failed = tasks.filter((t) => t.status === "fail").length;
+  let totalTasks = tasks.length;
+  if (sawSummaryLine) {
+    totalTasks = summaryTotal;
+    passed = summarySuccessful;
+    failed = Math.max(0, summaryTotal - summarySuccessful);
+  }
+
+  // Cached: prefer the summary "Cached: N cached" line; fall back to counting
+  // per-task hits.
+  const cachedFromTasks = tasks.filter((t) => t.cache === "hit").length;
+  const cached = sawSummaryLine ? summaryCached : cachedFromTasks;
+
   let summary: Record<string, unknown> | undefined;
   if (summaryJsonContent) {
     try {
@@ -728,7 +785,7 @@ export function parseTurboOutput(
     totalTasks,
     passed,
     failed,
-    cached: summaryCached || cached,
+    cached,
     summary,
   };
 }

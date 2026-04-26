@@ -191,6 +191,155 @@ describe("parseTurboOutput", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Modern turbo 2.x output format (regression coverage for #830)
+// ---------------------------------------------------------------------------
+
+// Real captured output from `turbo 2.9.6` for the repro in #830.
+// Note: per-task lines use ":" between package and task (not "#"), and the
+// status line does NOT include a trailing "(duration)" suffix.
+const TURBO_V2_FORCE_BUILD = [
+  "",
+  "   • Packages in scope: @paretools/shared",
+  "   • Running build in 1 packages",
+  "   • Remote caching disabled, using shared worktree cache",
+  "",
+  "@paretools/shared:build: cache bypass, force executing 678fee9a6acfc093",
+  "@paretools/shared:build: ",
+  "@paretools/shared:build: > @paretools/shared@0.18.0 build /tmp/pkg/shared",
+  "@paretools/shared:build: > tsc",
+  "@paretools/shared:build: ",
+  "",
+  " Tasks:    1 successful, 1 total",
+  "Cached:    0 cached, 1 total",
+  "  Time:    1.262s",
+].join("\n");
+
+const TURBO_V2_CACHE_HIT = [
+  "@paretools/shared:build: cache hit, replaying logs 678fee9a6acfc093",
+  "@paretools/shared:build: ",
+  "@paretools/shared:build: > tsc",
+  "",
+  " Tasks:    1 successful, 1 total",
+  "Cached:    1 cached, 1 total",
+  "  Time:    59ms >>> FULL TURBO",
+].join("\n");
+
+const TURBO_V2_CACHE_MISS = [
+  "@paretools/shared:build: cache miss, executing 678fee9a6acfc093",
+  "@paretools/shared:build: > tsc",
+  "",
+  " Tasks:    1 successful, 1 total",
+  "Cached:    0 cached, 1 total",
+  "  Time:    1.5s",
+].join("\n");
+
+// Real captured output for a failing build under turbo 2.x: the task status
+// line uses ":" but the failure summary lines still use "#".
+const TURBO_V2_FAILURE = [
+  "@paretools/shared:build: cache bypass, force executing 5a7ec1ce892dbcf0",
+  "@paretools/shared:build: > tsc",
+  "@paretools/shared:build: src/break.ts(1,6): error TS1005: ';' expected.",
+  "@paretools/shared:build:  ELIFECYCLE  Command failed with exit code 2.",
+  " ERROR  @paretools/shared#build: command (/tmp/pkg/shared) /usr/local/bin/pnpm run build exited (2)",
+  "",
+  " Tasks:    0 successful, 1 total",
+  "Cached:    0 cached, 1 total",
+  "  Time:    1.393s ",
+  "Failed:    @paretools/shared#build",
+  "",
+  " ERROR  run failed: command  exited (2)",
+].join("\n");
+
+describe("parseTurboOutput (turbo 2.x)", () => {
+  it("parses a force-rebuilt single task (cache bypass) and reports passed=1", () => {
+    const result = parseTurboOutput(TURBO_V2_FORCE_BUILD, "", 0, 1.3);
+
+    expect(result.success).toBe(true);
+    expect(result.totalTasks).toBe(1);
+    expect(result.passed).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(result.cached).toBe(0);
+    expect(result.tasks).toHaveLength(1);
+    expect(result.tasks?.[0]).toMatchObject({
+      package: "@paretools/shared",
+      task: "build",
+      status: "pass",
+      cache: "miss",
+    });
+  });
+
+  it("parses a cache hit and reports cached=1", () => {
+    const result = parseTurboOutput(TURBO_V2_CACHE_HIT, "", 0, 0.06);
+
+    expect(result.success).toBe(true);
+    expect(result.totalTasks).toBe(1);
+    expect(result.passed).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(result.cached).toBe(1);
+    expect(result.tasks?.[0]).toMatchObject({
+      package: "@paretools/shared",
+      task: "build",
+      status: "pass",
+      cache: "hit",
+    });
+  });
+
+  it("parses a cache miss task with no inline duration", () => {
+    const result = parseTurboOutput(TURBO_V2_CACHE_MISS, "", 0, 1.5);
+
+    expect(result.success).toBe(true);
+    expect(result.totalTasks).toBe(1);
+    expect(result.passed).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(result.cached).toBe(0);
+    expect(result.tasks?.[0]).toMatchObject({
+      package: "@paretools/shared",
+      task: "build",
+      status: "pass",
+      cache: "miss",
+    });
+  });
+
+  it("parses a failing build using ERROR + Failed lines (turbo 2.x)", () => {
+    const result = parseTurboOutput(TURBO_V2_FAILURE, "", 1, 1.4);
+
+    expect(result.success).toBe(false);
+    expect(result.totalTasks).toBe(1);
+    expect(result.passed).toBe(0);
+    expect(result.failed).toBe(1);
+    expect(result.tasks).toHaveLength(1);
+    expect(result.tasks?.[0]).toMatchObject({
+      package: "@paretools/shared",
+      task: "build",
+      status: "fail",
+    });
+  });
+
+  it("preserves the passed + failed === totalTasks invariant across all fixtures", () => {
+    const fixtures = [
+      { stdout: TURBO_SUCCESS_ALL_CACHED, exit: 0 },
+      { stdout: TURBO_SUCCESS_PARTIAL_CACHE, exit: 0 },
+      { stdout: TURBO_FAILURE, exit: 1 },
+      { stdout: TURBO_NO_TASKS, exit: 0 },
+      { stdout: TURBO_MIXED_OUTPUT, exit: 0 },
+      { stdout: TURBO_ERROR_OUTPUT, exit: 1 },
+      { stdout: TURBO_V2_FORCE_BUILD, exit: 0 },
+      { stdout: TURBO_V2_CACHE_HIT, exit: 0 },
+      { stdout: TURBO_V2_CACHE_MISS, exit: 0 },
+      { stdout: TURBO_V2_FAILURE, exit: 1 },
+    ];
+    for (const f of fixtures) {
+      const result = parseTurboOutput(f.stdout, "", f.exit, 0);
+      expect(
+        result.passed + result.failed,
+        `passed(${result.passed}) + failed(${result.failed}) must equal totalTasks(${result.totalTasks}) for fixture: ${f.stdout.split("\n")[0] || "<empty>"}`,
+      ).toBe(result.totalTasks);
+      expect(result.cached).toBeLessThanOrEqual(result.totalTasks);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Formatter tests
 // ---------------------------------------------------------------------------
 
