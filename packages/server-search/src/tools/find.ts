@@ -7,7 +7,7 @@ import {
   compactInput,
   pathInput,
 } from "@paretools/shared";
-import { fdCmd } from "../lib/search-runner.js";
+import { fdCmd, resolveSearchPath } from "../lib/search-runner.js";
 import { parseFdOutput } from "../lib/parsers.js";
 import { formatFind, compactFindMap, formatFindCompact } from "../lib/formatters.js";
 import { FindResultSchema } from "../schemas/index.js";
@@ -117,7 +117,17 @@ export function registerFindTool(server: McpServer) {
       if (size) assertNoFlagInjection(size, "size");
       if (changedWithin) assertNoFlagInjection(changedWithin, "changedWithin");
 
-      const cwd = path || process.cwd();
+      // fd walks a directory tree; a file path is not meaningful as a search
+      // root. Resolve the path to surface clear errors for missing paths and
+      // reject file inputs with a typed error (matches the schema description).
+      const resolved = resolveSearchPath(path);
+      if (resolved.isFile) {
+        throw new Error(
+          `path must be a directory for find (got a file): ${path ?? ""}. ` +
+            `Use search or count to operate on a single file.`,
+        );
+      }
+      const cwd = resolved.cwd;
       const args = ["--color", "never"];
 
       if (type) {

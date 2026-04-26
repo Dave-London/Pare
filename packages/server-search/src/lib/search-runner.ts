@@ -1,4 +1,6 @@
 import { run, type RunResult } from "@paretools/shared";
+import { statSync } from "node:fs";
+import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 
 /** Platform-specific install hints for commands used by the search package. */
 const INSTALL_HINTS: Record<string, string> = {
@@ -60,6 +62,60 @@ export async function rgCmd(args: string[], cwd?: string): Promise<RunResult> {
 
 export async function fdCmd(args: string[], cwd?: string): Promise<RunResult> {
   return runWithInstallHint("fd", args, { cwd, timeout: 180_000 });
+}
+
+/**
+ * Result of resolving a user-supplied `path` parameter into a `cwd` for the
+ * underlying CLI plus a positional target path to pass to it.
+ *
+ * - For directory inputs, `cwd` is the directory itself and `target` is "."
+ *   (preserves current behaviour).
+ * - For file inputs, `cwd` is the file's parent directory and `target` is the
+ *   absolute file path so the CLI searches just that file rather than crashing
+ *   with `spawn ENOTDIR` when the file path is used as a process cwd.
+ */
+export interface ResolvedSearchPath {
+  cwd: string;
+  target: string;
+  isFile: boolean;
+}
+
+/**
+ * Resolves a user-supplied search path into a safe (cwd, target) pair.
+ *
+ * Throws a typed Error with a clear message when the path does not exist or
+ * is neither a regular file nor a directory.
+ */
+export function resolveSearchPath(inputPath: string | undefined): ResolvedSearchPath {
+  if (!inputPath) {
+    return { cwd: process.cwd(), target: ".", isFile: false };
+  }
+
+  const absolute = isAbsolute(inputPath) ? inputPath : resolvePath(process.cwd(), inputPath);
+
+  let stat;
+  try {
+    stat = statSync(absolute);
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      throw new Error(`path does not exist: ${inputPath}`);
+    }
+    if (code === "EACCES") {
+      throw new Error(`path is not accessible: ${inputPath}`);
+    }
+    throw err;
+  }
+
+  if (stat.isDirectory()) {
+    return { cwd: absolute, target: ".", isFile: false };
+  }
+
+  if (stat.isFile()) {
+    return { cwd: dirname(absolute), target: absolute, isFile: true };
+  }
+
+  throw new Error(`path is not a regular file or directory: ${inputPath}`);
 }
 
 export async function yqCmd(
