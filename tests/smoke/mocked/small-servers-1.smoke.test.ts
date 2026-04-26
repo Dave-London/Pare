@@ -54,6 +54,13 @@ vi.mock("../../../packages/server-search/src/lib/search-runner.js", () => ({
   rgCmd: vi.fn(),
   fdCmd: vi.fn(),
   jqCmd: vi.fn(),
+  // Default to the directory case — preserves pre-#827 behavior. Tests that
+  // need to exercise the file-input path can override per-test.
+  resolveSearchPath: vi.fn((p: string | undefined) => ({
+    cwd: p ?? process.cwd(),
+    target: ".",
+    isFile: false,
+  })),
 }));
 
 // ── Mock curl runner ────────────────────────────────────────────────────────
