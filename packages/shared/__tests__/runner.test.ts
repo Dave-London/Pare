@@ -634,15 +634,33 @@ describe("_probeFallbackPaths", () => {
     expect(_probeFallbackPaths("some-nonexistent-tool")).toBeUndefined();
   });
 
-  it("has fallback entries for git, gh, node, docker", () => {
+  it("has fallback entries for git, gh, node, docker, and node package managers", () => {
     expect(_WIN32_FALLBACK_PATHS).toHaveProperty("git");
     expect(_WIN32_FALLBACK_PATHS).toHaveProperty("gh");
     expect(_WIN32_FALLBACK_PATHS).toHaveProperty("node");
     expect(_WIN32_FALLBACK_PATHS).toHaveProperty("docker");
-    // All entries should be .exe paths
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("npm");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("npx");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("pnpm");
+    expect(_WIN32_FALLBACK_PATHS).toHaveProperty("yarn");
+    // Entries must end in .exe/.com (Branch 2 direct spawn) or .cmd/.bat
+    // (Branch 3 cmd.exe wrapper). Extensionless paths would break Branch 3.
     for (const paths of Object.values(_WIN32_FALLBACK_PATHS)) {
       for (const p of paths) {
-        if (p) expect(p).toMatch(/\.exe$/i);
+        if (p) expect(p).toMatch(/\.(exe|com|cmd|bat)$/i);
+      }
+    }
+  });
+
+  it("registers .cmd wrappers for npm/npx/pnpm/yarn (#839)", () => {
+    // Node package managers ship as .cmd on Windows. _buildSpawnConfig
+    // Branch 3 routes them through cmd.exe correctly.
+    for (const cmd of ["npm", "npx", "pnpm", "yarn"]) {
+      const paths = _WIN32_FALLBACK_PATHS[cmd];
+      expect(paths).toBeDefined();
+      expect(paths!.length).toBeGreaterThan(0);
+      for (const p of paths!) {
+        if (p) expect(p).toMatch(/\.cmd$/i);
       }
     }
   });
