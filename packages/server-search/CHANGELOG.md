@@ -1,5 +1,14 @@
 # @paretools/search
 
+## 0.18.1
+
+### Patch Changes
+
+- [#843](https://github.com/Dave-London/Pare/pull/843) [`9db6a9a`](https://github.com/Dave-London/Pare/commit/9db6a9a8f3b702deed40ea918b15fdf175f6e69a) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `pare-search__search` and `pare-search__count` crashing with `spawn ENOTDIR` when `path` points to a file. The schema already promised file or directory; now both work. `pare-search__find` (fd) genuinely walks directories, so it now returns a typed `path must be a directory for find` error instead of leaking the raw Node `ENOTDIR`. Missing paths produce a clear `path does not exist: <path>` error. Closes [#827](https://github.com/Dave-London/Pare/issues/827).
+
+- Updated dependencies [[`55977cf`](https://github.com/Dave-London/Pare/commit/55977cf4bc78d7da8faf0fce56109e804b8fe9b3), [`decf9ee`](https://github.com/Dave-London/Pare/commit/decf9ee3603e563ed6d5188bb9e325ff6fae841e)]:
+  - @paretools/shared@0.18.1
+
 ## 0.18.0
 
 ### Patch Changes
