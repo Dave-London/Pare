@@ -42,6 +42,16 @@ vi.mock("node:fs/promises", () => ({
   access: vi.fn().mockRejectedValue(new Error("ENOENT")),
 }));
 
+// Mock node:fs's existsSync so the post-install verification (#842) treats the
+// fake mock paths (e.g. /tmp/project) as if node_modules/ exists. The unit
+// tests in packages/server-npm/__tests__/install-verification.test.ts cover
+// the real existsSync-based assertion behavior. server-npm only imports
+// existsSync from node:fs (verified by grep), so the minimal mock below
+// is safe — no other fs functions need to pass through.
+vi.mock("node:fs", () => ({
+  existsSync: vi.fn().mockReturnValue(true),
+}));
+
 // Mock @paretools/shared run for nvm tool
 vi.mock("@paretools/shared", async () => {
   const actual = await vi.importActual<typeof import("@paretools/shared")>("@paretools/shared");
@@ -77,6 +87,7 @@ import { registerOutdatedTool } from "../../../packages/server-npm/src/tools/out
 import { registerRunTool } from "../../../packages/server-npm/src/tools/run.js";
 import { registerSearchTool } from "../../../packages/server-npm/src/tools/search.js";
 import { registerTestTool } from "../../../packages/server-npm/src/tools/test.js";
+import { existsSync } from "node:fs";
 
 // ── Types & Helpers ────────────────────────────────────────────────────────
 
@@ -583,6 +594,10 @@ describe("Smoke: npm.install", () => {
     vi.resetAllMocks();
     vi.mocked(detectPackageManager).mockResolvedValue("npm");
     vi.mocked(readFile).mockRejectedValue(new Error("ENOENT"));
+    // The post-install verification (#842) calls existsSync(<cwd>/node_modules).
+    // Smoke tests use mock paths like /tmp/project that don't exist on disk —
+    // re-set after vi.resetAllMocks() above wipes the file-level mock factory.
+    vi.mocked(existsSync).mockReturnValue(true);
     const server = new FakeServer();
     registerInstallTool(server as never);
     handler = server.tools.get("install")!.handler;

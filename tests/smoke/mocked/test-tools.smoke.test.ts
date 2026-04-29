@@ -44,6 +44,18 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   };
 });
 
+// Mock node:fs's existsSync so the framework-binary check (#842) treats the
+// fake mock paths (e.g. /project) as if node_modules/.bin/<framework> exists.
+// The unit tests in packages/server-test/__tests__/binary-check.test.ts cover
+// the real existsSync-based assertion behavior.
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    existsSync: vi.fn().mockReturnValue(true),
+  };
+});
+
 import { run } from "../../../packages/shared/dist/runner.js";
 import { detectFramework } from "../../../packages/server-test/src/lib/detect.js";
 import { readFile } from "node:fs/promises";
