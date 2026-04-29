@@ -55,9 +55,13 @@ describe("@paretools/build integration", () => {
 
   describe("tsc", () => {
     it("returns structured TypeScript diagnostics", async () => {
-      const repoRoot = resolve(__dirname, "../../..");
+      // Use this package's own dir so the binary-resolution check (#842) finds
+      // tsc in packages/server-build/node_modules/.bin/. pnpm doesn't hoist
+      // tsc to the repo-root node_modules in this workspace, so calling with
+      // path=repoRoot fails the assertBinaryAvailable check.
+      const packageRoot = resolve(__dirname, "..");
       const result = await client.callTool(
-        { name: "tsc", arguments: { path: repoRoot, noEmit: true } },
+        { name: "tsc", arguments: { path: packageRoot, noEmit: true } },
         undefined,
         CALL_TIMEOUT,
       );
