@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.18.1
+
+### Patch Changes
+
+- [#829](https://github.com/Dave-London/Pare/pull/829) [`55977cf`](https://github.com/Dave-London/Pare/commit/55977cf4bc78d7da8faf0fce56109e804b8fe9b3) Thanks [@Dave-London](https://github.com/Dave-London)! - Improve "Command not found" error: now includes the platform, the first PATH entries the runner saw, and on Windows the well-known fallback paths probed plus whether each exists on disk. Makes [#820](https://github.com/Dave-London/Pare/issues/820)-style failures (subagent PATH not inherited) self-debugging in the wild.
+
+- [#841](https://github.com/Dave-London/Pare/pull/841) [`decf9ee`](https://github.com/Dave-London/Pare/commit/decf9ee3603e563ed6d5188bb9e325ff6fae841e) Thanks [@Dave-London](https://github.com/Dave-London)! - Add npm/npx/pnpm/yarn to `_WIN32_FALLBACK_PATHS` so `pare-npm` and other Node-package-manager calls succeed on Windows + Git Bash when the spawned MCP server doesn't inherit the user's PATH (the same root condition as [#820](https://github.com/Dave-London/Pare/issues/820)). The cross-spawn cmd.exe wrapper in `_buildSpawnConfig` already handled `.cmd` correctly — only the fallback registry was missing entries. Fixes [#839](https://github.com/Dave-London/Pare/issues/839).
+
 ## 0.18.0
 
 ### Patch Changes

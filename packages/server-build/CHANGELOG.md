@@ -1,5 +1,14 @@
 # @paretools/build
 
+## 0.18.1
+
+### Patch Changes
+
+- [#833](https://github.com/Dave-London/Pare/pull/833) [`fdcce2a`](https://github.com/Dave-London/Pare/commit/fdcce2abdd9550427fd0e6af3a3c38591c07bef6) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `turbo` tool reporting `passed/failed/cached` all 0 with empty `tasks: []` on modern turbo 2.x output ([#830](https://github.com/Dave-London/Pare/issues/830)). Turbo 2.x prefixes per-task status lines with `<pkg>:<task>:` (colon) instead of the legacy `<pkg>#<task>:` (hash) the parser was matching, so every task was silently skipped. The parser now accepts both separators, treats the trailing `(duration)` as optional, recognizes `cache bypass` from `--force` runs, and parses turbo 2.x's `ERROR ...` and `Failed:` failure summary lines. The `passed + failed === totalTasks` invariant is now enforced via the summary line as a fallback when per-task lines can't be matched.
+
+- Updated dependencies [[`55977cf`](https://github.com/Dave-London/Pare/commit/55977cf4bc78d7da8faf0fce56109e804b8fe9b3), [`decf9ee`](https://github.com/Dave-London/Pare/commit/decf9ee3603e563ed6d5188bb9e325ff6fae841e)]:
+  - @paretools/shared@0.18.1
+
 ## 0.18.0
 
 ### Patch Changes
