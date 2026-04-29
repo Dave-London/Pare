@@ -71,7 +71,7 @@ This package runs real downstream suites (including `@paretools/git` integration
 
 The default `pnpm test` runs these batches sequentially for earlier failure and clearer triage.
 
-## All Pare Servers (240 tools)
+## All Pare Servers (244 tools)
 
 | Package                                                              | Tools                                                                       | Wraps                                   |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- |

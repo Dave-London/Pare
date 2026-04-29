@@ -8,6 +8,9 @@ import type {
   PrReviewResult,
   EditResult,
   PrChecksResult,
+  PrCloseResult,
+  PrReopenResult,
+  PrReadyResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -167,6 +170,8 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
     summary,
     ...(data.errorType ? { errorType: data.errorType } : {}),
     ...(data.errorMessage ? { errorMessage: data.errorMessage } : {}),
+    ...(data.pollCount !== undefined ? { pollCount: data.pollCount } : {}),
+    ...(data.waitedSeconds !== undefined ? { waitedSeconds: data.waitedSeconds } : {}),
   };
 }
 
@@ -240,6 +245,34 @@ export function formatIssueClose(data: IssueCloseResult): string {
   const reasonPart = data.reason ? ` (${data.reason})` : "";
   const alreadyPart = data.alreadyClosed ? " [already closed]" : "";
   return `Closed issue #${data.number}${reasonPart}: ${data.url}${alreadyPart}`;
+}
+
+/** Formats structured pr-close data into human-readable text. */
+export function formatPrClose(data: PrCloseResult): string {
+  const alreadyPart = data.alreadyClosed ? " [already closed]" : "";
+  const branchPart = data.deletedBranch ? " [branch deleted]" : "";
+  if (data.errorMessage && !data.url) {
+    return `Failed to close PR #${data.number}: ${data.errorMessage}`;
+  }
+  return `Closed PR #${data.number}: ${data.url}${alreadyPart}${branchPart}`;
+}
+
+/** Formats structured pr-reopen data into human-readable text. */
+export function formatPrReopen(data: PrReopenResult): string {
+  const alreadyPart = data.alreadyOpen ? " [already open]" : "";
+  if (data.errorMessage && !data.url) {
+    return `Failed to reopen PR #${data.number}: ${data.errorMessage}`;
+  }
+  return `Reopened PR #${data.number}: ${data.url}${alreadyPart}`;
+}
+
+/** Formats structured pr-ready data into human-readable text. */
+export function formatPrReady(data: PrReadyResult): string {
+  if (data.errorMessage && !data.url) {
+    return `Failed to mark PR #${data.number}: ${data.errorMessage}`;
+  }
+  const verb = data.isDraft ? "Converted PR to draft" : "Marked PR as ready for review";
+  return `${verb} #${data.number}: ${data.url}`;
 }
 
 /** Formats structured issue update data into human-readable text. */

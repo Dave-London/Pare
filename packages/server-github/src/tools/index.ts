@@ -14,6 +14,9 @@ import { registerPrReviewTool } from "./pr-review.js";
 import { registerPrUpdateTool } from "./pr-update.js";
 import { registerPrChecksTool } from "./pr-checks.js";
 import { registerPrDiffTool } from "./pr-diff.js";
+import { registerPrCloseTool } from "./pr-close.js";
+import { registerPrReopenTool } from "./pr-reopen.js";
+import { registerPrReadyTool } from "./pr-ready.js";
 import { registerIssueViewTool } from "./issue-view.js";
 import { registerIssueListTool } from "./issue-list.js";
 import { registerIssueCreateTool } from "./issue-create.js";
@@ -90,6 +93,24 @@ const TOOL_DEFS: Array<{
     description:
       "Returns file-level diff statistics for a pull request. Use full=true for patch content.",
     register: registerPrDiffTool,
+  },
+  {
+    name: "pr-close",
+    description:
+      "Closes a pull request with an optional comment and optional branch deletion. Returns structured data with PR number, state, URL, and deleted-branch flag.",
+    register: registerPrCloseTool,
+  },
+  {
+    name: "pr-reopen",
+    description:
+      "Reopens a previously closed pull request, optionally with a comment. Returns structured data with PR number, state, and URL.",
+    register: registerPrReopenTool,
+  },
+  {
+    name: "pr-ready",
+    description:
+      "Marks a pull request as ready for review (or converts it back to draft when undo=true). Returns structured data with PR number, state, URL, and resulting draft status.",
+    register: registerPrReadyTool,
   },
   {
     name: "issue-view",
