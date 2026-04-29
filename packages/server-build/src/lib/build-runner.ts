@@ -1,6 +1,46 @@
+import { existsSync } from "node:fs";
+import { dirname, join, parse } from "node:path";
 import { run, type RunResult } from "@paretools/shared";
 
+/**
+ * Walks up from `cwd` looking for `node_modules/.bin/<binary>` (or `<binary>.cmd`
+ * on Windows). Returns the resolved path, or `undefined` if not found before
+ * hitting the filesystem root.
+ */
+function findLocalBinary(cwd: string, binary: string): string | undefined {
+  const isWin = process.platform === "win32";
+  const candidates = isWin ? [`${binary}.cmd`, `${binary}.exe`, binary] : [binary];
+  let current = cwd;
+  const root = parse(current).root;
+  while (true) {
+    for (const name of candidates) {
+      const candidate = join(current, "node_modules", ".bin", name);
+      if (existsSync(candidate)) return candidate;
+    }
+    if (current === root) return undefined;
+    const parent = dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
+  }
+}
+
+/**
+ * Asserts that a binary is available at `<cwd>/node_modules/.bin/<binary>` (or
+ * any ancestor — supports workspaces). Throws a typed error pointing at the
+ * missing-deps case so consumers don't get a contradictory empty diagnostics
+ * result. See #842.
+ */
+export function assertBinaryAvailable(cwd: string, binary: string): void {
+  if (findLocalBinary(cwd, binary)) return;
+  const expected = join(cwd, "node_modules", ".bin", binary);
+  throw new Error(
+    `${binary} binary not found at ${expected} — try running "pnpm install" (or "npm install" / "yarn install") in ${cwd}.`,
+  );
+}
+
 export async function tsc(args: string[], cwd?: string): Promise<RunResult> {
+  const workdir = cwd ?? process.cwd();
+  assertBinaryAvailable(workdir, "tsc");
   return run("npx", ["tsc", ...args], { cwd, timeout: 180_000 });
 }
 

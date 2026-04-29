@@ -15,6 +15,7 @@ import {
   coerceJsonArray,
 } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
+import { assertNodeFrameworkAvailable } from "../lib/binary-check.js";
 import { parsePytestOutput } from "../lib/parsers/pytest.js";
 import { parseJestJson } from "../lib/parsers/jest.js";
 import { parseVitestJson } from "../lib/parsers/vitest.js";
@@ -391,6 +392,7 @@ export function registerRunTool(server: McpServer) {
 
       const cwd = path || process.cwd();
       const detected = framework || (await detectFramework(cwd));
+      assertNodeFrameworkAvailable(cwd, detected);
       const extraArgs = buildRunExtraArgs(detected, {
         filter,
         shard,

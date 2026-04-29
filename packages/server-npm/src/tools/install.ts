@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   dualOutput,
@@ -160,10 +162,52 @@ export function registerInstallTool(server: McpServer) {
 
       const output = result.stdout + "\n" + result.stderr;
       const install = parseInstallOutput(output);
+
+      // Sanity check: install (other than dry-run / global) MUST leave a
+      // node_modules/ on disk. Without this guard, a CLI that exits 0 with
+      // a benign "already up to date" message gets reported as success even
+      // though nothing was installed. See #842.
+      if (!dryRun && !isGlobal) {
+        assertInstallActuallyHappened({
+          cwd,
+          pm,
+          subcommand,
+          exitCode: result.exitCode,
+          stderr: result.stderr,
+        });
+      }
+
       return dualOutput({ ...install, packageManager: pm, lockfileChanged }, (d) =>
         formatInstall(d, duration),
       );
     },
+  );
+}
+
+/**
+ * Throws when an install command reports success but no `node_modules/` was
+ * created in `cwd`. This catches the dominant silent-success failure mode
+ * described in #842, where pnpm exits 0 without actually installing.
+ *
+ * Exported so unit tests can exercise the verification without needing to
+ * shell out to a real package manager.
+ */
+export function assertInstallActuallyHappened(args: {
+  cwd: string;
+  pm: "npm" | "pnpm" | "yarn";
+  subcommand: string;
+  exitCode: number;
+  stderr: string;
+}): void {
+  const nodeModulesPath = join(args.cwd, "node_modules");
+  if (existsSync(nodeModulesPath)) return;
+
+  const stderrTail = args.stderr.trim().split("\n").slice(-5).join("\n");
+  throw new Error(
+    `${args.pm} ${args.subcommand} reported success but no node_modules/ was created at ${nodeModulesPath}. ` +
+      `This usually means the package manager exited 0 without actually installing (e.g. a misleading "already up to date" message, or a workspace filter that matched nothing).\n` +
+      `pm=${args.pm} cwd=${args.cwd} exitCode=${args.exitCode}` +
+      (stderrTail ? `\nstderr (last 5 lines):\n${stderrTail}` : ""),
   );
 }
 
