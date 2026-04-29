@@ -22,7 +22,9 @@ describe("assertBinaryAvailable (build)", () => {
   });
 
   it("includes the cwd in the error so the consumer can locate the workspace", () => {
-    expect(() => assertBinaryAvailable(tmp, "tsc")).toThrowError(new RegExp(tmp));
+    // Use string (substring match) rather than RegExp — Windows tmp paths
+    // contain backslashes that would be interpreted as regex escapes.
+    expect(() => assertBinaryAvailable(tmp, "tsc")).toThrowError(tmp);
   });
 
   it("succeeds when node_modules/.bin/<binary> exists in cwd", () => {
