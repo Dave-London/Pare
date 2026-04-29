@@ -8,6 +8,9 @@ import type {
   PrReviewResult,
   EditResult,
   PrChecksResult,
+  PrCloseResult,
+  PrReopenResult,
+  PrReadyResult,
   IssueViewResult,
   IssueListResult,
   IssueCreateResult,
@@ -485,6 +488,79 @@ export function parseIssueClose(
     reason: reason ?? undefined,
     commentUrl: comment && commentUrlMatch ? commentUrlMatch[1] : undefined,
     alreadyClosed,
+  };
+}
+
+/** Extracts the trailing PR number from a github.com pull request URL, if present. */
+function extractPrNumberFromUrl(url: string): number | undefined {
+  const m = url.match(/\/pull\/(\d+)/);
+  return m ? Number(m[1]) : undefined;
+}
+
+/**
+ * Parses `gh pr close` output into structured data.
+ * The gh CLI may print a confirmation message plus the PR URL to stdout, and
+ * may also include a "branch deleted" notice when --delete-branch was passed.
+ * If `number` is `0` and the URL contains a PR number, that number is used instead.
+ */
+export function parsePrClose(
+  stdout: string,
+  number: number,
+  deleteBranch?: boolean,
+  stderr?: string,
+): PrCloseResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : stdout.trim();
+  const combined = `${stdout}\n${stderr ?? ""}`;
+  const alreadyClosed =
+    /already closed/i.test(combined) || /already been closed/i.test(combined) ? true : undefined;
+  // gh prints a "Deleted branch" line when --delete-branch succeeds
+  const deletedBranch = deleteBranch
+    ? /deleted branch|branch .* deleted/i.test(combined)
+      ? true
+      : false
+    : undefined;
+  const resolvedNumber = number || extractPrNumberFromUrl(url) || 0;
+  return {
+    number: resolvedNumber,
+    state: "closed",
+    url,
+    deletedBranch,
+    alreadyClosed,
+  };
+}
+
+/**
+ * Parses `gh pr reopen` output into structured data.
+ */
+export function parsePrReopen(stdout: string, number: number, stderr?: string): PrReopenResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : stdout.trim();
+  const combined = `${stdout}\n${stderr ?? ""}`;
+  const alreadyOpen =
+    /already open/i.test(combined) || /already reopened/i.test(combined) ? true : undefined;
+  const resolvedNumber = number || extractPrNumberFromUrl(url) || 0;
+  return {
+    number: resolvedNumber,
+    state: "open",
+    url,
+    alreadyOpen,
+  };
+}
+
+/**
+ * Parses `gh pr ready` output into structured data.
+ * When `undo=true`, the PR is converted back to draft.
+ */
+export function parsePrReady(stdout: string, number: number, undo?: boolean): PrReadyResult {
+  const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/pull\/\d+)/);
+  const url = urlMatch ? urlMatch[1] : stdout.trim();
+  const resolvedNumber = number || extractPrNumberFromUrl(url) || 0;
+  return {
+    number: resolvedNumber,
+    state: "open",
+    url,
+    isDraft: !!undo,
   };
 }
 

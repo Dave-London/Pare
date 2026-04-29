@@ -311,10 +311,17 @@ describe("Recorded: github.pr-checks", () => {
     expect(args[2]).toBe("feature-branch");
   });
 
-  it("S29 [recorded] watch: true passes --watch flag", async () => {
+  // The watch flag now triggers internal polling rather than passing --watch
+  // to gh (which is mutually exclusive with --json — see #844). When all
+  // checks are non-pending on the first poll, the loop exits immediately.
+  it("S29 [recorded] watch: true polls internally and does not pass --watch to gh (#844)", async () => {
     mockGhWithFixture("s01-all-passing.txt");
-    await callAndValidate({ number: "123", watch: true });
+    const { parsed } = await callAndValidate({ number: "123", watch: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
-    expect(args).toContain("--watch");
+    expect(args).not.toContain("--watch");
+    // With all checks already passing, polling exits on the first iteration
+    expect(parsed.summary!.total).toBeGreaterThan(0);
+    expect(parsed.summary!.failed).toBe(0);
+    expect(parsed.summary!.pending).toBe(0);
   });
 });

@@ -362,10 +362,16 @@ describe("Smoke: github.pr-checks", () => {
   });
 
   // ── Scenario 29: watch: true ────────────────────────────────────────
-  it("S29 [P2] watch: true passes --watch flag", async () => {
+  // The watch flag now triggers internal polling rather than passing --watch
+  // to gh (which is mutually exclusive with --json — see #844). When all
+  // checks are non-pending on the first poll, the loop exits immediately.
+  it("S29 [P2] watch: true polls internally and does not pass --watch to gh (#844)", async () => {
     mockGh(JSON.stringify([SAMPLE_CHECK]));
-    await callAndValidate({ number: "123", watch: true });
+    const { parsed } = await callAndValidate({ number: "123", watch: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
-    expect(args).toContain("--watch");
+    expect(args).not.toContain("--watch");
+    // With all checks already passing, polling exits on the first iteration
+    expect(parsed.summary!.total).toBe(1);
+    expect(parsed.summary!.passed).toBe(1);
   });
 });

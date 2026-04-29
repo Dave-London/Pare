@@ -27,7 +27,7 @@ describe("@paretools/github integration", () => {
     await transport.close();
   }, 30_000);
 
-  it("lists all 27 tools", async () => {
+  it("lists all 30 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -43,11 +43,14 @@ describe("@paretools/github integration", () => {
       "label-create",
       "label-list",
       "pr-checks",
+      "pr-close",
       "pr-comment",
       "pr-create",
       "pr-diff",
       "pr-list",
       "pr-merge",
+      "pr-ready",
+      "pr-reopen",
       "pr-review",
       "pr-update",
       "pr-view",

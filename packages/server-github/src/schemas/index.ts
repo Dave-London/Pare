@@ -280,13 +280,68 @@ export const PrChecksResultSchema = z.object({
   pr: z.number(),
   checks: z.array(PrChecksItemSchema).optional(),
   summary: PrChecksSummarySchema.optional(),
-  errorType: z.enum(["not-found", "permission-denied", "in-progress", "unknown"]).optional(),
+  errorType: z
+    .enum(["not-found", "permission-denied", "in-progress", "watch-timeout", "unknown"])
+    .optional(),
   errorMessage: z.string().optional(),
+  /** Number of times the wrapper polled gh (only set when watch=true). */
+  pollCount: z.number().optional(),
+  /** Total wall-clock seconds spent in the watch loop (only set when watch=true). */
+  waitedSeconds: z.number().optional(),
 });
 
 export type PrChecksItem = z.infer<typeof PrChecksItemSchema>;
 export type PrChecksSummary = z.infer<typeof PrChecksSummarySchema>;
 export type PrChecksResult = z.infer<typeof PrChecksResultSchema>;
+
+// ── PR lifecycle schemas (close / reopen / ready) ───────────────────
+
+/** Zod schema for structured pr-close output. */
+export const PrCloseResultSchema = z.object({
+  number: z.number(),
+  state: z.string(),
+  url: z.string(),
+  /** True when the branch was deleted as part of the close. */
+  deletedBranch: z.boolean().optional(),
+  /** True when gh reports the PR was already closed. */
+  alreadyClosed: z.boolean().optional(),
+  errorType: z
+    .enum(["not-found", "permission-denied", "already-closed", "merged", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type PrCloseResult = z.infer<typeof PrCloseResultSchema>;
+
+/** Zod schema for structured pr-reopen output. */
+export const PrReopenResultSchema = z.object({
+  number: z.number(),
+  state: z.string(),
+  url: z.string(),
+  /** True when gh reports the PR was already open. */
+  alreadyOpen: z.boolean().optional(),
+  errorType: z
+    .enum(["not-found", "permission-denied", "already-open", "merged", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type PrReopenResult = z.infer<typeof PrReopenResultSchema>;
+
+/** Zod schema for structured pr-ready output. */
+export const PrReadyResultSchema = z.object({
+  number: z.number(),
+  state: z.string(),
+  url: z.string(),
+  /** Resulting draft status after the operation (true when undo=true). */
+  isDraft: z.boolean(),
+  errorType: z
+    .enum(["not-found", "permission-denied", "already-ready", "already-draft", "unknown"])
+    .optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type PrReadyResult = z.infer<typeof PrReadyResultSchema>;
 
 // ── Run schemas ──────────────────────────────────────────────────────
 
