@@ -107,7 +107,11 @@ export function _pickBestMatch(lines: string[], platform: string): string {
 /**
  * Well-known installation directories for common dev tools on Windows.
  * Used as a fallback when `where` fails (e.g., MSYS2/Git Bash PATH not
- * inherited by the MCP server process). Only `.exe` entries are probed.
+ * inherited by the MCP server process).
+ *
+ * Entries may be `.exe`/`.com` (spawned directly via Branch 2 of
+ * `_buildSpawnConfig`) or `.cmd`/`.bat` wrappers (routed through cmd.exe via
+ * Branch 3). Both work, and the resolver picks the first that exists on disk.
  *
  * @internal — Exported for unit testing only.
  */
@@ -134,11 +138,35 @@ export const _WIN32_FALLBACK_PATHS: Record<string, string[]> = {
       "docker.exe",
     ),
   ],
+  // Node package managers ship as .cmd wrappers on Windows. The default Node
+  // installer puts them in C:\Program Files\nodejs; npm-installed globals land
+  // in %APPDATA%\npm; pnpm's standalone installer lands in %LOCALAPPDATA%\pnpm.
+  npm: [
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "nodejs", "npm.cmd"),
+    join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "nodejs", "npm.cmd"),
+    join(process.env.APPDATA ?? "", "npm", "npm.cmd"),
+  ],
+  npx: [
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "nodejs", "npx.cmd"),
+    join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "nodejs", "npx.cmd"),
+    join(process.env.APPDATA ?? "", "npm", "npx.cmd"),
+  ],
+  pnpm: [
+    join(process.env.LOCALAPPDATA ?? "", "pnpm", "pnpm.cmd"),
+    join(process.env.APPDATA ?? "", "npm", "pnpm.cmd"),
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "nodejs", "pnpm.cmd"),
+  ],
+  yarn: [
+    join(process.env.APPDATA ?? "", "npm", "yarn.cmd"),
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "Yarn", "bin", "yarn.cmd"),
+    join(process.env.PROGRAMFILES ?? "C:\\Program Files", "nodejs", "yarn.cmd"),
+  ],
 };
 
 /**
  * Probes well-known Windows installation paths for a command when `where` fails.
- * Returns the first existing `.exe` path, or `undefined` if none found.
+ * Returns the first existing path (may be .exe/.com or .cmd/.bat — both are
+ * handled correctly downstream by `_buildSpawnConfig`), or `undefined` if none found.
  *
  * @internal — Exported for unit testing only.
  */
