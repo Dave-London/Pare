@@ -60,7 +60,7 @@
     "@inquirer/prompts": "^8.4.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "smol-toml": "^1.6.1",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.4"
   },
   "devDependencies": {
     "@paretools/tsconfig": "workspace:*",
