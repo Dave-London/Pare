@@ -107,8 +107,9 @@ export function parseStatusV2(stdout: string): GitStatus {
 
   let branch = "unknown";
   let upstream: string | undefined;
-  let ahead: number | undefined;
-  let behind: number | undefined;
+  // null = no upstream / no branch.ab line; explicit number = parsed value.
+  let ahead: number | null = null;
+  let behind: number | null = null;
 
   for (const line of lines) {
     if (line.startsWith("# ")) {
@@ -193,17 +194,19 @@ export function parseStatusV2(stdout: string): GitStatus {
 function parseBranchFromPorcelain(line: string): {
   name: string;
   upstream?: string;
-  ahead?: number;
-  behind?: number;
+  ahead: number | null;
+  behind: number | null;
 } {
   // "## main...origin/main [ahead 2, behind 1]"
-  // "## main"
+  // "## main...origin/main"               (synced — no brackets)
+  // "## main"                              (no upstream)
   // "## HEAD (no branch)"
   const stripped = line.replace(/^## /, "");
   const dotIndex = stripped.indexOf("...");
 
   if (dotIndex === -1) {
-    return { name: stripped.split(" ")[0] };
+    // No upstream tracking — explicit null distinguishes "no upstream" from "synced".
+    return { name: stripped.split(" ")[0], ahead: null, behind: null };
   }
 
   const name = stripped.slice(0, dotIndex);
@@ -213,11 +216,12 @@ function parseBranchFromPorcelain(line: string): {
   const aheadMatch = rest.match(/ahead (\d+)/);
   const behindMatch = rest.match(/behind (\d+)/);
 
+  // Upstream exists — default to 0 when no [ahead/behind] brackets are emitted.
   return {
     name,
     upstream,
-    ahead: aheadMatch ? parseInt(aheadMatch[1], 10) : undefined,
-    behind: behindMatch ? parseInt(behindMatch[1], 10) : undefined,
+    ahead: aheadMatch ? parseInt(aheadMatch[1], 10) : 0,
+    behind: behindMatch ? parseInt(behindMatch[1], 10) : 0,
   };
 }
 

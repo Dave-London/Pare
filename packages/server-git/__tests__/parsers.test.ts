@@ -57,7 +57,8 @@ describe("parseStatus", () => {
     expect(result.branch).toBe("feature");
     expect(result.upstream).toBe("origin/feature");
     expect(result.ahead).toBe(2);
-    expect(result.behind).toBeUndefined();
+    // Upstream exists with no [behind N] in the branch line → defaults to 0.
+    expect(result.behind).toBe(0);
     expect(result.staged).toEqual([
       { file: "src/index.ts", status: "modified" },
       { file: "src/new.ts", status: "added" },
@@ -107,6 +108,36 @@ describe("parseStatus", () => {
     const result = parseStatus("", "## new-branch");
     expect(result.branch).toBe("new-branch");
     expect(result.upstream).toBeUndefined();
+    // No upstream → null distinguishes from "synced" (which is 0).
+    expect(result.ahead).toBeNull();
+    expect(result.behind).toBeNull();
+  });
+
+  it("handles in-sync branch (upstream, no [ahead/behind] brackets) → ahead=0, behind=0", () => {
+    const result = parseStatus("", "## main...origin/main");
+    expect(result.branch).toBe("main");
+    expect(result.upstream).toBe("origin/main");
+    expect(result.ahead).toBe(0);
+    expect(result.behind).toBe(0);
+  });
+
+  it("handles ahead-only branch (synced behind)", () => {
+    const result = parseStatus("", "## main...origin/main [ahead 3]");
+    expect(result.ahead).toBe(3);
+    expect(result.behind).toBe(0);
+  });
+
+  it("handles behind-only branch (synced ahead)", () => {
+    const result = parseStatus("", "## main...origin/main [behind 5]");
+    expect(result.ahead).toBe(0);
+    expect(result.behind).toBe(5);
+  });
+
+  it("detached HEAD has no upstream → ahead=null, behind=null", () => {
+    const result = parseStatus("", "## HEAD (no branch)");
+    expect(result.branch).toBe("HEAD");
+    expect(result.ahead).toBeNull();
+    expect(result.behind).toBeNull();
   });
 });
 

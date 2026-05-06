@@ -67,7 +67,7 @@ export function registerDiscussionListTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .describe("Repository in OWNER/REPO format"),
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(20)

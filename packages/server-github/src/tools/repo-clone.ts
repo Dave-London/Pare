@@ -35,7 +35,7 @@ export function registerRepoCloneTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Target directory for the clone"),
-        depth: z
+        depth: z.coerce
           .number()
           .optional()
           .describe("Create a shallow clone with this many commits (passed as -- --depth=N)"),

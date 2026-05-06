@@ -31,7 +31,7 @@ export function registerPrListTool(server: McpServer) {
           .optional()
           .default("open")
           .describe("Filter by PR state (default: open)"),
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(30)
