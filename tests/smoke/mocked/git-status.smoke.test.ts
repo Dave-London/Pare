@@ -186,8 +186,9 @@ describe("Smoke: git.status", () => {
     const { parsed } = await callAndValidate({});
     expect(parsed.branch).toBe("feature-branch");
     expect(parsed.upstream).toBeUndefined();
-    expect(parsed.ahead).toBeUndefined();
-    expect(parsed.behind).toBeUndefined();
+    // No upstream → explicit null distinguishes from "synced" (which is 0).
+    expect(parsed.ahead).toBeNull();
+    expect(parsed.behind).toBeNull();
   });
 
   // ── Scenario 18: Merge conflict (UU) ───────────────────────────────
