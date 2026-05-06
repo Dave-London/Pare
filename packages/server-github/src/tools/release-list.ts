@@ -30,7 +30,7 @@ export function registerReleaseListTool(server: McpServer) {
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         // S-gap P1: Align default limit to CLI default (30)
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(30)

@@ -30,7 +30,7 @@ export function registerIssueListTool(server: McpServer) {
           .optional()
           .default("open")
           .describe("Filter by issue state (default: open)"),
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(30)

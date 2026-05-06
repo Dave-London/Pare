@@ -26,7 +26,7 @@ export function registerRunListTool(server: McpServer) {
         "Lists workflow runs with optional filters. Returns structured list with run ID, status, conclusion, and workflow details.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(20)

@@ -5,8 +5,8 @@ export const GitStatusSchema = z.object({
   branch: z.string(),
   porcelainVersion: z.enum(["v1", "v2"]).optional(),
   upstream: z.string().optional(),
-  ahead: z.number().optional(),
-  behind: z.number().optional(),
+  ahead: z.number().nullable().optional(),
+  behind: z.number().nullable().optional(),
   staged: z.array(
     z.object({
       file: z.string(),

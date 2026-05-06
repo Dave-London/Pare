@@ -23,7 +23,7 @@ export function registerLabelListTool(server: McpServer) {
         "Lists repository labels. Returns structured data with label name, description, color, and default status.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
-        limit: z
+        limit: z.coerce
           .number()
           .optional()
           .default(30)
