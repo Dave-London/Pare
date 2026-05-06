@@ -1,5 +1,12 @@
 # @paretools/cmake
 
+## 0.19.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.19.0
+
 ## 0.18.1
 
 ### Patch Changes
