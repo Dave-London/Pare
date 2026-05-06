@@ -131,26 +131,20 @@ export function registerInstallTool(server: McpServer) {
       const cwd = path || process.cwd();
       const pm = await detectPackageManager(cwd, packageManager);
 
-      const flags: string[] = [];
-      if (ignoreScripts) flags.push("--ignore-scripts");
-      if (pm === "pnpm" && filter) flags.push(`--filter=${filter}`);
-      if (saveDev) flags.push("--save-dev");
-      if (frozenLockfile) {
-        if (pm !== "npm") flags.push("--frozen-lockfile");
-      }
-      if (dryRun) flags.push("--dry-run");
-      if (production) {
-        if (pm === "npm") flags.push("--omit=dev");
-        else if (pm === "pnpm") flags.push("--prod");
-        else flags.push("--production");
-      }
-      if (legacyPeerDeps && pm === "npm") flags.push("--legacy-peer-deps");
-      if (force) flags.push("--force");
-      if (noAudit) flags.push("--no-audit");
-      if (exact) flags.push("--save-exact");
-      if (isGlobal) flags.push("--global");
-      if (registry) flags.push(`--registry=${registry}`);
-      if (pm === "npm") flags.push("--json");
+      const flags = composeInstallFlags(pm, {
+        ignoreScripts,
+        filter,
+        saveDev,
+        frozenLockfile,
+        dryRun,
+        production,
+        legacyPeerDeps,
+        force,
+        noAudit,
+        exact,
+        global: isGlobal,
+        registry,
+      });
 
       const subcommand = frozenLockfile && pm === "npm" ? "ci" : "install";
       const beforeLockfileHash = await getLockfileHash(cwd, pm);
@@ -211,7 +205,49 @@ export function assertInstallActuallyHappened(args: {
   );
 }
 
-function assertSafeRegistryUrl(url: string): void {
+interface InstallFlagOptions {
+  ignoreScripts?: boolean;
+  filter?: string;
+  saveDev?: boolean;
+  frozenLockfile?: boolean;
+  dryRun?: boolean;
+  production?: boolean;
+  legacyPeerDeps?: boolean;
+  force?: boolean;
+  noAudit?: boolean;
+  exact?: boolean;
+  global?: boolean;
+  registry?: string;
+}
+
+/** Exported for unit tests. */
+export function composeInstallFlags(
+  pm: "npm" | "pnpm" | "yarn",
+  opts: InstallFlagOptions,
+): string[] {
+  const flags: string[] = [];
+  if (opts.ignoreScripts) flags.push("--ignore-scripts");
+  if (pm === "pnpm" && opts.filter) flags.push(`--filter=${opts.filter}`);
+  if (opts.saveDev) flags.push("--save-dev");
+  if (opts.frozenLockfile && pm !== "npm") flags.push("--frozen-lockfile");
+  if (opts.dryRun) flags.push("--dry-run");
+  if (opts.production) {
+    if (pm === "npm") flags.push("--omit=dev");
+    else if (pm === "pnpm") flags.push("--prod");
+    else flags.push("--production");
+  }
+  if (opts.legacyPeerDeps && pm === "npm") flags.push("--legacy-peer-deps");
+  if (opts.force) flags.push("--force");
+  if (opts.noAudit) flags.push("--no-audit");
+  if (opts.exact) flags.push("--save-exact");
+  if (opts.global) flags.push("--global");
+  if (opts.registry) flags.push(`--registry=${opts.registry}`);
+  if (pm === "npm") flags.push("--json");
+  return flags;
+}
+
+/** Exported for unit tests. */
+export function assertSafeRegistryUrl(url: string): void {
   if (/^https:\/\//i.test(url)) return;
   if (/^http:\/\//i.test(url) && process.env.PARE_NPM_ALLOW_HTTP_REGISTRY === "true") {
     return;
@@ -222,7 +258,8 @@ function assertSafeRegistryUrl(url: string): void {
   );
 }
 
-async function getLockfileHash(
+/** Exported for unit tests. */
+export async function getLockfileHash(
   cwd: string,
   pm: "npm" | "pnpm" | "yarn",
 ): Promise<string | undefined> {
