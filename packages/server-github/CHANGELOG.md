@@ -1,5 +1,18 @@
 # @paretools/github
 
+## 0.19.1
+
+### Patch Changes
+
+- [#864](https://github.com/Dave-London/Pare/pull/864) [`c5ba357`](https://github.com/Dave-London/Pare/commit/c5ba357ff85c181f40c5ddd35a14f2e010b1abe5) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `pr-list`'s `limit` input rejecting JSON-number values (`"expected number, received string"`) and apply the same defensive `z.coerce.number()` pattern across other `pare-github` tools that take numeric inputs (`issue-list`, `run-list`, `label-list`, `release-list`, `discussion-list`, `repo-clone`).
+
+  Workaround was to omit the param. After this fix, callers can pass numbers as JSON numbers or numeric strings interchangeably, matching the existing `run-view`/`run-rerun` behavior.
+
+  Resolves [#861](https://github.com/Dave-London/Pare/issues/861).
+
+- Updated dependencies []:
+  - @paretools/shared@0.19.1
+
 ## 0.19.0
 
 ### Minor Changes
