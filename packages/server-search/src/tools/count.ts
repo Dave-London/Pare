@@ -7,7 +7,7 @@ import {
   compactInput,
   pathInput,
 } from "@paretools/shared";
-import { rgCmd } from "../lib/search-runner.js";
+import { rgCmd, resolveSearchTarget } from "../lib/search-runner.js";
 import { parseRgCountOutput } from "../lib/parsers.js";
 import { formatCount, compactCountMap, formatCountCompact } from "../lib/formatters.js";
 import { CountResultSchema } from "../schemas/index.js";
@@ -115,8 +115,18 @@ export function registerCountTool(server: McpServer) {
       if (type) assertNoFlagInjection(type, "type");
       if (!fixedStrings) validateRegexPattern(pattern);
 
-      const cwd = path || process.cwd();
+      // Resolve `path` into a cwd + positional target. When `path` points at
+      // a file, we cannot use it as cwd (child process spawn would fail with
+      // ENOTDIR), so we split into parent dir + basename instead.
+      const { cwd, target, isFile } = resolveSearchTarget(path);
       const args = countMatches ? ["--count-matches"] : ["--count"];
+
+      // When ripgrep is given a single file positional, --count emits just
+      // the count (no `file:count` prefix), which the parser cannot read.
+      // Force the filename prefix so the parser still works.
+      if (isFile) {
+        args.push("--with-filename");
+      }
 
       if (!caseSensitive) {
         args.push("--ignore-case");
@@ -160,9 +170,10 @@ export function registerCountTool(server: McpServer) {
 
       args.push(pattern);
 
-      // Always pass "." as the search path so rg searches the directory
-      // instead of reading from stdin (which hangs when stdin is piped)
-      args.push(".");
+      // Always pass an explicit search target so rg searches files instead of
+      // reading from stdin (which hangs when stdin is piped). For directories
+      // this is "." (relative to cwd); for files it's the basename.
+      args.push(target);
       const result = await rgCmd(args, cwd);
 
       // rg exits with code 1 when no matches are found — that's not an error
