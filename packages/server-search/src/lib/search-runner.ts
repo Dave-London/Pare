@@ -1,3 +1,5 @@
+import { statSync } from "node:fs";
+import { dirname, basename, isAbsolute, resolve } from "node:path";
 import { run, type RunResult } from "@paretools/shared";
 
 /** Platform-specific install hints for commands used by the search package. */
@@ -56,6 +58,53 @@ async function runWithInstallHint(
 
 export async function rgCmd(args: string[], cwd?: string): Promise<RunResult> {
   return runWithInstallHint("rg", args, { cwd, timeout: 180_000 });
+}
+
+/**
+ * Resolves a user-supplied `path` parameter into a `cwd` and a positional
+ * `target` argument suitable for ripgrep/fd.
+ *
+ * Behavior:
+ * - If `path` is undefined/empty → cwd = process.cwd(), target = "."
+ *   (search current dir, isFile = false).
+ * - If `path` is an existing directory → cwd = path, target = "."
+ *   (search recursively, isFile = false).
+ * - If `path` is an existing file → cwd = parent dir, target = basename
+ *   (search just that file, isFile = true). Spawning with cwd pointed at a
+ *   file is what produces the `spawn ENOTDIR` crash, so we split it.
+ * - If `path` does not exist → cwd = process.cwd(), target = path
+ *   (isFile = false). Let ripgrep surface its own "no such file" error
+ *   rather than crashing the spawn.
+ *
+ * The `isFile` flag lets callers add ripgrep flags like `--with-filename`
+ * when needed (rg's `--count` omits the filename when given a single file
+ * positional, which breaks the count parser).
+ */
+export function resolveSearchTarget(path?: string): {
+  cwd: string;
+  target: string;
+  isFile: boolean;
+} {
+  if (!path) {
+    return { cwd: process.cwd(), target: ".", isFile: false };
+  }
+
+  const absolute = isAbsolute(path) ? path : resolve(process.cwd(), path);
+
+  try {
+    const stat = statSync(absolute);
+    if (stat.isDirectory()) {
+      return { cwd: absolute, target: ".", isFile: false };
+    }
+    // It's a file (or symlink/special file) — split into parent + basename so
+    // the child process spawn doesn't fail with ENOTDIR.
+    return { cwd: dirname(absolute), target: basename(absolute), isFile: true };
+  } catch {
+    // Path doesn't exist (or isn't accessible). Fall back to passing the
+    // raw path as a positional argument from the current working directory
+    // so ripgrep itself emits the user-facing "no such file" message.
+    return { cwd: process.cwd(), target: path, isFile: false };
+  }
 }
 
 export async function fdCmd(args: string[], cwd?: string): Promise<RunResult> {

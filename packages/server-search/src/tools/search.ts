@@ -7,7 +7,7 @@ import {
   compactInput,
   pathInput,
 } from "@paretools/shared";
-import { rgCmd } from "../lib/search-runner.js";
+import { rgCmd, resolveSearchTarget } from "../lib/search-runner.js";
 import { parseRgJsonOutput } from "../lib/parsers.js";
 import { formatSearch, compactSearchMap, formatSearchCompact } from "../lib/formatters.js";
 import { SearchResultSchema } from "../schemas/index.js";
@@ -114,7 +114,10 @@ export function registerSearchTool(server: McpServer) {
       if (type) assertNoFlagInjection(type, "type");
       if (!fixedStrings) validateRegexPattern(pattern);
 
-      const cwd = path || process.cwd();
+      // Resolve `path` into a cwd + positional target. When `path` points at
+      // a file, we cannot use it as cwd (child process spawn would fail with
+      // ENOTDIR), so we split into parent dir + basename instead.
+      const { cwd, target } = resolveSearchTarget(path);
       const args = ["--json"];
 
       if (!caseSensitive) {
@@ -171,9 +174,10 @@ export function registerSearchTool(server: McpServer) {
 
       args.push(pattern);
 
-      // Always pass "." as the search path so rg searches the directory
-      // instead of reading from stdin (which hangs when stdin is piped)
-      args.push(".");
+      // Always pass an explicit search target so rg searches files instead of
+      // reading from stdin (which hangs when stdin is piped). For directories
+      // this is "." (relative to cwd); for files it's the basename.
+      args.push(target);
       const result = await rgCmd(args, cwd);
 
       // rg exits with code 1 when no matches are found — that's not an error
