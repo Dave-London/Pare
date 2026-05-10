@@ -1076,7 +1076,6 @@ describe("formatReleaseList", () => {
           draft: false,
           prerelease: false,
           publishedAt: "2024-01-15",
-          url: "https://url",
           isLatest: true,
         },
         {
@@ -1085,7 +1084,6 @@ describe("formatReleaseList", () => {
           draft: true,
           prerelease: true,
           publishedAt: "2024-01-10",
-          url: "https://url",
         },
       ],
     };
@@ -1110,7 +1108,6 @@ describe("compactReleaseList", () => {
           draft: false,
           prerelease: false,
           publishedAt: "2024-01-01",
-          url: "https://url",
         },
       ],
     };

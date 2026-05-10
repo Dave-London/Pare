@@ -472,8 +472,8 @@ export const ReleaseListItemSchema = z.object({
   draft: z.boolean(),
   prerelease: z.boolean(),
   publishedAt: z.string().optional(),
-  url: z.string().optional(),
-  // S-gap: Add isLatest, createdAt
+  // Note: `url` is intentionally omitted — `gh release list --json` does not
+  // expose a `url` field. Use `release-view` for release URLs. See issue #868.
   isLatest: z.boolean().optional(),
   createdAt: z.string().optional(),
 });

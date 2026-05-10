@@ -417,7 +417,6 @@ describe("GitHub P2 gaps", () => {
           isDraft: false,
           isPrerelease: false,
           publishedAt: "2025-01-01T00:00:00Z",
-          url: "u1",
         },
       ]),
       stderr: "",
@@ -426,6 +425,13 @@ describe("GitHub P2 gaps", () => {
 
     const out = await handler({ limit: 1, compact: false });
     expect((out.structuredContent.releases as unknown[]).length).toBe(1);
+    // Verify tool requests gh fields supported by `gh release list --json`.
+    // `url` is NOT a valid field for release list (only for release view).
+    const ghCall = vi.mocked(ghCmd).mock.calls[0];
+    const args = ghCall[0] as string[];
+    const fieldsArg = args[args.indexOf("--json") + 1];
+    expect(fieldsArg).not.toContain("url");
+    expect(fieldsArg).toContain("tagName");
   });
 
   it("#296 run-list returns correct results", async () => {
