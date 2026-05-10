@@ -94,13 +94,14 @@ const SAMPLE_RUN_VIEW_JSON = {
   attempt: 1,
 };
 
+// Note: `url` is intentionally absent — `gh release list --json` does not
+// expose a `url` field (only `gh release view` does). See issue #868.
 const SAMPLE_RELEASE = {
   tagName: "v1.0.0",
   name: "Release 1.0.0",
   isDraft: false,
   isPrerelease: false,
   publishedAt: "2026-02-17T10:00:00Z",
-  url: "https://github.com/owner/repo/releases/tag/v1.0.0",
   isLatest: true,
   createdAt: "2026-02-17T09:00:00Z",
 };
@@ -906,9 +907,22 @@ describe("Smoke: github.release-list", () => {
     const { parsed } = await callAndValidate({ compact: false });
     const rel = parsed.releases[0];
     expect(rel.publishedAt).toBe("2026-02-17T10:00:00Z");
-    expect(rel.url).toContain("releases/tag/v1.0.0");
+    // `url` is not exposed by `gh release list --json` (see #868).
+    expect(rel).not.toHaveProperty("url");
     expect(rel.isLatest).toBe(true);
     expect(rel.createdAt).toBe("2026-02-17T09:00:00Z");
+  });
+
+  // S13 [P0] Regression for #868: `--json` field list excludes `url`
+  it("S13 [P0] does not request unsupported url field", async () => {
+    mockGh(JSON.stringify([SAMPLE_RELEASE]));
+    await callAndValidate({});
+    const args = vi.mocked(ghCmd).mock.calls[0][0];
+    const fieldsArg = args[args.indexOf("--json") + 1];
+    expect(fieldsArg).not.toContain("url");
+    expect(fieldsArg).toContain("tagName");
+    expect(fieldsArg).toContain("isLatest");
+    expect(fieldsArg).toContain("createdAt");
   });
 
   // S12 [P2] Custom limit

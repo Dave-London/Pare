@@ -16,8 +16,10 @@ import {
 } from "../lib/formatters.js";
 import { ReleaseListResultSchema } from "../schemas/index.js";
 
-// S-gap: Add isLatest and createdAt to JSON fields
-const RELEASE_LIST_FIELDS = "tagName,name,isDraft,isPrerelease,publishedAt,url,isLatest,createdAt";
+// `url` is intentionally omitted: `gh release list --json` does not expose a `url`
+// field (only `gh release view` does), and including it caused the CLI to error
+// with `Unknown JSON field: "url"`. See issue #868.
+const RELEASE_LIST_FIELDS = "tagName,name,isDraft,isPrerelease,publishedAt,isLatest,createdAt";
 
 /** Registers the `release-list` tool on the given MCP server. */
 export function registerReleaseListTool(server: McpServer) {
@@ -26,7 +28,7 @@ export function registerReleaseListTool(server: McpServer) {
     {
       title: "Release List",
       description:
-        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, creation date, and URL.",
+        "Lists GitHub releases for a repository. Returns structured list with tag, name, draft/prerelease/latest status, publish date, and creation date.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         // S-gap P1: Align default limit to CLI default (30)

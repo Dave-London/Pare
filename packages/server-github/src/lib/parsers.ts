@@ -736,7 +736,10 @@ export function parseReleaseCreate(
 
 /**
  * Parses `gh release list --json ...` output into structured release list data.
- * S-gap: Enhanced to include isLatest and createdAt.
+ *
+ * Note: `gh release list --json` does not expose a `url` field — only
+ * `gh release view --json` does. We intentionally omit it from the output to
+ * avoid `Unknown JSON field: "url"` errors from gh. See issue #868.
  */
 export function parseReleaseList(json: string): ReleaseListResult {
   const raw = JSON.parse(json);
@@ -749,7 +752,6 @@ export function parseReleaseList(json: string): ReleaseListResult {
       isDraft: boolean;
       isPrerelease: boolean;
       publishedAt: string;
-      url: string;
       isLatest?: boolean;
       createdAt?: string;
     }) => ({
@@ -758,8 +760,6 @@ export function parseReleaseList(json: string): ReleaseListResult {
       draft: r.isDraft ?? false,
       prerelease: r.isPrerelease ?? false,
       publishedAt: r.publishedAt ?? "",
-      url: r.url ?? "",
-      // S-gap fields
       isLatest: r.isLatest ?? undefined,
       createdAt: r.createdAt ?? undefined,
     }),
