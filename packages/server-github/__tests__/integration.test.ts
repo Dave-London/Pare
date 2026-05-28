@@ -27,7 +27,7 @@ describe("@paretools/github integration", () => {
     await transport.close();
   }, 30_000);
 
-  it("lists all 30 tools", async () => {
+  it("lists all 36 tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -61,6 +61,12 @@ describe("@paretools/github integration", () => {
       "run-list",
       "run-rerun",
       "run-view",
+      "secret-delete",
+      "secret-list",
+      "secret-set",
+      "variable-delete",
+      "variable-list",
+      "variable-set",
     ]);
   });
 

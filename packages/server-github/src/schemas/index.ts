@@ -540,6 +540,74 @@ export const LabelCreateResultSchema = z.object({
 
 export type LabelCreateResult = z.infer<typeof LabelCreateResultSchema>;
 
+// ── Actions secret / variable schemas ───────────────────────────────
+
+const GithubConfigScopeSchema = z.enum(["repo", "org", "environment"]);
+const GithubConfigErrorSchema = z.enum(["not-found", "permission-denied", "validation", "unknown"]);
+
+/** Zod schema for a single GitHub Actions secret item. Values are never exposed by GitHub. */
+export const SecretItemSchema = z.object({
+  name: z.string(),
+  updatedAt: z.string().optional(),
+  visibility: z.string().optional(),
+  numSelectedRepos: z.number().optional(),
+  selectedReposURL: z.string().optional(),
+});
+
+/** Zod schema for structured secret-list output. */
+export const SecretListResultSchema = z.object({
+  secrets: z.array(SecretItemSchema),
+  scope: GithubConfigScopeSchema,
+  errorType: GithubConfigErrorSchema.optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type SecretListResult = z.infer<typeof SecretListResultSchema>;
+
+/** Zod schema for structured secret set/delete output. */
+export const SecretMutationResultSchema = z.object({
+  name: z.string(),
+  action: z.enum(["set", "delete"]),
+  scope: GithubConfigScopeSchema,
+  secretValueMasked: z.literal(true),
+  errorType: GithubConfigErrorSchema.optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type SecretMutationResult = z.infer<typeof SecretMutationResultSchema>;
+
+/** Zod schema for a single GitHub Actions variable item. */
+export const VariableItemSchema = z.object({
+  name: z.string(),
+  value: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  visibility: z.string().optional(),
+  numSelectedRepos: z.number().optional(),
+  selectedReposURL: z.string().optional(),
+});
+
+/** Zod schema for structured variable-list output. */
+export const VariableListResultSchema = z.object({
+  variables: z.array(VariableItemSchema),
+  scope: GithubConfigScopeSchema,
+  errorType: GithubConfigErrorSchema.optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type VariableListResult = z.infer<typeof VariableListResultSchema>;
+
+/** Zod schema for structured variable set/delete output. */
+export const VariableMutationResultSchema = z.object({
+  name: z.string(),
+  action: z.enum(["set", "delete"]),
+  scope: GithubConfigScopeSchema,
+  errorType: GithubConfigErrorSchema.optional(),
+  errorMessage: z.string().optional(),
+});
+
+export type VariableMutationResult = z.infer<typeof VariableMutationResultSchema>;
+
 // ── Repo schemas ────────────────────────────────────────────────────
 
 /** Zod schema for structured repo-view output. */
