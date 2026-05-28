@@ -1,5 +1,14 @@
 # @paretools/search
 
+## 0.20.0
+
+### Patch Changes
+
+- [#874](https://github.com/Dave-London/Pare/pull/874) [`3ba18e2`](https://github.com/Dave-London/Pare/commit/3ba18e280337aed8bf89ba7a86ea3e60de73c6c5) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `pare-search__search` and `pare-search__count` crashing with `spawn ENOTDIR` when `path` points to a file. The runner previously used the supplied `path` as the child process `cwd` unconditionally, which fails when `path` is a file. The runner now resolves a file path into a parent-directory `cwd` plus a basename positional argument so ripgrep searches just that file (matching the schema's "Directory or file to search in" contract). Closes [#871](https://github.com/Dave-London/Pare/issues/871).
+
+- Updated dependencies [[`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7), [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116)]:
+  - @paretools/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes

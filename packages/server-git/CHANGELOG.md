@@ -1,5 +1,20 @@
 # @paretools/git
 
+## 0.20.0
+
+### Patch Changes
+
+- [#898](https://github.com/Dave-London/Pare/pull/898) [`9937409`](https://github.com/Dave-London/Pare/commit/99374097eb89f6c1032f4e5df0eb96443cebfc54) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix checkout branch creation with `track` and `startPoint` so flags are ordered before branch operands.
+
+- [#912](https://github.com/Dave-London/Pare/pull/912) [`854ab00`](https://github.com/Dave-London/Pare/commit/854ab00fab5a2be229fc6ec089909c217f992f93) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix stash-list reporting every entry as `stash@{0}`; resolve real incrementing indices from a date-free reflog selector so `--date` no longer corrupts them. Closes [#908](https://github.com/Dave-London/Pare/issues/908).
+
+- [#911](https://github.com/Dave-London/Pare/pull/911) [`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7) Thanks [@Dave-London](https://github.com/Dave-London)! - Clarify that the `path` parameter is authoritative: when omitted, repo-scoped tools operate on the server's own process working directory (its launch dir), not the caller's cwd. Callers in a git worktree or other directory must pass `path` explicitly to avoid operating on the wrong repository. Adds a regression test, documents the behavior in mutating git tool descriptions and the README, and updates the shared `repoPathInput` schema description. Closes [#876](https://github.com/Dave-London/Pare/issues/876).
+
+- [#910](https://github.com/Dave-London/Pare/pull/910) [`c0dc657`](https://github.com/Dave-London/Pare/commit/c0dc657a477a50cb1e3011241c5ede54702406ae) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `worktree` list with `listVerbose=true` crashing on git's `--verbose`/`--porcelain` conflict; locked/prunable detail (including prunable reason) is now surfaced via the porcelain parser. Closes [#906](https://github.com/Dave-London/Pare/issues/906).
+
+- Updated dependencies [[`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7), [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116)]:
+  - @paretools/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes

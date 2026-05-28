@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.20.0
+
+### Patch Changes
+
+- [#911](https://github.com/Dave-London/Pare/pull/911) [`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7) Thanks [@Dave-London](https://github.com/Dave-London)! - Clarify that the `path` parameter is authoritative: when omitted, repo-scoped tools operate on the server's own process working directory (its launch dir), not the caller's cwd. Callers in a git worktree or other directory must pass `path` explicitly to avoid operating on the wrong repository. Adds a regression test, documents the behavior in mutating git tool descriptions and the README, and updates the shared `repoPathInput` schema description. Closes [#876](https://github.com/Dave-London/Pare/issues/876).
+
+- [#899](https://github.com/Dave-London/Pare/pull/899) [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116) Thanks [@Dave-London](https://github.com/Dave-London)! - Add shared Python interpreter resolution with project virtualenv detection, `python3` fallback, and `python -m <tool>` fallback for Python-backed tools when their executable is not on PATH.
+
 ## 0.19.1
 
 ## 0.19.0
