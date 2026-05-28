@@ -61,6 +61,17 @@ Add to your MCP client config:
 }
 ```
 
+## Python Interpreter Resolution
+
+Python-backed tools prefer the project-local virtual environment before falling back to global commands. When a tool needs Python, Pare checks for interpreters in this order from the requested `path`:
+
+1. `.venv/bin/python`, `.venv/bin/python3` (or `.venv/Scripts/python.exe` on Windows)
+2. `venv/` and `env/` with the same platform-specific interpreter names
+3. `python`
+4. `python3`
+
+Tools such as `ruff-check`, `ruff-format`, `pytest`, `mypy`, `pip-install`, `pip-audit`, and `black` also fall back from a missing console script to `python -m <module>`. Use `pythonPath` on `ruff-check`, `ruff-format`, `pytest`, and `mypy` when a project needs an explicit interpreter override.
+
 ## All Pare Servers (244 tools)
 
 | Package                                                              | Tools                                                                       | Wraps                              |
