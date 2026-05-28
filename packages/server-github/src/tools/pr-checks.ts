@@ -5,6 +5,7 @@ import {
   assertNoFlagInjection,
   INPUT_LIMITS,
   compactInput,
+  repoPathInput,
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrChecks } from "../lib/parsers.js";
@@ -177,6 +178,7 @@ export function registerPrChecksTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
+        path: repoPathInput,
         watch: z.coerce
           .boolean()
           .optional()
@@ -210,7 +212,9 @@ export function registerPrChecksTool(server: McpServer) {
       },
       outputSchema: PrChecksResultSchema,
     },
-    async ({ number, repo, watch, interval, watchTimeout, required, compact }) => {
+    async ({ number, repo, path, watch, interval, watchTimeout, required, compact }) => {
+      const cwd = path || process.cwd();
+
       if (repo) assertNoFlagInjection(repo, "repo");
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
@@ -228,7 +232,7 @@ export function registerPrChecksTool(server: McpServer) {
       if (watch) {
         const intervalSeconds = interval ?? DEFAULT_INTERVAL_SECONDS;
         const timeoutSeconds = watchTimeout ?? DEFAULT_WATCH_TIMEOUT_SECONDS;
-        const watchResult = await watchPrChecks(args, undefined, prNum, {
+        const watchResult = await watchPrChecks(args, cwd, prNum, {
           intervalMs: intervalSeconds * 1000,
           timeoutMs: timeoutSeconds * 1000,
         });
@@ -254,7 +258,7 @@ export function registerPrChecksTool(server: McpServer) {
         );
       }
 
-      const result = await ghCmd(args);
+      const result = await ghCmd(args, cwd);
 
       // Exit code 8 means checks are still pending — gh still returns valid JSON
       if (result.exitCode !== 0 && result.exitCode !== 8) {
