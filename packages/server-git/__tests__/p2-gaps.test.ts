@@ -22,6 +22,7 @@ import { registerResetTool } from "../src/tools/reset.js";
 import { registerRestoreTool } from "../src/tools/restore.js";
 import { registerShowTool } from "../src/tools/show.js";
 import { registerStashTool } from "../src/tools/stash.js";
+import { registerStashListTool } from "../src/tools/stash-list.js";
 import { registerStatusTool } from "../src/tools/status.js";
 import { registerWorktreeTool } from "../src/tools/worktree.js";
 
@@ -522,5 +523,36 @@ describe("Git P2 gaps", () => {
 
     await handler({ action: "repair", repairPaths: ["/tmp/a", "/tmp/b"] });
     expect(vi.mocked(git).mock.calls[0][0]).toEqual(["worktree", "repair", "/tmp/a", "/tmp/b"]);
+  });
+
+  it("#908 reports real incrementing stash indices instead of all stash@{0}", async () => {
+    const server = new FakeServer();
+    registerStashListTool(server as never);
+    const handler = server.tools.get("stash-list")!.handler;
+    // The `--date` flag corrupts the %gd reflog selector so every entry comes
+    // back as `stash@{<date>}`. The tool resolves real indices via a second,
+    // date-free `git stash list --format=%gd` call.
+    vi.mocked(git)
+      .mockResolvedValueOnce({
+        stdout:
+          "stash@{2024-01-15 10:30:00 +0000}\tWIP on main: a\t2024-01-15 10:30:00 +0000\n" +
+          "stash@{2024-01-14 09:00:00 +0000}\tOn feature: b\t2024-01-14 09:00:00 +0000\n" +
+          "stash@{2024-01-13 08:00:00 +0000}\tWIP on main: c\t2024-01-13 08:00:00 +0000",
+        stderr: "",
+        exitCode: 0,
+      })
+      .mockResolvedValueOnce({
+        stdout: "stash@{0}\nstash@{1}\nstash@{2}",
+        stderr: "",
+        exitCode: 0,
+      });
+
+    const out = (await handler({ compact: false })) as {
+      structuredContent: { stashes: Array<{ index: number; message: string }> };
+    };
+    const indices = out.structuredContent.stashes.map((s) => s.index);
+    expect(indices).toEqual([0, 1, 2]);
+    // Verify the second call is the date-free index resolution.
+    expect(vi.mocked(git).mock.calls[1][0]).toEqual(["stash", "list", "--format=%gd"]);
   });
 });
