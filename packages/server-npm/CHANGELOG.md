@@ -1,5 +1,16 @@
 # @paretools/npm
 
+## 0.20.0
+
+### Patch Changes
+
+- [#873](https://github.com/Dave-London/Pare/pull/873) [`2507291`](https://github.com/Dave-London/Pare/commit/25072917a937d10867b740182b047586dec7961d) Thanks [@Dave-London](https://github.com/Dave-London)! - `pare-npm install` no longer emits `--no-audit` for pnpm or yarn. The flag is npm-specific — pnpm install rejects it with `ERROR Unknown option: 'audit'`, and yarn install does not run an audit step either. With this change, `noAudit: true` is honoured on npm (still maps to `--no-audit`) and is a silent no-op on pnpm/yarn, where install never audits anyway. The tool description has been updated to reflect this.
+
+  Resolves [#872](https://github.com/Dave-London/Pare/issues/872).
+
+- Updated dependencies [[`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7), [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116)]:
+  - @paretools/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes

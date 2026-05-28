@@ -1,5 +1,26 @@
 # @paretools/github
 
+## 0.20.0
+
+### Minor Changes
+
+- [#901](https://github.com/Dave-London/Pare/pull/901) [`ae87a75`](https://github.com/Dave-London/Pare/commit/ae87a754f4c6f0e0596ae74c6489bcf2c69e91b6) Thanks [@Dave-London](https://github.com/Dave-London)! - Add first-class GitHub Actions secret and variable management tools: `secret-set`, `secret-list`, `secret-delete`, `variable-set`, `variable-list`, and `variable-delete`. Secret and variable set operations send values through stdin; secret values are masked from structured output. Closes [#883](https://github.com/Dave-London/Pare/issues/883).
+
+### Patch Changes
+
+- [#909](https://github.com/Dave-London/Pare/pull/909) [`36816d5`](https://github.com/Dave-London/Pare/commit/36816d53287a3681b60787bbcda309b58de5d575) Thanks [@Dave-London](https://github.com/Dave-London)! - Guard list/view parsers against empty stdout from `gh` commands (e.g. `gh pr list --search`, `gh issue list`) that exit 0 with no output, instead of throwing "Unexpected end of JSON input". Closes [#905](https://github.com/Dave-London/Pare/issues/905).
+
+- [#904](https://github.com/Dave-London/Pare/pull/904) [`410edc9`](https://github.com/Dave-London/Pare/commit/410edc9fa2e3055cf083df6be88c21a8f5de6678) Thanks [@MohammadYusif](https://github.com/MohammadYusif)! - Fix `label-list` crashing with "Unexpected end of JSON input" when `--search` matches zero labels. `gh label list --search <term>` exits 0 but prints empty stdout (not `[]`); `parseLabelList` now treats empty/whitespace-only output as an empty list. Closes [#903](https://github.com/Dave-London/Pare/issues/903).
+
+- [#913](https://github.com/Dave-London/Pare/pull/913) [`ac1a286`](https://github.com/Dave-London/Pare/commit/ac1a286bec21ad14aa60223347e770f17605d153) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix pr-diff so full=true returns patch/hunk content and nameOnly=true returns the changed file paths. Closes [#907](https://github.com/Dave-London/Pare/issues/907).
+
+- [#900](https://github.com/Dave-London/Pare/pull/900) [`e736de7`](https://github.com/Dave-London/Pare/commit/e736de75e0cd0b72e9f8ac16a1e45d2899099758) Thanks [@Dave-London](https://github.com/Dave-London)! - Allow `pr-checks` and `pr-diff` to accept the shared `path` parameter and run `gh` from that repository directory. Closes [#896](https://github.com/Dave-London/Pare/issues/896).
+
+- [#875](https://github.com/Dave-London/Pare/pull/875) [`53e4b06`](https://github.com/Dave-London/Pare/commit/53e4b0662c494be1ec1dfd855ac97ab1f09fcfae) Thanks [@Dave-London](https://github.com/Dave-London)! - Fix `release-list` always failing with `Unknown JSON field: "url"`. The `url` field is not a valid `--json` field for `gh release list` (only `gh release view` exposes it). Removed `url` from the requested gh fields, parser, and output schema. Use `release-view` if you need a release URL. Closes [#868](https://github.com/Dave-London/Pare/issues/868).
+
+- Updated dependencies [[`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7), [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116)]:
+  - @paretools/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes

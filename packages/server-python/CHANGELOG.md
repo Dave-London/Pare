@@ -1,5 +1,16 @@
 # @paretools/python
 
+## 0.20.0
+
+### Patch Changes
+
+- [#902](https://github.com/Dave-London/Pare/pull/902) [`416ecb2`](https://github.com/Dave-London/Pare/commit/416ecb2433a88eadee255d02e205727d2d9d729e) Thanks [@Dave-London](https://github.com/Dave-London)! - Document Python interpreter resolution order, virtualenv detection, `python -m` fallbacks, and explicit interpreter override inputs for Python-backed tools.
+
+- [#899](https://github.com/Dave-London/Pare/pull/899) [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116) Thanks [@Dave-London](https://github.com/Dave-London)! - Add shared Python interpreter resolution with project virtualenv detection, `python3` fallback, and `python -m <tool>` fallback for Python-backed tools when their executable is not on PATH.
+
+- Updated dependencies [[`62c4fed`](https://github.com/Dave-London/Pare/commit/62c4fedad16d30d9f7c70e8d08e66f7ac803c5f7), [`79611ac`](https://github.com/Dave-London/Pare/commit/79611acd24581e17831e83cb096992b045ead116)]:
+  - @paretools/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes
