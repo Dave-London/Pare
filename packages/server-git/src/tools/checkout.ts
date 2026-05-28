@@ -101,10 +101,11 @@ export function registerCheckoutTool(server: McpServer) {
         return dualOutput(checkoutResult, formatCheckout);
       }
 
-      // git switch has two tag-related incompatibilities vs git checkout:
+      // git switch has a few start-point incompatibilities vs git checkout:
       //   1. `git switch -c <branch> <tag>` → "a branch is expected, got tag" (#666)
       //   2. `git switch --detach <tag>` → "reference is not a branch" on older git (#669)
-      // Use git checkout for both cases; it handles all ref types universally.
+      //   3. `git switch -c <branch> --track <startPoint>` can parse `--track` as a ref (#890)
+      // Use git checkout for these cases; it handles all ref types universally.
       const needsCheckoutForStartPoint = Boolean(
         startPoint && (create || forceCreate) && preferSwitch,
       );
@@ -122,9 +123,9 @@ export function registerCheckoutTool(server: McpServer) {
       }
       const args = [cmd];
       if (force) args.push(cmd === "switch" ? "--discard-changes" : "--force");
-      if (createFlag) args.push(createFlag);
       if (track) args.push("--track");
       if (detach) args.push("--detach");
+      if (createFlag) args.push(createFlag);
       args.push(branch);
       if (startPoint && (create || forceCreate)) args.push(startPoint);
 
