@@ -1,7 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { parsePrDiffNumstat } from "../src/lib/parsers.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../src/lib/formatters.js";
-import type { PrDiffResult } from "../src/schemas/index.js";
+import { PrDiffResultSchema, type PrDiffResult } from "../src/schemas/index.js";
+
+vi.mock("../src/lib/gh-runner.js", () => ({
+  ghCmd: vi.fn(),
+}));
+
+import { ghCmd } from "../src/lib/gh-runner.js";
+import { registerPrDiffTool } from "../src/tools/pr-diff.js";
 
 // ── Parser tests ────────────────────────────────────────────────────
 
@@ -145,5 +152,83 @@ describe("compactPrDiff", () => {
     const text = formatPrDiffCompact(compact);
     expect(text).toContain("1 files changed");
     expect(text).toContain("src/index.ts +10 -2");
+  });
+});
+
+// ── Tool handler tests: full / nameOnly modes (issue #907) ──────────
+
+type ToolHandler = (params: Record<string, unknown>) => Promise<{
+  content: unknown[];
+  structuredContent: unknown;
+}>;
+
+class FakeServer {
+  tools = new Map<string, { handler: ToolHandler }>();
+  registerTool(name: string, _config: Record<string, unknown>, handler: ToolHandler) {
+    this.tools.set(name, { handler });
+  }
+}
+
+function mockGh(stdout: string, stderr = "", exitCode = 0) {
+  vi.mocked(ghCmd).mockResolvedValueOnce({ stdout, stderr, exitCode });
+}
+
+const SIMPLE_DIFF = `diff --git a/src/index.ts b/src/index.ts
+index abc1234..def5678 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,3 +1,4 @@
+ import { foo } from "bar";
++import { baz } from "qux";
+
+ export function main() {
+-  return foo();
++  return baz(foo());
+ }
+`;
+
+describe("pr-diff tool: full / nameOnly modes", () => {
+  let handler: ToolHandler;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const server = new FakeServer();
+    registerPrDiffTool(server as never);
+    handler = server.tools.get("pr-diff")!.handler;
+  });
+
+  it("full: true includes patch chunks even in default compact mode", async () => {
+    mockGh(SIMPLE_DIFF);
+    const result = await handler({ number: "123", full: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files).toHaveLength(1);
+    expect(parsed.files[0].chunks).toBeDefined();
+    expect(parsed.files[0].chunks!.length).toBeGreaterThan(0);
+    expect(parsed.files[0].chunks![0].header).toMatch(/^@@/);
+    expect(parsed.files[0].chunks![0].lines).toContain("+import { baz }");
+  });
+
+  it("default (no full) omits chunks", async () => {
+    mockGh(SIMPLE_DIFF);
+    const result = await handler({ number: "123" });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files[0].chunks).toBeUndefined();
+  });
+
+  it("nameOnly passes --name-only and returns the changed file paths", async () => {
+    mockGh("src/index.ts\nsrc/utils.ts\nREADME.md\n");
+    const result = await handler({ number: "123", nameOnly: true });
+    const args = vi.mocked(ghCmd).mock.calls[0][0];
+    expect(args).toContain("--name-only");
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files.map((f) => f.file)).toEqual(["src/index.ts", "src/utils.ts", "README.md"]);
+    expect(parsed.files.every((f) => f.status === "modified")).toBe(true);
+  });
+
+  it("nameOnly with empty output returns no files", async () => {
+    mockGh("");
+    const result = await handler({ number: "123", nameOnly: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files).toEqual([]);
   });
 });

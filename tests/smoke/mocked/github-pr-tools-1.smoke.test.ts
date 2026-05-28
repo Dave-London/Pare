@@ -5,10 +5,10 @@
  * validating argument construction, output schema compliance,
  * flag injection blocking, and edge case handling.
  *
- * 76 scenarios total:
+ * 78 scenarios total:
  *   pr-comment: 13
  *   pr-create:  25
- *   pr-diff:    17
+ *   pr-diff:    19
  *   pr-list:    21
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -413,7 +413,7 @@ describe("Smoke: github.pr-create", () => {
 });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Section 11: pr-diff (17 scenarios)
+// Section 11: pr-diff (19 scenarios)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /** Minimal unified diff for a single modified file */
@@ -552,11 +552,14 @@ describe("Smoke: github.pr-diff", () => {
   });
 
   // ── S7: Name only mode ────────────────────────────────────────────
-  it("S7 [P1] nameOnly passes --name-only flag", async () => {
+  it("S7 [P1] nameOnly passes --name-only flag and returns file paths", async () => {
     mockGh("src/index.ts\nsrc/utils.ts\n");
-    await callAndValidate({ number: "123", nameOnly: true });
+    const { parsed } = await callAndValidate({ number: "123", nameOnly: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("--name-only");
+    // issue #907: nameOnly must return the actual changed file paths,
+    // not a single empty-filename entry.
+    expect(parsed.files.map((f) => f.file)).toEqual(["src/index.ts", "src/utils.ts"]);
   });
 
   // ── S8: File status detection (added) ─────────────────────────────
@@ -639,6 +642,28 @@ describe("Smoke: github.pr-diff", () => {
     await callAndValidate({ number: "feature-branch" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args).toContain("feature-branch");
+  });
+
+  // ── S18: full=true preserves chunks under default (compact) mode ──
+  // Regression for issue #907: full=true previously had its chunks stripped by
+  // the compact projection because callers did not also pass compact:false.
+  it("S18 [P0] full: true preserves chunks even in default compact mode", async () => {
+    mockGh(SIMPLE_DIFF);
+    const result = await handler({ number: "123", full: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files[0].chunks).toBeDefined();
+    expect(parsed.files[0].chunks!.length).toBeGreaterThan(0);
+    expect(parsed.files[0].chunks![0].header).toMatch(/^@@/);
+    expect(parsed.files[0].chunks![0].lines).toContain("+import { baz }");
+  });
+
+  // ── S19: nameOnly returns file paths in default compact mode ─────
+  // Regression for issue #907: nameOnly returned a single empty-filename entry.
+  it("S19 [P0] nameOnly returns file paths in default compact mode", async () => {
+    mockGh("src/index.ts\nsrc/utils.ts\n");
+    const result = await handler({ number: "123", nameOnly: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files.map((f) => f.file)).toEqual(["src/index.ts", "src/utils.ts"]);
   });
 });
 
