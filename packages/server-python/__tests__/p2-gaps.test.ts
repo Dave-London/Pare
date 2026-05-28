@@ -14,6 +14,8 @@ import { registerCondaTool } from "../src/tools/conda.js";
 import { registerMypyTool } from "../src/tools/mypy.js";
 import { registerPoetryTool } from "../src/tools/poetry.js";
 import { registerPyenvTool } from "../src/tools/pyenv.js";
+import { registerPytestTool } from "../src/tools/pytest.js";
+import { registerRuffTool } from "../src/tools/ruff.js";
 
 vi.mock("../src/lib/python-runner.js", () => ({
   pip: vi.fn(),
@@ -28,7 +30,7 @@ vi.mock("../src/lib/python-runner.js", () => ({
   pipAudit: vi.fn(),
 }));
 
-import { conda, mypy, poetry, pyenv } from "../src/lib/python-runner.js";
+import { conda, mypy, poetry, pyenv, pytest, ruff } from "../src/lib/python-runner.js";
 
 type ToolHandler = (
   input: Record<string, unknown>,
@@ -169,6 +171,28 @@ describe("Python P2 gaps", () => {
     expect(args).toContain("--disallow-untyped-defs");
     expect(args).toContain("--disallow-untyped-calls");
     expect(args).toContain("--warn-unreachable");
+  });
+
+  it("#891 passes pythonPath through to ruff-check", async () => {
+    const server = new FakeServer();
+    registerRuffTool(server as never);
+    const handler = server.tools.get("ruff-check")!.handler;
+    vi.mocked(ruff).mockResolvedValueOnce({ stdout: "[]", stderr: "", exitCode: 0 });
+
+    await handler({ pythonPath: ".venv/bin/python", compact: false });
+
+    expect(vi.mocked(ruff).mock.calls[0][2]).toBe(".venv/bin/python");
+  });
+
+  it("#891 passes pythonPath through to pytest", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
+
+    await handler({ pythonPath: ".venv/bin/python", compact: false });
+
+    expect(vi.mocked(pytest).mock.calls[0][2]).toBe(".venv/bin/python");
   });
 
   it("#365 includes pip-audit skipped dependencies", () => {

@@ -70,6 +70,11 @@ export function registerRuffFormatTool(server: McpServer) {
           .optional()
           .describe("Override the configured indent width (--indent-width)"),
         path: projectPathInput,
+        pythonPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use (overrides executable/PATH fallback)"),
         config: configInput("Path to custom ruff config file"),
         targetVersion: z
           .string()
@@ -104,6 +109,7 @@ export function registerRuffFormatTool(server: McpServer) {
       isolated,
       indentWidth,
       path,
+      pythonPath,
       config,
       targetVersion,
       exclude,
@@ -116,6 +122,7 @@ export function registerRuffFormatTool(server: McpServer) {
         assertNoFlagInjection(p, "patterns");
       }
       if (config) assertNoFlagInjection(config, "config");
+      if (pythonPath) assertNoFlagInjection(pythonPath, "pythonPath");
       if (targetVersion) assertNoFlagInjection(targetVersion, "targetVersion");
       if (range) assertNoFlagInjection(range, "range");
       for (const e of exclude ?? []) {
@@ -138,7 +145,7 @@ export function registerRuffFormatTool(server: McpServer) {
         args.push("--exclude", e);
       }
 
-      const result = await ruff(args, cwd);
+      const result = await ruff(args, cwd, pythonPath);
       const data = parseRuffFormatOutput(result.stdout, result.stderr, result.exitCode);
       return compactDualOutput(
         data,

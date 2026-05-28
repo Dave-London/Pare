@@ -29,6 +29,11 @@ export function registerPytestTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
+        pythonPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use (overrides venv/PATH detection)"),
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -94,6 +99,7 @@ export function registerPytestTool(server: McpServer) {
     },
     async ({
       path,
+      pythonPath,
       targets,
       markers,
       keyword,
@@ -117,6 +123,7 @@ export function registerPytestTool(server: McpServer) {
       if (keyword) assertNoFlagInjection(keyword, "keyword");
       if (coverage) assertNoFlagInjection(coverage, "coverage");
       if (configFile) assertNoFlagInjection(configFile, "configFile");
+      if (pythonPath) assertNoFlagInjection(pythonPath, "pythonPath");
 
       const tbStyle = tracebackStyle || "short";
       const args = [`--tb=${tbStyle}`, "-q"];
@@ -134,7 +141,7 @@ export function registerPytestTool(server: McpServer) {
       if (configFile) args.push("-c", configFile);
       if (targets && targets.length > 0) args.push(...targets);
 
-      const result = await pytest(args, cwd);
+      const result = await pytest(args, cwd, pythonPath);
       const data = parsePytestOutput(result.stdout, result.stderr, result.exitCode);
       return compactDualOutput(
         data,
