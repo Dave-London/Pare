@@ -227,6 +227,42 @@ describe("GitHub P2 gaps", () => {
     expect(out.structuredContent.errorType).toBe("permission-denied");
   });
 
+  it("#896 pr-checks accepts path as gh cwd", async () => {
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: "[]",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ number: "9", path: "/tmp/target-repo" });
+
+    expect(vi.mocked(ghCmd)).toHaveBeenCalledWith(
+      ["pr", "checks", "9", "--json", expect.any(String)],
+      "/tmp/target-repo",
+    );
+  });
+
+  it("#896 pr-checks watch accepts path as gh cwd", async () => {
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: "[]",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ number: "9", path: "/tmp/target-repo", watch: true });
+
+    expect(vi.mocked(ghCmd)).toHaveBeenCalledWith(
+      ["pr", "checks", "9", "--json", expect.any(String)],
+      "/tmp/target-repo",
+    );
+  });
+
   it("#284 returns typed pr-comment errors", async () => {
     const server = new FakeServer();
     registerPrCommentTool(server as never);
@@ -290,6 +326,21 @@ describe("GitHub P2 gaps", () => {
     expect(file.file).toBe("src/new name.ts");
     expect(file.oldFile).toBe("src/old name.ts");
     expect(file.status).toBe("renamed");
+  });
+
+  it("#896 pr-diff accepts path as gh cwd", async () => {
+    const server = new FakeServer();
+    registerPrDiffTool(server as never);
+    const handler = server.tools.get("pr-diff")!.handler;
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ number: "14", path: "/tmp/target-repo" });
+
+    expect(vi.mocked(ghCmd)).toHaveBeenCalledWith(["pr", "diff", "14"], "/tmp/target-repo");
   });
 
   it("#288 pr-list returns correct results", async () => {

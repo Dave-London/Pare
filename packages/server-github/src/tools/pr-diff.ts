@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { compactDualOutput, INPUT_LIMITS, compactInput } from "@paretools/shared";
+import { compactDualOutput, INPUT_LIMITS, compactInput, repoPathInput } from "@paretools/shared";
 import { assertNoFlagInjection } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../lib/formatters.js";
@@ -28,6 +28,7 @@ export function registerPrDiffTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (default: current repo)"),
+        path: repoPathInput,
         full: z
           .boolean()
           .optional()
@@ -41,7 +42,9 @@ export function registerPrDiffTool(server: McpServer) {
       },
       outputSchema: PrDiffResultSchema,
     },
-    async ({ number, repo, full, nameOnly, compact }) => {
+    async ({ number, repo, path, full, nameOnly, compact }) => {
+      const cwd = path || process.cwd();
+
       if (repo) {
         assertNoFlagInjection(repo, "repo");
       }
@@ -60,7 +63,7 @@ export function registerPrDiffTool(server: McpServer) {
       if (repo) diffArgs.push("--repo", repo);
       if (nameOnly) diffArgs.push("--name-only");
 
-      const result = await ghCmd(diffArgs, { cwd: process.cwd() });
+      const result = await ghCmd(diffArgs, cwd);
 
       if (result.exitCode !== 0) {
         throw new Error(`gh pr diff failed: ${result.stderr}`);
