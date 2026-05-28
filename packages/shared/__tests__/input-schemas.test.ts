@@ -68,8 +68,12 @@ describe("repoPathInput", () => {
     expect(repoPathInput.safeParse("a".repeat(INPUT_LIMITS.PATH_MAX + 1)).success).toBe(false);
   });
 
-  it("has the expected description", () => {
-    expect(repoPathInput.description).toBe("Repository path");
+  it("has a description that documents the authoritative-path / worktree caveat", () => {
+    // The description must warn callers that omitting `path` targets the
+    // server's own cwd (its launch dir), not the caller's — see #876.
+    expect(repoPathInput.description).toMatch(/^Repository path\./);
+    expect(repoPathInput.description).toContain("Authoritative");
+    expect(repoPathInput.description).toContain("worktree");
   });
 });
 

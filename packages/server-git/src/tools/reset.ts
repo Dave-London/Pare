@@ -13,7 +13,7 @@ export function registerResetTool(server: McpServer) {
     {
       title: "Git Reset",
       description:
-        "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. The 'hard' mode requires confirm=true as a safety guard since it permanently discards changes. Returns structured data with the ref, mode, and list of affected files.",
+        "Resets the current HEAD to a specified state. Supports soft, mixed, hard, merge, and keep modes. The 'hard' mode requires confirm=true as a safety guard since it permanently discards changes. Returns structured data with the ref, mode, and list of affected files. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
       annotations: { destructiveHint: true },
       inputSchema: {
         path: repoPathInput,
