@@ -61,7 +61,10 @@ describe("@paretools/python integration", () => {
   describe("ruff-check", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
-        { name: "ruff-check", arguments: { path: resolve(__dirname, "../../..") } },
+        {
+          name: "ruff-check",
+          arguments: { path: resolve(__dirname, "../../.."), compact: false },
+        },
         undefined,
         CALL_TIMEOUT,
       );
@@ -105,7 +108,7 @@ describe("@paretools/python integration", () => {
   describe("mypy", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
-        { name: "mypy", arguments: { targets: ["nonexistent_dir_xyz"] } },
+        { name: "mypy", arguments: { targets: ["nonexistent_dir_xyz"], compact: false } },
         undefined,
         CALL_TIMEOUT,
       );
@@ -125,7 +128,7 @@ describe("@paretools/python integration", () => {
   describe("pip-audit", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
-        { name: "pip-audit", arguments: {} },
+        { name: "pip-audit", arguments: { compact: false } },
         undefined,
         CALL_TIMEOUT,
       );
@@ -144,7 +147,7 @@ describe("@paretools/python integration", () => {
   describe("pytest", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
-        { name: "pytest", arguments: { targets: ["nonexistent_test_dir_xyz"] } },
+        { name: "pytest", arguments: { targets: ["nonexistent_test_dir_xyz"], compact: false } },
         undefined,
         CALL_TIMEOUT,
       );
@@ -211,7 +214,10 @@ describe("@paretools/python integration", () => {
   describe("black", () => {
     it("returns structured data or a command-not-found error", async () => {
       const result = await client.callTool(
-        { name: "black", arguments: { targets: ["nonexistent_dir_xyz"], check: true } },
+        {
+          name: "black",
+          arguments: { targets: ["nonexistent_dir_xyz"], check: true, compact: false },
+        },
         undefined,
         CALL_TIMEOUT,
       );

@@ -13,6 +13,7 @@ import {
   projectPathInput,
   configInput,
   coerceJsonArray,
+  runPythonModule,
 } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { assertNodeFrameworkAvailable } from "../lib/binary-check.js";
@@ -265,6 +266,11 @@ export function registerRunTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
+        interpreter: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use for pytest (overrides venv/PATH detection)"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -356,6 +362,7 @@ export function registerRunTool(server: McpServer) {
     },
     async ({
       path,
+      interpreter,
       framework,
       filter,
       shard,
@@ -380,6 +387,9 @@ export function registerRunTool(server: McpServer) {
       }
       if (config) {
         assertNoFlagInjection(config, "config");
+      }
+      if (interpreter) {
+        assertNoFlagInjection(interpreter, "interpreter");
       }
       if (testNamePattern) {
         assertNoFlagInjection(testNamePattern, "testNamePattern");
@@ -422,7 +432,14 @@ export function registerRunTool(server: McpServer) {
         cmdArgs.push(`--outputFile=${tempPath}`);
       }
 
-      const result = await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
+      const result =
+        detected === "pytest"
+          ? await runPythonModule("pytest", cmdArgs.slice(2), {
+              cwd,
+              pythonPath: interpreter,
+              timeout: TEST_CLI_TIMEOUT_MS,
+            })
+          : await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
 
       // Combine stdout and stderr for parsing (some frameworks write to stderr)
       const output = result.stdout + "\n" + result.stderr;

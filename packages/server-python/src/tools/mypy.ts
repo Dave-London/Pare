@@ -24,6 +24,11 @@ export function registerMypyTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
+        pythonPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use (overrides executable/PATH fallback)"),
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -128,6 +133,7 @@ export function registerMypyTool(server: McpServer) {
     },
     async (input) => {
       const path = input["path"] as string | undefined;
+      const pythonPath = input["pythonPath"] as string | undefined;
       const targets = input["targets"] as string[] | undefined;
       const strict = input["strict"] as boolean | undefined;
       const ignoreMissingImports = input["ignoreMissingImports"] as boolean | undefined;
@@ -153,6 +159,7 @@ export function registerMypyTool(server: McpServer) {
       for (const t of targets ?? []) {
         assertNoFlagInjection(t, "targets");
       }
+      if (pythonPath) assertNoFlagInjection(pythonPath, "pythonPath");
       if (configFile) assertNoFlagInjection(configFile, "configFile");
       if (pythonVersion) assertNoFlagInjection(pythonVersion, "pythonVersion");
       if (exclude) assertNoFlagInjection(exclude, "exclude");
@@ -189,7 +196,7 @@ export function registerMypyTool(server: McpServer) {
         args.push(...(targets || ["."]));
       }
 
-      const result = await mypy(args, cwd);
+      const result = await mypy(args, cwd, pythonPath);
       const data = parseMypyJsonOutput(result.stdout, result.exitCode);
       return compactDualOutput(
         data,

@@ -17,6 +17,7 @@ export {
   type RunOptions,
   type SpawnConfig,
 } from "./runner.js";
+export { pythonInterpreterCandidates, runPythonModule, runPythonTool } from "./python.js";
 export { stripAnsi } from "./ansi.js";
 export {
   coerceJsonArray,

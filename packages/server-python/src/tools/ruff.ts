@@ -25,6 +25,11 @@ export function registerRuffTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
+        pythonPath: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use (overrides executable/PATH fallback)"),
         targets: z
           .array(z.string().max(INPUT_LIMITS.PATH_MAX))
           .max(INPUT_LIMITS.ARRAY_MAX)
@@ -90,6 +95,7 @@ export function registerRuffTool(server: McpServer) {
     },
     async ({
       path,
+      pythonPath,
       targets,
       fix,
       unsafeFixes,
@@ -110,6 +116,7 @@ export function registerRuffTool(server: McpServer) {
         assertNoFlagInjection(t, "targets");
       }
       if (config) assertNoFlagInjection(config, "config");
+      if (pythonPath) assertNoFlagInjection(pythonPath, "pythonPath");
       if (targetVersion) assertNoFlagInjection(targetVersion, "targetVersion");
       for (const s of select ?? []) {
         assertNoFlagInjection(s, "select");
@@ -137,7 +144,7 @@ export function registerRuffTool(server: McpServer) {
         args.push("--exclude", e);
       }
 
-      const result = await ruff(args, cwd);
+      const result = await ruff(args, cwd, pythonPath);
       const data = parseRuffJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,

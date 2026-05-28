@@ -7,6 +7,7 @@ import {
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
+  runPythonModule,
 } from "@paretools/shared";
 import { detectFramework, type Framework } from "../lib/detect.js";
 import { parsePytestCoverage, parsePytestCoverageJson } from "../lib/parsers/pytest.js";
@@ -211,6 +212,11 @@ export function registerCoverageTool(server: McpServer) {
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: projectPathInput,
+        interpreter: z
+          .string()
+          .max(INPUT_LIMITS.PATH_MAX)
+          .optional()
+          .describe("Python interpreter path to use for pytest (overrides venv/PATH detection)"),
         framework: z
           .enum(["pytest", "jest", "vitest", "mocha"])
           .optional()
@@ -264,7 +270,19 @@ export function registerCoverageTool(server: McpServer) {
       },
       outputSchema: CoverageSchema,
     },
-    async ({ path, framework, branch, all, filter, source, exclude, failUnder, args, compact }) => {
+    async ({
+      path,
+      interpreter,
+      framework,
+      branch,
+      all,
+      filter,
+      source,
+      exclude,
+      failUnder,
+      args,
+      compact,
+    }) => {
       for (const s of source ?? []) {
         assertNoFlagInjection(s, "source");
       }
@@ -272,6 +290,7 @@ export function registerCoverageTool(server: McpServer) {
         assertNoFlagInjection(e, "exclude");
       }
       if (filter) assertNoFlagInjection(filter, "filter");
+      if (interpreter) assertNoFlagInjection(interpreter, "interpreter");
       if (args) {
         for (const arg of args) {
           assertNoFlagInjection(arg, "args");
@@ -298,7 +317,14 @@ export function registerCoverageTool(server: McpServer) {
       await mkdir(tempDir, { recursive: true });
 
       const { cmd, cmdArgs } = getCoverageCommand(detected, extraArgs, coverageJsonPath);
-      const result = await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
+      const result =
+        detected === "pytest"
+          ? await runPythonModule("pytest", cmdArgs.slice(2), {
+              cwd,
+              pythonPath: interpreter,
+              timeout: TEST_CLI_TIMEOUT_MS,
+            })
+          : await run(cmd, cmdArgs, { cwd, timeout: TEST_CLI_TIMEOUT_MS });
       const output = result.stdout + "\n" + result.stderr;
 
       let coverage;
