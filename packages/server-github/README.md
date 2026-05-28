@@ -7,18 +7,24 @@
 
 Part of the [Pare](https://github.com/Dave-London/Pare) suite of MCP servers.
 
-## Tools (8)
+## Tools
 
-| Tool           | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| `pr-view`      | View PR details with checks, review decision, diff stats |
-| `pr-list`      | List PRs with state/author/label filters                 |
-| `pr-create`    | Create a pull request with title, body, base/head        |
-| `issue-view`   | View issue details with labels, assignees, body          |
-| `issue-list`   | List issues with state/label/assignee filters            |
-| `issue-create` | Create an issue with title, body, labels                 |
-| `run-view`     | View workflow run details with job statuses              |
-| `run-list`     | List workflow runs with branch/status filters            |
+| Tool              | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `pr-view`         | View PR details with checks, review decision, diff stats   |
+| `pr-list`         | List PRs with state/author/label filters                   |
+| `pr-create`       | Create a pull request with title, body, base/head          |
+| `issue-view`      | View issue details with labels, assignees, body            |
+| `issue-list`      | List issues with state/label/assignee filters              |
+| `issue-create`    | Create an issue with title, body, labels                   |
+| `run-view`        | View workflow run details with job statuses                |
+| `run-list`        | List workflow runs with branch/status filters              |
+| `secret-set`      | Set a repo, org, or environment GitHub Actions secret      |
+| `secret-list`     | List secret names and metadata; values are never returned  |
+| `secret-delete`   | Delete a repo, org, or environment GitHub Actions secret   |
+| `variable-set`    | Set a repo, org, or environment GitHub Actions variable    |
+| `variable-list`   | List variable names, values, and metadata                  |
+| `variable-delete` | Delete a repo, org, or environment GitHub Actions variable |
 
 ## Quick Start
 
@@ -57,6 +63,33 @@ Add to your MCP client config:
   "additions": 150,
   "deletions": 20,
   "changedFiles": 5
+}
+```
+
+**`secret-set` input:**
+
+```json
+{
+  "name": "MAXMIND_LICENSE_KEY",
+  "value": "license-key-value",
+  "repo": "owner/repo"
+}
+```
+
+Secret values are sent to `gh secret set` via stdin and are not returned in structured output. For organization scope, pass `org` and optional `visibility` / `repos`; for environment scope, pass `repo` and `env`.
+
+**`variable-list` output:**
+
+```json
+{
+  "scope": "repo",
+  "variables": [
+    {
+      "name": "PUBLIC_URL",
+      "value": "https://example.com",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    }
+  ]
 }
 ```
 

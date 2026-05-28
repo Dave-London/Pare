@@ -35,6 +35,14 @@ import { registerLabelCreateTool } from "./label-create.js";
 import { registerRepoViewTool } from "./repo-view.js";
 import { registerRepoCloneTool } from "./repo-clone.js";
 import { registerDiscussionListTool } from "./discussion-list.js";
+import {
+  registerSecretDeleteTool,
+  registerSecretListTool,
+  registerSecretSetTool,
+  registerVariableDeleteTool,
+  registerVariableListTool,
+  registerVariableSetTool,
+} from "./secrets-variables.js";
 
 const TOOL_DEFS: Array<{
   name: string;
@@ -195,6 +203,40 @@ const TOOL_DEFS: Array<{
     description:
       "Creates a new repository label. Returns structured data with label name, description, color, and URL.",
     register: registerLabelCreateTool,
+  },
+  {
+    name: "secret-set",
+    description:
+      "Sets a repository, organization, or environment GitHub Actions secret. Secret values are sent via stdin and never returned.",
+    register: registerSecretSetTool,
+  },
+  {
+    name: "secret-list",
+    description:
+      "Lists repository, organization, or environment secret names and metadata. Secret values are never exposed.",
+    register: registerSecretListTool,
+  },
+  {
+    name: "secret-delete",
+    description: "Deletes a repository, organization, or environment GitHub Actions secret.",
+    register: registerSecretDeleteTool,
+  },
+  {
+    name: "variable-set",
+    description:
+      "Sets a repository, organization, or environment GitHub Actions variable. Variables are not secret.",
+    register: registerVariableSetTool,
+  },
+  {
+    name: "variable-list",
+    description:
+      "Lists repository, organization, or environment GitHub Actions variables with values and metadata.",
+    register: registerVariableListTool,
+  },
+  {
+    name: "variable-delete",
+    description: "Deletes a repository, organization, or environment GitHub Actions variable.",
+    register: registerVariableDeleteTool,
   },
   {
     name: "repo-view",

@@ -24,6 +24,10 @@ import type {
   ApiResult,
   LabelListResult,
   LabelCreateResult,
+  SecretListResult,
+  SecretMutationResult,
+  VariableListResult,
+  VariableMutationResult,
   RepoViewResult,
   RepoCloneResult,
   DiscussionListResult,
@@ -628,6 +632,45 @@ export function formatLabelCreate(data: LabelCreateResult): string {
   const descPart = data.description ? ` — ${data.description}` : "";
   const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
   return `Created label "${data.name}"${colorPart}${descPart}${errorPart}`;
+}
+
+// ── Actions secrets / variables ─────────────────────────────────────
+
+export function formatSecretList(data: SecretListResult): string {
+  const total = data.secrets.length;
+  if (total === 0) return `No ${data.scope} secrets found.`;
+  const lines = [`${total} ${data.scope} secrets:`];
+  for (const secret of data.secrets) {
+    const updated = secret.updatedAt ? ` updated ${secret.updatedAt}` : "";
+    const visibility = secret.visibility ? ` (${secret.visibility})` : "";
+    lines.push(`  ${secret.name}${visibility}${updated}`);
+  }
+  return lines.join("\n");
+}
+
+export function formatSecretMutation(data: SecretMutationResult): string {
+  const verb = data.action === "set" ? "Set" : "Deleted";
+  const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
+  return `${verb} ${data.scope} secret "${data.name}"${errorPart}`;
+}
+
+export function formatVariableList(data: VariableListResult): string {
+  const total = data.variables.length;
+  if (total === 0) return `No ${data.scope} variables found.`;
+  const lines = [`${total} ${data.scope} variables:`];
+  for (const variable of data.variables) {
+    const value = variable.value !== undefined ? `=${variable.value}` : "";
+    const updated = variable.updatedAt ? ` updated ${variable.updatedAt}` : "";
+    const visibility = variable.visibility ? ` (${variable.visibility})` : "";
+    lines.push(`  ${variable.name}${value}${visibility}${updated}`);
+  }
+  return lines.join("\n");
+}
+
+export function formatVariableMutation(data: VariableMutationResult): string {
+  const verb = data.action === "set" ? "Set" : "Deleted";
+  const errorPart = data.errorType ? ` [error: ${data.errorType}]` : "";
+  return `${verb} ${data.scope} variable "${data.name}"${errorPart}`;
 }
 
 /** Formats run view with log output. */
