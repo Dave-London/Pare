@@ -63,6 +63,12 @@ Add to your MCP client config:
 
 This package runs real downstream suites (including `@paretools/git` integration tests), so lower global limits like 120s can fail due to cumulative runtime on slower CI/Windows runners.
 
+## Pytest Interpreter Resolution
+
+For `framework: "pytest"`, `run` and `coverage` use the shared Python interpreter resolver. Pare checks `.venv/`, `venv/`, and `env/` under the requested `path` before falling back to `python` and then `python3`, and invokes pytest as `python -m pytest`.
+
+Use the `interpreter` input to point at a specific Python executable when auto-detection is not enough.
+
 ## Test Batching (Maintainers)
 
 - `pnpm test:unit` runs fast parser/formatter/helper tests
