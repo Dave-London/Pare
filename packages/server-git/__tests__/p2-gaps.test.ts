@@ -523,4 +523,56 @@ describe("Git P2 gaps", () => {
     await handler({ action: "repair", repairPaths: ["/tmp/a", "/tmp/b"] });
     expect(vi.mocked(git).mock.calls[0][0]).toEqual(["worktree", "repair", "/tmp/a", "/tmp/b"]);
   });
+
+  it("#906 worktree list with listVerbose never passes -v alongside --porcelain", async () => {
+    const server = new FakeServer();
+    registerWorktreeTool(server as never);
+    const handler = server.tools.get("worktree")!.handler;
+    // Porcelain output already carries the locked/prunable detail that -v surfaces.
+    vi.mocked(git).mockResolvedValueOnce({
+      stdout: [
+        "worktree /home/user/repo",
+        "HEAD abc1234567890abcdef1234567890abcdef123456",
+        "branch refs/heads/main",
+        "",
+        "worktree /home/user/repo-locked",
+        "HEAD def5678901234567890abcdef1234567890abcdef",
+        "branch refs/heads/feature",
+        "locked maintenance window",
+        "",
+        "worktree /home/user/repo-stale",
+        "HEAD 0123456789abcdef0123456789abcdef01234567",
+        "branch refs/heads/old",
+        "prunable gitdir file points to non-existent location",
+        "",
+      ].join("\n"),
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const result = (await handler({ action: "list", listVerbose: true, compact: false })) as {
+      structuredContent: {
+        worktrees: Array<{
+          path: string;
+          locked?: boolean;
+          lockReason?: string;
+          prunable?: boolean;
+          prunableReason?: string;
+        }>;
+      };
+    };
+
+    // The flag conflict (#906) is avoided: only --porcelain is passed, never -v.
+    expect(vi.mocked(git).mock.calls[0][0]).toEqual(["worktree", "list", "--porcelain"]);
+    expect(vi.mocked(git).mock.calls[0][0]).not.toContain("-v");
+    expect(vi.mocked(git).mock.calls[0][0]).not.toContain("--verbose");
+
+    // Locked/prunable detail is surfaced in the structured output.
+    const worktrees = result.structuredContent.worktrees;
+    expect(worktrees).toHaveLength(3);
+    expect(worktrees[1].locked).toBe(true);
+    expect(worktrees[1].lockReason).toBe("maintenance window");
+    expect(worktrees[2].prunable).toBe(true);
+    expect(worktrees[2].prunableReason).toBe("gitdir file points to non-existent location");
+  });
 });
