@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 // Mock @paretools/shared's run function to simulate ENOENT errors
 vi.mock("@paretools/shared", async () => {
@@ -10,7 +13,7 @@ vi.mock("@paretools/shared", async () => {
 });
 
 import { run } from "@paretools/shared";
-import { rgCmd, fdCmd, jqCmd } from "../src/lib/search-runner.js";
+import { rgCmd, fdCmd, jqCmd, resolveSearchTarget } from "../src/lib/search-runner.js";
 
 const mockRun = vi.mocked(run);
 
@@ -87,5 +90,73 @@ describe("search-runner install hints", () => {
 
     const result = await rgCmd(["--json", "pattern", "."]);
     expect(result).toEqual({ exitCode: 0, stdout: "result", stderr: "" });
+  });
+});
+
+describe("resolveSearchTarget", () => {
+  // Set up a fixture tree:
+  //   <tmp>/file.txt   (a file)
+  //   <tmp>/sub/       (a directory)
+  let root: string;
+  let filePath: string;
+  let subDir: string;
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), "pare-search-target-"));
+    filePath = join(root, "file.txt");
+    writeFileSync(filePath, "hello world\n");
+    subDir = join(root, "sub");
+    mkdirSync(subDir);
+  });
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("returns process.cwd() and '.' when path is undefined", () => {
+    const result = resolveSearchTarget(undefined);
+    expect(result.cwd).toBe(process.cwd());
+    expect(result.target).toBe(".");
+    expect(result.isFile).toBe(false);
+  });
+
+  it("returns process.cwd() and '.' when path is an empty string", () => {
+    const result = resolveSearchTarget("");
+    expect(result.cwd).toBe(process.cwd());
+    expect(result.target).toBe(".");
+    expect(result.isFile).toBe(false);
+  });
+
+  it("uses the path as cwd and '.' as target when path is an existing directory", () => {
+    const result = resolveSearchTarget(subDir);
+    expect(result.cwd).toBe(subDir);
+    expect(result.target).toBe(".");
+    expect(result.isFile).toBe(false);
+  });
+
+  it("splits a file path into parent dir cwd + basename target (regression: spawn ENOTDIR)", () => {
+    // This is the core fix for issue #871. Previously the runner used
+    // `path` directly as cwd, causing `spawn ENOTDIR` when path was a file.
+    const result = resolveSearchTarget(filePath);
+    expect(result.cwd).toBe(root);
+    expect(result.target).toBe("file.txt");
+    expect(result.isFile).toBe(true);
+  });
+
+  it("falls back to process.cwd() + raw path when path does not exist", () => {
+    const missing = join(root, "does-not-exist.txt");
+    const result = resolveSearchTarget(missing);
+    expect(result.cwd).toBe(process.cwd());
+    expect(result.target).toBe(missing);
+    expect(result.isFile).toBe(false);
+  });
+
+  it("resolves relative directory paths to absolute cwd", () => {
+    // process.cwd() is always a directory, so passing "." should yield an
+    // absolute cwd matching it and target ".".
+    const result = resolveSearchTarget(".");
+    expect(result.cwd).toBe(process.cwd());
+    expect(result.target).toBe(".");
+    expect(result.isFile).toBe(false);
   });
 });
