@@ -74,6 +74,37 @@ export function registerStashListTool(server: McpServer) {
 
       const stashList = parseStashListOutput(result.stdout);
 
+      // The reflog selector (%gd) only renders the numeric index
+      // (`stash@{0}`, `stash@{1}`, …) when no `--date` option is present. With
+      // any `--date` (the tool always passes one), git renders the selector as
+      // `stash@{<date>}`, so the parser cannot read the index and reports 0 for
+      // every entry (issue #908). When the selector did not carry a usable
+      // index, resolve the real incrementing indices from a date-free run that
+      // applies the same filters so the entries line up by position.
+      const stashLines = result.stdout.trim().split("\n").filter(Boolean);
+      const indexCorrupted = stashLines.some((line) => !/^stash@\{\d+\}/.test(line));
+      if (indexCorrupted && stashList.stashes.length > 0) {
+        const indexArgs = ["stash", "list", "--format=%gd"];
+        if (maxCount !== undefined) indexArgs.push(`--max-count=${maxCount}`);
+        if (grep) indexArgs.push(`--grep=${grep}`);
+        if (since) indexArgs.push(`--since=${since}`);
+        const indexResult = await git(indexArgs, cwd);
+        if (indexResult.exitCode === 0) {
+          const realIndices = indexResult.stdout
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .map((line) => {
+              const m = line.match(/stash@\{(\d+)\}/);
+              return m ? parseInt(m[1], 10) : undefined;
+            });
+          stashList.stashes.forEach((stash, i) => {
+            const realIndex = realIndices[i];
+            if (realIndex !== undefined) stash.index = realIndex;
+          });
+        }
+      }
+
       // Gap #140: Add file change summary per stash entry
       if (includeSummary && stashList.stashes.length > 0) {
         // Run git stash show --stat for each stash entry to get file count and summary

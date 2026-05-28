@@ -376,12 +376,18 @@ describe("Recorded: git.stash-list", () => {
   }
 
   it("S1 [recorded] list stashes", async () => {
+    // Real `git stash list --date=iso` output: the %gd reflog selector renders
+    // as `stash@{<date>}`, so the index must be recovered from a date-free
+    // follow-up call (issue #908).
     mockGit(loadFixture("stash-list", "s01-list.txt"));
+    mockGit(loadFixture("stash-list", "s01-index.txt"));
     const { parsed } = await callAndValidate({ compact: false });
     expect(parsed.stashes.length).toBeGreaterThanOrEqual(1);
     // The message should contain branch info (full mode returns objects)
     const stash = parsed.stashes[0] as Record<string, unknown>;
     expect(stash.message).toContain("main");
+    // The recovered index is the real reflog index, not the corrupted 0 default.
+    expect(stash.index).toBe(0);
   });
 
   it("S2 [recorded] empty stash list", async () => {
