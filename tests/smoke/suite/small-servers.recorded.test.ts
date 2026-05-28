@@ -30,6 +30,11 @@ vi.mock("../../../packages/server-search/src/lib/search-runner.js", () => ({
   rgCmd: vi.fn(),
   fdCmd: vi.fn(),
   jqCmd: vi.fn(),
+  resolveSearchTarget: (path?: string) => ({
+    cwd: path || process.cwd(),
+    target: ".",
+    isFile: false,
+  }),
 }));
 
 // ── Mock curl runner ────────────────────────────────────────────────────────
