@@ -30,11 +30,46 @@ import type {
 } from "../schemas/index.js";
 
 /**
+ * Safely parses JSON that is expected to be an array.
+ *
+ * Several `gh ... list` commands (e.g. `gh pr list --search`, `gh issue list`)
+ * exit 0 but print EMPTY stdout — not `[]` — when nothing matches. Passing that
+ * to `JSON.parse` throws "Unexpected end of JSON input". This helper treats
+ * empty/whitespace stdout as an empty array, and any non-array JSON value (null,
+ * object, etc.) as an empty array too, so list parsers never throw on it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseJsonArray(json: string): any[] {
+  const trimmed = json.trim();
+  const raw = trimmed ? JSON.parse(trimmed) : [];
+  return Array.isArray(raw) ? raw : [];
+}
+
+/**
+ * Safely parses JSON that is expected to be a single object.
+ *
+ * `gh ... view --json` normally prints a JSON object, but a command can exit 0
+ * with EMPTY stdout in edge cases. Returning an empty object (instead of letting
+ * `JSON.parse("")` throw) lets view parsers fall back to their existing
+ * field-level defaults rather than crashing.
+ *
+ * Returns the parsed value typed as the original `JSON.parse` result so existing
+ * dynamic property access (`raw.foo?.bar`) continues to compile unchanged.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseJsonObject(json: string): any {
+  const trimmed = json.trim();
+  if (!trimmed) return {};
+  const raw = JSON.parse(trimmed);
+  return raw && typeof raw === "object" ? raw : {};
+}
+
+/**
  * Parses `gh pr view --json ...` output into structured PR view data.
  * Renames gh field names to our schema names (e.g., headRefName → headBranch).
  */
 export function parsePrView(json: string): PrViewResult {
-  const raw = JSON.parse(json);
+  const raw = parseJsonObject(json);
 
   const checks = (raw.statusCheckRollup ?? []).map(
     (c: {
@@ -109,8 +144,7 @@ export function parsePrView(json: string): PrViewResult {
  * Parses `gh pr list --json ...` output into structured PR list data.
  */
 export function parsePrList(json: string): PrListResult {
-  const raw = JSON.parse(json);
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const prs = items.map(
     (pr: {
@@ -315,8 +349,7 @@ function classifyReviewError(stderr: string): PrReviewResult["errorType"] {
  * (determined by completedAt, then startedAt, with later entries winning ties).
  */
 export function parsePrChecks(json: string, pr: number): PrChecksResult {
-  const raw = JSON.parse(json);
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const allChecks = items.map(
     (c: {
@@ -378,7 +411,7 @@ export function parsePrChecks(json: string, pr: number): PrChecksResult {
  * Parses `gh issue view --json ...` output into structured issue view data.
  */
 export function parseIssueView(json: string): IssueViewResult {
-  const raw = JSON.parse(json);
+  const raw = parseJsonObject(json);
 
   return {
     number: raw.number,
@@ -406,8 +439,7 @@ export function parseIssueView(json: string): IssueViewResult {
  * Parses `gh issue list --json ...` output into structured issue list data.
  */
 export function parseIssueList(json: string): IssueListResult {
-  const raw = JSON.parse(json);
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const issues = items.map(
     (issue: {
@@ -585,7 +617,7 @@ export function parseIssueUpdate(
  * S-gap: Enhanced to include job steps, headSha, event, startedAt, attempt.
  */
 export function parseRunView(json: string): RunViewResult {
-  const raw = JSON.parse(json);
+  const raw = parseJsonObject(json);
 
   const jobs = (raw.jobs ?? []).map(
     (j: {
@@ -631,8 +663,7 @@ export function parseRunView(json: string): RunViewResult {
  * Parses `gh run list --json ...` output into structured run list data.
  */
 export function parseRunList(json: string): RunListResult {
-  const raw = JSON.parse(json);
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const runs = items.map(
     (r: {
@@ -742,8 +773,7 @@ export function parseReleaseCreate(
  * avoid `Unknown JSON field: "url"` errors from gh. See issue #868.
  */
 export function parseReleaseList(json: string): ReleaseListResult {
-  const raw = JSON.parse(json);
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const releases = items.map(
     (r: {
@@ -925,9 +955,7 @@ export function parseGistCreate(
  * rather than letting `JSON.parse("")` throw "Unexpected end of JSON input".
  */
 export function parseLabelList(json: string): LabelListResult {
-  const trimmed = json.trim();
-  const raw = trimmed ? JSON.parse(trimmed) : [];
-  const items = Array.isArray(raw) ? raw : [];
+  const items = parseJsonArray(json);
 
   const labels = items.map(
     (l: { name: string; description: string; color: string; isDefault: boolean }) => ({
@@ -972,7 +1000,7 @@ export function parseLabelCreate(
  * Renames gh field names to our schema names (e.g., stargazerCount -> stars).
  */
 export function parseRepoView(json: string): RepoViewResult {
-  const raw = JSON.parse(json);
+  const raw = parseJsonObject(json);
 
   return {
     name: raw.name ?? "",
@@ -1023,7 +1051,7 @@ export function parseRepoClone(
  * The GraphQL response contains a repository.discussions object with nodes and totalCount.
  */
 export function parseDiscussionList(json: string): DiscussionListResult {
-  const raw = JSON.parse(json);
+  const raw = parseJsonObject(json);
   const data = raw.data?.repository?.discussions ?? {};
   const nodes = Array.isArray(data.nodes) ? data.nodes : [];
 
