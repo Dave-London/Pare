@@ -141,6 +141,33 @@ describe("Git P2 gaps", () => {
     expect(vi.mocked(git).mock.calls[1][0][0]).toBe("switch");
   });
 
+  it("#890 falls back to checkout with track before branch creation operands", async () => {
+    const server = new FakeServer();
+    registerCheckoutTool(server as never);
+    const handler = server.tools.get("checkout")!.handler;
+    vi.mocked(git)
+      .mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: "", stderr: "Switched to a new branch", exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: "release/v0.4.27\n", stderr: "", exitCode: 0 })
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
+
+    await handler({
+      branch: "release/v0.4.27",
+      create: true,
+      startPoint: "origin/release/v0.4.27",
+      track: true,
+      useSwitch: true,
+    });
+
+    expect(vi.mocked(git).mock.calls[1][0]).toEqual([
+      "checkout",
+      "--track",
+      "-b",
+      "release/v0.4.27",
+      "origin/release/v0.4.27",
+    ]);
+  });
+
   it("#249 returns newCommitHash from cherry-pick output", () => {
     const out = parseCherryPick("[main abc1234] pick commit", "", 0, ["deadbeef"]);
     expect(out.newCommitHash).toBe("abc1234");
