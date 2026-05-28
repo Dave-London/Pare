@@ -19,7 +19,7 @@ export function registerAddTool(server: McpServer) {
     {
       title: "Git Add",
       description:
-        "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged.",
+        "Stages files for commit. Returns structured data with count and list of staged files, including how many were newly staged. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
       annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,

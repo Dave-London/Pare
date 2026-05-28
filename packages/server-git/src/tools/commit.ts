@@ -13,7 +13,7 @@ export function registerCommitTool(server: McpServer) {
     {
       title: "Git Commit",
       description:
-        "Creates a commit with the given message. Returns structured data with hash, message, and change statistics.",
+        "Creates a commit with the given message. Returns structured data with hash, message, and change statistics. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
       annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,

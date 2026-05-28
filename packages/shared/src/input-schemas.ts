@@ -24,12 +24,23 @@ export const projectPathInput = z
   .optional()
   .describe("Project root path");
 
-/** `path` for servers whose root concept is a repository (git, github, security). */
+/**
+ * `path` for servers whose root concept is a repository (git, github, security).
+ *
+ * IMPORTANT: This is authoritative. When omitted, the server operates on its own
+ * process working directory — which for a long-lived MCP server is its launch
+ * directory, NOT the calling client's directory. Callers running in a git
+ * worktree, subdirectory, or any location other than where the server was
+ * launched MUST pass `path` explicitly, or operations will silently target the
+ * wrong repository (see issue #876).
+ */
 export const repoPathInput = z
   .string()
   .max(INPUT_LIMITS.PATH_MAX)
   .optional()
-  .describe("Repository path");
+  .describe(
+    "Repository path. Authoritative — when omitted, the server uses its own process working directory (its launch dir, not the caller's cwd). Callers in a git worktree or other directory MUST pass this explicitly to avoid operating on the wrong repo.",
+  );
 
 /** `path` for servers whose root concept is a working directory (docker, http, process, search). */
 export const cwdPathInput = z
