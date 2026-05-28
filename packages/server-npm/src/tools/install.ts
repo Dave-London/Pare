@@ -77,7 +77,10 @@ export function registerInstallTool(server: McpServer) {
         noAudit: z
           .boolean()
           .optional()
-          .describe("Skip the automatic audit step to speed up installation (maps to --no-audit)"),
+          .describe(
+            "Skip the automatic audit step to speed up installation. Only npm runs an audit during install, so this maps to --no-audit on npm. " +
+              "On pnpm and yarn it is a silent no-op (audit is a separate command, not part of install).",
+          ),
         exact: z
           .boolean()
           .optional()
@@ -238,7 +241,11 @@ export function composeInstallFlags(
   }
   if (opts.legacyPeerDeps && pm === "npm") flags.push("--legacy-peer-deps");
   if (opts.force) flags.push("--force");
-  if (opts.noAudit) flags.push("--no-audit");
+  // --no-audit is npm-only. pnpm install does not audit (audit is a separate
+  // `pnpm audit` command) and rejects --no-audit with "Unknown option: 'audit'".
+  // yarn install also doesn't run an audit, so the flag is silently dropped
+  // there too. See #872.
+  if (opts.noAudit && pm === "npm") flags.push("--no-audit");
   if (opts.exact) flags.push("--save-exact");
   if (opts.global) flags.push("--global");
   if (opts.registry) flags.push(`--registry=${opts.registry}`);

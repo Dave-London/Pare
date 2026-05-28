@@ -177,16 +177,28 @@ describe("composeInstallFlags", () => {
     );
   });
 
-  it("force → --force, noAudit → --no-audit, exact → --save-exact, global → --global", () => {
+  it("force → --force, exact → --save-exact, global → --global (all PMs)", () => {
     const flags = composeInstallFlags("pnpm", {
       force: true,
-      noAudit: true,
       exact: true,
       global: true,
     });
-    expect(flags).toEqual(
-      expect.arrayContaining(["--force", "--no-audit", "--save-exact", "--global"]),
-    );
+    expect(flags).toEqual(expect.arrayContaining(["--force", "--save-exact", "--global"]));
+  });
+
+  it("noAudit → --no-audit only on npm (pnpm/yarn don't audit during install)", () => {
+    // npm: emits --no-audit
+    expect(composeInstallFlags("npm", { noAudit: true })).toContain("--no-audit");
+    // pnpm: silently dropped — pnpm install rejects --no-audit with "Unknown option: 'audit'" (#872)
+    expect(composeInstallFlags("pnpm", { noAudit: true })).not.toContain("--no-audit");
+    // yarn: silently dropped — yarn install does not audit
+    expect(composeInstallFlags("yarn", { noAudit: true })).not.toContain("--no-audit");
+  });
+
+  it("noAudit=false never emits --no-audit", () => {
+    expect(composeInstallFlags("npm", { noAudit: false })).not.toContain("--no-audit");
+    expect(composeInstallFlags("pnpm", { noAudit: false })).not.toContain("--no-audit");
+    expect(composeInstallFlags("yarn", { noAudit: false })).not.toContain("--no-audit");
   });
 
   it("registry → --registry=<value>", () => {
