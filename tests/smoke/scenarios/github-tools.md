@@ -1064,17 +1064,18 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 8   | totalAvailable count     | `{ limit: 5 }`                 | `totalAvailable` populated from probe query                        | P1       | complete |
 | 9   | Compact vs full output   | `{ compact: false }`           | Full schema output                                                 | P1       | complete |
 | 10  | Cross-repo listing       | `{ repo: "owner/repo" }`       | --repo flag passed                                                 | P1       | complete |
-| 11  | Release fields populated | `{ }`                          | Each release has `publishedAt`, `url`, `isLatest`, `createdAt`     | P1       | complete |
+| 11  | Release fields populated | `{ }`                          | Each release has `publishedAt`, `isLatest`, `createdAt` (no `url`) | P1       | complete |
 | 12  | Custom limit             | `{ limit: 5 }`                 | At most 5 releases returned                                        | P2       | complete |
+| 13  | No `url` in --json args  | `{ }`                          | Regression for #868: `--json` field list excludes `url`            | P0       | complete |
 
 ### Summary
 
 | Priority  | Count  |
 | --------- | ------ |
-| P0        | 4      |
+| P0        | 5      |
 | P1        | 7      |
 | P2        | 1      |
-| **Total** | **12** |
+| **Total** | **13** |
 
 ---
 
@@ -1329,10 +1330,10 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 15  | pr-update      | 17      | 9       | 1      | 27      |
 | 16  | pr-view        | 6       | 9       | 2      | 17      |
 | 17  | release-create | 12      | 9       | 4      | 25      |
-| 18  | release-list   | 4       | 7       | 1      | 12      |
+| 18  | release-list   | 5       | 7       | 1      | 13      |
 | 19  | run-list       | 9       | 10      | 2      | 21      |
 | 20  | run-rerun      | 7       | 3       | 1      | 11      |
 | 21  | run-view       | 6       | 8       | 1      | 15      |
 | 22  | label-list     | 6       | 4       | 0      | 10      |
 | 23  | label-create   | 9       | 2       | 1      | 12      |
-|     | **Totals**     | **215** | **159** | **37** | **411** |
+|     | **Totals**     | **216** | **159** | **37** | **412** |

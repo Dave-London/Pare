@@ -18,7 +18,6 @@ describe("parseReleaseList", () => {
         isDraft: false,
         isPrerelease: false,
         publishedAt: "2024-01-15T10:00:00Z",
-        url: "https://github.com/owner/repo/releases/tag/v1.0.0",
       },
       {
         tagName: "v0.9.0-beta",
@@ -26,7 +25,6 @@ describe("parseReleaseList", () => {
         isDraft: false,
         isPrerelease: true,
         publishedAt: "2024-01-10T08:00:00Z",
-        url: "https://github.com/owner/repo/releases/tag/v0.9.0-beta",
       },
     ]);
 
@@ -39,8 +37,10 @@ describe("parseReleaseList", () => {
       draft: false,
       prerelease: false,
       publishedAt: "2024-01-15T10:00:00Z",
-      url: "https://github.com/owner/repo/releases/tag/v1.0.0",
+      isLatest: undefined,
+      createdAt: undefined,
     });
+    expect(result.releases[0]).not.toHaveProperty("url");
     expect(result.releases[1].tag).toBe("v0.9.0-beta");
     expect(result.releases[1].prerelease).toBe(true);
   });
@@ -58,7 +58,6 @@ describe("parseReleaseList", () => {
         isDraft: true,
         isPrerelease: false,
         publishedAt: "",
-        url: "https://github.com/owner/repo/releases/tag/v2.0.0",
       },
     ]);
 
@@ -66,6 +65,7 @@ describe("parseReleaseList", () => {
 
     expect(result.releases[0].draft).toBe(true);
     expect(result.releases[0].prerelease).toBe(false);
+    expect(result.releases[0]).not.toHaveProperty("url");
   });
 
   it("handles missing optional fields with defaults", () => {
@@ -79,8 +79,26 @@ describe("parseReleaseList", () => {
       draft: false,
       prerelease: false,
       publishedAt: "",
-      url: "",
+      isLatest: undefined,
+      createdAt: undefined,
     });
+  });
+
+  it("ignores unexpected fields like url if present in input", () => {
+    // Defensive: even if a future gh release exposes url, parser should
+    // not include it in output to keep schema stable.
+    const json = JSON.stringify([
+      {
+        tagName: "v1.0.0",
+        name: "R1",
+        isDraft: false,
+        isPrerelease: false,
+        publishedAt: "2024-01-01",
+        url: "https://example.com/should-not-leak",
+      },
+    ]);
+    const result = parseReleaseList(json);
+    expect(result.releases[0]).not.toHaveProperty("url");
   });
 });
 
@@ -96,7 +114,6 @@ describe("formatReleaseList", () => {
           draft: false,
           prerelease: false,
           publishedAt: "2024-01-15T10:00:00Z",
-          url: "https://github.com/owner/repo/releases/tag/v1.0.0",
         },
       ],
     };
@@ -119,7 +136,6 @@ describe("formatReleaseList", () => {
           draft: true,
           prerelease: true,
           publishedAt: "2024-02-01T00:00:00Z",
-          url: "https://github.com/owner/repo/releases/tag/v2.0.0-alpha",
         },
       ],
     };
@@ -136,7 +152,6 @@ describe("formatReleaseList", () => {
           draft: true,
           prerelease: false,
           publishedAt: "",
-          url: "https://url",
         },
       ],
     };
@@ -158,7 +173,6 @@ describe("compactReleaseList", () => {
           draft: false,
           prerelease: false,
           publishedAt: "2024-01-15T10:00:00Z",
-          url: "https://github.com/owner/repo/releases/tag/v1.0.0",
         },
       ],
     };
