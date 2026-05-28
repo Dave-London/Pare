@@ -19,7 +19,8 @@ export function registerBranchTool(server: McpServer) {
     "branch",
     {
       title: "Git Branch",
-      description: "Lists, creates, renames, or deletes branches. Returns structured branch data.",
+      description:
+        "Lists, creates, renames, or deletes branches. Returns structured branch data. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,

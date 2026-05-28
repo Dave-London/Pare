@@ -597,6 +597,7 @@ export const GitWorktreeEntrySchema = z.object({
   locked: z.boolean().optional(),
   lockReason: z.string().optional(),
   prunable: z.boolean().optional(),
+  prunableReason: z.string().optional(),
 });
 
 /** Zod schema for structured git worktree list output. */
@@ -614,6 +615,7 @@ export type GitWorktreeListFull = {
     locked?: boolean;
     lockReason?: string;
     prunable?: boolean;
+    prunableReason?: string;
   }>;
 };
 

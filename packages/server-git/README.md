@@ -41,6 +41,32 @@ Add to your MCP client config:
 }
 ```
 
+## The `path` parameter is authoritative
+
+Every tool accepts an optional `path` parameter pointing at the target repository
+or git worktree. **When `path` is omitted, the server operates on its own process
+working directory** — i.e. the directory the MCP server was launched in, **not the
+directory of the client that issued the call.**
+
+An MCP server is a long-lived process and fundamentally cannot know the calling
+client's current directory. This matters when the caller runs somewhere other than
+the server's launch directory — most notably inside a **git worktree** (e.g. a
+background agent following an isolated-worktree workflow):
+
+- Read tools (`status`, `diff`, `log`, …) will report the launch-dir repo, which
+  can look misleadingly "clean" while your worktree is dirty.
+- Mutating tools (`checkout`, `commit`, `add`, `reset`, `branch`, …) will operate
+  on the launch-dir repo — for example moving a branch in the **wrong** worktree.
+
+**Always pass `path` explicitly** when calling from a worktree, subdirectory, or any
+location other than where the server was launched:
+
+```jsonc
+// Correct — operates on the caller's worktree
+status   { "path": "/path/to/my/worktree" }
+checkout { "path": "/path/to/my/worktree", "branch": "feature", "create": true }
+```
+
 ## Example
 
 **`status` output:**

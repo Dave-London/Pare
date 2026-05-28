@@ -13,7 +13,7 @@ export function registerCheckoutTool(server: McpServer) {
     {
       title: "Git Checkout",
       description:
-        "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status.",
+        "Switches branches or restores files. Returns structured data with ref, previous ref, whether a new branch was created, and detached HEAD status. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's, which can move branches in the wrong worktree (see #876).",
       annotations: { readOnlyHint: false },
       inputSchema: {
         path: repoPathInput,

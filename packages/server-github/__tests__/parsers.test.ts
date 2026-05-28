@@ -1670,3 +1670,88 @@ describe("parseRunRerun — job and failed-only modes", () => {
     expect(result.status).toBe("requested-full");
   });
 });
+
+// ── Empty / whitespace stdout guards (#905) ─────────────────────────
+//
+// Several `gh ... list` and `gh ... view` commands can exit 0 but print EMPTY
+// stdout (not `[]` / `{}`) when nothing matches — e.g. `gh pr list --search`,
+// `gh issue list`. Passing that to `JSON.parse` throws
+// "Unexpected end of JSON input". These parsers must treat empty/whitespace
+// input as an empty/default result rather than throwing.
+describe("empty/whitespace stdout guards (#905)", () => {
+  const EMPTY_INPUTS = ["", "   ", "\n"];
+
+  describe("array/list parsers return an empty list", () => {
+    for (const input of EMPTY_INPUTS) {
+      const label = JSON.stringify(input);
+
+      it(`parsePrList(${label})`, () => {
+        expect(() => parsePrList(input)).not.toThrow();
+        expect(parsePrList(input).prs).toEqual([]);
+      });
+
+      it(`parseIssueList(${label})`, () => {
+        expect(() => parseIssueList(input)).not.toThrow();
+        expect(parseIssueList(input).issues).toEqual([]);
+      });
+
+      it(`parseRunList(${label})`, () => {
+        expect(() => parseRunList(input)).not.toThrow();
+        expect(parseRunList(input).runs).toEqual([]);
+      });
+
+      it(`parseReleaseList(${label})`, () => {
+        expect(() => parseReleaseList(input)).not.toThrow();
+        expect(parseReleaseList(input).releases).toEqual([]);
+      });
+
+      it(`parseDiscussionList(${label})`, () => {
+        expect(() => parseDiscussionList(input)).not.toThrow();
+        expect(parseDiscussionList(input).discussions).toEqual([]);
+      });
+    }
+  });
+
+  describe("view/object parsers return a default result", () => {
+    for (const input of EMPTY_INPUTS) {
+      const label = JSON.stringify(input);
+
+      it(`parsePrView(${label})`, () => {
+        expect(() => parsePrView(input)).not.toThrow();
+        const result = parsePrView(input);
+        // Defaults are applied; array-bearing fields stay empty.
+        expect(result.checks).toEqual([]);
+        expect(result.mergeable).toBe("UNKNOWN");
+      });
+
+      it(`parsePrChecks(${label})`, () => {
+        expect(() => parsePrChecks(input, 7)).not.toThrow();
+        const result = parsePrChecks(input, 7);
+        expect(result.pr).toBe(7);
+        expect(result.checks).toEqual([]);
+        expect(result.summary.total).toBe(0);
+      });
+
+      it(`parseIssueView(${label})`, () => {
+        expect(() => parseIssueView(input)).not.toThrow();
+        const result = parseIssueView(input);
+        expect(result.labels).toEqual([]);
+        expect(result.assignees).toEqual([]);
+      });
+
+      it(`parseRunView(${label})`, () => {
+        expect(() => parseRunView(input)).not.toThrow();
+        const result = parseRunView(input);
+        expect(result.jobs).toEqual([]);
+      });
+
+      it(`parseRepoView(${label})`, () => {
+        expect(() => parseRepoView(input)).not.toThrow();
+        const result = parseRepoView(input);
+        expect(result.name).toBe("");
+        expect(result.defaultBranch).toBe("main");
+        expect(result.stars).toBe(0);
+      });
+    }
+  });
+});

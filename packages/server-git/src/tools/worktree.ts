@@ -73,7 +73,9 @@ export function registerWorktreeTool(server: McpServer) {
         listVerbose: z
           .boolean()
           .optional()
-          .describe("Verbose list output showing locked/prunable details (-v on list)"),
+          .describe(
+            "Include locked/prunable details on list. Always surfaced via the porcelain parser; this flag is accepted for compatibility and never passes git's -v (which conflicts with --porcelain).",
+          ),
         reason: z
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
@@ -98,8 +100,12 @@ export function registerWorktreeTool(server: McpServer) {
       const action = params.action || "list";
 
       if (action === "list") {
+        // `--porcelain` already emits the `locked <reason>` and `prunable <reason>`
+        // attribute lines that `-v/--verbose` surfaces in the human format, and git
+        // rejects `--verbose` alongside `--porcelain` (they are mutually exclusive).
+        // So we never pass `-v` here — `listVerbose` is honored by the porcelain parser,
+        // which captures the locked/prunable detail into the structured output. See #906.
         const listArgs = ["worktree", "list", "--porcelain"];
-        if (params.listVerbose) listArgs.push("-v");
         const result = await git(listArgs, cwd);
 
         if (result.exitCode !== 0) {

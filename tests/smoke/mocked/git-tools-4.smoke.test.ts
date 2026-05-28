@@ -915,16 +915,25 @@ describe("Smoke: git.worktree", () => {
     expect(args).toContain("--reason=in use by CI");
   });
 
-  // S14: Verbose list
-  it("S14 [P2] listVerbose passes -v flag", async () => {
+  // S14: Verbose list — #906: -v conflicts with --porcelain, so listVerbose must
+  // never pass -v. Locked/prunable detail is surfaced via the porcelain parser instead.
+  it("S14 [P2] listVerbose surfaces locked/prunable detail without passing -v", async () => {
     mockGit(
       "worktree /home/user/project\nHEAD abc1234567890abcdef1234567890abcdef123456\nbranch refs/heads/main\n\n" +
         "worktree /home/user/project-wt\nHEAD def5678901234567890abcdef1234567890abcdef\nbranch refs/heads/feature\nlocked in use\n\n",
     );
 
-    await callAndValidate({ listVerbose: true });
+    const { parsed } = await callAndValidate({ listVerbose: true, compact: false });
     const args = vi.mocked(git).mock.calls[0][0];
-    expect(args).toContain("-v");
+    // git rejects --verbose alongside --porcelain, so -v must not be passed.
+    expect(args).toEqual(["worktree", "list", "--porcelain"]);
+    expect(args).not.toContain("-v");
+    expect(args).not.toContain("--verbose");
+
+    // Locked detail comes through the porcelain parser.
+    const worktrees = parsed.worktrees as Array<Record<string, unknown>>;
+    expect(worktrees[1].locked).toBe(true);
+    expect(worktrees[1].lockReason).toBe("in use");
   });
 
   // S15: Compact vs full output

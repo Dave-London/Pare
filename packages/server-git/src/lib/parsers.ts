@@ -1763,6 +1763,7 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
     let locked: boolean | undefined;
     let lockReason: string | undefined;
     let prunable: boolean | undefined;
+    let prunableReason: string | undefined;
 
     for (const line of lines) {
       if (line.startsWith("worktree ")) {
@@ -1782,6 +1783,8 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
         if (reason) lockReason = reason;
       } else if (line === "prunable" || line.startsWith("prunable ")) {
         prunable = true;
+        const reason = line.slice("prunable".length).trim();
+        if (reason) prunableReason = reason;
       }
     }
 
@@ -1793,6 +1796,7 @@ export function parseWorktreeList(stdout: string): GitWorktreeListFull {
       ...(locked ? { locked } : {}),
       ...(lockReason ? { lockReason } : {}),
       ...(prunable ? { prunable } : {}),
+      ...(prunableReason ? { prunableReason } : {}),
     };
   });
 
