@@ -702,7 +702,11 @@ export function formatWorktreeList(w: GitWorktreeListFull): string {
       const bare = wt.bare ? " [bare]" : "";
       const branch = wt.branch ? ` (${wt.branch})` : "";
       const locked = wt.locked ? (wt.lockReason ? ` [locked: ${wt.lockReason}]` : " [locked]") : "";
-      const prunable = wt.prunable ? " [prunable]" : "";
+      const prunable = wt.prunable
+        ? wt.prunableReason
+          ? ` [prunable: ${wt.prunableReason}]`
+          : " [prunable]"
+        : "";
       return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}${locked}${prunable}`;
     })
     .join("\n");

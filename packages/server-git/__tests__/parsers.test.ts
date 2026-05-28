@@ -1621,6 +1621,21 @@ describe("parseWorktreeList — locked/prunable fields", () => {
 
     const result = parseWorktreeList(stdout);
     expect(result.worktrees[0].prunable).toBe(true);
+    expect(result.worktrees[0].prunableReason).toBeUndefined();
+  });
+
+  it("parses prunable worktree with reason (#906)", () => {
+    const stdout = [
+      "worktree /home/user/repo-stale",
+      "HEAD abc1234567890abcdef1234567890abcdef123456",
+      "branch refs/heads/old-branch",
+      "prunable gitdir file points to non-existent location",
+      "",
+    ].join("\n");
+
+    const result = parseWorktreeList(stdout);
+    expect(result.worktrees[0].prunable).toBe(true);
+    expect(result.worktrees[0].prunableReason).toBe("gitdir file points to non-existent location");
   });
 
   it("parses locked and prunable worktree", () => {
