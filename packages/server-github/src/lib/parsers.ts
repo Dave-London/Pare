@@ -920,9 +920,13 @@ export function parseGistCreate(
 
 /**
  * Parses `gh label list --json ...` output into structured label list data.
+ * Handles empty stdout gracefully: `gh label list --search <term>` exits 0 but
+ * prints nothing (not `[]`) when no labels match. Treat that as an empty list
+ * rather than letting `JSON.parse("")` throw "Unexpected end of JSON input".
  */
 export function parseLabelList(json: string): LabelListResult {
-  const raw = JSON.parse(json);
+  const trimmed = json.trim();
+  const raw = trimmed ? JSON.parse(trimmed) : [];
   const items = Array.isArray(raw) ? raw : [];
 
   const labels = items.map(

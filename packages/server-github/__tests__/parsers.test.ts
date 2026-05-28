@@ -868,6 +868,16 @@ describe("parseLabelList", () => {
     expect(result.labels).toEqual([]);
   });
 
+  it("handles empty stdout (gh label list --search returns nothing when no match)", () => {
+    // `gh label list --search <term>` exits 0 but prints empty stdout when no
+    // labels match. Ensure we return an empty list rather than throwing
+    // "Unexpected end of JSON input".
+    expect(() => parseLabelList("")).not.toThrow();
+    expect(parseLabelList("").labels).toEqual([]);
+    expect(parseLabelList("   ").labels).toEqual([]);
+    expect(parseLabelList("\n").labels).toEqual([]);
+  });
+
   it("handles missing optional fields", () => {
     const json = JSON.stringify([{ name: "test" }]);
 
