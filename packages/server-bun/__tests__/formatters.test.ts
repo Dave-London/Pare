@@ -361,4 +361,20 @@ describe("compactPmLsMap + formatPmLsCompact", () => {
     };
     expect(formatPmLsCompact(compactPmLsMap(data))).toContain("1 packages");
   });
+
+  it("keeps compact output compatible with pm-ls schema", () => {
+    const data: BunPmLsResult = {
+      success: true,
+      packages: [{ name: "a", version: "1.0.0" }],
+      total: 1,
+      duration: 50,
+    };
+
+    expect(compactPmLsMap(data)).toEqual({
+      success: true,
+      packages: [],
+      total: 1,
+      duration: 50,
+    });
+  });
 });

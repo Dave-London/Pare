@@ -294,6 +294,7 @@ export function formatOutdatedCompact(data: BunOutdatedCompact): string {
 export interface BunPmLsCompact {
   [key: string]: unknown;
   success: boolean;
+  packages: [];
   total: number;
   duration: number;
 }
@@ -301,6 +302,7 @@ export interface BunPmLsCompact {
 export function compactPmLsMap(data: BunPmLsResult): BunPmLsCompact {
   return {
     success: data.success,
+    packages: [],
     total: data.total,
     duration: data.duration,
   };
