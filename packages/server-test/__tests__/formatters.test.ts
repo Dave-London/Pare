@@ -138,6 +138,20 @@ describe("formatTestRun", () => {
     expect(output).toContain("0 failed");
     expect(output).toContain("5 skipped");
   });
+
+  it("shows ERROR (not PASS) when a load failure error is present", () => {
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 0, passed: 0, failed: 0, skipped: 0, duration: 0 },
+      failures: [],
+      error: "Test runner exited with code 1 but reported no tests.\nSyntaxError: boom",
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("ERROR");
+    expect(output).not.toMatch(/\bPASS\b/);
+    expect(output).toContain("exited with code 1");
+  });
 });
 
 describe("formatCoverage", () => {

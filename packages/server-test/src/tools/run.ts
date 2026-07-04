@@ -8,6 +8,7 @@ import {
   compactDualOutput,
   run,
   assertNoFlagInjection,
+  assertSafePassthroughArg,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -22,7 +23,7 @@ import { parseJestJson } from "../lib/parsers/jest.js";
 import { parseVitestJson } from "../lib/parsers/vitest.js";
 import { parseMochaJson } from "../lib/parsers/mocha.js";
 import { formatTestRun, compactTestRunMap, formatTestRunCompact } from "../lib/formatters.js";
-import { TestRunSchema } from "../schemas/index.js";
+import { TestRunSchema, type TestRun } from "../schemas/index.js";
 import { TEST_CLI_TIMEOUT_MS } from "../lib/timeouts.js";
 
 /** Exported for unit testing. */
@@ -255,6 +256,41 @@ export function buildRunExtraArgs(
   return extraArgs;
 }
 
+/**
+ * Detects a "silent green" load/collection failure and attaches a top-level
+ * `error` so callers never mistake it for a pass.
+ *
+ * When a test file throws at import/collection time (syntax error, bad import),
+ * or a filter matches no tests, the runner exits non-zero but the parsed totals
+ * are `{ total: 0, failed: 0 }` — which reads as PASS. If the runner exited
+ * non-zero AND no tests/failures were parsed, we surface an `error` describing
+ * the failure (with the runner's stderr/stdout for context).
+ *
+ * Exported for unit testing. See issues #928 and #931.
+ */
+export function surfaceLoadFailure(
+  testRun: TestRun,
+  result: { exitCode: number; stdout: string; stderr: string },
+): TestRun {
+  const noResults = testRun.summary.total === 0 && testRun.failures.length === 0;
+  if (result.exitCode === 0 || !noResults) {
+    return testRun;
+  }
+
+  const detail = (result.stderr.trim() || result.stdout.trim()).trim();
+  const MAX_DETAIL = 2000;
+  const truncated =
+    detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL)}\n… (output truncated)` : detail;
+
+  const message =
+    `Test runner exited with code ${result.exitCode} but reported no tests. ` +
+    `The suite likely failed to load or collect (import/syntax error), or a filter matched no tests. ` +
+    `This is not a passing run.` +
+    (truncated ? `\n${truncated}` : "");
+
+  return { ...testRun, error: message };
+}
+
 /** Registers the `run` tool on the given MCP server. */
 export function registerRunTool(server: McpServer) {
   server.registerTool(
@@ -395,8 +431,12 @@ export function registerRunTool(server: McpServer) {
         assertNoFlagInjection(testNamePattern, "testNamePattern");
       }
       if (args) {
+        // `args` is an explicit passthrough field: the caller intends these to
+        // reach the test runner verbatim, so leading `-`/`--` flags (e.g.
+        // `-p no:logfire`) are allowed. Only NUL/newline control chars are
+        // rejected. See assertSafePassthroughArg.
         for (const arg of args) {
-          assertNoFlagInjection(arg, "args");
+          assertSafePassthroughArg(arg, "args");
         }
       }
 
@@ -445,26 +485,43 @@ export function registerRunTool(server: McpServer) {
       const output = result.stdout + "\n" + result.stderr;
 
       let testRun;
-      switch (detected) {
-        case "pytest":
-          testRun = parsePytestOutput(output);
-          break;
-        case "jest": {
-          const jsonStr = await readJsonOutput(tempPath, output);
-          testRun = parseJestJson(jsonStr);
-          break;
+      try {
+        switch (detected) {
+          case "pytest":
+            testRun = parsePytestOutput(output);
+            break;
+          case "jest": {
+            const jsonStr = await readJsonOutput(tempPath, output);
+            testRun = parseJestJson(jsonStr);
+            break;
+          }
+          case "vitest": {
+            const jsonStr = await readJsonOutput(tempPath, output);
+            testRun = parseVitestJson(jsonStr);
+            break;
+          }
+          case "mocha": {
+            const jsonStr = extractJson(output);
+            testRun = parseMochaJson(jsonStr);
+            break;
+          }
         }
-        case "vitest": {
-          const jsonStr = await readJsonOutput(tempPath, output);
-          testRun = parseVitestJson(jsonStr);
-          break;
-        }
-        case "mocha": {
-          const jsonStr = extractJson(output);
-          testRun = parseMochaJson(jsonStr);
-          break;
-        }
+      } catch (parseError) {
+        // If parsing produced no usable output but the runner succeeded, the
+        // error is genuine (e.g. misconfiguration) — rethrow. If the runner
+        // exited non-zero, the missing/invalid JSON is itself a load/collection
+        // failure, so synthesize an empty run that surfaceLoadFailure will flag.
+        if (result.exitCode === 0) throw parseError;
+        testRun = {
+          framework: detected,
+          summary: { total: 0, passed: 0, failed: 0, skipped: 0, duration: 0 },
+          failures: [],
+        };
       }
+
+      // Guard against "silent green": a non-zero exit with zero parsed tests
+      // must not read as a pass (issues #928, #931).
+      testRun = surfaceLoadFailure(testRun, result);
 
       return compactDualOutput(
         testRun,

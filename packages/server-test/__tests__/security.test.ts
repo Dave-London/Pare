@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { assertNoFlagInjection, INPUT_LIMITS } from "@paretools/shared";
+import { assertNoFlagInjection, assertSafePassthroughArg, INPUT_LIMITS } from "@paretools/shared";
 
 /** Malicious inputs that must be rejected by every guarded parameter. */
 const MALICIOUS_INPUTS = [
@@ -54,26 +54,40 @@ describe("security: test run — filter validation", () => {
   });
 });
 
-describe("security: test run — args validation", () => {
-  it("rejects flag-like args", () => {
-    for (const malicious of MALICIOUS_INPUTS) {
-      expect(() => assertNoFlagInjection(malicious, "args")).toThrow(/must not start with "-"/);
+describe("security: test run — args passthrough validation", () => {
+  // The `args` field is an explicit passthrough: leading `-`/`--` flags are the
+  // caller's intent (e.g. `-p no:logfire` to disable a pytest plugin). Because
+  // execFile does not spawn a shell, these are not shell-interpreted. Only NUL
+  // and newline control characters are rejected. See issue #931.
+  it("accepts legitimate framework flags", () => {
+    const flags = [
+      "-p",
+      "no:logfire",
+      "-p no:cacheprovider",
+      "--maxfail=2",
+      "--no-header",
+      "-rA",
+      "--tb=short",
+    ];
+    for (const flag of flags) {
+      expect(() => assertSafePassthroughArg(flag, "args")).not.toThrow();
     }
   });
 
-  it("accepts safe args values", () => {
+  it("accepts safe non-flag args values", () => {
     for (const safe of SAFE_INPUTS) {
-      expect(() => assertNoFlagInjection(safe, "args")).not.toThrow();
+      expect(() => assertSafePassthroughArg(safe, "args")).not.toThrow();
+    }
+  });
+
+  it("rejects args containing NUL or newline control characters", () => {
+    for (const bad of ["foo\0bar", "line1\nline2", "carriage\rreturn"]) {
+      expect(() => assertSafePassthroughArg(bad, "args")).toThrow(/NUL or newline/);
     }
   });
 
   it("includes the parameter name in the error message", () => {
-    expect(() => assertNoFlagInjection("--bail", "args")).toThrow(/args/);
-  });
-
-  it("includes the invalid value in the error message", () => {
-    expect(() => assertNoFlagInjection("--bail", "args")).toThrow(/--bail/);
-    expect(() => assertNoFlagInjection("-x", "args")).toThrow(/-x/);
+    expect(() => assertSafePassthroughArg("bad\0", "args")).toThrow(/args/);
   });
 });
 
