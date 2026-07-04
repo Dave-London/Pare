@@ -222,4 +222,74 @@ describe("pr-checks tool handler — watch path", () => {
     expect(out.structuredContent.pollCount).toBe(1);
     expect(typeof out.structuredContent.waitedSeconds).toBe("number");
   });
+
+  it("sets conclusion=passed and timedOut=false when all checks pass (watch)", async () => {
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: checksJson([{ name: "lint", state: "SUCCESS", bucket: "pass" }]),
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+
+    const out = await handler({ number: "12", watch: true, interval: 5 });
+    expect(out.structuredContent.conclusion).toBe("passed");
+    expect(out.structuredContent.timedOut).toBe(false);
+  });
+
+  it("sets conclusion=failed when a check is failing (watch)", async () => {
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: checksJson([
+        { name: "lint", state: "SUCCESS", bucket: "pass" },
+        { name: "test", state: "FAILURE", bucket: "fail" },
+      ]),
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+
+    const out = await handler({ number: "12", watch: true, interval: 5 });
+    expect(out.structuredContent.conclusion).toBe("failed");
+    expect(out.structuredContent.timedOut).toBe(false);
+  });
+
+  it("returns a structured timed_out snapshot instead of throwing on timeout", async () => {
+    // Always pending → the watch loop hits its deadline.
+    vi.mocked(ghCmd).mockResolvedValue({
+      stdout: checksJson([{ name: "build", state: "PENDING", bucket: "pending" }]),
+      stderr: "",
+      exitCode: 8,
+    });
+
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+
+    // interval floor is 5s, watchTimeout 1s → the deadline check trips on the
+    // first iteration (0 + 5000 > 1000), so the loop never actually sleeps.
+    const out = await handler({ number: "12", watch: true, interval: 5, watchTimeout: 1 });
+    expect(out.structuredContent.timedOut).toBe(true);
+    expect(out.structuredContent.conclusion).toBe("timed_out");
+    expect(out.structuredContent.errorType).toBe("watch-timeout");
+  });
+
+  it("sets conclusion on a one-shot (non-watch) snapshot", async () => {
+    vi.mocked(ghCmd).mockResolvedValueOnce({
+      stdout: checksJson([{ name: "lint", state: "SUCCESS", bucket: "pass" }]),
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const server = new FakeServer();
+    registerPrChecksTool(server as never);
+    const handler = server.tools.get("pr-checks")!.handler;
+
+    const out = await handler({ number: "12" });
+    expect(out.structuredContent.conclusion).toBe("passed");
+  });
 });

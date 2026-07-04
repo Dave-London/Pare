@@ -44,6 +44,19 @@ function pendingCheckNames(data: PrChecksResult): string[] {
     .map((c) => c.name);
 }
 
+/**
+ * Aggregate outcome from the summary buckets so callers can branch without
+ * re-deriving. `failed` wins over `pending` (a red check is actionable even
+ * while others run); `pending` means at least one check is still non-terminal.
+ */
+function deriveConclusion(data: PrChecksResult): "passed" | "failed" | "pending" {
+  const summary = data.summary;
+  if (!summary) return "pending";
+  if (summary.failed > 0 || summary.cancelled > 0) return "failed";
+  if (summary.pending > 0) return "pending";
+  return "passed";
+}
+
 /** Sleeps for `ms` milliseconds. Exposed via parameter for testability. */
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -166,7 +179,7 @@ export function registerPrChecksTool(server: McpServer) {
     {
       title: "PR Checks",
       description:
-        "Lists check/status results for a pull request. Returns structured data with check names, states, URLs, and summary counts (passed, failed, pending). When watch=true, polls internally until all checks complete (or timeout).",
+        'Lists check/status results for a pull request. Returns structured data with check names, states, URLs, summary counts (passed, failed, pending), and a top-level `conclusion` ("passed" | "failed" | "pending" | "timed_out") for easy branching. When watch=true, polls internally until all checks complete or watchTimeout elapses; on timeout it returns the latest snapshot with `timedOut: true` and `conclusion: "timed_out"` rather than throwing.',
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         number: z
@@ -238,13 +251,31 @@ export function registerPrChecksTool(server: McpServer) {
         });
 
         if (watchResult.timedOut) {
-          throw new Error(
-            `pr-checks watch timed out after ${timeoutSeconds}s — checks still pending: ${watchResult.pending.join(", ") || "(none reported)"}`,
+          // Return a structured snapshot rather than throwing, so callers can
+          // branch on `conclusion`/`timedOut` instead of catching an exception.
+          const data: PrChecksResult = {
+            ...watchResult.data,
+            conclusion: "timed_out",
+            timedOut: true,
+            errorType: "watch-timeout",
+            errorMessage: `Watch timed out after ${timeoutSeconds}s — checks still pending: ${watchResult.pending.join(", ") || "(none reported)"}`,
+            pollCount: watchResult.pollCount,
+            waitedSeconds: Math.round(watchResult.waitedSeconds * 100) / 100,
+          };
+          return compactDualOutput(
+            data,
+            JSON.stringify(data.checks ?? []),
+            formatPrChecks,
+            compactPrChecksMap,
+            formatPrChecksCompact,
+            compact === false,
           );
         }
 
         const data: PrChecksResult = {
           ...watchResult.data,
+          conclusion: deriveConclusion(watchResult.data),
+          timedOut: false,
           pollCount: watchResult.pollCount,
           waitedSeconds: Math.round(watchResult.waitedSeconds * 100) / 100,
         };
@@ -279,9 +310,10 @@ export function registerPrChecksTool(server: McpServer) {
         );
       }
 
-      let data;
+      let data: PrChecksResult;
       try {
         data = parsePrChecks(result.stdout, prNum);
+        data.conclusion = deriveConclusion(data);
       } catch {
         const combined = `${result.stdout}\n${result.stderr}`.trim();
         return compactDualOutput(

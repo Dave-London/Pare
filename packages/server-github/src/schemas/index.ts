@@ -284,6 +284,15 @@ export const PrChecksResultSchema = z.object({
     .enum(["not-found", "permission-denied", "in-progress", "watch-timeout", "unknown"])
     .optional(),
   errorMessage: z.string().optional(),
+  /**
+   * Aggregate outcome derived from the check buckets, so callers can branch
+   * without re-deriving from `summary`: "passed" (all terminal, none failed),
+   * "failed" (at least one failed/cancelled), "pending" (checks still running),
+   * or "timed_out" (watch mode hit its deadline with checks still pending).
+   */
+  conclusion: z.enum(["passed", "failed", "pending", "timed_out"]).optional(),
+  /** True when watch mode returned because it hit `watchTimeout` (checks still pending). */
+  timedOut: z.boolean().optional(),
   /** Number of times the wrapper polled gh (only set when watch=true). */
   pollCount: z.number().optional(),
   /** Total wall-clock seconds spent in the watch loop (only set when watch=true). */
