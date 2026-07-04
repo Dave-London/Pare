@@ -296,13 +296,32 @@ export function formatBranchCompact(b: GitBranchCompact): string {
 /** Compact show: hashShort + message + author + date, no diff. */
 export interface GitShowCompact {
   [key: string]: unknown;
-  hashShort: string;
+  hashShort?: string;
   message: string;
   author?: string;
   date?: string;
+  objectType?: GitShow["objectType"];
+  objectName?: string;
+  objectSize?: number;
+  file?: string;
+  fileContent?: string;
 }
 
 export function compactShowMap(s: GitShow): GitShowCompact {
+  // Non-commit objects (blob / tag / tree) carry their payload in fileContent
+  // or message, not in a commit hash. The commit-shaped compact projection
+  // would drop that payload entirely — returning an empty hashShort and no
+  // content — so preserve the object fields instead. (Gap #926)
+  if (s.objectType && s.objectType !== "commit") {
+    return {
+      objectType: s.objectType,
+      message: s.message.split("\n")[0],
+      ...(s.objectName ? { objectName: s.objectName } : {}),
+      ...(s.objectSize !== undefined ? { objectSize: s.objectSize } : {}),
+      ...(s.file ? { file: s.file } : {}),
+      ...(s.fileContent !== undefined ? { fileContent: s.fileContent } : {}),
+    };
+  }
   return {
     hashShort: s.hashShort ?? (s.hash ?? "").slice(0, 7),
     message: s.message.split("\n")[0],
@@ -312,7 +331,17 @@ export function compactShowMap(s: GitShow): GitShowCompact {
 }
 
 export function formatShowCompact(s: GitShowCompact): string {
-  const parts = [`${s.hashShort} ${s.message}`];
+  // Blob extraction: surface the file content (the whole point of the call).
+  if (s.objectType && s.objectType !== "commit") {
+    if (s.fileContent !== undefined) {
+      const size = s.objectSize !== undefined ? ` (${s.objectSize} bytes)` : "";
+      const header = `── ${s.file ?? s.objectName ?? "blob"} @ ${s.objectName ?? "unknown"}${size} ──`;
+      return `${header}\n${s.fileContent}`;
+    }
+    const name = s.objectName ? ` ${s.objectName}` : "";
+    return `${s.objectType}${name}\n${s.message}`;
+  }
+  const parts = [`${s.hashShort ?? ""} ${s.message}`.trim()];
   if (s.author) parts.push(`Author: ${s.author}`);
   if (s.date) parts.push(`Date: ${s.date}`);
   return parts.join("\n");

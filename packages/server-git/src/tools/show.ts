@@ -38,7 +38,7 @@ export function registerShowTool(server: McpServer) {
           .describe("Commit hash, branch, or tag (default: HEAD)"),
         file: z
           .string()
-          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe(
             "File path to extract from the ref (e.g., 'src/index.ts'). Returns raw file content at that ref.",
