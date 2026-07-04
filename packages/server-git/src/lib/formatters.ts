@@ -26,6 +26,7 @@ import type {
   GitTagMutate,
   GitWorktreeListFull,
   GitWorktree,
+  GitWorktreePruneResult,
   GitSubmodule,
   GitArchive,
   GitClean,
@@ -85,7 +86,14 @@ export function formatBranch(b: GitBranchFull): string {
     .map((br) => {
       const prefix = br.current ? "* " : "  ";
       const upstream = br.upstream ? ` -> ${br.upstream}` : "";
-      return `${prefix}${br.name}${upstream}`;
+      // Only present when `mergedInto` was requested — keeps default output unchanged.
+      const merged =
+        br.merged === undefined
+          ? ""
+          : br.merged
+            ? " [merged]"
+            : ` [unmerged${br.unmerged ? ` ${br.unmerged}` : ""}]`;
+      return `${prefix}${br.name}${upstream}${merged}`;
     })
     .join("\n");
 }
@@ -694,6 +702,21 @@ export function formatBisect(b: GitBisect): string {
 
 // ── Worktree formatters ────────────────────────────────────────────────
 
+/**
+ * Builds the optional per-worktree status suffix (dirty/ahead/behind/unpushed/merged).
+ * Returns "" when no status fields are present so default output stays unchanged.
+ */
+function formatWorktreeStatusSuffix(wt: GitWorktreeListFull["worktrees"][number]): string {
+  const parts: string[] = [];
+  if (wt.dirty !== undefined) parts.push(wt.dirty ? "dirty" : "clean");
+  if (wt.ahead !== undefined || wt.behind !== undefined) {
+    parts.push(`ahead ${wt.ahead ?? 0}, behind ${wt.behind ?? 0}`);
+  }
+  if (wt.unpushed !== undefined) parts.push(`unpushed ${wt.unpushed}`);
+  if (wt.merged !== undefined) parts.push(wt.merged ? "merged" : "unmerged");
+  return parts.length > 0 ? ` [${parts.join(", ")}]` : "";
+}
+
 /** Formats structured git worktree list data into a human-readable worktree listing. */
 export function formatWorktreeList(w: GitWorktreeListFull): string {
   if (w.worktrees.length === 0) return "No worktrees found";
@@ -707,7 +730,8 @@ export function formatWorktreeList(w: GitWorktreeListFull): string {
           ? ` [prunable: ${wt.prunableReason}]`
           : " [prunable]"
         : "";
-      return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}${locked}${prunable}`;
+      const status = formatWorktreeStatusSuffix(wt);
+      return `${wt.path}  ${wt.head.slice(0, 8)}${branch}${bare}${locked}${prunable}${status}`;
     })
     .join("\n");
 }
@@ -739,6 +763,25 @@ export function formatWorktree(w: GitWorktree): string {
   const head = w.head ? ` at ${w.head}` : "";
   const target = w.targetPath ? ` -> '${w.targetPath}'` : "";
   return `${action}Worktree at '${w.path}'${target}${branch}${head}`;
+}
+
+/** Formats the result of a `worktree prune-merged` batch operation. */
+export function formatWorktreePrune(w: {
+  base?: string;
+  results?: GitWorktreePruneResult[];
+}): string {
+  const results = w.results ?? [];
+  const removed = results.filter((r) => r.removed);
+  const skipped = results.filter((r) => !r.removed);
+  const lines = [
+    `prune-merged (base ${w.base ?? "?"}): removed ${removed.length}, skipped ${skipped.length}`,
+  ];
+  for (const r of results) {
+    const label = r.removed ? "removed" : `skipped [${r.reason ?? "unknown"}]`;
+    const branch = r.branch ? ` (${r.branch})` : "";
+    lines.push(`  ${label}: ${r.path}${branch}`);
+  }
+  return lines.join("\n");
 }
 
 // ── Bisect run formatter ────────────────────────────────────────────────

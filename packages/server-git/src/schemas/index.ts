@@ -72,6 +72,10 @@ export const GitBranchEntrySchema = z.object({
   current: z.boolean(),
   upstream: z.string().optional(),
   lastCommit: z.string().optional(),
+  /** Whether this branch is fully contained in the `mergedInto` ref (opt-in). */
+  merged: z.boolean().optional(),
+  /** Count of commits on this branch not yet in the `mergedInto` ref (opt-in). */
+  unmerged: z.number().optional(),
 });
 
 /** Zod schema for structured git branch output listing all branches and the current branch. */
@@ -82,7 +86,14 @@ export const GitBranchSchema = z.object({
 
 /** Full branch data (always returned by parser, before compact projection). */
 export type GitBranchFull = {
-  branches: Array<{ name: string; current: boolean; upstream?: string; lastCommit?: string }>;
+  branches: Array<{
+    name: string;
+    current: boolean;
+    upstream?: string;
+    lastCommit?: string;
+    merged?: boolean;
+    unmerged?: number;
+  }>;
   current: string;
 };
 
@@ -598,6 +609,16 @@ export const GitWorktreeEntrySchema = z.object({
   lockReason: z.string().optional(),
   prunable: z.boolean().optional(),
   prunableReason: z.string().optional(),
+  /** Whether the worktree has uncommitted changes (opt-in via withStatus). */
+  dirty: z.boolean().optional(),
+  /** Commits ahead of the tracked upstream (present only when an upstream exists). */
+  ahead: z.number().optional(),
+  /** Commits behind the tracked upstream (present only when an upstream exists). */
+  behind: z.number().optional(),
+  /** Commits on HEAD not reachable from any remote-tracking branch (opt-in). */
+  unpushed: z.number().optional(),
+  /** Whether the worktree HEAD is fully contained in the `mergedInto` ref (opt-in). */
+  merged: z.boolean().optional(),
 });
 
 /** Zod schema for structured git worktree list output. */
@@ -616,6 +637,11 @@ export type GitWorktreeListFull = {
     lockReason?: string;
     prunable?: boolean;
     prunableReason?: string;
+    dirty?: boolean;
+    ahead?: number;
+    behind?: number;
+    unpushed?: number;
+    merged?: boolean;
   }>;
 };
 
@@ -624,7 +650,9 @@ export type GitWorktreeList = z.infer<typeof GitWorktreeListSchema>;
 /** Zod schema for structured git worktree add/remove output. */
 export const GitWorktreeSchema = z.object({
   success: z.boolean(),
-  action: z.enum(["add", "remove", "lock", "unlock", "prune", "move", "repair"]).optional(),
+  action: z
+    .enum(["add", "remove", "lock", "unlock", "prune", "move", "repair", "prune-merged"])
+    .optional(),
   path: z.string(),
   targetPath: z.string().optional(),
   branch: z.string(),
@@ -632,6 +660,19 @@ export const GitWorktreeSchema = z.object({
 });
 
 export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
+
+/** Zod schema for a single per-worktree result of the prune-merged batch operation. */
+export const GitWorktreePruneResultSchema = z.object({
+  path: z.string(),
+  branch: z.string().optional(),
+  removed: z.boolean(),
+  /** Why the worktree was skipped (only present when removed=false). */
+  reason: z
+    .enum(["not-merged", "dirty", "locked", "main", "current", "bare", "remove-failed"])
+    .optional(),
+});
+
+export type GitWorktreePruneResult = z.infer<typeof GitWorktreePruneResultSchema>;
 
 /** Unified Zod schema for all worktree tool output (list + mutate actions).
  *  Uses a single z.object() with optional fields instead of z.union(),
@@ -642,7 +683,9 @@ export const GitWorktreeOutputSchema = z.object({
   /** Present for mutate actions. */
   success: z.boolean().optional(),
   /** Action performed (only present for mutate operations). */
-  action: z.enum(["add", "remove", "lock", "unlock", "prune", "move", "repair"]).optional(),
+  action: z
+    .enum(["add", "remove", "lock", "unlock", "prune", "move", "repair", "prune-merged"])
+    .optional(),
   /** Worktree path (present for mutate actions). */
   path: z.string().optional(),
   /** Target path (only present for move action). */
@@ -651,6 +694,10 @@ export const GitWorktreeOutputSchema = z.object({
   branch: z.string().optional(),
   /** HEAD commit (present for mutate actions). */
   head: z.string().optional(),
+  /** Base ref evaluated (only present for prune-merged). */
+  base: z.string().optional(),
+  /** Per-worktree removal results (only present for prune-merged). */
+  results: z.array(GitWorktreePruneResultSchema).optional(),
 });
 
 /** Type alias for remote mutate results (uses unified GitRemoteSchema). */
