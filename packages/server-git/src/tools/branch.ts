@@ -9,7 +9,7 @@ import {
 } from "@paretools/shared";
 import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
-import { parseBranch } from "../lib/parsers.js";
+import { parseBranch, parseRevListCount } from "../lib/parsers.js";
 import { formatBranch, compactBranchMap, formatBranchCompact } from "../lib/formatters.js";
 import { GitBranchSchema } from "../schemas/index.js";
 
@@ -85,6 +85,13 @@ export function registerBranchTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Filter to branches not merged into HEAD (--no-merged)"),
+        mergedInto: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "Opt-in ancestry check: for each listed branch, add `merged` (fully contained in this ref) and `unmerged` (commit count not yet in the ref). Safe-delete predicate for cleanup workflows.",
+          ),
         remotes: z.boolean().optional().describe("List remote branches only (-r)"),
         verbose: z.boolean().optional().describe("Verbose branch listing (-v)"),
         force: z.coerce
@@ -114,6 +121,7 @@ export function registerBranchTool(server: McpServer) {
       forceDelete,
       merged,
       noMerged,
+      mergedInto,
       remotes,
       verbose,
       force,
@@ -220,13 +228,31 @@ export function registerBranchTool(server: McpServer) {
       }
 
       const branches = parseBranch(result.stdout);
+
+      // Opt-in ancestry / merged predicate (#921). For each branch, count the
+      // commits it carries that are NOT yet in `mergedInto`. Zero ⇒ the branch
+      // is fully contained in the ref (safe to delete). `git rev-list --count
+      // <ref>..<branch>` yields both the boolean and the unmerged count.
+      if (mergedInto) {
+        assertNoFlagInjection(mergedInto, "mergedInto");
+        for (const br of branches.branches) {
+          // Skip placeholder rows like "(HEAD detached at abc123)".
+          if (!br.name || br.name.startsWith("(")) continue;
+          const rev = await git(["rev-list", "--count", `${mergedInto}..${br.name}`], cwd);
+          if (rev.exitCode !== 0) continue;
+          const unmerged = parseRevListCount(rev.stdout);
+          br.merged = unmerged === 0;
+          br.unmerged = unmerged;
+        }
+      }
+
       return compactDualOutput(
         branches,
         result.stdout,
         formatBranch,
         compactBranchMap,
         formatBranchCompact,
-        compact === false,
+        compact === false || !!mergedInto,
       );
     },
   );

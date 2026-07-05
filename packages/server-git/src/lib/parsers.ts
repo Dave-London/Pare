@@ -24,6 +24,7 @@ import type {
   GitBisect,
   GitWorktreeListFull,
   GitWorktree,
+  GitWorktreePruneResult,
   ReflogAction,
   GitSubmoduleEntry,
   GitClean,
@@ -1821,6 +1822,67 @@ export function parseWorktreeResult(
     branch,
     ...(head ? { head } : {}),
   };
+}
+
+/** Parses the numeric output of `git rev-list --count <range>` into an integer (0 on empty/invalid). */
+export function parseRevListCount(stdout: string): number {
+  const n = parseInt(stdout.trim(), 10);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+/**
+ * Normalizes a worktree path for cross-platform equality comparison:
+ * backslashes → forward slashes, strip trailing slash, lowercase (git worktree
+ * paths land on case-insensitive filesystems on Windows/macOS).
+ */
+export function normalizeWorktreePath(p: string): string {
+  return p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+}
+
+/** True when two worktree paths refer to the same location (after normalization). */
+export function worktreePathsEqual(a: string, b: string): boolean {
+  return normalizeWorktreePath(a) === normalizeWorktreePath(b);
+}
+
+/**
+ * Pure safe-cleanup decision for `worktree prune-merged`.
+ *
+ * Given the parsed worktree entries — each annotated with `merged` (HEAD fully
+ * contained in the base ref) and `dirty` — decides which worktrees may be
+ * removed. Guards: never touch the bare repo, the main worktree, the current
+ * worktree, or a locked worktree; never remove an unmerged worktree; and never
+ * remove a dirty worktree when `requireClean` is set. Returns a per-path result.
+ */
+export function decidePruneMerged(
+  worktrees: Array<{
+    path: string;
+    branch: string;
+    bare: boolean;
+    locked?: boolean;
+    merged?: boolean;
+    dirty?: boolean;
+  }>,
+  opts: { mainPath: string; currentPath: string; requireClean: boolean },
+): GitWorktreePruneResult[] {
+  return worktrees.map((wt) => {
+    const base: { path: string; branch?: string } = {
+      path: wt.path,
+      ...(wt.branch ? { branch: wt.branch } : {}),
+    };
+    const skip = (reason: GitWorktreePruneResult["reason"]): GitWorktreePruneResult => ({
+      ...base,
+      removed: false,
+      reason,
+    });
+
+    if (wt.bare) return skip("bare");
+    if (worktreePathsEqual(wt.path, opts.mainPath)) return skip("main");
+    if (worktreePathsEqual(wt.path, opts.currentPath)) return skip("current");
+    if (wt.locked) return skip("locked");
+    if (!wt.merged) return skip("not-merged");
+    if (opts.requireClean && wt.dirty) return skip("dirty");
+    return { ...base, removed: true };
+  });
 }
 
 /** Parses `git bisect run <cmd>` output into structured bisect run result data. */
