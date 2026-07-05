@@ -1,5 +1,14 @@
 # @paretools/test
 
+## 0.21.0
+
+### Patch Changes
+
+- [#964](https://github.com/Dave-London/Pare/pull/964) [`cfbe390`](https://github.com/Dave-London/Pare/commit/cfbe3909f69d0990864015d2179456b7dda3752e) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): surface load/collection failures instead of reporting silent green, and allow flag-prefixed passthrough args
+
+- Updated dependencies []:
+  - @paretools/shared@0.21.0
+
 ## 0.20.0
 
 ### Patch Changes

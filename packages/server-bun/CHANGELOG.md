@@ -1,5 +1,14 @@
 # @paretools/bun
 
+## 0.21.0
+
+### Patch Changes
+
+- [#970](https://github.com/Dave-London/Pare/pull/970) [`65a27a0`](https://github.com/Dave-London/Pare/commit/65a27a0ff41ac45b8b74719abd07130a69155208) Thanks [@jamesx0416](https://github.com/jamesx0416)! - fix(bun): allow compact outdated and pm ls output to omit package details
+
+- Updated dependencies []:
+  - @paretools/shared@0.21.0
+
 ## 0.20.0
 
 ### Patch Changes
