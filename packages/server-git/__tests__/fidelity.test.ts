@@ -1022,8 +1022,13 @@ describe("fidelity: git log-graph (fixture-based)", () => {
     const raw = gitRaw(["log", "--graph", "--oneline", "--decorate", "--max-count=5"]);
     const result = parseLogGraph(raw);
 
-    // Cross-check with oneline output for commit count
-    const rawOneline = gitRaw(["log", "--oneline", "--max-count=5"]);
+    // Cross-check with an independent oneline traversal. `--graph` implies
+    // --topo-order, whereas a plain `git log` is reverse-chronological, so in a
+    // repo containing merge commits the two orderings can select *different*
+    // 5-commit windows — making this assertion fail non-deterministically on
+    // whatever local HEAD it runs against. Force --topo-order here so both
+    // traversals cover the same commits regardless of branch topology.
+    const rawOneline = gitRaw(["log", "--oneline", "--topo-order", "--max-count=5"]);
     const rawHashes = rawOneline
       .trim()
       .split("\n")
@@ -1032,7 +1037,8 @@ describe("fidelity: git log-graph (fixture-based)", () => {
 
     const graphHashes = result.commits.filter((c) => c.hashShort !== "").map((c) => c.hashShort);
 
-    // Every hash from oneline should appear in graph output
+    // Every hash from the (topo-ordered) oneline output must appear in the
+    // parsed graph output — i.e. parseLogGraph drops no commits.
     for (const hash of rawHashes) {
       expect(graphHashes).toContain(hash);
     }
