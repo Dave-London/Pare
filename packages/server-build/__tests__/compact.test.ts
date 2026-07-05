@@ -115,12 +115,43 @@ describe("compactTscMap", () => {
     expect(compact.warnings).toBe(0);
     expect(compact.diagnostics).toEqual([]);
   });
+
+  // #965: propagate the failure detail through the compact projection.
+  it("carries the error field for a diagnostic-less failure", () => {
+    const data: TscResult = {
+      success: false,
+      diagnostics: [],
+      errors: 0,
+      warnings: 0,
+      error: "error TS18003: No inputs were found.",
+    };
+
+    const compact = compactTscMap(data);
+    expect(compact.success).toBe(false);
+    expect(compact.error).toBe("error TS18003: No inputs were found.");
+  });
 });
 
 describe("formatTscCompact", () => {
   it("formats clean result", () => {
     const compact = { success: true, errors: 0, warnings: 0, diagnostics: [] };
     expect(formatTscCompact(compact)).toBe("TypeScript: no errors found.");
+  });
+
+  // #965: a failed run with no parseable diagnostics must NOT read as
+  // "no errors found" just because the error/warning counts are zero.
+  it("shows the failure instead of 'no errors found' when a run failed silently", () => {
+    const compact = {
+      success: false,
+      errors: 0,
+      warnings: 0,
+      diagnostics: [],
+      error: "error TS18003: No inputs were found in config file 'tsconfig.json'.",
+    };
+    const output = formatTscCompact(compact);
+    expect(output).not.toContain("no errors found");
+    expect(output).toContain("TypeScript check failed");
+    expect(output).toContain("TS18003");
   });
 
   it("formats compact diagnostics with file:line only", () => {

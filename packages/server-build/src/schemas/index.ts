@@ -20,6 +20,10 @@ export const TscResultSchema = z.object({
   emittedFiles: z.array(z.string()).optional(),
   errors: z.number(),
   warnings: z.number(),
+  /** Raw failure detail when tsc exits non-zero without emitting parseable
+   *  diagnostics (e.g. a tsconfig error or crash) — keeps `success:false` from
+   *  ever being contextless. */
+  error: z.string().optional(),
 });
 
 /** Full tsc diagnostic -- always returned by the parser. */
@@ -42,6 +46,7 @@ export interface TscResult {
   emittedFiles?: string[];
   errors: number;
   warnings: number;
+  error?: string;
 }
 
 /** Zod schema for structured build command output with success status, duration, errors, and warnings.
