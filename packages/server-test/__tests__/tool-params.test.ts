@@ -80,9 +80,13 @@ describe("tool parameter handling", () => {
       expect(summary.total).toEqual(expect.any(Number));
     }, 300_000);
 
-    it("rejects flag-like args to prevent flag injection", async () => {
+    it("accepts flag-like passthrough args (no flag-injection rejection)", async () => {
       const gitPkgPath = resolve(__dirname, "../../server-git");
-      // args[] elements are validated with assertNoFlagInjection to prevent injection
+      // `args` is an explicit passthrough field: leading-dash framework flags
+      // are the caller's intent and must NOT be rejected as flag injection.
+      // Previously "--"-prefixed args were blocked; issue #931 loosened this so
+      // legitimate flags (e.g. pytest's `-p no:logfire`) work. execFile means
+      // args are never shell-interpreted.
       const result = await client.callTool(
         {
           name: "run",
@@ -90,14 +94,35 @@ describe("tool parameter handling", () => {
             path: gitPkgPath,
             framework: "vitest",
             filter: "parsers",
-            args: ["--bail", "1"],
+            args: ["--no-color"],
           },
         },
         undefined,
         CALL_TIMEOUT,
       );
 
-      // Should error — flag-like args are blocked by assertNoFlagInjection
+      // Must NOT be rejected by validation — the flag is passed through to vitest.
+      expect(result.isError).toBeFalsy();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc?.framework).toBe("vitest");
+    }, 300_000);
+
+    it("rejects args containing control characters", async () => {
+      const gitPkgPath = resolve(__dirname, "../../server-git");
+      // NUL/newline are still rejected — they can corrupt argument boundaries.
+      const result = await client.callTool(
+        {
+          name: "run",
+          arguments: {
+            path: gitPkgPath,
+            framework: "vitest",
+            args: ["line1\nline2"],
+          },
+        },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
       expect(result.isError).toBe(true);
     }, 300_000);
 

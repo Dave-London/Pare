@@ -34,6 +34,12 @@ export const TestRunSchema = z.object({
       }),
     )
     .optional(),
+  /**
+   * Present when the runner exited non-zero but reported no tests — i.e. the
+   * suite failed to load/collect (import/syntax error) or a filter matched
+   * nothing. A run with this field set MUST NOT be treated as a pass.
+   */
+  error: z.string().optional(),
 });
 
 export type TestRun = z.infer<typeof TestRunSchema>;
