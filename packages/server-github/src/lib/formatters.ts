@@ -172,6 +172,8 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
     pr: data.pr,
     checks: data.checks ?? [],
     summary,
+    ...(data.conclusion ? { conclusion: data.conclusion } : {}),
+    ...(data.timedOut !== undefined ? { timedOut: data.timedOut } : {}),
     ...(data.errorType ? { errorType: data.errorType } : {}),
     ...(data.errorMessage ? { errorMessage: data.errorMessage } : {}),
     ...(data.pollCount !== undefined ? { pollCount: data.pollCount } : {}),
