@@ -25,6 +25,7 @@ import {
   compactPmLsMap,
   formatPmLsCompact,
 } from "../src/lib/formatters.js";
+import { BunOutdatedResultSchema, BunPmLsResultSchema } from "../src/schemas/index.js";
 import type {
   BunRunResult,
   BunTestResult,
@@ -323,6 +324,20 @@ describe("compactOutdatedMap + formatOutdatedCompact", () => {
     const data: BunOutdatedResult = { success: true, packages: [], total: 0, duration: 50 };
     expect(formatOutdatedCompact(compactOutdatedMap(data))).toContain("all up to date");
   });
+
+  it("keeps compact output compatible with the outdated schema", () => {
+    const data: BunOutdatedResult = {
+      success: true,
+      packages: [{ name: "a", current: "1.0.0", latest: "2.0.0" }],
+      total: 1,
+      duration: 50,
+    };
+
+    const compact = compactOutdatedMap(data);
+
+    expect(compact).not.toHaveProperty("packages");
+    expect(BunOutdatedResultSchema.parse(compact)).toEqual(compact);
+  });
 });
 
 // ── Pm Ls ───────────────────────────────────────────────────────────
@@ -360,5 +375,19 @@ describe("compactPmLsMap + formatPmLsCompact", () => {
       duration: 50,
     };
     expect(formatPmLsCompact(compactPmLsMap(data))).toContain("1 packages");
+  });
+
+  it("keeps compact output compatible with the pm-ls schema", () => {
+    const data: BunPmLsResult = {
+      success: true,
+      packages: [{ name: "a", version: "1.0.0" }],
+      total: 1,
+      duration: 50,
+    };
+
+    const compact = compactPmLsMap(data);
+
+    expect(compact).not.toHaveProperty("packages");
+    expect(BunPmLsResultSchema.parse(compact)).toEqual(compact);
   });
 });

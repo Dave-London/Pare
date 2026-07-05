@@ -131,5 +131,5 @@ All packages are up to date.
 ## Notes
 
 - Each outdated package includes `name`, `current`, `latest`, and optionally `wanted` version fields
-- Compact mode drops the `packages` array, keeping only `success`, `total`, and `duration`
+- Compact mode omits the `packages` array, keeping only `success`, `total`, and `duration`
 - The `wanted` field represents the highest version matching the semver range in package.json

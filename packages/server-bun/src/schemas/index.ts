@@ -109,7 +109,7 @@ export const BunOutdatedEntrySchema = z.object({
 /** Zod schema for structured `bun outdated` output. */
 export const BunOutdatedResultSchema = z.object({
   success: z.boolean(),
-  packages: z.array(BunOutdatedEntrySchema),
+  packages: z.array(BunOutdatedEntrySchema).optional(),
   total: z.number(),
   duration: z.number(),
 });
@@ -126,7 +126,7 @@ export const BunPmLsEntrySchema = z.object({
 /** Zod schema for structured `bun pm ls` output. */
 export const BunPmLsResultSchema = z.object({
   success: z.boolean(),
-  packages: z.array(BunPmLsEntrySchema),
+  packages: z.array(BunPmLsEntrySchema).optional(),
   total: z.number(),
   duration: z.number(),
 });
