@@ -1134,24 +1134,24 @@ Consolidated scenario mapping for k8s (5 tools), search (4 tools), http (4 tools
 
 ### Scenarios
 
-| #   | Scenario                             | Params                                                                                                  | Expected Output                                                                                    | Priority                | Status                   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------ | -------- | -------- |
-| 1   | Run a simple command                 | `{ command: "echo", args: ["hello"] }`                                                                  | `{ command: "echo", exitCode: 0, success: true, stdout: "hello\n", duration: N, timedOut: false }` | P0                      | complete                 |
-| 2   | Command not found                    | `{ command: "nonexistent_command_xyz" }`                                                                | Error thrown (command not found)                                                                   | P0                      | complete                 |
-| 3   | Command exits with error             | `{ command: "node", args: ["-e", "process.exit(42)"] }`                                                 | `{ exitCode: 42, success: false }`                                                                 | P0                      | complete                 |
-| 4   | Empty stdout and stderr              | `{ command: "true" }`                                                                                   | `{ exitCode: 0, stdout: "", stderr: "" }`                                                          | P0                      | complete                 |
-| 5   | Policy-blocked command               | `{ command: "rm" }` (if PARE_ALLOWED_COMMANDS set)                                                      | `assertAllowedByPolicy` throws                                                                     | P0                      | complete                 |
-| 6   | Timeout handling                     | `{ command: "sleep", args: ["999"], timeout: 1000 }`                                                    | `{ timedOut: true, exitCode: 124, signal: "SIGTERM" }`                                             | P0                      | complete                 |
-| 7   | Stdin input                          | `{ command: "cat", stdin: "hello world" }`                                                              | `{ stdout: "hello world" }`                                                                        | P1                      | complete                 |
-| 8   | Custom environment variables         | `{ command: "node", args: ["-e", "console.log(process.env.MY_VAR)"], env: { MY_VAR: "test" } }`         | `{ stdout: "test\n" }`                                                                             | P1                      | complete                 |
-| 9   | stripEnv isolates environment        | `{ command: "env", stripEnv: true }`                                                                    | Minimal env (only PATH + explicit vars)                                                            | P1                      | complete                 |
-| 10  | Custom working directory             | `{ command: "pwd", cwd: "/tmp" }`                                                                       | `{ stdout: "/tmp\n" }`                                                                             | P1                      | complete                 |
-| 11  | maxOutputLines truncation            | `{ command: "node", args: ["-e", "for(let i=0;i<100;i++) console.log(i)"], maxOutputLines: 5 }`         | `stdout` truncated to 5 lines, `truncated: true`                                                   | P1                      | complete                 |
-| 12  | shell: true enables piping           | `{ command: "echo hello                                                                                 | cat", shell: true }`                                                                               | `{ stdout: "hello\n" }` | P1                       | complete |
-| 13  | shell: false prevents shell features | `{ command: "echo", args: ["hello                                                                       | cat"] }`                                                                                           | `{ stdout: "hello       | cat\n" }` (literal pipe) | P1       | complete |
-| 14  | maxBuffer exceeded                   | `{ command: "node", args: ["-e", "process.stdout.write('x'.repeat(200*1024*1024))"], maxBuffer: 1024 }` | `{ truncated: true }` or buffer error                                                              | P2                      | complete                 |
-| 15  | Custom killSignal                    | `{ command: "sleep", args: ["999"], timeout: 1000, killSignal: "SIGKILL" }`                             | `{ signal: "SIGKILL" }`                                                                            | P2                      | complete                 |
-| 16  | Schema validation                    | all                                                                                                     | Zod parse against `ProcessRunResultSchema` succeeds                                                | P0                      | complete                 |
+| 1 | Run a simple command | `{ command: "echo", args: ["hello"] }` | `{ command: "echo", exitCode: 0, success: true, stdout: "hello\n", duration: N, timedOut: false }` | P0 | complete |
+| 2 | Command not found | `{ command: "nonexistent_command_xyz" }` | Error thrown (command not found) | P0 | complete |
+| 3 | Command exits with error | `{ command: "node", args: ["-e", "process.exit(42)"] }` | `{ exitCode: 42, success: false }` | P0 | complete |
+| 4 | Empty stdout and stderr | `{ command: "true" }` | `{ exitCode: 0, stdout: "", stderr: "" }` | P0 | complete |
+| 5 | Policy-blocked command | `{ command: "rm" }` (if PARE_ALLOWED_COMMANDS set) | `assertAllowedByPolicy` throws | P0 | complete |
+| 6 | Timeout handling | `{ command: "sleep", args: ["999"], timeout: 1000 }` | `{ timedOut: true, exitCode: 124, signal: "SIGTERM" }` | P0 | complete |
+| 7 | Stdin input | `{ command: "cat", stdin: "hello world" }` | `{ stdout: "hello world" }` | P1 | complete |
+| 8 | Custom environment variables | `{ command: "node", args: ["-e", "console.log(process.env.MY_VAR)"], env: { MY_VAR: "test" } }` | `{ stdout: "test\n" }` | P1 | complete |
+| 9 | stripEnv isolates environment | `{ command: "env", stripEnv: true }` | Minimal env (only PATH + explicit vars) | P1 | complete |
+| 10 | Custom working directory | `{ command: "pwd", cwd: "/tmp" }` | `{ stdout: "/tmp\n" }` | P1 | complete |
+| 11 | maxOutputLines truncation | `{ command: "node", args: ["-e", "for(let i=0;i<100;i++) console.log(i)"], maxOutputLines: 5 }` | `stdout` truncated to 5 lines, `truncated: true` | P1 | complete |
+| 12 | shell: true enables piping | `{ command: "echo hello                                                                                 | cat", shell: true }` | `{ stdout: "hello\n" }` | P1 | complete |
+| 13 | shell: false prevents shell features | `{ command: "echo", args: ["hello                                                                       | cat"] }` | `{ stdout: "hello       | cat\n" }` (literal pipe) | P1 | complete |
+| 14 | maxBuffer exceeded | `{ command: "node", args: ["-e", "process.stdout.write('x'.repeat(200*1024*1024))"], maxBuffer: 1024 }` | `{ truncated: true }` or buffer error | P2 | complete |
+| 15 | Custom killSignal | `{ command: "sleep", args: ["999"], timeout: 1000, killSignal: "SIGKILL" }` | `{ signal: "SIGKILL" }` | P2 | complete |
+| 16 | Schema validation | all | Zod parse against `ProcessRunResultSchema` succeeds | P0 | complete |
 
 ### Summary
 

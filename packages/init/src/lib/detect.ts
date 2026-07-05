@@ -12,16 +12,7 @@ export function detectClients(): ClientEntry[] {
 
 /** Ecosystem identifier detected from marker files. */
 export type Ecosystem =
-  | "python"
-  | "rust"
-  | "go"
-  | "web"
-  | "devops"
-  | "make"
-  | "jvm"
-  | "dotnet"
-  | "ruby"
-  | "swift";
+  "python" | "rust" | "go" | "web" | "devops" | "make" | "jvm" | "dotnet" | "ruby" | "swift";
 
 /** Marker files/directories that indicate a particular ecosystem. */
 const ECOSYSTEM_MARKERS: Record<Ecosystem, string[]> = {

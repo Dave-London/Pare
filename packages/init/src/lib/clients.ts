@@ -3,11 +3,7 @@ import { homedir } from "node:os";
 import { isWindows } from "./platform.js";
 
 export type ConfigFormat =
-  | "json-mcpservers"
-  | "json-vscode"
-  | "json-zed"
-  | "toml-codex"
-  | "yaml-continue";
+  "json-mcpservers" | "json-vscode" | "json-zed" | "toml-codex" | "yaml-continue";
 
 export type ConfigScope = "project" | "user";
 

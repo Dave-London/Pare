@@ -1002,9 +1002,7 @@ export function parseCargoAuditJson(
   type Severity = "critical" | "high" | "medium" | "low" | "informational" | "unknown";
 
   const vulnData = data.vulnerabilities as
-    | { list?: Array<Record<string, unknown>> }
-    | Array<Record<string, unknown>>
-    | undefined;
+    { list?: Array<Record<string, unknown>> } | Array<Record<string, unknown>> | undefined;
   const vulnList = Array.isArray(vulnData) ? vulnData : (vulnData?.list ?? []);
   const vulnerabilities = vulnList.map(
     (v: {

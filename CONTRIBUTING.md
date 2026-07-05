@@ -121,9 +121,7 @@ server.registerTool(
   {
     title: "My Tool Command",
     description: "What it does",
-    inputSchema: {
-      /* Zod input params */
-    },
+    inputSchema: {/* Zod input params */},
     outputSchema: MyToolSchema,
   },
   async (params) => {

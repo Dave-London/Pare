@@ -424,22 +424,18 @@ function tryParseListPackageJson(stdout: string): DotnetProjectPackages[] | unde
       project: proj.path ?? "unknown",
       frameworks: (proj.frameworks ?? []).map((fw) => ({
         framework: fw.framework ?? "unknown",
-        topLevel: fw.topLevelPackages?.map(
-          (pkg): DotnetPackageEntry => ({
-            id: pkg.id ?? "unknown",
-            resolved: pkg.resolvedVersion ?? pkg.requestedVersion ?? "unknown",
-            latest: pkg.latestVersion,
-            deprecated: pkg.isDeprecated || undefined,
-          }),
-        ),
-        transitive: fw.transitivePackages?.map(
-          (pkg): DotnetPackageEntry => ({
-            id: pkg.id ?? "unknown",
-            resolved: pkg.resolvedVersion ?? "unknown",
-            latest: pkg.latestVersion,
-            deprecated: pkg.isDeprecated || undefined,
-          }),
-        ),
+        topLevel: fw.topLevelPackages?.map((pkg): DotnetPackageEntry => ({
+          id: pkg.id ?? "unknown",
+          resolved: pkg.resolvedVersion ?? pkg.requestedVersion ?? "unknown",
+          latest: pkg.latestVersion,
+          deprecated: pkg.isDeprecated || undefined,
+        })),
+        transitive: fw.transitivePackages?.map((pkg): DotnetPackageEntry => ({
+          id: pkg.id ?? "unknown",
+          resolved: pkg.resolvedVersion ?? "unknown",
+          latest: pkg.latestVersion,
+          deprecated: pkg.isDeprecated || undefined,
+        })),
       })),
     }));
   } catch {
