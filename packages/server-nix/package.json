@@ -60,6 +60,6 @@
     "@paretools/tsconfig": "workspace:*",
     "@types/node": "^25.9.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }

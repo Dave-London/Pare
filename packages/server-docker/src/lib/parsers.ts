@@ -696,8 +696,7 @@ function parseContainerInspect(obj: Record<string, unknown>): DockerInspect {
 
   // Extract health status from State.Health.Status
   const healthRaw = (state.Health as Record<string, unknown> | undefined)?.Status as
-    | string
-    | undefined;
+    string | undefined;
   const validHealth = ["healthy", "unhealthy", "starting", "none"];
   const healthStatus =
     healthRaw && validHealth.includes(healthRaw.toLowerCase())
@@ -710,8 +709,7 @@ function parseContainerInspect(obj: Record<string, unknown>): DockerInspect {
 
   // Extract restart policy from HostConfig.RestartPolicy.Name
   const restartPolicy = (hostConfig.RestartPolicy as Record<string, unknown> | undefined)?.Name as
-    | string
-    | undefined;
+    string | undefined;
 
   // #111: Extract network settings
   const networkSettings = parseNetworkSettings(
@@ -983,8 +981,7 @@ function parseComposePorts(
         const container = p.TargetPort ?? p.target_port ?? 0;
         const host = p.PublishedPort ?? p.published_port ?? 0;
         const protocol = ((p.Protocol ?? p.protocol ?? "tcp") as string).toLowerCase() as
-          | "tcp"
-          | "udp";
+          "tcp" | "udp";
         return {
           ...(host > 0 ? { host } : {}),
           container,

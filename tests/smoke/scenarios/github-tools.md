@@ -175,21 +175,21 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                                 | Params                                                  | Expected Output                                      | Priority                                           | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------- | -------- | -------- |
-| 1   | Close issue happy path                   | `{ number: "42" }`                                      | `state: "closed"`, `url` populated, `number` correct | P0                                                 | complete |
-| 2   | Close with comment                       | `{ number: "42", comment: "Fixed in PR #50" }`          | `commentUrl` populated                               | P0                                                 | complete |
-| 3   | Close with reason "not planned"          | `{ number: "42", reason: "not planned" }`               | `reason: "not planned"`                              | P0                                                 | complete |
-| 4   | Issue not found                          | `{ number: "999999" }`                                  | `errorType: "not-found"`, `errorMessage` populated   | P0                                                 | complete |
-| 5   | Already closed issue                     | `{ number: "42" }`                                      | `errorType: "already-closed"`, `alreadyClosed: true` | P0                                                 | complete |
-| 6   | Flag injection on number                 | `{ number: "--exec=evil" }`                             | `assertNoFlagInjection` throws                       | P0                                                 | complete |
-| 7   | Flag injection on comment                | `{ number: "42", comment: "--exec=evil" }`              | `assertNoFlagInjection` throws                       | P0                                                 | complete |
-| 8   | Flag injection on repo                   | `{ number: "42", repo: "--exec=evil" }`                 | `assertNoFlagInjection` throws                       | P0                                                 | complete |
-| 9   | Shell escaping in comment (#530 pattern) | `{ number: "42", comment: "Fixed: use `foo              | bar` (see docs)" }`                                  | Comment delivered intact, no shell escaping issues | P0       | complete |
-| 10  | Cross-repo close                         | `{ number: "42", repo: "owner/other-repo" }`            | --repo flag passed, closes in other repo             | P1                                                 | complete |
-| 11  | Close with reason "completed"            | `{ number: "42", reason: "completed" }`                 | `reason: "completed"`                                | P1                                                 | complete |
-| 12  | Permission denied                        | `{ number: "42" }`                                      | `errorType: "permission-denied"`                     | P1                                                 | complete |
-| 13  | Issue number as URL                      | `{ number: "https://github.com/owner/repo/issues/42" }` | Passes URL to gh CLI correctly                       | P2                                                 | complete |
+| 1 | Close issue happy path | `{ number: "42" }` | `state: "closed"`, `url` populated, `number` correct | P0 | complete |
+| 2 | Close with comment | `{ number: "42", comment: "Fixed in PR #50" }` | `commentUrl` populated | P0 | complete |
+| 3 | Close with reason "not planned" | `{ number: "42", reason: "not planned" }` | `reason: "not planned"` | P0 | complete |
+| 4 | Issue not found | `{ number: "999999" }` | `errorType: "not-found"`, `errorMessage` populated | P0 | complete |
+| 5 | Already closed issue | `{ number: "42" }` | `errorType: "already-closed"`, `alreadyClosed: true` | P0 | complete |
+| 6 | Flag injection on number | `{ number: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on comment | `{ number: "42", comment: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on repo | `{ number: "42", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Shell escaping in comment (#530 pattern) | `{ number: "42", comment: "Fixed: use `foo | bar` (see docs)" }` | Comment delivered intact, no shell escaping issues | P0 | complete |
+| 10 | Cross-repo close | `{ number: "42", repo: "owner/other-repo" }` | --repo flag passed, closes in other repo | P1 | complete |
+| 11 | Close with reason "completed" | `{ number: "42", reason: "completed" }` | `reason: "completed"` | P1 | complete |
+| 12 | Permission denied | `{ number: "42" }` | `errorType: "permission-denied"` | P1 | complete |
+| 13 | Issue number as URL | `{ number: "https://github.com/owner/repo/issues/42" }` | Passes URL to gh CLI correctly | P2 | complete |
 
 ### Summary
 
@@ -224,21 +224,21 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                              | Params                                                              | Expected Output                                       | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Create comment happy path             | `{ number: "42", body: "Looks good!" }`                             | `operation: "create"`, `url` populated, `body` echoed | P0                                          | complete |
-| 2   | Issue not found                       | `{ number: "999999", body: "test" }`                                | `errorType: "not-found"`                              | P0                                          | complete |
-| 3   | Flag injection on body                | `{ number: "42", body: "--exec=evil" }`                             | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 4   | Flag injection on number              | `{ number: "--exec=evil", body: "test" }`                           | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 5   | Flag injection on repo                | `{ number: "42", body: "test", repo: "--exec=evil" }`               | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 6   | Shell escaping in body (#530 pattern) | `{ number: "42", body: "Use `cmd                                    | grep` and $(var)" }`                                  | Body delivered intact via --body-file stdin | P0       | complete |
-| 7   | Body with markdown special chars      | `{ number: "42", body: "## Header\n- item\n```code```" }`           | Body preserved with markdown formatting               | P0                                          | complete |
-| 8   | Edit last comment                     | `{ number: "42", body: "Updated", editLast: true }`                 | `operation: "edit"`                                   | P1                                          | complete |
-| 9   | Delete last comment                   | `{ number: "42", body: "", deleteLast: true }`                      | `operation: "delete"`                                 | P1                                          | complete |
-| 10  | Edit with createIfNone                | `{ number: "42", body: "New", editLast: true, createIfNone: true }` | --create-if-none flag passed                          | P1                                          | complete |
-| 11  | Cross-repo comment                    | `{ number: "42", body: "test", repo: "owner/repo" }`                | --repo flag passed                                    | P1                                          | complete |
-| 12  | Permission denied                     | `{ number: "42", body: "test" }`                                    | `errorType: "permission-denied"`                      | P1                                          | complete |
-| 13  | Validation error (empty body edge)    | `{ number: "42", body: "" }`                                        | `errorType: "validation"` or graceful handling        | P2                                          | complete |
+| 1 | Create comment happy path | `{ number: "42", body: "Looks good!" }` | `operation: "create"`, `url` populated, `body` echoed | P0 | complete |
+| 2 | Issue not found | `{ number: "999999", body: "test" }` | `errorType: "not-found"` | P0 | complete |
+| 3 | Flag injection on body | `{ number: "42", body: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 4 | Flag injection on number | `{ number: "--exec=evil", body: "test" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on repo | `{ number: "42", body: "test", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Shell escaping in body (#530 pattern) | `{ number: "42", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 7 | Body with markdown special chars | `{ number: "42", body: "## Header\n- item\n```code```" }` | Body preserved with markdown formatting | P0 | complete |
+| 8 | Edit last comment | `{ number: "42", body: "Updated", editLast: true }` | `operation: "edit"` | P1 | complete |
+| 9 | Delete last comment | `{ number: "42", body: "", deleteLast: true }` | `operation: "delete"` | P1 | complete |
+| 10 | Edit with createIfNone | `{ number: "42", body: "New", editLast: true, createIfNone: true }` | --create-if-none flag passed | P1 | complete |
+| 11 | Cross-repo comment | `{ number: "42", body: "test", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 12 | Permission denied | `{ number: "42", body: "test" }` | `errorType: "permission-denied"` | P1 | complete |
+| 13 | Validation error (empty body edge) | `{ number: "42", body: "" }` | `errorType: "validation"` or graceful handling | P2 | complete |
 
 ### Summary
 
@@ -275,27 +275,27 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                                             | Params                                                   | Expected Output                                               | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ---------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Create issue happy path                              | `{ title: "Bug report", body: "Steps to reproduce..." }` | `number > 0`, `url` populated                                 | P0                                          | complete |
-| 2   | Create with labels                                   | `{ title: "Bug", body: "desc", labels: ["bug", "p0"] }`  | `labelsApplied: ["bug", "p0"]`                                | P0                                          | complete |
-| 3   | Flag injection on title                              | `{ title: "--exec=evil", body: "test" }`                 | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 4   | Flag injection on labels entry                       | `{ title: "t", body: "b", labels: ["--exec=evil"] }`     | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 5   | Flag injection on assignees entry                    | `{ title: "t", body: "b", assignees: ["--exec=evil"] }`  | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 6   | Flag injection on milestone                          | `{ title: "t", body: "b", milestone: "--exec=evil" }`    | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 7   | Flag injection on project                            | `{ title: "t", body: "b", project: "--exec=evil" }`      | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 8   | Flag injection on template                           | `{ title: "t", body: "b", template: "--exec=evil" }`     | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 9   | Flag injection on repo                               | `{ title: "t", body: "b", repo: "--exec=evil" }`         | `assertNoFlagInjection` throws                                | P0                                          | complete |
-| 10  | Shell escaping in body (#530 pattern)                | `{ title: "t", body: "Use `cmd                           | grep` and $(var)" }`                                          | Body delivered intact via --body-file stdin | P0       | complete |
-| 11  | Permission denied                                    | `{ title: "t", body: "b" }`                              | `errorType: "permission-denied"`                              | P0                                          | complete |
-| 12  | Validation error                                     | `{ title: "t", body: "b" }`                              | `errorType: "validation"`                                     | P0                                          | complete |
-| 13  | Create with assignees                                | `{ title: "t", body: "b", assignees: ["user1"] }`        | --assignee flag passed                                        | P1                                          | complete |
-| 14  | Create with milestone                                | `{ title: "t", body: "b", milestone: "v1.0" }`           | --milestone flag passed                                       | P1                                          | complete |
-| 15  | Create with project                                  | `{ title: "t", body: "b", project: "Board" }`            | --project flag passed                                         | P1                                          | complete |
-| 16  | Create with template                                 | `{ title: "t", body: "b", template: "bug_report.md" }`   | --template flag passed                                        | P1                                          | complete |
-| 17  | Cross-repo create                                    | `{ title: "t", body: "b", repo: "owner/repo" }`          | --repo flag passed                                            | P1                                          | complete |
-| 18  | Partial creation (issue created but metadata failed) | `{ title: "t", body: "b", labels: ["nonexistent"] }`     | `partial: true`, `errorType: "partial-created"`, `number > 0` | P1                                          | complete |
-| 19  | Body with long markdown content                      | `{ title: "t", body: "<very long body>" }`               | Body delivered intact, no truncation                          | P2                                          | complete |
+| 1 | Create issue happy path | `{ title: "Bug report", body: "Steps to reproduce..." }` | `number > 0`, `url` populated | P0 | complete |
+| 2 | Create with labels | `{ title: "Bug", body: "desc", labels: ["bug", "p0"] }` | `labelsApplied: ["bug", "p0"]` | P0 | complete |
+| 3 | Flag injection on title | `{ title: "--exec=evil", body: "test" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 4 | Flag injection on labels entry | `{ title: "t", body: "b", labels: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on assignees entry | `{ title: "t", body: "b", assignees: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Flag injection on milestone | `{ title: "t", body: "b", milestone: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on project | `{ title: "t", body: "b", project: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on template | `{ title: "t", body: "b", template: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on repo | `{ title: "t", body: "b", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Shell escaping in body (#530 pattern) | `{ title: "t", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 11 | Permission denied | `{ title: "t", body: "b" }` | `errorType: "permission-denied"` | P0 | complete |
+| 12 | Validation error | `{ title: "t", body: "b" }` | `errorType: "validation"` | P0 | complete |
+| 13 | Create with assignees | `{ title: "t", body: "b", assignees: ["user1"] }` | --assignee flag passed | P1 | complete |
+| 14 | Create with milestone | `{ title: "t", body: "b", milestone: "v1.0" }` | --milestone flag passed | P1 | complete |
+| 15 | Create with project | `{ title: "t", body: "b", project: "Board" }` | --project flag passed | P1 | complete |
+| 16 | Create with template | `{ title: "t", body: "b", template: "bug_report.md" }` | --template flag passed | P1 | complete |
+| 17 | Cross-repo create | `{ title: "t", body: "b", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 18 | Partial creation (issue created but metadata failed) | `{ title: "t", body: "b", labels: ["nonexistent"] }` | `partial: true`, `errorType: "partial-created"`, `number > 0` | P1 | complete |
+| 19 | Body with long markdown content | `{ title: "t", body: "<very long body>" }` | Body delivered intact, no truncation | P2 | complete |
 
 ### Summary
 
@@ -400,31 +400,31 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                                | Params                                                                       | Expected Output                                   | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | --------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Update title happy path                 | `{ number: "42", title: "New title" }`                                       | `updatedFields: ["title"]`, `url` populated       | P0                                          | complete |
-| 2   | Update body                             | `{ number: "42", body: "New body text" }`                                    | `updatedFields: ["body"]`, body sent via stdin    | P0                                          | complete |
-| 3   | Issue not found                         | `{ number: "999999", title: "x" }`                                           | `errorType: "not-found"`                          | P0                                          | complete |
-| 4   | Flag injection on number                | `{ number: "--exec=evil", title: "x" }`                                      | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 5   | Flag injection on title                 | `{ number: "42", title: "--exec=evil" }`                                     | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 6   | Flag injection on milestone             | `{ number: "42", milestone: "--exec=evil" }`                                 | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 7   | Flag injection on repo                  | `{ number: "42", repo: "--exec=evil" }`                                      | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 8   | Flag injection on addLabels entry       | `{ number: "42", addLabels: ["--exec=evil"] }`                               | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 9   | Flag injection on removeLabels entry    | `{ number: "42", removeLabels: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 10  | Flag injection on addAssignees entry    | `{ number: "42", addAssignees: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 11  | Flag injection on removeAssignees entry | `{ number: "42", removeAssignees: ["--exec=evil"] }`                         | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 12  | Flag injection on addProjects entry     | `{ number: "42", addProjects: ["--exec=evil"] }`                             | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 13  | Flag injection on removeProjects entry  | `{ number: "42", removeProjects: ["--exec=evil"] }`                          | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 14  | Shell escaping in body (#530 pattern)   | `{ number: "42", body: "Use `cmd                                             | grep` and $(var)" }`                              | Body delivered intact via --body-file stdin | P0       | complete |
-| 15  | Add labels                              | `{ number: "42", addLabels: ["bug", "p0"] }`                                 | `operations: ["add-label"]`                       | P1                                          | complete |
-| 16  | Remove labels                           | `{ number: "42", removeLabels: ["wontfix"] }`                                | `operations: ["remove-label"]`                    | P1                                          | complete |
-| 17  | Add and remove assignees                | `{ number: "42", addAssignees: ["user1"], removeAssignees: ["user2"] }`      | `operations: ["add-assignee", "remove-assignee"]` | P1                                          | complete |
-| 18  | Set milestone                           | `{ number: "42", milestone: "v1.0" }`                                        | `operations: ["set-milestone"]`                   | P1                                          | complete |
-| 19  | Remove milestone                        | `{ number: "42", removeMilestone: true }`                                    | `operations: ["remove-milestone"]`                | P1                                          | complete |
-| 20  | Add project                             | `{ number: "42", addProjects: ["Board"] }`                                   | `operations: ["add-project"]`                     | P1                                          | complete |
-| 21  | Cross-repo update                       | `{ number: "42", title: "x", repo: "owner/repo" }`                           | --repo flag passed                                | P1                                          | complete |
-| 22  | Permission denied                       | `{ number: "42", title: "x" }`                                               | `errorType: "permission-denied"`                  | P1                                          | complete |
-| 23  | Multiple operations at once             | `{ number: "42", title: "New", addLabels: ["bug"], addAssignees: ["user"] }` | `updatedFields: ["title", "labels", "assignees"]` | P2                                          | complete |
+| 1 | Update title happy path | `{ number: "42", title: "New title" }` | `updatedFields: ["title"]`, `url` populated | P0 | complete |
+| 2 | Update body | `{ number: "42", body: "New body text" }` | `updatedFields: ["body"]`, body sent via stdin | P0 | complete |
+| 3 | Issue not found | `{ number: "999999", title: "x" }` | `errorType: "not-found"` | P0 | complete |
+| 4 | Flag injection on number | `{ number: "--exec=evil", title: "x" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on title | `{ number: "42", title: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Flag injection on milestone | `{ number: "42", milestone: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on repo | `{ number: "42", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on addLabels entry | `{ number: "42", addLabels: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on removeLabels entry | `{ number: "42", removeLabels: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Flag injection on addAssignees entry | `{ number: "42", addAssignees: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 11 | Flag injection on removeAssignees entry | `{ number: "42", removeAssignees: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 12 | Flag injection on addProjects entry | `{ number: "42", addProjects: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 13 | Flag injection on removeProjects entry | `{ number: "42", removeProjects: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 14 | Shell escaping in body (#530 pattern) | `{ number: "42", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 15 | Add labels | `{ number: "42", addLabels: ["bug", "p0"] }` | `operations: ["add-label"]` | P1 | complete |
+| 16 | Remove labels | `{ number: "42", removeLabels: ["wontfix"] }` | `operations: ["remove-label"]` | P1 | complete |
+| 17 | Add and remove assignees | `{ number: "42", addAssignees: ["user1"], removeAssignees: ["user2"] }` | `operations: ["add-assignee", "remove-assignee"]` | P1 | complete |
+| 18 | Set milestone | `{ number: "42", milestone: "v1.0" }` | `operations: ["set-milestone"]` | P1 | complete |
+| 19 | Remove milestone | `{ number: "42", removeMilestone: true }` | `operations: ["remove-milestone"]` | P1 | complete |
+| 20 | Add project | `{ number: "42", addProjects: ["Board"] }` | `operations: ["add-project"]` | P1 | complete |
+| 21 | Cross-repo update | `{ number: "42", title: "x", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 22 | Permission denied | `{ number: "42", title: "x" }` | `errorType: "permission-denied"` | P1 | complete |
+| 23 | Multiple operations at once | `{ number: "42", title: "New", addLabels: ["bug"], addAssignees: ["user"] }` | `updatedFields: ["title", "labels", "assignees"]` | P2 | complete |
 
 ### Summary
 
@@ -506,21 +506,21 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                              | Params                                                               | Expected Output                                       | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Create comment happy path             | `{ number: "123", body: "LGTM" }`                                    | `operation: "create"`, `url` populated, `body` echoed | P0                                          | complete |
-| 2   | PR not found                          | `{ number: "999999", body: "test" }`                                 | `errorType: "not-found"`                              | P0                                          | complete |
-| 3   | Flag injection on body                | `{ number: "123", body: "--exec=evil" }`                             | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 4   | Flag injection on number              | `{ number: "--exec=evil", body: "test" }`                            | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 5   | Flag injection on repo                | `{ number: "123", body: "test", repo: "--exec=evil" }`               | `assertNoFlagInjection` throws                        | P0                                          | complete |
-| 6   | Shell escaping in body (#530 pattern) | `{ number: "123", body: "Run `npm test                               | grep fail` and $(echo hi)" }`                         | Body delivered intact via --body-file stdin | P0       | complete |
-| 7   | Body with backticks and pipes         | `{ number: "123", body: "```\ncode                                   | filter\n```" }`                                       | Body preserved intact                       | P0       | complete |
-| 8   | Edit last comment                     | `{ number: "123", body: "Updated", editLast: true }`                 | `operation: "edit"`                                   | P1                                          | complete |
-| 9   | Delete last comment                   | `{ number: "123", body: "", deleteLast: true }`                      | `operation: "delete"`                                 | P1                                          | complete |
-| 10  | Edit with createIfNone                | `{ number: "123", body: "New", editLast: true, createIfNone: true }` | --create-if-none flag passed                          | P1                                          | complete |
-| 11  | Cross-repo comment                    | `{ number: "123", body: "test", repo: "owner/repo" }`                | --repo flag passed                                    | P1                                          | complete |
-| 12  | Permission denied                     | `{ number: "123", body: "test" }`                                    | `errorType: "permission-denied"`                      | P1                                          | complete |
-| 13  | PR number as branch name              | `{ number: "feature-branch", body: "test" }`                         | Passes branch name to gh CLI                          | P2                                          | complete |
+| 1 | Create comment happy path | `{ number: "123", body: "LGTM" }` | `operation: "create"`, `url` populated, `body` echoed | P0 | complete |
+| 2 | PR not found | `{ number: "999999", body: "test" }` | `errorType: "not-found"` | P0 | complete |
+| 3 | Flag injection on body | `{ number: "123", body: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 4 | Flag injection on number | `{ number: "--exec=evil", body: "test" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on repo | `{ number: "123", body: "test", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Shell escaping in body (#530 pattern) | `{ number: "123", body: "Run `npm test | grep fail` and $(echo hi)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 7 | Body with backticks and pipes | `{ number: "123", body: "```\ncode                                   | filter\n```" }` | Body preserved intact | P0 | complete |
+| 8 | Edit last comment | `{ number: "123", body: "Updated", editLast: true }` | `operation: "edit"` | P1 | complete |
+| 9 | Delete last comment | `{ number: "123", body: "", deleteLast: true }` | `operation: "delete"` | P1 | complete |
+| 10 | Edit with createIfNone | `{ number: "123", body: "New", editLast: true, createIfNone: true }` | --create-if-none flag passed | P1 | complete |
+| 11 | Cross-repo comment | `{ number: "123", body: "test", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 12 | Permission denied | `{ number: "123", body: "test" }` | `errorType: "permission-denied"` | P1 | complete |
+| 13 | PR number as branch name | `{ number: "feature-branch", body: "test" }` | Passes branch name to gh CLI | P2 | complete |
 
 ### Summary
 
@@ -566,33 +566,33 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                              | Params                                                       | Expected Output                             | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Create PR happy path                  | `{ title: "Fix bug", body: "Fixes #123" }`                   | `number > 0`, `url` populated               | P0                                          | complete |
-| 2   | Create draft PR                       | `{ title: "WIP", body: "In progress", draft: true }`         | `draft: true`                               | P0                                          | complete |
-| 3   | No commits between base/head          | `{ title: "t", body: "b" }`                                  | `errorType: "no-commits"`                   | P0                                          | complete |
-| 4   | Base branch missing                   | `{ title: "t", body: "b", base: "nonexistent" }`             | `errorType: "base-branch-missing"`          | P0                                          | complete |
-| 5   | Flag injection on title               | `{ title: "--exec=evil", body: "b" }`                        | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 6   | Flag injection on base                | `{ title: "t", body: "b", base: "--exec=evil" }`             | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 7   | Flag injection on head                | `{ title: "t", body: "b", head: "--exec=evil" }`             | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 8   | Flag injection on milestone           | `{ title: "t", body: "b", milestone: "--exec=evil" }`        | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 9   | Flag injection on project             | `{ title: "t", body: "b", project: "--exec=evil" }`          | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 10  | Flag injection on repo                | `{ title: "t", body: "b", repo: "--exec=evil" }`             | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 11  | Flag injection on template            | `{ title: "t", body: "b", template: "--exec=evil" }`         | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 12  | Flag injection on reviewer entry      | `{ title: "t", body: "b", reviewer: ["--exec=evil"] }`       | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 13  | Flag injection on label entry         | `{ title: "t", body: "b", label: ["--exec=evil"] }`          | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 14  | Flag injection on assignee entry      | `{ title: "t", body: "b", assignee: ["--exec=evil"] }`       | `assertNoFlagInjection` throws              | P0                                          | complete |
-| 15  | Shell escaping in body (#530 pattern) | `{ title: "t", body: "Use `cmd                               | grep` and $(var)" }`                        | Body delivered intact via --body-file stdin | P0       | complete |
-| 16  | Permission denied                     | `{ title: "t", body: "b" }`                                  | `errorType: "permission-denied"`            | P0                                          | complete |
-| 17  | Create with reviewers                 | `{ title: "t", body: "b", reviewer: ["user1", "org/team"] }` | --reviewer flags passed                     | P1                                          | complete |
-| 18  | Create with labels                    | `{ title: "t", body: "b", label: ["bug", "p0"] }`            | --label flags passed                        | P1                                          | complete |
-| 19  | Create with assignees                 | `{ title: "t", body: "b", assignee: ["user1"] }`             | --assignee flag passed                      | P1                                          | complete |
-| 20  | Fill from commits                     | `{ title: "t", body: "b", fill: true }`                      | --fill flag passed                          | P1                                          | complete |
-| 21  | Fill first commit                     | `{ title: "t", body: "b", fillFirst: true }`                 | --fill-first flag passed                    | P1                                          | complete |
-| 22  | Dry run                               | `{ title: "t", body: "b", dryRun: true }`                    | --dry-run flag passed, no actual PR created | P1                                          | complete |
-| 23  | Cross-repo create                     | `{ title: "t", body: "b", repo: "owner/repo" }`              | --repo flag passed                          | P1                                          | complete |
-| 24  | No maintainer edit                    | `{ title: "t", body: "b", noMaintainerEdit: true }`          | --no-maintainer-edit flag passed            | P2                                          | complete |
-| 25  | Template usage                        | `{ title: "t", body: "b", template: "bug_report.md" }`       | --template flag passed                      | P2                                          | complete |
+| 1 | Create PR happy path | `{ title: "Fix bug", body: "Fixes #123" }` | `number > 0`, `url` populated | P0 | complete |
+| 2 | Create draft PR | `{ title: "WIP", body: "In progress", draft: true }` | `draft: true` | P0 | complete |
+| 3 | No commits between base/head | `{ title: "t", body: "b" }` | `errorType: "no-commits"` | P0 | complete |
+| 4 | Base branch missing | `{ title: "t", body: "b", base: "nonexistent" }` | `errorType: "base-branch-missing"` | P0 | complete |
+| 5 | Flag injection on title | `{ title: "--exec=evil", body: "b" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Flag injection on base | `{ title: "t", body: "b", base: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on head | `{ title: "t", body: "b", head: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on milestone | `{ title: "t", body: "b", milestone: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on project | `{ title: "t", body: "b", project: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Flag injection on repo | `{ title: "t", body: "b", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 11 | Flag injection on template | `{ title: "t", body: "b", template: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 12 | Flag injection on reviewer entry | `{ title: "t", body: "b", reviewer: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 13 | Flag injection on label entry | `{ title: "t", body: "b", label: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 14 | Flag injection on assignee entry | `{ title: "t", body: "b", assignee: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 15 | Shell escaping in body (#530 pattern) | `{ title: "t", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 16 | Permission denied | `{ title: "t", body: "b" }` | `errorType: "permission-denied"` | P0 | complete |
+| 17 | Create with reviewers | `{ title: "t", body: "b", reviewer: ["user1", "org/team"] }` | --reviewer flags passed | P1 | complete |
+| 18 | Create with labels | `{ title: "t", body: "b", label: ["bug", "p0"] }` | --label flags passed | P1 | complete |
+| 19 | Create with assignees | `{ title: "t", body: "b", assignee: ["user1"] }` | --assignee flag passed | P1 | complete |
+| 20 | Fill from commits | `{ title: "t", body: "b", fill: true }` | --fill flag passed | P1 | complete |
+| 21 | Fill first commit | `{ title: "t", body: "b", fillFirst: true }` | --fill-first flag passed | P1 | complete |
+| 22 | Dry run | `{ title: "t", body: "b", dryRun: true }` | --dry-run flag passed, no actual PR created | P1 | complete |
+| 23 | Cross-repo create | `{ title: "t", body: "b", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 24 | No maintainer edit | `{ title: "t", body: "b", noMaintainerEdit: true }` | --no-maintainer-edit flag passed | P2 | complete |
+| 25 | Template usage | `{ title: "t", body: "b", template: "bug_report.md" }` | --template flag passed | P2 | complete |
 
 ### Summary
 
@@ -805,25 +805,25 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                              | Params                                                           | Expected Output                           | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | ------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Approve PR happy path                 | `{ number: "123", event: "approve" }`                            | `event: "approve"`, `url` populated       | P0                                          | complete |
-| 2   | Request changes with body             | `{ number: "123", event: "request-changes", body: "Fix this" }`  | `event: "request-changes"`, `body` echoed | P0                                          | complete |
-| 3   | Comment review                        | `{ number: "123", event: "comment", body: "Looks interesting" }` | `event: "comment"`, `body` echoed         | P0                                          | complete |
-| 4   | Request changes without body          | `{ number: "123", event: "request-changes" }`                    | Error: body required for request-changes  | P0                                          | complete |
-| 5   | Comment without body                  | `{ number: "123", event: "comment" }`                            | Error: body required for comment          | P0                                          | complete |
-| 6   | PR not found                          | `{ number: "999999", event: "approve" }`                         | `errorType: "not-found"`                  | P0                                          | complete |
-| 7   | Flag injection on number              | `{ number: "--exec=evil", event: "approve" }`                    | `assertNoFlagInjection` throws            | P0                                          | complete |
-| 8   | Flag injection on body                | `{ number: "123", event: "comment", body: "--exec=evil" }`       | `assertNoFlagInjection` throws            | P0                                          | complete |
-| 9   | Flag injection on repo                | `{ number: "123", event: "approve", repo: "--exec=evil" }`       | `assertNoFlagInjection` throws            | P0                                          | complete |
-| 10  | Flag injection on bodyFile            | `{ number: "123", event: "comment", bodyFile: "--exec=evil" }`   | `assertNoFlagInjection` throws            | P0                                          | complete |
-| 11  | Shell escaping in body (#530 pattern) | `{ number: "123", event: "comment", body: "Use `cmd              | grep` and $(var)" }`                      | Body delivered intact via --body-file stdin | P0       | complete |
-| 12  | Permission denied                     | `{ number: "123", event: "approve" }`                            | `errorType: "permission-denied"`          | P0                                          | complete |
-| 13  | Cross-repo review                     | `{ number: "123", event: "approve", repo: "owner/repo" }`        | --repo flag passed                        | P1                                          | complete |
-| 14  | Body from file                        | `{ number: "123", event: "comment", bodyFile: "review.md" }`     | --body-file flag passed                   | P1                                          | complete |
-| 15  | Review on draft PR                    | `{ number: "123", event: "approve" }`                            | `errorType: "draft-pr"`                   | P1                                          | complete |
-| 16  | Already reviewed error                | `{ number: "123", event: "approve" }`                            | `errorType: "already-reviewed"`           | P1                                          | complete |
-| 17  | PR number as branch name              | `{ number: "feature-branch", event: "approve" }`                 | Passes branch to gh CLI                   | P2                                          | complete |
+| 1 | Approve PR happy path | `{ number: "123", event: "approve" }` | `event: "approve"`, `url` populated | P0 | complete |
+| 2 | Request changes with body | `{ number: "123", event: "request-changes", body: "Fix this" }` | `event: "request-changes"`, `body` echoed | P0 | complete |
+| 3 | Comment review | `{ number: "123", event: "comment", body: "Looks interesting" }` | `event: "comment"`, `body` echoed | P0 | complete |
+| 4 | Request changes without body | `{ number: "123", event: "request-changes" }` | Error: body required for request-changes | P0 | complete |
+| 5 | Comment without body | `{ number: "123", event: "comment" }` | Error: body required for comment | P0 | complete |
+| 6 | PR not found | `{ number: "999999", event: "approve" }` | `errorType: "not-found"` | P0 | complete |
+| 7 | Flag injection on number | `{ number: "--exec=evil", event: "approve" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on body | `{ number: "123", event: "comment", body: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on repo | `{ number: "123", event: "approve", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Flag injection on bodyFile | `{ number: "123", event: "comment", bodyFile: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 11 | Shell escaping in body (#530 pattern) | `{ number: "123", event: "comment", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 12 | Permission denied | `{ number: "123", event: "approve" }` | `errorType: "permission-denied"` | P0 | complete |
+| 13 | Cross-repo review | `{ number: "123", event: "approve", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 14 | Body from file | `{ number: "123", event: "comment", bodyFile: "review.md" }` | --body-file flag passed | P1 | complete |
+| 15 | Review on draft PR | `{ number: "123", event: "approve" }` | `errorType: "draft-pr"` | P1 | complete |
+| 16 | Already reviewed error | `{ number: "123", event: "approve" }` | `errorType: "already-reviewed"` | P1 | complete |
+| 17 | PR number as branch name | `{ number: "feature-branch", event: "approve" }` | Passes branch to gh CLI | P2 | complete |
 
 ### Summary
 
@@ -867,35 +867,35 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                                | Params                                                                        | Expected Output                                   | Priority                                    | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | --------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------- | -------- | -------- |
-| 1   | Update title happy path                 | `{ number: "123", title: "New title" }`                                       | `updatedFields: ["title"]`, `url` populated       | P0                                          | complete |
-| 2   | Update body                             | `{ number: "123", body: "New body" }`                                         | `updatedFields: ["body"]`, body sent via stdin    | P0                                          | complete |
-| 3   | PR not found                            | `{ number: "999999", title: "x" }`                                            | `errorType: "not-found"`                          | P0                                          | complete |
-| 4   | Flag injection on number                | `{ number: "--exec=evil", title: "x" }`                                       | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 5   | Flag injection on title                 | `{ number: "123", title: "--exec=evil" }`                                     | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 6   | Flag injection on base                  | `{ number: "123", base: "--exec=evil" }`                                      | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 7   | Flag injection on milestone             | `{ number: "123", milestone: "--exec=evil" }`                                 | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 8   | Flag injection on repo                  | `{ number: "123", repo: "--exec=evil" }`                                      | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 9   | Flag injection on addLabels entry       | `{ number: "123", addLabels: ["--exec=evil"] }`                               | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 10  | Flag injection on removeLabels entry    | `{ number: "123", removeLabels: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 11  | Flag injection on addAssignees entry    | `{ number: "123", addAssignees: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 12  | Flag injection on removeAssignees entry | `{ number: "123", removeAssignees: ["--exec=evil"] }`                         | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 13  | Flag injection on addProjects entry     | `{ number: "123", addProjects: ["--exec=evil"] }`                             | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 14  | Flag injection on removeProjects entry  | `{ number: "123", removeProjects: ["--exec=evil"] }`                          | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 15  | Flag injection on addReviewers entry    | `{ number: "123", addReviewers: ["--exec=evil"] }`                            | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 16  | Flag injection on removeReviewers entry | `{ number: "123", removeReviewers: ["--exec=evil"] }`                         | `assertNoFlagInjection` throws                    | P0                                          | complete |
-| 17  | Shell escaping in body (#530 pattern)   | `{ number: "123", body: "Use `cmd                                             | grep` and $(var)" }`                              | Body delivered intact via --body-file stdin | P0       | complete |
-| 18  | Add labels                              | `{ number: "123", addLabels: ["bug", "p0"] }`                                 | `operations: ["add-label"]`                       | P1                                          | complete |
-| 19  | Remove labels                           | `{ number: "123", removeLabels: ["wontfix"] }`                                | `operations: ["remove-label"]`                    | P1                                          | complete |
-| 20  | Add reviewers                           | `{ number: "123", addReviewers: ["user1", "org/team"] }`                      | `operations: ["add-reviewer"]`                    | P1                                          | complete |
-| 21  | Remove reviewers                        | `{ number: "123", removeReviewers: ["user1"] }`                               | `operations: ["remove-reviewer"]`                 | P1                                          | complete |
-| 22  | Change base branch                      | `{ number: "123", base: "develop" }`                                          | `operations: ["set-base"]`                        | P1                                          | complete |
-| 23  | Set milestone                           | `{ number: "123", milestone: "v1.0" }`                                        | `operations: ["set-milestone"]`                   | P1                                          | complete |
-| 24  | Remove milestone                        | `{ number: "123", removeMilestone: true }`                                    | `operations: ["remove-milestone"]`                | P1                                          | complete |
-| 25  | Permission denied                       | `{ number: "123", title: "x" }`                                               | `errorType: "permission-denied"`                  | P1                                          | complete |
-| 26  | Cross-repo update                       | `{ number: "123", title: "x", repo: "owner/repo" }`                           | --repo flag passed                                | P1                                          | complete |
-| 27  | Multiple operations at once             | `{ number: "123", title: "New", addLabels: ["bug"], addReviewers: ["user"] }` | `updatedFields: ["title", "labels", "reviewers"]` | P2                                          | complete |
+| 1 | Update title happy path | `{ number: "123", title: "New title" }` | `updatedFields: ["title"]`, `url` populated | P0 | complete |
+| 2 | Update body | `{ number: "123", body: "New body" }` | `updatedFields: ["body"]`, body sent via stdin | P0 | complete |
+| 3 | PR not found | `{ number: "999999", title: "x" }` | `errorType: "not-found"` | P0 | complete |
+| 4 | Flag injection on number | `{ number: "--exec=evil", title: "x" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on title | `{ number: "123", title: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Flag injection on base | `{ number: "123", base: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on milestone | `{ number: "123", milestone: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on repo | `{ number: "123", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on addLabels entry | `{ number: "123", addLabels: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Flag injection on removeLabels entry | `{ number: "123", removeLabels: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 11 | Flag injection on addAssignees entry | `{ number: "123", addAssignees: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 12 | Flag injection on removeAssignees entry | `{ number: "123", removeAssignees: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 13 | Flag injection on addProjects entry | `{ number: "123", addProjects: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 14 | Flag injection on removeProjects entry | `{ number: "123", removeProjects: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 15 | Flag injection on addReviewers entry | `{ number: "123", addReviewers: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 16 | Flag injection on removeReviewers entry | `{ number: "123", removeReviewers: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 17 | Shell escaping in body (#530 pattern) | `{ number: "123", body: "Use `cmd | grep` and $(var)" }` | Body delivered intact via --body-file stdin | P0 | complete |
+| 18 | Add labels | `{ number: "123", addLabels: ["bug", "p0"] }` | `operations: ["add-label"]` | P1 | complete |
+| 19 | Remove labels | `{ number: "123", removeLabels: ["wontfix"] }` | `operations: ["remove-label"]` | P1 | complete |
+| 20 | Add reviewers | `{ number: "123", addReviewers: ["user1", "org/team"] }` | `operations: ["add-reviewer"]` | P1 | complete |
+| 21 | Remove reviewers | `{ number: "123", removeReviewers: ["user1"] }` | `operations: ["remove-reviewer"]` | P1 | complete |
+| 22 | Change base branch | `{ number: "123", base: "develop" }` | `operations: ["set-base"]` | P1 | complete |
+| 23 | Set milestone | `{ number: "123", milestone: "v1.0" }` | `operations: ["set-milestone"]` | P1 | complete |
+| 24 | Remove milestone | `{ number: "123", removeMilestone: true }` | `operations: ["remove-milestone"]` | P1 | complete |
+| 25 | Permission denied | `{ number: "123", title: "x" }` | `errorType: "permission-denied"` | P1 | complete |
+| 26 | Cross-repo update | `{ number: "123", title: "x", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 27 | Multiple operations at once | `{ number: "123", title: "New", addLabels: ["bug"], addReviewers: ["user"] }` | `updatedFields: ["title", "labels", "reviewers"]` | P2 | complete |
 
 ### Summary
 
@@ -991,33 +991,33 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Scenarios
 
-| #   | Scenario                               | Params                                                             | Expected Output                                                       | Priority                                      | Status   |
+| # | Scenario | Params | Expected Output | Priority | Status |
 | --- | -------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------- | -------- | -------- |
-| 1   | Create release happy path              | `{ tag: "v1.0.0" }`                                                | `tag: "v1.0.0"`, `url` populated, `draft: false`, `prerelease: false` | P0                                            | complete |
-| 2   | Tag conflict (already exists)          | `{ tag: "v1.0.0" }`                                                | `errorType: "tag-conflict"`                                           | P0                                            | complete |
-| 3   | Permission denied                      | `{ tag: "v1.0.0" }`                                                | `errorType: "permission-denied"`                                      | P0                                            | complete |
-| 4   | Flag injection on tag                  | `{ tag: "--exec=evil" }`                                           | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 5   | Flag injection on title                | `{ tag: "v1.0.0", title: "--exec=evil" }`                          | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 6   | Flag injection on target               | `{ tag: "v1.0.0", target: "--exec=evil" }`                         | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 7   | Flag injection on repo                 | `{ tag: "v1.0.0", repo: "--exec=evil" }`                           | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 8   | Flag injection on notesFile            | `{ tag: "v1.0.0", notesFile: "--exec=evil" }`                      | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 9   | Flag injection on notesStartTag        | `{ tag: "v1.0.0", notesStartTag: "--exec=evil" }`                  | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 10  | Flag injection on discussionCategory   | `{ tag: "v1.0.0", discussionCategory: "--exec=evil" }`             | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 11  | Flag injection on assets entry         | `{ tag: "v1.0.0", assets: ["--exec=evil"] }`                       | `assertNoFlagInjection` throws                                        | P0                                            | complete |
-| 12  | Shell escaping in notes (#530 pattern) | `{ tag: "v1.0.0", notes: "Use `cmd                                 | grep` and $(var)" }`                                                  | Notes delivered intact via --notes-file stdin | P0       | complete |
-| 13  | Draft release                          | `{ tag: "v1.0.0", draft: true }`                                   | `draft: true`                                                         | P1                                            | complete |
-| 14  | Prerelease                             | `{ tag: "v1.0.0-beta.1", prerelease: true }`                       | `prerelease: true`                                                    | P1                                            | complete |
-| 15  | With title                             | `{ tag: "v1.0.0", title: "Release 1.0" }`                          | `title: "Release 1.0"` in output                                      | P1                                            | complete |
-| 16  | Generate notes                         | `{ tag: "v1.0.0", generateNotes: true }`                           | --generate-notes flag passed                                          | P1                                            | complete |
-| 17  | Verify tag                             | `{ tag: "v1.0.0", verifyTag: true }`                               | --verify-tag flag passed                                              | P1                                            | complete |
-| 18  | Target branch                          | `{ tag: "v1.0.0", target: "release/1.0" }`                         | --target flag passed                                                  | P1                                            | complete |
-| 19  | With assets                            | `{ tag: "v1.0.0", assets: ["dist/app.zip", "dist/checksum.txt"] }` | `assetsUploaded: 2`                                                   | P1                                            | complete |
-| 20  | Fail on no commits                     | `{ tag: "v1.0.0", failOnNoCommits: true }`                         | `errorType: "no-new-commits"` when applicable                         | P1                                            | complete |
-| 21  | Cross-repo release                     | `{ tag: "v1.0.0", repo: "owner/repo" }`                            | --repo flag passed                                                    | P1                                            | complete |
-| 22  | Latest flag true                       | `{ tag: "v1.0.0", latest: true }`                                  | --latest=true flag passed                                             | P2                                            | complete |
-| 23  | Latest flag false                      | `{ tag: "v1.0.0", latest: false }`                                 | --latest=false flag passed                                            | P2                                            | complete |
-| 24  | Notes from tag                         | `{ tag: "v1.0.0", notesFromTag: true }`                            | --notes-from-tag flag passed                                          | P2                                            | complete |
-| 25  | Discussion category                    | `{ tag: "v1.0.0", discussionCategory: "Announcements" }`           | --discussion-category flag passed                                     | P2                                            | complete |
+| 1 | Create release happy path | `{ tag: "v1.0.0" }` | `tag: "v1.0.0"`, `url` populated, `draft: false`, `prerelease: false` | P0 | complete |
+| 2 | Tag conflict (already exists) | `{ tag: "v1.0.0" }` | `errorType: "tag-conflict"` | P0 | complete |
+| 3 | Permission denied | `{ tag: "v1.0.0" }` | `errorType: "permission-denied"` | P0 | complete |
+| 4 | Flag injection on tag | `{ tag: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 5 | Flag injection on title | `{ tag: "v1.0.0", title: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 6 | Flag injection on target | `{ tag: "v1.0.0", target: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 7 | Flag injection on repo | `{ tag: "v1.0.0", repo: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 8 | Flag injection on notesFile | `{ tag: "v1.0.0", notesFile: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 9 | Flag injection on notesStartTag | `{ tag: "v1.0.0", notesStartTag: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 10 | Flag injection on discussionCategory | `{ tag: "v1.0.0", discussionCategory: "--exec=evil" }` | `assertNoFlagInjection` throws | P0 | complete |
+| 11 | Flag injection on assets entry | `{ tag: "v1.0.0", assets: ["--exec=evil"] }` | `assertNoFlagInjection` throws | P0 | complete |
+| 12 | Shell escaping in notes (#530 pattern) | `{ tag: "v1.0.0", notes: "Use `cmd | grep` and $(var)" }` | Notes delivered intact via --notes-file stdin | P0 | complete |
+| 13 | Draft release | `{ tag: "v1.0.0", draft: true }` | `draft: true` | P1 | complete |
+| 14 | Prerelease | `{ tag: "v1.0.0-beta.1", prerelease: true }` | `prerelease: true` | P1 | complete |
+| 15 | With title | `{ tag: "v1.0.0", title: "Release 1.0" }` | `title: "Release 1.0"` in output | P1 | complete |
+| 16 | Generate notes | `{ tag: "v1.0.0", generateNotes: true }` | --generate-notes flag passed | P1 | complete |
+| 17 | Verify tag | `{ tag: "v1.0.0", verifyTag: true }` | --verify-tag flag passed | P1 | complete |
+| 18 | Target branch | `{ tag: "v1.0.0", target: "release/1.0" }` | --target flag passed | P1 | complete |
+| 19 | With assets | `{ tag: "v1.0.0", assets: ["dist/app.zip", "dist/checksum.txt"] }` | `assetsUploaded: 2` | P1 | complete |
+| 20 | Fail on no commits | `{ tag: "v1.0.0", failOnNoCommits: true }` | `errorType: "no-new-commits"` when applicable | P1 | complete |
+| 21 | Cross-repo release | `{ tag: "v1.0.0", repo: "owner/repo" }` | --repo flag passed | P1 | complete |
+| 22 | Latest flag true | `{ tag: "v1.0.0", latest: true }` | --latest=true flag passed | P2 | complete |
+| 23 | Latest flag false | `{ tag: "v1.0.0", latest: false }` | --latest=false flag passed | P2 | complete |
+| 24 | Notes from tag | `{ tag: "v1.0.0", notesFromTag: true }` | --notes-from-tag flag passed | P2 | complete |
+| 25 | Discussion category | `{ tag: "v1.0.0", discussionCategory: "Announcements" }` | --discussion-category flag passed | P2 | complete |
 
 ### Summary
 
