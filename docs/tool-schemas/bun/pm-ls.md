@@ -134,5 +134,5 @@ $ bun pm ls
 
 - The `all` flag shows transitive dependencies in addition to direct dependencies
 - Each package entry includes `name` and optionally `version`
-- Compact mode drops the `packages` array, keeping only `success`, `total`, and `duration`
-- The `total` field reflects the count of packages in the `packages` array
+- Compact mode omits the `packages` array, keeping only `success`, `total`, and `duration`
+- The `total` field reflects the package count; in full mode, it matches the `packages` array length

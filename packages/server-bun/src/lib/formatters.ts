@@ -104,7 +104,7 @@ export function formatOutdated(data: BunOutdatedResult): string {
 
   const lines: string[] = [];
   lines.push(`bun outdated: ${data.total} packages outdated (${data.duration}ms)`);
-  for (const p of data.packages) {
+  for (const p of data.packages ?? []) {
     const wanted = p.wanted ? ` (wanted: ${p.wanted})` : "";
     lines.push(`  ${p.name}: ${p.current} -> ${p.latest}${wanted}`);
   }
@@ -117,7 +117,7 @@ export function formatPmLs(data: BunPmLsResult): string {
 
   const lines: string[] = [];
   lines.push(`bun pm ls: ${data.total} packages (${data.duration}ms)`);
-  for (const p of data.packages) {
+  for (const p of data.packages ?? []) {
     lines.push(`  ${p.name}${p.version ? `@${p.version}` : ""}`);
   }
   return lines.join("\n");
