@@ -20,7 +20,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && tsx scripts/sync-server-versions.ts",
     "release": "turbo run build && changeset publish",
     "canary": "changeset version --snapshot canary",
     "changelog": "tsx scripts/aggregate-changelog.ts",
@@ -31,6 +31,8 @@
     "docs:api": "typedoc",
     "sync-tool-counts": "tsx scripts/sync-tool-counts.ts",
     "sync-tool-counts:check": "tsx scripts/sync-tool-counts.ts --check",
+    "sync-server-versions": "tsx scripts/sync-server-versions.ts",
+    "sync-server-versions:check": "tsx scripts/sync-server-versions.ts --check",
     "prepare": "husky"
   },
   "devDependencies": {
