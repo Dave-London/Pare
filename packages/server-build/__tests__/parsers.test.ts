@@ -41,6 +41,40 @@ describe("parseTscOutput", () => {
     expect(result.success).toBe(true);
     expect(result.diagnostics).toHaveLength(0);
     expect(result.diagnostics).toEqual([]);
+    expect(result.error).toBeUndefined();
+  });
+
+  // #965: a non-zero exit with no parseable diagnostics must never be a bare,
+  // contextless result — attach the raw stderr as `error`.
+  it("surfaces stderr as error when tsc fails without diagnostics (#965)", () => {
+    const stderr = "error TS18003: No inputs were found in config file 'tsconfig.json'.";
+    const result = parseTscOutput("", stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.error).toBe(stderr);
+  });
+
+  it("falls back to stdout, then a generic message, when a failed run is silent (#965)", () => {
+    const fromStdout = parseTscOutput("some non-diagnostic stdout noise", "", 2);
+    expect(fromStdout.success).toBe(false);
+    expect(fromStdout.error).toBe("some non-diagnostic stdout noise");
+
+    const silent = parseTscOutput("", "", 2);
+    expect(silent.success).toBe(false);
+    expect(silent.error).toContain("exited with code 2");
+  });
+
+  it("does not attach error when diagnostics were parsed", () => {
+    const result = parseTscOutput("src/a.ts(1,1): error TS2307: Cannot find module.", "", 2);
+    expect(result.success).toBe(false);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("does not attach error on a successful run", () => {
+    const result = parseTscOutput("", "", 0);
+    expect(result.error).toBeUndefined();
   });
 
   it("parses errors from multiple files", () => {

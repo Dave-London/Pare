@@ -63,15 +63,29 @@ export function parseTscOutput(stdout: string, stderr: string, exitCode: number)
 
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
+  const success = exitCode === 0;
 
-  return {
-    success: exitCode === 0,
+  const result: TscResult = {
+    success,
     diagnostics,
     totalFiles,
     emittedFiles: emittedFiles.length > 0 ? emittedFiles : undefined,
     errors,
     warnings,
   };
+
+  // Invariant: a non-zero exit must never surface as a bare, contextless
+  // result. When tsc fails without emitting any parseable diagnostics — a
+  // tsconfig error (e.g. TS18003 "No inputs were found"), a crash, or an
+  // npx/binary resolution failure — an empty diagnostics list reads as
+  // "no errors found". Attach the raw stderr so `success:false` always carries
+  // something actionable. (#965)
+  if (!success && diagnostics.length === 0) {
+    const detail = (stderr.trim() || stdout.trim()).trim();
+    result.error = detail || `tsc exited with code ${exitCode} but produced no diagnostics.`;
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------

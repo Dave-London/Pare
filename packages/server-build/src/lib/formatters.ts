@@ -21,6 +21,12 @@ export function formatTsc(data: TscResult): string {
     return "TypeScript: no errors found.";
   }
 
+  // Non-zero exit with no parseable diagnostics — surface the raw failure
+  // instead of an empty "0 errors" summary that reads as success. (#965)
+  if (!data.success && data.diagnostics.length === 0 && data.error) {
+    return `TypeScript check failed (no diagnostics parsed):\n${data.error}`;
+  }
+
   const fileSummary = data.totalFiles !== undefined ? ` in ${data.totalFiles} files` : "";
   const lines = [`TypeScript: ${data.errors} errors, ${data.warnings} warnings${fileSummary}`];
   for (const d of data.diagnostics ?? []) {
@@ -195,6 +201,7 @@ export interface TscCompact {
   errors: number;
   warnings: number;
   diagnostics: Array<{ file: string; line: number; severity: string }>;
+  error?: string;
 }
 
 const TSC_COMPACT_DIAG_LIMIT = 10;
@@ -209,11 +216,18 @@ export function compactTscMap(data: TscResult): TscCompact {
       line: d.line,
       severity: d.severity,
     })),
+    ...(data.error ? { error: data.error } : {}),
   };
 }
 
 export function formatTscCompact(data: TscCompact): string {
-  if (data.errors === 0 && data.warnings === 0) return "TypeScript: no errors found.";
+  // A failed run with no parseable diagnostics must not read as success. (#965)
+  if (data.error && data.diagnostics.length === 0) {
+    return `TypeScript check failed:\n${data.error}`;
+  }
+  if (data.success && data.errors === 0 && data.warnings === 0) {
+    return "TypeScript: no errors found.";
+  }
 
   const lines = [`TypeScript: ${data.errors} errors, ${data.warnings} warnings`];
   for (const d of data.diagnostics) {
