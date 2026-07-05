@@ -1,5 +1,18 @@
 # @paretools/github
 
+## 0.21.0
+
+### Minor Changes
+
+- [#961](https://github.com/Dave-London/Pare/pull/961) [`05c02dc`](https://github.com/Dave-London/Pare/commit/05c02dc47a0ca91938faa45c173963646e775b37) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(github): add a top-level `conclusion` to `pr-checks` and make watch-mode timeouts non-throwing
+
+  `pr-checks` now returns `conclusion` (`"passed" | "failed" | "pending" | "timed_out"`) derived from the check buckets, so callers can branch on the aggregate outcome without re-deriving it from `summary`. In `watch` mode, hitting `watchTimeout` now returns the latest snapshot with `timedOut: true`, `conclusion: "timed_out"`, and `errorType: "watch-timeout"` instead of throwing — making "drive this PR to green" fully expressible as a single tool call whose result you branch on. Closes [#932](https://github.com/Dave-London/Pare/issues/932).
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.21.0
+
 ## 0.20.0
 
 ### Minor Changes

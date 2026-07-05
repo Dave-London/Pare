@@ -1,5 +1,28 @@
 # @paretools/git
 
+## 0.21.0
+
+### Minor Changes
+
+- [#966](https://github.com/Dave-London/Pare/pull/966) [`132366f`](https://github.com/Dave-London/Pare/commit/132366f0fc205e39707f76eeced9071164cca3e0) Thanks [@Dave-London](https://github.com/Dave-London)! - Add safe worktree-cleanup primitives ([#921](https://github.com/Dave-London/Pare/issues/921)): `branch` gains an opt-in `mergedInto` ancestry check (per-branch `merged`/`unmerged`), `worktree list` gains opt-in `withStatus` (dirty/ahead/behind/unpushed) and `mergedInto` enrichment, and a new `worktree` action `prune-merged {base, requireClean}` batch-removes merged-clean worktrees while refusing dirty, unmerged, locked, bare, main, and current worktrees.
+
+### Patch Changes
+
+- [#962](https://github.com/Dave-London/Pare/pull/962) [`fff367d`](https://github.com/Dave-London/Pare/commit/fff367d9db21422aee9631f3b075739bd327e003) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): return file content from `show` with `file` + `ref` in compact mode
+
+  `git show` with a `file` argument (blob extraction, e.g. `HEAD:src/index.ts`)
+  returned empty content in the default compact mode — the compact projection
+  used a commit-shaped map that emitted only an empty `hashShort` and a
+  `"blob ref:file"` message, dropping `fileContent` entirely. Because the raw
+  content and the structured payload are near-identical in size, the dual-output
+  helper always selected the compact branch, so the content was effectively never
+  returned unless `compact: false` was passed. `compactShowMap` now preserves
+  `fileContent` and object metadata for non-commit objects (blob/tag/tree). Also
+  raised the `file` input cap from 255 to 4096 chars to match `path`. Closes [#926](https://github.com/Dave-London/Pare/issues/926).
+
+- Updated dependencies []:
+  - @paretools/shared@0.21.0
+
 ## 0.20.0
 
 ### Patch Changes
