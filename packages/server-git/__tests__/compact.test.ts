@@ -209,6 +209,44 @@ describe("compactShowMap", () => {
     const compact = compactShowMap(show);
     expect(compact.hashShort).toBe("abc123d");
   });
+
+  // Gap #926: blob extraction (git show <ref>:<file>) must not lose fileContent
+  // in compact mode — previously the commit-shaped projection returned only an
+  // empty hashShort + "blob ref:file" message with no content.
+  it("preserves fileContent and metadata for a blob (file extraction)", () => {
+    const show: GitShow = {
+      objectType: "blob",
+      objectName: "origin/dev:.github/workflows/deploy.yml",
+      objectSize: 42,
+      file: ".github/workflows/deploy.yml",
+      fileContent: "name: deploy\non: push\n",
+      message: "blob origin/dev:.github/workflows/deploy.yml",
+    };
+
+    const compact = compactShowMap(show);
+
+    expect(compact.objectType).toBe("blob");
+    expect(compact.file).toBe(".github/workflows/deploy.yml");
+    expect(compact.fileContent).toBe("name: deploy\non: push\n");
+    expect(compact.objectSize).toBe(42);
+    // No empty commit hash for a blob.
+    expect(compact).not.toHaveProperty("hashShort");
+  });
+
+  it("preserves the payload for a non-commit object (tag)", () => {
+    const show: GitShow = {
+      objectType: "tag",
+      objectName: "v1.2.3",
+      message: "Release v1.2.3",
+    };
+
+    const compact = compactShowMap(show);
+
+    expect(compact.objectType).toBe("tag");
+    expect(compact.objectName).toBe("v1.2.3");
+    expect(compact.message).toBe("Release v1.2.3");
+    expect(compact).not.toHaveProperty("hashShort");
+  });
 });
 
 describe("formatShowCompact", () => {
@@ -223,6 +261,19 @@ describe("formatShowCompact", () => {
     expect(output).toContain("abc1234 Fix parser bug");
     expect(output).toContain("Author: Jane <j@e.com>");
     expect(output).toContain("Date: 2h ago");
+  });
+
+  it("renders blob file content instead of an empty commit line (#926)", () => {
+    const output = formatShowCompact({
+      objectType: "blob",
+      objectName: "HEAD:src/index.ts",
+      objectSize: 20,
+      file: "src/index.ts",
+      fileContent: "export const x = 1;\n",
+      message: "blob HEAD:src/index.ts",
+    });
+    expect(output).toContain("src/index.ts");
+    expect(output).toContain("export const x = 1;");
   });
 });
 
