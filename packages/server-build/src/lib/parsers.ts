@@ -346,6 +346,41 @@ export function parseEsbuildMetafile(content: string): EsbuildMetafile | undefin
 const VITE_OUTPUT_RE =
   /^\s*(.+?)\s{2,}(\d+[\d.]*\s*[kKmMgG]?[bB])(?:\s*[|│]\s*gzip:\s*(\d+[\d.]*\s*[kKmMgG]?[bB]))?/;
 
+/** Advisory (non-fatal) notices emitted by Vite / rolldown-vite that must be
+ *  classified as warnings — never errors — and must NEVER flip `success`.
+ *  These are surfaced by successful builds (exit 0) and are purely informational.
+ *  See #915 (rolldown-vite@8 advisory stderr misreported as a failure). */
+const VITE_ADVISORY_PATTERNS: RegExp[] = [
+  // rolldown-vite: "[INEFFECTIVE_DYNAMIC_IMPORT] <file> is dynamically imported ..."
+  /^\[INEFFECTIVE_DYNAMIC_IMPORT]/,
+  // Mixed static/dynamic import notice (may appear with or without the code prefix)
+  /dynamically imported by .+ but also statically imported/i,
+  // Chunk-size advisory, with or without the leading "(!)" prefix
+  /chunks are larger than\s+\d+/i,
+];
+
+function isViteAdvisoryLine(line: string): boolean {
+  return matchesAny(line, VITE_ADVISORY_PATTERNS);
+}
+
+/** Extracts fallback error text from a failed Vite build whose diagnostics did
+ *  not match any known error heuristic (e.g. rolldown-vite's error format).
+ *  Guarantees a non-empty, actionable `errors[]` so a `success:false` result is
+ *  never internally inconsistent. See #915. */
+function extractViteFallbackErrors(stderr: string, stdout: string): string[] {
+  const source = stderr.trim() ? stderr : stdout;
+  const candidates = source
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => !isViteAdvisoryLine(l) && !isWarningLine(l))
+    .filter((l) => !VITE_OUTPUT_RE.test(l));
+  if (candidates.length === 0) {
+    return ["Vite build failed with a non-zero exit code."];
+  }
+  return candidates;
+}
+
 /** Parses a human-readable size string (e.g. "45.2 kB", "1.5 MB", "320 B") into bytes.
  *  Returns undefined if the string cannot be parsed. */
 export function parseSizeToBytes(sizeStr: string): number | undefined {
@@ -374,6 +409,10 @@ export function parseViteBuildOutput(
   exitCode: number,
   duration: number,
 ): ViteBuildResult {
+  // `success` tracks the `vite build` process EXIT CODE only. Advisory stderr
+  // (chunk-size notice, ineffective-dynamic-import, etc.) must never flip this.
+  const success = exitCode === 0;
+
   const outputs: ViteOutputFile[] = [];
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -397,19 +436,33 @@ export function parseViteBuildOutput(
       }
     }
 
-    // Collect error and warning lines
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    if (isErrorLine(trimmed)) {
-      errors.push(trimmed);
-    } else if (isWarningLine(trimmed)) {
+    // Advisory notices and warnings are collected regardless of exit code and
+    // are NEVER treated as errors.
+    if (isViteAdvisoryLine(trimmed) || isWarningLine(trimmed)) {
       warnings.push(trimmed);
+      continue;
+    }
+
+    // Only classify error lines on a genuine failure. On a successful build
+    // (exit 0) stray "error"-looking text must not surface as an error — the
+    // result would otherwise be internally inconsistent (success:true + errors).
+    if (!success && isErrorLine(trimmed)) {
+      errors.push(trimmed);
     }
   }
 
+  // A failed build must always surface at least one actionable error, even when
+  // Vite/rolldown's error text doesn't match our line heuristics. This keeps a
+  // `success:false` result from ever being emitted with an empty `errors[]`.
+  if (!success && errors.length === 0) {
+    errors.push(...extractViteFallbackErrors(stderr, stdout));
+  }
+
   return {
-    success: exitCode === 0,
+    success,
     duration,
     outputs,
     errors,

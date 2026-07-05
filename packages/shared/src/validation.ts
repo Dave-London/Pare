@@ -28,6 +28,25 @@ export function assertNoFlagInjection(value: string, paramName: string): void {
 }
 
 /**
+ * Validates a passthrough argument destined for a subprocess invoked via `execFile`.
+ *
+ * Unlike {@link assertNoFlagInjection}, a leading `-`/`--` is permitted, because a
+ * passthrough arg is the caller's explicit intent to forward a framework flag
+ * (e.g. `-p no:logfire` to disable a pytest plugin). Since `execFile` does not
+ * spawn a shell, args are never shell-interpreted, so shell metacharacters are
+ * harmless. The only rejected patterns are NUL and newline/carriage-return
+ * control characters, which are never valid inside a single CLI argument and can
+ * corrupt argument boundaries or downstream config parsing.
+ */
+export function assertSafePassthroughArg(value: string, paramName: string): void {
+  if (/[\0\r\n]/.test(value)) {
+    throw new Error(
+      `Invalid ${paramName}: "${value}". Arguments must not contain NUL or newline characters.`,
+    );
+  }
+}
+
+/**
  * Validates that a git sort key is safe. Git sort keys may start with `-` (meaning
  * descending order), e.g. `-creatordate`, `-committerdate`, `version:refname`.
  * Only allows alphanumeric chars, colons, dots, and underscores (with optional leading `-`).
