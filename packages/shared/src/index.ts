@@ -22,6 +22,7 @@ export { stripAnsi } from "./ansi.js";
 export {
   coerceJsonArray,
   assertNoFlagInjection,
+  assertSafePassthroughArg,
   assertValidSortKey,
   assertValidLogOpts,
   assertAllowedCommand,

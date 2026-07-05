@@ -47,6 +47,30 @@ const VITE_WARNING_OUTPUT = [
 
 const VITE_SINGLE_FILE = ["dist/bundle.js     12.50 kB │ gzip: 4.20 kB"].join("\n");
 
+// rolldown-vite@8 (Vite 8) advisory stderr on an otherwise successful build.
+// The process exits 0 and writes dist; the only stderr is non-fatal advice.
+// See #915.
+const ROLLDOWN_ADVISORY_STDERR = [
+  "[INEFFECTIVE_DYNAMIC_IMPORT] src/App.tsx is dynamically imported by src/main.tsx but also statically imported by src/index.tsx, dynamic import will not move module into another chunk.",
+  "(!) Some chunks are larger than 500 kB after minification. Consider:",
+  "  - Using dynamic import() to code-split the application",
+].join("\n");
+
+const ROLLDOWN_ADVISORY_STDOUT = [
+  "vite v8.0.0 building for production...",
+  "✓ 128 modules transformed.",
+  "dist/index.html                   0.46 kB │ gzip:  0.30 kB",
+  "dist/assets/index-abc123.js     612.11 kB │ gzip: 190.42 kB",
+  "✓ built in 0.60s",
+].join("\n");
+
+// A genuine rolldown-vite failure whose error text matches none of the generic
+// error heuristics — the parser must still populate errors[] (via fallback).
+const ROLLDOWN_UNMATCHED_FAILURE_STDERR = [
+  '[UNRESOLVED_IMPORT] Could not resolve "./missing" from "src/main.tsx"',
+  "https://rolldown.rs/guide/errors#unresolved-import",
+].join("\n");
+
 // ---------------------------------------------------------------------------
 // Parser tests
 // ---------------------------------------------------------------------------
@@ -169,6 +193,51 @@ describe("parseViteBuildOutput", () => {
   it("preserves duration exactly", () => {
     const result = parseViteBuildOutput("", "", 0, 7.891);
     expect(result.duration).toBe(7.891);
+  });
+
+  // #915: rolldown-vite@8 emits advisory-only stderr on a successful (exit 0)
+  // build. success must track the exit code, advisories must land in warnings[],
+  // and errors[] must stay empty.
+  it("reports success:true for a rolldown-vite build with advisory-only stderr (#915)", () => {
+    const result = parseViteBuildOutput(ROLLDOWN_ADVISORY_STDOUT, ROLLDOWN_ADVISORY_STDERR, 0, 0.6);
+
+    expect(result.success).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings!.length).toBeGreaterThanOrEqual(2);
+
+    const warningText = result.warnings!.join(" ");
+    expect(warningText).toContain("INEFFECTIVE_DYNAMIC_IMPORT");
+    expect(warningText).toContain("larger than 500 kB");
+
+    // The output-file summary lines are still parsed.
+    expect(result.outputs!.length).toBe(2);
+  });
+
+  it("never flips success to false based on advisory stderr alone (#915)", () => {
+    // Advisories on stderr with a zero exit code must remain a success.
+    const result = parseViteBuildOutput("", ROLLDOWN_ADVISORY_STDERR, 0, 0.6);
+    expect(result.success).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings!.length).toBeGreaterThan(0);
+  });
+
+  // #915: a non-zero exit must always yield a populated errors[] so the result
+  // is never internally inconsistent, even when rolldown's error text matches
+  // none of the generic error heuristics (fallback extraction).
+  it("populates errors[] on a genuine failure with unmatched error text (#915)", () => {
+    const result = parseViteBuildOutput("", ROLLDOWN_UNMATCHED_FAILURE_STDERR, 1, 0.4);
+
+    expect(result.success).toBe(false);
+    expect(result.errors!.length).toBeGreaterThan(0);
+    expect(result.errors!.join(" ")).toContain("Could not resolve");
+    // No spurious warnings for a hard failure.
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("guarantees a non-empty errors[] even when a failed build produced no diagnostics (#915)", () => {
+    const result = parseViteBuildOutput("", "", 1, 0.1);
+    expect(result.success).toBe(false);
+    expect(result.errors!.length).toBeGreaterThan(0);
   });
 });
 

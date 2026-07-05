@@ -2,10 +2,14 @@ import type { TestRun, Coverage, PlaywrightResult } from "../schemas/index.js";
 
 /** Formats structured test run results into a human-readable summary with pass/fail counts and failure details. */
 export function formatTestRun(r: TestRun): string {
-  const status = r.summary.failed > 0 ? "FAIL" : "PASS";
+  const status = r.error ? "ERROR" : r.summary.failed > 0 ? "FAIL" : "PASS";
   const parts = [
     `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];
+
+  if (r.error) {
+    parts.push(`  ${r.error.split("\n")[0]}`);
+  }
 
   for (const f of r.failures) {
     const loc = f.file ? `${f.file}${f.line ? `:${f.line}` : ""}` : "";
@@ -45,6 +49,7 @@ export interface TestRunCompact {
     duration: number;
   };
   failures: Array<{ name: string; message?: string }>;
+  error?: string;
 }
 
 export function compactTestRunMap(r: TestRun): TestRunCompact {
@@ -55,14 +60,19 @@ export function compactTestRunMap(r: TestRun): TestRunCompact {
       name: f.name,
       ...(f.message ? { message: f.message } : {}),
     })),
+    ...(r.error ? { error: r.error } : {}),
   };
 }
 
 export function formatTestRunCompact(r: TestRunCompact): string {
-  const status = r.summary.failed > 0 ? "FAIL" : "PASS";
+  const status = r.error ? "ERROR" : r.summary.failed > 0 ? "FAIL" : "PASS";
   const parts = [
     `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];
+
+  if (r.error) {
+    parts.push(`  ${r.error.split("\n")[0]}`);
+  }
 
   for (const f of r.failures) {
     parts.push(`  FAIL ${f.name}${f.message ? `: ${f.message}` : ""}`);
