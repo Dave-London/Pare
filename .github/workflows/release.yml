@@ -44,6 +44,10 @@ jobs:
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
+          # Use our version script (changeset version + server.json sync) instead
+          # of the action's default `changeset version`, so the "version packages"
+          # PR keeps each server.json version aligned with its package.json.
+          version: pnpm version-packages
           publish: pnpm release
           title: "chore: version packages"
           commit: "chore: version packages"
