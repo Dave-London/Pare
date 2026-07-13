@@ -100,6 +100,21 @@ describe("run", () => {
       unlinkSync(stdinScript);
     }
   });
+
+  it("closes stdin when no data is provided", async () => {
+    const stdinScript = join(tmpdir(), "pare-test-stdin-eof.js");
+    writeFileSync(
+      stdinScript,
+      "process.stdin.on('end',()=>process.stdout.write('closed'));process.stdin.resume()",
+    );
+    try {
+      const result = await run("node", [stdinScript], { timeout: 1000 });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("closed");
+    } finally {
+      unlinkSync(stdinScript);
+    }
+  });
 });
 
 describe("run – env and edge cases", () => {
