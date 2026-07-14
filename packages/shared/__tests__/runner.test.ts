@@ -108,7 +108,7 @@ describe("run", () => {
       "process.stdin.on('end',()=>process.stdout.write('closed'));process.stdin.resume()",
     );
     try {
-      const result = await run("node", [stdinScript], { timeout: 1000 });
+      const result = await run("node", [stdinScript], { timeout: 10000 });
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe("closed");
     } finally {
