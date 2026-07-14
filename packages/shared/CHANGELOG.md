@@ -1,5 +1,11 @@
 # @paretools/shared
 
+## 0.21.1
+
+### Patch Changes
+
+- [#986](https://github.com/Dave-London/Pare/pull/986) [`251d7a4`](https://github.com/Dave-London/Pare/commit/251d7a48a6d0a6dcf8e931644825793acac1862b) Thanks [@jamesx0416](https://github.com/jamesx0416)! - Close child stdin when no input is provided so commands that wait for EOF, including Bun scripts, can exit normally.
+
 ## 0.21.0
 
 ## 0.20.0
