@@ -656,7 +656,7 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
     // process knows input is complete (e.g., `git commit --file -`).
     if (opts?.stdin != null) {
       child.stdin?.write(opts.stdin);
-      child.stdin?.end();
     }
+    child.stdin?.end();
   });
 }
