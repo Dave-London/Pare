@@ -1,5 +1,12 @@
 # @paretools/npm
 
+## 0.21.1
+
+### Patch Changes
+
+- Updated dependencies [[`251d7a4`](https://github.com/Dave-London/Pare/commit/251d7a48a6d0a6dcf8e931644825793acac1862b)]:
+  - @paretools/shared@0.21.1
+
 ## 0.21.0
 
 ### Patch Changes
