@@ -106,6 +106,10 @@ export const CargoAddResultSchema = z.object({
     .boolean()
     .optional()
     .describe("True when --dry-run was used; Cargo.toml was not modified"),
+  packages: z
+    .array(z.string())
+    .optional()
+    .describe("Added package names (set in compact output in place of the added list)"),
   error: z.string().optional(),
 });
 
@@ -246,6 +250,17 @@ export const CargoAuditResultSchema = z.object({
     .number()
     .optional()
     .describe("Number of fixes applied when using cargo audit fix"),
+  // Top-level severity counts (set in compact output in place of the nested summary).
+  total: z.number().optional().describe("Total vulnerability count (set in compact output)"),
+  critical: z.number().optional().describe("Critical severity count (set in compact output)"),
+  high: z.number().optional().describe("High severity count (set in compact output)"),
+  medium: z.number().optional().describe("Medium severity count (set in compact output)"),
+  low: z.number().optional().describe("Low severity count (set in compact output)"),
+  informational: z
+    .number()
+    .optional()
+    .describe("Informational severity count (set in compact output)"),
+  unknown: z.number().optional().describe("Unknown severity count (set in compact output)"),
   omittedVulnerabilities: z
     .number()
     .optional()

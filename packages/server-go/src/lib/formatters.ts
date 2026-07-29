@@ -417,8 +417,8 @@ export interface GoModTidyCompact {
   success: boolean;
   summary?: string;
   madeChanges?: boolean;
-  addedModules?: number;
-  removedModules?: number;
+  addedModuleCount?: number;
+  removedModuleCount?: number;
   errorType?: GoModTidyResult["errorType"];
 }
 
@@ -428,8 +428,8 @@ export function compactModTidyMap(data: GoModTidyResult): GoModTidyCompact {
   };
   if (data.summary) compact.summary = data.summary;
   if (data.madeChanges !== undefined) compact.madeChanges = data.madeChanges;
-  if (data.addedModules?.length) compact.addedModules = data.addedModules.length;
-  if (data.removedModules?.length) compact.removedModules = data.removedModules.length;
+  if (data.addedModules?.length) compact.addedModuleCount = data.addedModules.length;
+  if (data.removedModules?.length) compact.removedModuleCount = data.removedModules.length;
   if (data.errorType) compact.errorType = data.errorType;
   return compact;
 }

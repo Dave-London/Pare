@@ -31,6 +31,8 @@ export const LintResultSchema = z.object({
   diagnosticsTruncated: z.boolean().optional(),
   /** Number of diagnostics omitted from the compact list (set alongside diagnosticsTruncated). */
   omittedCount: z.number().optional(),
+  /** Number of deprecation warnings (set in compact output in place of the deprecations list). */
+  deprecationCount: z.number().optional(),
   ...EmptyFailureSchemaFields,
 });
 
