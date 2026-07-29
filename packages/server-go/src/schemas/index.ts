@@ -100,6 +100,10 @@ export const GoModTidyResultSchema = z.object({
   summary: z.string().optional(),
   addedModules: z.array(z.string()).optional(),
   removedModules: z.array(z.string()).optional(),
+  /** Count of added modules (set in compact output in place of the addedModules list). */
+  addedModuleCount: z.number().optional(),
+  /** Count of removed modules (set in compact output in place of the removedModules list). */
+  removedModuleCount: z.number().optional(),
   errorType: z.enum(["network", "checksum", "syntax", "unknown"]).optional(),
   /** Whether go mod tidy actually changed go.mod/go.sum (true) or they were already tidy (false). */
   madeChanges: z.boolean().optional(),
@@ -150,21 +154,29 @@ export const GoGenerateResultSchema = z.object({
   timedOut: z.boolean().optional(),
   /** Parsed per-directive status from -v or -x output. */
   directives: z.array(GoGenerateDirectiveSchema).optional(),
+  /** Count of parsed directives (set in compact output in place of the directives list). */
+  directiveCount: z.number().optional(),
 });
 
 export type GoGenerateResult = z.infer<typeof GoGenerateResultSchema>;
 
 /** Zod schema for structured go env output with environment variables and key fields. */
-export const GoEnvResultSchema = z.object({
-  success: z.boolean(),
-  vars: z.record(z.string(), z.string()).optional(),
-  goroot: z.string(),
-  gopath: z.string(),
-  goversion: z.string(),
-  goos: z.string(),
-  goarch: z.string(),
-  cgoEnabled: z.boolean().optional(),
-});
+export const GoEnvResultSchema = z
+  .object({
+    success: z.boolean(),
+    vars: z.record(z.string(), z.string()).optional(),
+    goroot: z.string(),
+    gopath: z.string(),
+    goversion: z.string(),
+    goos: z.string(),
+    goarch: z.string(),
+    cgoEnabled: z.boolean().optional(),
+  })
+  // Compact mode surfaces explicitly queried variables (Gap #150) as top-level
+  // string entries (e.g. GOCACHE) — allow them through schema validation.
+  // z.unknown() (not z.string()) keeps the inferred type's index signature
+  // compatible with the declared boolean/record fields.
+  .catchall(z.unknown());
 
 export type GoEnvResult = z.infer<typeof GoEnvResultSchema>;
 
@@ -205,6 +217,8 @@ export const GoListResultSchema = z.object({
   packages: z.array(GoListPackageSchema).optional(),
   /** Module list (populated when modules mode is used). */
   modules: z.array(GoListModuleSchema).optional(),
+  /** Combined package/module count (set in compact output in place of the lists). */
+  packageCount: z.number().optional(),
 });
 
 export type GoListResult = z.infer<typeof GoListResultSchema>;
@@ -237,6 +251,8 @@ export const GoGetResultSchema = z.object({
   resolvedPackages: z.array(GoGetResolvedPackageSchema).optional(),
   /** Per-package status showing success/failure for each requested package. */
   packages: z.array(GoGetPackageStatusSchema).optional(),
+  /** Count of resolved packages (set in compact output in place of resolvedPackages). */
+  resolvedCount: z.number().optional(),
   goModChanges: z
     .object({
       added: z.array(z.string()),
@@ -284,6 +300,8 @@ export const GolangciLintResultSchema = z.object({
   errors: z.number(),
   warnings: z.number(),
   resultsTruncated: z.boolean().optional(),
+  /** Number of diagnostics omitted from the compact list (only set when the cap was hit). */
+  diagnosticsOmitted: z.number().optional(),
   /** Linter failure output (config error, crash) surfaced when the run failed with no parseable diagnostics (#1024). */
   ...EmptyFailureSchemaFields,
 });

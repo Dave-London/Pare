@@ -34,6 +34,15 @@ export const MypyDiagnosticSchema = z.object({
 export const MypyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(MypyDiagnosticSchema).optional(),
+  errorCount: z.number().optional().describe("Count of error diagnostics (set in compact output)"),
+  warningCount: z
+    .number()
+    .optional()
+    .describe("Count of warning diagnostics (set in compact output)"),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe("Whether the compact diagnostics list was capped (only set when true)"),
   ...EmptyFailureSchemaFields,
 });
 
@@ -61,6 +70,15 @@ export const RuffResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(RuffDiagnosticSchema).optional(),
   fixedCount: z.number().optional(),
+  total: z.number().optional().describe("Total diagnostic count (set in compact output)"),
+  fixableCount: z
+    .number()
+    .optional()
+    .describe("Count of fixable diagnostics (set in compact output)"),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe("Whether the compact diagnostics list was capped (only set when true)"),
   ...EmptyFailureSchemaFields,
 });
 
@@ -98,6 +116,19 @@ export const PipAuditResultSchema = z.object({
       }),
     )
     .optional(),
+  total: z.number().optional().describe("Total vulnerability count (set in compact output)"),
+  severityCounts: z
+    .record(z.string(), z.number())
+    .optional()
+    .describe("Vulnerability counts per severity (set in compact output)"),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe("Whether the compact vulnerability list was capped (only set when true)"),
+  skippedCount: z
+    .number()
+    .optional()
+    .describe("Count of packages skipped by the audit (set in compact output)"),
   ...EmptyFailureSchemaFields,
 });
 
@@ -118,6 +149,10 @@ export const PytestResultSchema = z.object({
   skipped: z.number(),
   warnings: z.number().describe("Count of warnings from pytest warnings summary"),
   failures: z.array(PytestFailureSchema).optional(),
+  failedTests: z
+    .array(z.string())
+    .optional()
+    .describe("Names of failed tests (set in compact output)"),
   exitCode: z
     .number()
     .optional()
@@ -215,6 +250,11 @@ export const PipListPackageSchema = z.object({
 export const PipListSchema = z.object({
   success: z.boolean(),
   packages: z.array(PipListPackageSchema).optional(),
+  total: z.number().optional().describe("Total installed package count (set in compact output)"),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe("Whether the compact package list was capped (only set when true)"),
   error: z.string().optional().describe("Parse error message when JSON parsing fails"),
   rawOutput: z.string().optional().describe("Raw CLI output included when parsing fails"),
 });
@@ -241,7 +281,14 @@ export const PipShowPackageSchema = z.object({
  *  Supports both single and multiple packages. */
 export const PipShowSchema = z.object({
   success: z.boolean(),
-  packages: z.array(PipShowPackageSchema).describe("Array of package info (one or more)"),
+  packages: z
+    .array(PipShowPackageSchema)
+    .optional()
+    .describe("Array of package info (one or more); omitted in compact output"),
+  packageCount: z
+    .number()
+    .optional()
+    .describe("Number of packages returned (set in compact output)"),
   // Keep top-level fields for backward compat (first package)
   name: z.string(),
   version: z.string(),
@@ -483,6 +530,13 @@ export const PoetryResultSchema = z.object({
   packages: z.array(PoetryPackageSchema).optional(),
   artifacts: z.array(PoetryArtifactSchema).optional(),
   messages: z.array(z.string()).optional(),
+  packageCount: z.number().optional().describe("Total package count (set in compact output)"),
+  artifactCount: z.number().optional().describe("Total artifact count (set in compact output)"),
+  messageCount: z.number().optional().describe("Total message count (set in compact output)"),
+  truncated: z
+    .boolean()
+    .optional()
+    .describe("Whether any compact list was capped (only set when true)"),
   ...EmptyFailureSchemaFields,
 });
 
