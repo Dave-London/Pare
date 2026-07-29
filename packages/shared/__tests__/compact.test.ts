@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
 import { estimateTokens, compactDualOutput, strippedCompactDualOutput } from "../src/output.js";
+import {
+  truncateStream,
+  compactStreamFields,
+  CompactStreamSchemaFields,
+  COMPACT_HEAD_LINES,
+  COMPACT_TAIL_LINES,
+  COMPACT_BYTE_CAP,
+} from "../src/compact.js";
 
 describe("estimateTokens", () => {
   it("returns 1 for a 4-char string", () => {
@@ -272,5 +280,193 @@ describe("strippedCompactDualOutput dev-mode validation", () => {
         schema,
       ),
     ).not.toThrow();
+  });
+});
+
+// ── truncateStream / compactStreamFields (extracted from server-process #1020) ──
+
+/** Builds a string of `count` numbered lines joined with the given separator. */
+function makeLines(count: number, sep = "\n"): string {
+  return Array.from({ length: count }, (_, i) => `line ${i + 1}`).join(sep);
+}
+
+describe("truncateStream", () => {
+  it("exports the #1020 default budget constants", () => {
+    expect(COMPACT_HEAD_LINES).toBe(40);
+    expect(COMPACT_TAIL_LINES).toBe(10);
+    expect(COMPACT_BYTE_CAP).toBe(8192);
+  });
+
+  it("returns empty text unchanged (one line per String.split semantics)", () => {
+    expect(truncateStream("")).toEqual({ text: "", truncated: false, totalLines: 1 });
+  });
+
+  it("returns short text unchanged", () => {
+    const text = makeLines(5);
+    expect(truncateStream(text)).toEqual({ text, truncated: false, totalLines: 5 });
+  });
+
+  it("does not truncate at exactly head + tail lines", () => {
+    const text = makeLines(COMPACT_HEAD_LINES + COMPACT_TAIL_LINES);
+    const result = truncateStream(text);
+    expect(result.truncated).toBe(false);
+    expect(result.text).toBe(text);
+    expect(result.totalLines).toBe(50);
+  });
+
+  it("truncates at one line over the budget with an omission marker", () => {
+    const text = makeLines(51);
+    const result = truncateStream(text);
+    expect(result.truncated).toBe(true);
+    expect(result.totalLines).toBe(51);
+    const lines = result.text.split("\n");
+    expect(lines).toHaveLength(51); // 40 head + 1 marker + 10 tail
+    expect(lines[0]).toBe("line 1");
+    expect(lines[39]).toBe("line 40");
+    expect(lines[40]).toBe("... (1 lines omitted) ...");
+    expect(lines[41]).toBe("line 42");
+    expect(lines[50]).toBe("line 51");
+  });
+
+  it("reports the omitted line count in the marker", () => {
+    const result = truncateStream(makeLines(150));
+    expect(result.text).toContain("... (100 lines omitted) ...");
+    expect(result.totalLines).toBe(150);
+  });
+
+  it("counts a trailing newline as an extra (empty) line", () => {
+    const result = truncateStream("a\nb\n");
+    expect(result.totalLines).toBe(3);
+    expect(result.truncated).toBe(false);
+  });
+
+  it("does not apply the byte cap at exactly the cap", () => {
+    const text = "x".repeat(COMPACT_BYTE_CAP);
+    const result = truncateStream(text);
+    expect(result.truncated).toBe(false);
+    expect(result.text).toBe(text);
+  });
+
+  it("applies the byte cap at one character over", () => {
+    const text = "x".repeat(COMPACT_BYTE_CAP + 1);
+    const result = truncateStream(text);
+    expect(result.truncated).toBe(true);
+    expect(result.text).toBe("x".repeat(COMPACT_BYTE_CAP) + "\n... (truncated)");
+    expect(result.totalLines).toBe(1);
+  });
+
+  it("applies the byte cap after line trimming when trimmed text is still too large", () => {
+    // 60 lines of 190 chars: line-trimmed to 40 head + marker + 10 tail (~9.6KB),
+    // so the marker lands inside the 8KB cap but the trimmed text still exceeds it.
+    const text = Array.from({ length: 60 }, () => "y".repeat(190)).join("\n");
+    const result = truncateStream(text);
+    expect(result.truncated).toBe(true);
+    expect(result.text.endsWith("\n... (truncated)")).toBe(true);
+    expect(result.text).toContain("... (10 lines omitted) ...");
+    expect(result.text.length).toBe(COMPACT_BYTE_CAP + "\n... (truncated)".length);
+    expect(result.totalLines).toBe(60);
+  });
+
+  it("honors custom headLines/tailLines", () => {
+    const result = truncateStream(makeLines(10), { headLines: 2, tailLines: 1 });
+    expect(result.truncated).toBe(true);
+    expect(result.text).toBe("line 1\nline 2\n... (7 lines omitted) ...\nline 10");
+    expect(result.totalLines).toBe(10);
+  });
+
+  it("honors a custom byteCap", () => {
+    const result = truncateStream("abcdef", { byteCap: 4 });
+    expect(result.truncated).toBe(true);
+    expect(result.text).toBe("abcd\n... (truncated)");
+  });
+
+  it("splits CRLF input on \\n, preserving carriage returns", () => {
+    const text = Array.from({ length: 10 }, (_, i) => `line ${i + 1}`).join("\r\n");
+    const result = truncateStream(text, { headLines: 2, tailLines: 1 });
+    expect(result.totalLines).toBe(10);
+    expect(result.truncated).toBe(true);
+    expect(result.text).toBe("line 1\r\nline 2\r\n... (7 lines omitted) ...\nline 10");
+  });
+});
+
+describe("compactStreamFields", () => {
+  it("returns an empty object for undefined streams", () => {
+    expect(compactStreamFields(undefined, undefined)).toEqual({});
+  });
+
+  it("omits empty-string streams entirely", () => {
+    const fields = compactStreamFields("", "");
+    expect(Object.keys(fields)).toEqual([]);
+  });
+
+  it("keeps a short stdout without truncation metadata", () => {
+    const fields = compactStreamFields("hello\nworld", undefined);
+    expect(fields).toEqual({ stdout: "hello\nworld" });
+    expect("stdoutTruncated" in fields).toBe(false);
+    expect("stdoutTotalLines" in fields).toBe(false);
+  });
+
+  it("sets stdoutTruncated and stdoutTotalLines only when stdout is truncated", () => {
+    const fields = compactStreamFields(makeLines(60), "err");
+    expect(fields.stdoutTruncated).toBe(true);
+    expect(fields.stdoutTotalLines).toBe(60);
+    expect(fields.stderr).toBe("err");
+    expect("stderrTruncated" in fields).toBe(false);
+    expect("stderrTotalLines" in fields).toBe(false);
+  });
+
+  it("sets stderrTruncated and stderrTotalLines only when stderr is truncated", () => {
+    const fields = compactStreamFields("out", makeLines(60));
+    expect(fields.stdout).toBe("out");
+    expect(fields.stderrTruncated).toBe(true);
+    expect(fields.stderrTotalLines).toBe(60);
+    expect("stdoutTruncated" in fields).toBe(false);
+  });
+
+  it("handles both streams truncated independently", () => {
+    const fields = compactStreamFields(makeLines(70), makeLines(90));
+    expect(fields.stdoutTruncated).toBe(true);
+    expect(fields.stdoutTotalLines).toBe(70);
+    expect(fields.stderrTruncated).toBe(true);
+    expect(fields.stderrTotalLines).toBe(90);
+  });
+
+  it("passes budget overrides through to truncateStream", () => {
+    const fields = compactStreamFields("a\nb\nc\nd", undefined, { headLines: 1, tailLines: 1 });
+    expect(fields.stdoutTruncated).toBe(true);
+    expect(fields.stdoutTotalLines).toBe(4);
+    expect(fields.stdout).toBe("a\n... (2 lines omitted) ...\nd");
+  });
+});
+
+describe("CompactStreamSchemaFields", () => {
+  const schema = z.object({
+    stdout: z.string().optional(),
+    stderr: z.string().optional(),
+    ...CompactStreamSchemaFields,
+  });
+
+  it("validates compactStreamFields output with truncation metadata", () => {
+    const fields = compactStreamFields(makeLines(60), makeLines(60));
+    expect(schema.parse(fields)).toEqual(fields);
+  });
+
+  it("validates compactStreamFields output without truncation metadata", () => {
+    const fields = compactStreamFields("short", undefined);
+    expect(schema.parse(fields)).toEqual(fields);
+  });
+
+  it("matches the server-process #1020 field shape", () => {
+    // Same field names and types declared by ProcessRunResultSchema.
+    expect(
+      schema.safeParse({
+        stdoutTruncated: true,
+        stderrTruncated: true,
+        stdoutTotalLines: 123,
+        stderrTotalLines: 456,
+      }).success,
+    ).toBe(true);
+    expect(schema.safeParse({ stdoutTotalLines: "123" }).success).toBe(false);
+    expect(schema.safeParse({ stdoutTruncated: "yes" }).success).toBe(false);
   });
 });

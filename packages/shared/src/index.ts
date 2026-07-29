@@ -39,6 +39,25 @@ export {
   filePatternsInput,
 } from "./input-schemas.js";
 export { sanitizeErrorOutput } from "./sanitize.js";
+export {
+  COMPACT_HEAD_LINES,
+  COMPACT_TAIL_LINES,
+  COMPACT_BYTE_CAP,
+  truncateStream,
+  compactStreamFields,
+  CompactStreamSchemaFields,
+} from "./compact.js";
+export type {
+  TruncateStreamOptions,
+  TruncateStreamResult,
+  CompactStreamFields,
+} from "./compact.js";
+export {
+  surfaceEmptyFailure,
+  SURFACE_EMPTY_FAILURE_MAX_BYTES,
+  EmptyFailureSchemaFields,
+} from "./diagnostics.js";
+export type { SurfaceEmptyFailureOptions } from "./diagnostics.js";
 export { shouldRegisterTool, isLazyEnabled, _resetProfileCache } from "./tool-filter.js";
 export { PROFILES, CORE_TOOLS, resolveProfile, isCoreToolForServer } from "./profiles.js";
 export type { ProfileName } from "./profiles.js";
