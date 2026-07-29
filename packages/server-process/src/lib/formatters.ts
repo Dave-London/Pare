@@ -59,24 +59,88 @@ export function formatRun(data: ProcessRunResultInternal): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact run: schema-compatible fields only. Drop stdout/stderr and Internal fields. */
+/** Compact output budget: keep the first N lines and last N lines of each stream. */
+export const COMPACT_HEAD_LINES = 40;
+export const COMPACT_TAIL_LINES = 10;
+/** Compact output budget: hard byte cap per stream (applied after line trimming). */
+export const COMPACT_BYTE_CAP = 8192;
+
+/**
+ * Truncates a stream to the compact budget: first 40 lines + last 10 lines,
+ * then a hard 8KB byte cap. Returns the (possibly truncated) text, whether
+ * truncation occurred, and the total line count of the original text.
+ */
+function truncateForCompact(text: string): {
+  text: string;
+  truncated: boolean;
+  totalLines: number;
+} {
+  const lines = text.split("\n");
+  const totalLines = lines.length;
+  let out = text;
+  let truncated = false;
+
+  if (totalLines > COMPACT_HEAD_LINES + COMPACT_TAIL_LINES) {
+    const omitted = totalLines - COMPACT_HEAD_LINES - COMPACT_TAIL_LINES;
+    out = [
+      ...lines.slice(0, COMPACT_HEAD_LINES),
+      `... (${omitted} lines omitted) ...`,
+      ...lines.slice(totalLines - COMPACT_TAIL_LINES),
+    ].join("\n");
+    truncated = true;
+  }
+
+  if (out.length > COMPACT_BYTE_CAP) {
+    out = out.slice(0, COMPACT_BYTE_CAP) + "\n... (truncated)";
+    truncated = true;
+  }
+
+  return { text: out, truncated, totalLines };
+}
+
+/** Compact run: schema-compatible fields only. stdout/stderr kept, truncated to a small budget. */
 export interface ProcessRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
   timedOut: boolean;
+  stdout?: string;
+  stderr?: string;
+  stdoutTruncated?: boolean;
+  stderrTruncated?: boolean;
+  stdoutTotalLines?: number;
+  stderrTotalLines?: number;
   truncated?: boolean;
   signal?: string;
 }
 
 export function compactRunMap(data: ProcessRunResultInternal): ProcessRunCompact {
-  return {
+  const compact: ProcessRunCompact = {
     exitCode: data.exitCode,
     success: data.success,
     timedOut: data.timedOut,
     truncated: data.truncated,
     signal: data.signal,
   };
+
+  if (data.stdout) {
+    const t = truncateForCompact(data.stdout);
+    compact.stdout = t.text;
+    if (t.truncated) {
+      compact.stdoutTruncated = true;
+      compact.stdoutTotalLines = t.totalLines;
+    }
+  }
+  if (data.stderr) {
+    const t = truncateForCompact(data.stderr);
+    compact.stderr = t.text;
+    if (t.truncated) {
+      compact.stderrTruncated = true;
+      compact.stderrTotalLines = t.totalLines;
+    }
+  }
+
+  return compact;
 }
 
 export function formatRunCompact(data: ProcessRunCompact): string {
@@ -92,6 +156,23 @@ export function formatRunCompact(data: ProcessRunCompact): string {
 
   if (data.truncated) {
     parts.push("  [output truncated: maxBuffer exceeded]");
+  }
+
+  if (data.stdout) {
+    parts.push(data.stdout);
+    if (data.stdoutTruncated) {
+      parts.push(
+        `  [stdout truncated: ${data.stdoutTotalLines} total lines; re-run with compact:false for full output]`,
+      );
+    }
+  }
+  if (data.stderr) {
+    parts.push(data.stderr);
+    if (data.stderrTruncated) {
+      parts.push(
+        `  [stderr truncated: ${data.stderrTotalLines} total lines; re-run with compact:false for full output]`,
+      );
+    }
   }
 
   return parts.join("\n");

@@ -56,6 +56,9 @@ describe("@paretools/process integration", () => {
       expect(sc.success).toBe(true);
       expect(sc.exitCode).toBe(0);
       expect(sc.timedOut).toBe(false);
+      // Compact mode (the default) must still include stdout (issue #983)
+      expect(sc.stdout).toContain("42");
+      expect(sc.stdoutTruncated).toBeUndefined();
     });
 
     it("returns exit code for a failing command", async () => {

@@ -11,6 +11,14 @@ export const ProcessRunResultSchema = z.object({
   timedOut: z.boolean(),
   truncated: z.boolean().optional(),
   signal: z.string().optional(),
+  /** Whether stdout was truncated to the compact output budget. Re-run with compact:false for full output. */
+  stdoutTruncated: z.boolean().optional(),
+  /** Whether stderr was truncated to the compact output budget. Re-run with compact:false for full output. */
+  stderrTruncated: z.boolean().optional(),
+  /** Total number of stdout lines before compact truncation (only set when stdoutTruncated). */
+  stdoutTotalLines: z.number().optional(),
+  /** Total number of stderr lines before compact truncation (only set when stderrTruncated). */
+  stderrTotalLines: z.number().optional(),
 });
 
 export type ProcessRunResult = z.infer<typeof ProcessRunResultSchema>;

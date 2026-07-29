@@ -118,7 +118,7 @@ describe("formatRun", () => {
 // ── Compact mappers and formatters ───────────────────────────────────
 
 describe("compactRunMap", () => {
-  it("keeps exitCode, success, timedOut; drops command, duration, stdout, stderr", () => {
+  it("keeps exitCode, success, timedOut, stdout, stderr; drops command, duration", () => {
     const data: ProcessRunResultInternal = {
       command: "echo",
       success: true,
@@ -134,10 +134,111 @@ describe("compactRunMap", () => {
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
     expect(compact.timedOut).toBe(false);
+    expect(compact.stdout).toBe("lots of output...");
+    expect(compact.stderr).toBe("some warnings");
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stderrTruncated).toBeUndefined();
     expect(compact).not.toHaveProperty("command");
     expect(compact).not.toHaveProperty("duration");
+  });
+
+  it("passes short output through whole with no truncation flags", () => {
+    const stdout = Array.from({ length: 50 }, (_, i) => `line ${i + 1}`).join("\n");
+    const data: ProcessRunResultInternal = {
+      command: "ls",
+      success: true,
+      exitCode: 0,
+      stdout,
+      duration: 20,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdout).toBe(stdout);
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stdoutTotalLines).toBeUndefined();
+  });
+
+  it("truncates long stdout to head+tail and sets truncation fields", () => {
+    const stdout = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join("\n");
+    const data: ProcessRunResultInternal = {
+      command: "cat",
+      success: true,
+      exitCode: 0,
+      stdout,
+      duration: 20,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdoutTotalLines).toBe(200);
+    expect(compact.stdout).toContain("line 1\n");
+    expect(compact.stdout).toContain("line 40");
+    expect(compact.stdout).toContain("line 191");
+    expect(compact.stdout).toContain("line 200");
+    expect(compact.stdout).toContain("... (150 lines omitted) ...");
+    expect(compact.stdout).not.toContain("line 41\n");
+    expect(compact.stdout).not.toContain("line 190\n");
+  });
+
+  it("truncates long stderr independently of stdout", () => {
+    const stderr = Array.from({ length: 100 }, (_, i) => `err ${i + 1}`).join("\n");
+    const data: ProcessRunResultInternal = {
+      command: "node",
+      success: false,
+      exitCode: 1,
+      stdout: "short",
+      stderr,
+      duration: 20,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdout).toBe("short");
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stderrTruncated).toBe(true);
+    expect(compact.stderrTotalLines).toBe(100);
+    expect(compact.stderr).toContain("... (50 lines omitted) ...");
+  });
+
+  it("applies the 8KB byte cap to few very long lines", () => {
+    const stdout = "x".repeat(20_000);
+    const data: ProcessRunResultInternal = {
+      command: "cat",
+      success: true,
+      exitCode: 0,
+      stdout,
+      duration: 20,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdoutTotalLines).toBe(1);
+    expect((compact.stdout as string).length).toBeLessThan(8192 + 32);
+    expect(compact.stdout).toContain("... (truncated)");
+  });
+
+  it("omits stdout/stderr entirely when there is no output", () => {
+    const data: ProcessRunResultInternal = {
+      command: "true",
+      success: true,
+      exitCode: 0,
+      duration: 10,
+      timedOut: false,
+    };
+
+    const compact = compactRunMap(data);
+
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stderrTruncated).toBeUndefined();
   });
 
   it("preserves signal and timedOut", () => {
@@ -275,5 +376,34 @@ describe("formatRunCompact", () => {
     });
     expect(output).toContain("process: exit code 1.");
     expect(output).toContain("[output truncated: maxBuffer exceeded]");
+  });
+
+  it("includes stdout and stderr in the text output", () => {
+    const output = formatRunCompact({
+      exitCode: 0,
+      success: true,
+      timedOut: false,
+      stdout: "hello world",
+      stderr: "a warning",
+    });
+    expect(output).toContain("process: success.");
+    expect(output).toContain("hello world");
+    expect(output).toContain("a warning");
+  });
+
+  it("shows truncation notices with total line counts", () => {
+    const output = formatRunCompact({
+      exitCode: 0,
+      success: true,
+      timedOut: false,
+      stdout: "first lines...",
+      stdoutTruncated: true,
+      stdoutTotalLines: 500,
+      stderr: "err lines...",
+      stderrTruncated: true,
+      stderrTotalLines: 120,
+    });
+    expect(output).toContain("[stdout truncated: 500 total lines; re-run with compact:false");
+    expect(output).toContain("[stderr truncated: 120 total lines; re-run with compact:false");
   });
 });
