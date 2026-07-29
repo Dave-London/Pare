@@ -1,3 +1,4 @@
+import { surfaceEmptyFailure } from "@paretools/shared";
 import type {
   GoBuildResult,
   GoTestResult,
@@ -84,8 +85,18 @@ export function parseGoBuildOutput(
  * Parses `go test -json` output.
  * Each line is a JSON object: { Time, Action, Package, Test, Elapsed, Output }
  * Actions: "run", "pause", "cont", "pass", "fail", "skip", "output"
+ *
+ * Toolchain failures (e.g. "go: cannot find main module", bad -tags, invalid
+ * flags) go to stderr and produce no parseable JSON on stdout. When the run
+ * exits non-zero with zero parsed tests and no package failures, the raw
+ * stderr/stdout tail is surfaced via the `error` field (#1024). Normal test
+ * failures (non-zero exit with parsed failures) do NOT set `error`.
  */
-export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult {
+export function parseGoTestJson(
+  stdout: string,
+  exitCode: number,
+  stderr: string = "",
+): GoTestResult {
   const lines = stdout.trim().split("\n").filter(Boolean);
 
   // Collect output lines per test (keyed by package/test)
@@ -187,7 +198,7 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
   const failed = tests.filter((t) => t.status === "fail").length;
   const skipped = tests.filter((t) => t.status === "skip").length;
 
-  return {
+  const data: GoTestResult = {
     success: exitCode === 0,
     tests,
     packageFailures: packageFailures.length > 0 ? packageFailures : undefined,
@@ -195,6 +206,15 @@ export function parseGoTestJson(stdout: string, exitCode: number): GoTestResult 
     failed,
     skipped,
   };
+
+  // Surface toolchain failures that produced no parseable test output (#1024)
+  return surfaceEmptyFailure(
+    data,
+    { exitCode, stdout, stderr },
+    {
+      isEmpty: (d) => (d.tests?.length ?? 0) === 0 && (d.packageFailures?.length ?? 0) === 0,
+    },
+  );
 }
 
 interface GoTestEvent {
@@ -832,20 +852,37 @@ function splitJsonObjects(text: string): string[] {
 /**
  * Parses `golangci-lint run --out-format json` output into structured diagnostics.
  * The JSON output has the shape: { Issues: [...], Report: { Linters: [...] } }
+ *
+ * golangci-lint exits 1 when issues are found — that is normal and does NOT
+ * set `error`. But when the linter fails outright (config error, crash,
+ * timeout) it exits non-zero with no parseable JSON on stdout; that state
+ * previously read as a clean `{diagnostics: [], errors: 0}` result. The raw
+ * stderr/stdout tail is now surfaced via the `error` field (#1024).
  */
-export function parseGolangciLintJson(stdout: string, _exitCode: number): GolangciLintResult {
+export function parseGolangciLintJson(
+  stdout: string,
+  exitCode: number,
+  stderr: string = "",
+): GolangciLintResult {
   const diagnostics: GolangciLintDiagnostic[] = [];
+  // Surface linter failures that produced no parseable diagnostics (#1024)
+  const withFailure = (data: GolangciLintResult): GolangciLintResult =>
+    surfaceEmptyFailure(
+      data,
+      { exitCode, stdout, stderr },
+      { isEmpty: (d) => (d.diagnostics?.length ?? 0) === 0 },
+    );
 
   if (!stdout.trim()) {
-    return { diagnostics, errors: 0, warnings: 0 };
+    return withFailure({ diagnostics, errors: 0, warnings: 0 });
   }
 
   let parsed: GolangciLintJsonOutput;
   try {
     parsed = JSON.parse(stdout);
   } catch {
-    // If JSON parsing fails, return empty result
-    return { diagnostics, errors: 0, warnings: 0 };
+    // JSON parsing failed: surface the failure instead of a clean-looking result
+    return withFailure({ diagnostics, errors: 0, warnings: 0 });
   }
 
   const issues = parsed.Issues ?? [];
@@ -895,11 +932,11 @@ export function parseGolangciLintJson(stdout: string, _exitCode: number): Golang
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
 
-  return {
+  return withFailure({
     diagnostics,
     errors,
     warnings,
-  };
+  });
 }
 
 function mapSeverity(severity?: string): "error" | "warning" | "info" {

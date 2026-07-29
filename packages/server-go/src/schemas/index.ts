@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CompactStreamSchemaFields, EmptyFailureSchemaFields } from "@paretools/shared";
 
 /** Zod schema for a single go build error with file location and message. */
 export const GoBuildErrorSchema = z.object({
@@ -54,6 +55,8 @@ export const GoTestResultSchema = z.object({
   passed: z.number(),
   failed: z.number(),
   skipped: z.number(),
+  /** Toolchain failure output (e.g. "go: cannot find main module") surfaced when the run failed with zero parsed tests (#1024). */
+  ...EmptyFailureSchemaFields,
 });
 
 export type GoTestResult = z.infer<typeof GoTestResultSchema>;
@@ -84,10 +87,8 @@ export const GoRunResultSchema = z.object({
   stdout: z.string().optional(),
   stderr: z.string().optional(),
   timedOut: z.boolean().optional(),
-  /** Whether stdout was truncated due to maxOutput limit. */
-  stdoutTruncated: z.boolean().optional(),
-  /** Whether stderr was truncated due to maxOutput limit. */
-  stderrTruncated: z.boolean().optional(),
+  /** Truncation flags cover both the maxOutput limit and compact-mode stream budgets (#1022). */
+  ...CompactStreamSchemaFields,
   success: z.boolean(),
 });
 
@@ -283,6 +284,8 @@ export const GolangciLintResultSchema = z.object({
   errors: z.number(),
   warnings: z.number(),
   resultsTruncated: z.boolean().optional(),
+  /** Linter failure output (config error, crash) surfaced when the run failed with no parseable diagnostics (#1024). */
+  ...EmptyFailureSchemaFields,
 });
 
 export type GolangciLintResult = z.infer<typeof GolangciLintResultSchema>;

@@ -1,3 +1,4 @@
+import { compactStreamFields } from "@paretools/shared";
 import type {
   GoBuildResult,
   GoTestResult,
@@ -44,6 +45,12 @@ export function formatGoTest(data: GoTestResult): string {
   const lines = [
     `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`,
   ];
+  if (data.error) {
+    lines.push("Toolchain error:");
+    for (const errorLine of data.error.split("\n")) {
+      lines.push(`  ${errorLine}`);
+    }
+  }
   for (const t of data.tests ?? []) {
     const elapsed = t.elapsed !== undefined ? ` (${t.elapsed}s)` : "";
     lines.push(`  ${t.status.padEnd(4)} ${t.package}/${t.name}${elapsed}`);
@@ -233,7 +240,7 @@ export function formatBuildCompact(data: GoBuildCompact): string {
   return `go build: ${total} errors`;
 }
 
-/** Compact test: passed, failed, skipped. Drop individual test details but keep package failures. */
+/** Compact test: passed, failed, skipped. Drop individual test details but keep package failures and toolchain errors. */
 export interface GoTestCompact {
   [key: string]: unknown;
   success: boolean;
@@ -241,6 +248,8 @@ export interface GoTestCompact {
   failed: number;
   skipped: number;
   packageFailures?: GoTestResult["packageFailures"];
+  error?: string;
+  exitCode?: number;
 }
 
 export function compactTestMap(data: GoTestResult): GoTestCompact {
@@ -251,12 +260,23 @@ export function compactTestMap(data: GoTestResult): GoTestCompact {
     skipped: data.skipped,
   };
   if (data.packageFailures?.length) compact.packageFailures = data.packageFailures;
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
 export function formatTestCompact(data: GoTestCompact): string {
   const status = data.success ? "ok" : "FAIL";
-  return `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`;
+  const lines = [
+    `${status}: ${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped`,
+  ];
+  if (data.error) {
+    lines.push("Toolchain error:");
+    for (const errorLine of data.error.split("\n")) {
+      lines.push(`  ${errorLine}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 /** Compact vet: success + diagnostics preserved when non-empty (total derived from diagnostics). */
@@ -280,12 +300,12 @@ export function formatVetCompact(data: GoVetCompact): string {
   return `go vet: ${total} issues`;
 }
 
-/** Compact fmt: success, file count. Drop individual file list and parse errors. */
+/** Compact fmt: success, file count. Drop the file list but keep parse errors — they are real errors, not noise (#1022). */
 export interface GoFmtCompact {
   [key: string]: unknown;
   success: boolean;
   filesChanged: number;
-  parseErrorCount?: number;
+  parseErrors?: GoFmtResult["parseErrors"];
 }
 
 export function compactFmtMap(data: GoFmtResult): GoFmtCompact {
@@ -293,42 +313,77 @@ export function compactFmtMap(data: GoFmtResult): GoFmtCompact {
     success: data.success,
     filesChanged: data.filesChanged,
   };
-  if (data.parseErrors?.length) compact.parseErrorCount = data.parseErrors.length;
+  if (data.parseErrors?.length) compact.parseErrors = data.parseErrors;
   return compact;
 }
 
 export function formatFmtCompact(data: GoFmtCompact): string {
-  if (data.success && data.filesChanged === 0) return "gofmt: all files formatted.";
-  const parts = [`gofmt: ${data.filesChanged} files`];
-  if (data.parseErrorCount) parts.push(`${data.parseErrorCount} parse errors`);
-  return parts.join(", ");
+  const parseErrors = data.parseErrors ?? [];
+  if (data.success && data.filesChanged === 0 && parseErrors.length === 0) {
+    return "gofmt: all files formatted.";
+  }
+  const lines = [
+    `gofmt: ${data.filesChanged} files` +
+      (parseErrors.length > 0 ? `, ${parseErrors.length} parse errors` : ""),
+  ];
+  for (const pe of parseErrors) {
+    const col = pe.column ? `:${pe.column}` : "";
+    lines.push(`  ${pe.file}:${pe.line}${col}: ${pe.message}`);
+  }
+  return lines.join("\n");
 }
 
-/** Compact run: exitCode, success, truncation flags. Drop stdout/stderr (signal removed from schema). */
+/** Compact run: exitCode, success, and stdout/stderr truncated to the shared compact budget (#1022, the #983/#1020 pattern). */
 export interface GoRunCompact {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
   timedOut?: boolean;
+  stdout?: string;
+  stderr?: string;
   stdoutTruncated?: boolean;
   stderrTruncated?: boolean;
+  stdoutTotalLines?: number;
+  stderrTotalLines?: number;
 }
 
 export function compactRunMap(data: GoRunResult): GoRunCompact {
   const compact: GoRunCompact = {
     exitCode: data.exitCode,
     success: data.success,
+    ...compactStreamFields(data.stdout, data.stderr),
   };
   if (data.timedOut) compact.timedOut = true;
+  // Preserve pre-existing truncation flags (maxOutput limit applied upstream)
   if (data.stdoutTruncated) compact.stdoutTruncated = true;
   if (data.stderrTruncated) compact.stderrTruncated = true;
   return compact;
 }
 
 export function formatRunCompact(data: GoRunCompact): string {
-  if (data.timedOut) return "go run: timed out.";
-  if (data.success) return "go run: success.";
-  return `go run: exit code ${data.exitCode}.`;
+  const lines: string[] = [];
+  if (data.timedOut) {
+    lines.push("go run: timed out.");
+  } else if (data.success) {
+    lines.push("go run: success.");
+  } else {
+    lines.push(`go run: exit code ${data.exitCode}.`);
+  }
+  if (data.stdout) {
+    lines.push(data.stdout);
+    if (data.stdoutTruncated) {
+      const total = data.stdoutTotalLines ? `: ${data.stdoutTotalLines} total lines` : "";
+      lines.push(`  [stdout truncated${total}; re-run with compact:false for full output]`);
+    }
+  }
+  if (data.stderr) {
+    lines.push(data.stderr);
+    if (data.stderrTruncated) {
+      const total = data.stderrTotalLines ? `: ${data.stderrTotalLines} total lines` : "";
+      lines.push(`  [stderr truncated${total}; re-run with compact:false for full output]`);
+    }
+  }
+  return lines.join("\n");
 }
 
 /** Compact generate: success. Output included when non-empty. */
@@ -569,26 +624,42 @@ export function formatGoGet(data: GoGetResult): string {
   return lines.join("\n");
 }
 
-/** Compact get: success + resolved package count. Drop individual details (output removed from schema). */
+/** Compact get: success + resolved package count. Keep failing packages with error/errorType so failures stay actionable (#1022). */
 export interface GoGetCompact {
   [key: string]: unknown;
   success: boolean;
   resolvedCount: number;
+  packages?: GoGetResult["packages"];
 }
 
 export function compactGetMap(data: GoGetResult): GoGetCompact {
-  return {
+  const compact: GoGetCompact = {
     success: data.success,
     resolvedCount: data.resolvedPackages?.length ?? 0,
   };
+  const failing = data.packages?.filter((p) => p.error);
+  if (failing?.length) compact.packages = failing;
+  return compact;
 }
 
 export function formatGetCompact(data: GoGetCompact): string {
+  const lines: string[] = [];
   if (data.success) {
-    if (data.resolvedCount > 0) return `go get: success, ${data.resolvedCount} packages resolved.`;
-    return "go get: success.";
+    if (data.resolvedCount > 0) {
+      lines.push(`go get: success, ${data.resolvedCount} packages resolved.`);
+    } else {
+      lines.push("go get: success.");
+    }
+  } else {
+    lines.push("go get: FAIL");
   }
-  return "go get: FAIL";
+  for (const pkg of data.packages ?? []) {
+    if (pkg.error) {
+      const type = pkg.errorType ? ` [${pkg.errorType}]` : "";
+      lines.push(`  ${pkg.path}${type}: ${pkg.error}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 // ── golangci-lint ────────────────────────────────────────────────────
@@ -597,6 +668,12 @@ export function formatGetCompact(data: GoGetCompact): string {
 export function formatGolangciLint(data: GolangciLintResult): string {
   const diagnostics = data.diagnostics ?? [];
   const total = diagnostics.length;
+  if (data.error) {
+    const exitNote = data.exitCode !== undefined ? ` (exit code ${data.exitCode})` : "";
+    return [`golangci-lint: FAIL${exitNote}`, ...data.error.split("\n").map((l) => `  ${l}`)].join(
+      "\n",
+    );
+  }
   if (total === 0) return "golangci-lint: no issues found.";
 
   const lines = [
@@ -616,12 +693,19 @@ export function formatGolangciLint(data: GolangciLintResult): string {
   return lines.join("\n");
 }
 
-/** Compact golangci-lint: errors, warnings counts. Drop individual diagnostics (total derived from errors+warnings). */
+/** Maximum diagnostics kept in compact golangci-lint output (#1022). */
+export const GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS = 20;
+
+/** Compact golangci-lint: errors/warnings counts plus the first N diagnostics (fix data stripped) and any linter failure (#1022). */
 export interface GolangciLintCompact {
   [key: string]: unknown;
   errors: number;
   warnings: number;
   resultsTruncated?: boolean;
+  diagnostics?: GolangciLintResult["diagnostics"];
+  diagnosticsOmitted?: number;
+  error?: string;
+  exitCode?: number;
 }
 
 export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCompact {
@@ -630,12 +714,46 @@ export function compactGolangciLintMap(data: GolangciLintResult): GolangciLintCo
     warnings: data.warnings,
   };
   if (data.resultsTruncated) compact.resultsTruncated = true;
+  const diagnostics = data.diagnostics ?? [];
+  if (diagnostics.length > 0) {
+    compact.diagnostics = diagnostics
+      .slice(0, GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS)
+      .map(({ file, line, column, linter, severity, message }) => ({
+        file,
+        line,
+        ...(column !== undefined ? { column } : {}),
+        linter,
+        severity,
+        message,
+      }));
+    if (diagnostics.length > GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS) {
+      compact.diagnosticsOmitted = diagnostics.length - GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS;
+    }
+  }
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
 export function formatGolangciLintCompact(data: GolangciLintCompact): string {
+  if (data.error) {
+    const exitNote = data.exitCode !== undefined ? ` (exit code ${data.exitCode})` : "";
+    return [`golangci-lint: FAIL${exitNote}`, ...data.error.split("\n").map((l) => `  ${l}`)].join(
+      "\n",
+    );
+  }
   const total = data.errors + data.warnings;
   if (total === 0) return "golangci-lint: no issues found.";
   const truncated = data.resultsTruncated ? " (truncated)" : "";
-  return `golangci-lint: ${total} issues (${data.errors} errors, ${data.warnings} warnings)${truncated}`;
+  const lines = [
+    `golangci-lint: ${total} issues (${data.errors} errors, ${data.warnings} warnings)${truncated}`,
+  ];
+  for (const d of data.diagnostics ?? []) {
+    const col = d.column ? `:${d.column}` : "";
+    lines.push(`  ${d.file}:${d.line}${col}: ${d.message} (${d.linter})`);
+  }
+  if (data.diagnosticsOmitted) {
+    lines.push(`  ... ${data.diagnosticsOmitted} more (re-run with compact:false for all)`);
+  }
+  return lines.join("\n");
 }

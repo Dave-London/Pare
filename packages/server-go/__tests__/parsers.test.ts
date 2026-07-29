@@ -302,6 +302,77 @@ describe("parseGoTestJson", () => {
   });
 });
 
+// ─── #1024: go test silent-failure surfacing ────────────────────────
+
+describe("parseGoTestJson — silent failure surfacing (#1024)", () => {
+  it("surfaces a toolchain error from stderr when no tests parsed", () => {
+    const stderr = "go: cannot find main module, but found .git/config in /repo\n";
+    const result = parseGoTestJson("", 1, stderr);
+
+    expect(result.success).toBe(false);
+    expect(result.passed).toBe(0);
+    expect(result.failed).toBe(0);
+    expect(result.error).toBe("go: cannot find main module, but found .git/config in /repo");
+    expect(result.exitCode).toBe(1);
+  });
+
+  it("surfaces a bad build tag error", () => {
+    const stderr = 'go: -tags= flag: malformed tag "bad tag"';
+    const result = parseGoTestJson("", 2, stderr);
+
+    expect(result.error).toContain("malformed tag");
+    expect(result.exitCode).toBe(2);
+  });
+
+  it("does NOT set error when test failures were parsed (normal non-zero exit)", () => {
+    const stdout = [
+      JSON.stringify({ Action: "run", Package: "myapp", Test: "TestFail" }),
+      JSON.stringify({ Action: "fail", Package: "myapp", Test: "TestFail", Elapsed: 0.01 }),
+    ].join("\n");
+    const result = parseGoTestJson(stdout, 1, "some stderr noise");
+
+    expect(result.failed).toBe(1);
+    expect(result.error).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
+  });
+
+  it("does NOT set error when package failures were parsed", () => {
+    const stdout = [
+      JSON.stringify({
+        Action: "output",
+        Package: "myapp/broken",
+        Output: "./main.go:5:2: undefined: missingFunc\n",
+      }),
+      JSON.stringify({ Action: "fail", Package: "myapp/broken", Elapsed: 0.1 }),
+    ].join("\n");
+    const result = parseGoTestJson(stdout, 1, "");
+
+    expect(result.packageFailures).toHaveLength(1);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("does NOT set error on clean empty run (exit 0)", () => {
+    const result = parseGoTestJson("", 0, "");
+
+    expect(result.error).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
+  });
+
+  it("falls back to stdout when stderr is empty", () => {
+    const result = parseGoTestJson("malformed non-JSON output", 1, "");
+
+    expect(result.error).toBe("malformed non-JSON output");
+    expect(result.exitCode).toBe(1);
+  });
+
+  it("uses a fallback message when both streams are empty on failure", () => {
+    const result = parseGoTestJson("", 1, "");
+
+    expect(result.error).toContain("exited with code 1");
+    expect(result.exitCode).toBe(1);
+  });
+});
+
 describe("parseGoVetOutput", () => {
   it("parses vet diagnostics from text output (fallback)", () => {
     const stderr = [
@@ -829,10 +900,12 @@ describe("parseGolangciLintJson", () => {
     expect(result.warnings).toBe(0);
   });
 
-  it("handles malformed JSON", () => {
+  it("handles malformed JSON by surfacing the failure (#1024)", () => {
     const result = parseGolangciLintJson("not valid json", 1);
 
     expect(result.diagnostics).toHaveLength(0);
+    expect(result.error).toBe("not valid json");
+    expect(result.exitCode).toBe(1);
   });
 
   it("groups diagnostics by linter", () => {
@@ -869,6 +942,53 @@ describe("parseGolangciLintJson", () => {
     const result = parseGolangciLintJson(stdout, 0);
 
     expect(result.diagnostics).toHaveLength(0);
+  });
+});
+
+// ─── #1024: golangci-lint silent-failure surfacing ──────────────────
+
+describe("parseGolangciLintJson — silent failure surfacing (#1024)", () => {
+  it("surfaces a config error from stderr on empty stdout", () => {
+    const stderr =
+      "level=error msg=\"Can't read config: can't read viper config: While parsing config: yaml: line 3: mapping values are not allowed in this context\"";
+    const result = parseGolangciLintJson("", 3, stderr);
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.errors).toBe(0);
+    expect(result.error).toContain("Can't read config");
+    expect(result.exitCode).toBe(3);
+  });
+
+  it("prefers stderr over unparseable stdout for the error detail", () => {
+    const result = parseGolangciLintJson("garbage output", 2, 'level=error msg="linter panic"');
+
+    expect(result.error).toContain("linter panic");
+    expect(result.exitCode).toBe(2);
+  });
+
+  it("does NOT set error when issues were found (normal exit 1)", () => {
+    const stdout = JSON.stringify({
+      Issues: [{ FromLinter: "govet", Text: "issue", Pos: { Filename: "a.go", Line: 1 } }],
+    });
+    const result = parseGolangciLintJson(stdout, 1, "some stderr noise");
+
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.error).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
+  });
+
+  it("does NOT set error on a clean run (exit 0, empty output)", () => {
+    const result = parseGolangciLintJson("", 0, "");
+
+    expect(result.error).toBeUndefined();
+    expect(result.exitCode).toBeUndefined();
+  });
+
+  it("uses a fallback message when both streams are empty on failure", () => {
+    const result = parseGolangciLintJson("", 4, "");
+
+    expect(result.error).toContain("exited with code 4");
+    expect(result.exitCode).toBe(4);
   });
 });
 
