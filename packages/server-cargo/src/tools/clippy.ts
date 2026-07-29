@@ -186,7 +186,9 @@ export function registerClippyTool(server: McpServer) {
       }
 
       const result = await cargo(args, cwd);
-      const data = parseCargoClippyJson(result.stdout, result.exitCode);
+      // Epic #1024: pass stderr so pre-lint failures surface an error instead of
+      // a silent "no warnings" result.
+      const data = parseCargoClippyJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
         result.stdout,

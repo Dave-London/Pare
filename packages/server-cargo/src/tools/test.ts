@@ -158,7 +158,9 @@ export function registerTestTool(server: McpServer) {
       const humanOutput = humanLines.join("\n");
       const jsonOutput = jsonLines.length > 0 ? jsonLines.join("\n") : undefined;
 
-      const data = parseCargoTestOutput(humanOutput, result.exitCode, jsonOutput);
+      // Epic #1024: pass stderr so pre-run failures (missing Cargo.toml, toolchain
+      // errors) surface an error instead of a silent zeroed result.
+      const data = parseCargoTestOutput(humanOutput, result.exitCode, jsonOutput, result.stderr);
       return compactDualOutput(
         data,
         result.stdout,

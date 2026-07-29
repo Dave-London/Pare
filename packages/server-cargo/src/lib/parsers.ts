@@ -1,3 +1,4 @@
+import { surfaceEmptyFailure, SURFACE_EMPTY_FAILURE_MAX_BYTES } from "@paretools/shared";
 import type {
   CargoBuildResult,
   CargoCheckResult,
@@ -51,7 +52,17 @@ export function parseCargoBuildJson(
   if (timings) {
     result.timings = timings;
   }
-  return result;
+
+  // Epic #1024: a failed build with zero parsed diagnostics (missing Cargo.toml,
+  // toolchain error, manifest parse failure) would otherwise read as a clean
+  // "0 errors" result. Surface the raw stderr so the failure is actionable.
+  return surfaceEmptyFailure(
+    result,
+    { exitCode, stdout, stderr: stderr ?? "" },
+    {
+      isEmpty: (d) => !d.success && (d.diagnostics ?? []).length === 0,
+    },
+  );
 }
 
 /** Parses cargo check output using the build parser. */
@@ -72,11 +83,14 @@ export function parseCargoCheckJson(
  * and the "failures:" name list or "test result:" line.
  *
  * Gap #95: Also parses JSON message format output for compilation diagnostics.
+ * Epic #1024: accepts stderr so pre-run failures (missing Cargo.toml, toolchain
+ * errors) surface an `error` instead of a silent zeroed result.
  */
 export function parseCargoTestOutput(
   stdout: string,
   exitCode: number,
   jsonOutput?: string,
+  stderr?: string,
 ): CargoTestResult {
   const lines = stdout.split("\n");
   const tests: {
@@ -145,7 +159,17 @@ export function parseCargoTestOutput(
     }
   }
 
-  return result;
+  // Epic #1024: cargo test exits non-zero when tests FAIL — parsed failures are a
+  // successful run, no error. But a non-zero exit with zero parsed tests and no
+  // compilation diagnostics (missing Cargo.toml, toolchain error) is a silent
+  // failure that would read as "0 passed; 0 failed" — surface the raw output.
+  return surfaceEmptyFailure(
+    result,
+    { exitCode, stdout, stderr: stderr ?? "" },
+    {
+      isEmpty: (d) => (d.tests ?? []).length === 0 && !d.compilationDiagnostics?.length,
+    },
+  );
 }
 
 /**
@@ -208,14 +232,30 @@ function parseFailureOutputSections(stdout: string): Map<string, string> {
  * Parses `cargo clippy --message-format=json` output.
  * Same JSON format as cargo build. Now includes success field.
  * Gap #90: Captures suggestion text from JSON children.
+ * Epic #1024: accepts stderr so pre-lint failures (missing Cargo.toml, clippy not
+ * installed) surface an `error` instead of a silent "no warnings" result.
  */
-export function parseCargoClippyJson(stdout: string, exitCode: number): CargoClippyResult {
+export function parseCargoClippyJson(
+  stdout: string,
+  exitCode: number,
+  stderr?: string,
+): CargoClippyResult {
   const { diagnostics } = parseCompilerMessages(stdout);
 
-  return {
+  const result: CargoClippyResult = {
     success: exitCode === 0,
     diagnostics,
   };
+
+  // Epic #1024: clippy exits non-zero when lints are denied — parsed diagnostics
+  // are fine. A non-zero exit with zero diagnostics is a silent failure.
+  return surfaceEmptyFailure(
+    result,
+    { exitCode, stdout, stderr: stderr ?? "" },
+    {
+      isEmpty: (d) => (d.diagnostics ?? []).length === 0,
+    },
+  );
 }
 
 /**
@@ -984,6 +1024,18 @@ export function parseCargoAuditJson(
   try {
     data = JSON.parse(jsonStr);
   } catch {
+    // Epic #1024: an unparseable report (cargo-audit not installed, advisory DB
+    // fetch failure, crash) must never read as a clean "0 vulnerabilities" scan.
+    // Surface the raw output and exit code so the failure is visible.
+    // NOTE: cargo audit exits 1 when vulnerabilities ARE found — that path still
+    // produces valid JSON and never reaches this catch.
+    const detail = jsonStr.trim();
+    const error = detail
+      ? detail.length > SURFACE_EMPTY_FAILURE_MAX_BYTES
+        ? `… (output truncated)\n${detail.slice(-SURFACE_EMPTY_FAILURE_MAX_BYTES)}`
+        : detail
+      : `cargo audit exited with code ${exitCode} but produced no parseable JSON output. ` +
+        `This is not a clean scan.`;
     return {
       success: false,
       vulnerabilities: [],
@@ -996,6 +1048,8 @@ export function parseCargoAuditJson(
         informational: 0,
         unknown: 0,
       },
+      error,
+      exitCode,
     };
   }
 

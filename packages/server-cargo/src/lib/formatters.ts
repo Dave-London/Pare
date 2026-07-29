@@ -1,3 +1,4 @@
+import { compactStreamFields, type CompactStreamFields } from "@paretools/shared";
 import type {
   CargoBuildResult,
   CargoTestResult,
@@ -42,6 +43,8 @@ export interface CargoBuildCompact {
   success: boolean;
   diagnostics?: CargoBuildResult["diagnostics"];
   timings?: CargoBuildResult["timings"];
+  error?: string;
+  exitCode?: number;
 }
 
 /** Compact test: summary counts with failed test entries preserved for diagnostics. */
@@ -53,6 +56,8 @@ export interface CargoTestCompact {
   failed: number;
   ignored: number;
   compilationDiagnostics?: CargoTestResult["compilationDiagnostics"];
+  error?: string;
+  exitCode?: number;
 }
 
 /** Compact clippy: success + diagnostics preserved when non-empty (counts derived from diagnostics). */
@@ -60,10 +65,16 @@ export interface CargoClippyCompact {
   [key: string]: unknown;
   success: boolean;
   diagnostics?: CargoClippyResult["diagnostics"];
+  error?: string;
+  exitCode?: number;
 }
 
-/** Compact run: exit code + success only, no stdout/stderr (signal derived from exit code). */
-export interface CargoRunCompact {
+/**
+ * Compact run: exit code + success with stdout/stderr truncated to the shared
+ * compact budget (epic #1022, the #983/#1020 pattern). The executed binary's
+ * output is the payload the agent called the tool for — never drop it.
+ */
+export interface CargoRunCompact extends CompactStreamFields {
   [key: string]: unknown;
   exitCode: number;
   success: boolean;
@@ -113,6 +124,11 @@ export function formatCargoBuild(data: CargoBuildResult): string {
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
   const total = diagnostics.length;
+  // Epic #1024: failed with no parsed diagnostics — show the raw error instead
+  // of an empty "0 errors" summary that reads as success.
+  if (!data.success && total === 0 && data.error) {
+    return `cargo build: failed (no diagnostics parsed):\n${data.error}`;
+  }
   if (data.success && total === 0) return "cargo build: success, no diagnostics.";
 
   const status = data.success ? "success" : "failed";
@@ -135,6 +151,11 @@ export function formatCargoBuild(data: CargoBuildResult): string {
 
 /** Formats structured cargo test results into a human-readable test summary with pass/fail status. */
 export function formatCargoTest(data: CargoTestResult): string {
+  // Epic #1024: failed before any test ran — show the raw error instead of a
+  // zeroed "0 passed; 0 failed" summary.
+  if (!data.success && (data.tests ?? []).length === 0 && data.error) {
+    return `cargo test: failed (no tests ran):\n${data.error}`;
+  }
   const status = data.success ? "ok" : "FAILED";
   const lines = [
     `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`,
@@ -166,6 +187,11 @@ export function formatCargoClippy(data: CargoClippyResult): string {
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
   const total = diagnostics.length;
+  // Epic #1024: failed with no parsed diagnostics — show the raw error instead
+  // of "no warnings" which reads as a clean lint run.
+  if (!data.success && total === 0 && data.error) {
+    return `clippy: failed (no diagnostics parsed):\n${data.error}`;
+  }
   if (total === 0) return "clippy: no warnings.";
 
   const lines = [`clippy: ${errors} errors, ${warnings} warnings`];
@@ -282,6 +308,8 @@ export function compactBuildMap(data: CargoBuildResult): CargoBuildCompact {
   };
   if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
   if (data.timings) compact.timings = data.timings;
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
@@ -299,6 +327,8 @@ export function compactTestMap(data: CargoTestResult): CargoTestCompact {
   if (data.compilationDiagnostics?.length) {
     compact.compilationDiagnostics = data.compilationDiagnostics;
   }
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
@@ -307,15 +337,23 @@ export function compactClippyMap(data: CargoClippyResult): CargoClippyCompact {
     success: data.success,
   };
   if (data.diagnostics?.length) compact.diagnostics = data.diagnostics;
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
 export function compactRunMap(data: CargoRunResult): CargoRunCompact {
+  // Epic #1022: keep the executed binary's stdout/stderr (truncated to the
+  // shared compact budget) — dropping them was the #983 class of bug.
   const compact: CargoRunCompact = {
     exitCode: data.exitCode,
     success: data.success,
+    ...compactStreamFields(data.stdout, data.stderr),
   };
   if (data.failureType) compact.failureType = data.failureType;
+  // Preserve upstream maxOutputSize truncation flags from the full result.
+  if (data.stdoutTruncated) compact.stdoutTruncated = true;
+  if (data.stderrTruncated) compact.stderrTruncated = true;
   return compact;
 }
 
@@ -362,8 +400,11 @@ export function compactDocMap(data: CargoDocResult): CargoDocCompact {
 // ── Compact formatters ───────────────────────────────────────────────
 
 export function formatBuildCompact(data: CargoBuildCompact): string {
-  const status = data.success ? "success" : "failed";
   const diagnostics = data.diagnostics ?? [];
+  if (!data.success && diagnostics.length === 0 && data.error) {
+    return `cargo build: failed (no diagnostics parsed):\n${data.error}`;
+  }
+  const status = data.success ? "success" : "failed";
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
   const timingSuffix = data.timings?.generated ? " [timings]" : "";
@@ -371,6 +412,9 @@ export function formatBuildCompact(data: CargoBuildCompact): string {
 }
 
 export function formatTestCompact(data: CargoTestCompact): string {
+  if (!data.success && data.passed === 0 && data.failed === 0 && data.error) {
+    return `cargo test: failed (no tests ran):\n${data.error}`;
+  }
   const status = data.success ? "ok" : "FAILED";
   return `test result: ${status}. ${data.passed} passed; ${data.failed} failed; ${data.ignored} ignored`;
 }
@@ -380,6 +424,9 @@ export function formatClippyCompact(data: CargoClippyCompact): string {
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
   const total = diagnostics.length;
+  if (!data.success && total === 0 && data.error) {
+    return `clippy: failed (no diagnostics parsed):\n${data.error}`;
+  }
   if (total === 0) return "clippy: no warnings.";
   return `clippy: ${errors} errors, ${warnings} warnings`;
 }
@@ -387,7 +434,24 @@ export function formatClippyCompact(data: CargoClippyCompact): string {
 export function formatRunCompact(data: CargoRunCompact): string {
   const status = data.success ? "success" : "failed";
   const failType = data.failureType ? ` [${data.failureType}]` : "";
-  return `cargo run: ${status}${failType} (exit code ${data.exitCode})`;
+  const lines = [`cargo run: ${status}${failType} (exit code ${data.exitCode})`];
+  if (data.stdout) {
+    lines.push(`stdout:\n${data.stdout}`);
+    if (data.stdoutTruncated) {
+      const total =
+        data.stdoutTotalLines !== undefined ? `: ${data.stdoutTotalLines} total lines` : "";
+      lines.push(`  [stdout truncated${total}; re-run with compact:false for full output]`);
+    }
+  }
+  if (data.stderr) {
+    lines.push(`stderr:\n${data.stderr}`);
+    if (data.stderrTruncated) {
+      const total =
+        data.stderrTotalLines !== undefined ? `: ${data.stderrTotalLines} total lines` : "";
+      lines.push(`  [stderr truncated${total}; re-run with compact:false for full output]`);
+    }
+  }
+  return lines.join("\n");
 }
 
 export function formatAddCompact(data: CargoAddCompact): string {
@@ -506,6 +570,11 @@ export function formatCargoAudit(data: CargoAuditResult): string {
     unknown: 0,
   };
 
+  // Epic #1024: an unparseable/failed scan must not read as "no vulnerabilities".
+  if (data.error && summary.total === 0) {
+    return `cargo audit: scan failed (no report parsed) — NOT a clean scan:\n${data.error}`;
+  }
+
   const fixesSuffix =
     data.fixesApplied !== undefined ? ` (${data.fixesApplied} fix(es) applied)` : "";
 
@@ -522,7 +591,15 @@ export function formatCargoAudit(data: CargoAuditResult): string {
   return lines.join("\n");
 }
 
-/** Compact audit: success + summary counts only, no individual vulnerabilities. */
+/** Maximum vulnerability entries kept in compact audit output (epic #1022). */
+export const AUDIT_COMPACT_MAX_VULNS = 10;
+
+/**
+ * Compact audit: severity counts plus the first {@link AUDIT_COMPACT_MAX_VULNS}
+ * vulnerability identities (advisory id, package, version, severity, title,
+ * patched versions). Epic #1022: the advisory identities are the payload the
+ * agent called the tool for — never reduce them to bare counts.
+ */
 export interface CargoAuditCompact {
   [key: string]: unknown;
   success: boolean;
@@ -533,7 +610,18 @@ export interface CargoAuditCompact {
   low: number;
   informational: number;
   unknown: number;
+  vulnerabilities: {
+    id: string;
+    package: string;
+    version: string;
+    severity: "critical" | "high" | "medium" | "low" | "informational" | "unknown";
+    title: string;
+    patched: string[];
+  }[];
+  omittedVulnerabilities?: number;
   fixesApplied?: number;
+  error?: string;
+  exitCode?: number;
 }
 
 export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
@@ -546,9 +634,18 @@ export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
     informational: 0,
     unknown: 0,
   };
+  const allVulns = data.vulnerabilities ?? [];
   const compact: CargoAuditCompact = {
     success: data.success,
-    vulnerabilities: [],
+    // Epic #1022: keep advisory identities (first N) instead of dropping the list.
+    vulnerabilities: allVulns.slice(0, AUDIT_COMPACT_MAX_VULNS).map((v) => ({
+      id: v.id,
+      package: v.package,
+      version: v.version,
+      severity: v.severity,
+      title: v.title,
+      patched: v.patched,
+    })),
     total: summary.total,
     critical: summary.critical,
     high: summary.high,
@@ -557,15 +654,37 @@ export function compactAuditMap(data: CargoAuditResult): CargoAuditCompact {
     informational: summary.informational,
     unknown: summary.unknown,
   };
+  if (allVulns.length > AUDIT_COMPACT_MAX_VULNS) {
+    compact.omittedVulnerabilities = allVulns.length - AUDIT_COMPACT_MAX_VULNS;
+  }
   if (data.fixesApplied !== undefined) {
     compact.fixesApplied = data.fixesApplied;
   }
+  // Epic #1024: pass through silent-failure evidence.
+  if (data.error) compact.error = data.error;
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   return compact;
 }
 
 export function formatAuditCompact(data: CargoAuditCompact): string {
+  // Epic #1024: an unparseable/failed scan must not read as "no vulnerabilities".
+  if (data.error && data.total === 0) {
+    return `cargo audit: scan failed (no report parsed) — NOT a clean scan:\n${data.error}`;
+  }
   const fixesSuffix =
     data.fixesApplied !== undefined ? ` (${data.fixesApplied} fix(es) applied)` : "";
   if (data.total === 0) return `cargo audit: no vulnerabilities found.${fixesSuffix}`;
-  return `cargo audit: ${data.total} vulnerabilities (${data.critical} critical, ${data.high} high, ${data.medium} medium, ${data.low} low)${fixesSuffix}`;
+  const lines = [
+    `cargo audit: ${data.total} vulnerabilities (${data.critical} critical, ${data.high} high, ${data.medium} medium, ${data.low} low)${fixesSuffix}`,
+  ];
+  for (const v of data.vulnerabilities ?? []) {
+    const patched = v.patched.length > 0 ? ` (patched: ${v.patched.join(", ")})` : "";
+    lines.push(`  [${v.severity}] ${v.id} ${v.package}@${v.version}${patched}`);
+  }
+  if (data.omittedVulnerabilities) {
+    lines.push(
+      `  ... ${data.omittedVulnerabilities} more omitted; re-run with compact:false for the full list`,
+    );
+  }
+  return lines.join("\n");
 }

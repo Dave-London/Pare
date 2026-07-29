@@ -352,7 +352,8 @@ describe("compactClippyMap", () => {
 });
 
 describe("compactRunMap", () => {
-  it("strips stdout/stderr and keeps exit code", () => {
+  // Epic #1022: compact mode must keep the executed binary's stdout/stderr.
+  it("keeps stdout/stderr and exit code", () => {
     const data: CargoRunResult = {
       exitCode: 0,
       stdout: "Hello, world!\nLine 2\nLine 3",
@@ -360,9 +361,48 @@ describe("compactRunMap", () => {
       success: true,
     };
     const compact = compactRunMap(data);
+    expect(compact).toEqual({
+      exitCode: 0,
+      success: true,
+      stdout: "Hello, world!\nLine 2\nLine 3",
+      stderr: "some warnings here",
+    });
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stderrTruncated).toBeUndefined();
+  });
+
+  it("omits empty streams entirely", () => {
+    const compact = compactRunMap({ exitCode: 0, stdout: "", stderr: "", success: true });
     expect(compact).toEqual({ exitCode: 0, success: true });
     expect(compact).not.toHaveProperty("stdout");
     expect(compact).not.toHaveProperty("stderr");
+  });
+
+  it("truncates long streams to the compact budget with metadata", () => {
+    const longStdout = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join("\n");
+    const compact = compactRunMap({
+      exitCode: 0,
+      stdout: longStdout,
+      stderr: "",
+      success: true,
+    });
+    expect(compact.stdout).toContain("line 1");
+    expect(compact.stdout).toContain("line 200");
+    expect(compact.stdout).toContain("lines omitted");
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdoutTotalLines).toBe(200);
+  });
+
+  it("preserves upstream maxOutputSize truncation flags", () => {
+    const compact = compactRunMap({
+      exitCode: 0,
+      stdout: "partial output",
+      stderr: "",
+      success: true,
+      stdoutTruncated: true,
+    });
+    expect(compact.stdout).toBe("partial output");
+    expect(compact.stdoutTruncated).toBe(true);
   });
 
   it("formats compact run output", () => {
@@ -372,6 +412,21 @@ describe("compactRunMap", () => {
     expect(formatRunCompact({ exitCode: 1, success: false })).toBe(
       "cargo run: failed (exit code 1)",
     );
+  });
+
+  it("formats compact run output with streams and truncation notes", () => {
+    const output = formatRunCompact({
+      exitCode: 1,
+      success: false,
+      stdout: "some output",
+      stderr: "boom",
+      stderrTruncated: true,
+      stderrTotalLines: 99,
+    });
+    expect(output).toContain("cargo run: failed (exit code 1)");
+    expect(output).toContain("stdout:\nsome output");
+    expect(output).toContain("stderr:\nboom");
+    expect(output).toContain("[stderr truncated: 99 total lines; re-run with compact:false");
   });
 });
 
@@ -523,7 +578,8 @@ describe("formatCargoAudit", () => {
 });
 
 describe("compactAuditMap", () => {
-  it("strips vulnerability details and keeps summary counts", () => {
+  // Epic #1022: compact mode keeps advisory identities instead of bare counts.
+  it("keeps advisory identities and summary counts", () => {
     const data: CargoAuditResult = {
       success: false,
       vulnerabilities: [
@@ -541,7 +597,16 @@ describe("compactAuditMap", () => {
     const compact = compactAuditMap(data);
     expect(compact).toEqual({
       success: false,
-      vulnerabilities: [],
+      vulnerabilities: [
+        {
+          id: "RUSTSEC-2022-0090",
+          package: "libsqlite3-sys",
+          version: "0.24.2",
+          severity: "critical",
+          title: "Use-after-free",
+          patched: [">=0.25.1"],
+        },
+      ],
       total: 1,
       critical: 1,
       high: 0,
@@ -552,12 +617,129 @@ describe("compactAuditMap", () => {
     });
   });
 
+  it("strips optional per-vuln fields (cvssScore, unaffected) in compact entries", () => {
+    const data: CargoAuditResult = {
+      success: false,
+      vulnerabilities: [
+        {
+          id: "RUSTSEC-2022-0090",
+          package: "libsqlite3-sys",
+          version: "0.24.2",
+          severity: "critical",
+          title: "Use-after-free",
+          patched: [">=0.25.1"],
+          unaffected: ["<0.9.0"],
+          cvssScore: 9.8,
+        },
+      ],
+      summary: { total: 1, critical: 1, high: 0, medium: 0, low: 0, informational: 0, unknown: 0 },
+    };
+    const compact = compactAuditMap(data);
+    expect(compact.vulnerabilities[0]).not.toHaveProperty("cvssScore");
+    expect(compact.vulnerabilities[0]).not.toHaveProperty("unaffected");
+  });
+
+  it("caps the compact list at 10 entries and reports omitted count", () => {
+    const vulns = Array.from({ length: 14 }, (_, i) => ({
+      id: `RUSTSEC-2024-${String(i).padStart(4, "0")}`,
+      package: `crate-${i}`,
+      version: "1.0.0",
+      severity: "high" as const,
+      title: `Vuln ${i}`,
+      patched: [],
+    }));
+    const data: CargoAuditResult = {
+      success: false,
+      vulnerabilities: vulns,
+      summary: {
+        total: 14,
+        critical: 0,
+        high: 14,
+        medium: 0,
+        low: 0,
+        informational: 0,
+        unknown: 0,
+      },
+    };
+    const compact = compactAuditMap(data);
+    expect(compact.vulnerabilities).toHaveLength(10);
+    expect(compact.vulnerabilities[0].id).toBe("RUSTSEC-2024-0000");
+    expect(compact.omittedVulnerabilities).toBe(4);
+  });
+
+  it("passes through error and exitCode from a failed scan", () => {
+    const data: CargoAuditResult = {
+      success: false,
+      vulnerabilities: [],
+      summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0, informational: 0, unknown: 0 },
+      error: "error: couldn't fetch advisory database",
+      exitCode: 2,
+    };
+    const compact = compactAuditMap(data);
+    expect(compact.error).toBe("error: couldn't fetch advisory database");
+    expect(compact.exitCode).toBe(2);
+  });
+
   it("formats compact audit output", () => {
-    expect(formatAuditCompact({ total: 0, critical: 0, high: 0, medium: 0, low: 0 })).toBe(
-      "cargo audit: no vulnerabilities found.",
-    );
-    expect(formatAuditCompact({ total: 3, critical: 1, high: 1, medium: 1, low: 0 })).toBe(
+    expect(
+      formatAuditCompact({
+        success: true,
+        vulnerabilities: [],
+        total: 0,
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        informational: 0,
+        unknown: 0,
+      }),
+    ).toBe("cargo audit: no vulnerabilities found.");
+    const output = formatAuditCompact({
+      success: false,
+      vulnerabilities: [
+        {
+          id: "RUSTSEC-2022-0090",
+          package: "libsqlite3-sys",
+          version: "0.24.2",
+          severity: "critical",
+          title: "Use-after-free",
+          patched: [">=0.25.1"],
+        },
+      ],
+      total: 3,
+      critical: 1,
+      high: 1,
+      medium: 1,
+      low: 0,
+      informational: 0,
+      unknown: 0,
+      omittedVulnerabilities: 2,
+    });
+    expect(output).toContain(
       "cargo audit: 3 vulnerabilities (1 critical, 1 high, 1 medium, 0 low)",
     );
+    expect(output).toContain(
+      "[critical] RUSTSEC-2022-0090 libsqlite3-sys@0.24.2 (patched: >=0.25.1)",
+    );
+    expect(output).toContain("... 2 more omitted; re-run with compact:false");
+  });
+
+  it("formats a failed scan as NOT clean instead of 'no vulnerabilities'", () => {
+    const output = formatAuditCompact({
+      success: false,
+      vulnerabilities: [],
+      total: 0,
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      informational: 0,
+      unknown: 0,
+      error: "error: not found: cargo-audit",
+      exitCode: 101,
+    });
+    expect(output).not.toContain("no vulnerabilities found");
+    expect(output).toContain("scan failed");
+    expect(output).toContain("error: not found: cargo-audit");
   });
 });
