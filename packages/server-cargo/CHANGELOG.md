@@ -1,5 +1,22 @@
 # @paretools/cargo
 
+## 0.22.0
+
+### Patch Changes
+
+- [#1035](https://github.com/Dave-London/Pare/pull/1035) [`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f) Thanks [@Dave-London](https://github.com/Dave-London)! - Declare compact-only fields in output schemas so structuredContent validates against the registered outputSchema. Compact mappers emitted fields (e.g. `total`, `truncated`, counts) that the Zod outputSchemas did not declare; the MCP SDK converts outputSchema to JSON Schema with `additionalProperties: false` and AJV-validates structuredContent, so compact responses failed with `MCP error -32602` whenever compact mode engaged. Adds `@paretools/shared/testing` with SDK-equivalent schema validation helpers for regression tests.
+
+- [#1030](https://github.com/Dave-London/Pare/pull/1030) [`522a6c0`](https://github.com/Dave-London/Pare/commit/522a6c0e2377d48d4aeaf8b9ec1da7d39b89ff18) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface silent toolchain failures and restore compact payloads (part of [#1022](https://github.com/Dave-London/Pare/issues/1022) and [#1024](https://github.com/Dave-London/Pare/issues/1024)).
+
+  - `cargo build`/`check`/`clippy`/`test`: a non-zero exit with no parseable diagnostics/tests (missing Cargo.toml, toolchain error, clippy not installed) now attaches the raw stderr as `error` plus `exitCode` instead of returning a zeroed result that reads as clean. Failing tests and denied lints still parse normally with no `error`.
+  - `cargo audit`: unparseable output (cargo-audit missing, advisory DB fetch failure) now surfaces `error`/`exitCode` instead of a false-clean "0 vulnerabilities" result. Exit 1 with vulnerabilities found remains a successful scan.
+  - `cargo run` compact mode: keeps the executed binary's stdout/stderr, truncated to the shared compact budget with truncation metadata, instead of dropping them.
+  - `cargo audit` compact mode: keeps the first 10 advisory identities (id, package, version, severity, title, patched) plus an omitted count, instead of an empty vulnerabilities list.
+  - Compact mappers and text formatters pass through the new `error`/`exitCode` fields.
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @paretools/npm
 
+## 0.22.0
+
+### Patch Changes
+
+- [#1031](https://github.com/Dave-London/Pare/pull/1031) [`2f95f18`](https://github.com/Dave-London/Pare/commit/2f95f18ba1951417d6345a72075927bf7f90f840) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface npm failures and restore the compact list payload.
+
+  - `outdated`: a non-zero exit with no output, or npm's `{"error": ...}` JSON payload, now returns an error instead of reading as "everything up to date" ([#1024](https://github.com/Dave-London/Pare/issues/1024))
+  - `audit`: unparseable output or a failed run (e.g. ENOLOCK) now returns a structured Pare error via the shared `errorOutput`/`classifyError` helpers instead of a raw SyntaxError or a false "no vulnerabilities" ([#1024](https://github.com/Dave-London/Pare/issues/1024))
+  - compact `list` output now includes `dependencyCount`, `problems`, `packageManager`, and the first 20 top-level dependencies with an omitted-count marker ([#1022](https://github.com/Dave-London/Pare/issues/1022))
+  - compact `info` output now includes `dependencyCount` and `versionCount` ([#1022](https://github.com/Dave-London/Pare/issues/1022))
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes

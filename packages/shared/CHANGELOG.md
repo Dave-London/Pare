@@ -1,5 +1,15 @@
 # @paretools/shared
 
+## 0.22.0
+
+### Minor Changes
+
+- [#1026](https://github.com/Dave-London/Pare/pull/1026) [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea) Thanks [@Dave-London](https://github.com/Dave-London)! - Add shared compact-output and diagnostics helpers: `truncateStream`/`compactStreamFields` (head/tail + byte-cap stream truncation with `CompactStreamSchemaFields`, generalizing the server-process compact budget from [#1020](https://github.com/Dave-London/Pare/issues/1020)) and `surfaceEmptyFailure` (attaches `error`/`exitCode` when a CLI exits non-zero with nothing parseable, with `EmptyFailureSchemaFields`, generalizing server-test's `surfaceLoadFailure`). Foundation for epics [#1022](https://github.com/Dave-London/Pare/issues/1022) and [#1024](https://github.com/Dave-London/Pare/issues/1024).
+
+### Patch Changes
+
+- [#1035](https://github.com/Dave-London/Pare/pull/1035) [`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f) Thanks [@Dave-London](https://github.com/Dave-London)! - Declare compact-only fields in output schemas so structuredContent validates against the registered outputSchema. Compact mappers emitted fields (e.g. `total`, `truncated`, counts) that the Zod outputSchemas did not declare; the MCP SDK converts outputSchema to JSON Schema with `additionalProperties: false` and AJV-validates structuredContent, so compact responses failed with `MCP error -32602` whenever compact mode engaged. Adds `@paretools/shared/testing` with SDK-equivalent schema validation helpers for regression tests.
+
 ## 0.21.1
 
 ### Patch Changes

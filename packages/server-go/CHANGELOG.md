@@ -1,5 +1,23 @@
 # @paretools/go
 
+## 0.22.0
+
+### Patch Changes
+
+- [#1035](https://github.com/Dave-London/Pare/pull/1035) [`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f) Thanks [@Dave-London](https://github.com/Dave-London)! - Declare compact-only fields in output schemas so structuredContent validates against the registered outputSchema. Compact mappers emitted fields (e.g. `total`, `truncated`, counts) that the Zod outputSchemas did not declare; the MCP SDK converts outputSchema to JSON Schema with `additionalProperties: false` and AJV-validates structuredContent, so compact responses failed with `MCP error -32602` whenever compact mode engaged. Adds `@paretools/shared/testing` with SDK-equivalent schema validation helpers for regression tests.
+
+- [#1029](https://github.com/Dave-London/Pare/pull/1029) [`efe7799`](https://github.com/Dave-London/Pare/commit/efe7799d841e3fd3c29ece2f2d11b4e1cae45c80) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface toolchain failures and restore compact payloads ([#1022](https://github.com/Dave-London/Pare/issues/1022), [#1024](https://github.com/Dave-London/Pare/issues/1024)).
+
+  - `go test`: toolchain failures (e.g. "go: cannot find main module", bad -tags) that previously read as a zeroed clean result now surface the raw stderr tail via a new `error` field plus `exitCode`. Normal test failures are unaffected.
+  - `golangci-lint`: the parser now uses the exit code and stderr; linter crashes/config errors that previously read as a clean `{diagnostics: [], errors: 0}` result now surface `error` and `exitCode`. Exit code 1 with issues found remains a normal result.
+  - Compact `run`: stdout/stderr content is now kept (truncated to the shared compact budget with `stdoutTruncated`/`stderrTruncated` flags and total line counts) instead of being dropped entirely.
+  - Compact `get`: failing packages are kept with their `error`/`errorType` instead of being dropped.
+  - Compact `fmt`: parse errors are kept in full instead of being reduced to a count.
+  - Compact `golangci-lint`: the first 20 diagnostics are now included (fix data stripped, `diagnosticsOmitted` count when capped) instead of counts only; `error` is passed through.
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes

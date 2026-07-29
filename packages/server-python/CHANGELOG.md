@@ -1,5 +1,27 @@
 # @paretools/python
 
+## 0.22.0
+
+### Minor Changes
+
+- [#1023](https://github.com/Dave-London/Pare/pull/1023) [`59a3024`](https://github.com/Dave-London/Pare/commit/59a3024f1b73f405072cc922c955d0b89b393526) Thanks [@Dave-London](https://github.com/Dave-London)! - pytest: surface collection/startup error diagnostics and add `env`/`extraArgs` inputs ([#984](https://github.com/Dave-London/Pare/issues/984))
+
+  - When a pytest run fails with no test results (e.g. `ModuleNotFoundError` from a src-layout project missing `PYTHONPATH`, or a broken plugin crashing at startup), the tool now includes `exitCode` and an `errorOutput` diagnostic (capped tail of the most informative output stream) instead of a silent all-zero result.
+  - New `env` input: extra environment variables merged over the parent environment (e.g. `{"PYTHONPATH": "src"}`).
+  - New `extraArgs` input: additional pytest CLI arguments passed through verbatim (e.g. `["-p", "no:logfire"]`).
+
+### Patch Changes
+
+- [#1035](https://github.com/Dave-London/Pare/pull/1035) [`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f) Thanks [@Dave-London](https://github.com/Dave-London)! - Declare compact-only fields in output schemas so structuredContent validates against the registered outputSchema. Compact mappers emitted fields (e.g. `total`, `truncated`, counts) that the Zod outputSchemas did not declare; the MCP SDK converts outputSchema to JSON Schema with `additionalProperties: false` and AJV-validates structuredContent, so compact responses failed with `MCP error -32602` whenever compact mode engaged. Adds `@paretools/shared/testing` with SDK-equivalent schema validation helpers for regression tests.
+
+- [#1032](https://github.com/Dave-London/Pare/pull/1032) [`8a6e788`](https://github.com/Dave-London/Pare/commit/8a6e78897b63f0dd0d9f7f6f172467f0544413cf) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface silent tool failures and restore compact-mode payloads (part of [#1022](https://github.com/Dave-London/Pare/issues/1022) and [#1024](https://github.com/Dave-London/Pare/issues/1024)).
+
+  - pip-audit, mypy, ruff-check, ruff-format, pip-install, and poetry now attach `error` and `exitCode` when a run fails without producing parseable output, instead of returning a silent zeroed result — a crashed pip-audit no longer reads as "0 vulnerabilities", and pip's `ERROR:` lines are captured.
+  - Compact mode now keeps the actionable payload: mypy/ruff diagnostics (first 20 + severity/fixable counts), pip-audit severity counts + vulnerability identities, pip-list name/version pairs, poetry package/artifact/message entries, pyenv version lists, and uv-run truncated stdout/stderr via the shared compact-stream budget.
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes
