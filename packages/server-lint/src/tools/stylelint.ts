@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  surfaceEmptyFailure,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -104,7 +105,13 @@ export function registerStylelintTool(server: McpServer) {
       }
 
       const result = await stylelintCmd(args, cwd);
-      const data = parseStylelintJson(result.stdout);
+      // Stylelint exits 2 when violations are found (normal); exit 1 signals a
+      // fatal error and 78 a config problem. A non-zero exit with zero parsed
+      // diagnostics means the run itself failed — surface it instead of
+      // reporting a false clean (#1024).
+      const data = surfaceEmptyFailure(parseStylelintJson(result.stdout), result, {
+        isEmpty: (d) => (d.diagnostics ?? []).length === 0,
+      });
       return compactDualOutput(
         data,
         result.stdout,

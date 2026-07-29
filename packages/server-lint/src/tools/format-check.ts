@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  surfaceEmptyFailure,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -126,10 +127,12 @@ export function registerFormatCheckTool(server: McpServer) {
 
       const result = await prettier(args, cwd);
       const files = parsePrettierListDifferent(result.stdout);
-      const data = {
-        formatted: result.exitCode === 0,
-        files,
-      };
+      // Prettier exits 1 when files need formatting (normal for
+      // --list-different); exit >1 means the run itself failed (config error,
+      // parse error) — surface stderr instead of a silent empty result (#1024).
+      const data = surfaceEmptyFailure({ formatted: result.exitCode === 0, files }, result, {
+        isEmpty: () => result.exitCode > 1,
+      });
       return compactDualOutput(
         data,
         result.stdout,

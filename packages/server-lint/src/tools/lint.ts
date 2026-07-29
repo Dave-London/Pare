@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  surfaceEmptyFailure,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -113,7 +114,12 @@ export function registerLintTool(server: McpServer) {
       }
 
       const result = await eslint(args, cwd);
-      const data = parseEslintJson(result.stdout);
+      // ESLint exits 1 when violations are found (normal) and 2 on config/fatal
+      // errors. A non-zero exit with zero parsed diagnostics means the run
+      // itself failed — surface it instead of reporting a false clean (#1024).
+      const data = surfaceEmptyFailure(parseEslintJson(result.stdout), result, {
+        isEmpty: (d) => (d.diagnostics ?? []).length === 0,
+      });
       return compactDualOutput(
         data,
         result.stdout,
