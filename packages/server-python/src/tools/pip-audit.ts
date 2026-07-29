@@ -112,7 +112,7 @@ export function registerPipAuditTool(server: McpServer) {
 
       // pip-audit is a standalone binary, NOT a pip subcommand
       const result = await pipAudit(args, cwd);
-      const data = parsePipAuditJson(result.stdout, result.exitCode);
+      const data = parsePipAuditJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
         result.stdout,

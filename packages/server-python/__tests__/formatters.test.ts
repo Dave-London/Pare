@@ -824,22 +824,24 @@ describe("formatPyenv", () => {
 });
 
 describe("formatPyenvCompact", () => {
-  it("formats failed action", () => {
+  it("formats failed action with error detail", () => {
     const data = compactPyenvMap({
       action: "install",
       success: false,
       error: "not found",
     } as PyenvResult);
-    expect(formatPyenvCompact(data)).toBe("pyenv install failed.");
+    expect(formatPyenvCompact(data)).toBe("pyenv install failed: not found");
   });
 
-  it("formats successful action", () => {
+  it("formats successful versions action with the version list", () => {
     const data = compactPyenvMap({
       action: "versions",
       success: true,
       versions: ["3.11.7"],
     } as PyenvResult);
-    expect(formatPyenvCompact(data)).toBe("pyenv versions: success.");
+    const output = formatPyenvCompact(data);
+    expect(output).toContain("1 versions installed:");
+    expect(output).toContain("3.11.7");
   });
 });
 
@@ -946,7 +948,7 @@ describe("formatPoetryCompact", () => {
     expect(formatPoetryCompact(data)).toBe("poetry: failed.");
   });
 
-  it("formats successful action", () => {
+  it("formats successful action with package entries", () => {
     const data = compactPoetryMap({
       success: true,
       packages: [
@@ -954,7 +956,22 @@ describe("formatPoetryCompact", () => {
         { name: "flask", version: "3.0.0" },
       ],
     } as PoetryResult);
-    expect(formatPoetryCompact(data)).toBe("poetry: success.");
+    const output = formatPoetryCompact(data);
+    expect(output).toContain("poetry: success.");
+    expect(output).toContain("2 packages:");
+    expect(output).toContain("requests==2.31.0");
+    expect(output).toContain("flask==3.0.0");
+  });
+
+  it("keeps messages and error on failed runs", () => {
+    const data = compactPoetryMap({
+      success: false,
+      messages: ["Poetry could not find a pyproject.toml file in C:\\proj or its parents"],
+      exitCode: 1,
+    } as PoetryResult);
+    const output = formatPoetryCompact(data);
+    expect(output).toContain("poetry: failed.");
+    expect(output).toContain("could not find a pyproject.toml");
   });
 });
 

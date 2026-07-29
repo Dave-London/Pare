@@ -259,7 +259,7 @@ describe("formatPyenv", () => {
 // ── Compact formatter tests ──────────────────────────────────────────
 
 describe("compactPyenvMap", () => {
-  it("maps full result to compact form", () => {
+  it("keeps versions and current for the versions action", () => {
     const data: PyenvResult = {
       action: "versions",
       success: true,
@@ -270,8 +270,33 @@ describe("compactPyenvMap", () => {
 
     expect(compact.action).toBe("versions");
     expect(compact.success).toBe(true);
-    // Compact drops versions/current/etc.
-    expect((compact as Record<string, unknown>).versions).toBeUndefined();
+    // Compact keeps the version list — it is the whole point of the call (#1022)
+    expect(compact.versions).toEqual(["3.10.13", "3.11.7", "3.12.0"]);
+    expect(compact.current).toBe("3.12.0");
+  });
+
+  it("caps installList availableVersions at 50 with a count", () => {
+    const data: PyenvResult = {
+      action: "installList",
+      success: true,
+      availableVersions: Array.from({ length: 120 }, (_, i) => `3.${i}.0`),
+    };
+    const compact = compactPyenvMap(data);
+
+    expect(compact.availableVersionCount).toBe(120);
+    expect(compact.availableVersions).toHaveLength(50);
+    expect(compact.truncated).toBe(true);
+  });
+
+  it("passes through error on failure", () => {
+    const data: PyenvResult = {
+      action: "install",
+      success: false,
+      error: "python-build: definition not found: 9.9.9",
+    };
+    const compact = compactPyenvMap(data);
+
+    expect(compact.error).toBe("python-build: definition not found: 9.9.9");
   });
 });
 
