@@ -363,9 +363,30 @@ export function parsePnpmAuditJson(jsonStr: string): NpmAudit {
   return { vulnerabilities };
 }
 
-/** Parses `npm outdated --json` or `pnpm outdated --json` output into structured data with current, wanted, and latest versions. */
+/**
+ * Parses `npm outdated --json` or `pnpm outdated --json` output into structured data with current, wanted, and latest versions.
+ *
+ * Throws when the payload is npm's `{"error": {...}}` failure shape (emitted on
+ * stdout with a non-zero exit, e.g. `--workspace` pointing at a missing
+ * workspace) so a crashed run is never misread as "everything up to date" (#1024).
+ */
 export function parseOutdatedJson(jsonStr: string, _pm: PackageManager = "npm"): NpmOutdated {
   const data = JSON.parse(jsonStr);
+
+  // npm CLI failures with --json print {"error": {code?, summary, detail}} to
+  // stdout — surface that as a failure instead of a package named "error".
+  if (
+    data !== null &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    typeof data.error === "object" &&
+    data.error !== null &&
+    ("summary" in data.error || "code" in data.error)
+  ) {
+    const err = data.error as { code?: string; summary?: string; detail?: string };
+    const parts = [err.code, err.summary, err.detail].filter(Boolean);
+    throw new Error(parts.join(": ") || "npm reported an unknown error");
+  }
 
   // pnpm outdated --json returns an object keyed by package name, same as npm
   // but may also return an array in some versions

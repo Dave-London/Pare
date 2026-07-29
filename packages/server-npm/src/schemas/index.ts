@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PareErrorSchema } from "@paretools/shared";
 
 /** Reusable schema field indicating which package manager was used. */
 const packageManagerField = z
@@ -62,6 +63,19 @@ export const NpmAuditSchema = z.object({
 
 export type NpmAudit = z.infer<typeof NpmAuditSchema>;
 
+/**
+ * Output schema for the audit tool: either structured audit results or a
+ * structured Pare error (#1024 — audit is the pilot for `errorOutput`).
+ *
+ * Declared as a single object with optional fields from both shapes because
+ * the MCP SDK does not support union output schemas, while MCP clients
+ * validate `structuredContent` even on `isError` results: successful audits
+ * always carry `vulnerabilities`; failures carry `isError`/`category`/`message`.
+ */
+export const NpmAuditOutputSchema = NpmAuditSchema.partial({ vulnerabilities: true }).extend(
+  PareErrorSchema.partial().shape,
+);
+
 /** Zod schema for a single outdated package entry with current, wanted, and latest versions. */
 export const NpmOutdatedEntrySchema = z.object({
   name: z.string(),
@@ -116,6 +130,16 @@ export const NpmListSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Problems reported by npm ls (e.g., missing/extraneous/invalid deps)"),
+  dependencyCount: z
+    .number()
+    .optional()
+    .describe("Total number of dependencies including nested ones (set in compact output)"),
+  omittedDependencyCount: z
+    .number()
+    .optional()
+    .describe(
+      "Number of top-level dependencies omitted from compact output (use compact: false for the full tree)",
+    ),
 });
 
 export type NpmList = z.infer<typeof NpmListSchema>;
@@ -202,6 +226,14 @@ export const NpmInfoSchema = z.object({
   repository: NpmRepositorySchema.optional().describe("Source code repository info"),
   keywords: z.array(z.string()).optional().describe("Package keywords for discovery"),
   versions: z.array(z.string()).optional().describe("All published versions"),
+  dependencyCount: z
+    .number()
+    .optional()
+    .describe("Number of runtime dependencies (set in compact output)"),
+  versionCount: z
+    .number()
+    .optional()
+    .describe("Number of published versions (set in compact output)"),
 });
 
 export type NpmInfo = z.infer<typeof NpmInfoSchema>;

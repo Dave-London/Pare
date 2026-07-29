@@ -268,6 +268,8 @@ describe("compactInfoMap", () => {
     expect(compact.homepage).toBe("http://expressjs.com/");
     expect(compact).not.toHaveProperty("dependencies");
     expect(compact).not.toHaveProperty("dist");
+    // #1022: counts are kept even though the details are dropped
+    expect(compact.dependencyCount).toBe(1);
   });
 
   it("omits license and homepage when not present", () => {
@@ -279,6 +281,20 @@ describe("compactInfoMap", () => {
     const compact = compactInfoMap(data);
     expect(compact.license).toBeUndefined();
     expect(compact.homepage).toBeUndefined();
+    expect(compact.dependencyCount).toBeUndefined();
+    expect(compact.versionCount).toBeUndefined();
+  });
+
+  it("keeps versionCount when versions are present (#1022)", () => {
+    const data: NpmInfo = {
+      name: "pkg",
+      version: "3.0.0",
+      description: "test",
+      versions: ["1.0.0", "2.0.0", "3.0.0"],
+    };
+    const compact = compactInfoMap(data);
+    expect(compact).not.toHaveProperty("versions");
+    expect(compact.versionCount).toBe(3);
   });
 });
 
@@ -297,6 +313,18 @@ describe("formatInfoCompact", () => {
     expect(output).toContain("Fast web framework");
     expect(output).toContain("License: MIT");
     expect(output).toContain("Homepage: http://expressjs.com/");
+  });
+
+  it("includes dependency and version counts when present (#1022)", () => {
+    const output = formatInfoCompact({
+      name: "express",
+      version: "4.18.2",
+      description: "Fast web framework",
+      dependencyCount: 31,
+      versionCount: 279,
+    });
+    expect(output).toContain("Dependencies: 31");
+    expect(output).toContain("Published Versions: 279");
   });
 
   it("formats minimal compact info", () => {

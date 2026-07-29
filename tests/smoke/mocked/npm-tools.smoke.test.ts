@@ -1153,10 +1153,12 @@ describe("Smoke: npm.outdated", () => {
   });
 
   it("S3 [P0] no package.json", async () => {
-    // outdated parses result.stdout || "{}" so it won't throw, just returns empty
+    // A non-zero exit with no stdout is a crash, not "all deps up to date".
+    // The previous expectation (silently returning empty packages) was the
+    // exact false-clean bug fixed in #1024 — outdated now throws, mirroring
+    // the list S3 contract for the same ELSPROBLEMS failure.
     mockRunPm("", "npm ERR! code ELSPROBLEMS", 1);
-    const { parsed } = await callAndValidate({ path: "/tmp/empty" });
-    expect(parsed.packages).toEqual([]);
+    await expect(callAndValidate({ path: "/tmp/empty" })).rejects.toThrow(/outdated failed/);
   });
 
   it("S4 [P0] flag injection via filter", async () => {
