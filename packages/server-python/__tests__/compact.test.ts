@@ -157,7 +157,7 @@ describe("formatPytestCompact", () => {
 // ── Mypy compact ──────────────────────────────────────────────────────
 
 describe("compactMypyMap", () => {
-  it("keeps success, drops individual diagnostics", () => {
+  it("keeps severity counts and first-N diagnostics", () => {
     const data: MypyResult = {
       success: false,
       diagnostics: [
@@ -181,26 +181,103 @@ describe("compactMypyMap", () => {
     const compact = compactMypyMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact.errorCount).toBe(1);
+    expect(compact.warningCount).toBe(0);
+    expect(compact.diagnostics).toEqual([
+      {
+        file: "src/main.py",
+        line: 10,
+        severity: "error",
+        message: "Incompatible return value type",
+        code: "return-value",
+      },
+      {
+        file: "src/utils.py",
+        line: 3,
+        severity: "note",
+        message: "Revealed type is 'builtins.str'",
+      },
+    ]);
+    expect(compact).not.toHaveProperty("truncated");
+  });
+
+  it("caps diagnostics at 20 and sets truncated", () => {
+    const data: MypyResult = {
+      success: false,
+      diagnostics: Array.from({ length: 25 }, (_, i) => ({
+        file: `src/m${i}.py`,
+        line: i + 1,
+        severity: "error" as const,
+        message: `error ${i}`,
+      })),
+    };
+
+    const compact = compactMypyMap(data);
+
+    expect(compact.errorCount).toBe(25);
+    expect(compact.diagnostics).toHaveLength(20);
+    expect(compact.truncated).toBe(true);
+  });
+
+  it("passes through error and exitCode from failed runs", () => {
+    const data: MypyResult = {
+      success: false,
+      diagnostics: [],
+      error: "mypy: error: Cannot find config file 'missing.ini'",
+      exitCode: 2,
+    };
+
+    const compact = compactMypyMap(data);
+
+    expect(compact.error).toBe("mypy: error: Cannot find config file 'missing.ini'");
+    expect(compact.exitCode).toBe(2);
   });
 });
 
 describe("formatMypyCompact", () => {
   it("formats clean result", () => {
-    const compact = { success: true };
+    const compact = { success: true, errorCount: 0, warningCount: 0 };
     expect(formatMypyCompact(compact)).toBe("mypy: no errors found.");
   });
 
-  it("formats result with errors", () => {
-    const compact = { success: false };
-    expect(formatMypyCompact(compact)).toBe("mypy: errors found.");
+  it("formats result with errors including diagnostics", () => {
+    const compact = {
+      success: false,
+      errorCount: 1,
+      warningCount: 0,
+      diagnostics: [
+        {
+          file: "src/main.py",
+          line: 10,
+          severity: "error" as const,
+          message: "Incompatible return value type",
+          code: "return-value",
+        },
+      ],
+    };
+    const output = formatMypyCompact(compact);
+    expect(output).toContain("mypy: 1 errors, 0 warnings");
+    expect(output).toContain("src/main.py:10 error: Incompatible return value type [return-value]");
+  });
+
+  it("formats failed run with error detail", () => {
+    const compact = {
+      success: false,
+      errorCount: 0,
+      warningCount: 0,
+      error: "mypy: error: Cannot find config file 'missing.ini'",
+      exitCode: 2,
+    };
+    const output = formatMypyCompact(compact);
+    expect(output).toContain("mypy: run failed (exit code 2)");
+    expect(output).toContain("Cannot find config file");
   });
 });
 
 // ── Ruff compact ──────────────────────────────────────────────────────
 
 describe("compactRuffMap", () => {
-  it("keeps success and fixedCount, drops diagnostics", () => {
+  it("keeps totals, fixedCount, and first-N diagnostics", () => {
     const data: RuffResult = {
       success: false,
       diagnostics: [
@@ -211,6 +288,8 @@ describe("compactRuffMap", () => {
           code: "F401",
           message: "'os' imported but unused",
           fixable: true,
+          fixApplicability: "safe",
+          url: "https://docs.astral.sh/ruff/rules/unused-import",
         },
         {
           file: "src/main.py",
@@ -227,20 +306,104 @@ describe("compactRuffMap", () => {
     const compact = compactRuffMap(data);
 
     expect(compact.success).toBe(false);
+    expect(compact.total).toBe(2);
+    expect(compact.fixableCount).toBe(1);
     expect(compact.fixedCount).toBe(1);
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact.diagnostics).toEqual([
+      {
+        file: "src/main.py",
+        line: 1,
+        column: 1,
+        code: "F401",
+        message: "'os' imported but unused",
+        fixable: true,
+      },
+      {
+        file: "src/main.py",
+        line: 5,
+        column: 10,
+        code: "E501",
+        message: "Line too long",
+        fixable: false,
+      },
+    ]);
+    expect(compact).not.toHaveProperty("truncated");
+  });
+
+  it("caps diagnostics at 20 and sets truncated", () => {
+    const data: RuffResult = {
+      success: false,
+      diagnostics: Array.from({ length: 30 }, (_, i) => ({
+        file: `src/m${i}.py`,
+        line: i + 1,
+        column: 1,
+        code: "F401",
+        message: `unused import ${i}`,
+        fixable: true,
+      })),
+    };
+
+    const compact = compactRuffMap(data);
+
+    expect(compact.total).toBe(30);
+    expect(compact.diagnostics).toHaveLength(20);
+    expect(compact.truncated).toBe(true);
+  });
+
+  it("passes through error and exitCode from failed runs", () => {
+    const data: RuffResult = {
+      success: false,
+      diagnostics: [],
+      error: "ruff failed\n  Cause: Failed to parse ruff.toml",
+      exitCode: 2,
+    };
+
+    const compact = compactRuffMap(data);
+
+    expect(compact.error).toContain("Failed to parse ruff.toml");
+    expect(compact.exitCode).toBe(2);
   });
 });
 
 describe("formatRuffCompact", () => {
   it("formats clean result", () => {
-    const compact = { success: true };
+    const compact = { success: true, total: 0, fixableCount: 0 };
     expect(formatRuffCompact(compact)).toBe("ruff: no issues found.");
   });
 
   it("formats result with issues", () => {
-    const compact = { success: false, fixedCount: 3 };
-    expect(formatRuffCompact(compact)).toBe("ruff: issues found, 3 fixed");
+    const compact = {
+      success: false,
+      total: 2,
+      fixableCount: 1,
+      fixedCount: 3,
+      diagnostics: [
+        {
+          file: "src/main.py",
+          line: 1,
+          column: 1,
+          code: "F401",
+          message: "'os' imported but unused",
+          fixable: true,
+        },
+      ],
+    };
+    const output = formatRuffCompact(compact);
+    expect(output).toContain("ruff: 2 issues (1 fixable, 3 fixed)");
+    expect(output).toContain("src/main.py:1:1 F401: 'os' imported but unused");
+  });
+
+  it("formats failed run with error detail", () => {
+    const compact = {
+      success: false,
+      total: 0,
+      fixableCount: 0,
+      error: "ruff failed\n  Cause: Failed to parse ruff.toml",
+      exitCode: 2,
+    };
+    const output = formatRuffCompact(compact);
+    expect(output).toContain("ruff: run failed (exit code 2)");
+    expect(output).toContain("Failed to parse ruff.toml");
   });
 });
 
@@ -322,7 +485,7 @@ describe("formatPipInstallCompact", () => {
 // ── Pip Audit compact ─────────────────────────────────────────────────
 
 describe("compactPipAuditMap", () => {
-  it("keeps success, drops vulnerability details", () => {
+  it("keeps total, severity counts, and vulnerability identities", () => {
     const data: PipAuditResult = {
       success: false,
       vulnerabilities: [
@@ -332,6 +495,7 @@ describe("compactPipAuditMap", () => {
           id: "PYSEC-2023-001",
           description: "Session fixation vulnerability",
           fixVersions: ["2.31.0"],
+          severity: "HIGH",
         },
         {
           name: "flask",
@@ -346,19 +510,92 @@ describe("compactPipAuditMap", () => {
     const compact = compactPipAuditMap(data);
 
     expect(compact.success).toBe(false);
-    expect(compact).not.toHaveProperty("vulnerabilities");
+    expect(compact.total).toBe(2);
+    expect(compact.severityCounts).toEqual({ HIGH: 1, unknown: 1 });
+    expect(compact.vulnerabilities).toHaveLength(2);
+    expect(compact.vulnerabilities?.[0]).toMatchObject({
+      name: "requests",
+      version: "2.25.0",
+      id: "PYSEC-2023-001",
+      fixVersions: ["2.31.0"],
+      severity: "HIGH",
+    });
+  });
+
+  it("truncates long descriptions and caps entries at 10", () => {
+    const data: PipAuditResult = {
+      success: false,
+      vulnerabilities: Array.from({ length: 12 }, (_, i) => ({
+        name: `pkg${i}`,
+        version: "1.0.0",
+        id: `PYSEC-2024-${i}`,
+        description: "x".repeat(500),
+        fixVersions: [],
+      })),
+    };
+
+    const compact = compactPipAuditMap(data);
+
+    expect(compact.total).toBe(12);
+    expect(compact.vulnerabilities).toHaveLength(10);
+    expect(compact.truncated).toBe(true);
+    expect(compact.vulnerabilities?.[0].description.length).toBeLessThanOrEqual(141);
+  });
+
+  it("passes through error and exitCode from crashed audits", () => {
+    const data: PipAuditResult = {
+      success: false,
+      vulnerabilities: [],
+      error: "ERROR:pip_audit._cli:Vulnerability service returned an error",
+      exitCode: 1,
+    };
+
+    const compact = compactPipAuditMap(data);
+
+    expect(compact.total).toBe(0);
+    expect(compact.error).toContain("Vulnerability service returned an error");
+    expect(compact.exitCode).toBe(1);
   });
 });
 
 describe("formatPipAuditCompact", () => {
   it("formats clean audit", () => {
-    const compact = { success: true };
+    const compact = { success: true, total: 0 };
     expect(formatPipAuditCompact(compact)).toBe("No vulnerabilities found.");
   });
 
   it("formats audit with vulnerabilities", () => {
-    const compact = { success: false };
-    expect(formatPipAuditCompact(compact)).toBe("Vulnerabilities found.");
+    const compact = {
+      success: false,
+      total: 2,
+      severityCounts: { HIGH: 1, unknown: 1 },
+      vulnerabilities: [
+        {
+          name: "requests",
+          version: "2.25.0",
+          id: "PYSEC-2023-001",
+          description: "Session fixation",
+          fixVersions: ["2.31.0"],
+          severity: "HIGH",
+        },
+      ],
+    };
+    const output = formatPipAuditCompact(compact);
+    expect(output).toContain("2 vulnerabilities (1 HIGH, 1 unknown):");
+    expect(output).toContain("requests==2.25.0 PYSEC-2023-001 [HIGH] (fix: 2.31.0)");
+  });
+
+  it("formats crashed audit as NOT a clean scan", () => {
+    const compact = {
+      success: false,
+      total: 0,
+      error: "ERROR:pip_audit._cli:Vulnerability service returned an error",
+      exitCode: 1,
+    };
+    const output = formatPipAuditCompact(compact);
+    expect(output).toContain("audit failed (exit code 1)");
+    expect(output).toContain("NOT a clean scan");
+    expect(output).not.toContain("No vulnerabilities found");
   });
 });
 
@@ -401,7 +638,7 @@ describe("formatUvInstallCompact", () => {
 // ── Uv Run compact ───────────────────────────────────────────────────
 
 describe("compactUvRunMap", () => {
-  it("keeps exitCode and success; drops stdout/stderr", () => {
+  it("keeps exitCode, success, and truncated streams (the #983/#1020 pattern)", () => {
     const data: UvRun = {
       exitCode: 0,
       stdout: "Hello, world!\nLine 2\nLine 3",
@@ -413,8 +650,43 @@ describe("compactUvRunMap", () => {
 
     expect(compact.exitCode).toBe(0);
     expect(compact.success).toBe(true);
+    expect(compact.stdout).toBe("Hello, world!\nLine 2\nLine 3");
+    expect(compact.stderr).toBe("some warnings here");
+    expect(compact).not.toHaveProperty("stdoutTruncated");
+    expect(compact).not.toHaveProperty("stderrTruncated");
+  });
+
+  it("prefers commandStderr and omits empty streams", () => {
+    const data: UvRun = {
+      exitCode: 1,
+      stdout: "",
+      stderr: "Resolved 3 packages\nTraceback (most recent call last):\n  ValueError: boom",
+      commandStderr: "Traceback (most recent call last):\n  ValueError: boom",
+      success: false,
+    };
+
+    const compact = compactUvRunMap(data);
+
     expect(compact).not.toHaveProperty("stdout");
-    expect(compact).not.toHaveProperty("stderr");
+    expect(compact.stderr).toBe("Traceback (most recent call last):\n  ValueError: boom");
+  });
+
+  it("truncates long streams and sets truncation metadata", () => {
+    const longStdout = Array.from({ length: 200 }, (_, i) => `line ${i}`).join("\n");
+    const data: UvRun = {
+      exitCode: 0,
+      stdout: longStdout,
+      stderr: "",
+      success: true,
+    };
+
+    const compact = compactUvRunMap(data);
+
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdoutTotalLines).toBe(200);
+    expect(compact.stdout).toContain("line 0");
+    expect(compact.stdout).toContain("lines omitted");
+    expect(compact.stdout).toContain("line 199");
   });
 });
 
@@ -424,20 +696,27 @@ describe("formatUvRunCompact", () => {
     expect(formatUvRunCompact(compact)).toBe("uv run completed");
   });
 
-  it("formats failed run", () => {
-    const compact = { exitCode: 1, success: false };
-    expect(formatUvRunCompact(compact)).toBe("uv run failed (exit 1)");
+  it("formats failed run with streams", () => {
+    const compact = {
+      exitCode: 1,
+      success: false,
+      stderr: "ValueError: boom",
+    };
+    const output = formatUvRunCompact(compact);
+    expect(output).toContain("uv run failed (exit 1)");
+    expect(output).toContain("stderr:");
+    expect(output).toContain("ValueError: boom");
   });
 });
 
 // ── Pip List compact ──────────────────────────────────────────────────
 
 describe("compactPipListMap", () => {
-  it("keeps success and error, drops package details", () => {
+  it("keeps total and name/version pairs", () => {
     const data: PipList = {
       success: true,
       packages: [
-        { name: "flask", version: "3.0.0" },
+        { name: "flask", version: "3.0.0", location: "/usr/lib/site-packages" },
         { name: "requests", version: "2.31.0" },
       ],
     };
@@ -445,18 +724,50 @@ describe("compactPipListMap", () => {
     const compact = compactPipListMap(data);
 
     expect(compact.success).toBe(true);
-    expect(compact).not.toHaveProperty("packages");
+    expect(compact.total).toBe(2);
+    expect(compact.packages).toEqual([
+      { name: "flask", version: "3.0.0" },
+      { name: "requests", version: "2.31.0" },
+    ]);
+  });
+
+  it("keeps latestVersion for outdated mode and caps at 50", () => {
+    const data: PipList = {
+      success: true,
+      packages: Array.from({ length: 60 }, (_, i) => ({
+        name: `pkg${i}`,
+        version: "1.0.0",
+        latestVersion: "2.0.0",
+      })),
+    };
+
+    const compact = compactPipListMap(data);
+
+    expect(compact.total).toBe(60);
+    expect(compact.packages).toHaveLength(50);
+    expect(compact.truncated).toBe(true);
+    expect(compact.packages?.[0].latestVersion).toBe("2.0.0");
   });
 });
 
 describe("formatPipListCompact", () => {
-  it("formats successful list", () => {
-    const compact = { success: true };
-    expect(formatPipListCompact(compact)).toBe("Packages listed.");
+  it("formats successful list with packages", () => {
+    const compact = {
+      success: true,
+      total: 2,
+      packages: [
+        { name: "flask", version: "3.0.0" },
+        { name: "requests", version: "2.31.0" },
+      ],
+    };
+    const output = formatPipListCompact(compact);
+    expect(output).toContain("2 packages installed:");
+    expect(output).toContain("flask==3.0.0");
+    expect(output).toContain("requests==2.31.0");
   });
 
   it("formats error", () => {
-    const compact = { success: false, error: "parse error" };
+    const compact = { success: false, total: 0, error: "parse error" };
     expect(formatPipListCompact(compact)).toBe("pip list error: parse error");
   });
 });

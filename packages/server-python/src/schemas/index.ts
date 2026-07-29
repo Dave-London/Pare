@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EmptyFailureSchemaFields, CompactStreamSchemaFields } from "@paretools/shared";
 
 /** Zod schema for structured pip install output with installed packages and satisfaction status. */
 export const PipInstallSchema = z.object({
@@ -14,6 +15,7 @@ export const PipInstallSchema = z.object({
   alreadySatisfied: z.boolean(),
   warnings: z.array(z.string()).optional(),
   dryRun: z.boolean().optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type PipInstall = z.infer<typeof PipInstallSchema>;
@@ -32,6 +34,7 @@ export const MypyDiagnosticSchema = z.object({
 export const MypyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(MypyDiagnosticSchema).optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type MypyResult = z.infer<typeof MypyResultSchema>;
@@ -58,6 +61,7 @@ export const RuffResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(RuffDiagnosticSchema).optional(),
   fixedCount: z.number().optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type RuffResult = z.infer<typeof RuffResultSchema>;
@@ -94,6 +98,7 @@ export const PipAuditResultSchema = z.object({
       }),
     )
     .optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type PipAuditResult = z.infer<typeof PipAuditResultSchema>;
@@ -153,7 +158,8 @@ export const UvInstallSchema = z.object({
 
 export type UvInstall = z.infer<typeof UvInstallSchema>;
 
-/** Zod schema for structured uv run output with exit code and stdout/stderr. */
+/** Zod schema for structured uv run output with exit code and stdout/stderr.
+ *  Compact mode keeps truncated streams and sets the CompactStream metadata fields. */
 export const UvRunSchema = z.object({
   exitCode: z.number(),
   stdout: z.string().optional(),
@@ -162,6 +168,7 @@ export const UvRunSchema = z.object({
   uvDiagnostics: z.array(z.string()).optional(),
   truncated: z.boolean().optional(),
   success: z.boolean(),
+  ...CompactStreamSchemaFields,
 });
 
 export type UvRun = z.infer<typeof UvRunSchema>;
@@ -259,6 +266,7 @@ export const RuffFormatResultSchema = z.object({
   filesUnchanged: z.number(),
   files: z.array(z.string()).optional(),
   checkMode: z.boolean().optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type RuffFormatResult = z.infer<typeof RuffFormatResultSchema>;
@@ -475,6 +483,7 @@ export const PoetryResultSchema = z.object({
   packages: z.array(PoetryPackageSchema).optional(),
   artifacts: z.array(PoetryArtifactSchema).optional(),
   messages: z.array(z.string()).optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type PoetryResult = z.infer<typeof PoetryResultSchema>;

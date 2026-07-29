@@ -197,7 +197,7 @@ export function registerMypyTool(server: McpServer) {
       }
 
       const result = await mypy(args, cwd, pythonPath);
-      const data = parseMypyJsonOutput(result.stdout, result.exitCode);
+      const data = parseMypyJsonOutput(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
         result.stdout,

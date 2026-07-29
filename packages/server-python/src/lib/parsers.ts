@@ -19,6 +19,7 @@ import type {
   PoetryResult,
 } from "../schemas/index.js";
 import { z } from "zod";
+import { surfaceEmptyFailure } from "@paretools/shared";
 
 type MypyDiagnostic = z.infer<typeof MypyDiagnosticSchema>;
 
@@ -65,20 +66,37 @@ export function parsePipInstall(stdout: string, stderr: string, exitCode: number
     }
   }
 
+  const errors: string[] = [];
   for (const line of lines) {
     const trimmed = line.trim();
     if (/^(WARNING|DEPRECATION):/i.test(trimmed)) {
       warnings.push(trimmed);
     }
+    if (/^ERROR:/i.test(trimmed)) {
+      errors.push(trimmed);
+    }
   }
 
-  return {
+  const data: PipInstall = {
     success: exitCode === 0,
     installed,
     alreadySatisfied,
     warnings: warnings.length > 0 ? warnings : undefined,
     dryRun,
   };
+  // pip reports failures as "ERROR: ..." lines (often on stderr); surface them
+  // instead of returning a bare success:false with no explanation (#1024).
+  if (exitCode !== 0) {
+    data.exitCode = exitCode;
+    if (errors.length > 0) data.error = errors.join("\n");
+  }
+  return surfaceEmptyFailure(
+    data,
+    { exitCode, stdout, stderr },
+    {
+      isEmpty: (d) => (d.installed ?? []).length === 0,
+    },
+  );
 }
 
 const MYPY_RE = /^(.+?):(\d+)(?::(\d+))?: (error|warning|note): (.+?)(?:\s+\[([^\]]+)\])?$/;
@@ -94,18 +112,50 @@ interface MypyJsonEntry {
   severity: "error" | "warning" | "note";
 }
 
+/** Maximum size of the error detail attached to failed mypy runs. */
+const MYPY_ERROR_DETAIL_MAX = 4096;
+
+/** mypy exits 1 when type errors are found (a normal, parseable run) and 2+ on
+ *  usage/config errors (bad flags, unreadable config, internal crash). Surfaces
+ *  the latter so a crashed run does not read as a clean pass (#1024):
+ *  - non-zero exit with zero diagnostics → attach stderr/stdout tail as `error`
+ *  - exit > 1 with diagnostics → attach stderr as `error` alongside them */
+function attachMypyFailure(
+  data: MypyResult,
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): MypyResult {
+  if (exitCode === 0) return data;
+  if ((data.diagnostics ?? []).length === 0) {
+    return surfaceEmptyFailure(data, { exitCode, stdout, stderr }, { isEmpty: () => true });
+  }
+  if (exitCode > 1) {
+    const out: MypyResult = { ...data, exitCode };
+    const detail = stderr.trim();
+    if (detail) {
+      out.error =
+        detail.length > MYPY_ERROR_DETAIL_MAX
+          ? `… (output truncated)\n${detail.slice(-MYPY_ERROR_DETAIL_MAX)}`
+          : detail;
+    }
+    return out;
+  }
+  return data;
+}
+
 /** Parses mypy JSON output (from `--output json`) into structured diagnostics. */
-export function parseMypyJsonOutput(stdout: string, exitCode: number): MypyResult {
+export function parseMypyJsonOutput(stdout: string, exitCode: number, stderr = ""): MypyResult {
   let entries: MypyJsonEntry[];
   try {
     entries = JSON.parse(stdout);
   } catch {
     // Fall back to text parsing if JSON parsing fails (older mypy without --output json)
-    return parseMypyTextOutput(stdout, exitCode);
+    return parseMypyTextOutput(stdout, exitCode, stderr);
   }
 
   if (!Array.isArray(entries)) {
-    return parseMypyTextOutput(stdout, exitCode);
+    return parseMypyTextOutput(stdout, exitCode, stderr);
   }
 
   const diagnostics: MypyDiagnostic[] = entries.map((e) => ({
@@ -117,14 +167,11 @@ export function parseMypyJsonOutput(stdout: string, exitCode: number): MypyResul
     code: e.code || undefined,
   }));
 
-  return {
-    success: exitCode === 0,
-    diagnostics,
-  };
+  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy text output into structured diagnostics (fallback for older mypy without JSON). */
-export function parseMypyTextOutput(stdout: string, exitCode: number): MypyResult {
+export function parseMypyTextOutput(stdout: string, exitCode: number, stderr = ""): MypyResult {
   const lines = stdout.split("\n");
   const diagnostics: MypyDiagnostic[] = [];
 
@@ -142,10 +189,7 @@ export function parseMypyTextOutput(stdout: string, exitCode: number): MypyResul
     }
   }
 
-  return {
-    success: exitCode === 0,
-    diagnostics,
-  };
+  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy output: tries JSON first, falls back to text parsing.
@@ -160,7 +204,14 @@ export function parseRuffJson(stdout: string, exitCode: number, stderr = ""): Ru
   try {
     entries = JSON.parse(stdout);
   } catch {
-    return { success: exitCode === 0, diagnostics: [] };
+    // ruff exits 1 with valid JSON when violations are found; unparseable
+    // output on a non-zero exit is a crashed/misconfigured run, not a clean
+    // pass — surface stderr instead of an empty diagnostics list (#1024).
+    return surfaceEmptyFailure(
+      { success: exitCode === 0, diagnostics: [] },
+      { exitCode, stdout, stderr },
+      { isEmpty: () => true },
+    );
   }
 
   const diagnostics = entries.map((e) => ({
@@ -218,13 +269,20 @@ interface RuffJsonEntry {
   url?: string;
 }
 
-/** Parses `pip-audit --format json` output into structured vulnerability data with fix versions. */
-export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditResult {
+/** Parses `pip-audit --format json` output into structured vulnerability data with fix versions.
+ *  pip-audit exits 1 both when vulnerabilities are found (a successful audit with valid JSON)
+ *  and when the audit itself fails; a non-zero exit with no parseable vulnerabilities is a
+ *  crashed audit and must not read as "0 vulnerabilities" (#1024). */
+export function parsePipAuditJson(stdout: string, exitCode: number, stderr = ""): PipAuditResult {
   let data: PipAuditJson;
   try {
     data = JSON.parse(stdout);
   } catch {
-    return { success: exitCode === 0, vulnerabilities: [] };
+    return surfaceEmptyFailure(
+      { success: exitCode === 0, vulnerabilities: [] },
+      { exitCode, stdout, stderr },
+      { isEmpty: () => true },
+    );
   }
 
   const byPackage: NonNullable<PipAuditResult["byPackage"]> = [];
@@ -253,12 +311,18 @@ export function parsePipAuditJson(stdout: string, exitCode: number): PipAuditRes
     return packageVulns;
   });
 
-  return {
-    success: exitCode === 0,
-    vulnerabilities,
-    byPackage: byPackage.length > 0 ? byPackage : undefined,
-    skipped: skipped.length > 0 ? skipped : undefined,
-  };
+  return surfaceEmptyFailure(
+    {
+      success: exitCode === 0,
+      vulnerabilities,
+      byPackage: byPackage.length > 0 ? byPackage : undefined,
+      skipped: skipped.length > 0 ? skipped : undefined,
+    },
+    { exitCode, stdout, stderr },
+    // Exit 1 with parsed vulnerabilities is the normal "vulns found" outcome;
+    // only a non-zero exit with nothing parsed gets an error attached.
+    { isEmpty: (d) => (d.vulnerabilities ?? []).length === 0 },
+  );
 }
 
 interface PipAuditJson {
@@ -922,13 +986,20 @@ export function parseRuffFormatOutput(
   const unchangedMatch = output.match(/(\d+) files? (?:would be )?left unchanged/);
   const filesUnchanged = unchangedMatch ? parseInt(unchangedMatch[1], 10) : 0;
 
-  return {
-    success: exitCode === 0,
-    filesChanged: filesChanged || files.length,
-    filesUnchanged,
-    files: files.length > 0 ? files : undefined,
-    checkMode,
-  };
+  // A non-zero exit with no file matches means ruff format crashed (bad config,
+  // invalid flag, unreadable path) rather than "files need reformatting" —
+  // surface stderr instead of a silent zeroed result (#1024).
+  return surfaceEmptyFailure(
+    {
+      success: exitCode === 0,
+      filesChanged: filesChanged || files.length,
+      filesUnchanged,
+      files: files.length > 0 ? files : undefined,
+      checkMode,
+    },
+    { exitCode, stdout, stderr },
+    { isEmpty: (d) => d.filesChanged === 0 && (d.files ?? []).length === 0 },
+  );
 }
 
 // ── conda parsers ────────────────────────────────────────────────────
@@ -1171,7 +1242,10 @@ const POETRY_BUILT_RE = /Built\s+(\S+)/;
 /** Regex matching `poetry add/remove` installed/removed lines with version e.g. "  - Installing requests (2.31.0)" */
 const POETRY_INSTALL_LINE_RE = /(?:Installing|Updating|Removing)\s+(\S+)\s+\(([^)]+)\)/;
 
-/** Parses poetry output into structured data based on the action performed. */
+/** Parses poetry output into structured data based on the action performed.
+ *  When an action-specific parse finds nothing (e.g. the run failed before doing
+ *  any work), the raw output lines are kept as `messages` — mirroring the
+ *  check/lock/export branch — so failures are never silently zeroed (#1024). */
 export function parsePoetryOutput(
   stdout: string,
   stderr: string,
@@ -1180,6 +1254,25 @@ export function parsePoetryOutput(
 ): PoetryResult {
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
+
+  /** Raw output lines fallback used when a branch-specific parse finds nothing. */
+  const fallbackMessages = (): string[] | undefined => {
+    const messages = lines.map((l) => l.trim()).filter(Boolean);
+    return messages.length > 0 ? messages : undefined;
+  };
+
+  /** Attaches error/exitCode when the run failed and produced nothing at all. */
+  const finish = (data: PoetryResult): PoetryResult =>
+    surfaceEmptyFailure(
+      data,
+      { exitCode, stdout, stderr },
+      {
+        isEmpty: (d) =>
+          (d.packages ?? []).length === 0 &&
+          (d.artifacts ?? []).length === 0 &&
+          (d.messages ?? []).length === 0,
+      },
+    );
 
   if (action === "show") {
     const packages: { name: string; version: string; description?: string }[] = [];
@@ -1196,10 +1289,11 @@ export function parsePoetryOutput(
         });
       }
     }
-    return {
+    return finish({
       success: exitCode === 0,
       packages,
-    };
+      messages: packages.length === 0 ? fallbackMessages() : undefined,
+    });
   }
 
   if (action === "build") {
@@ -1210,18 +1304,18 @@ export function parsePoetryOutput(
         artifacts.push({ file: match[1] });
       }
     }
-    return {
+    return finish({
       success: exitCode === 0,
       artifacts,
-    };
+      messages: artifacts.length === 0 ? fallbackMessages() : undefined,
+    });
   }
 
   if (action === "check" || action === "lock" || action === "export") {
-    const messages = lines.map((l) => l.trim()).filter(Boolean);
-    return {
+    return finish({
       success: exitCode === 0,
-      messages: messages.length > 0 ? messages : undefined,
-    };
+      messages: fallbackMessages(),
+    });
   }
 
   // install, add, remove, update — parse installed/updated/removed packages
@@ -1233,8 +1327,9 @@ export function parsePoetryOutput(
     }
   }
 
-  return {
+  return finish({
     success: exitCode === 0,
     packages,
-  };
+    messages: packages.length === 0 ? fallbackMessages() : undefined,
+  });
 }
