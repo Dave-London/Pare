@@ -16,8 +16,9 @@ export async function pytest(
   args: string[],
   cwd?: string,
   pythonPath?: string,
+  env?: Record<string, string>,
 ): Promise<RunResult> {
-  return runPythonTool("pytest", "pytest", args, { cwd, pythonPath, timeout: 300_000 });
+  return runPythonTool("pytest", "pytest", args, { cwd, pythonPath, env, timeout: 300_000 });
 }
 
 export async function uv(args: string[], cwd?: string): Promise<RunResult> {

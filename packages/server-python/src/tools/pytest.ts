@@ -8,6 +8,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  assertSafePassthroughArg,
+  coerceJsonArray,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -93,6 +95,24 @@ export function registerPytestTool(server: McpServer) {
           .optional()
           .describe("Number of parallel workers for pytest-xdist (-n NUM, 0=auto)"),
         configFile: configInput("Path to pytest config file (-c FILE)"),
+        env: z
+          .record(z.string(), z.string().max(INPUT_LIMITS.STRING_MAX))
+          .optional()
+          .describe(
+            "Additional environment variables for the pytest process, merged over the " +
+              'parent environment (e.g. {"PYTHONPATH": "src"} for src-layout projects)',
+          ),
+        extraArgs: z.preprocess(
+          coerceJsonArray,
+          z
+            .array(z.string().max(INPUT_LIMITS.STRING_MAX))
+            .max(INPUT_LIMITS.ARRAY_MAX)
+            .optional()
+            .describe(
+              'Additional pytest CLI arguments passed through verbatim (e.g. ["-p", "no:logfire"] ' +
+                "to disable a broken plugin). Each element is validated for control characters.",
+            ),
+        ),
         compact: compactInput,
       },
       outputSchema: PytestResultSchema,
@@ -113,6 +133,8 @@ export function registerPytestTool(server: McpServer) {
       coverage,
       parallel,
       configFile,
+      env,
+      extraArgs,
       compact,
     }) => {
       const cwd = path || process.cwd();
@@ -124,6 +146,26 @@ export function registerPytestTool(server: McpServer) {
       if (coverage) assertNoFlagInjection(coverage, "coverage");
       if (configFile) assertNoFlagInjection(configFile, "configFile");
       if (pythonPath) assertNoFlagInjection(pythonPath, "pythonPath");
+      if (env) {
+        for (const [key, value] of Object.entries(env)) {
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+            throw new Error(
+              `Invalid env: key "${key}" must match /^[A-Za-z_][A-Za-z0-9_]*$/ ` +
+                "(letters, digits, and underscores, not starting with a digit).",
+            );
+          }
+          assertSafePassthroughArg(value, `env.${key}`);
+        }
+      }
+      if (extraArgs) {
+        // `extraArgs` is an explicit passthrough field: the caller intends these to
+        // reach pytest verbatim, so leading `-`/`--` flags (e.g. `-p no:logfire`)
+        // are allowed. Only NUL/newline control chars are rejected.
+        // See assertSafePassthroughArg and the same pattern in server-test.
+        for (const arg of extraArgs) {
+          assertSafePassthroughArg(arg, "extraArgs");
+        }
+      }
 
       const tbStyle = tracebackStyle || "short";
       const args = [`--tb=${tbStyle}`, "-q"];
@@ -139,9 +181,10 @@ export function registerPytestTool(server: McpServer) {
       if (coverage) args.push(`--cov=${coverage}`);
       if (parallel != null) args.push("-n", String(parallel));
       if (configFile) args.push("-c", configFile);
+      if (extraArgs && extraArgs.length > 0) args.push(...extraArgs);
       if (targets && targets.length > 0) args.push(...targets);
 
-      const result = await pytest(args, cwd, pythonPath);
+      const result = await pytest(args, cwd, pythonPath, env);
       const data = parsePytestOutput(result.stdout, result.stderr, result.exitCode);
       return compactDualOutput(
         data,

@@ -195,6 +195,82 @@ describe("Python P2 gaps", () => {
     expect(vi.mocked(pytest).mock.calls[0][2]).toBe(".venv/bin/python");
   });
 
+  it("#984 passes env through to the pytest runner", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "1 passed in 0.1s",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ env: { PYTHONPATH: "src" }, compact: false });
+
+    expect(vi.mocked(pytest).mock.calls[0][3]).toEqual({ PYTHONPATH: "src" });
+  });
+
+  it("#984 appends extraArgs before targets", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "1 passed in 0.1s",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ extraArgs: ["-p", "no:logfire"], targets: ["tests/"], compact: false });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    expect(args.slice(-3)).toEqual(["-p", "no:logfire", "tests/"]);
+  });
+
+  it("#984 rejects env keys that are not valid variable names", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+
+    await expect(handler({ env: { "BAD-NAME": "x" }, compact: false })).rejects.toThrow(
+      /Invalid env/,
+    );
+    await expect(handler({ env: { "1LEADING": "x" }, compact: false })).rejects.toThrow(
+      /Invalid env/,
+    );
+    expect(vi.mocked(pytest)).not.toHaveBeenCalled();
+  });
+
+  it("#984 rejects env values and extraArgs with control characters", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+
+    await expect(handler({ env: { GOOD_NAME: "bad\nvalue" }, compact: false })).rejects.toThrow(
+      /must not contain NUL or newline/,
+    );
+    await expect(handler({ extraArgs: ["-p\nno:evil"], compact: false })).rejects.toThrow(
+      /must not contain NUL or newline/,
+    );
+    expect(vi.mocked(pytest)).not.toHaveBeenCalled();
+  });
+
+  it("#984 surfaces errorOutput when a run fails with no test results", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "",
+      stderr: "ImportError: broken plugin",
+      exitCode: 1,
+    });
+
+    const out = await handler({ compact: false });
+
+    expect(out.structuredContent.success).toBe(false);
+    expect(out.structuredContent.exitCode).toBe(1);
+    expect(out.structuredContent.errorOutput).toContain("ImportError: broken plugin");
+  });
+
   it("#365 includes pip-audit skipped dependencies", () => {
     const out = parsePipAuditJson(
       JSON.stringify({
