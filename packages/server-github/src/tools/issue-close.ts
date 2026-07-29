@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parseIssueClose } from "../lib/parsers.js";
+import { parseIssueClose, resolveNumber } from "../lib/parsers.js";
 import { formatIssueClose } from "../lib/formatters.js";
 import { IssueCloseResultSchema } from "../schemas/index.js";
 
@@ -52,7 +52,7 @@ export function registerIssueCloseTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const issueNum = typeof number === "number" ? number : 0;
+      const issueNum = resolveNumber(number);
 
       const args = ["issue", "close", selector];
       // Note: gh issue close only supports --comment, not --comment-file or stdin.

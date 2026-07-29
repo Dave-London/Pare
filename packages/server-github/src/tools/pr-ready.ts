@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrReady } from "../lib/parsers.js";
+import { parsePrReady, resolveNumber } from "../lib/parsers.js";
 import { formatPrReady } from "../lib/formatters.js";
 import { PrReadyResultSchema } from "../schemas/index.js";
 
@@ -57,7 +57,7 @@ export function registerPrReadyTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
 
       const args = ["pr", "ready", selector];
       if (undo) args.push("--undo");

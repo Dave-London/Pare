@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrReview } from "../lib/parsers.js";
+import { parsePrReview, resolveNumber } from "../lib/parsers.js";
 import { formatPrReview } from "../lib/formatters.js";
 import { PrReviewResultSchema } from "../schemas/index.js";
 
@@ -60,7 +60,7 @@ export function registerPrReviewTool(server: McpServer) {
       }
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
 
       const args = ["pr", "review", selector, `--${event}`];
       if (repo) args.push("--repo", repo);

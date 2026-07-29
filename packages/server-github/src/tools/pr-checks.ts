@@ -8,7 +8,7 @@ import {
   repoPathInput,
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrChecks } from "../lib/parsers.js";
+import { parsePrChecks, resolveNumber } from "../lib/parsers.js";
 import { formatPrChecks, compactPrChecksMap, formatPrChecksCompact } from "../lib/formatters.js";
 import { PrChecksResultSchema, type PrChecksResult } from "../schemas/index.js";
 
@@ -232,7 +232,7 @@ export function registerPrChecksTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
 
       // Note: gh rejects `--watch` together with `--json`, so we never pass
       // gh's native --watch. When watch=true the wrapper polls internally.

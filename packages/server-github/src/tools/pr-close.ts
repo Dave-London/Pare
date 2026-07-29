@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrClose } from "../lib/parsers.js";
+import { parsePrClose, resolveNumber } from "../lib/parsers.js";
 import { formatPrClose } from "../lib/formatters.js";
 import { PrCloseResultSchema } from "../schemas/index.js";
 
@@ -53,7 +53,7 @@ export function registerPrCloseTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
 
       const args = ["pr", "close", selector];
       if (comment) args.push("--comment", comment);
