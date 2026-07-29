@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EmptyFailureSchemaFields } from "@paretools/shared";
 
 /** Zod schema for a single vulnerability entry from Trivy output.
  * Moved to formatter: title (display-only). */
@@ -30,7 +31,10 @@ export const TrivyScanResultSchema = z.object({
   target: z.string(),
   scanType: z.enum(["image", "fs", "config"]),
   vulnerabilities: z.array(TrivyVulnerabilitySchema).optional(),
+  /** Set (true) in compact mode when the vulnerability list was cut to the top entries. */
+  vulnerabilitiesTruncated: z.boolean().optional(),
   summary: TrivySeveritySummarySchema,
+  ...EmptyFailureSchemaFields,
 });
 
 export type TrivyScanResult = z.infer<typeof TrivyScanResultSchema>;
@@ -44,6 +48,8 @@ export type TrivyVulnerabilityInternal = TrivyVulnerability & {
 export type TrivyScanResultInternal = Omit<TrivyScanResult, "vulnerabilities"> & {
   vulnerabilities?: TrivyVulnerabilityInternal[];
   totalVulnerabilities: number;
+  /** Internal-only: set when the CLI output could not be parsed as a Trivy report. */
+  parseFailed?: true;
 };
 
 // -- Semgrep schemas ----------------------------------------------------------
@@ -76,6 +82,8 @@ export type SemgrepSeveritySummary = z.infer<typeof SemgrepSeveritySummarySchema
  * Moved to formatter: config (echo-back / display-only). */
 export const SemgrepScanResultSchema = z.object({
   findings: z.array(SemgrepFindingSchema).optional(),
+  /** Set (true) in compact mode when the findings list was cut to the top entries. */
+  findingsTruncated: z.boolean().optional(),
   errors: z
     .array(
       z.object({
@@ -86,6 +94,7 @@ export const SemgrepScanResultSchema = z.object({
     )
     .optional(),
   summary: SemgrepSeveritySummarySchema,
+  ...EmptyFailureSchemaFields,
 });
 
 export type SemgrepScanResult = z.infer<typeof SemgrepScanResultSchema>;
@@ -100,20 +109,23 @@ export type SemgrepScanResultInternal = Omit<SemgrepScanResult, "findings"> & {
   findings?: SemgrepFindingInternal[];
   totalFindings: number;
   config: string;
+  /** Internal-only: set when the CLI output could not be parsed as a Semgrep report. */
+  parseFailed?: true;
 };
 
 // -- Gitleaks schemas ---------------------------------------------------------
 
 /** Zod schema for a single Gitleaks finding.
- * Moved to formatter: description, author, date (display-only). */
+ * Moved to formatter: description, author, date (display-only).
+ * `match`, `secret`, and `commit` are omitted in compact mode. */
 export const GitleaksFindingSchema = z.object({
   ruleID: z.string(),
-  match: z.string(),
-  secret: z.string(),
+  match: z.string().optional(),
+  secret: z.string().optional(),
   file: z.string(),
   startLine: z.number(),
   endLine: z.number(),
-  commit: z.string(),
+  commit: z.string().optional(),
 });
 
 export type GitleaksFinding = z.infer<typeof GitleaksFindingSchema>;
@@ -128,6 +140,11 @@ export type GitleaksSummary = z.infer<typeof GitleaksSummarySchema>;
  * Removed derivable: totalFindings (= findings.length). */
 export const GitleaksScanResultSchema = z.object({
   findings: z.array(GitleaksFindingSchema).optional(),
+  /** Total findings detected; set in compact mode where `findings` may be cut. */
+  totalFindings: z.number().optional(),
+  /** Set (true) in compact mode when the findings list was cut to the top entries. */
+  findingsTruncated: z.boolean().optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type GitleaksScanResult = z.infer<typeof GitleaksScanResultSchema>;
@@ -150,4 +167,6 @@ export type GitleaksScanResultInternal = Omit<GitleaksScanResult, "findings"> & 
   findings?: GitleaksFindingInternal[];
   totalFindings: number;
   summary?: GitleaksSummaryInternal;
+  /** Internal-only: set when the CLI output could not be parsed as a Gitleaks report. */
+  parseFailed?: true;
 };

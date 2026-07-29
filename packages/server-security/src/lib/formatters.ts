@@ -7,6 +7,30 @@ import type {
   GitleaksScanResultInternal,
 } from "../schemas/index.js";
 
+/** Maximum number of findings/vulnerabilities kept in compact projections. */
+export const COMPACT_MAX_FINDINGS = 20;
+
+/** Builds the optional error/exitCode passthrough fields (set by surfaceEmptyFailure). */
+function errorFields(data: { error?: string; exitCode?: number }): {
+  error?: string;
+  exitCode?: number;
+} {
+  return {
+    ...(data.error !== undefined ? { error: data.error } : {}),
+    ...(data.exitCode !== undefined ? { exitCode: data.exitCode } : {}),
+  };
+}
+
+/** Appends the surfaced scan-failure error (if any) to formatter output lines. */
+function pushErrorLines(lines: string[], data: { error?: string; exitCode?: number }): void {
+  if (!data.error) return;
+  lines.push("");
+  lines.push(
+    `Scan failed${data.exitCode !== undefined ? ` (exit code ${data.exitCode})` : ""} — results are NOT a clean scan:`,
+  );
+  lines.push(data.error);
+}
+
 // -- Schema maps (strip Internal-only fields for structuredContent) -----------
 
 /** Strips Internal-only fields from Trivy scan result for structuredContent. */
@@ -23,6 +47,7 @@ export function schemaTrivyScanMap(data: TrivyScanResultInternal): TrivyScanResu
       cvssScore: v.cvssScore,
     })),
     summary: data.summary,
+    ...errorFields(data),
   };
 }
 
@@ -40,6 +65,7 @@ export function schemaSemgrepScanMap(data: SemgrepScanResultInternal): SemgrepSc
     })),
     errors: data.errors,
     summary: data.summary,
+    ...errorFields(data),
   };
 }
 
@@ -55,6 +81,7 @@ export function schemaGitleaksScanMap(data: GitleaksScanResultInternal): Gitleak
       endLine: f.endLine,
       commit: f.commit,
     })),
+    ...errorFields(data),
   };
 }
 
@@ -84,16 +111,27 @@ export function formatTrivyScan(data: TrivyScanResultInternal): string {
     }
   }
 
+  pushErrorLines(lines, data);
+
   return lines.join("\n");
 }
 
 // -- Compact types, mappers, and formatters -----------------------------------
 
-/** Compact scan result: summary only, no individual vulnerabilities (schema-compatible). */
+/** Compact scan result: severity summary plus the top critical/high
+ * vulnerabilities (schema-compatible). */
 export interface TrivyScanCompact {
   [key: string]: unknown;
   target: string;
   scanType: "image" | "fs" | "config";
+  vulnerabilities?: Array<{
+    id: string;
+    severity: string;
+    package: string;
+    installedVersion: string;
+    fixedVersion?: string;
+  }>;
+  vulnerabilitiesTruncated?: true;
   summary: {
     critical: number;
     high: number;
@@ -101,13 +139,28 @@ export interface TrivyScanCompact {
     low: number;
     unknown: number;
   };
+  error?: string;
+  exitCode?: number;
 }
 
 export function compactTrivyScanMap(data: TrivyScanResultInternal): TrivyScanCompact {
+  const all = data.vulnerabilities ?? [];
+  const topSeverity = all.filter((v) => v.severity === "CRITICAL" || v.severity === "HIGH");
+  const kept = topSeverity.slice(0, COMPACT_MAX_FINDINGS).map((v) => ({
+    id: v.id,
+    severity: v.severity,
+    package: v.package,
+    installedVersion: v.installedVersion,
+    ...(v.fixedVersion !== undefined ? { fixedVersion: v.fixedVersion } : {}),
+  }));
+  const truncated = kept.length < all.length;
   return {
     target: data.target,
     scanType: data.scanType,
+    ...(kept.length > 0 ? { vulnerabilities: kept } : {}),
+    ...(truncated ? { vulnerabilitiesTruncated: true as const } : {}),
     summary: data.summary,
+    ...errorFields(data),
   };
 }
 
@@ -118,11 +171,20 @@ export function formatTrivyScanCompact(data: TrivyScanCompact): string {
     data.summary.medium +
     data.summary.low +
     data.summary.unknown;
-  return (
+  const lines: string[] = [
     `Trivy ${data.scanType} scan: ${data.target} -- ` +
-    `${total} vulnerabilities ` +
-    `(${data.summary.critical}C/${data.summary.high}H/${data.summary.medium}M/${data.summary.low}L)`
-  );
+      `${total} vulnerabilities ` +
+      `(${data.summary.critical}C/${data.summary.high}H/${data.summary.medium}M/${data.summary.low}L)`,
+  ];
+  for (const v of data.vulnerabilities ?? []) {
+    const fixed = v.fixedVersion ? ` -> ${v.fixedVersion}` : "";
+    lines.push(`  [${v.severity}] ${v.id}: ${v.package}@${v.installedVersion}${fixed}`);
+  }
+  if (data.vulnerabilitiesTruncated) {
+    lines.push(`  ... (list truncated; totals per severity above)`);
+  }
+  pushErrorLines(lines, data);
+  return lines.join("\n");
 }
 
 // -- Semgrep formatters -------------------------------------------------------
@@ -158,34 +220,79 @@ export function formatSemgrepScan(data: SemgrepScanResultInternal): string {
     }
   }
 
+  pushErrorLines(lines, data);
+
   return lines.join("\n");
 }
 
 // -- Semgrep compact types, mappers, and formatters ---------------------------
 
-/** Compact scan result: summary only, no individual findings (schema-compatible). */
+/** Compact scan result: severity summary plus the top findings and any scan
+ * errors (schema-compatible). */
 export interface SemgrepScanCompact {
   [key: string]: unknown;
+  findings?: Array<{
+    ruleId: string;
+    path: string;
+    startLine: number;
+    endLine: number;
+    message: string;
+    severity: string;
+  }>;
+  findingsTruncated?: true;
+  errors?: Array<{ type?: string; message: string; path?: string }>;
   summary: {
     error: number;
     warning: number;
     info: number;
   };
+  error?: string;
+  exitCode?: number;
 }
 
 export function compactSemgrepScanMap(data: SemgrepScanResultInternal): SemgrepScanCompact {
+  const all = data.findings ?? [];
+  const kept = all.slice(0, COMPACT_MAX_FINDINGS).map((f) => ({
+    ruleId: f.ruleId,
+    path: f.path,
+    startLine: f.startLine,
+    endLine: f.endLine,
+    message: f.message,
+    severity: f.severity,
+  }));
   return {
+    ...(kept.length > 0 ? { findings: kept } : {}),
+    ...(kept.length < all.length ? { findingsTruncated: true as const } : {}),
+    ...(data.errors && data.errors.length > 0 ? { errors: data.errors } : {}),
     summary: data.summary,
+    ...errorFields(data),
   };
 }
 
 export function formatSemgrepScanCompact(data: SemgrepScanCompact): string {
   const total = data.summary.error + data.summary.warning + data.summary.info;
-  return (
+  const lines: string[] = [
     `Semgrep scan -- ` +
-    `${total} findings ` +
-    `(${data.summary.error}E/${data.summary.warning}W/${data.summary.info}I)`
-  );
+      `${total} findings ` +
+      `(${data.summary.error}E/${data.summary.warning}W/${data.summary.info}I)`,
+  ];
+  for (const f of data.findings ?? []) {
+    lines.push(`  [${f.severity}] ${f.ruleId}: ${f.path}:${f.startLine}-${f.endLine}`);
+    lines.push(`    ${f.message}`);
+  }
+  if (data.findingsTruncated) {
+    lines.push(`  ... (list truncated; totals per severity above)`);
+  }
+  if ((data.errors ?? []).length > 0) {
+    lines.push(`Errors: ${data.errors?.length ?? 0}`);
+    for (const err of data.errors ?? []) {
+      const type = err.type ? `[${err.type}] ` : "";
+      const path = err.path ? ` (${err.path})` : "";
+      lines.push(`  ${type}${err.message}${path}`);
+    }
+  }
+  pushErrorLines(lines, data);
+  return lines.join("\n");
 }
 
 // -- Gitleaks formatters ------------------------------------------------------
@@ -213,21 +320,53 @@ export function formatGitleaksScan(data: GitleaksScanResultInternal): string {
     }
   }
 
+  pushErrorLines(lines, data);
+
   return lines.join("\n");
 }
 
 // -- Gitleaks compact types, mappers, and formatters --------------------------
 
-/** Compact scan result: empty projection, no findings (schema-compatible).
- * GitleaksScanResultSchema only has `findings`, which compact mode drops. */
+/** Compact scan result: finding count plus the top findings by rule/file/line
+ * (schema-compatible). Drops match/secret/commit details. */
 export interface GitleaksScanCompact {
   [key: string]: unknown;
+  totalFindings: number;
+  findings?: Array<{
+    ruleID: string;
+    file: string;
+    startLine: number;
+    endLine: number;
+  }>;
+  findingsTruncated?: true;
+  error?: string;
+  exitCode?: number;
 }
 
-export function compactGitleaksScanMap(_data: GitleaksScanResultInternal): GitleaksScanCompact {
-  return {};
+export function compactGitleaksScanMap(data: GitleaksScanResultInternal): GitleaksScanCompact {
+  const all = data.findings ?? [];
+  const kept = all.slice(0, COMPACT_MAX_FINDINGS).map((f) => ({
+    ruleID: f.ruleID,
+    file: f.file,
+    startLine: f.startLine,
+    endLine: f.endLine,
+  }));
+  return {
+    totalFindings: data.totalFindings,
+    ...(kept.length > 0 ? { findings: kept } : {}),
+    ...(kept.length < all.length ? { findingsTruncated: true as const } : {}),
+    ...errorFields(data),
+  };
 }
 
-export function formatGitleaksScanCompact(_data: GitleaksScanCompact): string {
-  return `Gitleaks scan: compact summary`;
+export function formatGitleaksScanCompact(data: GitleaksScanCompact): string {
+  const lines: string[] = [`Gitleaks scan -- ${data.totalFindings} secret(s) found`];
+  for (const f of data.findings ?? []) {
+    lines.push(`  [${f.ruleID}] ${f.file}:${f.startLine}-${f.endLine}`);
+  }
+  if (data.findingsTruncated) {
+    lines.push(`  ... (list truncated; ${data.totalFindings} total)`);
+  }
+  pushErrorLines(lines, data);
+  return lines.join("\n");
 }
