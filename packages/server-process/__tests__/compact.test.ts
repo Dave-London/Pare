@@ -7,7 +7,7 @@ import type { ProcessRunResultInternal } from "../src/schemas/index.js";
 // ---------------------------------------------------------------------------
 
 describe("compactRunMap", () => {
-  it("keeps exitCode, success, timedOut; drops command, duration, stdout, stderr", () => {
+  it("keeps exitCode, success, timedOut, stdout; drops command, duration", () => {
     const data: ProcessRunResultInternal = {
       command: "node",
       exitCode: 0,
@@ -23,11 +23,15 @@ describe("compactRunMap", () => {
     expect(compact.success).toBe(true);
     expect(compact.exitCode).toBe(0);
     expect(compact.timedOut).toBe(false);
+    // Short output is passed through whole, with no truncation flags
+    expect(compact.stdout).toBe("Hello, world!\nLine 2\nLine 3");
+    expect(compact.stdoutTruncated).toBeUndefined();
+    expect(compact.stdoutTotalLines).toBeUndefined();
+    // Empty stderr is omitted entirely
+    expect(compact).not.toHaveProperty("stderr");
     // Verify dropped fields
     expect(compact).not.toHaveProperty("command");
     expect(compact).not.toHaveProperty("duration");
-    expect(compact).not.toHaveProperty("stdout");
-    expect(compact).not.toHaveProperty("stderr");
   });
 
   it("preserves signal when present", () => {
@@ -46,10 +50,10 @@ describe("compactRunMap", () => {
 
     expect(compact.timedOut).toBe(true);
     expect(compact.signal).toBe("SIGTERM");
+    expect(compact.stderr).toBe("timed out");
     expect(compact).not.toHaveProperty("command");
     expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
-    expect(compact).not.toHaveProperty("stderr");
   });
 
   it("handles failed command with no signal", () => {
@@ -68,10 +72,10 @@ describe("compactRunMap", () => {
     expect(compact.success).toBe(false);
     expect(compact.exitCode).toBe(1);
     expect(compact.signal).toBeUndefined();
+    expect(compact.stderr).toBe("command failed");
     expect(compact).not.toHaveProperty("command");
     expect(compact).not.toHaveProperty("duration");
     expect(compact).not.toHaveProperty("stdout");
-    expect(compact).not.toHaveProperty("stderr");
   });
 
   it("preserves truncated flag when true", () => {
