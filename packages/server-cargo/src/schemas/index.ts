@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CompactStreamSchemaFields, EmptyFailureSchemaFields } from "@paretools/shared";
 
 /** Zod schema for a single Rust compiler diagnostic with file location, severity, and optional lint code. */
 export const CargoDiagnosticSchema = z.object({
@@ -23,6 +24,7 @@ export const CargoBuildResultSchema = z.object({
     })
     .optional()
     .describe("Structured cargo --timings metadata when timing report generation is enabled"),
+  ...EmptyFailureSchemaFields,
 });
 
 export type CargoBuildResult = z.infer<typeof CargoBuildResultSchema>;
@@ -51,6 +53,7 @@ export const CargoTestResultSchema = z.object({
     .array(CargoDiagnosticSchema)
     .optional()
     .describe("Compiler diagnostics from --message-format=json when tests fail to compile"),
+  ...EmptyFailureSchemaFields,
 });
 
 export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
@@ -59,6 +62,7 @@ export type CargoTestResult = z.infer<typeof CargoTestResultSchema>;
 export const CargoClippyResultSchema = z.object({
   success: z.boolean(),
   diagnostics: z.array(CargoDiagnosticSchema).optional(),
+  ...EmptyFailureSchemaFields,
 });
 
 export type CargoClippyResult = z.infer<typeof CargoClippyResultSchema>;
@@ -73,14 +77,9 @@ export const CargoRunResultSchema = z.object({
     .enum(["compilation", "runtime", "timeout"])
     .optional()
     .describe("Type of failure: compilation (rustc error), runtime (program error), or timeout"),
-  stdoutTruncated: z
-    .boolean()
-    .optional()
-    .describe("True when stdout exceeded maxOutputSize and was truncated"),
-  stderrTruncated: z
-    .boolean()
-    .optional()
-    .describe("True when stderr exceeded maxOutputSize and was truncated"),
+  // stdoutTruncated/stderrTruncated cover both maxOutputSize truncation (full mode)
+  // and the compact stream budget (compact mode, epic #1022).
+  ...CompactStreamSchemaFields,
 });
 
 export type CargoRunResult = z.infer<typeof CargoRunResultSchema>;
@@ -247,6 +246,11 @@ export const CargoAuditResultSchema = z.object({
     .number()
     .optional()
     .describe("Number of fixes applied when using cargo audit fix"),
+  omittedVulnerabilities: z
+    .number()
+    .optional()
+    .describe("Number of vulnerabilities omitted from the compact vulnerability list"),
+  ...EmptyFailureSchemaFields,
 });
 
 export type CargoAuditResult = z.infer<typeof CargoAuditResultSchema>;
