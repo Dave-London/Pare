@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
@@ -165,6 +167,122 @@ describe("@paretools/python integration", () => {
         expect(typeof sc.skipped).toBe("number");
         expect(Array.isArray(sc.failures)).toBe(true);
       }
+    });
+
+    describe("src-layout project (issue #984)", () => {
+      let projectDir: string;
+
+      beforeAll(() => {
+        // src-layout project: tests import `mypkg`, which is only importable
+        // with PYTHONPATH=src.
+        projectDir = mkdtempSync(join(tmpdir(), "pare-pytest-984-"));
+        mkdirSync(join(projectDir, "src", "mypkg"), { recursive: true });
+        mkdirSync(join(projectDir, "tests"), { recursive: true });
+        writeFileSync(
+          join(projectDir, "src", "mypkg", "__init__.py"),
+          "def add(a, b):\n    return a + b\n",
+        );
+        writeFileSync(
+          join(projectDir, "tests", "test_add.py"),
+          "from mypkg import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n",
+        );
+      });
+
+      afterAll(() => {
+        rmSync(projectDir, { recursive: true, force: true });
+      });
+
+      it("surfaces diagnostics when the run fails with no test results", async () => {
+        const result = await client.callTool(
+          { name: "pytest", arguments: { path: projectDir, compact: false } },
+          undefined,
+          CALL_TIMEOUT,
+        );
+
+        if (result.isError) {
+          // pytest not installed on this machine
+          const content = result.content as Array<{ type: string; text: string }>;
+          expect(content[0].text).toMatch(/pytest|command|not found/i);
+          return;
+        }
+
+        const sc = result.structuredContent as Record<string, unknown>;
+        // Without PYTHONPATH the run must fail (collection error or plugin
+        // crash) — and the agent must be able to see why.
+        expect(sc.success).toBe(false);
+        expect(sc.passed).toBe(0);
+        expect(typeof sc.exitCode).toBe("number");
+        expect(typeof sc.errorOutput).toBe("string");
+        expect((sc.errorOutput as string).length).toBeGreaterThan(0);
+      });
+
+      it("passes with env PYTHONPATH and extraArgs plugin disable", async () => {
+        const result = await client.callTool(
+          {
+            name: "pytest",
+            arguments: {
+              path: projectDir,
+              env: { PYTHONPATH: "src" },
+              // `-p no:logfire` mirrors the issue's broken-plugin workaround;
+              // disabling a plugin that is not installed is a no-op, so this is
+              // safe on any machine while still exercising the passthrough.
+              extraArgs: ["-p", "no:logfire", "-p", "no:cacheprovider"],
+              compact: false,
+            },
+          },
+          undefined,
+          CALL_TIMEOUT,
+        );
+
+        if (result.isError) {
+          const content = result.content as Array<{ type: string; text: string }>;
+          expect(content[0].text).toMatch(/pytest|command|not found/i);
+          return;
+        }
+
+        const sc = result.structuredContent as Record<string, unknown>;
+        expect(sc.success).toBe(true);
+        expect(sc.passed).toBe(1);
+        expect(sc.errorOutput).toBeUndefined();
+      });
+
+      it("rejects invalid env variable names", async () => {
+        const result = await client.callTool(
+          {
+            name: "pytest",
+            arguments: {
+              path: projectDir,
+              env: { "BAD-NAME; rm -rf /": "x" },
+              compact: false,
+            },
+          },
+          undefined,
+          CALL_TIMEOUT,
+        );
+
+        expect(result.isError).toBe(true);
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/Invalid env/i);
+      });
+
+      it("rejects extraArgs containing control characters", async () => {
+        const result = await client.callTool(
+          {
+            name: "pytest",
+            arguments: {
+              path: projectDir,
+              extraArgs: ["-p\nno:evil"],
+              compact: false,
+            },
+          },
+          undefined,
+          CALL_TIMEOUT,
+        );
+
+        expect(result.isError).toBe(true);
+        const content = result.content as Array<{ type: string; text: string }>;
+        expect(content[0].text).toMatch(/must not contain NUL or newline/i);
+      });
     });
   });
 

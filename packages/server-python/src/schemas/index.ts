@@ -113,6 +113,18 @@ export const PytestResultSchema = z.object({
   skipped: z.number(),
   warnings: z.number().describe("Count of warnings from pytest warnings summary"),
   failures: z.array(PytestFailureSchema).optional(),
+  exitCode: z
+    .number()
+    .optional()
+    .describe("pytest exit code; only present when the run failed with no parseable test results"),
+  errorOutput: z
+    .string()
+    .optional()
+    .describe(
+      "Tail of the raw pytest output explaining why the run produced no test results " +
+        "(e.g. collection error, ModuleNotFoundError, broken plugin); " +
+        "only present when the run failed with no parseable test results",
+    ),
 });
 
 export type PytestResult = z.infer<typeof PytestResultSchema>;

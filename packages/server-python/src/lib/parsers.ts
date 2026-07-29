@@ -283,6 +283,52 @@ function extractCount(line: string, label: RegExp): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+/** Maximum size of the errorOutput diagnostic attached to failed empty pytest runs. */
+const PYTEST_ERROR_OUTPUT_MAX = 4_000;
+
+/** Picks the stream most likely to explain a failed pytest run.
+ *  Collection errors ("ERRORS" section, ModuleNotFoundError) land on stdout;
+ *  plugin/startup crashes (tracebacks) land on stderr. Prefers whichever stream
+ *  carries an error signal, falling back to stdout. */
+function pickPytestErrorStream(stdout: string, stderr: string): string {
+  const out = stdout.trim();
+  const err = stderr.trim();
+  if (!out) return err;
+  if (!err) return out;
+  const signal = /\b(?:ERRORS?|[A-Za-z]*Error|Traceback|error)\b/;
+  if (signal.test(out)) return out;
+  if (signal.test(err)) return err;
+  return out;
+}
+
+/** When a pytest run failed but produced no parseable test results (e.g. collection
+ *  error from a missing PYTHONPATH, or a broken plugin crashing at startup), attaches
+ *  the exit code and a capped tail of the raw output so agents can see WHY instead of
+ *  a silent all-zero result. See issue #984. */
+function attachEmptyRunDiagnostics(
+  result: PytestResult,
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+): PytestResult {
+  // Zero executed tests + failure means the run never got past collection/startup.
+  // Any parsed `failures` in this state are collection-error blocks (e.g.
+  // "ERROR collecting tests/test_x.py"), not test failures, so the raw tail is
+  // still the only place the agent can see the underlying cause.
+  const noTestsExecuted = result.passed === 0 && result.failed === 0 && result.skipped === 0;
+  if (result.success || !noTestsExecuted) return result;
+
+  result.exitCode = exitCode;
+  const detail = pickPytestErrorStream(stdout, stderr);
+  if (detail) {
+    result.errorOutput =
+      detail.length > PYTEST_ERROR_OUTPUT_MAX
+        ? `… (output truncated)\n${detail.slice(-PYTEST_ERROR_OUTPUT_MAX)}`
+        : detail;
+  }
+  return result;
+}
+
 /** Parses pytest output into structured test results with pass/fail/error/skip/warning counts and failure details. */
 export function parsePytestOutput(stdout: string, stderr: string, exitCode: number): PytestResult {
   const output = stdout + "\n" + stderr;
@@ -309,15 +355,20 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
   // Check for "no tests ran" case
   const noTests = output.includes("no tests ran");
   if (noTests && passed === 0 && failed === 0 && errors === 0) {
-    return {
-      success: exitCode === 0 || exitCode === 5,
-      passed: 0,
-      failed: 0,
-      errors: 0,
-      skipped: 0,
-      warnings,
-      failures: [],
-    };
+    return attachEmptyRunDiagnostics(
+      {
+        success: exitCode === 0 || exitCode === 5,
+        passed: 0,
+        failed: 0,
+        errors: 0,
+        skipped: 0,
+        warnings,
+        failures: [],
+      },
+      stdout,
+      stderr,
+      exitCode,
+    );
   }
 
   // Parse failure blocks from short traceback
@@ -353,15 +404,20 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     failures.push({ test: testName, message });
   }
 
-  return {
-    success: exitCode === 0,
-    passed,
-    failed,
-    errors,
-    skipped,
-    warnings,
-    failures,
-  };
+  return attachEmptyRunDiagnostics(
+    {
+      success: exitCode === 0,
+      passed,
+      failed,
+      errors,
+      skipped,
+      warnings,
+      failures,
+    },
+    stdout,
+    stderr,
+    exitCode,
+  );
 }
 
 // Matches uv install output lines like: " + package==version" or "Installed N packages in Ns"

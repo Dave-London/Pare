@@ -88,7 +88,12 @@ export function formatPipAudit(data: PipAuditResult): string {
 /** Formats structured pytest results into a human-readable test summary. */
 export function formatPytest(data: PytestResult): string {
   const total = data.passed + data.failed + data.errors + data.skipped;
-  if (total === 0) return "pytest: no tests collected.";
+  if (total === 0) {
+    if (data.success) return "pytest: no tests collected.";
+    const lines = [`pytest: run failed with no test results (exit code ${data.exitCode ?? "?"}).`];
+    if (data.errorOutput) lines.push(data.errorOutput);
+    return lines.join("\n");
+  }
 
   const parts: string[] = [];
   if (data.passed > 0) parts.push(`${data.passed} passed`);
@@ -101,6 +106,9 @@ export function formatPytest(data: PytestResult): string {
 
   for (const f of data.failures ?? []) {
     lines.push(`  FAILED ${f.test}: ${f.message}`);
+  }
+  if (data.errorOutput) {
+    lines.push(data.errorOutput);
   }
 
   return lines.join("\n");
@@ -192,7 +200,9 @@ export function formatBlack(data: BlackResult): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact pytest: counts + failure test names only (no stack traces). */
+/** Compact pytest: counts + failure test names only (no stack traces).
+ *  Diagnostics (exitCode/errorOutput) are kept: they only appear on failed runs
+ *  with no test results, where they are the sole actionable signal. */
 export interface PytestResultCompact {
   [key: string]: unknown;
   success: boolean;
@@ -202,10 +212,12 @@ export interface PytestResultCompact {
   skipped: number;
   warnings: number;
   failedTests: string[];
+  exitCode?: number;
+  errorOutput?: string;
 }
 
 export function compactPytestMap(data: PytestResult): PytestResultCompact {
-  return {
+  const compact: PytestResultCompact = {
     success: data.success,
     passed: data.passed,
     failed: data.failed,
@@ -214,11 +226,19 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
     warnings: data.warnings,
     failedTests: (data.failures ?? []).map((f) => f.test),
   };
+  if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
+  if (data.errorOutput !== undefined) compact.errorOutput = data.errorOutput;
+  return compact;
 }
 
 export function formatPytestCompact(data: PytestResultCompact): string {
   const total = data.passed + data.failed + data.errors + data.skipped;
-  if (total === 0) return "pytest: no tests collected.";
+  if (total === 0) {
+    if (data.success) return "pytest: no tests collected.";
+    const lines = [`pytest: run failed with no test results (exit code ${data.exitCode ?? "?"}).`];
+    if (data.errorOutput) lines.push(data.errorOutput);
+    return lines.join("\n");
+  }
 
   const parts: string[] = [];
   if (data.passed > 0) parts.push(`${data.passed} passed`);
@@ -230,6 +250,9 @@ export function formatPytestCompact(data: PytestResultCompact): string {
   const lines = [`pytest: ${parts.join(", ")}`];
   for (const t of data.failedTests) {
     lines.push(`  FAILED ${t}`);
+  }
+  if (data.errorOutput) {
+    lines.push(data.errorOutput);
   }
   return lines.join("\n");
 }

@@ -80,6 +80,27 @@ describe("compactPytestMap", () => {
 
     const compact = compactPytestMap(data);
     expect(compact.failedTests).toEqual([]);
+    expect(compact).not.toHaveProperty("exitCode");
+    expect(compact).not.toHaveProperty("errorOutput");
+  });
+
+  it("keeps exitCode and errorOutput diagnostics on failed empty runs", () => {
+    const data: PytestResult = {
+      success: false,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      exitCode: 2,
+      errorOutput: "ModuleNotFoundError: No module named 'mypkg'",
+    };
+
+    const compact = compactPytestMap(data);
+
+    expect(compact.exitCode).toBe(2);
+    expect(compact.errorOutput).toBe("ModuleNotFoundError: No module named 'mypkg'");
   });
 });
 
@@ -112,6 +133,24 @@ describe("formatPytestCompact", () => {
       failedTests: [],
     };
     expect(formatPytestCompact(compact)).toBe("pytest: no tests collected.");
+  });
+
+  it("formats failed empty run with exit code and diagnostics", () => {
+    const compact = {
+      success: false,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failedTests: [],
+      exitCode: 2,
+      errorOutput: "ModuleNotFoundError: No module named 'mypkg'",
+    };
+    const output = formatPytestCompact(compact);
+
+    expect(output).toContain("run failed with no test results (exit code 2)");
+    expect(output).toContain("ModuleNotFoundError: No module named 'mypkg'");
   });
 });
 
