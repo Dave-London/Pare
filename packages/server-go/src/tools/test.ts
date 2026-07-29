@@ -175,10 +175,11 @@ export function registerTestTool(server: McpServer) {
       if (runFilter) args.push("-run", runFilter);
 
       const result = await goCmd(args, cwd);
-      const data = parseGoTestJson(result.stdout, result.exitCode);
+      // Pass stderr so toolchain failures (no parseable JSON) are surfaced (#1024)
+      const data = parseGoTestJson(result.stdout, result.exitCode, result.stderr);
       return compactDualOutput(
         data,
-        result.stdout,
+        (result.stdout + "\n" + result.stderr).trim(),
         formatGoTest,
         compactTestMap,
         formatTestCompact,

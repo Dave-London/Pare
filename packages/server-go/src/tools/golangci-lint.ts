@@ -198,8 +198,9 @@ export function registerGolangciLintTool(server: McpServer) {
       args.push(...(patterns || ["./..."]));
 
       const result = await golangciLintCmd(args, cwd);
-      // golangci-lint outputs JSON to stdout even on exit code 1 (issues found)
-      const data = parseGolangciLintJson(result.stdout, result.exitCode);
+      // golangci-lint outputs JSON to stdout even on exit code 1 (issues found).
+      // stderr is passed so outright linter failures are surfaced as `error` (#1024).
+      const data = parseGolangciLintJson(result.stdout, result.exitCode, result.stderr);
 
       // Set resultsTruncated if limits were set (indicates potential truncation)
       const totalIssues = data.diagnostics?.length ?? 0;

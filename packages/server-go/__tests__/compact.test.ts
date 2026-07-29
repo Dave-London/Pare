@@ -20,6 +20,9 @@ import {
   formatListCompact,
   compactGetMap,
   formatGetCompact,
+  compactGolangciLintMap,
+  formatGolangciLintCompact,
+  GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS,
 } from "../src/lib/formatters.js";
 import type {
   GoBuildResult,
@@ -32,6 +35,7 @@ import type {
   GoEnvResult,
   GoListResult,
   GoGetResult,
+  GolangciLintResult,
 } from "../src/schemas/index.js";
 
 // ---------------------------------------------------------------------------
@@ -231,7 +235,7 @@ describe("formatFmtCompact", () => {
 // run
 // ---------------------------------------------------------------------------
 describe("compactRunMap", () => {
-  it("keeps exitCode and success, drops stdout/stderr", () => {
+  it("keeps exitCode, success, and short stdout/stderr content (#1022)", () => {
     const data: GoRunResult = {
       exitCode: 0,
       stdout: "Hello, World!\nLine 2",
@@ -243,11 +247,12 @@ describe("compactRunMap", () => {
 
     expect(compact.exitCode).toBe(0);
     expect(compact.success).toBe(true);
-    expect(compact).not.toHaveProperty("stdout");
+    expect(compact.stdout).toBe("Hello, World!\nLine 2");
     expect(compact).not.toHaveProperty("stderr");
+    expect(compact).not.toHaveProperty("stdoutTruncated");
   });
 
-  it("preserves non-zero exit code", () => {
+  it("preserves non-zero exit code and stderr content", () => {
     const data: GoRunResult = {
       exitCode: 2,
       stdout: "",
@@ -259,6 +264,41 @@ describe("compactRunMap", () => {
 
     expect(compact.exitCode).toBe(2);
     expect(compact.success).toBe(false);
+    expect(compact.stderr).toBe("panic: runtime error");
+  });
+
+  it("truncates long streams to the compact budget with flags and total lines", () => {
+    const stdout = Array.from({ length: 200 }, (_, i) => `line ${i}`).join("\n");
+    const data: GoRunResult = {
+      exitCode: 0,
+      stdout,
+      stderr: "",
+      success: true,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdoutTotalLines).toBe(200);
+    expect(compact.stdout).toContain("line 0");
+    expect(compact.stdout).toContain("line 199");
+    expect(compact.stdout).toContain("lines omitted");
+    expect(compact.stdout!.length).toBeLessThan(stdout.length);
+  });
+
+  it("preserves upstream maxOutput truncation flags", () => {
+    const data: GoRunResult = {
+      exitCode: 0,
+      stdout: "partial output\n... (truncated)",
+      stderr: "",
+      stdoutTruncated: true,
+      success: true,
+    };
+
+    const compact = compactRunMap(data);
+
+    expect(compact.stdoutTruncated).toBe(true);
+    expect(compact.stdout).toContain("partial output");
   });
 });
 
@@ -269,6 +309,21 @@ describe("formatRunCompact", () => {
 
   it("formats failed run with exit code", () => {
     expect(formatRunCompact({ exitCode: 2, success: false })).toBe("go run: exit code 2.");
+  });
+
+  it("includes stream content and truncation notes (#1022)", () => {
+    const text = formatRunCompact({
+      exitCode: 1,
+      success: false,
+      stdout: "some output",
+      stderr: "boom",
+      stderrTruncated: true,
+      stderrTotalLines: 500,
+    });
+    expect(text).toContain("go run: exit code 1.");
+    expect(text).toContain("some output");
+    expect(text).toContain("boom");
+    expect(text).toContain("[stderr truncated: 500 total lines");
   });
 });
 
@@ -629,10 +684,10 @@ describe("compactEnvMap — queried vars (Gap #150)", () => {
   });
 });
 
-// ─── Gap #151: fmt compact with parse error count ───────────────────
+// ─── Gap #151 / #1022: fmt compact keeps parse errors ───────────────
 
-describe("compactFmtMap — parseErrorCount (Gap #151)", () => {
-  it("includes parseErrorCount when parse errors present", () => {
+describe("compactFmtMap — parseErrors (#1022)", () => {
+  it("keeps the full parseErrors array (real errors, not noise)", () => {
     const data: GoFmtResult = {
       success: false,
       filesChanged: 1,
@@ -642,10 +697,11 @@ describe("compactFmtMap — parseErrorCount (Gap #151)", () => {
 
     const compact = compactFmtMap(data);
 
-    expect(compact.parseErrorCount).toBe(1);
+    expect(compact.parseErrors).toEqual(data.parseErrors);
+    expect(compact).not.toHaveProperty("files");
   });
 
-  it("does not include parseErrorCount when no parse errors", () => {
+  it("does not include parseErrors when no parse errors", () => {
     const data: GoFmtResult = {
       success: true,
       filesChanged: 0,
@@ -654,15 +710,21 @@ describe("compactFmtMap — parseErrorCount (Gap #151)", () => {
 
     const compact = compactFmtMap(data);
 
-    expect(compact).not.toHaveProperty("parseErrorCount");
+    expect(compact).not.toHaveProperty("parseErrors");
   });
 });
 
-describe("formatFmtCompact — parseErrorCount (Gap #151)", () => {
-  it("includes parse error count in compact format", () => {
-    expect(formatFmtCompact({ success: false, filesChanged: 2, parseErrorCount: 3 })).toBe(
-      "gofmt: 2 files, 3 parse errors",
-    );
+describe("formatFmtCompact — parseErrors (#1022)", () => {
+  it("lists parse errors in compact format", () => {
+    const text = formatFmtCompact({
+      success: false,
+      filesChanged: 2,
+      parseErrors: [
+        { file: "broken.go", line: 5, column: 1, message: "expected declaration, found foo" },
+      ],
+    });
+    expect(text).toContain("gofmt: 2 files, 1 parse errors");
+    expect(text).toContain("broken.go:5:1: expected declaration, found foo");
   });
 });
 
@@ -735,5 +797,192 @@ describe("formatModTidyCompact — madeChanges (Gap #156)", () => {
 
   it("formats without madeChanges", () => {
     expect(formatModTidyCompact({ success: true })).toBe("go mod tidy: success.");
+  });
+});
+
+// ─── #1022: get compact keeps failing packages ──────────────────────
+
+describe("compactGetMap — failing packages (#1022)", () => {
+  it("keeps packages with error/errorType on failure", () => {
+    const data: GoGetResult = {
+      success: false,
+      packages: [
+        { path: "github.com/ok/pkg", version: "v1.0.0" },
+        {
+          path: "github.com/nonexistent/pkg",
+          error: 'no matching versions for query "latest"',
+          errorType: "unknown",
+        },
+      ],
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact.success).toBe(false);
+    expect(compact.packages).toHaveLength(1);
+    expect(compact.packages![0].path).toBe("github.com/nonexistent/pkg");
+    expect(compact.packages![0].error).toBe('no matching versions for query "latest"');
+    expect(compact.packages![0].errorType).toBe("unknown");
+  });
+
+  it("omits packages when none failed", () => {
+    const data: GoGetResult = {
+      success: true,
+      packages: [{ path: "github.com/ok/pkg", version: "v1.0.0" }],
+    };
+
+    const compact = compactGetMap(data);
+
+    expect(compact).not.toHaveProperty("packages");
+  });
+});
+
+describe("formatGetCompact — failing packages (#1022)", () => {
+  it("lists per-package errors", () => {
+    const text = formatGetCompact({
+      success: false,
+      resolvedCount: 0,
+      packages: [
+        {
+          path: "github.com/nonexistent/pkg",
+          error: "no matching versions",
+          errorType: "unknown",
+        },
+      ],
+    });
+    expect(text).toContain("go get: FAIL");
+    expect(text).toContain("github.com/nonexistent/pkg [unknown]: no matching versions");
+  });
+});
+
+// ─── #1024: test compact passes through toolchain error ─────────────
+
+describe("compactTestMap — error passthrough (#1024)", () => {
+  it("keeps error and exitCode from a surfaced toolchain failure", () => {
+    const data: GoTestResult = {
+      success: false,
+      tests: [],
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      error: "go: cannot find main module, but found .git/config",
+      exitCode: 1,
+    };
+
+    const compact = compactTestMap(data);
+
+    expect(compact.error).toBe("go: cannot find main module, but found .git/config");
+    expect(compact.exitCode).toBe(1);
+  });
+
+  it("omits error when not set", () => {
+    const data: GoTestResult = { success: true, tests: [], passed: 3, failed: 0, skipped: 0 };
+
+    const compact = compactTestMap(data);
+
+    expect(compact).not.toHaveProperty("error");
+    expect(compact).not.toHaveProperty("exitCode");
+  });
+});
+
+describe("formatTestCompact — error (#1024)", () => {
+  it("shows the toolchain error", () => {
+    const text = formatTestCompact({
+      success: false,
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      error: "go: cannot find main module",
+    });
+    expect(text).toContain("FAIL: 0 passed, 0 failed, 0 skipped");
+    expect(text).toContain("go: cannot find main module");
+  });
+});
+
+// ─── #1022/#1024: golangci-lint compact diagnostics + error ─────────
+
+describe("compactGolangciLintMap (#1022)", () => {
+  const diag = (i: number): NonNullable<GolangciLintResult["diagnostics"]>[number] => ({
+    file: `file${i}.go`,
+    line: i,
+    column: 2,
+    linter: "govet",
+    severity: "warning" as const,
+    message: `issue ${i}`,
+  });
+
+  it("keeps the first N diagnostics with fix data stripped", () => {
+    const diagnostics = Array.from({ length: 5 }, (_, i) => ({
+      ...diag(i),
+      fix: { text: "replacement" },
+    }));
+    const data: GolangciLintResult = { diagnostics, errors: 0, warnings: 5 };
+
+    const compact = compactGolangciLintMap(data);
+
+    expect(compact.diagnostics).toHaveLength(5);
+    expect(compact.diagnostics![0]).not.toHaveProperty("fix");
+    expect(compact.diagnostics![0].message).toBe("issue 0");
+    expect(compact).not.toHaveProperty("diagnosticsOmitted");
+  });
+
+  it("caps diagnostics and reports omitted count", () => {
+    const count = GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS + 7;
+    const diagnostics = Array.from({ length: count }, (_, i) => diag(i));
+    const data: GolangciLintResult = { diagnostics, errors: 0, warnings: count };
+
+    const compact = compactGolangciLintMap(data);
+
+    expect(compact.diagnostics).toHaveLength(GOLANGCI_LINT_COMPACT_MAX_DIAGNOSTICS);
+    expect(compact.diagnosticsOmitted).toBe(7);
+  });
+
+  it("passes through error and exitCode from a surfaced linter failure (#1024)", () => {
+    const data: GolangciLintResult = {
+      diagnostics: [],
+      errors: 0,
+      warnings: 0,
+      error: "Can't read config: unknown linter 'bogus'",
+      exitCode: 3,
+    };
+
+    const compact = compactGolangciLintMap(data);
+
+    expect(compact.error).toBe("Can't read config: unknown linter 'bogus'");
+    expect(compact.exitCode).toBe(3);
+  });
+});
+
+describe("formatGolangciLintCompact (#1022)", () => {
+  it("lists kept diagnostics and omitted count", () => {
+    const text = formatGolangciLintCompact({
+      errors: 1,
+      warnings: 21,
+      diagnostics: [
+        {
+          file: "main.go",
+          line: 10,
+          column: 5,
+          linter: "govet",
+          severity: "warning",
+          message: "unreachable code",
+        },
+      ],
+      diagnosticsOmitted: 2,
+    });
+    expect(text).toContain("golangci-lint: 22 issues (1 errors, 21 warnings)");
+    expect(text).toContain("main.go:10:5: unreachable code (govet)");
+    expect(text).toContain("... 2 more");
+  });
+
+  it("shows the linter failure error", () => {
+    const text = formatGolangciLintCompact({
+      errors: 0,
+      warnings: 0,
+      error: "Can't read config",
+      exitCode: 3,
+    });
+    expect(text).toContain("golangci-lint: FAIL (exit code 3)");
+    expect(text).toContain("Can't read config");
   });
 });
