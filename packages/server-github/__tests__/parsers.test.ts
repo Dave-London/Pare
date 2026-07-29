@@ -12,7 +12,58 @@ import {
   parseRunList,
   parseLabelList,
   parseLabelCreate,
+  resolveNumber,
 } from "../src/lib/parsers.js";
+
+describe("resolveNumber", () => {
+  it("returns plain numbers unchanged", () => {
+    expect(resolveNumber(123)).toBe(123);
+  });
+
+  it("resolves numeric strings", () => {
+    expect(resolveNumber("123")).toBe(123);
+  });
+
+  it("resolves numeric strings with surrounding whitespace", () => {
+    expect(resolveNumber("  456 ")).toBe(456);
+  });
+
+  it("resolves hash-prefixed numbers", () => {
+    expect(resolveNumber("#123")).toBe(123);
+  });
+
+  it("resolves PR URLs", () => {
+    expect(resolveNumber("https://github.com/owner/repo/pull/1017")).toBe(1017);
+  });
+
+  it("resolves issue URLs", () => {
+    expect(resolveNumber("https://github.com/owner/repo/issues/42")).toBe(42);
+  });
+
+  it("resolves URLs with a trailing slash", () => {
+    expect(resolveNumber("https://github.com/owner/repo/pull/99/")).toBe(99);
+  });
+
+  it("resolves URLs with a query string", () => {
+    expect(resolveNumber("https://github.com/owner/repo/pull/7?diff=split")).toBe(7);
+  });
+
+  it("resolves URLs with a fragment", () => {
+    expect(resolveNumber("https://github.com/owner/repo/issues/8#issuecomment-1")).toBe(8);
+  });
+
+  it("resolves URL subpaths like /files", () => {
+    expect(resolveNumber("https://github.com/owner/repo/pull/55/files")).toBe(55);
+  });
+
+  it("returns 0 for branch names", () => {
+    expect(resolveNumber("feat/my-branch")).toBe(0);
+  });
+
+  it("returns 0 for branch names containing digits", () => {
+    expect(resolveNumber("fix/1017-github-number-echo")).toBe(0);
+  });
+});
 
 describe("parsePrView", () => {
   it("parses full PR view JSON", () => {

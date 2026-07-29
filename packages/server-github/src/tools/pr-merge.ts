@@ -8,7 +8,7 @@ import {
   repoPathInput,
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrMerge } from "../lib/parsers.js";
+import { parsePrMerge, resolveNumber } from "../lib/parsers.js";
 import { formatPrMerge } from "../lib/formatters.js";
 import { PrMergeResultSchema } from "../schemas/index.js";
 
@@ -117,7 +117,7 @@ export function registerPrMergeTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
 
       const args = ["pr", "merge", selector, `--${method}`];
       if (deleteBranch) args.push("--delete-branch");

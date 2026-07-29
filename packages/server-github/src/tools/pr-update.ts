@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parsePrUpdate } from "../lib/parsers.js";
+import { parsePrUpdate, resolveNumber } from "../lib/parsers.js";
 import { formatPrUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
@@ -174,7 +174,7 @@ export function registerPrUpdateTool(server: McpServer) {
       }
 
       const selector = String(number);
-      const prNum = typeof number === "number" ? number : 0;
+      const prNum = resolveNumber(number);
       const updatedFields = [
         title ? "title" : undefined,
         body ? "body" : undefined,

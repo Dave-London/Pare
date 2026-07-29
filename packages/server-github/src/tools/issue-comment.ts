@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parseComment } from "../lib/parsers.js";
+import { parseComment, resolveNumber } from "../lib/parsers.js";
 import { formatComment } from "../lib/formatters.js";
 import { CommentResultSchema } from "../schemas/index.js";
 
@@ -60,7 +60,7 @@ export function registerIssueCommentTool(server: McpServer) {
       if (typeof number === "string") assertNoFlagInjection(number, "number");
 
       const selector = String(number);
-      const issueNum = typeof number === "number" ? number : 0;
+      const issueNum = resolveNumber(number);
 
       const args = ["issue", "comment", selector, "--body-file", "-"];
       if (editLast) args.push("--edit-last");

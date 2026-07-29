@@ -65,6 +65,24 @@ function parseJsonObject(json: string): any {
 }
 
 /**
+ * Resolves a PR/issue selector (number, numeric string, "#123", or GitHub URL)
+ * to its numeric value for echoing in structured output.
+ *
+ * MCP tool inputs type `number` as a string (to also allow URLs and branch
+ * names), so a plain `typeof number === "number"` guard always fell through to
+ * `0` for MCP callers (issue #1017). Branch names have no derivable number and
+ * still resolve to `0`.
+ */
+export function resolveNumber(input: string | number): number {
+  if (typeof input === "number") return input;
+  const trimmed = input.trim();
+  if (/^#?\d+$/.test(trimmed)) return Number(trimmed.replace(/^#/, ""));
+  const urlMatch = /\/(?:pull|issues)\/(\d+)(?:\/|$|\?|#)/.exec(trimmed);
+  if (urlMatch) return Number(urlMatch[1]);
+  return 0; // branch names have no derivable number
+}
+
+/**
  * Parses `gh pr view --json ...` output into structured PR view data.
  * Renames gh field names to our schema names (e.g., headRefName → headBranch).
  */

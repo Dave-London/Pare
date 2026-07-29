@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
-import { parseIssueUpdate } from "../lib/parsers.js";
+import { parseIssueUpdate, resolveNumber } from "../lib/parsers.js";
 import { formatIssueUpdate } from "../lib/formatters.js";
 import { EditResultSchema } from "../schemas/index.js";
 
@@ -175,7 +175,7 @@ export function registerIssueUpdateTool(server: McpServer) {
       }
 
       const selector = String(number);
-      const issueNum = typeof number === "number" ? number : 0;
+      const issueNum = resolveNumber(number);
       const updatedFields = [
         title ? "title" : undefined,
         body ? "body" : undefined,
