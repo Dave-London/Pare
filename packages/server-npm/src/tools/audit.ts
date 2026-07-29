@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   dualOutput,
+  errorOutput,
+  classifyError,
   assertNoFlagInjection,
   INPUT_LIMITS,
   projectPathInput,
@@ -10,7 +12,7 @@ import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
 import { parseAuditJson, parsePnpmAuditJson, parseYarnAuditJson } from "../lib/parsers.js";
 import { formatAudit } from "../lib/formatters.js";
-import { NpmAuditSchema } from "../schemas/index.js";
+import { NpmAuditOutputSchema } from "../schemas/index.js";
 import { packageManagerInput } from "../lib/pm-input.js";
 
 /** Registers the `audit` tool on the given MCP server. */
@@ -66,7 +68,7 @@ export function registerAuditTool(server: McpServer) {
           ),
         packageManager: packageManagerInput,
       },
-      outputSchema: NpmAuditSchema,
+      outputSchema: NpmAuditOutputSchema,
     },
     async ({
       path,
@@ -114,12 +116,27 @@ export function registerAuditTool(server: McpServer) {
 
       // audit returns exit code 1 when vulnerabilities are found, which is expected
       const output = result.stdout || result.stderr;
-      const audit =
-        pm === "pnpm"
-          ? parsePnpmAuditJson(output)
-          : pm === "yarn"
-            ? parseYarnAuditJson(output)
-            : parseAuditJson(output);
+      let audit;
+      try {
+        audit =
+          pm === "pnpm"
+            ? parsePnpmAuditJson(output)
+            : pm === "yarn"
+              ? parseYarnAuditJson(output)
+              : parseAuditJson(output);
+      } catch {
+        // Unparseable output (crash, garbage, empty) — return a structured
+        // error instead of leaking a raw SyntaxError (#1024).
+        return errorOutput(classifyError(result, `${pm} audit`));
+      }
+
+      // npm prints {"error": {...}} JSON to stdout on failure (e.g. ENOLOCK),
+      // which parses "successfully" as zero vulnerabilities. A non-zero exit
+      // with nothing parsed is a failed audit, not a clean one (#1024).
+      if (result.exitCode !== 0 && audit.vulnerabilities.length === 0) {
+        return errorOutput(classifyError(result, `${pm} audit`));
+      }
+
       return dualOutput({ ...audit, packageManager: pm }, formatAudit);
     },
   );

@@ -109,10 +109,25 @@ export function registerOutdatedTool(server: McpServer) {
 
       const result = await runPm(pm, pmArgs, cwd);
 
-      // outdated returns exit code 1 when outdated packages exist, which is expected
+      // outdated returns exit code 1 when outdated packages exist, which is
+      // expected — but a non-zero exit with NO output is a crash, and must not
+      // be misread as "everything up to date" (#1024). Mirrors list.ts.
+      if (result.exitCode !== 0 && !result.stdout.trim()) {
+        throw new Error(
+          `${pm} outdated failed: ${result.stderr.trim() || `exit code ${result.exitCode}`}`,
+        );
+      }
+
       const output = result.stdout || "{}";
-      const outdated =
-        pm === "yarn" ? parseYarnOutdatedJson(output) : parseOutdatedJson(output, pm);
+      let outdated;
+      try {
+        outdated = pm === "yarn" ? parseYarnOutdatedJson(output) : parseOutdatedJson(output, pm);
+      } catch (err) {
+        // Unparseable stdout or npm's {"error": {...}} failure payload.
+        throw new Error(
+          `${pm} outdated failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
       return dualOutput({ ...outdated, packageManager: pm }, formatOutdated);
     },
   );

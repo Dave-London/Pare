@@ -154,6 +154,43 @@ describe("parseOutdatedJson", () => {
     const result = parseOutdatedJson(json);
     expect(result.packages[0].homepage).toBe("https://www.typescriptlang.org/");
   });
+
+  // #1024: npm CLI failures with --json print {"error": {...}} to stdout —
+  // captured from `npm outdated --json --workspace=nope` (npm 11).
+  it("throws on npm's {error: ...} failure payload instead of parsing a package named 'error'", () => {
+    const json = JSON.stringify({
+      error: {
+        summary: "No workspaces found:\n  --workspace=nope",
+        detail: "",
+      },
+    });
+
+    expect(() => parseOutdatedJson(json)).toThrow(/No workspaces found/);
+  });
+
+  it("includes the error code in the thrown message when present", () => {
+    const json = JSON.stringify({
+      error: {
+        code: "ENOLOCK",
+        summary: "This command requires an existing lockfile.",
+        detail: "Try creating one first with: npm i --package-lock-only",
+      },
+    });
+
+    expect(() => parseOutdatedJson(json)).toThrow(/ENOLOCK.*existing lockfile/s);
+  });
+
+  it("still parses a real dependency literally named 'error'", () => {
+    // A package entry has version-shaped fields, not summary/code — must not
+    // be misclassified as a failure payload.
+    const json = JSON.stringify({
+      error: { current: "1.0.0", wanted: "1.1.0", latest: "2.0.0" },
+    });
+
+    const result = parseOutdatedJson(json);
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages[0].name).toBe("error");
+  });
 });
 
 describe("parseListJson", () => {

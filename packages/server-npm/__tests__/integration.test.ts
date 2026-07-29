@@ -147,6 +147,71 @@ describe("@paretools/npm integration", () => {
     });
   });
 
+  describe("silent-failure surfacing (#1024)", () => {
+    let fixtureDir: string;
+
+    beforeAll(async () => {
+      const { mkdtemp, writeFile } = await import("node:fs/promises");
+      const { tmpdir } = await import("node:os");
+      fixtureDir = await mkdtemp(join(tmpdir(), "pare-npm-fail-"));
+      // package.json with a dependency but NO lockfile and NO workspaces
+      await writeFile(
+        join(fixtureDir, "package.json"),
+        JSON.stringify({
+          name: "pare-npm-failure-fixture",
+          version: "1.0.0",
+          dependencies: { lodash: "^4.0.0" },
+        }),
+      );
+    });
+
+    afterAll(async () => {
+      const { rm } = await import("node:fs/promises");
+      await rm(fixtureDir, { recursive: true, force: true });
+    });
+
+    it("outdated surfaces npm failures instead of reporting 'up to date'", async () => {
+      const result = await client.callTool(
+        {
+          name: "outdated",
+          arguments: { path: fixtureDir, workspace: "nope", packageManager: "npm" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      // npm exits 1 with an {"error": ...} payload — must NOT parse as
+      // "all packages up to date"
+      expect(result.isError).toBe(true);
+      const text = (result.content as { type: string; text: string }[])
+        .map((c) => c.text)
+        .join("\n");
+      expect(text).toContain("outdated failed");
+      expect(text.toLowerCase()).toContain("workspace");
+    });
+
+    it("audit returns a structured PareError when npm audit cannot run", async () => {
+      const result = await client.callTool(
+        {
+          name: "audit",
+          arguments: { path: fixtureDir, packageManager: "npm" },
+        },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      // No lockfile → npm audit fails with ENOLOCK; previously this parsed
+      // npm's {"error": ...} stdout as zero vulnerabilities (false clean)
+      expect(result.isError).toBe(true);
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toBeDefined();
+      expect(sc.isError).toBe(true);
+      expect(typeof sc.category).toBe("string");
+      expect(typeof sc.message).toBe("string");
+      expect((sc.message as string).toLowerCase()).toContain("lockfile");
+    });
+  });
+
   describe("run", () => {
     it("returns structured run data for a valid script", async () => {
       const pkgPath = resolve(__dirname, "..");

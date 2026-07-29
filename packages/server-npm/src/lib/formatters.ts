@@ -180,22 +180,85 @@ export function formatInit(data: NpmInit): string {
 
 // ── Compact types, mappers, and formatters ───────────────────────────
 
-/** Compact list: counts only, no dependency tree (tree shape can't validate against schema). */
+/** Maximum number of top-level dependencies kept in compact list output. */
+export const COMPACT_LIST_MAX_DEPS = 20;
+
+/**
+ * Compact list: total dependency count, problems, and the first
+ * {@link COMPACT_LIST_MAX_DEPS} top-level dependencies flattened (nested
+ * dependency trees are dropped). Epic #1022: the previous compact shape
+ * dropped the entire payload (no count, no deps, no problems).
+ */
 export interface NpmListCompact {
   [key: string]: unknown;
   name: string;
   version: string;
+  packageManager?: string;
+  dependencyCount: number;
+  dependencies?: Record<string, NpmListDep>;
+  omittedDependencyCount?: number;
+  problems?: string[];
 }
 
 export function compactListMap(data: NpmList): NpmListCompact {
-  return {
+  function countDeps(deps: Record<string, NpmListDep>): number {
+    let count = 0;
+    for (const dep of Object.values(deps)) {
+      count++;
+      if (dep.dependencies) count += countDeps(dep.dependencies);
+    }
+    return count;
+  }
+
+  const allDeps = data.dependencies ?? {};
+  const topLevel = Object.entries(allDeps);
+
+  const result: NpmListCompact = {
     name: data.name,
     version: data.version,
+    dependencyCount: countDeps(allDeps),
   };
+  if (data.packageManager) result.packageManager = data.packageManager;
+
+  if (topLevel.length > 0) {
+    const kept = topLevel.slice(0, COMPACT_LIST_MAX_DEPS);
+    result.dependencies = Object.fromEntries(
+      kept.map(([name, dep]) => [
+        name,
+        { version: dep.version, ...(dep.type ? { type: dep.type } : {}) },
+      ]),
+    );
+    if (topLevel.length > kept.length) {
+      result.omittedDependencyCount = topLevel.length - kept.length;
+    }
+  }
+
+  // Problems (missing/extraneous/invalid deps) are always actionable — never drop them.
+  if (data.problems && data.problems.length > 0) {
+    result.problems = data.problems;
+  }
+
+  return result;
 }
 
 export function formatListCompact(data: NpmListCompact): string {
-  return `${data.name}@${data.version}`;
+  const lines = [`${data.name}@${data.version} (${data.dependencyCount} dependencies)`];
+  if (data.problems && data.problems.length > 0) {
+    lines.push(`Problems (${data.problems.length}):`);
+    for (const problem of data.problems) {
+      lines.push(`  - ${problem}`);
+    }
+  }
+  for (const [name, dep] of Object.entries(data.dependencies ?? {})) {
+    const typeTag = dep.type ? ` [${dep.type}]` : "";
+    lines.push(`  ${name}@${dep.version}${typeTag}`);
+  }
+  if (data.omittedDependencyCount) {
+    lines.push(
+      `  ... and ${data.omittedDependencyCount} more top-level dependencies (compact: false for full tree)`,
+    );
+  }
+  return lines.join("\n");
 }
 
 // ── Info formatters ──────────────────────────────────────────────────
@@ -241,7 +304,7 @@ export function formatInfo(data: NpmInfo, deprecationMessage?: string): string {
   return lines.join("\n");
 }
 
-/** Compact info: drop dependencies, dist details, versions. */
+/** Compact info: drop dependency/version details but keep their counts (#1022). */
 export interface NpmInfoCompact {
   [key: string]: unknown;
   name: string;
@@ -250,6 +313,8 @@ export interface NpmInfoCompact {
   license?: string;
   homepage?: string;
   isDeprecated?: boolean;
+  dependencyCount?: number;
+  versionCount?: number;
 }
 
 export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
@@ -261,6 +326,8 @@ export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
   if (data.license) result.license = data.license;
   if (data.homepage) result.homepage = data.homepage;
   if (data.isDeprecated) result.isDeprecated = data.isDeprecated;
+  if (data.dependencies) result.dependencyCount = Object.keys(data.dependencies).length;
+  if (data.versions && data.versions.length > 0) result.versionCount = data.versions.length;
   return result;
 }
 
@@ -270,6 +337,8 @@ export function formatInfoCompact(data: NpmInfoCompact): string {
   if (data.isDeprecated) lines.push(`DEPRECATED`);
   if (data.license) lines.push(`License: ${data.license}`);
   if (data.homepage) lines.push(`Homepage: ${data.homepage}`);
+  if (data.dependencyCount !== undefined) lines.push(`Dependencies: ${data.dependencyCount}`);
+  if (data.versionCount !== undefined) lines.push(`Published Versions: ${data.versionCount}`);
   return lines.join("\n");
 }
 
