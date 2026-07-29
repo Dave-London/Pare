@@ -66,10 +66,10 @@
   },
   "devDependencies": {
     "@paretools/tsconfig": "workspace:*",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
-    "webpack": "^5.108.4",
-    "webpack-cli": "^7.2.1"
+    "webpack": "^5.109.2",
+    "webpack-cli": "^7.2.2"
   }
 }
