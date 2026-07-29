@@ -4,6 +4,7 @@ import {
   compactDualOutput,
   dualOutput,
   assertNoFlagInjection,
+  surfaceEmptyFailure,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -158,7 +159,13 @@ export function registerShellcheckTool(server: McpServer) {
       args.push(...resolvedFiles);
 
       const result = await shellcheckCmd(args, cwd);
-      const data = parseShellcheckJson(result.stdout);
+      // ShellCheck exits 1 when issues are found (normal); exit 2+ signals it
+      // could not process the files. A non-zero exit with zero parsed
+      // diagnostics means the run itself failed — surface it instead of
+      // reporting a false clean (#1024).
+      const data = surfaceEmptyFailure(parseShellcheckJson(result.stdout), result, {
+        isEmpty: (d) => (d.diagnostics ?? []).length === 0,
+      });
       return compactDualOutput(
         data,
         result.stdout,

@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  surfaceEmptyFailure,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -131,7 +132,12 @@ export function registerBiomeCheckTool(server: McpServer) {
       args.push(...(patterns || ["."]));
 
       const result = await biome(args, cwd);
-      const data = parseBiomeJson(result.stdout);
+      // Biome exits 1 when diagnostics are found (normal). A non-zero exit with
+      // zero parsed diagnostics means the run itself failed (bad config,
+      // internal error) — surface it instead of reporting a false clean (#1024).
+      const data = surfaceEmptyFailure(parseBiomeJson(result.stdout), result, {
+        isEmpty: (d) => (d.diagnostics ?? []).length === 0,
+      });
       return compactDualOutput(
         data,
         result.stdout,

@@ -6,15 +6,34 @@ import {
   formatFormatCheckCompact,
   compactFormatWriteMap,
   formatFormatWriteCompact,
+  COMPACT_DIAGNOSTIC_LIMIT,
+  COMPACT_FILE_LIMIT,
 } from "../src/lib/formatters.js";
-import type { LintResult, FormatCheckResult, FormatWriteResult } from "../src/schemas/index.js";
+import {
+  LintResultSchema,
+  FormatCheckResultSchema,
+  type LintResult,
+  type LintDiagnostic,
+  type FormatCheckResult,
+  type FormatWriteResult,
+} from "../src/schemas/index.js";
+
+function makeDiagnostics(count: number): LintDiagnostic[] {
+  return Array.from({ length: count }, (_, i) => ({
+    file: `src/file${i}.ts`,
+    line: i + 1,
+    severity: (i % 2 === 0 ? "error" : "warning") as "error" | "warning",
+    rule: "no-unused-vars",
+    message: `'foo${i}' is defined but never used.`,
+  }));
+}
 
 // ---------------------------------------------------------------------------
 // compactLintMap
 // ---------------------------------------------------------------------------
 
 describe("compactLintMap", () => {
-  it("keeps only counts, drops diagnostics", () => {
+  it("keeps counts AND diagnostics (#1022)", () => {
     const data: LintResult = {
       diagnostics: [
         {
@@ -43,8 +62,49 @@ describe("compactLintMap", () => {
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(1);
     expect(compact.filesChecked).toBe(10);
-    // Verify diagnostics are dropped
-    expect(compact).not.toHaveProperty("diagnostics");
+    // Diagnostics are kept in compact mode (the actionable payload)
+    expect(compact.diagnostics).toHaveLength(2);
+    expect(compact.diagnostics?.[0]).toMatchObject({
+      file: "src/index.ts",
+      line: 5,
+      rule: "no-unused-vars",
+      message: "'foo' is defined but never used.",
+    });
+    // No truncation flags when under the cap
+    expect(compact).not.toHaveProperty("diagnosticsTruncated");
+    expect(compact).not.toHaveProperty("omittedCount");
+  });
+
+  it("caps diagnostics at COMPACT_DIAGNOSTIC_LIMIT with truncation metadata", () => {
+    const data: LintResult = {
+      diagnostics: makeDiagnostics(COMPACT_DIAGNOSTIC_LIMIT + 15),
+      errors: 20,
+      warnings: 20,
+      filesChecked: 40,
+    };
+
+    const compact = compactLintMap(data);
+
+    expect(compact.diagnostics).toHaveLength(COMPACT_DIAGNOSTIC_LIMIT);
+    expect(compact.diagnosticsTruncated).toBe(true);
+    expect(compact.omittedCount).toBe(15);
+    // First-N kept in order
+    expect(compact.diagnostics?.[0].file).toBe("src/file0.ts");
+  });
+
+  it("keeps fixable counts (#1022)", () => {
+    const data: LintResult = {
+      diagnostics: makeDiagnostics(2),
+      errors: 1,
+      warnings: 1,
+      fixableErrorCount: 1,
+      fixableWarningCount: 1,
+      filesChecked: 5,
+    };
+
+    const compact = compactLintMap(data);
+    expect(compact.fixableErrorCount).toBe(1);
+    expect(compact.fixableWarningCount).toBe(1);
   });
 
   it("handles clean lint result", () => {
@@ -76,6 +136,35 @@ describe("compactLintMap", () => {
     const compact = compactLintMap(data);
     expect(compact.deprecationCount).toBe(1);
   });
+
+  it("passes through error and exitCode (#1024)", () => {
+    const data: LintResult = {
+      diagnostics: [],
+      errors: 0,
+      warnings: 0,
+      filesChecked: 0,
+      error: "Oops! Something went wrong! Cannot find module 'eslint-plugin-foo'",
+      exitCode: 2,
+    };
+
+    const compact = compactLintMap(data);
+    expect(compact.error).toBe(data.error);
+    expect(compact.exitCode).toBe(2);
+  });
+
+  it("produces output that validates against LintResultSchema", () => {
+    const data: LintResult = {
+      diagnostics: makeDiagnostics(COMPACT_DIAGNOSTIC_LIMIT + 5),
+      errors: 15,
+      warnings: 15,
+      fixableErrorCount: 3,
+      fixableWarningCount: 2,
+      filesChecked: 30,
+    };
+
+    const compact = compactLintMap(data);
+    expect(LintResultSchema.safeParse(compact).success).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -99,6 +188,32 @@ describe("formatLintCompact", () => {
       "Lint: 0 errors, 1 warnings across 2 files (3 deprecations).",
     );
   });
+
+  it("lists diagnostics and the omitted count", () => {
+    const compact = compactLintMap({
+      diagnostics: makeDiagnostics(COMPACT_DIAGNOSTIC_LIMIT + 3),
+      errors: 14,
+      warnings: 14,
+      filesChecked: 28,
+    });
+
+    const text = formatLintCompact(compact);
+    expect(text).toContain("src/file0.ts:1 error no-unused-vars");
+    expect(text).toContain("... (3 more diagnostics omitted)");
+  });
+
+  it("formats surfaced failures", () => {
+    const compact = {
+      errors: 0,
+      warnings: 0,
+      filesChecked: 0,
+      error: "Cannot find module 'eslint-plugin-foo'",
+      exitCode: 2,
+    };
+    expect(formatLintCompact(compact)).toBe(
+      "Lint failed (exit 2): Cannot find module 'eslint-plugin-foo'",
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -106,7 +221,7 @@ describe("formatLintCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactLintMap with shellcheck-shaped data", () => {
-  it("keeps only counts, drops SC-code diagnostics", () => {
+  it("keeps counts and SC-code diagnostics", () => {
     const data: LintResult = {
       diagnostics: [
         {
@@ -135,7 +250,8 @@ describe("compactLintMap with shellcheck-shaped data", () => {
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(0);
     expect(compact.filesChecked).toBe(2);
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact.diagnostics).toHaveLength(2);
+    expect(compact.diagnostics?.[0].rule).toBe("SC2086");
   });
 });
 
@@ -144,7 +260,7 @@ describe("compactLintMap with shellcheck-shaped data", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactLintMap with hadolint-shaped data", () => {
-  it("keeps only counts, drops DL-code diagnostics", () => {
+  it("keeps counts and DL-code diagnostics", () => {
     const data: LintResult = {
       diagnostics: [
         {
@@ -173,7 +289,8 @@ describe("compactLintMap with hadolint-shaped data", () => {
     expect(compact.errors).toBe(1);
     expect(compact.warnings).toBe(1);
     expect(compact.filesChecked).toBe(1);
-    expect(compact).not.toHaveProperty("diagnostics");
+    expect(compact.diagnostics).toHaveLength(2);
+    expect(compact.diagnostics?.[1].rule).toBe("DL3008");
   });
 });
 
@@ -182,7 +299,7 @@ describe("compactLintMap with hadolint-shaped data", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactFormatCheckMap", () => {
-  it("keeps only formatted status, drops file list", () => {
+  it("keeps the file list and total (#1021)", () => {
     const data: FormatCheckResult = {
       formatted: false,
       files: ["src/index.ts", "src/utils.ts", "src/config.ts"],
@@ -191,8 +308,20 @@ describe("compactFormatCheckMap", () => {
     const compact = compactFormatCheckMap(data);
 
     expect(compact.formatted).toBe(false);
-    // Verify files are dropped
-    expect(compact).not.toHaveProperty("files");
+    expect(compact.files).toEqual(["src/index.ts", "src/utils.ts", "src/config.ts"]);
+    expect(compact.total).toBe(3);
+    expect(compact).not.toHaveProperty("filesTruncated");
+  });
+
+  it("caps the file list at COMPACT_FILE_LIMIT with truncation metadata", () => {
+    const files = Array.from({ length: COMPACT_FILE_LIMIT + 20 }, (_, i) => `src/file${i}.ts`);
+    const data: FormatCheckResult = { formatted: false, files };
+
+    const compact = compactFormatCheckMap(data);
+
+    expect(compact.files).toHaveLength(COMPACT_FILE_LIMIT);
+    expect(compact.total).toBe(COMPACT_FILE_LIMIT + 20);
+    expect(compact.filesTruncated).toBe(true);
   });
 
   it("handles all-formatted result", () => {
@@ -206,6 +335,25 @@ describe("compactFormatCheckMap", () => {
     expect(compact.formatted).toBe(true);
     expect(compact).not.toHaveProperty("files");
   });
+
+  it("passes through error and exitCode (#1024)", () => {
+    const data: FormatCheckResult = {
+      formatted: false,
+      files: [],
+      error: "[error] Invalid configuration file `.prettierrc`",
+      exitCode: 2,
+    };
+
+    const compact = compactFormatCheckMap(data);
+    expect(compact.error).toBe(data.error);
+    expect(compact.exitCode).toBe(2);
+  });
+
+  it("produces output that validates against FormatCheckResultSchema", () => {
+    const files = Array.from({ length: COMPACT_FILE_LIMIT + 1 }, (_, i) => `src/file${i}.ts`);
+    const compact = compactFormatCheckMap({ formatted: false, files });
+    expect(FormatCheckResultSchema.safeParse(compact).success).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -218,9 +366,38 @@ describe("formatFormatCheckCompact", () => {
     expect(formatFormatCheckCompact(compact)).toBe("All files are formatted.");
   });
 
-  it("formats when files need formatting", () => {
+  it("formats when files need formatting but no list is available", () => {
     const compact = { formatted: false };
     expect(formatFormatCheckCompact(compact)).toBe("Some files need formatting.");
+  });
+
+  it("lists the failing files", () => {
+    const compact = compactFormatCheckMap({
+      formatted: false,
+      files: ["src/index.ts", "src/utils.ts"],
+    });
+    expect(formatFormatCheckCompact(compact)).toBe(
+      "2 files need formatting:\n  src/index.ts\n  src/utils.ts",
+    );
+  });
+
+  it("notes omitted files when truncated", () => {
+    const files = Array.from({ length: COMPACT_FILE_LIMIT + 5 }, (_, i) => `src/file${i}.ts`);
+    const compact = compactFormatCheckMap({ formatted: false, files });
+    const text = formatFormatCheckCompact(compact);
+    expect(text).toContain(`${COMPACT_FILE_LIMIT + 5} files need formatting:`);
+    expect(text).toContain("... (5 more files omitted)");
+  });
+
+  it("formats surfaced failures", () => {
+    const compact = {
+      formatted: false,
+      error: "[error] Invalid configuration file",
+      exitCode: 2,
+    };
+    expect(formatFormatCheckCompact(compact)).toBe(
+      "Format check failed (exit 2): [error] Invalid configuration file",
+    );
   });
 });
 
@@ -229,7 +406,7 @@ describe("formatFormatCheckCompact", () => {
 // ---------------------------------------------------------------------------
 
 describe("compactFormatWriteMap", () => {
-  it("keeps only success and filesChanged, drops file list", () => {
+  it("keeps counts and the reformatted file list (#1022)", () => {
     const data: FormatWriteResult = {
       filesChanged: 3,
       files: ["src/index.ts", "src/utils.ts", "src/config.ts"],
@@ -240,8 +417,21 @@ describe("compactFormatWriteMap", () => {
 
     expect(compact.success).toBe(true);
     expect(compact.filesChanged).toBe(3);
-    // Verify files are dropped
-    expect(compact).not.toHaveProperty("files");
+    expect(compact.files).toEqual(["src/index.ts", "src/utils.ts", "src/config.ts"]);
+  });
+
+  it("caps the file list at COMPACT_FILE_LIMIT with truncation metadata", () => {
+    const files = Array.from({ length: COMPACT_FILE_LIMIT + 10 }, (_, i) => `src/file${i}.ts`);
+    const data: FormatWriteResult = {
+      filesChanged: files.length,
+      files,
+      success: true,
+    };
+
+    const compact = compactFormatWriteMap(data);
+
+    expect(compact.files).toHaveLength(COMPACT_FILE_LIMIT);
+    expect(compact.filesTruncated).toBe(true);
   });
 
   it("handles failed format result", () => {
@@ -309,8 +499,24 @@ describe("formatFormatWriteCompact", () => {
     expect(formatFormatWriteCompact(compact)).toBe("All files already formatted.");
   });
 
-  it("formats files changed", () => {
-    const compact = { success: true, filesChanged: 7 };
-    expect(formatFormatWriteCompact(compact)).toBe("Formatted 7 files.");
+  it("lists formatted files", () => {
+    const compact = compactFormatWriteMap({
+      filesChanged: 2,
+      files: ["src/a.ts", "src/b.ts"],
+      success: true,
+    });
+    expect(formatFormatWriteCompact(compact)).toBe("Formatted 2 files:\n  src/a.ts\n  src/b.ts");
+  });
+
+  it("notes omitted files when truncated", () => {
+    const files = Array.from({ length: COMPACT_FILE_LIMIT + 7 }, (_, i) => `src/file${i}.ts`);
+    const compact = compactFormatWriteMap({
+      filesChanged: files.length,
+      files,
+      success: true,
+    });
+    const text = formatFormatWriteCompact(compact);
+    expect(text).toContain(`Formatted ${COMPACT_FILE_LIMIT + 7} files:`);
+    expect(text).toContain("... (7 more files omitted)");
   });
 });
