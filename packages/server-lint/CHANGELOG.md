@@ -1,5 +1,22 @@
 # @paretools/lint
 
+## 0.22.0
+
+### Patch Changes
+
+- [#1035](https://github.com/Dave-London/Pare/pull/1035) [`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f) Thanks [@Dave-London](https://github.com/Dave-London)! - Declare compact-only fields in output schemas so structuredContent validates against the registered outputSchema. Compact mappers emitted fields (e.g. `total`, `truncated`, counts) that the Zod outputSchemas did not declare; the MCP SDK converts outputSchema to JSON Schema with `additionalProperties: false` and AJV-validates structuredContent, so compact responses failed with `MCP error -32602` whenever compact mode engaged. Adds `@paretools/shared/testing` with SDK-equivalent schema validation helpers for regression tests.
+
+- [#1028](https://github.com/Dave-London/Pare/pull/1028) [`c78d2df`](https://github.com/Dave-London/Pare/commit/c78d2df84890b69e8134e52ed81ea8d089e741c6) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface linter config failures and keep the actionable payload in compact output.
+
+  - All six linters (eslint, biome-check, stylelint, shellcheck, hadolint, oxlint) now attach `error` and `exitCode` when the CLI exits non-zero with zero parsed diagnostics, instead of reporting a false "clean" result on config errors or crashes ([#1024](https://github.com/Dave-London/Pare/issues/1024)). Exits caused by found violations are unaffected.
+  - `format-check` surfaces prettier failures (exit > 1) as `error` instead of a silent `{formatted: false, files: []}` ([#1024](https://github.com/Dave-London/Pare/issues/1024)).
+  - Compact lint output now keeps the first 25 diagnostics plus `diagnosticsTruncated`/`omittedCount` and the fixable counts, instead of dropping every diagnostic ([#1022](https://github.com/Dave-London/Pare/issues/1022)).
+  - Compact `format-check` output now includes the failing file list (capped at 50 with `filesTruncated`) and `total` ([#1021](https://github.com/Dave-London/Pare/issues/1021)).
+  - Compact `prettier-format`/`biome-format` output now includes the list of reformatted files (capped at 50 with `filesTruncated`) ([#1022](https://github.com/Dave-London/Pare/issues/1022)).
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes

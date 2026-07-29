@@ -1,5 +1,18 @@
 # @paretools/security
 
+## 0.22.0
+
+### Patch Changes
+
+- [#1027](https://github.com/Dave-London/Pare/pull/1027) [`15af6d5`](https://github.com/Dave-London/Pare/commit/15af6d56b71ecf1e89997a092b5801cdaa30ce75) Thanks [@Dave-London](https://github.com/Dave-London)! - Surface scanner failures and restore compact findings payload for trivy, semgrep, and gitleaks.
+
+  - A crashed scan (non-zero exit with no parseable report) no longer reads as a clean scan: the result now carries `error` (stderr/stdout tail) and `exitCode`, in both structured and text output.
+  - Exit-code semantics are respected per tool: gitleaks exit 1 with a findings report, trivy `--exit-code`, and semgrep findings exits are still treated as successful scans.
+  - Compact mode no longer drops the actionable payload: gitleaks compact (previously `{}`) now returns `totalFindings` plus the top findings (rule/file/line); trivy compact includes the top critical/high vulnerabilities (id, package, severity, fixed version); semgrep compact includes the top findings and always passes through `errors[]`. All compact projections carry `error`/`exitCode` and set a truncation flag when the list is cut.
+
+- Updated dependencies [[`ae381ea`](https://github.com/Dave-London/Pare/commit/ae381ea780e87681a3a0bd7ac991804461ebcf2f), [`4ec6e4b`](https://github.com/Dave-London/Pare/commit/4ec6e4bd00fbaade872414a295e2b80fae3dc4ea)]:
+  - @paretools/shared@0.22.0
+
 ## 0.21.1
 
 ### Patch Changes
