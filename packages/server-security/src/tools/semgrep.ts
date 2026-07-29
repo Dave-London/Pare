@@ -9,6 +9,7 @@ import {
   cwdPathInput,
   compactInput,
   coerceJsonArray,
+  surfaceEmptyFailure,
 } from "@paretools/shared";
 import { parseSemgrepJson } from "../lib/parsers.js";
 import {
@@ -199,7 +200,14 @@ export function registerSemgrepTool(server: McpServer) {
 
       // Use first config for display; join all for the structured output
       const configDisplay = configs.join(",");
-      const data = parseSemgrepJson(result.stdout, configDisplay);
+      // Semgrep exits non-zero on findings (with --error) and on execution
+      // errors. A non-zero exit with a parseable report (findings and/or its
+      // own errors[] array) is a completed scan. Only surface a failure when
+      // the output was not a Semgrep JSON report at all, so a crashed scan
+      // can never read as "0 findings".
+      const data = surfaceEmptyFailure(parseSemgrepJson(result.stdout, configDisplay), result, {
+        isEmpty: (d) => d.parseFailed === true && d.totalFindings === 0,
+      });
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return strippedCompactDualOutput(

@@ -8,6 +8,7 @@ import {
   assertNoFlagInjection,
   cwdPathInput,
   compactInput,
+  surfaceEmptyFailure,
 } from "@paretools/shared";
 import { parseTrivyJson } from "../lib/parsers.js";
 import {
@@ -179,7 +180,14 @@ export function registerTrivyTool(server: McpServer) {
 
       const result = await run("trivy", args, { cwd, timeout: 300_000 });
 
-      const data = parseTrivyJson(result.stdout, target, scanType);
+      // Trivy exits non-zero on execution errors, and also (per --exit-code)
+      // when vulnerabilities are found — a non-zero exit with a parseable
+      // report is still a successful scan. Only surface a failure when the
+      // output was not a Trivy report at all (crash, bad target, etc.), so a
+      // crashed scan can never read as "0 vulnerabilities".
+      const data = surfaceEmptyFailure(parseTrivyJson(result.stdout, target, scanType), result, {
+        isEmpty: (d) => d.parseFailed === true && d.totalVulnerabilities === 0,
+      });
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return strippedCompactDualOutput(

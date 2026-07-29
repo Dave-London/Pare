@@ -96,13 +96,19 @@ describe("parseTrivyJson", () => {
     expect(result.vulnerabilities).toEqual([]);
   });
 
-  it("handles invalid JSON gracefully", () => {
+  it("flags invalid JSON as parseFailed", () => {
     const result = parseTrivyJson("not valid json", "target", "fs");
 
     expect(result.target).toBe("target");
     expect(result.scanType).toBe("fs");
     expect(result.totalVulnerabilities).toBe(0);
     expect(result.vulnerabilities).toEqual([]);
+    expect(result.parseFailed).toBe(true);
+  });
+
+  it("does not set parseFailed on a valid empty report", () => {
+    const result = parseTrivyJson(JSON.stringify({ Results: [] }), "target", "fs");
+    expect(result.parseFailed).toBeUndefined();
   });
 
   it("handles null Results", () => {
@@ -341,13 +347,19 @@ describe("parseSemgrepJson", () => {
     expect(result.findings).toEqual([]);
   });
 
-  it("handles invalid JSON gracefully", () => {
+  it("flags invalid JSON as parseFailed", () => {
     const result = parseSemgrepJson("not valid json", "auto");
 
     expect(result.config).toBe("auto");
     expect(result.totalFindings).toBe(0);
     expect(result.findings).toEqual([]);
     expect(result.summary).toEqual({ error: 0, warning: 0, info: 0 });
+    expect(result.parseFailed).toBe(true);
+  });
+
+  it("does not set parseFailed on a valid empty report", () => {
+    const result = parseSemgrepJson(JSON.stringify({ results: [] }), "auto");
+    expect(result.parseFailed).toBeUndefined();
   });
 
   it("normalizes severity strings to uppercase", () => {
@@ -485,20 +497,27 @@ describe("parseGitleaksJson", () => {
     expect(result.summary).toEqual({ totalFindings: 0 });
   });
 
-  it("handles invalid JSON gracefully", () => {
+  it("flags invalid JSON as parseFailed", () => {
     const result = parseGitleaksJson("not valid json");
 
     expect(result.totalFindings).toBe(0);
     expect(result.findings).toEqual([]);
     expect(result.summary).toEqual({ totalFindings: 0 });
+    expect(result.parseFailed).toBe(true);
   });
 
-  it("handles non-array JSON gracefully", () => {
+  it("flags non-array JSON as parseFailed", () => {
     const json = JSON.stringify({ notAnArray: true });
     const result = parseGitleaksJson(json);
 
     expect(result.totalFindings).toBe(0);
     expect(result.findings).toEqual([]);
+    expect(result.parseFailed).toBe(true);
+  });
+
+  it("does not set parseFailed on a valid empty report", () => {
+    const result = parseGitleaksJson(JSON.stringify([]));
+    expect(result.parseFailed).toBeUndefined();
   });
 
   it("handles missing fields with defaults", () => {

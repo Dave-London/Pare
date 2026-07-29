@@ -57,12 +57,15 @@ export function parseTrivyJson(
   try {
     parsed = JSON.parse(jsonStr) as TrivyJsonOutput;
   } catch {
+    // Not a Trivy JSON report (crash, empty output, error text). Flag it so
+    // the tool layer can surface the failure instead of reporting a clean scan.
     return {
       target,
       scanType,
       vulnerabilities: [],
       summary: { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 },
       totalVulnerabilities: 0,
+      parseFailed: true,
     };
   }
 
@@ -203,11 +206,14 @@ export function parseSemgrepJson(jsonStr: string, config: string): SemgrepScanRe
   try {
     parsed = JSON.parse(jsonStr) as SemgrepJsonOutput;
   } catch {
+    // Not a Semgrep JSON report (crash, empty output, error text). Flag it so
+    // the tool layer can surface the failure instead of reporting a clean scan.
     return {
       totalFindings: 0,
       findings: [],
       summary: { error: 0, warning: 0, info: 0 },
       config,
+      parseFailed: true,
     };
   }
 
@@ -333,11 +339,14 @@ export function parseGitleaksJson(jsonStr: string): GitleaksScanResultInternal {
   try {
     const raw = JSON.parse(jsonStr) as unknown;
     if (!Array.isArray(raw)) {
-      return { totalFindings: 0, findings: [], summary: { totalFindings: 0 } };
+      // Valid JSON but not a findings array — not a Gitleaks report. Flag it
+      // so the tool layer can surface the failure instead of a clean scan.
+      return { totalFindings: 0, findings: [], summary: { totalFindings: 0 }, parseFailed: true };
     }
     parsed = raw as GitleaksJsonFinding[];
   } catch {
-    return { totalFindings: 0, findings: [], summary: { totalFindings: 0 } };
+    // Not a Gitleaks JSON report (crash, empty output, error text).
+    return { totalFindings: 0, findings: [], summary: { totalFindings: 0 }, parseFailed: true };
   }
 
   const findings: GitleaksFindingInternal[] = [];

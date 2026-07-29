@@ -10,6 +10,7 @@ import {
   repoPathInput,
   compactInput,
   configInput,
+  surfaceEmptyFailure,
 } from "@paretools/shared";
 import { parseGitleaksJson } from "../lib/parsers.js";
 import {
@@ -170,7 +171,13 @@ export function registerGitleaksTool(server: McpServer) {
       // gitleaks exits with code 1 when findings are detected, which is not an error
       const result = await run("gitleaks", args, { cwd, timeout: 300_000 });
 
-      const data = parseGitleaksJson(result.stdout);
+      // Gitleaks exits 1 both when leaks are found (a successful scan that
+      // emits a JSON findings array) and on execution errors (no report).
+      // Only surface a failure when the output was not a findings array, so a
+      // crashed scan can never read as "0 secrets found".
+      const data = surfaceEmptyFailure(parseGitleaksJson(result.stdout), result, {
+        isEmpty: (d) => d.parseFailed === true && d.totalFindings === 0,
+      });
       const rawOutput = (result.stdout + "\n" + result.stderr).trim();
 
       return strippedCompactDualOutput(

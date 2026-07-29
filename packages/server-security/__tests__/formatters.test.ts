@@ -250,7 +250,7 @@ describe("schemaGitleaksScanMap", () => {
 // -- Compact mappers and formatters -------------------------------------------
 
 describe("compactTrivyScanMap", () => {
-  it("keeps target, scanType, summary; drops vulnerabilities and totalVulnerabilities", () => {
+  it("keeps target, scanType, summary and critical/high vulns; drops totalVulnerabilities", () => {
     const data: TrivyScanResultInternal = {
       target: "alpine:3.18",
       scanType: "image",
@@ -273,7 +273,16 @@ describe("compactTrivyScanMap", () => {
     expect(compact.target).toBe("alpine:3.18");
     expect(compact.scanType).toBe("image");
     expect(compact.summary.critical).toBe(1);
-    expect(compact).not.toHaveProperty("vulnerabilities");
+    expect(compact.vulnerabilities).toEqual([
+      {
+        id: "CVE-2024-0001",
+        severity: "CRITICAL",
+        package: "libcrypto3",
+        installedVersion: "3.1.4-r1",
+        fixedVersion: "3.1.4-r5",
+      },
+    ]);
+    expect(compact).not.toHaveProperty("vulnerabilitiesTruncated");
     expect(compact).not.toHaveProperty("totalVulnerabilities");
   });
 });
@@ -392,7 +401,25 @@ describe("compactSemgrepScanMap", () => {
 
     expect(compact.summary.error).toBe(1);
     expect(compact.summary.warning).toBe(1);
-    expect(compact).not.toHaveProperty("findings");
+    expect(compact.findings).toEqual([
+      {
+        ruleId: "rule1",
+        path: "test.py",
+        startLine: 1,
+        endLine: 1,
+        message: "msg",
+        severity: "ERROR",
+      },
+      {
+        ruleId: "rule2",
+        path: "test.py",
+        startLine: 2,
+        endLine: 2,
+        message: "msg",
+        severity: "WARNING",
+      },
+    ]);
+    expect(compact).not.toHaveProperty("findingsTruncated");
     expect(compact).not.toHaveProperty("totalFindings");
     expect(compact).not.toHaveProperty("config");
   });
@@ -476,7 +503,7 @@ describe("formatGitleaksScan", () => {
 });
 
 describe("compactGitleaksScanMap", () => {
-  it("returns empty object; drops findings and totalFindings", () => {
+  it("keeps totalFindings and rule/file/line; drops match, secret, commit, summary", () => {
     const data: GitleaksScanResultInternal = {
       totalFindings: 2,
       findings: [
@@ -498,15 +525,18 @@ describe("compactGitleaksScanMap", () => {
 
     const compact = compactGitleaksScanMap(data);
 
-    expect(compact).not.toHaveProperty("findings");
-    expect(compact).not.toHaveProperty("totalFindings");
+    expect(compact.totalFindings).toBe(2);
+    expect(compact.findings).toEqual([
+      { ruleID: "rule1", file: "test.py", startLine: 1, endLine: 1 },
+    ]);
     expect(compact).not.toHaveProperty("summary");
   });
 });
 
 describe("formatGitleaksScanCompact", () => {
   it("formats compact summary", () => {
-    const output = formatGitleaksScanCompact({});
+    const output = formatGitleaksScanCompact({ totalFindings: 0 });
     expect(output).toContain("Gitleaks scan");
+    expect(output).toContain("0 secret(s)");
   });
 });
