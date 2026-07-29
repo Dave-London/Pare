@@ -58,8 +58,8 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "smol-toml": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "smol-toml": "^1.7.1",
     "yaml": "^2.9.0"
   },
   "devDependencies": {
