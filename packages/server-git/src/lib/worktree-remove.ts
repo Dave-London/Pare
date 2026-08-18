@@ -1,6 +1,27 @@
+import { realpathSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { git } from "./git-runner.js";
-import { parseWorktreeList, worktreePathsEqual } from "./parsers.js";
+import { normalizeWorktreePath, parseWorktreeList, worktreePathsEqual } from "./parsers.js";
+
+/**
+ * Resolves a path through the filesystem before normalizing it. Callers hand us
+ * whatever they typed — a short 8.3 alias like `C:\Users\RUNNER~1\...`, a `..`
+ * segment, a symlinked parent — while git stores the fully resolved path, so
+ * plain string comparison misses matches that are in fact the same directory.
+ * Falls back to normalization when the path no longer exists.
+ */
+function canonicalWorktreePath(p: string): string {
+  try {
+    return normalizeWorktreePath(realpathSync.native(p));
+  } catch {
+    return normalizeWorktreePath(p);
+  }
+}
+
+/** True when two paths name the same worktree directory. */
+function samePath(a: string, b: string): boolean {
+  return worktreePathsEqual(a, b) || canonicalWorktreePath(a) === canonicalWorktreePath(b);
+}
 
 /** Outcome of a worktree removal attempt. */
 export interface WorktreeRemoveOutcome {
@@ -19,9 +40,7 @@ export interface WorktreeRemoveOutcome {
 async function isRegistered(cwd: string, worktreePath: string): Promise<boolean | undefined> {
   const list = await git(["worktree", "list", "--porcelain"], cwd);
   if (list.exitCode !== 0) return undefined;
-  return parseWorktreeList(list.stdout).worktrees.some((w) =>
-    worktreePathsEqual(w.path, worktreePath),
-  );
+  return parseWorktreeList(list.stdout).worktrees.some((w) => samePath(w.path, worktreePath));
 }
 
 /**

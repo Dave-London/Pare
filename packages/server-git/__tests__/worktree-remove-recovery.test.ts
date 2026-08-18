@@ -16,9 +16,17 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+
+/**
+ * Temp dir with the path git will report. On Windows the runner's TEMP is a short
+ * 8.3 alias (`C:\Users\RUNNER~1\...`) while git stores the resolved long path.
+ */
+function mkTempRepo(prefix: string): string {
+  return realpathSync.native(mkdtempSync(join(tmpdir(), prefix)));
+}
 
 vi.mock("../src/lib/git-runner.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/lib/git-runner.js")>();
@@ -99,7 +107,7 @@ describe("worktree removal consistency (#1073)", () => {
     vi.clearAllMocks();
     vi.mocked(git).mockImplementation(realGit);
 
-    mainRepo = mkdtempSync(join(tmpdir(), "pare-git-1073-main-"));
+    mainRepo = mkTempRepo("pare-git-1073-main-");
     run(["init", "-b", "trunk"], mainRepo);
     run(["config", "user.email", "test@test.com"], mainRepo);
     run(["config", "user.name", "Test"], mainRepo);
@@ -151,6 +159,23 @@ describe("worktree removal consistency (#1073)", () => {
     expect(isRegistered(mainRepo, wtPath)).toBe(false);
   });
 
+  it("recognises the worktree through a non-canonical path", async () => {
+    // Callers pass whatever they typed — a `.` segment here, a Windows 8.3 alias
+    // like C:\Users\RUNNER~1\... in the wild — while git reports the resolved path.
+    const messy = join(wtPath, ".") + "/./";
+    failNextRemoveAfterUnregistering(
+      mainRepo,
+      wtPath,
+      `error: failed to delete '${wtPath}': Filename too long`,
+    );
+
+    const outcome = await removeWorktree(mainRepo, messy, { force: true });
+
+    expect(outcome.removed).toBe(true);
+    expect(outcome.cleanedUp).toBe(true);
+    expect(existsSync(wtPath)).toBe(false);
+  });
+
   it("surfaces git stderr and leaves the worktree alone on a genuine failure", async () => {
     run(["worktree", "lock", wtPath], mainRepo);
 
@@ -166,7 +191,7 @@ describe("worktree removal consistency (#1073)", () => {
   });
 
   it("never deletes a directory that was not a registered worktree", async () => {
-    const stranger = mkdtempSync(join(tmpdir(), "pare-git-1073-stranger-"));
+    const stranger = mkTempRepo("pare-git-1073-stranger-");
     writeFileSync(join(stranger, "precious.txt"), "do not delete\n");
 
     const outcome = await removeWorktree(mainRepo, stranger, { force: true });
@@ -280,7 +305,7 @@ describe.skipIf(process.platform !== "win32")("worktree removal over MAX_PATH (#
     vi.clearAllMocks();
     vi.mocked(git).mockImplementation(realGit);
 
-    mainRepo = mkdtempSync(join(tmpdir(), "pare-git-1073-long-"));
+    mainRepo = mkTempRepo("pare-git-1073-long-");
     run(["init", "-b", "trunk"], mainRepo);
     run(["config", "user.email", "test@test.com"], mainRepo);
     run(["config", "user.name", "Test"], mainRepo);
