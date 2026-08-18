@@ -19,6 +19,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # codeql-action init/autobuild/analyze/upload-sarif must move together;
+      # a lone bump fails Analyze with "Loaded a configuration file for version
+      # X, but running version Y".
+      codeql:
+        patterns: ["github/codeql-action*"]
+      github-actions:
+        patterns: ["*"]
+        exclude-patterns: ["github/codeql-action*"]
     labels:
       - "dependencies"
       - "ci"
