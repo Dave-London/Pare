@@ -48,6 +48,54 @@ describe("parsePytestOutput", () => {
     expect(result.summary.total).toBe(0);
     expect(result.failures).toHaveLength(0);
   });
+
+  // Skip reasons carrying libpq's "port 5555 failed: Connection refused" text used
+  // to be scraped as a failure count. See issues #1061 / #1045.
+  it("ignores numbers in skip reasons and parses only the summary line (#1061)", () => {
+    const stdout = [
+      "============================= test session starts =============================",
+      "collected 201 items",
+      "",
+      "tests/test_db.py::test_query SKIPPED",
+      "",
+      "=========================== short test summary info ===========================",
+      'SKIPPED [1] tests/test_db.py:12: postgres_only: connection to server at "localhost" (127.0.0.1), port 5555 failed: Connection refused',
+      "SKIPPED [3] tests/conftest.py:88: requires Postgres on port 5555",
+      "======================= 197 passed, 4 skipped in 12.34s =======================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout);
+
+    expect(result.summary.failed).toBe(0);
+    expect(result.summary.passed).toBe(197);
+    expect(result.summary.skipped).toBe(4);
+    expect(result.summary.total).toBe(201);
+    expect(result.summary.duration).toBe(12.34);
+    expect(result.failures).toHaveLength(0);
+  });
+
+  it("parses the undecorated summary line emitted by pytest -q", () => {
+    const result = parsePytestOutput("....s\n4 passed, 1 skipped in 0.52s");
+
+    expect(result.summary.passed).toBe(4);
+    expect(result.summary.skipped).toBe(1);
+    expect(result.summary.failed).toBe(0);
+    expect(result.summary.duration).toBe(0.52);
+  });
+
+  it("takes the last summary line when several are printed", () => {
+    const stdout = [
+      "==================== 1 failed, 1 passed in 0.50s ====================",
+      "Rerunning failed tests…",
+      "==================== 2 passed in 0.90s ====================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout);
+
+    expect(result.summary.passed).toBe(2);
+    expect(result.summary.failed).toBe(0);
+    expect(result.summary.duration).toBe(0.9);
+  });
 });
 
 describe("parsePytestCoverage", () => {
