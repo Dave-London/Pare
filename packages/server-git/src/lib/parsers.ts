@@ -1179,6 +1179,61 @@ export function parseBlameOutput(stdout: string, file: string): GitBlameFull {
   return { commits, file };
 }
 
+/**
+ * Normalizes a repo-relative path for pathspec comparison: backslashes become
+ * forward slashes, a leading "./" is stripped, and trailing slashes are dropped.
+ */
+export function normalizeRepoPath(p: string): string {
+  let s = p.trim().replace(/\\/g, "/");
+  while (s.startsWith("./")) s = s.slice(2);
+  s = s.replace(/\/+$/, "");
+  return s;
+}
+
+/**
+ * Rewrites a user-supplied pathspec into a path relative to the repository root,
+ * so it can be compared against `git status --porcelain` output — which is always
+ * root-relative, no matter which directory the command ran in.
+ *
+ * @param pathspec - The user path, absolute or relative to `prefix`
+ * @param repoRoot - Absolute repository root (`git rev-parse --show-toplevel`)
+ * @param prefix - cwd relative to the root (`git rev-parse --show-prefix`), "" at the root
+ */
+export function toRepoRelativePathspec(pathspec: string, repoRoot: string, prefix: string): string {
+  const normalized = normalizeRepoPath(pathspec);
+  const root = normalizeRepoPath(repoRoot);
+  const pre = normalizeRepoPath(prefix);
+
+  // Absolute path — strip the repo root when the path lives inside the repo.
+  if (/^([a-zA-Z]:\/|\/)/.test(normalized)) {
+    if (root && normalized.toLowerCase() === root.toLowerCase()) return ".";
+    if (root && normalized.toLowerCase().startsWith(`${root.toLowerCase()}/`)) {
+      return normalized.slice(root.length + 1);
+    }
+    return normalized;
+  }
+
+  if (!pre) return normalized === "" ? "." : normalized;
+  if (normalized === "" || normalized === ".") return pre;
+  return `${pre}/${normalized}`;
+}
+
+/**
+ * True when `candidate` is the pathspec itself or lies underneath it.
+ *
+ * `git status --porcelain` lists individual files, so a directory pathspec never
+ * equals a status line. Comparing by exact name therefore reported every
+ * directory restore as verified even when files under it were left untouched
+ * (#1068). Both sides are normalized first; "." and "" (the repo root) match
+ * everything.
+ */
+export function pathIsUnderPathspec(candidate: string, pathspec: string): boolean {
+  const c = normalizeRepoPath(candidate);
+  const p = normalizeRepoPath(pathspec);
+  if (p === "" || p === ".") return true;
+  return c === p || c.startsWith(`${p}/`);
+}
+
 /** Parses `git restore` result into structured restore data.
  *  Since `git restore` produces no stdout on success, we return the file list that was passed in.
  *  If verification data is provided, includes per-file verification status. */

@@ -797,6 +797,9 @@ describe("Smoke: git.worktree", () => {
 
   // S3: Remove worktree
   it("S3 [P0] remove worktree returns success", async () => {
+    // worktree list --porcelain (pre-flight registration check, #1073)
+    mockGit("worktree /repo\nHEAD abc1234\nbranch refs/heads/main\n\n", "", 0);
+    // worktree remove
     mockGit("", "", 0);
 
     const { parsed } = await callAndValidate({
@@ -882,6 +885,9 @@ describe("Smoke: git.worktree", () => {
 
   // S11: Force remove dirty worktree
   it("S11 [P1] force remove passes --force flag", async () => {
+    // worktree list --porcelain (pre-flight registration check, #1073)
+    mockGit("worktree /repo\nHEAD abc1234\nbranch refs/heads/main\n\n", "", 0);
+    // worktree remove --force
     mockGit("", "", 0);
 
     await callAndValidate({
@@ -889,7 +895,7 @@ describe("Smoke: git.worktree", () => {
       worktreePath: "../wt-dirty",
       force: true,
     });
-    const args = vi.mocked(git).mock.calls[0][0];
+    const args = vi.mocked(git).mock.calls[1][0];
     expect(args).toContain("--force");
   });
 

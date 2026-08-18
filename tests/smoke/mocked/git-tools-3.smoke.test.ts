@@ -808,6 +808,8 @@ describe("Smoke: git.restore", () => {
     mockGit("");
     // git status --porcelain=v1 (verification)
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({ files: ["src/index.ts"] });
     expect(parsed.restored).toContain("src/index.ts");
     expect(parsed.source).toBe("HEAD");
@@ -817,6 +819,8 @@ describe("Smoke: git.restore", () => {
   it("S2 [P0] restore staged file", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({ files: ["src/index.ts"], staged: true });
     expect(parsed.staged).toBe(true);
     const args = vi.mocked(git).mock.calls[0][0];
@@ -826,6 +830,8 @@ describe("Smoke: git.restore", () => {
   it("S3 [P0] restore from specific source", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({
       files: ["src/index.ts"],
       source: "HEAD~1",
@@ -839,6 +845,8 @@ describe("Smoke: git.restore", () => {
   it("S4 [P0] restore multiple files", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({
       files: ["file1.ts", "file2.ts", "file3.ts"],
     });
@@ -854,6 +862,8 @@ describe("Smoke: git.restore", () => {
   it("S6 [P1] --ours flag is passed during conflict", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["conflicted.ts"], ours: true });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--ours");
@@ -862,6 +872,8 @@ describe("Smoke: git.restore", () => {
   it("S7 [P1] --theirs flag is passed during conflict", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["conflicted.ts"], theirs: true });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--theirs");
@@ -870,6 +882,8 @@ describe("Smoke: git.restore", () => {
   it("S8 [P1] --worktree flag is passed", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["file.ts"], worktree: true });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--worktree");
@@ -878,6 +892,8 @@ describe("Smoke: git.restore", () => {
   it("S9 [P1] --merge flag is passed", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["file.ts"], merge: true });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--merge");
@@ -886,6 +902,8 @@ describe("Smoke: git.restore", () => {
   it("S10 [P1] --no-overlay flag is passed", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["file.ts"], noOverlay: true });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--no-overlay");
@@ -894,6 +912,8 @@ describe("Smoke: git.restore", () => {
   it("S11 [P1] --conflict style is passed", async () => {
     mockGit("");
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     await callAndValidate({ files: ["file.ts"], conflict: "diff3" });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--conflict=diff3");
