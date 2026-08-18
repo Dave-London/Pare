@@ -829,7 +829,8 @@ export function formatWorktreePrune(w: {
   for (const r of results) {
     const label = r.removed ? "removed" : `skipped [${r.reason ?? "unknown"}]`;
     const branch = r.branch ? ` (${r.branch})` : "";
-    lines.push(`  ${label}: ${r.path}${branch}`);
+    const error = r.error ? ` — ${r.error.split("\n")[0]}` : "";
+    lines.push(`  ${label}: ${r.path}${branch}${error}`);
   }
   return lines.join("\n");
 }

@@ -9,6 +9,7 @@ import {
   repoPathInput,
 } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
+import { removeWorktree } from "../lib/worktree-remove.js";
 import {
   parseWorktreeList,
   parseWorktreeResult,
@@ -272,14 +273,18 @@ export function registerWorktreeTool(server: McpServer) {
         // Execute removals for the entries cleared by the decision function.
         for (const decision of decisions) {
           if (!decision.removed) continue;
-          const rmArgs = ["worktree", "remove"];
-          // Only opting out of the clean guard uses --force (dirty merged trees).
-          if (!requireClean) rmArgs.push("--force");
-          rmArgs.push(decision.path);
-          const rm = await git(rmArgs, cwd);
-          if (rm.exitCode !== 0) {
+          const outcome = await removeWorktree(cwd, decision.path, {
+            // Only opting out of the clean guard uses --force (dirty merged trees).
+            force: !requireClean,
+            // Every candidate came straight out of `git worktree list`.
+            wasRegistered: true,
+          });
+          if (!outcome.removed) {
             decision.removed = false;
             decision.reason = "remove-failed";
+            decision.error = outcome.error;
+          } else if (outcome.cleanedUp) {
+            decision.cleanedUp = true;
           }
         }
 
@@ -440,20 +445,15 @@ export function registerWorktreeTool(server: McpServer) {
 
       assertNoFlagInjection(worktreePath, "worktreePath");
 
-      const args = ["worktree", "remove"];
-      if (params.force) {
-        args.push("--force");
-      }
-      args.push(worktreePath);
+      const outcome = await removeWorktree(cwd, worktreePath, { force: params.force });
 
-      const result = await git(args, cwd);
-
-      if (result.exitCode !== 0) {
-        throw new Error(`git worktree remove failed: ${result.stderr}`);
+      if (!outcome.removed) {
+        throw new Error(`git worktree remove failed: ${outcome.error}`);
       }
 
-      const worktreeResult = parseWorktreeResult(result.stdout, result.stderr, worktreePath, "");
+      const worktreeResult = parseWorktreeResult("", "", worktreePath, "");
       worktreeResult.action = "remove";
+      if (outcome.cleanedUp) worktreeResult.cleanedUp = true;
       return dualOutput(worktreeResult, formatWorktree);
     },
   );

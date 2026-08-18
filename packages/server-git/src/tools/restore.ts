@@ -2,7 +2,12 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { git, resolveFilePaths } from "../lib/git-runner.js";
-import { parseRestore, parseRestoreError } from "../lib/parsers.js";
+import {
+  parseRestore,
+  parseRestoreError,
+  pathIsUnderPathspec,
+  toRepoRelativePathspec,
+} from "../lib/parsers.js";
 import { formatRestore } from "../lib/formatters.js";
 import { GitRestoreSchema } from "../schemas/index.js";
 
@@ -116,13 +121,13 @@ export function registerRestoreTool(server: McpServer) {
         return dualOutput(restoreError, formatRestore);
       }
 
-      // Post-restore verification: check file status to verify restoration
+      // Post-restore verification: check file status to verify restoration.
       const statusResult = await git(["status", "--porcelain=v1"], cwd);
       let verifiedFiles: Array<{ file: string; restored: boolean }> | undefined;
       if (statusResult.exitCode === 0) {
         const statusLines = statusResult.stdout.split("\n").filter(Boolean);
-        // Build a set of files that still appear as modified/deleted in the status
-        const stillDirty = new Set<string>();
+        // Paths that still appear as modified/deleted in the status.
+        const stillDirty: string[] = [];
         for (const line of statusLines) {
           const worktreeStatus = line[1];
           const statusFile = line.slice(3).trim();
@@ -132,20 +137,31 @@ export function registerRestoreTool(server: McpServer) {
             // For staged restores, check if the file is still in the index
             const indexStatus = line[0];
             if (indexStatus && indexStatus !== " " && indexStatus !== "?") {
-              stillDirty.add(resolvedName);
+              stillDirty.push(resolvedName);
             }
           } else {
             // For working tree restores, check if the file still has worktree changes
             if (worktreeStatus === "M" || worktreeStatus === "D") {
-              stillDirty.add(resolvedName);
+              stillDirty.push(resolvedName);
             }
           }
         }
 
-        verifiedFiles = files.map((f) => ({
-          file: f,
-          restored: !stillDirty.has(f),
-        }));
+        // `git status --porcelain` paths are relative to the repository root, while
+        // the pathspecs are relative to `cwd` — translate before comparing (#1068).
+        const revParse = await git(["rev-parse", "--show-toplevel", "--show-prefix"], cwd);
+        const [repoRoot = "", prefix = ""] =
+          revParse.exitCode === 0 ? revParse.stdout.split("\n").map((l) => l.trim()) : [];
+
+        // A directory pathspec never equals a status line, so match by containment:
+        // a path is unrestored if any remaining dirty entry lies at or under it.
+        verifiedFiles = files.map((f, i) => {
+          const pathspec = toRepoRelativePathspec(resolvedFiles[i] ?? f, repoRoot, prefix);
+          return {
+            file: f,
+            restored: !stillDirty.some((dirty) => pathIsUnderPathspec(dirty, pathspec)),
+          };
+        });
       }
 
       const restoreResult = parseRestore(files, resolvedSource, staged, verifiedFiles);

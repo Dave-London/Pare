@@ -695,6 +695,8 @@ export const GitWorktreeSchema = z.object({
   targetPath: z.string().optional(),
   branch: z.string(),
   head: z.string().optional(),
+  /** True when git unregistered the worktree but the directory had to be deleted by the tool. */
+  cleanedUp: z.boolean().optional(),
 });
 
 export type GitWorktree = z.infer<typeof GitWorktreeSchema>;
@@ -708,6 +710,10 @@ export const GitWorktreePruneResultSchema = z.object({
   reason: z
     .enum(["not-merged", "dirty", "locked", "main", "current", "bare", "remove-failed"])
     .optional(),
+  /** Git's stderr for a failed removal (only present with reason="remove-failed"). */
+  error: z.string().optional(),
+  /** True when git unregistered the worktree but the directory had to be deleted by the tool. */
+  cleanedUp: z.boolean().optional(),
 });
 
 export type GitWorktreePruneResult = z.infer<typeof GitWorktreePruneResultSchema>;
@@ -732,6 +738,8 @@ export const GitWorktreeOutputSchema = z.object({
   branch: z.string().optional(),
   /** HEAD commit (present for mutate actions). */
   head: z.string().optional(),
+  /** True when the worktree directory had to be deleted by the tool (remove action). */
+  cleanedUp: z.boolean().optional(),
   /** Base ref evaluated (only present for prune-merged). */
   base: z.string().optional(),
   /** Per-worktree removal results (only present for prune-merged). */

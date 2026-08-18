@@ -232,6 +232,8 @@ describe("Recorded: git.restore", () => {
     mockGit("");
     // Call 2: git status --porcelain=v1 (verify file is no longer modified)
     mockGit("");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({ files: ["modified.ts"], staged: false });
     expect(parsed.restored).toContain("modified.ts");
   });
@@ -241,6 +243,8 @@ describe("Recorded: git.restore", () => {
     mockGit("");
     // Call 2: git status --porcelain=v1
     mockGit(" M staged.ts\n");
+    // rev-parse --show-toplevel --show-prefix (pathspec -> repo-relative)
+    mockGit("/repo\n\n");
     const { parsed } = await callAndValidate({ files: ["staged.ts"], staged: true });
     expect(parsed.restored).toContain("staged.ts");
   });
