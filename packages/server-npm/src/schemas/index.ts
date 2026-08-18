@@ -12,6 +12,12 @@ export const NpmInstallPackageSchema = z.object({
   name: z.string().describe("Package name"),
   version: z.string().describe("Installed version"),
   action: z.enum(["added", "removed", "updated"]).describe("What happened to this package"),
+  previousVersion: z
+    .string()
+    .optional()
+    .describe(
+      'Version that was replaced, when the package was updated in place (action: "updated")',
+    ),
 });
 
 /** Zod schema for structured npm install output including package counts and vulnerabilities. */

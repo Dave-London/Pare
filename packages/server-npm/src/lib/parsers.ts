@@ -150,7 +150,85 @@ export function parseInstallPackageDetails(stdout: string): NpmInstall["packageD
     match = yarnPattern.exec(stdout);
   }
 
-  return details.length > 0 ? details : undefined;
+  const collapsed = collapseVersionBumps(details);
+  return collapsed.length > 0 ? collapsed : undefined;
+}
+
+type InstallPackageDetail = NonNullable<NpmInstall["packageDetails"]>[number];
+
+/**
+ * Collapses a matched `removed`/`added` pair for the same package name into a
+ * single `updated` entry carrying `previousVersion` → `version`.
+ *
+ * Package managers report a version bump as two lines (pnpm prints
+ * `- picocolors 1.0.0` followed by `+ picocolors 1.1.1`), which naively reads
+ * as one addition plus one removal. Agents branch on those counts, so a bump
+ * must surface as a single change. See #1081.
+ *
+ * Exported for unit tests.
+ */
+export function collapseVersionBumps(details: InstallPackageDetail[]): InstallPackageDetail[] {
+  const result = [...details];
+  for (let i = 0; i < result.length; i++) {
+    const removed = result[i];
+    if (removed.action !== "removed") continue;
+    const addedIndex = result.findIndex(
+      (d, j) => j !== i && d.action === "added" && d.name === removed.name,
+    );
+    if (addedIndex === -1) continue;
+    const added = result[addedIndex];
+    result[addedIndex] = {
+      name: added.name,
+      version: added.version,
+      action: "updated",
+      previousVersion: removed.version,
+    };
+    result.splice(i, 1);
+    i--;
+  }
+  return result;
+}
+
+/**
+ * Derives `added`/`removed`/`changed` counts from parsed package details so the
+ * top-level counters can never contradict the list they summarise (#1081).
+ *
+ * Exported for unit tests.
+ */
+export function countInstallPackageDetails(details: InstallPackageDetail[]): {
+  added: number;
+  removed: number;
+  changed: number;
+} {
+  let added = 0;
+  let removed = 0;
+  let changed = 0;
+  for (const detail of details) {
+    if (detail.action === "added") added++;
+    else if (detail.action === "removed") removed++;
+    else changed++;
+  }
+  return { added, removed, changed };
+}
+
+/**
+ * Parses pnpm's store-level summary line (`Packages: +6 -6`).
+ *
+ * pnpm never prints npm's "added N packages" sentence, so without this the
+ * counters stay at zero for every pnpm install. Used only as a fallback when
+ * no per-package details were parsed. See #1081.
+ *
+ * Exported for unit tests.
+ */
+export function parsePnpmPackagesSummary(
+  stdout: string,
+): { added: number; removed: number } | undefined {
+  const match = stdout.match(/^Packages:(?:\s+\+(\d+))?(?:\s+-(\d+))?\s*$/m);
+  if (!match || (match[1] === undefined && match[2] === undefined)) return undefined;
+  return {
+    added: parseInt(match[1] ?? "0", 10),
+    removed: parseInt(match[2] ?? "0", 10),
+  };
 }
 
 /** Parses `npm install` or `pnpm install` summary output into structured data with package counts and vulnerability info. */
@@ -171,10 +249,20 @@ export function parseInstallOutput(stdout: string, _duration?: number): NpmInsta
       : undefined;
 
     const packageDetails = parseInstallPackageDetails(stdout);
+    const hasJsonCounts =
+      installJson.added !== undefined ||
+      installJson.removed !== undefined ||
+      installJson.changed !== undefined;
+    const counts =
+      hasJsonCounts || !packageDetails
+        ? {
+            added: parseInt(String(installJson.added ?? 0), 10),
+            removed: parseInt(String(installJson.removed ?? 0), 10),
+            changed: parseInt(String(installJson.changed ?? 0), 10),
+          }
+        : countInstallPackageDetails(packageDetails);
     return {
-      added: parseInt(String(installJson.added ?? 0), 10),
-      removed: parseInt(String(installJson.removed ?? 0), 10),
-      changed: parseInt(String(installJson.changed ?? 0), 10),
+      ...counts,
       ...(packageDetails ? { packageDetails } : {}),
       ...(vulnerabilities ? { vulnerabilities } : {}),
       ...(installJson.funding !== undefined
@@ -213,10 +301,26 @@ export function parseInstallOutput(stdout: string, _duration?: number): NpmInsta
   // Best-effort: parse specific package details
   const packageDetails = parseInstallPackageDetails(stdout);
 
+  // Counter precedence (#1081): npm's own summary sentence wins when present
+  // (it counts the whole tree, while the detail lines only cover direct deps).
+  // Otherwise derive from the details so the counters can never contradict the
+  // list they summarise, and fall back to pnpm's `Packages: +N -M` store line
+  // when there are no details at all.
+  const hasTextSummary = added !== undefined || removed !== undefined || changed !== undefined;
+  const pnpmSummary =
+    hasTextSummary || packageDetails ? undefined : parsePnpmPackagesSummary(stdout);
+  const counts = hasTextSummary
+    ? {
+        added: parseInt(added ?? "0", 10),
+        removed: parseInt(removed ?? "0", 10),
+        changed: parseInt(changed ?? "0", 10),
+      }
+    : packageDetails
+      ? countInstallPackageDetails(packageDetails)
+      : { added: pnpmSummary?.added ?? 0, removed: pnpmSummary?.removed ?? 0, changed: 0 };
+
   return {
-    added: parseInt(added ?? "0", 10),
-    removed: parseInt(removed ?? "0", 10),
-    changed: parseInt(changed ?? "0", 10),
+    ...counts,
     ...(packageDetails ? { packageDetails } : {}),
     ...(vulnerabilities ? { vulnerabilities } : {}),
     ...(fundingMatch ? { funding: parseInt(fundingMatch[1], 10) } : {}),
