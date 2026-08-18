@@ -1,5 +1,6 @@
 import { realpathSync } from "node:fs";
 import { rm } from "node:fs/promises";
+import { resolve } from "node:path";
 import { git } from "./git-runner.js";
 import { normalizeWorktreePath, parseWorktreeList, worktreePathsEqual } from "./parsers.js";
 
@@ -93,7 +94,9 @@ export async function removeWorktree(
   if (stillRegistered !== false) return { removed: false, error };
 
   try {
-    await rm(worktreePath, { recursive: true, force: true, maxRetries: 3 });
+    // resolve() first: a caller's trailing "/." or ".." segment makes the
+    // recursive delete fail outright on Linux (EINVAL on "refusing to remove '.'").
+    await rm(resolve(worktreePath), { recursive: true, force: true, maxRetries: 3 });
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);
     return { removed: false, error: `${error}; directory cleanup failed: ${detail}` };
