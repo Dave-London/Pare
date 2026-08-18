@@ -78,11 +78,49 @@ export const GitBranchEntrySchema = z.object({
   unmerged: z.number().optional(),
 });
 
-/** Zod schema for structured git branch output listing all branches and the current branch. */
+/** Zod schema for structured git branch output.
+ *
+ *  Covers both modes with a single z.object() of optional fields (z.union() is not
+ *  supported by the MCP SDK for outputSchema — same approach as GitWorktreeOutputSchema):
+ *  - list mode returns `branches` + `current`
+ *  - mutation modes (create / delete / rename / set-upstream) return a compact
+ *    confirmation instead of the full listing, which on repos with many branches ran
+ *    to tens of thousands of characters and blew past client output caps (#1037).
+ */
 export const GitBranchSchema = z.object({
-  branches: z.union([z.array(GitBranchEntrySchema), z.array(z.string())]),
-  current: z.string(),
+  /** Present in list mode. */
+  branches: z.union([z.array(GitBranchEntrySchema), z.array(z.string())]).optional(),
+  /** Present in list mode - the checked-out branch. */
+  current: z.string().optional(),
+  /** Present for mutations - whether the operation succeeded. */
+  success: z.boolean().optional(),
+  /** Mutation performed. */
+  action: z.enum(["create", "delete", "rename", "set-upstream"]).optional(),
+  /** Branch affected by create / rename / set-upstream. */
+  branch: z.string().optional(),
+  /** Branch names removed by a delete. */
+  deleted: z.array(z.string()).optional(),
+  /** Start point used when creating a branch. */
+  startPoint: z.string().optional(),
+  /** Upstream ref set by set-upstream. */
+  upstream: z.string().optional(),
+  /** Whether the mutation used a force flag (-D / -M / -f). */
+  force: z.boolean().optional(),
+  /** Whether a created branch was also checked out. */
+  switched: z.boolean().optional(),
 });
+
+/** Compact confirmation returned by branch mutations (create/delete/rename/set-upstream). */
+export type GitBranchMutation = {
+  success: boolean;
+  action: "create" | "delete" | "rename" | "set-upstream";
+  branch?: string;
+  deleted?: string[];
+  startPoint?: string;
+  upstream?: string;
+  force?: boolean;
+  switched?: boolean;
+};
 
 /** Full branch data (always returned by parser, before compact projection). */
 export type GitBranchFull = {
