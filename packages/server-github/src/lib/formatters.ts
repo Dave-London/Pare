@@ -35,6 +35,18 @@ import type {
 
 // ── Full formatters ──────────────────────────────────────────────────
 
+/**
+ * Renders a one-line note when a `body` field was shortened (issue #1067), so
+ * a human reader knows the text they see is not the whole story.
+ */
+function bodyTruncationNote(data: { bodyTruncated?: boolean; bodyLength?: number }): string[] {
+  if (!data.bodyTruncated) return [];
+  const original = data.bodyLength !== undefined ? ` (original ${data.bodyLength} chars)` : "";
+  return [
+    `  body truncated${original} - <details> blocks collapsed and/or capped; raise maxBodyLength or set it to 0 for the full text`,
+  ];
+}
+
 /** Formats structured PR view data into human-readable text. */
 export function formatPrView(data: PrViewResult): string {
   const lines = [
@@ -70,6 +82,7 @@ export function formatPrView(data: PrViewResult): string {
   if (data.body) {
     lines.push(`  body: ${data.body.slice(0, 200)}${data.body.length > 200 ? "..." : ""}`);
   }
+  lines.push(...bodyTruncationNote(data));
   return lines.join("\n");
 }
 
@@ -144,6 +157,14 @@ export function formatPrChecks(data: PrChecksResult): string {
   const lines = [
     `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`,
   ];
+  // Issue #1077: zero checks must never read as success.
+  if (summary.total === 0) {
+    lines.push(
+      data.timedOut
+        ? "  no checks appeared before the watch deadline - NOT a passing state"
+        : "  no checks reported - NOT a passing state (conclusion: none)",
+    );
+  }
   for (const c of data.checks ?? []) {
     const workflow = c.workflow ? ` [${c.workflow}]` : "";
     lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
@@ -183,7 +204,9 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
 
 export function formatPrChecksCompact(data: PrChecksCompact): string {
   const summary = data.summary ?? { total: 0, passed: 0, failed: 0, pending: 0 };
-  return `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`;
+  const head = `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`;
+  // Issue #1077: zero checks must never read as success.
+  return summary.total === 0 ? `${head} - no checks reported, NOT a passing state` : head;
 }
 
 /** Formats structured PR diff data into a human-readable file change summary. */
@@ -224,6 +247,7 @@ export function formatIssueView(data: IssueViewResult): string {
   if (data.body) {
     lines.push(`  body: ${data.body.slice(0, 200)}${data.body.length > 200 ? "..." : ""}`);
   }
+  lines.push(...bodyTruncationNote(data));
   return lines.join("\n");
 }
 

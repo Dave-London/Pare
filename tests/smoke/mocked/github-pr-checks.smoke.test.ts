@@ -118,6 +118,8 @@ describe("Smoke: github.pr-checks", () => {
     const { parsed } = await callAndValidate({ number: "123" });
     expect(parsed.checks).toEqual([]);
     expect(parsed.summary!.total).toBe(0);
+    // #1077: zero checks is never "passed"
+    expect(parsed.conclusion).toBe("none");
   });
 
   // ── Scenario 7: Empty JSON array from gh ───────────────────────────
@@ -359,6 +361,42 @@ describe("Smoke: github.pr-checks", () => {
     await callAndValidate({ number: "feature-branch" });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args[2]).toBe("feature-branch");
+  });
+
+  // ── Scenario 30: zero checks never conclude "passed" (BUG #1077) ───
+  it("S30 [P0] empty checks report conclusion 'none', never 'passed' (#1077)", async () => {
+    mockGh("[]");
+    const { parsed } = await callAndValidate({ number: "123" });
+    expect(parsed.conclusion).toBe("none");
+    expect(parsed.conclusion).not.toBe("passed");
+  });
+
+  // ── Scenario 31: gh "no checks reported" is not a hard failure ──────
+  it("S31 [P0] gh 'no checks reported' maps to errorType 'no-checks' + conclusion 'none' (#1077)", async () => {
+    mockGh("", "no checks reported on the 'feature' branch", 1);
+    const { parsed } = await callAndValidate({ number: "123" });
+    expect(parsed.errorType).toBe("no-checks");
+    expect(parsed.conclusion).toBe("none");
+    expect(parsed.summary!.total).toBe(0);
+  });
+
+  // ── Scenario 32: watch + zero checks times out, never "passed" ──────
+  it("S32 [P0] watch with zero checks times out rather than passing (#1077)", async () => {
+    vi.mocked(ghCmd).mockResolvedValue({
+      stdout: "",
+      stderr: "no checks reported on the 'feature' branch",
+      exitCode: 1,
+    });
+    // interval floor 5s vs watchTimeout 1s → deadline trips on poll 1
+    const { parsed } = await callAndValidate({
+      number: "123",
+      watch: true,
+      interval: 5,
+      watchTimeout: 1,
+    });
+    expect(parsed.conclusion).toBe("timed_out");
+    expect(parsed.timedOut).toBe(true);
+    expect(parsed.errorType).toBe("watch-timeout");
   });
 
   // ── Scenario 29: watch: true ────────────────────────────────────────

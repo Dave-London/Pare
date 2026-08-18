@@ -6,11 +6,12 @@ Views a pull request by number. Returns structured data with state, checks, revi
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                |
-| --------- | ------- | ------- | ---------------------------------------------------------- |
-| `number`  | number  | —       | Pull request number                                        |
-| `path`    | string  | cwd     | Repository path                                            |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter       | Type    | Default | Description                                                |
+| --------------- | ------- | ------- | ---------------------------------------------------------- |
+| `number`        | string  | —       | Pull request number, URL, or branch name                   |
+| `path`          | string  | cwd     | Repository path                                            |
+| `maxBodyLength` | number  | `4000`  | Character cap on `body`; `0` returns the body verbatim     |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success
 
@@ -132,6 +133,32 @@ GraphQL: Could not resolve to a PullRequest with the number of 9999.
 | ------------ | ---------- | --------- | ------------ | ------- |
 | PR with body | ~250       | ~100      | ~55          | 60-78%  |
 | PR not found | ~25        | ~20       | ~20          | 20%     |
+
+## Body truncation (issue #1067)
+
+Dependabot and release-note PR bodies routinely run past 30k characters, almost all of it inside
+collapsed `<details>` blocks. In full-schema mode `body` is therefore shortened in two steps:
+
+1. Every `<details>…</details>` block is collapsed to its `<summary>` text plus a ` […]` marker
+   (nested blocks innermost-first). This alone removes ~95% of a Dependabot body.
+2. What remains is capped at `maxBodyLength` characters (default `4000`).
+
+When anything was removed the payload carries `bodyTruncated: true` and `bodyLength` (the original
+character count), and the human-readable text adds a `body truncated …` line:
+
+```json
+{
+  "number": 1064,
+  "title": "chore(deps): bump foo from 1.0.0 to 2.0.0",
+  "body": "Bumps [foo](…) from 1.0.0 to 2.0.0.\nRelease notes […]\nCommits […]",
+  "bodyTruncated": true,
+  "bodyLength": 31842
+}
+```
+
+Pass `maxBodyLength: 0` to disable both the collapse and the cap and get the body exactly as GitHub
+returned it. Oversized `reviews[].body` values are collapsed and capped the same way and flagged
+per-review with `bodyTruncated`.
 
 ## Notes
 

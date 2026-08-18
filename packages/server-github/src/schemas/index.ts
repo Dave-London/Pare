@@ -14,6 +14,8 @@ export const PrReviewItemSchema = z.object({
   author: z.string(),
   state: z.string(),
   body: z.string().optional(),
+  /** True when this review body was collapsed/capped (see `maxBodyLength`). */
+  bodyTruncated: z.boolean().optional(),
   submittedAt: z.string().optional(),
 });
 
@@ -23,6 +25,13 @@ export const PrViewResultSchema = z.object({
   state: z.string(),
   title: z.string(),
   body: z.string().nullable().optional(),
+  /**
+   * True when `body` was shortened — `<details>` blocks collapsed to their
+   * `<summary>` and/or the text capped at `maxBodyLength` (issue #1067).
+   */
+  bodyTruncated: z.boolean().optional(),
+  /** Character length of the original, untruncated body. Only set when truncated. */
+  bodyLength: z.number().optional(),
   mergeable: z.string(),
   reviewDecision: z.string(),
   checks: z.array(PrCheckSchema).optional(),
@@ -157,6 +166,13 @@ export const IssueViewResultSchema = z.object({
   state: z.string(),
   title: z.string(),
   body: z.string().nullable().optional(),
+  /**
+   * True when `body` was shortened — `<details>` blocks collapsed to their
+   * `<summary>` and/or the text capped at `maxBodyLength` (issue #1067).
+   */
+  bodyTruncated: z.boolean().optional(),
+  /** Character length of the original, untruncated body. Only set when truncated. */
+  bodyLength: z.number().optional(),
   labels: z.array(z.string()),
   assignees: z.array(z.string()),
   url: z.string(),
@@ -281,16 +297,27 @@ export const PrChecksResultSchema = z.object({
   checks: z.array(PrChecksItemSchema).optional(),
   summary: PrChecksSummarySchema.optional(),
   errorType: z
-    .enum(["not-found", "permission-denied", "in-progress", "watch-timeout", "unknown"])
+    .enum([
+      "not-found",
+      "permission-denied",
+      "in-progress",
+      "no-checks",
+      "watch-timeout",
+      "unknown",
+    ])
     .optional(),
   errorMessage: z.string().optional(),
   /**
    * Aggregate outcome derived from the check buckets, so callers can branch
-   * without re-deriving from `summary`: "passed" (all terminal, none failed),
-   * "failed" (at least one failed/cancelled), "pending" (checks still running),
-   * or "timed_out" (watch mode hit its deadline with checks still pending).
+   * without re-deriving from `summary`: "passed" (at least one check, all
+   * terminal, none failed), "failed" (at least one failed/cancelled), "pending"
+   * (checks still running), "none" (GitHub reports zero checks on this PR — a
+   * merge gate must NOT treat this as success, issue #1077), or "timed_out"
+   * (watch mode hit its deadline with checks still pending or absent).
+   *
+   * Invariant: `conclusion === "passed"` implies `checks.length > 0`.
    */
-  conclusion: z.enum(["passed", "failed", "pending", "timed_out"]).optional(),
+  conclusion: z.enum(["passed", "failed", "pending", "none", "timed_out"]).optional(),
   /** True when watch mode returned because it hit `watchTimeout` (checks still pending). */
   timedOut: z.boolean().optional(),
   /** Number of times the wrapper polled gh (only set when watch=true). */

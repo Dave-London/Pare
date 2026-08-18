@@ -6,11 +6,15 @@ Lists check/status results for a pull request. Returns structured data with chec
 
 ## Input Parameters
 
-| Parameter | Type    | Default      | Description                                                |
-| --------- | ------- | ------------ | ---------------------------------------------------------- |
-| `pr`      | number  | —            | Pull request number                                        |
-| `repo`    | string  | current repo | Repository in OWNER/REPO format                            |
-| `compact` | boolean | `true`       | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter      | Type    | Default      | Description                                                  |
+| -------------- | ------- | ------------ | ------------------------------------------------------------ |
+| `number`       | string  | —            | Pull request number, URL, or branch name                     |
+| `repo`         | string  | current repo | Repository in OWNER/REPO format                              |
+| `watch`        | boolean | `false`      | Poll until checks appear **and** all complete                |
+| `interval`     | number  | `10`         | Poll interval in seconds when `watch: true` (min 5, max 300) |
+| `watchTimeout` | number  | `600`        | Wall-clock timeout in seconds for the watch loop (max 3600)  |
+| `required`     | boolean | `false`      | Filter to required checks only                               |
+| `compact`      | boolean | `true`       | Auto-compact when structured output exceeds raw CLI tokens   |
 
 ## Success
 
@@ -115,8 +119,47 @@ Some checks were not successful
 | 3 checks, 1 fail | ~200       | ~120      | ~25          | 40-88%  |
 | All passing      | ~150       | ~100      | ~25          | 33-83%  |
 
+## `conclusion` — the field to branch on
+
+| Value       | Meaning                                                                      |
+| ----------- | ---------------------------------------------------------------------------- |
+| `passed`    | At least one check exists, all are terminal, none failed or were cancelled   |
+| `failed`    | At least one check failed or was cancelled                                   |
+| `pending`   | At least one check is still queued or running                                |
+| `none`      | GitHub reports **zero** checks on this PR                                    |
+| `timed_out` | `watch: true` hit `watchTimeout` with checks still pending — or still absent |
+
+**Invariant (issue #1077): `conclusion === "passed"` implies `checks.length > 0` and all of them
+succeeded.** A freshly pushed PR whose check runs GitHub has not registered yet returns `none`, never
+`passed`, so a merge gate cannot mistake "CI has not started" for "CI is green".
+
+```json
+{
+  "pr": 1076,
+  "checks": [],
+  "summary": { "total": 0, "passed": 0, "failed": 0, "pending": 0, "skipped": 0, "cancelled": 0 },
+  "conclusion": "none",
+  "errorType": "no-checks",
+  "errorMessage": "no checks reported on the 'fix/example' branch"
+}
+```
+
+## Watch behaviour
+
+With `watch: true` the wrapper polls `gh pr checks --json …` itself (gh rejects its native `--watch`
+alongside `--json`) until **checks exist and all of them are terminal**, or `watchTimeout` elapses:
+
+- Zero checks does **not** end the loop — polling continues so the watch survives the race between
+  pushing and GitHub creating the check runs.
+- gh's "no checks reported" exit is treated as "nothing has started yet", not as a hard failure.
+- Short settle grace: while gh itself still exits `8` ("pending") within the first 30 seconds, a
+  checks array that merely _looks_ terminal does not end the loop either.
+- On timeout the tool returns the latest snapshot with `timedOut: true`,
+  `conclusion: "timed_out"` and `errorType: "watch-timeout"` rather than throwing.
+
 ## Notes
 
 - Compact mode returns only the summary counts (`pr`, `total`, `passed`, `failed`, `pending`), dropping individual check details
 - The `bucket` field classifies checks as `pass`, `fail`, `pending`, `skipping`, or `cancel`
+- `errorType` is one of `not-found`, `permission-denied`, `in-progress`, `no-checks`, `watch-timeout`, `unknown`
 - The `repo` parameter allows checking PRs in other repositories without being in that repo's working directory

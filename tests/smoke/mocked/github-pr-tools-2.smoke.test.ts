@@ -714,6 +714,26 @@ describe("Smoke: github.pr-view", () => {
     await expect(callAndValidate({ number: "999999" })).rejects.toThrow(/gh pr view failed/);
   });
 
+  it("S18 [P0] oversized body is collapsed + capped and flagged (#1067)", async () => {
+    const body = `Bumps foo from 1 to 2.\n<details>\n<summary>Commits</summary>\n${"- abc1234 a commit\n".repeat(
+      800,
+    )}</details>`;
+    mockGh(JSON.stringify({ ...PR_VIEW_JSON, body }));
+    const { parsed } = await callAndValidate({ number: "123", compact: false });
+    expect(parsed.body!.length).toBeLessThanOrEqual(4000);
+    expect(parsed.body).toContain("Commits […]");
+    expect(parsed.bodyTruncated).toBe(true);
+    expect(parsed.bodyLength).toBe(body.length);
+  });
+
+  it("S19 [P1] maxBodyLength: 0 returns the body verbatim (#1067)", async () => {
+    const body = `<details><summary>S</summary>${"y".repeat(10_000)}</details>`;
+    mockGh(JSON.stringify({ ...PR_VIEW_JSON, body }));
+    const { parsed } = await callAndValidate({ number: "123", maxBodyLength: 0, compact: false });
+    expect(parsed.body).toBe(body);
+    expect(parsed.bodyTruncated).toBeUndefined();
+  });
+
   it("S3 [P0] flag injection on number", async () => {
     await expect(callAndValidate({ number: "--exec=evil" })).rejects.toThrow();
   });
