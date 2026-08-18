@@ -3,15 +3,39 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
-const SERVER_PATH = resolve(__dirname, "../dist/index.js");
+const PKG_ROOT = resolve(__dirname, "..");
+const SERVER_PATH = resolve(PKG_ROOT, "dist/index.js");
+const SRC_DIR = resolve(PKG_ROOT, "src");
 const FIXTURES_DIR = resolve(__dirname, "fixtures");
 
 /** MCP SDK defaults to 60 s request timeout; override for CI where npx + cmd.exe is slow. */
 const CALL_TIMEOUT = { timeout: 180_000 };
+
+/**
+ * Content hash of every file under `dir`.
+ *
+ * Guards against a write/fix-mode tool being pointed at real repo source: any
+ * test that formats or fixes files must run against a temp fixture copy, never
+ * against `PKG_ROOT`. See issue #1034 — `biome format --write` needs no config
+ * file, so a "not configured" test aimed at the package root silently rewrote
+ * `src/lib/formatters.ts` in the working tree.
+ */
+function hashTree(dir: string): string {
+  const hash = createHash("sha256");
+  const entries = (readdirSync(dir, { recursive: true, encoding: "utf8" }) as string[]).sort();
+  for (const entry of entries) {
+    const full = join(dir, entry);
+    if (!statSync(full).isFile()) continue;
+    hash.update(entry.replace(/\\/g, "/"));
+    hash.update(readFileSync(full));
+  }
+  return hash.digest("hex");
+}
 
 // ---------------------------------------------------------------------------
 // Tool listing & schema tests
@@ -20,8 +44,11 @@ const CALL_TIMEOUT = { timeout: 180_000 };
 describe("@paretools/lint integration", () => {
   let client: Client;
   let transport: StdioClientTransport;
+  let srcHashBefore: string;
 
   beforeAll(async () => {
+    srcHashBefore = hashTree(SRC_DIR);
+
     transport = new StdioClientTransport({
       command: "node",
       args: [SERVER_PATH],
@@ -34,6 +61,9 @@ describe("@paretools/lint integration", () => {
 
   afterAll(async () => {
     await transport.close();
+    // No test in this file may mutate real package source — write/fix modes
+    // must always target a temp fixture copy.
+    expect(hashTree(SRC_DIR)).toBe(srcHashBefore);
   }, 30_000);
 
   it("lists all 9 tools", async () => {
@@ -242,11 +272,12 @@ describe("@paretools/lint integration", () => {
     });
 
     it("returns structured Prettier write result for already-formatted file", async () => {
-      const pkgPath = resolve(__dirname, "..");
+      // Must run against the temp copy, never the real package source: this is a
+      // --write invocation and would rewrite repo files in place.
       const result = await client.callTool(
         {
           name: "prettier-format",
-          arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] },
+          arguments: { path: tempDir, patterns: ["formatted.js"] },
         },
         undefined,
         CALL_TIMEOUT,
@@ -373,20 +404,26 @@ describe("@paretools/lint integration", () => {
 
   describe("biome-format", () => {
     let tempDir: string;
+    let unconfiguredDir: string;
 
     beforeEach(() => {
       tempDir = mkdtempSync(join(tmpdir(), "pare-lint-biome-"));
       cpSync(resolve(FIXTURES_DIR, "biome-project"), tempDir, { recursive: true });
+
+      // A project with no biome.json. Biome 2.x formats without a config, so this
+      // must be a temp copy too — pointing it at real source rewrites files (#1034).
+      unconfiguredDir = mkdtempSync(join(tmpdir(), "pare-lint-biome-noconfig-"));
+      cpSync(resolve(FIXTURES_DIR, "unconfigured-project"), unconfiguredDir, { recursive: true });
     });
 
     afterEach(() => {
       rmSync(tempDir, { recursive: true, force: true });
+      rmSync(unconfiguredDir, { recursive: true, force: true });
     });
 
     it("returns structured result when biome is not configured", async () => {
-      const pkgPath = resolve(__dirname, "..");
       const result = await client.callTool(
-        { name: "biome-format", arguments: { path: pkgPath, patterns: ["src/lib/formatters.ts"] } },
+        { name: "biome-format", arguments: { path: unconfiguredDir, patterns: ["src/"] } },
         undefined,
         CALL_TIMEOUT,
       );
