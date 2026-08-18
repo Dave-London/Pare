@@ -1,5 +1,42 @@
 import type { TestRun, Coverage } from "../../schemas/index.js";
 
+/** One "N label" token of pytest's final summary line ("3 passed", "1 xfailed",
+ *  "2 subtests passed"), or the literal "no tests ran". */
+const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran)`;
+
+/** The body of pytest's final summary line, e.g. "1 failed, 9 passed in 0.42s".
+ *  Deliberately anchored and strict: the ENTIRE body must be comma-separated
+ *  count tokens followed by a duration, so free text containing a number next to
+ *  a status word (e.g. the skip reason `port 5555 failed: Connection refused`)
+ *  can never be read as a count. See issues #1061 / #1045. */
+const PYTEST_SUMMARY_BODY_RE = new RegExp(
+  String.raw`^${PYTEST_COUNT_TOKEN}(?:,\s*${PYTEST_COUNT_TOKEN})*\s+in\s+[\d.]+s(?:\s*\([^)]*\))?$`,
+);
+
+/** Strips pytest's "=" rule padding: "==== 3 passed in 1s ====" -> "3 passed in 1s". */
+const PYTEST_RULE_RE = /^=+\s*(.*?)\s*=+$/;
+
+/** Finds pytest's own final summary line (also emitted undecorated under `-q`).
+ *  The LAST match wins; null means pytest never printed one, so counts stay zero
+ *  instead of being guessed from unrelated output. */
+function findPytestSummaryLine(lines: string[]): string | null {
+  let summary: string | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const ruled = line.match(PYTEST_RULE_RE);
+    const body = ruled ? ruled[1] : line;
+    if (PYTEST_SUMMARY_BODY_RE.test(body)) summary = body;
+  }
+  return summary;
+}
+
+function countFrom(summary: string | null, label: RegExp): number {
+  if (!summary) return 0;
+  const m = summary.match(label);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
 /**
  * Parses pytest verbose output (-v) into structured data.
  *
@@ -13,15 +50,15 @@ import type { TestRun, Coverage } from "../../schemas/index.js";
 export function parsePytestOutput(stdout: string): TestRun {
   const lines = stdout.split("\n");
 
-  // Parse summary line: "1 failed, 9 passed, 2 skipped in 0.42s"
-  const summaryMatch = stdout.match(
-    /=+ (?:(\d+) failed)?[, ]*(?:(\d+) passed)?[, ]*(?:(\d+) skipped)?[, ]*(?:(\d+) error)?[, ]*in ([\d.]+)s/,
-  );
+  // Counts come ONLY from pytest's final summary line
+  // ("1 failed, 9 passed, 2 skipped in 0.42s"), never from arbitrary output.
+  const summaryLine = findPytestSummaryLine(lines);
 
-  const failed = summaryMatch ? parseInt(summaryMatch[1] || "0", 10) : 0;
-  const passed = summaryMatch ? parseInt(summaryMatch[2] || "0", 10) : 0;
-  const skipped = summaryMatch ? parseInt(summaryMatch[3] || "0", 10) : 0;
-  const duration = summaryMatch ? parseFloat(summaryMatch[5] || "0") : 0;
+  const failed = countFrom(summaryLine, /(\d+) failed\b/);
+  const passed = countFrom(summaryLine, /(\d+) passed\b/);
+  const skipped = countFrom(summaryLine, /(\d+) skipped\b/);
+  const durationMatch = summaryLine?.match(/in ([\d.]+)s/);
+  const duration = durationMatch ? parseFloat(durationMatch[1]) : 0;
 
   // Parse failures from short test summary
   const failures: TestRun["failures"] = [];

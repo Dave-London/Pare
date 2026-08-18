@@ -286,3 +286,121 @@ describe("formatPytest", () => {
     expect(output).toContain("ModuleNotFoundError: No module named 'mypkg'");
   });
 });
+
+// Real shape of a run with Postgres-gated skips: the skip reason carries libpq's
+// "port 5555 failed: Connection refused" text, which the old line-by-line
+// scraper read as `failed: 5555`. See issues #1061 / #1045.
+const PYTEST_SKIP_REASON_WITH_PORT = [
+  "============================= test session starts =============================",
+  "platform win32 -- Python 3.13.1, pytest-8.3.4, pluggy-1.5.0",
+  "rootdir: C:\proj",
+  "plugins: anyio-4.6.2, asyncio-0.24.0, cov-6.0.0",
+  "collected 201 items",
+  "",
+  "tests/test_api.py ......................................          [ 25%]",
+  "tests/test_db.py ssss                                             [ 27%]",
+  "tests/test_engine.py ..................................           [100%]",
+  "",
+  "=========================== short test summary info ===========================",
+  'SKIPPED [1] tests/test_db.py:12: postgres_only: connection to server at "localhost" (127.0.0.1), port 5555 failed: Connection refused',
+  'SKIPPED [1] tests/test_db.py:20: postgres_only: connection to server at "localhost" (127.0.0.1), port 5555 failed: Connection refused',
+  "SKIPPED [2] tests/conftest.py:88: requires Postgres on port 5555",
+  "======================= 197 passed, 4 skipped in 12.34s =======================",
+].join("\n");
+
+describe("parsePytestOutput — counts come only from the summary line (#1061)", () => {
+  it("ignores numbers in skip reasons instead of scraping them as failures", () => {
+    const result = parsePytestOutput(PYTEST_SKIP_REASON_WITH_PORT, "", 0);
+
+    expect(result.failed).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.success).toBe(true);
+    expect(result.passed).toBe(197);
+    expect(result.skipped).toBe(4);
+    expect(result.failures).toEqual([]);
+  });
+
+  it("ignores a port number in a captured log line on stderr", () => {
+    const stderr = [
+      "WARNING  db.session:session.py:44 could not connect on port 5555 failed: Connection refused",
+    ].join("\n");
+
+    const result = parsePytestOutput("1465 passed, 12 skipped in 98.20s", stderr, 0);
+
+    expect(result.failed).toBe(0);
+    expect(result.passed).toBe(1465);
+    expect(result.skipped).toBe(12);
+    expect(result.success).toBe(true);
+  });
+
+  it("takes the last summary line when several are printed", () => {
+    const stdout = [
+      "==================== 1 failed, 1 passed in 0.50s ====================",
+      "Rerunning failed tests…",
+      "==================== 2 passed in 0.90s ====================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.passed).toBe(2);
+    expect(result.failed).toBe(0);
+    expect(result.success).toBe(true);
+  });
+
+  it("does not treat the short test summary header as a counts line", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "SKIPPED [1] tests/test_db.py:12: needs 5555 error budget",
+      "======================= 3 passed, 1 skipped in 0.42s =======================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.passed).toBe(3);
+    expect(result.skipped).toBe(1);
+    expect(result.errors).toBe(0);
+  });
+
+  it("reports zero rather than a fabricated count when no summary line exists", () => {
+    const stdout = [
+      "Connecting to fixture host…",
+      "connection to server at localhost, port 5555 failed: Connection refused",
+      "42 error budget exceeded",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.failed).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.passed).toBe(0);
+    expect(result.failures).toEqual([]);
+  });
+
+  it("never reports success alongside failures", () => {
+    // Defensive: a wrapper swallowing pytest's exit code must not flip the verdict.
+    const result = parsePytestOutput("==== 1 failed, 2 passed in 0.30s ====", "", 0);
+
+    expect(result.failed).toBe(1);
+    expect(result.success).toBe(false);
+  });
+
+  it("still parses the undecorated summary line emitted by pytest -q", () => {
+    const result = parsePytestOutput("....s\n4 passed, 1 skipped in 0.52s", "", 0);
+
+    expect(result.passed).toBe(4);
+    expect(result.skipped).toBe(1);
+    expect(result.failed).toBe(0);
+  });
+
+  it("parses a summary line with an elapsed-time suffix", () => {
+    const result = parsePytestOutput(
+      "==== 120 passed, 3 skipped in 3612.10s (1:00:12) ====",
+      "",
+      0,
+    );
+
+    expect(result.passed).toBe(120);
+    expect(result.skipped).toBe(3);
+    expect(result.failed).toBe(0);
+  });
+});

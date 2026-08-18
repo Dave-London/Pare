@@ -350,6 +350,40 @@ function extractCount(line: string, label: RegExp): number {
 /** Maximum size of the errorOutput diagnostic attached to failed empty pytest runs. */
 const PYTEST_ERROR_OUTPUT_MAX = 4_000;
 
+/** One "N label" token of pytest's final summary line ("3 passed", "1 xfailed",
+ *  "2 subtests passed"), or the literal "no tests ran". */
+const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran)`;
+
+/** The body of pytest's final summary line, e.g. "3 passed, 1 failed in 1.23s".
+ *  Deliberately anchored and strict: the ENTIRE body must be comma-separated
+ *  count tokens followed by a duration. Free text that merely happens to contain
+ *  a number followed by a status word — e.g. the psycopg skip reason
+ *  `port 5555 failed: Connection refused` — can never satisfy it, so counts are
+ *  never scraped out of arbitrary output. See issues #1061 / #1045. */
+const PYTEST_SUMMARY_BODY_RE = new RegExp(
+  String.raw`^${PYTEST_COUNT_TOKEN}(?:,\s*${PYTEST_COUNT_TOKEN})*\s+in\s+[\d.]+s(?:\s*\([^)]*\))?$`,
+);
+
+/** Strips pytest's "=" rule padding: "==== 3 passed in 1s ====" -> "3 passed in 1s". */
+const PYTEST_RULE_RE = /^=+\s*(.*?)\s*=+$/;
+
+/** Finds pytest's own final summary line (the `==== N passed, M failed in Xs ====`
+ *  line, also emitted undecorated under `-q`). The LAST match wins, since reruns
+ *  and plugins can emit more than one. Returns null when pytest never printed one
+ *  (crash before the summary, truncated capture) — counts are then unknown, not
+ *  guessed. */
+function findPytestSummaryLine(lines: string[]): string | null {
+  let summary: string | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const ruled = line.match(PYTEST_RULE_RE);
+    const body = ruled ? ruled[1] : line;
+    if (PYTEST_SUMMARY_BODY_RE.test(body)) summary = body;
+  }
+  return summary;
+}
+
 /** Picks the stream most likely to explain a failed pytest run.
  *  Collection errors ("ERRORS" section, ModuleNotFoundError) land on stdout;
  *  plugin/startup crashes (tracebacks) land on stderr. Prefers whichever stream
@@ -398,22 +432,23 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
   const output = stdout + "\n" + stderr;
   const lines = output.split("\n");
 
-  // Find the summary line (e.g., "=== 3 passed, 1 failed in 0.52s ===")
+  // Counts come ONLY from pytest's own final summary line
+  // (e.g. "=== 3 passed, 1 failed in 0.52s ==="), never from arbitrary output
+  // lines — a skip reason like "port 5555 failed: Connection refused" used to be
+  // scraped as `failed: 5555`. See issues #1061 / #1045.
+  const summaryLine = findPytestSummaryLine(lines);
   let passed = 0;
   let failed = 0;
   let errors = 0;
   let skipped = 0;
   let warnings = 0;
 
-  for (const line of lines) {
-    // Match lines containing pytest summary markers (== ... in Xs ==) or standalone counts
-    if (/\d+ (?:passed|failed|error|skipped|warning)/.test(line) || /in [\d.]+s/.test(line)) {
-      passed = Math.max(passed, extractCount(line, /(\d+) passed/));
-      failed = Math.max(failed, extractCount(line, /(\d+) failed/));
-      errors = Math.max(errors, extractCount(line, /(\d+) errors?/));
-      skipped = Math.max(skipped, extractCount(line, /(\d+) skipped/));
-      warnings = Math.max(warnings, extractCount(line, /(\d+) warnings?/));
-    }
+  if (summaryLine) {
+    passed = extractCount(summaryLine, /(\d+) passed\b/);
+    failed = extractCount(summaryLine, /(\d+) failed\b/);
+    errors = extractCount(summaryLine, /(\d+) errors?\b/);
+    skipped = extractCount(summaryLine, /(\d+) skipped\b/);
+    warnings = extractCount(summaryLine, /(\d+) warnings?\b/);
   }
 
   // Check for "no tests ran" case
@@ -468,9 +503,18 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     failures.push({ test: testName, message });
   }
 
+  // Consistency guard (#1061): a failure/error count must be traceable to either
+  // pytest's summary line or a parsed failure block. Without both, report zero
+  // rather than fabricating a number the rest of the payload contradicts.
+  if (!summaryLine && failures.length === 0) {
+    failed = 0;
+    errors = 0;
+  }
+
   return attachEmptyRunDiagnostics(
     {
-      success: exitCode === 0,
+      // A run with failures/errors is never a success, whatever the exit code says.
+      success: exitCode === 0 && failed === 0 && errors === 0,
       passed,
       failed,
       errors,
