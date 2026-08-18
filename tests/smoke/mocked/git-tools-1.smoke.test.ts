@@ -613,24 +613,46 @@ describe("Smoke: git.branch", () => {
     expect(Array.isArray(parsed.branches)).toBe(true);
   });
 
-  // S2: Create branch
-  it("S2 [P0] create branch", async () => {
+  // S2: Create branch — mutations return a confirmation, not the listing (#1037)
+  it("S2 [P0] create branch returns a compact confirmation", async () => {
     // git branch feature-x
     mockGit("");
-    // git branch -vv (listing after create)
-    mockGit("* main       abc1234 latest commit\n  feature-x  def5678 new branch\n");
     const { parsed } = await callAndValidate({ ...DEFAULTS, create: "feature-x" });
-    expect(parsed.current).toBe("main");
+    expect(parsed).toMatchObject({
+      success: true,
+      action: "create",
+      branch: "feature-x",
+      switched: false,
+    });
+    expect(parsed.branches).toBeUndefined();
+    // No listing call is made.
+    expect(vi.mocked(git).mock.calls).toHaveLength(1);
   });
 
-  // S3: Delete branch
-  it("S3 [P0] delete branch", async () => {
+  // S3: Delete branch — must not return the full listing (#1037)
+  it("S3 [P0] delete branch returns a compact confirmation", async () => {
     // git branch -d feature-x
     mockGit("Deleted branch feature-x (was def5678).");
-    // git branch -vv
-    mockGit("* main       abc1234 latest commit\n");
-    const { parsed } = await callAndValidate({ ...DEFAULTS, delete: "feature-x" });
-    expect(parsed.current).toBe("main");
+    const { parsed, result } = await callAndValidate({ ...DEFAULTS, delete: "feature-x" });
+    expect(parsed).toMatchObject({
+      success: true,
+      action: "delete",
+      deleted: ["feature-x"],
+      force: false,
+    });
+    expect(parsed.branches).toBeUndefined();
+    expect(parsed.current).toBeUndefined();
+    // No post-delete listing call.
+    expect(vi.mocked(git).mock.calls).toHaveLength(1);
+    expect((result.content as Array<{ text: string }>)[0].text).toContain("Deleted 1 branch(es)");
+  });
+
+  // S3b: Deleting many branches lists them all in one confirmation
+  it("S3b [P1] batch delete confirmation names every deleted branch", async () => {
+    mockGit("Deleted branch a (was 1111111).\nDeleted branch b (was 2222222).");
+    const { parsed } = await callAndValidate({ ...DEFAULTS, delete: ["a", "b"] });
+    expect(parsed.deleted).toEqual(["a", "b"]);
+    expect(vi.mocked(git).mock.calls).toHaveLength(1);
   });
 
   // S4: Flag injection in create
@@ -653,36 +675,41 @@ describe("Smoke: git.branch", () => {
     mockGit("");
     // git switch feat
     mockGit("Switched to branch 'feat'");
-    // git branch -vv
-    mockGit("  main  abc1234 latest commit\n* feat  def5678 new branch\n");
     const { parsed } = await callAndValidate({
       ...DEFAULTS,
       create: "feat",
       switchAfterCreate: true,
     });
-    expect(parsed.current).toBe("feat");
+    expect(parsed).toMatchObject({
+      success: true,
+      action: "create",
+      branch: "feat",
+      switched: true,
+    });
   });
 
   // S7: Create with start point
   it("S7 [P1] create with start point", async () => {
     // git branch feat HEAD~3
     mockGit("");
-    // git branch -vv
-    mockGit("* main  abc1234 latest\n  feat  1112222 older commit\n");
-    await callAndValidate({ ...DEFAULTS, create: "feat", startPoint: "HEAD~3" });
+    const { parsed } = await callAndValidate({
+      ...DEFAULTS,
+      create: "feat",
+      startPoint: "HEAD~3",
+    });
     const createArgs = vi.mocked(git).mock.calls[0][0];
     expect(createArgs).toContain("feat");
     expect(createArgs).toContain("HEAD~3");
+    expect(parsed.startPoint).toBe("HEAD~3");
   });
 
   // S8: Rename current branch
   it("S8 [P1] rename current branch", async () => {
     // git branch -m new-name
     mockGit("");
-    // git branch -vv
-    mockGit("* new-name  abc1234 latest commit\n");
     const { parsed } = await callAndValidate({ ...DEFAULTS, rename: "new-name" });
-    expect(parsed.current).toBe("new-name");
+    expect(parsed).toMatchObject({ success: true, action: "rename", branch: "new-name" });
+    expect(parsed.branches).toBeUndefined();
   });
 
   // S9: List all (including remotes)
@@ -705,9 +732,12 @@ describe("Smoke: git.branch", () => {
   it("S11 [P1] set upstream tracking", async () => {
     // git branch --set-upstream-to=origin/main
     mockGit("Branch 'main' set up to track 'origin/main'.");
-    // git branch -vv
-    mockGit("* main  abc1234 [origin/main] latest\n");
-    await callAndValidate({ ...DEFAULTS, setUpstream: "origin/main" });
+    const { parsed } = await callAndValidate({ ...DEFAULTS, setUpstream: "origin/main" });
+    expect(parsed).toMatchObject({
+      success: true,
+      action: "set-upstream",
+      upstream: "origin/main",
+    });
     const upstreamArgs = vi.mocked(git).mock.calls[0][0];
     expect(upstreamArgs.some((a: string) => a.includes("--set-upstream-to=origin/main"))).toBe(
       true,
@@ -718,11 +748,14 @@ describe("Smoke: git.branch", () => {
   it("S12 [P2] force delete unmerged branch", async () => {
     // git branch -D feat
     mockGit("Deleted branch feat (was abc1234).");
-    // git branch -vv
-    mockGit("* main  abc1234 latest\n");
-    await callAndValidate({ ...DEFAULTS, delete: "feat", forceDelete: true });
+    const { parsed } = await callAndValidate({
+      ...DEFAULTS,
+      delete: "feat",
+      forceDelete: true,
+    });
     const deleteArgs = vi.mocked(git).mock.calls[0][0];
     expect(deleteArgs).toContain("-D");
+    expect(parsed).toMatchObject({ action: "delete", deleted: ["feat"], force: true });
   });
 
   // S13: Sort by date (note: assertNoFlagInjection blocks leading "-")
@@ -745,7 +778,7 @@ describe("Smoke: git.branch", () => {
   it("S15 [P2] compact: false returns full branch data", async () => {
     mockGit(BRANCH_LIST);
     const { parsed } = await callAndValidate({ ...DEFAULTS, compact: false });
-    expect(parsed.branches.length).toBeGreaterThanOrEqual(1);
+    expect(parsed.branches!.length).toBeGreaterThanOrEqual(1);
   });
 
   // S16: Schema validation

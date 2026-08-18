@@ -173,26 +173,27 @@ This file contains scenario mappings for all 23 git tools in `@paretools/git`, e
 
 ### Scenarios
 
-| #   | Scenario                     | Params                                              | Expected Output                                  | Priority | Status   |
-| --- | ---------------------------- | --------------------------------------------------- | ------------------------------------------------ | -------- | -------- |
-| 1   | List branches                | `{ path }`                                          | `branches` array, `current` set to active branch | P0       | complete |
-| 2   | Create branch                | `{ path, create: "feature-x" }`                     | Branch created, appears in listing               | P0       | complete |
-| 3   | Delete branch                | `{ path, delete: "feature-x" }`                     | Branch deleted, removed from listing             | P0       | complete |
-| 4   | Flag injection in create     | `{ path, create: "--exec=evil" }`                   | `assertNoFlagInjection` throws                   | P0       | complete |
-| 5   | Not a git repo               | `{ path: "/tmp/not-a-repo" }`                       | Error thrown                                     | P0       | complete |
-| 6   | Create and switch            | `{ path, create: "feat", switchAfterCreate: true }` | Branch created, `current` now "feat"             | P1       | complete |
-| 7   | Create with start point      | `{ path, create: "feat", startPoint: "HEAD~3" }`    | Branch created from specified ref                | P1       | complete |
-| 8   | Rename current branch        | `{ path, rename: "new-name" }`                      | Branch renamed, `current` reflects new name      | P1       | complete |
-| 9   | List all (including remotes) | `{ path, all: true }`                               | Remote branches included in listing              | P1       | complete |
-| 10  | Filter merged branches       | `{ path, merged: true }`                            | Only merged branches returned                    | P1       | complete |
-| 11  | Set upstream                 | `{ path, setUpstream: "origin/main" }`              | Upstream tracking configured                     | P1       | complete |
-| 12  | Force delete unmerged        | `{ path, delete: "feat", forceDelete: true }`       | Unmerged branch deleted                          | P2       | complete |
-| 13  | Sort by date                 | `{ path, sort: "-committerdate" }`                  | Branches sorted by commit date                   | P2       | complete |
-| 14  | Contains filter              | `{ path, contains: "abc123" }`                      | Only branches containing commit                  | P2       | complete |
-| 15  | Compact vs full output       | `{ path, compact: false }`                          | Full branch data with upstream, lastCommit       | P2       | complete |
-| 16  | Schema validation            | all scenarios                                       | Output validates against `GitBranchSchema`       | P0       | complete |
+| #   | Scenario                     | Params                                              | Expected Output                                                          | Priority | Status   |
+| --- | ---------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ | -------- | -------- |
+| 1   | List branches                | `{ path }`                                          | `branches` array, `current` set to active branch                         | P0       | complete |
+| 2   | Create branch                | `{ path, create: "feature-x" }`                     | `{ success, action: "create", branch }` confirmation                     | P0       | complete |
+| 3   | Delete branch                | `{ path, delete: "feature-x" }`                     | `{ success, action: "delete", deleted, force }` confirmation, no listing | P0       | complete |
+| 3b  | Batch delete confirmation    | `{ path, delete: ["a", "b"] }`                      | `deleted` names every branch removed                                     | P1       | complete |
+| 4   | Flag injection in create     | `{ path, create: "--exec=evil" }`                   | `assertNoFlagInjection` throws                                           | P0       | complete |
+| 5   | Not a git repo               | `{ path: "/tmp/not-a-repo" }`                       | Error thrown                                                             | P0       | complete |
+| 6   | Create and switch            | `{ path, create: "feat", switchAfterCreate: true }` | Confirmation with `switched: true`                                       | P1       | complete |
+| 7   | Create with start point      | `{ path, create: "feat", startPoint: "HEAD~3" }`    | Confirmation carries `startPoint`                                        | P1       | complete |
+| 8   | Rename current branch        | `{ path, rename: "new-name" }`                      | `{ success, action: "rename", branch }` confirmation                     | P1       | complete |
+| 9   | List all (including remotes) | `{ path, all: true }`                               | Remote branches included in listing                                      | P1       | complete |
+| 10  | Filter merged branches       | `{ path, merged: true }`                            | Only merged branches returned                                            | P1       | complete |
+| 11  | Set upstream                 | `{ path, setUpstream: "origin/main" }`              | `{ success, action: "set-upstream", upstream }` confirmation             | P1       | complete |
+| 12  | Force delete unmerged        | `{ path, delete: "feat", forceDelete: true }`       | Unmerged branch deleted                                                  | P2       | complete |
+| 13  | Sort by date                 | `{ path, sort: "-committerdate" }`                  | Branches sorted by commit date                                           | P2       | complete |
+| 14  | Contains filter              | `{ path, contains: "abc123" }`                      | Only branches containing commit                                          | P2       | complete |
+| 15  | Compact vs full output       | `{ path, compact: false }`                          | Full branch data with upstream, lastCommit                               | P2       | complete |
+| 16  | Schema validation            | all scenarios                                       | Output validates against `GitBranchSchema`                               | P0       | complete |
 
-**Summary: P0=6, P1=5, P2=5, Total=16**
+**Summary: P0=6, P1=6, P2=5, Total=17**
 
 ---
 

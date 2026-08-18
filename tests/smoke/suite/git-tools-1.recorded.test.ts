@@ -317,7 +317,7 @@ describe("Recorded: git.branch", () => {
     // branch -vv (list call)
     mockGit(loadFixture("branch", "s01-list.txt"));
     const { parsed } = await callAndValidate({ compact: false });
-    expect(parsed.branches.length).toBeGreaterThanOrEqual(2);
+    expect(parsed.branches!.length).toBeGreaterThanOrEqual(2);
     expect(parsed.current).toBe("main");
     // Verify branch data (full mode returns objects)
     const branches = parsed.branches as Array<Record<string, unknown>>;
@@ -326,23 +326,26 @@ describe("Recorded: git.branch", () => {
     expect(main!.lastCommit).toMatch(/^[0-9a-f]{7,}$/);
   });
 
-  it("S2 [recorded] create branch (then list)", async () => {
-    // Call 1: git branch <name> (create)
+  it("S2 [recorded] create branch confirms, then a follow-up list shows it", async () => {
+    // Call 1: git branch <name> (create) — returns a confirmation, no listing (#1037)
     mockGit("");
-    // Call 2: git branch -vv (list)
+    const { parsed: created } = await callAndValidate({ create: "test-branch", compact: false });
+    expect(created).toMatchObject({ success: true, action: "create", branch: "test-branch" });
+    expect(created.branches).toBeUndefined();
+
+    // Call 2: a separate list call surfaces the new branch
     mockGit(loadFixture("branch", "s02-after-create.txt"));
-    const { parsed } = await callAndValidate({ create: "test-branch", compact: false });
-    expect(parsed.branches.length).toBeGreaterThanOrEqual(3);
+    const { parsed } = await callAndValidate({ compact: false });
+    expect(parsed.branches!.length).toBeGreaterThanOrEqual(3);
     const branches = parsed.branches as Array<Record<string, unknown>>;
-    const created = branches.find((b) => b.name === "test-branch");
-    expect(created).toBeDefined();
+    expect(branches.find((b) => b.name === "test-branch")).toBeDefined();
   });
 
   it("S9 [recorded] all branches including remotes", async () => {
     // branch -vv -a (list all)
     mockGit(loadFixture("branch", "s09-all.txt"));
     const { parsed } = await callAndValidate({ all: true, compact: false });
-    expect(parsed.branches.length).toBeGreaterThanOrEqual(2);
+    expect(parsed.branches!.length).toBeGreaterThanOrEqual(2);
     // Should include remote branches (full mode returns objects)
     const branches = parsed.branches as Array<Record<string, unknown>>;
     const remotes = branches.filter((b) => (b.name as string).startsWith("remotes/"));

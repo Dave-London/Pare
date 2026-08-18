@@ -83,5 +83,7 @@ Nothing specified, nothing added.
 
 - No compact mode; the response is already concise
 - After staging, Pare runs `git status --porcelain=v1` to determine which files are staged
-- File path resolution handles case sensitivity on Windows
+- File path resolution handles case sensitivity on Windows for single-file pathspecs;
+  `.`, directory, and glob pathspecs reach git untouched so they expand the way the CLI
+  expands them (#1057)
 - Either `files` or `all: true` must be provided; omitting both throws an error

@@ -68,6 +68,62 @@ Lists, creates, or deletes branches. Returns structured branch data.
 </tr>
 </table>
 
+## Success - Mutations (create / delete / rename / setUpstream)
+
+Mutations return a compact confirmation rather than the post-mutation listing. On repos
+with hundreds of branches the listing ran to tens of thousands of characters and blew past
+client output caps (#1037). Call `branch` again with no mutation param to list.
+
+<table>
+<tr><th></th><th>Standard CLI Output</th><th>Pare Response</th></tr>
+<tr>
+<td><strong>Delete</strong></td>
+<td>
+
+```
+Deleted branch feature/auth (was a1b2c3d).
+```
+
+</td>
+<td>
+
+```json
+{
+  "success": true,
+  "action": "delete",
+  "deleted": ["feature/auth"],
+  "force": false
+}
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Create</strong></td>
+<td>
+
+```
+
+```
+
+</td>
+<td>
+
+```json
+{
+  "success": true,
+  "action": "create",
+  "branch": "feature/auth",
+  "startPoint": "main",
+  "force": false,
+  "switched": false
+}
+```
+
+</td>
+</tr>
+</table>
+
 ## Token Savings
 
 | Scenario         | CLI Tokens | Pare Full | Pare Compact | Savings |
@@ -79,7 +135,11 @@ Lists, creates, or deletes branches. Returns structured branch data.
 
 ## Notes
 
-- Create uses `git checkout -b` internally, switching to the new branch
+- Create uses `git branch <name>` and only switches when `switchAfterCreate` is set
 - Delete uses `git branch -d` (safe delete); branches with unmerged changes will error
+- Mutations return `{ success, action, ... }` and omit `branches` / `current`; list mode
+  returns `{ branches, current }` and omits the mutation fields
+- When several mutations are combined in one call, the confirmation describes the last one
+  performed (rename -> setUpstream -> create -> delete)
 - Compact mode reduces branches to a simple string array, dropping `current` and `upstream` metadata per branch
 - The `current` field at the top level always identifies the active branch

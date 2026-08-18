@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
+  dualOutput,
   INPUT_LIMITS,
   compactInput,
   repoPathInput,
@@ -10,8 +11,13 @@ import {
 import { assertNoFlagInjection, assertValidSortKey } from "@paretools/shared";
 import { git } from "../lib/git-runner.js";
 import { parseBranch, parseRevListCount } from "../lib/parsers.js";
-import { formatBranch, compactBranchMap, formatBranchCompact } from "../lib/formatters.js";
-import { GitBranchSchema } from "../schemas/index.js";
+import {
+  formatBranch,
+  compactBranchMap,
+  formatBranchCompact,
+  formatBranchMutation,
+} from "../lib/formatters.js";
+import { GitBranchSchema, type GitBranchMutation } from "../schemas/index.js";
 
 /** Registers the `branch` tool on the given MCP server. */
 export function registerBranchTool(server: McpServer) {
@@ -20,7 +26,7 @@ export function registerBranchTool(server: McpServer) {
     {
       title: "Git Branch",
       description:
-        "Lists, creates, renames, or deletes branches. Returns structured branch data. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
+        "Lists, creates, renames, or deletes branches. List mode returns `{ branches, current }`. Mutations (create/delete/rename/setUpstream) return a compact confirmation `{ success, action, ... }` instead of the full listing — call again without a mutation param to list. When several mutations are combined in one call, the confirmation describes the last one performed. Pass `path` to target a specific repo or worktree — when omitted, operates on the server's own working directory, not the caller's (see #876).",
       annotations: { readOnlyHint: true },
       inputSchema: {
         path: repoPathInput,
@@ -130,6 +136,12 @@ export function registerBranchTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
 
+      // Mutations return a compact confirmation rather than the post-mutation
+      // listing, which on repos with many branches ran to tens of thousands of
+      // characters and overflowed client output caps (#1037). When more than one
+      // mutation is requested in a single call, the last one performed wins.
+      let mutation: GitBranchMutation | undefined;
+
       // Rename branch
       if (rename) {
         assertNoFlagInjection(rename, "branch name");
@@ -138,6 +150,7 @@ export function registerBranchTool(server: McpServer) {
         if (result.exitCode !== 0) {
           throw new Error(`Failed to rename branch: ${result.stderr}`);
         }
+        mutation = { success: true, action: "rename", branch: rename, force: !!force };
       }
 
       // Set upstream
@@ -147,6 +160,7 @@ export function registerBranchTool(server: McpServer) {
         if (result.exitCode !== 0) {
           throw new Error(`Failed to set upstream: ${result.stderr}`);
         }
+        mutation = { success: true, action: "set-upstream", upstream: setUpstream };
       }
 
       // Create branch
@@ -169,6 +183,15 @@ export function registerBranchTool(server: McpServer) {
             throw new Error(`Branch created but failed to switch: ${switchResult.stderr}`);
           }
         }
+
+        mutation = {
+          success: true,
+          action: "create",
+          branch: create,
+          ...(startPoint ? { startPoint } : {}),
+          force: !!force,
+          switched: !!switchAfterCreate,
+        };
       }
 
       // Delete branch(es)
@@ -200,6 +223,18 @@ export function registerBranchTool(server: McpServer) {
         if (result.exitCode !== 0) {
           throw new Error(`Failed to delete branch(es): ${result.stderr}`);
         }
+        mutation = {
+          success: true,
+          action: "delete",
+          deleted: [...branchesToDelete],
+          force: isForceDelete,
+        };
+      }
+
+      // A mutation was requested — return the compact confirmation and skip the
+      // (potentially huge) listing entirely.
+      if (mutation) {
+        return dualOutput(mutation, formatBranchMutation);
       }
 
       // List branches — always use -vv to get upstream tracking info

@@ -456,6 +456,53 @@ describe("@paretools/git write-tool integration", () => {
     });
   });
 
+  /** Lists branch names via the tool's list mode (no mutation params). */
+  async function listBranchNames(): Promise<string[]> {
+    const listed = await client.callTool(
+      { name: "branch", arguments: { path: tempDir, compact: false } },
+      undefined,
+      { timeout: CALL_TIMEOUT },
+    );
+    const sc = listed.structuredContent as Record<string, unknown>;
+    return (sc.branches as Record<string, unknown>[]).map((b) => b.name as string);
+  }
+
+  describe("branch list mode", () => {
+    it("returns the full listing when no mutation is requested", async () => {
+      const result = await client.callTool(
+        { name: "branch", arguments: { path: tempDir, compact: false } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(Array.isArray(sc.branches)).toBe(true);
+      expect(typeof sc.current).toBe("string");
+      // List mode carries no mutation confirmation fields.
+      expect(sc.action).toBeUndefined();
+    });
+  });
+
+  describe("branch mutation confirmations (#1037)", () => {
+    it("create returns a confirmation instead of the branch listing", async () => {
+      const result = await client.callTool(
+        { name: "branch", arguments: { path: tempDir, create: "confirm-create-test" } },
+        undefined,
+        { timeout: CALL_TIMEOUT },
+      );
+
+      expect(result.isError).toBeUndefined();
+      const sc = result.structuredContent as Record<string, unknown>;
+      expect(sc).toMatchObject({ success: true, action: "create", branch: "confirm-create-test" });
+      expect(sc.branches).toBeUndefined();
+      expect(sc.current).toBeUndefined();
+      expect(await listBranchNames()).toContain("confirm-create-test");
+
+      gitInTemp(["branch", "-D", "confirm-create-test"]);
+    });
+  });
+
   describe("branch forceDelete", () => {
     it("force-deletes with forceDelete=true and delete=branchName", async () => {
       // Create an unmerged branch so only -D works
@@ -472,9 +519,15 @@ describe("@paretools/git write-tool integration", () => {
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
       expect(sc).toBeDefined();
-      // The deleted branch should no longer appear in the list
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "fd-bool-test")).toBeUndefined();
+      // Deletes return a compact confirmation, not the full listing (#1037)
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["fd-bool-test"],
+        force: true,
+      });
+      expect(sc.branches).toBeUndefined();
+      expect(await listBranchNames()).not.toContain("fd-bool-test");
     });
 
     it("force-deletes with forceDelete=branchName (string)", async () => {
@@ -491,10 +544,14 @@ describe("@paretools/git write-tool integration", () => {
 
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
-      expect(sc).toBeDefined();
-      // The deleted branch should no longer appear in the list
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "fd-string-test")).toBeUndefined();
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["fd-string-test"],
+        force: true,
+      });
+      expect(sc.branches).toBeUndefined();
+      expect(await listBranchNames()).not.toContain("fd-string-test");
     });
   });
 
@@ -512,8 +569,14 @@ describe("@paretools/git write-tool integration", () => {
 
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "single-del-test")).toBeUndefined();
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["single-del-test"],
+        force: false,
+      });
+      expect(sc.branches).toBeUndefined();
+      expect(await listBranchNames()).not.toContain("single-del-test");
     });
 
     it("deletes an array of branches", async () => {
@@ -534,10 +597,16 @@ describe("@paretools/git write-tool integration", () => {
 
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "batch-del-1")).toBeUndefined();
-      expect(branches.find((b) => b.name === "batch-del-2")).toBeUndefined();
-      expect(branches.find((b) => b.name === "batch-del-3")).toBeUndefined();
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["batch-del-1", "batch-del-2", "batch-del-3"],
+      });
+      expect(sc.branches).toBeUndefined();
+      const remaining = await listBranchNames();
+      expect(remaining).not.toContain("batch-del-1");
+      expect(remaining).not.toContain("batch-del-2");
+      expect(remaining).not.toContain("batch-del-3");
     });
 
     it("fails when one branch in an array does not exist", async () => {
@@ -574,9 +643,16 @@ describe("@paretools/git write-tool integration", () => {
 
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "batch-fd-1")).toBeUndefined();
-      expect(branches.find((b) => b.name === "batch-fd-2")).toBeUndefined();
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["batch-fd-1", "batch-fd-2"],
+        force: true,
+      });
+      expect(sc.branches).toBeUndefined();
+      const left = await listBranchNames();
+      expect(left).not.toContain("batch-fd-1");
+      expect(left).not.toContain("batch-fd-2");
     });
 
     it("rejects flag injection in delete array elements", async () => {
@@ -615,9 +691,14 @@ describe("@paretools/git write-tool integration", () => {
 
       expect(result.isError).toBeUndefined();
       const sc = result.structuredContent as Record<string, unknown>;
-      expect(sc).toBeDefined();
-      const branches = sc.branches as Record<string, unknown>[];
-      expect(branches.find((b) => b.name === "fd-str-batch-test")).toBeUndefined();
+      expect(sc).toMatchObject({
+        success: true,
+        action: "delete",
+        deleted: ["fd-str-batch-test"],
+        force: true,
+      });
+      expect(sc.branches).toBeUndefined();
+      expect(await listBranchNames()).not.toContain("fd-str-batch-test");
     });
   });
 

@@ -2,6 +2,7 @@ import type {
   GitStatus,
   GitLog,
   GitDiff,
+  GitBranchMutation,
   GitBranchFull,
   GitShow,
   GitAdd,
@@ -96,6 +97,26 @@ export function formatBranch(b: GitBranchFull): string {
       return `${prefix}${br.name}${upstream}${merged}`;
     })
     .join("\n");
+}
+
+/** Formats a branch mutation confirmation into a one-line human-readable summary. */
+export function formatBranchMutation(m: GitBranchMutation): string {
+  const forced = m.force ? " (forced)" : "";
+  switch (m.action) {
+    case "delete": {
+      const names = m.deleted ?? [];
+      return `Deleted ${names.length} branch(es)${forced}: ${names.join(", ")}`;
+    }
+    case "create": {
+      const from = m.startPoint ? ` from ${m.startPoint}` : "";
+      const switched = m.switched ? " and switched to it" : "";
+      return `Created branch ${m.branch}${from}${forced}${switched}`;
+    }
+    case "rename":
+      return `Renamed current branch to ${m.branch}${forced}`;
+    case "set-upstream":
+      return `Set upstream to ${m.upstream}`;
+  }
 }
 
 /** Formats a blob extraction result into a human-readable view with file header. */

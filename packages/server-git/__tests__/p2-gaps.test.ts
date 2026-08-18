@@ -97,13 +97,21 @@ describe("Git P2 gaps", () => {
     const server = new FakeServer();
     registerBranchTool(server as never);
     const handler = server.tools.get("branch")!.handler;
-    vi.mocked(git)
-      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 })
-      .mockResolvedValueOnce({ stdout: "* main", stderr: "", exitCode: 0 });
+    // Mutations no longer list afterwards (#1037), so only the create call runs.
+    vi.mocked(git).mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 });
 
-    await handler({ create: "feature/new" });
+    const out = (await handler({ create: "feature/new" })) as {
+      structuredContent: Record<string, unknown>;
+    };
     expect(vi.mocked(git).mock.calls[0][0]).toEqual(["branch", "feature/new"]);
     expect(vi.mocked(git).mock.calls.some((c) => c[0][0] === "switch")).toBe(false);
+    expect(vi.mocked(git).mock.calls).toHaveLength(1);
+    expect(out.structuredContent).toMatchObject({
+      success: true,
+      action: "create",
+      branch: "feature/new",
+      switched: false,
+    });
   });
 
   it("#246 parses lastCommit in branch listings", () => {
