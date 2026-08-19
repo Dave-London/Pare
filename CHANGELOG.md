@@ -4946,5 +4946,4 @@ Run `pnpm changelog` to regenerate the sections below from per-package changelog
 - Updated dependencies [[`d08cf3d`](https://github.com/Dave-London/pare/commit/d08cf3d967e6a8ff9d65928aeed767fcf13f024d)]:
   - @paretools/shared@0.2.0
 
-
 <!-- END AGGREGATED CHANGELOG -->
