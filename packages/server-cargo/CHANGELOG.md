@@ -1,5 +1,12 @@
 # @paretools/cargo
 
+## 0.22.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.22.1
+
 ## 0.22.0
 
 ### Patch Changes
