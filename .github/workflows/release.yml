@@ -47,10 +47,10 @@ jobs:
           # Use our version script (changeset version + server.json sync) instead
           # of the action's default `changeset version`, so the "version packages"
           # PR keeps each server.json version aligned with its package.json.
-          version: pnpm version-packages
-          publish: pnpm release
-          title: "chore: version packages"
-          commit: "chore: version packages"
+          version-script: pnpm version-packages
+          publish-script: pnpm release
+          pr-title: "chore: version packages"
+          commit-message: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
