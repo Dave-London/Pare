@@ -822,7 +822,7 @@ describe("Smoke: github.issue-update", () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
-// 6. issue-view (13 scenarios)
+// 6. issue-view (16 scenarios)
 // ═════════════════════════════════════════════════════════════════════
 
 describe("Smoke: github.issue-view", () => {
@@ -875,6 +875,33 @@ describe("Smoke: github.issue-view", () => {
     expect(parsed.assignees).toEqual(["octocat"]);
     expect(parsed.url).toContain("/issues/42");
     expect(parsed.createdAt).toBeDefined();
+  });
+
+  it("S14 [P0] oversized body is collapsed + capped and flagged (#1067)", async () => {
+    const body = `Report\n<details>\n<summary>Logs</summary>\n${"log line\n".repeat(
+      900,
+    )}</details>`;
+    mockGh(sampleIssueJson({ body }));
+    const { parsed } = await callAndValidate({ number: "42", compact: false });
+    expect(parsed.body!.length).toBeLessThanOrEqual(4000);
+    expect(parsed.body).toContain("Logs […]");
+    expect(parsed.bodyTruncated).toBe(true);
+    expect(parsed.bodyLength).toBe(body.length);
+  });
+
+  it("S15 [P1] maxBodyLength: 0 returns the body verbatim (#1067)", async () => {
+    const body = `<details><summary>S</summary>${"y".repeat(10_000)}</details>`;
+    mockGh(sampleIssueJson({ body }));
+    const { parsed } = await callAndValidate({ number: "42", maxBodyLength: 0, compact: false });
+    expect(parsed.body).toBe(body);
+    expect(parsed.bodyTruncated).toBeUndefined();
+  });
+
+  it("S16 [P1] short body is untouched and unflagged (#1067)", async () => {
+    mockGh(sampleIssueJson());
+    const { parsed } = await callAndValidate({ number: "42", compact: false });
+    expect(parsed.body).toBe("Issue body text");
+    expect(parsed.bodyTruncated).toBeUndefined();
   });
 
   it("S2 [P0] issue not found", async () => {

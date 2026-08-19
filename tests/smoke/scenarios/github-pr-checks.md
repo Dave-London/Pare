@@ -99,11 +99,19 @@
 | 28  | PR number as branch name    | `{ number: "feature-branch" }`                         | Passes branch to gh CLI correctly                                  | P2       | complete |
 | 29  | watch: true (short timeout) | `{ number: "123", watch: true }`                       | `--watch` flag in args (actual watch behavior not tested in smoke) | P2       | complete |
 
+### Zero checks never conclude "passed" (#1077)
+
+| #   | Scenario                             | Params                                                         | Expected Output                                                           | Priority | Status   |
+| --- | ------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------- | -------- | -------- |
+| 30  | Empty checks array                   | `{ number: "123" }`                                            | `conclusion: "none"` — never `"passed"`                                   | P0       | complete |
+| 31  | gh "no checks reported" (exit 1)     | `{ number: "123" }`                                            | `errorType: "no-checks"`, `conclusion: "none"`, `summary.total == 0`      | P0       | complete |
+| 32  | watch with zero checks hits deadline | `{ number: "123", watch: true, interval: 5, watchTimeout: 1 }` | `conclusion: "timed_out"`, `timedOut: true`, `errorType: "watch-timeout"` | P0       | complete |
+
 ## Summary
 
 | Priority  | Count  | Mocked | Recorded | Complete |
 | --------- | ------ | ------ | -------- | -------- |
-| P0        | 12     | 12     | 0        | 12       |
+| P0        | 15     | 15     | 0        | 15       |
 | P1        | 12     | 12     | 0        | 12       |
 | P2        | 5      | 5      | 0        | 5        |
-| **Total** | **29** | **29** | **0**    | **29**   |
+| **Total** | **32** | **32** | **0**    | **32**   |

@@ -6,11 +6,12 @@ Views an issue by number. Returns structured data with state, labels, assignees,
 
 ## Input Parameters
 
-| Parameter | Type    | Default | Description                                                |
-| --------- | ------- | ------- | ---------------------------------------------------------- |
-| `number`  | number  | —       | Issue number                                               |
-| `path`    | string  | cwd     | Repository path                                            |
-| `compact` | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
+| Parameter       | Type    | Default | Description                                                |
+| --------------- | ------- | ------- | ---------------------------------------------------------- |
+| `number`        | string  | —       | Issue number or URL                                        |
+| `path`          | string  | cwd     | Repository path                                            |
+| `maxBodyLength` | number  | `4000`  | Character cap on `body`; `0` returns the body verbatim     |
+| `compact`       | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens |
 
 ## Success
 
@@ -87,6 +88,17 @@ View this issue on GitHub: https://github.com/owner/repo/issues/100
 | --------------- | ---------- | --------- | ------------ | ------- |
 | Issue with body | ~180       | ~80       | ~45          | 56-75%  |
 | Issue not found | ~25        | ~20       | ~20          | 20%     |
+
+## Body truncation (issue #1067)
+
+In full-schema mode `body` is shortened before it is returned: HTML `<details>…</details>` blocks
+are collapsed to their `<summary>` text plus a ` […]` marker, and what remains is capped at
+`maxBodyLength` characters (default `4000`). When anything was removed the payload carries
+`bodyTruncated: true` and `bodyLength` (the original character count), and the human-readable text
+adds a `body truncated …` line.
+
+Pass `maxBodyLength: 0` to disable both the collapse and the cap and get the body exactly as GitHub
+returned it.
 
 ## Notes
 

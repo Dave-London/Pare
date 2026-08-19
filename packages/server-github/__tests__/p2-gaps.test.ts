@@ -249,8 +249,22 @@ describe("GitHub P2 gaps", () => {
     const server = new FakeServer();
     registerPrChecksTool(server as never);
     const handler = server.tools.get("pr-checks")!.handler;
+    // A terminal check so the watch loop exits on the first poll — an empty
+    // checks array now keeps polling until the deadline (issue #1077).
     vi.mocked(ghCmd).mockResolvedValueOnce({
-      stdout: "[]",
+      stdout: JSON.stringify([
+        {
+          name: "build",
+          state: "SUCCESS",
+          bucket: "pass",
+          description: "",
+          event: "pull_request",
+          workflow: "CI",
+          link: "",
+          startedAt: "",
+          completedAt: "",
+        },
+      ]),
       stderr: "",
       exitCode: 0,
     });

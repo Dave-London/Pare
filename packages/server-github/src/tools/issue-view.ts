@@ -10,6 +10,7 @@ import {
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseIssueView } from "../lib/parsers.js";
 import { formatIssueView, compactIssueViewMap, formatIssueViewCompact } from "../lib/formatters.js";
+import { applyBodyCap, DEFAULT_MAX_BODY_LENGTH } from "../lib/body-truncate.js";
 import { IssueViewResultSchema } from "../schemas/index.js";
 
 // S-gap: Add stateReason, author, milestone, updatedAt, closedAt, isPinned, projectItems
@@ -23,7 +24,8 @@ export function registerIssueViewTool(server: McpServer) {
     {
       title: "Issue View",
       description:
-        "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body.",
+        "Views an issue by number or URL. Returns structured data with state, labels, assignees, author, milestone, close reason, and body. The `body` is capped at " +
+        `${DEFAULT_MAX_BODY_LENGTH} characters (HTML <details> blocks collapsed to their <summary> first) and flagged with \`bodyTruncated\`/\`bodyLength\`; raise or lift the cap with \`maxBodyLength\` (0 = verbatim).`,
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
         number: z.string().max(INPUT_LIMITS.STRING_MAX).describe("Issue number or URL"),
@@ -38,11 +40,20 @@ export function registerIssueViewTool(server: McpServer) {
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
         path: repoPathInput,
+        maxBodyLength: z.coerce
+          .number()
+          .int()
+          .min(0)
+          .max(1_000_000)
+          .optional()
+          .describe(
+            `Maximum characters kept in the returned body (default ${DEFAULT_MAX_BODY_LENGTH}). Before capping, HTML <details> blocks are collapsed to their <summary> text. Set to 0 to disable both and return the body verbatim.`,
+          ),
         compact: compactInput,
       },
       outputSchema: IssueViewResultSchema,
     },
-    async ({ number, comments, repo, path, compact }) => {
+    async ({ number, comments, repo, path, maxBodyLength, compact }) => {
       const cwd = path || process.cwd();
 
       if (repo) assertNoFlagInjection(repo, "repo");
@@ -59,7 +70,9 @@ export function registerIssueViewTool(server: McpServer) {
         throw new Error(`gh issue view failed: ${result.stderr}`);
       }
 
-      const data = parseIssueView(result.stdout);
+      // Issue #1067: cap the body so a very long issue description cannot blow
+      // the caller's token budget in full-schema mode.
+      const data = applyBodyCap(parseIssueView(result.stdout), maxBodyLength);
       return compactDualOutput(
         data,
         result.stdout,

@@ -447,13 +447,14 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Input params
 
-| Param      | Type    | Required | Notes               |
-| ---------- | ------- | -------- | ------------------- |
-| `number`   | string  | yes      | Issue number or URL |
-| `comments` | boolean | no       | Include comments    |
-| `repo`     | string  | no       | OWNER/REPO format   |
-| `path`     | string  | no       | Repository path     |
-| `compact`  | boolean | no       | Default: true       |
+| Param           | Type    | Required | Notes                         |
+| --------------- | ------- | -------- | ----------------------------- |
+| `number`        | string  | yes      | Issue number or URL           |
+| `comments`      | boolean | no       | Include comments              |
+| `repo`          | string  | no       | OWNER/REPO format             |
+| `path`          | string  | no       | Repository path               |
+| `maxBodyLength` | number  | no       | Body cap, default 4000; 0=off |
+| `compact`       | boolean | no       | Default: true                 |
 
 ### Scenarios
 
@@ -472,15 +473,18 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 11  | Issue with null body                     | `{ number: "42" }`                                      | `body: null`, no crash                                                          | P1       | complete |
 | 12  | Issue number as URL                      | `{ number: "https://github.com/owner/repo/issues/42" }` | Passes URL correctly                                                            | P2       | complete |
 | 13  | Issue with empty labels and assignees    | `{ number: "42" }`                                      | `labels: []`, `assignees: []`                                                   | P2       | complete |
+| 14  | Oversized body collapsed + capped        | `{ number: "42", compact: false }`                      | `<details>` collapsed, `body` <= 4000, `bodyTruncated: true`, `bodyLength` set  | P0       | complete |
+| 15  | maxBodyLength 0 returns body verbatim    | `{ number: "42", maxBodyLength: 0, compact: false }`    | `body` byte-identical to gh output, no `bodyTruncated`                          | P1       | complete |
+| 16  | Short body untouched and unflagged       | `{ number: "42", compact: false }`                      | `body` unchanged, `bodyTruncated` absent                                        | P1       | complete |
 
 ### Summary
 
 | Priority  | Count  |
 | --------- | ------ |
-| P0        | 6      |
-| P1        | 5      |
+| P0        | 7      |
+| P1        | 7      |
 | P2        | 2      |
-| **Total** | **13** |
+| **Total** | **16** |
 
 ---
 
@@ -918,44 +922,47 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 
 ### Input params
 
-| Param      | Type    | Required | Notes                          |
-| ---------- | ------- | -------- | ------------------------------ |
-| `number`   | string  | yes      | PR number, URL, or branch name |
-| `comments` | boolean | no       | Include PR comments            |
-| `repo`     | string  | no       | OWNER/REPO format              |
-| `path`     | string  | no       | Repository path                |
-| `compact`  | boolean | no       | Default: true                  |
+| Param           | Type    | Required | Notes                          |
+| --------------- | ------- | -------- | ------------------------------ |
+| `number`        | string  | yes      | PR number, URL, or branch name |
+| `comments`      | boolean | no       | Include PR comments            |
+| `repo`          | string  | no       | OWNER/REPO format              |
+| `path`          | string  | no       | Repository path                |
+| `maxBodyLength` | number  | no       | Body cap, default 4000; 0=off  |
+| `compact`       | boolean | no       | Default: true                  |
 
 ### Scenarios
 
-| #   | Scenario                         | Params                                                 | Expected Output                                                                    | Priority | Status   |
-| --- | -------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- | -------- | -------- |
-| 1   | View PR happy path               | `{ number: "123" }`                                    | All core fields populated: number, state, title, url, headBranch, baseBranch, etc. | P0       | complete |
-| 2   | PR not found                     | `{ number: "999999" }`                                 | Error thrown: "gh pr view failed"                                                  | P0       | complete |
-| 3   | Flag injection on number         | `{ number: "--exec=evil" }`                            | `assertNoFlagInjection` throws                                                     | P0       | complete |
-| 4   | Flag injection on repo           | `{ number: "123", repo: "--exec=evil" }`               | `assertNoFlagInjection` throws                                                     | P0       | complete |
-| 5   | Merged PR                        | `{ number: "123" }`                                    | `state: "MERGED"`, `mergeable` populated                                           | P0       | complete |
-| 6   | Draft PR                         | `{ number: "123" }`                                    | `isDraft: true`                                                                    | P0       | complete |
-| 7   | Include comments                 | `{ number: "123", comments: true }`                    | --comments flag passed                                                             | P1       | complete |
-| 8   | PR with checks                   | `{ number: "123" }`                                    | `checks` array populated, `checksTotal` set                                        | P1       | complete |
-| 9   | PR with reviews                  | `{ number: "123" }`                                    | `reviews` array with author, state, body                                           | P1       | complete |
-| 10  | PR with labels and assignees     | `{ number: "123" }`                                    | `labels`, `assignees` arrays populated                                             | P1       | complete |
-| 11  | PR with null body                | `{ number: "123" }`                                    | `body: null`, no crash                                                             | P1       | complete |
-| 12  | Compact vs full output           | `{ number: "123", compact: false }`                    | Full schema output                                                                 | P1       | complete |
-| 13  | Cross-repo view                  | `{ number: "123", repo: "owner/repo" }`                | --repo flag passed                                                                 | P1       | complete |
-| 14  | Diff stats (additions/deletions) | `{ number: "123" }`                                    | `additions`, `deletions`, `changedFiles` populated                                 | P1       | complete |
-| 15  | Commit info                      | `{ number: "123" }`                                    | `commitCount`, `latestCommitSha` populated                                         | P1       | complete |
-| 16  | PR number as URL                 | `{ number: "https://github.com/owner/repo/pull/123" }` | Passes URL correctly                                                               | P2       | complete |
-| 17  | PR number as branch name         | `{ number: "feature-branch" }`                         | Passes branch to gh CLI                                                            | P2       | complete |
+| #   | Scenario                          | Params                                                 | Expected Output                                                                    | Priority | Status   |
+| --- | --------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- | -------- | -------- |
+| 1   | View PR happy path                | `{ number: "123" }`                                    | All core fields populated: number, state, title, url, headBranch, baseBranch, etc. | P0       | complete |
+| 2   | PR not found                      | `{ number: "999999" }`                                 | Error thrown: "gh pr view failed"                                                  | P0       | complete |
+| 3   | Flag injection on number          | `{ number: "--exec=evil" }`                            | `assertNoFlagInjection` throws                                                     | P0       | complete |
+| 4   | Flag injection on repo            | `{ number: "123", repo: "--exec=evil" }`               | `assertNoFlagInjection` throws                                                     | P0       | complete |
+| 5   | Merged PR                         | `{ number: "123" }`                                    | `state: "MERGED"`, `mergeable` populated                                           | P0       | complete |
+| 6   | Draft PR                          | `{ number: "123" }`                                    | `isDraft: true`                                                                    | P0       | complete |
+| 7   | Include comments                  | `{ number: "123", comments: true }`                    | --comments flag passed                                                             | P1       | complete |
+| 8   | PR with checks                    | `{ number: "123" }`                                    | `checks` array populated, `checksTotal` set                                        | P1       | complete |
+| 9   | PR with reviews                   | `{ number: "123" }`                                    | `reviews` array with author, state, body                                           | P1       | complete |
+| 10  | PR with labels and assignees      | `{ number: "123" }`                                    | `labels`, `assignees` arrays populated                                             | P1       | complete |
+| 11  | PR with null body                 | `{ number: "123" }`                                    | `body: null`, no crash                                                             | P1       | complete |
+| 12  | Compact vs full output            | `{ number: "123", compact: false }`                    | Full schema output                                                                 | P1       | complete |
+| 13  | Cross-repo view                   | `{ number: "123", repo: "owner/repo" }`                | --repo flag passed                                                                 | P1       | complete |
+| 14  | Diff stats (additions/deletions)  | `{ number: "123" }`                                    | `additions`, `deletions`, `changedFiles` populated                                 | P1       | complete |
+| 15  | Commit info                       | `{ number: "123" }`                                    | `commitCount`, `latestCommitSha` populated                                         | P1       | complete |
+| 16  | PR number as URL                  | `{ number: "https://github.com/owner/repo/pull/123" }` | Passes URL correctly                                                               | P2       | complete |
+| 17  | PR number as branch name          | `{ number: "feature-branch" }`                         | Passes branch to gh CLI                                                            | P2       | complete |
+| 18  | Oversized body collapsed + capped | `{ number: "123", compact: false }`                    | `<details>` collapsed, `body` <= 4000, `bodyTruncated: true`, `bodyLength` set     | P0       | complete |
+| 19  | maxBodyLength 0 returns verbatim  | `{ number: "123", maxBodyLength: 0, compact: false }`  | `body` byte-identical to gh output, no `bodyTruncated`                             | P1       | complete |
 
 ### Summary
 
 | Priority  | Count  |
 | --------- | ------ |
-| P0        | 6      |
-| P1        | 9      |
+| P0        | 7      |
+| P1        | 10     |
 | P2        | 2      |
-| **Total** | **17** |
+| **Total** | **19** |
 
 ---
 
@@ -1320,7 +1327,7 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 5   | issue-create   | 12      | 6       | 1      | 19      |
 | 6   | issue-list     | 11      | 8       | 2      | 21      |
 | 7   | issue-update   | 14      | 8       | 1      | 23      |
-| 8   | issue-view     | 6       | 5       | 2      | 13      |
+| 8   | issue-view     | 7       | 7       | 2      | 16      |
 | 9   | pr-comment     | 7       | 5       | 1      | 13      |
 | 10  | pr-create      | 16      | 7       | 2      | 25      |
 | 11  | pr-diff        | 5       | 10      | 2      | 17      |
@@ -1328,7 +1335,7 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 13  | pr-merge       | 12      | 8       | 2      | 22      |
 | 14  | pr-review      | 12      | 4       | 1      | 17      |
 | 15  | pr-update      | 17      | 9       | 1      | 27      |
-| 16  | pr-view        | 6       | 9       | 2      | 17      |
+| 16  | pr-view        | 7       | 10      | 2      | 19      |
 | 17  | release-create | 12      | 9       | 4      | 25      |
 | 18  | release-list   | 5       | 7       | 1      | 13      |
 | 19  | run-list       | 9       | 10      | 2      | 21      |
@@ -1336,4 +1343,4 @@ Reference: `tests/smoke/scenarios/github-pr-checks.md` for format precedent.
 | 21  | run-view       | 6       | 8       | 1      | 15      |
 | 22  | label-list     | 6       | 4       | 0      | 10      |
 | 23  | label-create   | 9       | 2       | 1      | 12      |
-|     | **Totals**     | **216** | **159** | **37** | **412** |
+|     | **Totals**     | **218** | **162** | **37** | **417** |
