@@ -44,6 +44,9 @@ jobs:
         id: changesets
         uses: changesets/action@198f833dd7d863100ea6e28967bc9a9fdefadb0a # v2.1.0
         with:
+          # v2 requires the token as an input; the env GITHUB_TOKEN below must
+          # match it (changelog-github reads the env during `changeset version`).
+          github-token: ${{ steps.app-token.outputs.token }}
           # Use our version script (changeset version + server.json sync) instead
           # of the action's default `changeset version`, so the "version packages"
           # PR keeps each server.json version aligned with its package.json.
