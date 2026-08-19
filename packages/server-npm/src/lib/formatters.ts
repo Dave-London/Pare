@@ -32,7 +32,8 @@ export function formatInstall(data: NpmInstall, duration?: number): string {
     const maxShow = 10; // Limit display to avoid huge output
     const shown = data.packageDetails.slice(0, maxShow);
     for (const pkg of shown) {
-      lines.push(`  ${pkg.action}: ${pkg.name}@${pkg.version}`);
+      const version = pkg.previousVersion ? `${pkg.previousVersion} → ${pkg.version}` : pkg.version;
+      lines.push(`  ${pkg.action}: ${pkg.name}@${version}`);
     }
     if (data.packageDetails.length > maxShow) {
       lines.push(`  ... and ${data.packageDetails.length - maxShow} more`);

@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { parsePnpmAuditJson, parseOutdatedJson, parseInstallOutput } from "../src/lib/parsers.js";
+import {
+  parsePnpmAuditJson,
+  parseOutdatedJson,
+  parseInstallOutput,
+  parseInstallPackageDetails,
+  parsePnpmPackagesSummary,
+  collapseVersionBumps,
+  countInstallPackageDetails,
+} from "../src/lib/parsers.js";
+import { NpmInstallSchema } from "../src/schemas/index.js";
 
 describe("parsePnpmAuditJson", () => {
   it("parses npm-compatible format (pnpm v8+)", () => {
@@ -149,6 +158,146 @@ describe("parseInstallOutput with pnpm-style output", () => {
       "Packages: +52\n\nProgress: resolved 287, reused 235, downloaded 52, added 52\n\ndone in 3.5s\n\n52 packages in 3s";
     const result = parseInstallOutput(output);
 
-    expect(result.added).toBe(0); // pnpm uses "+52" format, not "added 52"
+    // pnpm uses the "Packages: +52" store line instead of npm's
+    // "added 52 packages" sentence — both must yield a non-zero count (#1081).
+    expect(result.added).toBe(52);
+  });
+});
+
+// ─── #1081: counters must agree with packageDetails ──────────────────────────
+
+/**
+ * Real `pnpm install --frozen-lockfile` output captured from pnpm 10.29.2 on a
+ * two-project workspace after bumping @types/node, picocolors and tsx, adding
+ * nanoid and dropping left-pad. pnpm prints no "added N packages" sentence, so
+ * the old parser returned added:0/removed:0/changed:0 alongside 8 detail rows.
+ */
+const PNPM10_FROZEN_WORKSPACE_BUMP = `Scope: all 2 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +6 -6
+++++++------
+Progress: resolved 6, reused 2, downloaded 4, added 6, done
+
+devDependencies:
+- @types/node 22.7.0
++ @types/node 22.9.0
+- left-pad 1.3.0
++ nanoid 5.0.9
+- picocolors 1.0.0
++ picocolors 1.1.1
+- tsx 4.19.0
++ tsx 4.20.3
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: esbuild@0.25.12.                                    │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 889ms using pnpm v10.29.2
+`;
+
+/**
+ * Same workspace, but only a transitive dependency moved — pnpm prints the
+ * store-level `Packages: +1 -1` line and no per-package detail rows at all.
+ */
+const PNPM10_FROZEN_TRANSITIVE_ONLY = `Scope: all 2 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +1 -1
++-
+Progress: resolved 1, reused 1, downloaded 0, added 1, done
+
+Done in 399ms using pnpm v10.29.2
+`;
+
+describe("#1081: pnpm 10 install counters agree with packageDetails", () => {
+  it("derives counts from packageDetails when pnpm prints no summary sentence", () => {
+    const result = parseInstallOutput(PNPM10_FROZEN_WORKSPACE_BUMP);
+
+    expect(result.added).toBe(1);
+    expect(result.removed).toBe(1);
+    expect(result.changed).toBe(3);
+  });
+
+  it("reports a same-name version bump as one updated entry with previousVersion", () => {
+    const result = parseInstallOutput(PNPM10_FROZEN_WORKSPACE_BUMP);
+    const details = result.packageDetails!;
+
+    expect(details).toContainEqual({
+      name: "@types/node",
+      version: "22.9.0",
+      action: "updated",
+      previousVersion: "22.7.0",
+    });
+    expect(details).toContainEqual({
+      name: "picocolors",
+      version: "1.1.1",
+      action: "updated",
+      previousVersion: "1.0.0",
+    });
+    expect(details).toContainEqual({
+      name: "tsx",
+      version: "4.20.3",
+      action: "updated",
+      previousVersion: "4.19.0",
+    });
+    // Genuine add / remove stay as-is
+    expect(details).toContainEqual({ name: "nanoid", version: "5.0.9", action: "added" });
+    expect(details).toContainEqual({ name: "left-pad", version: "1.3.0", action: "removed" });
+    expect(details).toHaveLength(5);
+  });
+
+  it("keeps counters consistent with the detail rows", () => {
+    const result = parseInstallOutput(PNPM10_FROZEN_WORKSPACE_BUMP);
+    const details = result.packageDetails ?? [];
+
+    expect(result.added).toBe(details.filter((d) => d.action === "added").length);
+    expect(result.removed).toBe(details.filter((d) => d.action === "removed").length);
+    expect(result.changed).toBe(details.filter((d) => d.action === "updated").length);
+  });
+
+  it("validates against the output schema", () => {
+    const result = parseInstallOutput(PNPM10_FROZEN_WORKSPACE_BUMP);
+    expect(NpmInstallSchema.safeParse({ ...result, packageManager: "pnpm" }).success).toBe(true);
+  });
+
+  it("falls back to pnpm's `Packages: +N -M` line when there are no details", () => {
+    const result = parseInstallOutput(PNPM10_FROZEN_TRANSITIVE_ONLY);
+
+    expect(result.packageDetails).toBeUndefined();
+    expect(result.added).toBe(1);
+    expect(result.removed).toBe(1);
+    expect(result.changed).toBe(0);
+  });
+
+  it("does not mistake pnpm's progress glyph line for package details", () => {
+    const details = parseInstallPackageDetails(PNPM10_FROZEN_TRANSITIVE_ONLY);
+    expect(details).toBeUndefined();
+  });
+
+  it("parses the store summary line in both directions", () => {
+    expect(parsePnpmPackagesSummary("Packages: +6 -6")).toEqual({ added: 6, removed: 6 });
+    expect(parsePnpmPackagesSummary("Packages: +52")).toEqual({ added: 52, removed: 0 });
+    expect(parsePnpmPackagesSummary("Packages: -3")).toEqual({ added: 0, removed: 3 });
+    expect(parsePnpmPackagesSummary("Progress: resolved 6, added 6")).toBeUndefined();
+  });
+
+  it("leaves an unpaired removal alone", () => {
+    expect(
+      collapseVersionBumps([{ name: "left-pad", version: "1.3.0", action: "removed" }]),
+    ).toEqual([{ name: "left-pad", version: "1.3.0", action: "removed" }]);
+  });
+
+  it("counts npm-style 'updated' entries as changed", () => {
+    expect(
+      countInstallPackageDetails([
+        { name: "a", version: "1", action: "added" },
+        { name: "b", version: "1", action: "removed" },
+        { name: "c", version: "2", action: "updated", previousVersion: "1" },
+      ]),
+    ).toEqual({ added: 1, removed: 1, changed: 1 });
   });
 });
