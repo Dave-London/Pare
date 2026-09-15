@@ -57,10 +57,10 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.5.2",
+    "@inquirer/prompts": "^8.7.2",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "smol-toml": "^1.8.0",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@paretools/tsconfig": "workspace:*",
