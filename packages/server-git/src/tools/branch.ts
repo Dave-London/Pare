@@ -254,7 +254,8 @@ export function registerBranchTool(server: McpServer) {
       }
       if (pattern) {
         assertNoFlagInjection(pattern, "pattern");
-        args.push(pattern);
+        // Without --list, git reads a bare name as a branch to create.
+        args.push("--list", pattern);
       }
       const result = await git(args, cwd);
 
