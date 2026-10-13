@@ -62,6 +62,33 @@ describe("@paretools/test integration", () => {
 
       expect(Array.isArray(sc.failures)).toBe(true);
       expect((sc.failures as unknown[]).length).toBe(0);
+      // `failed: 0` alone is not a pass: a suite hook failure sets `error` instead (#1174).
+      expect(sc.error).toBeUndefined();
+    });
+
+    it("does not report a throwing beforeAll as a pass (#1174)", async () => {
+      // The fixture has one file whose beforeAll throws and one file that passes.
+      // Vitest exits 1 with numFailedTests: 0, so only `error` and `failures` show it.
+      const fixturePath = resolve(__dirname, "fixtures/vitest-hook-failure");
+      const result = await client.callTool(
+        { name: "run", arguments: { path: fixturePath, framework: "vitest", compact: false } },
+        undefined,
+        CALL_TIMEOUT,
+      );
+
+      const sc = result.structuredContent as Record<string, unknown>;
+      const summary = sc.summary as Record<string, number>;
+      expect(summary).toMatchObject({ total: 2, passed: 1, failed: 0, skipped: 1 });
+
+      expect(sc.error).toMatch(/no test was reported as failed/);
+      expect(sc.error).toMatch(/not a passing run/);
+
+      const failures = sc.failures as Array<{ name: string; file?: string }>;
+      expect(failures).toHaveLength(1);
+      expect(failures[0].name).toBe("hook.probe.ts (suite-level failure)");
+
+      const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+      expect(text.startsWith("ERROR")).toBe(true);
     });
 
     it("returns error for directory with no test framework", async () => {

@@ -152,6 +152,18 @@ describe("formatTestRun", () => {
     expect(output).not.toMatch(/\bPASS\b/);
     expect(output).toContain("exited with code 1");
   });
+
+  it("never prints PASS above a failure entry, even with failed: 0 and no error (#1174)", () => {
+    // A suite-level failure is in `failures` without a failed test behind it.
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 2, passed: 1, failed: 0, skipped: 1, duration: 0.1 },
+      failures: [{ name: "a.test.ts (suite-level failure)", message: "hook threw" }],
+    };
+
+    expect(formatTestRun(run)).toMatch(/^FAIL \(vitest\)/);
+    expect(formatTestRunCompact(compactTestRunMap(run))).toMatch(/^FAIL \(vitest\)/);
+  });
 });
 
 describe("formatCoverage", () => {

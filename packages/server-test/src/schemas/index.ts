@@ -35,9 +35,10 @@ export const TestRunSchema = z.object({
     )
     .optional(),
   /**
-   * Present when the runner exited non-zero but reported no tests — i.e. the
-   * suite failed to load/collect (import/syntax error) or a filter matched
-   * nothing. A run with this field set MUST NOT be treated as a pass.
+   * Present when the runner exited non-zero but no test was counted as failed:
+   * the suite failed to load/collect, a filter matched nothing, a suite hook
+   * threw, or the runner itself failed. `summary.failed` can be 0 in that case,
+   * so a run with this field set MUST NOT be treated as a pass.
    */
   error: z.string().optional(),
 });

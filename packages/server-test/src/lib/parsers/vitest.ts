@@ -1,3 +1,4 @@
+import { stripAnsi } from "@paretools/shared";
 import type { TestRun, Coverage } from "../../schemas/index.js";
 
 /**
@@ -13,14 +14,43 @@ interface VitestJsonOutput {
   success: boolean;
   testResults: Array<{
     name: string;
+    /** File-level outcome. "failed" with no failed assertion means a hook or load error. */
+    status?: string;
+    /**
+     * File-level error text. Set for load errors and for hooks at the top level of
+     * the file; empty for a hook inside a `describe`, and when only a test failed.
+     */
+    message?: string;
     assertionResults: Array<{
       fullName: string;
-      status: "passed" | "failed" | "pending" | "todo";
+      status: "passed" | "failed" | "pending" | "todo" | "skipped";
       failureMessages: string[];
       duration?: number;
       location?: { line: number; column: number };
     }>;
   }>;
+}
+
+/** Marker in a failure's `name` for a file that failed outside any test. */
+const SUITE_FAILURE_LABEL = "(suite-level failure)";
+
+const SUITE_FAILURE_FALLBACK =
+  "The file failed outside any test: a beforeAll/afterAll hook threw, or setup failed. " +
+  "Vitest's JSON report does not include the error here; rerun this file without the JSON reporter to see it.";
+
+/**
+ * Condenses a file-level error for a failure entry. The first line alone is often
+ * a header ("Transform failed with 1 error:") with the cause on the next lines,
+ * and the text can carry ANSI colour codes.
+ */
+function summarizeSuiteMessage(message: string | undefined): string | undefined {
+  const lines = stripAnsi(message ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return undefined;
+  const text = lines.slice(0, 3).join(" ");
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
 }
 
 /**
@@ -61,6 +91,24 @@ export function parseVitestJson(jsonStr: string): TestRun {
           actual: actualMatch?.[1]?.trim(),
         });
       }
+    }
+
+    // A file can fail with no failed test: a hook threw (its tests are then
+    // reported as skipped, or even passed for afterAll) or the file failed to
+    // load. Vitest counts these under numFailedTestSuites, not numFailedTests,
+    // so without this they vanish and the run reads as green (#1174).
+    // A file-level message alongside a failed test is a second, separate failure
+    // (for example a top-level afterAll that also threw), so it is kept too.
+    const hasFailedTest = suite.assertionResults.some((t) => t.status === "failed");
+    const suiteMessage = summarizeSuiteMessage(suite.message);
+    if (suite.status === "failed" && (!hasFailedTest || suiteMessage)) {
+      const fileName = suite.name.split(/[\\/]/).pop() || suite.name;
+      failures.push({
+        // The compact view keeps only name and message, so the name carries the file.
+        name: `${fileName} ${SUITE_FAILURE_LABEL}`,
+        file: suite.name,
+        message: suiteMessage ?? SUITE_FAILURE_FALLBACK,
+      });
     }
   }
 
