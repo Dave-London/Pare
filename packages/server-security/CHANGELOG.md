@@ -1,5 +1,13 @@
 # @paretools/security
 
+## 0.23.0
+
+### Patch Changes
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `@modelcontextprotocol/sdk` 1.31.0 or newer, which fixes CVE-2026-104850 (OAuth client could send credentials to an authorization server chosen by the MCP server)
+- Updated dependencies [[`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724)]:
+  - @paretools/shared@0.23.0
+
 ## 0.22.2
 
 ### Patch Changes

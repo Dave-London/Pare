@@ -1,5 +1,19 @@
 # @paretools/github
 
+## 0.23.0
+
+### Minor Changes
+
+- [#1163](https://github.com/Dave-London/Pare/pull/1163) [`7dfae71`](https://github.com/Dave-London/Pare/commit/7dfae71bc64aa6baa2351704f5ce93b7f1f9b1e0) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(github): require `PARE_GITHUB_ALLOWED_ACCOUNTS` to use the `account` option on `pr-review` and `pr-merge`; the option is refused unless the account is listed
+
+- [#1160](https://github.com/Dave-London/Pare/pull/1160) [`56b0db8`](https://github.com/Dave-London/Pare/commit/56b0db84b4ad81b88e9fbf0505c4a8b88cf8dc38) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(github): add `account` option to `pr-review` and `pr-merge` to run a single call as another locally logged-in gh account without switching the active account
+
+### Patch Changes
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `@modelcontextprotocol/sdk` 1.31.0 or newer, which fixes CVE-2026-104850 (OAuth client could send credentials to an authorization server chosen by the MCP server)
+- Updated dependencies [[`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724)]:
+  - @paretools/shared@0.23.0
+
 ## 0.22.2
 
 ### Patch Changes
