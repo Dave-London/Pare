@@ -285,6 +285,34 @@ describe("Python P2 gaps", () => {
     expect(pytestVerbosityArg(false, ["--verbosity=0"])).toBe("--verbosity=0");
   });
 
+  it("#1118 counts -v inside short-option clusters, but not inside an option's value", () => {
+    // pytest accepts clustered flags such as -xvv.
+    expect(pytestVerbosityArg(false, ["-xvv"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(false, ["-vvx"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(true, ["-vvs"])).toBe("--verbosity=3");
+    expect(pytestVerbosityArg(false, ["-vq"])).toBe("--verbosity=1");
+    // After a value-taking option the rest of the token is its value.
+    expect(pytestVerbosityArg(false, ["-kvv"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-mvery_slow"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-pno:vcr"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-n4", "-rv"])).toBe("--verbosity=-1");
+    // Long options and positionals containing "v" are not flags.
+    expect(pytestVerbosityArg(false, ["--cov=src", "tests/v1", "-V"])).toBe("--verbosity=-1");
+  });
+
+  it("#1118 passes an explicit level through as written and ignores malformed ones", () => {
+    // Not reformatted: a huge value must reach pytest as the caller wrote it.
+    expect(pytestVerbosityArg(false, ["--verbosity=99999999999999999999999"])).toBe(
+      "--verbosity=99999999999999999999999",
+    );
+    // Malformed or missing values fall back to the counted level; pytest then
+    // reports its own usage error for the caller's argument.
+    expect(pytestVerbosityArg(true, ["--verbosity=abc"])).toBe("--verbosity=1");
+    expect(pytestVerbosityArg(false, ["--verbosity=1.5"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--verbosity"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--verbosity="])).toBe("--verbosity=-1");
+  });
+
   it("#1118 never lets the pin go below -1, whatever asks for less output", () => {
     expect(pytestVerbosityArg(false, ["-q"])).toBe("--verbosity=-1");
     expect(pytestVerbosityArg(false, ["-qq", "--quiet"])).toBe("--verbosity=-1");

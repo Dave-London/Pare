@@ -354,9 +354,15 @@ const PYTEST_ERROR_OUTPUT_MAX = 4_000;
 const PYTEST_UNPARSED_OUTPUT_MAX = 1_500;
 
 /** One "N label" token of pytest's final summary line ("3 passed", "1 xfailed",
- *  "2 subtests passed"), the literal "no tests ran", or the `--collect-only`
- *  forms ("5 tests collected", "1/5 tests collected (4 deselected)"). */
-const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran|(?:\d+(?:/\d+)?|no) tests? collected(?: \(\d+ deselected\))?)`;
+ *  "2 subtests passed", "5 tests collected"), the literal "no tests ran", or the
+ *  `--collect-only` forms the generic shape cannot express ("1/5 tests collected
+ *  (4 deselected)", "no tests collected (5 deselected)").
+ *
+ *  The alternatives MUST stay disjoint: no string may match two of them. The summary
+ *  regex repeats this token, so an overlap makes a long line of such tokens that
+ *  does not end in a duration backtrack exponentially, and this runs on every line
+ *  of test output. "N tests collected" is therefore left to the generic shape. */
+const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran|(?:\d+/\d+|no) tests collected(?: \(\d+ deselected\))?)`;
 
 /** The body of pytest's final summary line, e.g. "3 passed, 1 failed in 1.23s".
  *  Deliberately anchored and strict: the ENTIRE body must be comma-separated
@@ -455,8 +461,10 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     warnings = extractCount(summaryLine, /(\d+) warnings?\b/);
   }
 
-  // Check for "no tests ran" case
-  const noTests = output.includes("no tests ran");
+  // Check for "no tests ran" case. Exit 0 with no summary line is left to the
+  // counts-unavailable fallback below, even if the phrase appears in the output:
+  // pytest exits 5, not 0, when it really ran nothing.
+  const noTests = output.includes("no tests ran") && !(exitCode === 0 && !summaryLine);
   if (noTests && passed === 0 && failed === 0 && errors === 0) {
     return attachEmptyRunDiagnostics(
       {

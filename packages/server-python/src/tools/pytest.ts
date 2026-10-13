@@ -40,20 +40,41 @@ import { PytestResultSchema } from "../schemas/index.js";
  */
 export function pytestVerbosityArg(verbose: boolean | undefined, extraArgs?: string[]): string {
   let level = verbose ? 1 : 0;
-  let explicit: number | undefined;
+  let explicit: string | undefined;
   const args = extraArgs ?? [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--") break; // everything after a bare `--` is positional
-    if (/^-v+$/.test(arg)) level += arg.length - 1;
-    else if (arg === "--verbose") level += 1;
-    else if (arg.startsWith("--verbosity=")) explicit = Number(arg.slice("--verbosity=".length));
-    else if (arg === "--verbosity") explicit = Number(args[i + 1]);
+    if (arg === "--verbose") level += 1;
+    else if (arg.startsWith("--verbosity=")) explicit = arg.slice("--verbosity=".length);
+    else if (arg === "--verbosity") explicit = args[i + 1];
+    else level += countClusteredVerbose(arg);
   }
-  if (explicit !== undefined && Number.isInteger(explicit)) {
-    return `--verbosity=${Math.max(-1, explicit)}`;
+  // An explicit level is passed through as written (so pytest reports its own
+  // error for a bad one), except that it is not allowed to go below -1.
+  if (explicit !== undefined && /^-?\d+$/.test(explicit)) {
+    return `--verbosity=${Number(explicit) < -1 ? "-1" : explicit}`;
   }
   return `--verbosity=${level > 0 ? level : -1}`;
+}
+
+/** pytest short options that take a value; in a cluster, the rest of the token is that value. */
+const PYTEST_SHORT_OPTIONS_WITH_VALUE = new Set(["k", "m", "p", "c", "o", "r", "W", "n"]);
+
+/**
+ * Counts `v` flags in a short-option token: `-v` is 1, `-vv` is 2, and pytest also
+ * accepts clusters such as `-xvv`. Stops at a value-taking option, whose value is the
+ * rest of the token (`-kvv` is the keyword "vv", not two verbose flags).
+ */
+function countClusteredVerbose(arg: string): number {
+  if (!/^-[A-Za-z]/.test(arg) || arg.startsWith("--")) return 0;
+  let count = 0;
+  for (const ch of arg.slice(1)) {
+    if (PYTEST_SHORT_OPTIONS_WITH_VALUE.has(ch)) break;
+    if (!/[A-Za-z]/.test(ch)) return 0; // not a flag cluster (e.g. "-n4", "-x=1")
+    if (ch === "v") count++;
+  }
+  return count;
 }
 
 /**

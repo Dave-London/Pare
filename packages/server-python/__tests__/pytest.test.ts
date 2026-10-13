@@ -480,6 +480,27 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     expect(result.failures).toEqual([{ test: "test_bad", message: "assert 1 == 2" }]);
   });
 
+  it("still flags unknown counts when the output merely mentions 'no tests ran'", () => {
+    // pytest exits 5 when it ran nothing; exit 0 with this phrase in a log line is
+    // still a run whose summary could not be read.
+    const result = parsePytestOutput("....\nINFO retry: no tests ran yet, waiting", "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+  });
+
+  it("scans a long line of summary-like tokens in linear time", () => {
+    // Regression: when two alternatives of the count token both matched
+    // "5 tests collected", a line of N such tokens with no duration took 2^N steps
+    // (26 tokens: seconds; 40: hours). Any test can print such a line.
+    const line = Array.from({ length: 400 }, () => "5 tests collected").join(", ");
+    const started = performance.now();
+    const result = parsePytestOutput(`${line}\n3 passed in 0.10s`, "", 0);
+    const elapsed = performance.now() - started;
+
+    expect(result.passed).toBe(3);
+    expect(elapsed).toBeLessThan(1000);
+  });
+
   it("uses stderr for the tail when stdout is empty", () => {
     const result = parsePytestOutput("", "custom reporter: 4 ok", 0);
 
