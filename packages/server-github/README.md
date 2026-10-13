@@ -121,7 +121,9 @@ The option is off by default. Name the accounts the server may act as in its env
 }
 ```
 
-Without it, any call that passes `account` is refused. Set it only in the projects where a second identity is wanted, so other sessions cannot pick up every account in your `gh` keyring.
+Without it, any call that passes `account` is refused. Set it only in the projects where a second identity is wanted, so this server does not offer every account in your `gh` keyring to every session.
+
+This limits what the server will do; it is not a sandbox. A client that can run `gh` itself can still use any logged-in account. An entry applies on whichever host the token lookup uses (see `GH_HOST` below).
 
 Limits:
 

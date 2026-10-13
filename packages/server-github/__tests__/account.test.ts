@@ -34,6 +34,10 @@ describe("per-call gh account", () => {
     vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", "horza-bora,nobody");
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("refuses the account option when no allowlist is configured", async () => {
     for (const value of [undefined, "", " , "]) {
       vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", value);
@@ -63,17 +67,43 @@ describe("per-call gh account", () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
-  it("does not consult the allowlist when no account is given", async () => {
+  it("requires an exact allowlist match, with no wildcard or prefix matching", async () => {
+    for (const allowlist of ["horza-bora-2", "horza", "*", "horza-bora;nobody"]) {
+      vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", allowlist);
+
+      await expect(ghCmd(["pr", "merge", "12"], { account: "horza-bora" })).rejects.toThrow(
+        /is not allowed by PARE_GITHUB_ALLOWED_ACCOUNTS/,
+      );
+    }
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("pr-review and pr-merge refuse account when no allowlist is configured", async () => {
+    vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", undefined);
+    const server = new FakeServer();
+    registerPrReviewTool(server as never);
+    registerPrMergeTool(server as never);
+
+    await expect(
+      server.tools
+        .get("pr-review")!
+        .handler({ number: "12", event: "approve", account: "horza-bora", path: "/tmp/repo" }),
+    ).rejects.toThrow(/account option is disabled/);
+    await expect(
+      server.tools
+        .get("pr-merge")!
+        .handler({ number: "12", method: "squash", account: "horza-bora", path: "/tmp/repo" }),
+    ).rejects.toThrow(/account option is disabled/);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("leaves calls without an account alone when no allowlist is configured", async () => {
     vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", undefined);
     vi.mocked(run).mockResolvedValueOnce(ok());
 
     await ghCmd(["pr", "list"]);
 
     expect(run).toHaveBeenCalledTimes(1);
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   it("runs as the active account when no account is given", async () => {

@@ -24,8 +24,9 @@ export function assertAccountAllowed(account: string): void {
     .filter(Boolean);
   if (allowed.length === 0) {
     throw new Error(
-      `The account option is disabled. To let this server act as "${account}", ` +
-        `set ${ALLOWED_ACCOUNTS_ENV} to a comma-separated list of gh accounts in the server's environment.`,
+      `The account option is disabled, so this call cannot run as "${account}". ` +
+        `Whoever operates this server enables it by listing accounts in ${ALLOWED_ACCOUNTS_ENV}; ` +
+        "ask them rather than changing the server configuration yourself.",
     );
   }
   if (!allowed.includes(account.toLowerCase())) {
