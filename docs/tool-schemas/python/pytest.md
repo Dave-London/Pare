@@ -2,7 +2,7 @@
 
 Runs pytest and returns structured test results with pass/fail/error/skip counts and failure details.
 
-**Command**: `pytest --tb=short -q <targets>`
+**Command**: `pytest --tb=short --verbosity=-1 <targets>`
 
 ## Input Parameters
 
@@ -157,7 +157,8 @@ E       AssertionError: assert 404 == 200
 
 ## Notes
 
-- Uses `--tb=short` and `-q` by default for concise output; the `verbose` flag switches from `-q` to `-v`
+- Uses `--tb=short` and an absolute `--verbosity=-1` (the level `-q` gives) for concise output; the `verbose` flag makes it `--verbosity=1`. It is placed after `extraArgs`, so a `-q` or `-v` in `extraArgs` or in the project's `addopts` does not change the level. This matters because pytest omits its summary line at two levels of quiet, and the counts are read from that line
+- If pytest exits 0 but no summary line is found (for example a plugin replaced it), the result has `countsUnavailable: true` and the tail of the output in `errorOutput`; the zero counts then mean "unknown", not "no tests ran"
 - The `exitFirst` flag maps to `-x`, stopping on the first failure
 - The `markers` parameter maps to `-m` for pytest marker expressions (e.g., `"not slow"`, `"integration"`)
 - Failures are extracted from the short traceback blocks, capturing `E ` lines as the error message

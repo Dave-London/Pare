@@ -20,6 +20,23 @@ import { parsePytestOutput } from "../lib/parsers.js";
 import { formatPytest, compactPytestMap, formatPytestCompact } from "../lib/formatters.js";
 import { PytestResultSchema } from "../schemas/index.js";
 
+/**
+ * The verbosity flag for the run: quiet by default, verbose on request.
+ *
+ * It is an absolute `--verbosity=N`, and the caller must place it after every
+ * other option. `-q` and `-v` are relative: each one moves the level by one, and
+ * they add up across this tool, `extraArgs`, and the project's `addopts`. At two
+ * levels of quiet pytest stops printing its final summary line, which is the only
+ * place the counts come from, so a stray `-q` used to turn a passing run into
+ * `passed: 0` (#1118, #1110, #1092). The last verbosity option wins, so pinning
+ * it at the end makes the output shape independent of whatever came before.
+ *
+ * Exported for unit testing.
+ */
+export function pytestVerbosityArg(verbose: boolean | undefined): string {
+  return `--verbosity=${verbose ? 1 : -1}`;
+}
+
 /** Registers the `pytest` tool on the given MCP server. */
 export function registerPytestTool(server: McpServer) {
   server.registerTool(
@@ -168,9 +185,8 @@ export function registerPytestTool(server: McpServer) {
       }
 
       const tbStyle = tracebackStyle || "short";
-      const args = [`--tb=${tbStyle}`, "-q"];
+      const args = [`--tb=${tbStyle}`];
 
-      if (verbose) args.splice(args.indexOf("-q"), 1, "-v");
       if (exitFirst) args.push("-x");
       if (maxFail !== undefined) args.push(`--maxfail=${maxFail}`);
       if (collectOnly) args.push("--collect-only");
@@ -182,6 +198,7 @@ export function registerPytestTool(server: McpServer) {
       if (parallel != null) args.push("-n", String(parallel));
       if (configFile) args.push("-c", configFile);
       if (extraArgs && extraArgs.length > 0) args.push(...extraArgs);
+      args.push(pytestVerbosityArg(verbose));
       if (targets && targets.length > 0) args.push(...targets);
 
       const result = await pytest(args, cwd, pythonPath, env);

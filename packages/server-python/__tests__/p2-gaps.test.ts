@@ -223,7 +223,52 @@ describe("Python P2 gaps", () => {
     await handler({ extraArgs: ["-p", "no:logfire"], targets: ["tests/"], compact: false });
 
     const args = vi.mocked(pytest).mock.calls[0][0] as string[];
-    expect(args.slice(-3)).toEqual(["-p", "no:logfire", "tests/"]);
+    expect(args.slice(-4)).toEqual(["-p", "no:logfire", "--verbosity=-1", "tests/"]);
+  });
+
+  // pytest drops its summary line at two levels of quiet, and -q flags add up across
+  // the tool, extraArgs and the project's addopts. The last verbosity option wins, so
+  // the tool pins an absolute level after everything else (#1118, #1110, #1092).
+  it("#1118 pins verbosity after extraArgs so a caller's -q cannot stack", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "19 passed in 5.67s",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({
+      extraArgs: ["-p", "no:logfire", "-q", "--timeout=60"],
+      targets: ["tests/api/test_a.py", "tests/test_b.py"],
+      compact: false,
+    });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    // The tool no longer adds a relative -q of its own.
+    expect(args.filter((a) => a === "-q")).toEqual(["-q"]);
+    expect(args.indexOf("--verbosity=-1")).toBeGreaterThan(args.lastIndexOf("-q"));
+    expect(args.indexOf("--verbosity=-1")).toBeLessThan(args.indexOf("tests/api/test_a.py"));
+    expect(args.slice(-2)).toEqual(["tests/api/test_a.py", "tests/test_b.py"]);
+  });
+
+  it("#1118 pins verbosity to 1 when verbose is requested", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "==== 1 passed in 0.1s ====",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ verbose: true, compact: false });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    expect(args).toContain("--verbosity=1");
+    expect(args).not.toContain("-v");
+    expect(args).not.toContain("-q");
   });
 
   it("#984 rejects env keys that are not valid variable names", async () => {

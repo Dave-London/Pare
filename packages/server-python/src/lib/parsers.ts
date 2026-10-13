@@ -350,6 +350,9 @@ function extractCount(line: string, label: RegExp): number {
 /** Maximum size of the errorOutput diagnostic attached to failed empty pytest runs. */
 const PYTEST_ERROR_OUTPUT_MAX = 4_000;
 
+/** Maximum size of the output tail attached when a passing run's summary line is missing. */
+const PYTEST_UNPARSED_OUTPUT_MAX = 1_500;
+
 /** One "N label" token of pytest's final summary line ("3 passed", "1 xfailed",
  *  "2 subtests passed"), or the literal "no tests ran". */
 const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran)`;
@@ -449,6 +452,33 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     errors = extractCount(summaryLine, /(\d+) errors?\b/);
     skipped = extractCount(summaryLine, /(\d+) skipped\b/);
     warnings = extractCount(summaryLine, /(\d+) warnings?\b/);
+  }
+
+  // pytest exits 0 only when it collected at least one test and none failed
+  // (collecting nothing is exit 5). So exit 0 with no summary line means the
+  // counts are unknown, not zero: pytest ran quieter than expected, or a plugin
+  // replaced the summary. Say so instead of returning a clean `passed: 0`, which
+  // reads as "nothing ran" or, worse, as a pass with nothing to report (#1092, #1153).
+  if (exitCode === 0 && !summaryLine) {
+    const tail = stdout.trim();
+    return {
+      success: true,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      countsUnavailable: true,
+      ...(tail
+        ? {
+            errorOutput:
+              tail.length > PYTEST_UNPARSED_OUTPUT_MAX
+                ? `… (output truncated)\n${tail.slice(-PYTEST_UNPARSED_OUTPUT_MAX)}`
+                : tail,
+          }
+        : {}),
+    };
   }
 
   // Check for "no tests ran" case

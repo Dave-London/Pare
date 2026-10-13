@@ -221,6 +221,25 @@ describe("formatPytest", () => {
     expect(formatPytest(data)).toBe("pytest: no tests collected.");
   });
 
+  it("does not say 'no tests collected' when the counts are merely unknown", () => {
+    const data: PytestResult = {
+      success: true,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      countsUnavailable: true,
+      errorOutput: "....s  [100%]",
+    };
+    const text = formatPytest(data);
+
+    expect(text).not.toContain("no tests collected");
+    expect(text).toMatch(/^pytest: passed \(exit code 0\), but its summary line was not found/);
+    expect(text).toContain("....s  [100%]");
+  });
+
   it("formats all passing", () => {
     const data: PytestResult = {
       success: true,
@@ -390,6 +409,63 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     expect(result.passed).toBe(4);
     expect(result.skipped).toBe(1);
     expect(result.failed).toBe(0);
+  });
+
+  // Real pytest 9.1.1 output at two levels of quiet (`--tb=short -q -q`): the progress
+  // line and the warnings section are there, the final "N passed" line is not.
+  const PYTEST_QQ_NO_SUMMARY = [
+    "....s                                                                    [100%]",
+    "=============================== warnings summary ===============================",
+    "tests/test_a.py::test_warn",
+    "  /project/tests/test_a.py:5: UserWarning: careful",
+    '    warnings.warn("careful", UserWarning)',
+    "",
+    "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+  ].join("\n");
+
+  it("flags a passing run whose summary line is missing instead of reporting clean zeros", () => {
+    const result = parsePytestOutput(PYTEST_QQ_NO_SUMMARY, "", 0);
+
+    // Exit 0 means pytest collected tests and none failed, so this is a pass...
+    expect(result.success).toBe(true);
+    // ...but the counts are unknown, and the result must say so (#1092, #1153).
+    expect(result.countsUnavailable).toBe(true);
+    expect(result).toMatchObject({ passed: 0, failed: 0, errors: 0, skipped: 0 });
+    // The raw tail is kept so a custom summary is still visible to the caller.
+    expect(result.errorOutput).toContain("[100%]");
+  });
+
+  it("does not flag counts as unavailable when the summary line is present", () => {
+    const withSummary = `${PYTEST_QQ_NO_SUMMARY}\n4 passed, 1 skipped, 1 warning in 0.01s`;
+    const result = parsePytestOutput(withSummary, "", 0);
+
+    expect(result.countsUnavailable).toBeUndefined();
+    expect(result).toMatchObject({ success: true, passed: 4, skipped: 1, warnings: 1 });
+    expect(result.errorOutput).toBeUndefined();
+  });
+
+  it("does not flag counts as unavailable for collect-only or no-tests output", () => {
+    // Real pytest 9.1.1: `--collect-only` at verbosity -1, and `-k` matching nothing (exit 5).
+    const collectOnly = parsePytestOutput(
+      "tests/test_a.py::test_one\ntests/test_a.py::test_two\n\n2 tests collected in 0.00s",
+      "",
+      0,
+    );
+    expect(collectOnly.countsUnavailable).toBeUndefined();
+    expect(collectOnly.success).toBe(true);
+
+    const deselected = parsePytestOutput("\n5 deselected in 0.00s", "", 5);
+    expect(deselected.countsUnavailable).toBeUndefined();
+  });
+
+  it("truncates the raw tail kept for an unparsed passing run", () => {
+    const long = `${"x".repeat(5000)}\nlast line of output`;
+    const result = parsePytestOutput(long, "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.errorOutput).toContain("last line of output");
+    expect(result.errorOutput).toContain("output truncated");
+    expect(result.errorOutput!.length).toBeLessThan(2000);
   });
 
   it("parses a summary line with an elapsed-time suffix", () => {

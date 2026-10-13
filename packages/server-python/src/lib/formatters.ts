@@ -118,8 +118,16 @@ export function formatPipAudit(data: PipAuditResult): string {
   return lines.join("\n");
 }
 
+const PYTEST_COUNTS_UNAVAILABLE =
+  "pytest: passed (exit code 0), but its summary line was not found, so test counts are unknown.";
+
 /** Formats structured pytest results into a human-readable test summary. */
 export function formatPytest(data: PytestResult): string {
+  if (data.countsUnavailable) {
+    return data.errorOutput
+      ? `${PYTEST_COUNTS_UNAVAILABLE}\n${data.errorOutput}`
+      : PYTEST_COUNTS_UNAVAILABLE;
+  }
   const total = data.passed + data.failed + data.errors + data.skipped;
   if (total === 0) {
     if (data.success) return "pytest: no tests collected.";
@@ -234,8 +242,8 @@ export function formatBlack(data: BlackResult): string {
 // ── Compact types, mappers, and formatters ───────────────────────────
 
 /** Compact pytest: counts + failure test names only (no stack traces).
- *  Diagnostics (exitCode/errorOutput) are kept: they only appear on failed runs
- *  with no test results, where they are the sole actionable signal. */
+ *  Diagnostics (exitCode/errorOutput/countsUnavailable) are kept: they only appear
+ *  when results could not be parsed, where they are the sole actionable signal. */
 export interface PytestResultCompact {
   [key: string]: unknown;
   success: boolean;
@@ -247,6 +255,7 @@ export interface PytestResultCompact {
   failedTests: string[];
   exitCode?: number;
   errorOutput?: string;
+  countsUnavailable?: boolean;
 }
 
 export function compactPytestMap(data: PytestResult): PytestResultCompact {
@@ -261,10 +270,16 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
   };
   if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   if (data.errorOutput !== undefined) compact.errorOutput = data.errorOutput;
+  if (data.countsUnavailable) compact.countsUnavailable = true;
   return compact;
 }
 
 export function formatPytestCompact(data: PytestResultCompact): string {
+  if (data.countsUnavailable) {
+    return data.errorOutput
+      ? `${PYTEST_COUNTS_UNAVAILABLE}\n${data.errorOutput}`
+      : PYTEST_COUNTS_UNAVAILABLE;
+  }
   const total = data.passed + data.failed + data.errors + data.skipped;
   if (total === 0) {
     if (data.success) return "pytest: no tests collected.";
