@@ -25,6 +25,52 @@ describe("parseVitestJson", () => {
     expect(fail.actual).toContain('{"nested": false}');
   });
 
+  // Real Vitest 4.1.10 reports. In all of them numFailedTests is 0 and the
+  // runner exits 1, so the suite-level failure is the only sign of trouble (#1174).
+  describe("suite-level failures", () => {
+    it("reports a throwing beforeAll, whose tests Vitest marks as skipped", () => {
+      const result = parseVitestJson(fixture("vitest-json-hook-before-all.json"));
+
+      expect(result.summary).toMatchObject({ total: 2, passed: 0, failed: 0, skipped: 2 });
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].name).toBe("before-all.test.ts (suite-level failure)");
+      expect(result.failures[0].file).toBe("/project/__tests__/before-all.test.ts");
+      // Vitest's JSON carries no error text for a hook failure; say so rather than leave it blank.
+      expect(result.failures[0].message).toMatch(/beforeAll\/afterAll hook threw/);
+    });
+
+    it("reports a throwing afterAll even though every test passed", () => {
+      const result = parseVitestJson(fixture("vitest-json-hook-after-all.json"));
+
+      expect(result.summary).toMatchObject({ total: 1, passed: 1, failed: 0 });
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].name).toBe("after-all.test.ts (suite-level failure)");
+    });
+
+    it("reports a file that failed to load alongside files that passed, with Vitest's message", () => {
+      const result = parseVitestJson(fixture("vitest-json-load-error-mixed.json"));
+
+      expect(result.summary).toMatchObject({ total: 1, passed: 1, failed: 0 });
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].name).toBe("load-error.test.ts (suite-level failure)");
+      expect(result.failures[0].message).toContain("Cannot find module './does-not-exist.js'");
+    });
+
+    it("flags only the failed file when a hook failure is mixed with passing files", () => {
+      const result = parseVitestJson(fixture("vitest-json-hook-before-all-mixed.json"));
+
+      expect(result.summary).toMatchObject({ total: 3, passed: 1, failed: 0, skipped: 2 });
+      expect(result.failures.map((f) => f.file)).toEqual(["/project/__tests__/before-all.test.ts"]);
+    });
+
+    it("does not add a suite-level entry for a file that already has a failed test", () => {
+      const result = parseVitestJson(fixture("vitest-json.json"));
+
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].name).not.toContain("suite-level failure");
+    });
+  });
+
   it("parses coverage-summary JSON", () => {
     const json = JSON.stringify({
       total: {

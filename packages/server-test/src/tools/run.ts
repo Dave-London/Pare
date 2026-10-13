@@ -257,23 +257,28 @@ export function buildRunExtraArgs(
 }
 
 /**
- * Detects a "silent green" load/collection failure and attaches a top-level
- * `error` so callers never mistake it for a pass.
+ * Detects a "silent green" run and attaches a top-level `error` so callers never
+ * mistake it for a pass.
  *
- * When a test file throws at import/collection time (syntax error, bad import),
- * or a filter matches no tests, the runner exits non-zero but the parsed totals
- * are `{ total: 0, failed: 0 }` — which reads as PASS. If the runner exited
- * non-zero AND no tests/failures were parsed, we surface an `error` describing
- * the failure (with the runner's stderr/stdout for context).
+ * The runner's exit code is the ground truth. If it is non-zero but no test was
+ * counted as failed, something failed that the per-test counts do not show:
  *
- * Exported for unit testing. See issues #928 and #931.
+ * - zero tests reported: a file threw at import/collection time (syntax error,
+ *   bad import) or a filter matched nothing (#928, #931);
+ * - tests reported, none failed: a suite hook threw, one file failed to load
+ *   while others ran, a coverage threshold was missed, or the runner itself
+ *   failed (#1174).
+ *
+ * Either way `{ failed: 0 }` alone would read as PASS, so we surface an `error`
+ * describing it (with the runner's stderr/stdout for context).
+ *
+ * Exported for unit testing.
  */
 export function surfaceLoadFailure(
   testRun: TestRun,
   result: { exitCode: number; stdout: string; stderr: string },
 ): TestRun {
-  const noResults = testRun.summary.total === 0 && testRun.failures.length === 0;
-  if (result.exitCode === 0 || !noResults) {
+  if (result.exitCode === 0 || testRun.summary.failed > 0) {
     return testRun;
   }
 
@@ -282,11 +287,16 @@ export function surfaceLoadFailure(
   const truncated =
     detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL)}\n… (output truncated)` : detail;
 
-  const message =
-    `Test runner exited with code ${result.exitCode} but reported no tests. ` +
-    `The suite likely failed to load or collect (import/syntax error), or a filter matched no tests. ` +
-    `This is not a passing run.` +
-    (truncated ? `\n${truncated}` : "");
+  const cause =
+    testRun.summary.total === 0
+      ? `Test runner exited with code ${result.exitCode} but reported no tests. ` +
+        `The suite likely failed to load or collect (import/syntax error), or a filter matched no tests.`
+      : `Test runner exited with code ${result.exitCode} but no test was reported as failed. ` +
+        `Something failed outside the tests: a suite hook (beforeAll/afterAll), a file that failed to load, ` +
+        `a coverage threshold, or the runner itself.` +
+        (testRun.failures.length > 0 ? ` See \`failures\` for the affected files.` : "");
+
+  const message = `${cause} This is not a passing run.` + (truncated ? `\n${truncated}` : "");
 
   return { ...testRun, error: message };
 }
@@ -519,8 +529,8 @@ export function registerRunTool(server: McpServer) {
         };
       }
 
-      // Guard against "silent green": a non-zero exit with zero parsed tests
-      // must not read as a pass (issues #928, #931).
+      // Guard against "silent green": a non-zero exit with no test counted as
+      // failed must not read as a pass (issues #928, #931, #1174).
       testRun = surfaceLoadFailure(testRun, result);
 
       return compactDualOutput(

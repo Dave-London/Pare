@@ -13,15 +13,26 @@ interface VitestJsonOutput {
   success: boolean;
   testResults: Array<{
     name: string;
+    /** File-level outcome. "failed" with no failed assertion means a hook or load error. */
+    status?: string;
+    /** File-level error text. Set for load errors; empty for hook failures. */
+    message?: string;
     assertionResults: Array<{
       fullName: string;
-      status: "passed" | "failed" | "pending" | "todo";
+      status: "passed" | "failed" | "pending" | "todo" | "skipped";
       failureMessages: string[];
       duration?: number;
       location?: { line: number; column: number };
     }>;
   }>;
 }
+
+/** Marker in a failure's `name` for a file that failed outside any test. */
+const SUITE_FAILURE_LABEL = "(suite-level failure)";
+
+const SUITE_FAILURE_FALLBACK =
+  "The file failed outside any test: a beforeAll/afterAll hook threw, or setup failed. " +
+  "Vitest's JSON report does not include the error; rerun this file without the JSON reporter to see it.";
 
 /**
  * Parses Vitest JSON output (`vitest run --reporter=json`) into structured data.
@@ -61,6 +72,21 @@ export function parseVitestJson(jsonStr: string): TestRun {
           actual: actualMatch?.[1]?.trim(),
         });
       }
+    }
+
+    // A file can fail with no failed test: a hook threw (its tests are then
+    // reported as skipped, or even passed for afterAll) or the file failed to
+    // load. Vitest counts these under numFailedTestSuites, not numFailedTests,
+    // so without this they vanish and the run reads as green (#1174).
+    const hasFailedTest = suite.assertionResults.some((t) => t.status === "failed");
+    if (suite.status === "failed" && !hasFailedTest) {
+      const fileName = suite.name.split(/[\\/]/).pop() || suite.name;
+      failures.push({
+        // The compact view keeps only name and message, so the name carries the file.
+        name: `${fileName} ${SUITE_FAILURE_LABEL}`,
+        file: suite.name,
+        message: suite.message?.trim().split("\n")[0] || SUITE_FAILURE_FALLBACK,
+      });
     }
   }
 

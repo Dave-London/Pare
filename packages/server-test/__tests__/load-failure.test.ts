@@ -66,6 +66,41 @@ describe("surfaceLoadFailure", () => {
     expect(flagged).toEqual(failingRun);
   });
 
+  it("flags a non-zero exit when tests ran but none was counted as failed (#1174)", () => {
+    // What a throwing beforeAll looks like: its tests are skipped, nothing "failed".
+    const hookFailure: TestRun = {
+      framework: "vitest",
+      summary: { total: 3, passed: 1, failed: 0, skipped: 2, duration: 0.2 },
+      failures: [{ name: "a.test.ts (suite-level failure)", file: "/p/a.test.ts", message: "x" }],
+    };
+    const flagged = surfaceLoadFailure(hookFailure, { exitCode: 1, stdout: "", stderr: "" });
+
+    expect(flagged.error).toMatch(/exited with code 1 but no test was reported as failed/);
+    expect(flagged.error).toMatch(/suite hook/);
+    expect(flagged.error).toMatch(/See `failures`/);
+    expect(flagged.error).toMatch(/not a passing run/);
+    // Counts and failures are left as the runner reported them.
+    expect(flagged.summary).toEqual(hookFailure.summary);
+    expect(flagged.failures).toEqual(hookFailure.failures);
+  });
+
+  it("flags a non-zero exit with all tests passing and no parsed failure (e.g. coverage threshold)", () => {
+    const allGreen: TestRun = {
+      framework: "jest",
+      summary: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 1 },
+      failures: [],
+    };
+    const flagged = surfaceLoadFailure(allGreen, {
+      exitCode: 1,
+      stdout: "",
+      stderr: 'Jest: "global" coverage threshold for lines (80%) not met: 61%',
+    });
+
+    expect(flagged.error).toMatch(/no test was reported as failed/);
+    expect(flagged.error).not.toMatch(/See `failures`/);
+    expect(flagged.error).toContain("coverage threshold for lines");
+  });
+
   it("does not flag a passing run (exit 0 with tests)", () => {
     const passingRun: TestRun = {
       framework: "jest",
