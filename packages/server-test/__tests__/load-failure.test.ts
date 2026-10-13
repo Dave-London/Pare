@@ -1,7 +1,9 @@
 /**
- * Tests for the "silent green" guard: a test runner that exits non-zero but
- * reports zero tests (a load/collection failure, or a filter that matched
- * nothing) must NOT be reported as a passing run. See issues #928 and #931.
+ * Tests for the "silent green" guard: a test runner that exits non-zero while no
+ * test is counted as failed must NOT be reported as a passing run. That covers
+ * zero tests reported (a load/collection failure, or a filter that matched
+ * nothing; #928, #931) and tests reported with none failed (a suite hook
+ * failure, a missed coverage threshold; #1174).
  */
 import { describe, it, expect } from "vitest";
 import { surfaceLoadFailure } from "../src/tools/run.js";
@@ -86,19 +88,53 @@ describe("surfaceLoadFailure", () => {
 
   it("flags a non-zero exit with all tests passing and no parsed failure (e.g. coverage threshold)", () => {
     const allGreen: TestRun = {
-      framework: "jest",
+      framework: "vitest",
       summary: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 1 },
       failures: [],
     };
     const flagged = surfaceLoadFailure(allGreen, {
       exitCode: 1,
       stdout: "",
-      stderr: 'Jest: "global" coverage threshold for lines (80%) not met: 61%',
+      stderr: "ERROR: Coverage for lines (61%) does not meet global threshold (80%)",
     });
 
     expect(flagged.error).toMatch(/no test was reported as failed/);
     expect(flagged.error).not.toMatch(/See `failures`/);
-    expect(flagged.error).toContain("coverage threshold for lines");
+    expect(flagged.error).toContain("does not meet global threshold");
+  });
+
+  it("drops the reporter's pointer to the temp report file, which is already deleted", () => {
+    const run: TestRun = {
+      framework: "vitest",
+      summary: { total: 2, passed: 0, failed: 0, skipped: 2, duration: 0.1 },
+      failures: [],
+    };
+    const flagged = surfaceLoadFailure(run, {
+      exitCode: 1,
+      stdout: "JSON report written to /tmp/pare-test-1234.json\n",
+      stderr: "",
+    });
+
+    expect(flagged.error).not.toContain("pare-test-1234.json");
+    expect(flagged.error).toMatch(/not a passing run\.$/);
+  });
+
+  it("keeps the end of long output, where runners print the reason for the exit", () => {
+    const run: TestRun = {
+      framework: "pytest",
+      summary: { total: 60, passed: 60, failed: 0, skipped: 0, duration: 2 },
+      failures: [],
+    };
+    const lines = Array.from({ length: 200 }, (_, i) => `tests/test_mod.py::test_${i} PASSED`);
+    const stdout = [...lines, "FAIL Required test coverage of 100% not reached. Total: 61%"].join(
+      "\n",
+    );
+    const flagged = surfaceLoadFailure(run, { exitCode: 1, stdout, stderr: "" });
+
+    expect(flagged.error).toContain("Required test coverage of 100% not reached");
+    expect(flagged.error).toContain("test_0 PASSED");
+    expect(flagged.error).toContain("output truncated");
+    expect(flagged.error!.length).toBeLessThan(stdout.length);
   });
 
   it("does not flag a passing run (exit 0 with tests)", () => {

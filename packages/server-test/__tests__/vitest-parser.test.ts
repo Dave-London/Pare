@@ -69,6 +69,55 @@ describe("parseVitestJson", () => {
       expect(result.failures).toHaveLength(1);
       expect(result.failures[0].name).not.toContain("suite-level failure");
     });
+
+    // Shape Vitest produces when a test fails and a top-level afterAll also throws:
+    // the file carries its own message next to the failed assertion.
+    const report = (file: { message: string; assertionStatus: "failed" | "passed" }) =>
+      JSON.stringify({
+        numTotalTests: 1,
+        numPassedTests: file.assertionStatus === "passed" ? 1 : 0,
+        numFailedTests: file.assertionStatus === "failed" ? 1 : 0,
+        numPendingTests: 0,
+        startTime: Date.now(),
+        success: false,
+        testResults: [
+          {
+            name: "C:\\proj\\__tests__\\both.test.ts",
+            status: "failed",
+            message: file.message,
+            assertionResults: [
+              {
+                fullName: "does a thing",
+                status: file.assertionStatus,
+                failureMessages: file.assertionStatus === "failed" ? ["expected 1 to be 2"] : [],
+              },
+            ],
+          },
+        ],
+      });
+
+    it("keeps a file-level error that sits alongside a failed test", () => {
+      const result = parseVitestJson(
+        report({ message: "afterAll exploded", assertionStatus: "failed" }),
+      );
+
+      expect(result.failures.map((f) => f.name)).toEqual([
+        "does a thing",
+        "both.test.ts (suite-level failure)",
+      ]);
+      expect(result.failures[1].message).toBe("afterAll exploded");
+    });
+
+    it("condenses a multi-line, coloured file-level error past its header line", () => {
+      const message =
+        "Transform failed with 1 error:\n\u001b[31m/project/x.test.ts:3:9: ERROR: Unexpected token\u001b[39m\n\n  at stack frame 1\n  at stack frame 2";
+      const result = parseVitestJson(report({ message, assertionStatus: "passed" }));
+
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].message).toBe(
+        "Transform failed with 1 error: /project/x.test.ts:3:9: ERROR: Unexpected token at stack frame 1",
+      );
+    });
   });
 
   it("parses coverage-summary JSON", () => {

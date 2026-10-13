@@ -266,8 +266,8 @@ export function buildRunExtraArgs(
  * - zero tests reported: a file threw at import/collection time (syntax error,
  *   bad import) or a filter matched nothing (#928, #931);
  * - tests reported, none failed: a suite hook threw, one file failed to load
- *   while others ran, a coverage threshold was missed, or the runner itself
- *   failed (#1174).
+ *   while others ran, a setup/teardown error (pytest), an unhandled error after
+ *   the tests, a missed coverage threshold, or the runner itself failed (#1174).
  *
  * Either way `{ failed: 0 }` alone would read as PASS, so we surface an `error`
  * describing it (with the runner's stderr/stdout for context).
@@ -282,23 +282,37 @@ export function surfaceLoadFailure(
     return testRun;
   }
 
-  const detail = (result.stderr.trim() || result.stdout.trim()).trim();
-  const MAX_DETAIL = 2000;
-  const truncated =
-    detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL)}\n… (output truncated)` : detail;
+  const detail = runnerDetail(result.stderr) || runnerDetail(result.stdout);
 
   const cause =
     testRun.summary.total === 0
       ? `Test runner exited with code ${result.exitCode} but reported no tests. ` +
         `The suite likely failed to load or collect (import/syntax error), or a filter matched no tests.`
       : `Test runner exited with code ${result.exitCode} but no test was reported as failed. ` +
-        `Something failed outside the tests: a suite hook (beforeAll/afterAll), a file that failed to load, ` +
-        `a coverage threshold, or the runner itself.` +
+        `Something failed outside the tests: a suite hook (beforeAll/afterAll), a setup or teardown error, ` +
+        `a file that failed to load, an unhandled error or rejection, a coverage threshold, or the runner itself.` +
         (testRun.failures.length > 0 ? ` See \`failures\` for the affected files.` : "");
 
-  const message = `${cause} This is not a passing run.` + (truncated ? `\n${truncated}` : "");
+  const message = `${cause} This is not a passing run.` + (detail ? `\n${detail}` : "");
 
   return { ...testRun, error: message };
+}
+
+/** Reporter bookkeeping that points at a temp file this tool has already deleted. */
+const REPORT_PATH_LINE = /^(JSON report written to|Test results written to:?)\s.*$/gim;
+
+const DETAIL_HEAD = 800;
+const DETAIL_TAIL = 1200;
+
+/**
+ * Prepares runner output for the `error` field. Keeps the head and the tail:
+ * runners print the reason for a non-zero exit (a coverage threshold, an
+ * "ERROR at setup" section) at the end, after the per-test lines.
+ */
+function runnerDetail(output: string): string {
+  const text = output.replace(REPORT_PATH_LINE, "").trim();
+  if (text.length <= DETAIL_HEAD + DETAIL_TAIL) return text;
+  return `${text.slice(0, DETAIL_HEAD)}\n… (output truncated) …\n${text.slice(-DETAIL_TAIL)}`;
 }
 
 /** Registers the `run` tool on the given MCP server. */
