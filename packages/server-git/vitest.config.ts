@@ -2,7 +2,7 @@ import { defineConfig, mergeConfig } from "vitest/config";
 import { createVitestConfig } from "../shared/vitest.shared.js";
 
 export default mergeConfig(
-  createVitestConfig({ hookTimeout: 30_000 }),
+  createVitestConfig({ hookTimeout: 30_000, globalSetup: ["./__tests__/global-setup.ts"] }),
   defineConfig({
     test: {
       // Use forks pool to prevent v8 coverage temp file race conditions.

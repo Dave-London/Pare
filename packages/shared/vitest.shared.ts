@@ -21,6 +21,8 @@ import { defineConfig, type UserConfig } from "vitest/config";
 interface VitestConfigOptions {
   testTimeout?: number;
   hookTimeout?: number;
+  /** Files run once in the main process before any test worker starts. */
+  globalSetup?: string[];
   coverageThresholds?: {
     lines?: number;
     functions?: number;
@@ -49,6 +51,7 @@ export function createVitestConfig(options?: VitestConfigOptions): UserConfig {
       globals: true,
       testTimeout,
       ...(options?.hookTimeout ? { hookTimeout: options.hookTimeout } : {}),
+      ...(options?.globalSetup ? { globalSetup: options.globalSetup } : {}),
       coverage: {
         provider: "v8",
         thresholds,

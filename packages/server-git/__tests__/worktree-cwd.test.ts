@@ -8,20 +8,8 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
-const PKG_DIR = resolve(__dirname, "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
 const CALL_TIMEOUT = 180_000;
-
-let built = false;
-function ensureBuiltArtifacts() {
-  if (built) return;
-  execFileSync("pnpm", ["build"], {
-    cwd: PKG_DIR,
-    encoding: "utf-8",
-    shell: process.platform === "win32",
-  });
-  built = true;
-}
 
 function gitIn(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf-8" });
@@ -50,8 +38,6 @@ describe("@paretools/git worktree cwd resolution (#876)", () => {
   let worktree: string;
 
   beforeAll(async () => {
-    ensureBuiltArtifacts();
-
     // Build a main repo with one commit on a known branch.
     mainRepo = mkdtempSync(join(tmpdir(), "pare-git-876-main-"));
     gitIn(mainRepo, ["init", "-b", "main-branch"]);
