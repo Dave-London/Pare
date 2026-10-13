@@ -7,7 +7,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureBuiltArtifacts } from "./ensure-built.js";
 
 const __dirname = resolve(fileURLToPath(import.meta.url), "..");
 const SERVER_PATH = resolve(__dirname, "../dist/index.js");
@@ -20,8 +19,6 @@ describe("tool parameter handling", () => {
   let transport: StdioClientTransport;
 
   beforeAll(async () => {
-    ensureBuiltArtifacts(__dirname);
-
     transport = new StdioClientTransport({
       command: "node",
       args: [SERVER_PATH],
