@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -18,11 +18,19 @@ import { resolve } from "node:path";
  */
 export function ensureBuilt(packageDirs: string[]): void {
   for (const dir of packageDirs) {
-    if (existsSync(resolve(dir, "dist", "index.js"))) continue;
-    execFileSync("pnpm", ["build"], {
-      cwd: dir,
-      encoding: "utf-8",
-      shell: process.platform === "win32",
-    });
+    const dist = resolve(dir, "dist");
+    if (existsSync(resolve(dist, "index.js"))) continue;
+    try {
+      execFileSync("pnpm", ["build"], {
+        cwd: dir,
+        encoding: "utf-8",
+        shell: process.platform === "win32",
+      });
+    } catch (err) {
+      // tsc emits even when type-checking fails. Drop the partial output so the
+      // next run builds again instead of trusting a dist from a failed build.
+      rmSync(dist, { recursive: true, force: true });
+      throw err;
+    }
   }
 }

@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolve } from "node:path";
 
 vi.mock("node:child_process", () => ({ execFileSync: vi.fn() }));
-vi.mock("node:fs", () => ({ existsSync: vi.fn() }));
+vi.mock("node:fs", () => ({ existsSync: vi.fn(), rmSync: vi.fn() }));
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { ensureBuilt } from "../vitest.ensure-built.js";
 
 describe("ensureBuilt", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("never rebuilds a package whose dist/index.js exists (#1085)", () => {
@@ -21,6 +21,7 @@ describe("ensureBuilt", () => {
     expect(existsSync).toHaveBeenCalledWith(resolve("/repo/packages/a", "dist", "index.js"));
     expect(existsSync).toHaveBeenCalledWith(resolve("/repo/packages/b", "dist", "index.js"));
     expect(execFileSync).not.toHaveBeenCalled();
+    expect(rmSync).not.toHaveBeenCalled();
   });
 
   it("builds only the packages whose dist/index.js is missing", () => {
@@ -37,14 +38,23 @@ describe("ensureBuilt", () => {
       ["build"],
       expect.objectContaining({ cwd: "/repo/packages/b" }),
     );
+    expect(rmSync).not.toHaveBeenCalled();
   });
 
-  it("surfaces a failed build instead of letting tests run against a missing dist", () => {
+  it("removes the partial dist and rethrows when the build fails", () => {
     vi.mocked(existsSync).mockReturnValue(false);
     vi.mocked(execFileSync).mockImplementation(() => {
       throw new Error("tsc failed");
     });
 
-    expect(() => ensureBuilt(["/repo/packages/a"])).toThrow("tsc failed");
+    expect(() => ensureBuilt(["/repo/packages/a", "/repo/packages/b"])).toThrow("tsc failed");
+
+    // tsc emits on type errors; leaving that dist behind would let the next run skip the build.
+    expect(rmSync).toHaveBeenCalledWith(resolve("/repo/packages/a", "dist"), {
+      recursive: true,
+      force: true,
+    });
+    // Stops at the first failure rather than building later packages.
+    expect(execFileSync).toHaveBeenCalledTimes(1);
   });
 });
