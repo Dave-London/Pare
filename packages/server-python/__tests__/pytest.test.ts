@@ -492,13 +492,16 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     // Regression: when two alternatives of the count token both matched
     // "5 tests collected", a line of N such tokens with no duration took 2^N steps
     // (26 tokens: seconds; 40: hours). Any test can print such a line.
-    const line = Array.from({ length: 400 }, () => "5 tests collected").join(", ");
+    // 24 tokens is deliberate: with the overlap it takes about a second, which fails
+    // this assertion cleanly. A much longer line would hang inside the regex, where
+    // the test timeout cannot interrupt it. The fixed regex takes microseconds.
+    const line = Array.from({ length: 24 }, () => "5 tests collected").join(", ");
     const started = performance.now();
     const result = parsePytestOutput(`${line}\n3 passed in 0.10s`, "", 0);
     const elapsed = performance.now() - started;
 
     expect(result.passed).toBe(3);
-    expect(elapsed).toBeLessThan(1000);
+    expect(elapsed).toBeLessThan(200);
   });
 
   it("uses stderr for the tail when stdout is empty", () => {
