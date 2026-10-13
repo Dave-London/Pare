@@ -135,6 +135,26 @@ describe("formatPytestCompact", () => {
     expect(formatPytestCompact(compact)).toBe("pytest: no tests collected.");
   });
 
+  it("keeps countsUnavailable in the compact view and does not say 'no tests collected'", () => {
+    const compact = compactPytestMap({
+      success: true,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      countsUnavailable: true,
+      errorOutput: "....s  [100%]",
+    });
+
+    expect(compact.countsUnavailable).toBe(true);
+    expect(compact.errorOutput).toBe("....s  [100%]");
+    const text = formatPytestCompact(compact);
+    expect(text).not.toContain("no tests collected");
+    expect(text).toContain("summary line was not found");
+  });
+
   it("formats failed empty run with exit code and diagnostics", () => {
     const compact = {
       success: false,

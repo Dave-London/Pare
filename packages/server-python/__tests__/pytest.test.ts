@@ -221,6 +221,25 @@ describe("formatPytest", () => {
     expect(formatPytest(data)).toBe("pytest: no tests collected.");
   });
 
+  it("does not say 'no tests collected' when the counts are merely unknown", () => {
+    const data: PytestResult = {
+      success: true,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      countsUnavailable: true,
+      errorOutput: "....s  [100%]",
+    };
+    const text = formatPytest(data);
+
+    expect(text).not.toContain("no tests collected");
+    expect(text).toMatch(/^pytest: exited 0, but its summary line was not found/);
+    expect(text).toContain("....s  [100%]");
+  });
+
   it("formats all passing", () => {
     const data: PytestResult = {
       success: true,
@@ -390,6 +409,116 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     expect(result.passed).toBe(4);
     expect(result.skipped).toBe(1);
     expect(result.failed).toBe(0);
+  });
+
+  // Real pytest 9.1.1 output at two levels of quiet (`--tb=short -q -q`): the progress
+  // line and the warnings section are there, the final "N passed" line is not.
+  const PYTEST_QQ_NO_SUMMARY = [
+    "....s                                                                    [100%]",
+    "=============================== warnings summary ===============================",
+    "tests/test_a.py::test_warn",
+    "  /project/tests/test_a.py:5: UserWarning: careful",
+    '    warnings.warn("careful", UserWarning)',
+    "",
+    "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+  ].join("\n");
+
+  it("flags a passing run whose summary line is missing instead of reporting clean zeros", () => {
+    const result = parsePytestOutput(PYTEST_QQ_NO_SUMMARY, "", 0);
+
+    // Exit 0 means pytest collected tests and none failed, so this is a pass...
+    expect(result.success).toBe(true);
+    // ...but the counts are unknown, and the result must say so (#1092, #1153).
+    expect(result.countsUnavailable).toBe(true);
+    expect(result).toMatchObject({ passed: 0, failed: 0, errors: 0, skipped: 0 });
+    // The raw tail is kept so a custom summary is still visible to the caller.
+    expect(result.errorOutput).toContain("[100%]");
+  });
+
+  it("does not flag counts as unavailable when the summary line is present", () => {
+    const withSummary = `${PYTEST_QQ_NO_SUMMARY}\n4 passed, 1 skipped, 1 warning in 0.01s`;
+    const result = parsePytestOutput(withSummary, "", 0);
+
+    expect(result.countsUnavailable).toBeUndefined();
+    expect(result).toMatchObject({ success: true, passed: 4, skipped: 1, warnings: 1 });
+    expect(result.errorOutput).toBeUndefined();
+  });
+
+  it("does not flag counts as unavailable for collect-only or no-tests output", () => {
+    // All real pytest 9.1.1 output. Nothing ran in any of these, so zeros are right.
+    const cases: Array<[string, number]> = [
+      // --collect-only at verbosity -1
+      ["tests/test_a.py::test_one\ntests/test_a.py::test_two\n\n2 tests collected in 0.00s", 0],
+      // --collect-only with -k, at verbosity -1 and (ruled) at verbosity 1
+      ["tests/test_a.py::test_one\n\n1/5 tests collected (4 deselected) in 0.00s", 0],
+      ["================= 1/5 tests collected (4 deselected) in 0.01s ==================", 0],
+      // --collect-only with -k matching nothing, and a plain run with -k matching nothing
+      ["\nno tests collected (5 deselected) in 0.00s", 5],
+      ["\n5 deselected in 0.00s", 5],
+    ];
+    for (const [stdout, exitCode] of cases) {
+      const result = parsePytestOutput(stdout, "", exitCode);
+      expect(result.countsUnavailable, stdout).toBeUndefined();
+      expect(result, stdout).toMatchObject({ passed: 0, failed: 0, errors: 0 });
+    }
+  });
+
+  it("keeps parsed failure blocks when the summary line is missing on exit 0", () => {
+    // Reachable with an exit-code-suppressing plugin plus a replaced summary: the
+    // failure text is in the output even though nothing counts it.
+    const stdout = [
+      "_____________________________ test_bad _____________________________",
+      "    def test_bad():",
+      ">       assert 1 == 2",
+      "E       assert 1 == 2",
+      "",
+      "tests/test_fail.py:2: AssertionError",
+    ].join("\n");
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.failures).toEqual([{ test: "test_bad", message: "assert 1 == 2" }]);
+  });
+
+  it("still flags unknown counts when the output merely mentions 'no tests ran'", () => {
+    // pytest exits 5 when it ran nothing; exit 0 with this phrase in a log line is
+    // still a run whose summary could not be read.
+    const result = parsePytestOutput("....\nINFO retry: no tests ran yet, waiting", "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+  });
+
+  it("scans a long line of summary-like tokens in linear time", () => {
+    // Regression: when two alternatives of the count token both matched
+    // "5 tests collected", a line of N such tokens with no duration took 2^N steps
+    // (26 tokens: seconds; 40: hours). Any test can print such a line.
+    // 24 tokens is deliberate: with the overlap it takes about a second, which fails
+    // this assertion cleanly. A much longer line would hang inside the regex, where
+    // the test timeout cannot interrupt it. The fixed regex takes microseconds.
+    const line = Array.from({ length: 24 }, () => "5 tests collected").join(", ");
+    const started = performance.now();
+    const result = parsePytestOutput(`${line}\n3 passed in 0.10s`, "", 0);
+    const elapsed = performance.now() - started;
+
+    expect(result.passed).toBe(3);
+    expect(elapsed).toBeLessThan(200);
+  });
+
+  it("uses stderr for the tail when stdout is empty", () => {
+    const result = parsePytestOutput("", "custom reporter: 4 ok", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.errorOutput).toBe("custom reporter: 4 ok");
+  });
+
+  it("truncates the raw tail kept for an unparsed passing run", () => {
+    const long = `${"x".repeat(5000)}\nlast line of output`;
+    const result = parsePytestOutput(long, "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.errorOutput).toContain("last line of output");
+    expect(result.errorOutput).toContain("output truncated");
+    expect(result.errorOutput!.length).toBeLessThan(2000);
   });
 
   it("parses a summary line with an elapsed-time suffix", () => {

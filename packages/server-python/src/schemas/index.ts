@@ -161,9 +161,17 @@ export const PytestResultSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Tail of the raw pytest output explaining why the run produced no test results " +
-        "(e.g. collection error, ModuleNotFoundError, broken plugin); " +
-        "only present when the run failed with no parseable test results",
+      "Tail of the raw pytest output when test results could not be parsed: a failed run " +
+        "with no results (e.g. collection error, ModuleNotFoundError, broken plugin), or a " +
+        "passing run whose summary line was not found (see countsUnavailable)",
+    ),
+  countsUnavailable: z
+    .boolean()
+    .optional()
+    .describe(
+      "true when pytest exited 0 but its summary line was not found, so passed/failed/errors/" +
+        "skipped are unknown and reported as 0. success then reflects the exit code only; " +
+        "do not read the zero counts as 'no tests ran'",
     ),
 });
 
