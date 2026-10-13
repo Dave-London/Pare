@@ -107,6 +107,11 @@ Secret values are sent to `gh secret set` via stdin and are not returned in stru
 
 This fits repositories that require an approving review from someone other than the PR author: one account opens the PR, a second approves and merges it. Log the second account in once with `gh auth login`, then switch back to your usual account with `gh auth switch`.
 
+Limits:
+
+- Requires `gh` 2.40 or newer (multi-account support).
+- Works for github.com and ghe.com hosts only. On GitHub Enterprise Server the call is refused rather than run as the active account.
+
 ## Compatible Clients
 
 Works with any MCP-compatible client: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.com), [Windsurf](https://codeium.com/windsurf), [VS Code / GitHub Copilot](https://code.visualstudio.com), [Cline](https://github.com/cline/cline), [Roo Code](https://roocode.com), [Zed](https://zed.dev), [Continue.dev](https://continue.dev), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenAI Codex](https://openai.com/index/codex/)

@@ -87,4 +87,4 @@ Same as full (output is already minimal).
 - The `body` field is required for `request-changes` and `comment` events; omitting it throws an error before calling `gh`
 - The body is passed via stdin (`--body-file -`) to avoid shell escaping issues
 - No compact mode mapping exists since output is already minimal
-- `account` submits the review as another account already in the local `gh` keyring (e.g. a reviewer account approving a PR the active account authored). The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched
+- `account` submits the review as another account already in the local `gh` keyring (e.g. a reviewer account approving a PR the active account authored). The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched. github.com and ghe.com hosts only
