@@ -354,8 +354,9 @@ const PYTEST_ERROR_OUTPUT_MAX = 4_000;
 const PYTEST_UNPARSED_OUTPUT_MAX = 1_500;
 
 /** One "N label" token of pytest's final summary line ("3 passed", "1 xfailed",
- *  "2 subtests passed"), or the literal "no tests ran". */
-const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran)`;
+ *  "2 subtests passed"), the literal "no tests ran", or the `--collect-only`
+ *  forms ("5 tests collected", "1/5 tests collected (4 deselected)"). */
+const PYTEST_COUNT_TOKEN = String.raw`(?:\d+ [a-z]+(?: [a-z]+)?|no tests ran|(?:\d+(?:/\d+)?|no) tests? collected(?: \(\d+ deselected\))?)`;
 
 /** The body of pytest's final summary line, e.g. "3 passed, 1 failed in 1.23s".
  *  Deliberately anchored and strict: the ENTIRE body must be comma-separated
@@ -454,33 +455,6 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     warnings = extractCount(summaryLine, /(\d+) warnings?\b/);
   }
 
-  // pytest exits 0 only when it collected at least one test and none failed
-  // (collecting nothing is exit 5). So exit 0 with no summary line means the
-  // counts are unknown, not zero: pytest ran quieter than expected, or a plugin
-  // replaced the summary. Say so instead of returning a clean `passed: 0`, which
-  // reads as "nothing ran" or, worse, as a pass with nothing to report (#1092, #1153).
-  if (exitCode === 0 && !summaryLine) {
-    const tail = stdout.trim();
-    return {
-      success: true,
-      passed: 0,
-      failed: 0,
-      errors: 0,
-      skipped: 0,
-      warnings: 0,
-      failures: [],
-      countsUnavailable: true,
-      ...(tail
-        ? {
-            errorOutput:
-              tail.length > PYTEST_UNPARSED_OUTPUT_MAX
-                ? `… (output truncated)\n${tail.slice(-PYTEST_UNPARSED_OUTPUT_MAX)}`
-                : tail,
-          }
-        : {}),
-    };
-  }
-
   // Check for "no tests ran" case
   const noTests = output.includes("no tests ran");
   if (noTests && passed === 0 && failed === 0 && errors === 0) {
@@ -531,6 +505,37 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     }
 
     failures.push({ test: testName, message });
+  }
+
+  // Exit 0 with no summary line: the counts could not be read. A test run only
+  // exits 0 when tests were collected and none failed (collecting nothing is
+  // exit 5), so zeros here would be wrong, and "no tests collected" misleading.
+  // It happens when a reporter plugin replaces the summary or code in the project
+  // lowers the verbosity. Say the counts are unknown and keep the output tail, where
+  // a plugin's own summary is usually visible. Non-test invocations that exit 0
+  // (--version, --help, --markers) land here too, which is also accurate.
+  // Any failure blocks that were parsed are kept. See #1118 for the main cause,
+  // which the tool now avoids by pinning the verbosity.
+  if (exitCode === 0 && !summaryLine) {
+    const tail = stdout.trim() || stderr.trim();
+    return {
+      success: true,
+      passed: 0,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures,
+      countsUnavailable: true,
+      ...(tail
+        ? {
+            errorOutput:
+              tail.length > PYTEST_UNPARSED_OUTPUT_MAX
+                ? `… (output truncated)\n${tail.slice(-PYTEST_UNPARSED_OUTPUT_MAX)}`
+                : tail,
+          }
+        : {}),
+    };
   }
 
   // Consistency guard (#1061): a failure/error count must be traceable to either

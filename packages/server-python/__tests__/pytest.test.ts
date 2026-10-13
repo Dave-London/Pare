@@ -236,7 +236,7 @@ describe("formatPytest", () => {
     const text = formatPytest(data);
 
     expect(text).not.toContain("no tests collected");
-    expect(text).toMatch(/^pytest: passed \(exit code 0\), but its summary line was not found/);
+    expect(text).toMatch(/^pytest: exited 0, but its summary line was not found/);
     expect(text).toContain("....s  [100%]");
   });
 
@@ -445,17 +445,46 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
   });
 
   it("does not flag counts as unavailable for collect-only or no-tests output", () => {
-    // Real pytest 9.1.1: `--collect-only` at verbosity -1, and `-k` matching nothing (exit 5).
-    const collectOnly = parsePytestOutput(
-      "tests/test_a.py::test_one\ntests/test_a.py::test_two\n\n2 tests collected in 0.00s",
-      "",
-      0,
-    );
-    expect(collectOnly.countsUnavailable).toBeUndefined();
-    expect(collectOnly.success).toBe(true);
+    // All real pytest 9.1.1 output. Nothing ran in any of these, so zeros are right.
+    const cases: Array<[string, number]> = [
+      // --collect-only at verbosity -1
+      ["tests/test_a.py::test_one\ntests/test_a.py::test_two\n\n2 tests collected in 0.00s", 0],
+      // --collect-only with -k, at verbosity -1 and (ruled) at verbosity 1
+      ["tests/test_a.py::test_one\n\n1/5 tests collected (4 deselected) in 0.00s", 0],
+      ["================= 1/5 tests collected (4 deselected) in 0.01s ==================", 0],
+      // --collect-only with -k matching nothing, and a plain run with -k matching nothing
+      ["\nno tests collected (5 deselected) in 0.00s", 5],
+      ["\n5 deselected in 0.00s", 5],
+    ];
+    for (const [stdout, exitCode] of cases) {
+      const result = parsePytestOutput(stdout, "", exitCode);
+      expect(result.countsUnavailable, stdout).toBeUndefined();
+      expect(result, stdout).toMatchObject({ passed: 0, failed: 0, errors: 0 });
+    }
+  });
 
-    const deselected = parsePytestOutput("\n5 deselected in 0.00s", "", 5);
-    expect(deselected.countsUnavailable).toBeUndefined();
+  it("keeps parsed failure blocks when the summary line is missing on exit 0", () => {
+    // Reachable with an exit-code-suppressing plugin plus a replaced summary: the
+    // failure text is in the output even though nothing counts it.
+    const stdout = [
+      "_____________________________ test_bad _____________________________",
+      "    def test_bad():",
+      ">       assert 1 == 2",
+      "E       assert 1 == 2",
+      "",
+      "tests/test_fail.py:2: AssertionError",
+    ].join("\n");
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.failures).toEqual([{ test: "test_bad", message: "assert 1 == 2" }]);
+  });
+
+  it("uses stderr for the tail when stdout is empty", () => {
+    const result = parsePytestOutput("", "custom reporter: 4 ok", 0);
+
+    expect(result.countsUnavailable).toBe(true);
+    expect(result.errorOutput).toBe("custom reporter: 4 ok");
   });
 
   it("truncates the raw tail kept for an unparsed passing run", () => {

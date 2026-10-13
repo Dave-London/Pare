@@ -21,20 +21,58 @@ import { formatPytest, compactPytestMap, formatPytestCompact } from "../lib/form
 import { PytestResultSchema } from "../schemas/index.js";
 
 /**
- * The verbosity flag for the run: quiet by default, verbose on request.
+ * The verbosity flag for the run: quiet by default, as verbose as the caller asked.
  *
- * It is an absolute `--verbosity=N`, and the caller must place it after every
- * other option. `-q` and `-v` are relative: each one moves the level by one, and
- * they add up across this tool, `extraArgs`, and the project's `addopts`. At two
- * levels of quiet pytest stops printing its final summary line, which is the only
- * place the counts come from, so a stray `-q` used to turn a passing run into
- * `passed: 0` (#1118, #1110, #1092). The last verbosity option wins, so pinning
- * it at the end makes the output shape independent of whatever came before.
+ * It is an absolute `--verbosity=N`, placed after every other option. `-q` and
+ * `-v` are relative: each one moves the level by one, and they add up across this
+ * tool, `extraArgs`, and the project's `addopts`. At two levels of quiet pytest
+ * stops printing its final summary line, which is the only place the counts come
+ * from, so a stray `-q` used to turn a passing run into `passed: 0` (#1118,
+ * #1110). The last verbosity option wins, so pinning it at the end makes the
+ * output shape independent of whatever came before.
+ *
+ * Because the pin overrides relative flags, it has to carry the caller's explicit
+ * requests itself: `verbose`, each `-v` in `extraArgs` (`-vv` gives the full
+ * assertion diff), or an explicit `--verbosity=N` there. Requests for less output
+ * are ignored; the level never goes below -1, which is what `-q` alone gives.
  *
  * Exported for unit testing.
  */
-export function pytestVerbosityArg(verbose: boolean | undefined): string {
-  return `--verbosity=${verbose ? 1 : -1}`;
+export function pytestVerbosityArg(verbose: boolean | undefined, extraArgs?: string[]): string {
+  let level = verbose ? 1 : 0;
+  let explicit: number | undefined;
+  const args = extraArgs ?? [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--") break; // everything after a bare `--` is positional
+    if (/^-v+$/.test(arg)) level += arg.length - 1;
+    else if (arg === "--verbose") level += 1;
+    else if (arg.startsWith("--verbosity=")) explicit = Number(arg.slice("--verbosity=".length));
+    else if (arg === "--verbosity") explicit = Number(args[i + 1]);
+  }
+  if (explicit !== undefined && Number.isInteger(explicit)) {
+    return `--verbosity=${Math.max(-1, explicit)}`;
+  }
+  return `--verbosity=${level > 0 ? level : -1}`;
+}
+
+/**
+ * Appends `extraArgs` and the verbosity pin. The pin goes after the options so it
+ * wins, but before a bare `--`: after that marker pytest would read it as a path.
+ */
+function pushExtraArgsAndVerbosity(
+  args: string[],
+  extraArgs: string[] | undefined,
+  verbose: boolean | undefined,
+): void {
+  const extras = extraArgs ?? [];
+  const pin = pytestVerbosityArg(verbose, extras);
+  const separator = extras.indexOf("--");
+  if (separator === -1) {
+    args.push(...extras, pin);
+  } else {
+    args.push(...extras.slice(0, separator), pin, ...extras.slice(separator));
+  }
 }
 
 /** Registers the `pytest` tool on the given MCP server. */
@@ -72,7 +110,14 @@ export function registerPytestTool(server: McpServer) {
           .enum(["short", "long", "line", "no", "native", "auto"])
           .optional()
           .describe("Traceback output style (default: short)"),
-        verbose: z.boolean().optional().default(false).describe("Enable verbose output"),
+        verbose: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            'Enable verbose output (verbosity 1). For more, add "-vv" to extraArgs, ' +
+              "e.g. to see a full assertion diff",
+          ),
         exitFirst: z.coerce
           .boolean()
           .optional()
@@ -127,7 +172,9 @@ export function registerPytestTool(server: McpServer) {
             .optional()
             .describe(
               'Additional pytest CLI arguments passed through verbatim (e.g. ["-p", "no:logfire"] ' +
-                "to disable a broken plugin). Each element is validated for control characters.",
+                "to disable a broken plugin). Each element is validated for control characters. " +
+                "Verbosity is set by the tool: -v/-vv/--verbosity=N here raise it, -q is ignored " +
+                "(the output never goes quieter than -q), and -v/-q in the project's addopts are overridden.",
             ),
         ),
         compact: compactInput,
@@ -197,8 +244,7 @@ export function registerPytestTool(server: McpServer) {
       if (coverage) args.push(`--cov=${coverage}`);
       if (parallel != null) args.push("-n", String(parallel));
       if (configFile) args.push("-c", configFile);
-      if (extraArgs && extraArgs.length > 0) args.push(...extraArgs);
-      args.push(pytestVerbosityArg(verbose));
+      pushExtraArgsAndVerbosity(args, extraArgs, verbose);
       if (targets && targets.length > 0) args.push(...targets);
 
       const result = await pytest(args, cwd, pythonPath, env);

@@ -119,7 +119,7 @@ export function formatPipAudit(data: PipAuditResult): string {
 }
 
 const PYTEST_COUNTS_UNAVAILABLE =
-  "pytest: passed (exit code 0), but its summary line was not found, so test counts are unknown.";
+  "pytest: exited 0, but its summary line was not found, so test counts are unknown.";
 
 /** Formats structured pytest results into a human-readable test summary. */
 export function formatPytest(data: PytestResult): string {
