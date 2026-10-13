@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
+import { accountInput } from "../lib/account.js";
 import { parsePrReview, resolveNumber } from "../lib/parsers.js";
 import { formatPrReview } from "../lib/formatters.js";
 import { PrReviewResultSchema } from "../schemas/index.js";
@@ -40,11 +41,12 @@ export function registerPrReviewTool(server: McpServer) {
           .max(INPUT_LIMITS.PATH_MAX)
           .optional()
           .describe("Read review body from file (--body-file). Mutually exclusive with body."),
+        account: accountInput,
         path: repoPathInput,
       },
       outputSchema: PrReviewResultSchema,
     },
-    async ({ number, event, body, repo, bodyFile, path }) => {
+    async ({ number, event, body, repo, bodyFile, account, path }) => {
       const cwd = path || process.cwd();
 
       if (body) {
@@ -75,7 +77,7 @@ export function registerPrReviewTool(server: McpServer) {
         args.push("--body-file", bodyFile);
       }
 
-      const result = await ghCmd(args, { cwd, stdin });
+      const result = await ghCmd(args, { cwd, stdin, account });
 
       // P1-gap #146: Classify errors instead of always throwing
       if (result.exitCode !== 0) {
