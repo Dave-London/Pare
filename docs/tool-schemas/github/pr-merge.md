@@ -11,6 +11,7 @@ Merges a pull request by number. Returns structured data with merge status, meth
 | `number`       | number                                | —          | Pull request number                                        |
 | `method`       | `"squash"` \| `"merge"` \| `"rebase"` | `"squash"` | Merge method                                               |
 | `deleteBranch` | boolean                               | `false`    | Delete branch after merge                                  |
+| `account`      | string                                | active     | Run this call as another locally logged-in gh account      |
 | `path`         | string                                | cwd        | Repository path                                            |
 | `compact`      | boolean                               | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
 

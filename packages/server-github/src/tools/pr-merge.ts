@@ -8,6 +8,7 @@ import {
   repoPathInput,
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
+import { accountInput } from "../lib/account.js";
 import { parsePrMerge, resolveNumber } from "../lib/parsers.js";
 import { formatPrMerge } from "../lib/formatters.js";
 import { PrMergeResultSchema } from "../schemas/index.js";
@@ -89,6 +90,7 @@ export function registerPrMergeTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe("Repository in OWNER/REPO format (--repo). Default: current repo."),
+        account: accountInput,
         path: repoPathInput,
         compact: compactInput,
       },
@@ -106,6 +108,7 @@ export function registerPrMergeTool(server: McpServer) {
       authorEmail,
       matchHeadCommit,
       repo,
+      account,
       path,
     }) => {
       const cwd = path || process.cwd();
@@ -136,7 +139,7 @@ export function registerPrMergeTool(server: McpServer) {
       if (matchHeadCommit) args.push("--match-head-commit", matchHeadCommit);
       if (repo) args.push("--repo", repo);
 
-      const result = await ghCmd(args, { cwd, stdin });
+      const result = await ghCmd(args, { cwd, stdin, account });
 
       if (result.exitCode !== 0) {
         const combined = `${result.stdout}\n${result.stderr}`.trim();
