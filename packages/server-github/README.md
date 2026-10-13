@@ -111,6 +111,7 @@ Limits:
 
 - Requires `gh` 2.40 or newer (multi-account support).
 - Works for github.com and ghe.com hosts only. On GitHub Enterprise Server the call is refused rather than run as the active account.
+- The account's token is looked up on gh's default host. If you are logged in to more than one host, set `GH_HOST` to the one the repository lives on.
 
 ## Compatible Clients
 

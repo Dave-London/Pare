@@ -29,6 +29,8 @@ const accountEnv = { GH_TOKEN: TOKEN, GH_ENTERPRISE_TOKEN: expect.any(String) };
 describe("per-call gh account", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Keep the suite independent of the developer's own gh host setting.
+    vi.stubEnv("GH_HOST", "");
   });
 
   afterEach(() => {
@@ -61,7 +63,7 @@ describe("per-call gh account", () => {
     expect(vi.mocked(run).mock.calls.flatMap((c) => c[1])).not.toContain("switch");
   });
 
-  it("never sends the account token to an Enterprise Server host", async () => {
+  it("sets a non-secret GH_ENTERPRISE_TOKEN so Enterprise Server targets cannot use stored credentials", async () => {
     vi.mocked(run).mockResolvedValueOnce(ok(TOKEN)).mockResolvedValueOnce(ok());
 
     await ghCmd(["pr", "merge", "12"], { account: "horza-bora" });
@@ -74,17 +76,27 @@ describe("per-call gh account", () => {
     expect(env?.GH_ENTERPRISE_TOKEN).not.toBe(TOKEN);
   });
 
-  it("refuses an Enterprise Server GH_HOST before spawning gh", async () => {
-    vi.stubEnv("GH_HOST", "ghe.corp.example");
+  it("refuses GH_HOST values gh treats as Enterprise Server before spawning gh", async () => {
+    for (const host of [
+      "ghe.corp.example",
+      "GHE.Corp.Example",
+      "github.com:443",
+      "localhost",
+      "ghe.com",
+      "evilgithub.com",
+      "github.com.evil.com",
+    ]) {
+      vi.stubEnv("GH_HOST", host);
 
-    await expect(ghCmd(["pr", "merge", "12"], { account: "horza-bora" })).rejects.toThrow(
-      /Cannot run as account "horza-bora" on ghe\.corp\.example/,
-    );
+      await expect(ghCmd(["pr", "merge", "12"], { account: "horza-bora" })).rejects.toThrow(
+        /Cannot run as account "horza-bora" on /,
+      );
+    }
     expect(run).not.toHaveBeenCalled();
   });
 
   it("allows github.com and ghe.com GH_HOST values", async () => {
-    for (const host of ["github.com", "tenant.ghe.com"]) {
+    for (const host of ["github.com", "GitHub.com", "tenant.ghe.com"]) {
       vi.clearAllMocks();
       vi.stubEnv("GH_HOST", host);
       vi.mocked(run).mockResolvedValueOnce(ok(TOKEN)).mockResolvedValueOnce(ok());
@@ -103,8 +115,21 @@ describe("per-call gh account", () => {
     const result = await ghCmd(["pr", "merge", "12"], { account: "horza-bora" });
 
     expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/token may be expired or revoked/);
     expect(result.stderr).toMatch(/github\.com and ghe\.com hosts only/);
     expect(JSON.stringify(result)).not.toContain(TOKEN);
+  });
+
+  it("does not mistake a PR numbered 401 for an auth failure", async () => {
+    const stderr =
+      "Pull request owner/repo#401 is not mergeable: the base branch policy prohibits it";
+    vi.mocked(run)
+      .mockResolvedValueOnce(ok(TOKEN))
+      .mockResolvedValueOnce({ stdout: "", stderr, exitCode: 1 });
+
+    const result = await ghCmd(["pr", "merge", "401"], { account: "horza-bora" });
+
+    expect(result.stderr).toBe(stderr);
   });
 
   it("fails without running the command when the account has no stored credentials", async () => {

@@ -79,9 +79,12 @@ export async function ghCmd(args: string[], cwdOrOpts?: string | GhCmdOptions): 
   if (
     account !== undefined &&
     result.exitCode !== 0 &&
-    /\b401\b|bad credentials/i.test(result.stderr)
+    /HTTP 401|bad credentials/i.test(result.stderr)
   ) {
-    return { ...result, stderr: `${result.stderr.trimEnd()}\n${ACCOUNT_HOST_HINT}` };
+    const hint =
+      `Authentication as account "${account}" failed: its stored token may be expired or revoked ` +
+      `(re-run \`gh auth login\`), or the target is a GitHub Enterprise Server host. ${ACCOUNT_HOST_HINT}`;
+    return { ...result, stderr: `${result.stderr.trimEnd()}\n${hint}` };
   }
   return result;
 }
