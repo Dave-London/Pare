@@ -206,6 +206,21 @@ This prevents a class of attack where a malicious binary is placed at a trusted-
 PARE_BUILD_STRICT_PATH=true
 ```
 
+### GitHub Account Allowlist
+
+Control which `gh` accounts the GitHub server may act as through the `account` input on `pr-review` and `pr-merge`.
+
+| Variable                       | Value                 | Effect                                                     |
+| ------------------------------ | --------------------- | ---------------------------------------------------------- |
+| `PARE_GITHUB_ALLOWED_ACCOUNTS` | `reviewer-login,bot2` | Calls may pass `account` for the listed accounts only      |
+| (unset or empty)               | —                     | Any call that passes `account` is refused before `gh` runs |
+
+Unlike the controls above, this one is deny-by-default: acting as a different identity must be switched on. Account names are matched case-insensitively. Calls that do not pass `account` are unaffected and run as the active `gh` account.
+
+```bash
+PARE_GITHUB_ALLOWED_ACCOUNTS=reviewer-login
+```
+
 ---
 
 ## Error Output Sanitization

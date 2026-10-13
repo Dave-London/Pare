@@ -31,6 +31,45 @@ describe("per-call gh account", () => {
     vi.clearAllMocks();
     // Keep the suite independent of the developer's own gh host setting.
     vi.stubEnv("GH_HOST", "");
+    vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", "horza-bora,nobody");
+  });
+
+  it("refuses the account option when no allowlist is configured", async () => {
+    for (const value of [undefined, "", " , "]) {
+      vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", value);
+
+      await expect(ghCmd(["pr", "merge", "12"], { account: "horza-bora" })).rejects.toThrow(
+        /account option is disabled.*PARE_GITHUB_ALLOWED_ACCOUNTS/,
+      );
+    }
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("refuses an account that is not on the allowlist before spawning gh", async () => {
+    vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", "reviewer-bot");
+
+    await expect(ghCmd(["pr", "merge", "12"], { account: "horza-bora" })).rejects.toThrow(
+      /Account "horza-bora" is not allowed by PARE_GITHUB_ALLOWED_ACCOUNTS\. Allowed: reviewer-bot/,
+    );
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("matches the allowlist case-insensitively and ignores surrounding whitespace", async () => {
+    vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", " other , Horza-Bora ");
+    vi.mocked(run).mockResolvedValueOnce(ok(TOKEN)).mockResolvedValueOnce(ok());
+
+    await ghCmd(["pr", "merge", "12"], { account: "horza-bora" });
+
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not consult the allowlist when no account is given", async () => {
+    vi.stubEnv("PARE_GITHUB_ALLOWED_ACCOUNTS", undefined);
+    vi.mocked(run).mockResolvedValueOnce(ok());
+
+    await ghCmd(["pr", "list"]);
+
+    expect(run).toHaveBeenCalledTimes(1);
   });
 
   afterEach(() => {

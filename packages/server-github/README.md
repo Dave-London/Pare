@@ -107,6 +107,22 @@ Secret values are sent to `gh secret set` via stdin and are not returned in stru
 
 This fits repositories that require an approving review from someone other than the PR author: one account opens the PR, a second approves and merges it. Log the second account in once with `gh auth login`, then switch back to your usual account with `gh auth switch`.
 
+The option is off by default. Name the accounts the server may act as in its environment:
+
+```json
+{
+  "mcpServers": {
+    "pare-github": {
+      "command": "npx",
+      "args": ["-y", "@paretools/github"],
+      "env": { "PARE_GITHUB_ALLOWED_ACCOUNTS": "reviewer-login" }
+    }
+  }
+}
+```
+
+Without it, any call that passes `account` is refused. Set it only in the projects where a second identity is wanted, so other sessions cannot pick up every account in your `gh` keyring.
+
 Limits:
 
 - Requires `gh` 2.40 or newer (multi-account support).
