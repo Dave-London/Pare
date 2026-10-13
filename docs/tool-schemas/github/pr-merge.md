@@ -98,4 +98,4 @@ Pull request #42 is not mergeable: the base branch policy prohibits the merge.
 - The `merged` field is always `true` on success; errors throw before returning
 - Use `deleteBranch: true` to automatically delete the head branch after merge
 - The merge method maps to `--squash`, `--merge`, or `--rebase` flags on the gh CLI
-- `account` merges as another account already in the local `gh` keyring. The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched. github.com and ghe.com hosts only
+- `account` merges as another account already in the local `gh` keyring. The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched. Off unless `PARE_GITHUB_ALLOWED_ACCOUNTS` lists the account. github.com and ghe.com hosts only

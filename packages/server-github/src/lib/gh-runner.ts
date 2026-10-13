@@ -1,5 +1,5 @@
 import { run, type RunResult } from "@paretools/shared";
-import { GH_LOGIN_RE } from "./account.js";
+import { GH_LOGIN_RE, assertAccountAllowed } from "./account.js";
 
 export interface GhCmdOptions {
   cwd?: string;
@@ -36,6 +36,7 @@ async function resolveAccountToken(account: string, cwd?: string): Promise<strin
   if (!GH_LOGIN_RE.test(account)) {
     throw new Error(`Invalid GitHub account name: "${account}"`);
   }
+  assertAccountAllowed(account);
   const host = process.env.GH_HOST;
   if (host && !usesGhToken(host)) {
     throw new Error(`Cannot run as account "${account}" on ${host}. ${ACCOUNT_HOST_HINT}`);
