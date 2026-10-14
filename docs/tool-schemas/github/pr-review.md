@@ -11,6 +11,7 @@ Submits a review on a pull request (approve, request-changes, or comment). Retur
 | `number`  | number                                            | —       | Pull request number                                    |
 | `event`   | `"approve"` \| `"request-changes"` \| `"comment"` | —       | Review type                                            |
 | `body`    | string                                            | —       | Review body (required for request-changes and comment) |
+| `account` | string                                            | active  | Run this call as another locally logged-in gh account  |
 | `path`    | string                                            | cwd     | Repository path                                        |
 
 ## Success
@@ -86,3 +87,4 @@ Same as full (output is already minimal).
 - The `body` field is required for `request-changes` and `comment` events; omitting it throws an error before calling `gh`
 - The body is passed via stdin (`--body-file -`) to avoid shell escaping issues
 - No compact mode mapping exists since output is already minimal
+- `account` submits the review as another account already in the local `gh` keyring (e.g. a reviewer account approving a PR the active account authored). The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched. Off unless `PARE_GITHUB_ALLOWED_ACCOUNTS` lists the account. github.com and ghe.com hosts only

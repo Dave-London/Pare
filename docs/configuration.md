@@ -206,6 +206,21 @@ This prevents a class of attack where a malicious binary is placed at a trusted-
 PARE_BUILD_STRICT_PATH=true
 ```
 
+### GitHub Account Allowlist
+
+Control which `gh` accounts the GitHub server may act as through the `account` input on `pr-review` and `pr-merge`.
+
+| Variable                       | Value                 | Effect                                                     |
+| ------------------------------ | --------------------- | ---------------------------------------------------------- |
+| `PARE_GITHUB_ALLOWED_ACCOUNTS` | `reviewer-login,bot2` | Calls may pass `account` for the listed accounts only      |
+| (unset or empty)               | —                     | Any call that passes `account` is refused before `gh` runs |
+
+Unlike the controls above, this one is deny-by-default: acting as a different identity must be switched on. Account names are matched case-insensitively. Calls that do not pass `account` are unaffected and run as the active `gh` account.
+
+```bash
+PARE_GITHUB_ALLOWED_ACCOUNTS=reviewer-login
+```
+
 ---
 
 ## Error Output Sanitization
@@ -235,6 +250,8 @@ All global/per-server variables follow the same precedence:
 2. **Per-server** (`PARE_{SERVER}_{SETTING}`) — applies to one server only
 3. **No variable set** — permissive default (no restriction)
 
+`PARE_GITHUB_ALLOWED_ACCOUNTS` is the exception: it is specific to the GitHub server, has no global form, and unset means the `account` option is refused.
+
 Server names in env vars use uppercase with hyphens replaced by underscores:
 
 - `server-git` → `PARE_GIT_*`
@@ -256,4 +273,5 @@ Server names in env vars use uppercase with hyphens replaced by underscores:
 | `PARE_ALLOWED_ROOTS`             | `path,...`        | unrestricted | Global root confinement                       |
 | `PARE_{SERVER}_ALLOWED_ROOTS`    | `path,...`        | unrestricted | Per-server root confinement                   |
 | `PARE_BUILD_STRICT_PATH`         | `true`            | disabled     | Reject path-qualified build commands          |
+| `PARE_GITHUB_ALLOWED_ACCOUNTS`   | `login,...`       | none allowed | gh accounts the `account` option may act as   |
 | `PARE_SANITIZE_ALL_PATHS`        | `true`            | disabled     | Broad absolute path redaction                 |

@@ -177,7 +177,7 @@ Returns framework, summary counts, and detailed failure information.
 }
 ```
 
-**Key fields for agents**: `summary.failed` (quick pass/fail), `failures[].file`/`line` (jump to broken code), `failures[].expected`/`actual` (understand what went wrong), `framework` (context for interpreting results).
+**Key fields for agents**: `error` and `summary.failed` (a run passed only if `error` is absent and `failed` is 0; `error` is set when the runner exited non-zero without a failed test, such as a suite hook failure), `failures[].file`/`line` (jump to broken code), `failures[].expected`/`actual` (understand what went wrong), `framework` (context for interpreting results).
 
 ## build tsc
 

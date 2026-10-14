@@ -11,6 +11,7 @@ Merges a pull request by number. Returns structured data with merge status, meth
 | `number`       | number                                | —          | Pull request number                                        |
 | `method`       | `"squash"` \| `"merge"` \| `"rebase"` | `"squash"` | Merge method                                               |
 | `deleteBranch` | boolean                               | `false`    | Delete branch after merge                                  |
+| `account`      | string                                | active     | Run this call as another locally logged-in gh account      |
 | `path`         | string                                | cwd        | Repository path                                            |
 | `compact`      | boolean                               | `true`     | Auto-compact when structured output exceeds raw CLI tokens |
 
@@ -97,3 +98,4 @@ Pull request #42 is not mergeable: the base branch policy prohibits the merge.
 - The `merged` field is always `true` on success; errors throw before returning
 - Use `deleteBranch: true` to automatically delete the head branch after merge
 - The merge method maps to `--squash`, `--merge`, or `--rebase` flags on the gh CLI
+- `account` merges as another account already in the local `gh` keyring. The token is passed to that single `gh` process via `GH_TOKEN`; the active account is not switched. Off unless `PARE_GITHUB_ALLOWED_ACCOUNTS` lists the account. github.com and ghe.com hosts only

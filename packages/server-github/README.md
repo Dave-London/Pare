@@ -97,6 +97,40 @@ Secret values are sent to `gh secret set` via stdin and are not returned in stru
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated (`gh auth login`)
 
+## Acting as a second account
+
+`pr-review` and `pr-merge` accept an optional `account` — the username of another account already logged in to `gh` on the machine. That one call runs with the account's stored token; the active account (`gh auth switch`) is left alone, so other sessions on the machine are unaffected.
+
+```json
+{ "number": "42", "event": "approve", "account": "reviewer-login" }
+```
+
+This fits repositories that require an approving review from someone other than the PR author: one account opens the PR, a second approves and merges it. Log the second account in once with `gh auth login`, then switch back to your usual account with `gh auth switch`.
+
+The option is off by default. Name the accounts the server may act as in its environment:
+
+```json
+{
+  "mcpServers": {
+    "pare-github": {
+      "command": "npx",
+      "args": ["-y", "@paretools/github"],
+      "env": { "PARE_GITHUB_ALLOWED_ACCOUNTS": "reviewer-login" }
+    }
+  }
+}
+```
+
+Without it, any call that passes `account` is refused. Set it only in the projects where a second identity is wanted, so this server does not offer every account in your `gh` keyring to every session.
+
+This limits what the server will do; it is not a sandbox. A client that can run `gh` itself can still use any logged-in account. An entry applies on whichever host the token lookup uses (see `GH_HOST` below).
+
+Limits:
+
+- Requires `gh` 2.40 or newer (multi-account support).
+- Works for github.com and ghe.com hosts only. On GitHub Enterprise Server the call is refused rather than run as the active account.
+- The account's token is looked up on gh's default host. If you are logged in to more than one host, set `GH_HOST` to the one the repository lives on.
+
 ## Compatible Clients
 
 Works with any MCP-compatible client: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.com), [Windsurf](https://codeium.com/windsurf), [VS Code / GitHub Copilot](https://code.visualstudio.com), [Cline](https://github.com/cline/cline), [Roo Code](https://roocode.com), [Zed](https://zed.dev), [Continue.dev](https://continue.dev), [Gemini CLI](https://github.com/google-gemini/gemini-cli), [OpenAI Codex](https://openai.com/index/codex/)

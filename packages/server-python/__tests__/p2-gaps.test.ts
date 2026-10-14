@@ -14,7 +14,7 @@ import { registerCondaTool } from "../src/tools/conda.js";
 import { registerMypyTool } from "../src/tools/mypy.js";
 import { registerPoetryTool } from "../src/tools/poetry.js";
 import { registerPyenvTool } from "../src/tools/pyenv.js";
-import { registerPytestTool } from "../src/tools/pytest.js";
+import { registerPytestTool, pytestVerbosityArg } from "../src/tools/pytest.js";
 import { registerRuffTool } from "../src/tools/ruff.js";
 
 vi.mock("../src/lib/python-runner.js", () => ({
@@ -223,7 +223,121 @@ describe("Python P2 gaps", () => {
     await handler({ extraArgs: ["-p", "no:logfire"], targets: ["tests/"], compact: false });
 
     const args = vi.mocked(pytest).mock.calls[0][0] as string[];
-    expect(args.slice(-3)).toEqual(["-p", "no:logfire", "tests/"]);
+    expect(args.slice(-4)).toEqual(["-p", "no:logfire", "--verbosity=-1", "tests/"]);
+  });
+
+  // pytest drops its summary line at two levels of quiet, and -q flags add up across
+  // the tool, extraArgs and the project's addopts. The last verbosity option wins, so
+  // the tool pins an absolute level after everything else (#1118, #1110, #1092).
+  it("#1118 pins verbosity after extraArgs so a caller's -q cannot stack", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "19 passed in 5.67s",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({
+      extraArgs: ["-p", "no:logfire", "-q", "--timeout=60"],
+      targets: ["tests/api/test_a.py", "tests/test_b.py"],
+      compact: false,
+    });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    // The tool no longer adds a relative -q of its own.
+    expect(args.filter((a) => a === "-q")).toEqual(["-q"]);
+    expect(args.indexOf("--verbosity=-1")).toBeGreaterThan(args.lastIndexOf("-q"));
+    expect(args.indexOf("--verbosity=-1")).toBeLessThan(args.indexOf("tests/api/test_a.py"));
+    expect(args.slice(-2)).toEqual(["tests/api/test_a.py", "tests/test_b.py"]);
+  });
+
+  it("#1118 pins verbosity to 1 when verbose is requested", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "==== 1 passed in 0.1s ====",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ verbose: true, compact: false });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    expect(args).toContain("--verbosity=1");
+    expect(args).not.toContain("-v");
+    expect(args).not.toContain("-q");
+  });
+
+  // The pin overrides relative flags, so it has to carry explicit requests for MORE
+  // output itself; otherwise `-vv` (the full assertion diff) would stop working.
+  it("#1118 carries explicit verbosity requests from extraArgs into the pin", () => {
+    expect(pytestVerbosityArg(false)).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(true)).toBe("--verbosity=1");
+    expect(pytestVerbosityArg(false, ["-v"])).toBe("--verbosity=1");
+    expect(pytestVerbosityArg(false, ["-vv"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(true, ["-vv"])).toBe("--verbosity=3");
+    expect(pytestVerbosityArg(false, ["--verbose", "-v"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(true, ["--verbosity=2"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(false, ["--verbosity", "3"])).toBe("--verbosity=3");
+    expect(pytestVerbosityArg(false, ["--verbosity=0"])).toBe("--verbosity=0");
+  });
+
+  it("#1118 counts -v inside short-option clusters, but not inside an option's value", () => {
+    // pytest accepts clustered flags such as -xvv.
+    expect(pytestVerbosityArg(false, ["-xvv"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(false, ["-vvx"])).toBe("--verbosity=2");
+    expect(pytestVerbosityArg(true, ["-vvs"])).toBe("--verbosity=3");
+    expect(pytestVerbosityArg(false, ["-vq"])).toBe("--verbosity=1");
+    // After a value-taking option the rest of the token is its value.
+    expect(pytestVerbosityArg(false, ["-kvv"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-mvery_slow"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-pno:vcr"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-n4", "-rv"])).toBe("--verbosity=-1");
+    // Long options and positionals containing "v" are not flags.
+    expect(pytestVerbosityArg(false, ["--cov=src", "tests/v1", "-V"])).toBe("--verbosity=-1");
+  });
+
+  it("#1118 passes an explicit level through as written and ignores malformed ones", () => {
+    // Not reformatted: a huge value must reach pytest as the caller wrote it.
+    expect(pytestVerbosityArg(false, ["--verbosity=99999999999999999999999"])).toBe(
+      "--verbosity=99999999999999999999999",
+    );
+    // Malformed or missing values fall back to the counted level; pytest then
+    // reports its own usage error for the caller's argument.
+    expect(pytestVerbosityArg(true, ["--verbosity=abc"])).toBe("--verbosity=1");
+    expect(pytestVerbosityArg(false, ["--verbosity=1.5"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--verbosity"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--verbosity="])).toBe("--verbosity=-1");
+  });
+
+  it("#1118 never lets the pin go below -1, whatever asks for less output", () => {
+    expect(pytestVerbosityArg(false, ["-q"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["-qq", "--quiet"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--verbosity=-3"])).toBe("--verbosity=-1");
+    // -q does not cancel an explicit -v: more output never costs the summary line.
+    expect(pytestVerbosityArg(false, ["-v", "-q"])).toBe("--verbosity=1");
+    // Not verbosity flags: a value for another option, and anything after a bare `--`.
+    expect(pytestVerbosityArg(false, ["-k", "v", "-x"])).toBe("--verbosity=-1");
+    expect(pytestVerbosityArg(false, ["--", "-vv"])).toBe("--verbosity=-1");
+  });
+
+  it("#1118 puts the pin before a bare -- so pytest does not read it as a path", async () => {
+    const server = new FakeServer();
+    registerPytestTool(server as never);
+    const handler = server.tools.get("pytest")!.handler;
+    vi.mocked(pytest).mockResolvedValueOnce({
+      stdout: "3 passed in 0.1s",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await handler({ extraArgs: ["-x", "--", "tests/test_a.py"], compact: false });
+
+    const args = vi.mocked(pytest).mock.calls[0][0] as string[];
+    expect(args.slice(-4)).toEqual(["-x", "--verbosity=-1", "--", "tests/test_a.py"]);
   });
 
   it("#984 rejects env keys that are not valid variable names", async () => {

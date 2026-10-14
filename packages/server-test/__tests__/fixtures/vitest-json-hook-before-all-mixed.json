@@ -1,0 +1,77 @@
+{
+  "numTotalTestSuites": 3,
+  "numPassedTestSuites": 1,
+  "numFailedTestSuites": 2,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 3,
+  "numPassedTests": 1,
+  "numFailedTests": 0,
+  "numPendingTests": 2,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1791904492856,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["hook failure probe"],
+          "fullName": "hook failure probe never runs",
+          "status": "skipped",
+          "title": "never runs",
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["hook failure probe"],
+          "fullName": "hook failure probe never runs either",
+          "status": "skipped",
+          "title": "never runs either",
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791904492856,
+      "endTime": 1791904492856,
+      "status": "failed",
+      "message": "",
+      "name": "/project/__tests__/before-all.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "fine",
+          "status": "passed",
+          "title": "fine",
+          "duration": 0.760666999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1791904492942,
+      "endTime": 1791904492942.7607,
+      "status": "passed",
+      "message": "",
+      "name": "/project/__tests__/ok.test.ts"
+    }
+  ]
+}

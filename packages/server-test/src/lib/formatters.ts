@@ -2,7 +2,12 @@ import type { TestRun, Coverage, PlaywrightResult } from "../schemas/index.js";
 
 /** Formats structured test run results into a human-readable summary with pass/fail counts and failure details. */
 export function formatTestRun(r: TestRun): string {
-  const status = r.error ? "ERROR" : r.summary.failed > 0 ? "FAIL" : "PASS";
+  // A suite-level failure adds to `failures` without a failed test, so check both.
+  const status = r.error
+    ? "ERROR"
+    : r.summary.failed > 0 || r.failures.length > 0
+      ? "FAIL"
+      : "PASS";
   const parts = [
     `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];
@@ -65,7 +70,11 @@ export function compactTestRunMap(r: TestRun): TestRunCompact {
 }
 
 export function formatTestRunCompact(r: TestRunCompact): string {
-  const status = r.error ? "ERROR" : r.summary.failed > 0 ? "FAIL" : "PASS";
+  const status = r.error
+    ? "ERROR"
+    : r.summary.failed > 0 || r.failures.length > 0
+      ? "FAIL"
+      : "PASS";
   const parts = [
     `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];

@@ -11,6 +11,18 @@
     "coverage": {
       "dependsOn": ["build"]
     },
+    "@paretools/test#test": {
+      "dependsOn": ["build", "@paretools/git#build"]
+    },
+    "@paretools/test#coverage": {
+      "dependsOn": ["build", "@paretools/git#build"]
+    },
+    "@paretools/init#test": {
+      "dependsOn": ["build", "@paretools/git#build"]
+    },
+    "@paretools/init#coverage": {
+      "dependsOn": ["build", "@paretools/git#build"]
+    },
     "lint": {
       "dependsOn": ["^build"]
     }
