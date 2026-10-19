@@ -89,6 +89,44 @@ export function deriveConclusion(data: PrChecksResult): "passed" | "failed" | "p
   return "passed";
 }
 
+/**
+ * Names of the workflow runs for the PR's head commit that have not completed.
+ * A run waiting on a `concurrency` group (or still queued) has no check run
+ * yet, so `gh pr checks` cannot see it, and a set of fast checks that already
+ * finished would otherwise read as "passed" before the main test workflow has
+ * started (#1159). Returns undefined when the lookup fails, so the check-based
+ * conclusion stands.
+ *
+ * Exported for unit testing.
+ */
+export async function pendingWorkflowRuns(
+  selector: string,
+  repo: string | undefined,
+  cwd: string | undefined,
+): Promise<string[] | undefined> {
+  const repoArgs = repo ? ["--repo", repo] : [];
+  const head = await ghCmd(
+    ["pr", "view", selector, "--json", "headRefOid", "--jq", ".headRefOid", ...repoArgs],
+    cwd,
+  );
+  const sha = head?.exitCode === 0 ? head.stdout.trim() : "";
+  if (!/^[0-9a-f]{7,40}$/i.test(sha)) return undefined;
+
+  const runs = await ghCmd(
+    ["run", "list", "--commit", sha, "--json", "name,status", "--limit", "100", ...repoArgs],
+    cwd,
+  );
+  if (!runs || runs.exitCode !== 0) return undefined;
+  try {
+    const list = JSON.parse(runs.stdout) as Array<{ name?: string; status?: string }>;
+    return list
+      .filter((r) => r.status && r.status !== "completed")
+      .map((r) => r.name || "(unnamed run)");
+  } catch {
+    return undefined;
+  }
+}
+
 /** Sleeps for `ms` milliseconds. Exposed via parameter for testability. */
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -115,6 +153,12 @@ export interface WatchOptions {
    * {@link SETTLE_GRACE_MS}; set to `0` to disable.
    */
   settleGraceMs?: number;
+  /**
+   * Called when every reported check looks terminal, before concluding.
+   * Returns workflow runs for the head commit that have not completed (see
+   * {@link pendingWorkflowRuns}); a non-empty list keeps the loop polling.
+   */
+  pendingRuns?: () => Promise<string[] | undefined>;
 }
 
 export interface WatchResult {
@@ -139,9 +183,10 @@ export async function watchPrChecks(
   const settleGraceMs = opts.settleGraceMs ?? SETTLE_GRACE_MS;
   let pollCount = 0;
   let lastData: PrChecksResult = emptySnapshot(prNum);
+  let lastPendingRuns: string[] = [];
 
   const finish = (timedOut: boolean, pending: string[]): WatchResult => ({
-    data: lastData,
+    data: lastPendingRuns.length > 0 ? { ...lastData, pendingRuns: lastPendingRuns } : lastData,
     pollCount,
     waitedSeconds: (now() - start) / 1000,
     timedOut,
@@ -196,13 +241,19 @@ export async function watchPrChecks(
       // Zero checks never terminates the loop: surviving the
       // push -> check-run-registration race is the whole point of watching.
       if (!hasNoChecks(lastData) && allChecksComplete(lastData) && !settling) {
-        return finish(false, []);
+        // The checks look done, but a workflow run that has not started (for
+        // example one queued behind a concurrency group) has no check yet (#1159).
+        const runs = opts.pendingRuns ? await opts.pendingRuns() : undefined;
+        lastPendingRuns = runs ?? [];
+        if (lastPendingRuns.length === 0) return finish(false, []);
+      } else {
+        lastPendingRuns = [];
       }
     }
 
     const elapsed = now() - start;
     if (elapsed + opts.intervalMs > opts.timeoutMs) {
-      return finish(true, pendingCheckNames(lastData));
+      return finish(true, [...pendingCheckNames(lastData), ...lastPendingRuns]);
     }
 
     await sleep(opts.intervalMs);
@@ -285,6 +336,7 @@ export function registerPrChecksTool(server: McpServer) {
         const watchResult = await watchPrChecks(args, cwd, prNum, {
           intervalMs: intervalSeconds * 1000,
           timeoutMs: timeoutSeconds * 1000,
+          pendingRuns: () => pendingWorkflowRuns(selector, repo, cwd),
         });
 
         if (watchResult.timedOut) {
@@ -374,6 +426,14 @@ export function registerPrChecksTool(server: McpServer) {
           formatPrChecksCompact,
           compact === false,
         );
+      }
+      // "passed" only if no workflow run for the head commit is still to come (#1159).
+      if (data.conclusion === "passed") {
+        const runs = await pendingWorkflowRuns(selector, repo, cwd);
+        if (runs && runs.length > 0) {
+          data.conclusion = "pending";
+          data.pendingRuns = runs;
+        }
       }
       return compactDualOutput(
         data,

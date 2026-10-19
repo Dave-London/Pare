@@ -328,6 +328,13 @@ export const PrChecksResultSchema = z.object({
    * Invariant: `conclusion === "passed"` implies `checks.length > 0`.
    */
   conclusion: z.enum(["passed", "failed", "pending", "none", "timed_out"]).optional(),
+  /**
+   * Workflow runs for the PR's head commit that have not completed although
+   * every reported check has (a run queued behind a concurrency group has no
+   * check yet). Present only when non-empty; the conclusion is then "pending"
+   * or "timed_out", never "passed" (#1159).
+   */
+  pendingRuns: z.array(z.string()).optional(),
   /** True when watch mode returned because it hit `watchTimeout` (checks still pending). */
   timedOut: z.boolean().optional(),
   /** Number of times the wrapper polled gh (only set when watch=true). */

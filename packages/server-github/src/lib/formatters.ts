@@ -172,6 +172,8 @@ export function formatPrChecks(data: PrChecksResult): string {
         : "  no checks reported - NOT a passing state (conclusion: none)",
     );
   }
+  const runs = pendingRunsNote(data.pendingRuns);
+  if (runs) lines.push(`  ${runs}`);
   for (const c of data.checks ?? []) {
     const workflow = c.workflow ? ` [${c.workflow}]` : "";
     lines.push(`  ${c.name}: ${c.state} (${c.bucket})${workflow}`);
@@ -206,14 +208,24 @@ export function compactPrChecksMap(data: PrChecksResult): PrChecksCompact {
     ...(data.errorMessage ? { errorMessage: data.errorMessage } : {}),
     ...(data.pollCount !== undefined ? { pollCount: data.pollCount } : {}),
     ...(data.waitedSeconds !== undefined ? { waitedSeconds: data.waitedSeconds } : {}),
+    ...(data.pendingRuns?.length ? { pendingRuns: data.pendingRuns } : {}),
   };
+}
+
+/** Line for workflow runs that have not finished although the checks have (#1159). */
+function pendingRunsNote(runs: unknown): string | undefined {
+  return Array.isArray(runs) && runs.length > 0
+    ? `workflow runs not finished: ${runs.join(", ")} - NOT a passing state`
+    : undefined;
 }
 
 export function formatPrChecksCompact(data: PrChecksCompact): string {
   const summary = data.summary ?? { total: 0, passed: 0, failed: 0, pending: 0 };
   const head = `PR #${data.pr}: ${summary.total} checks (${summary.passed} passed, ${summary.failed} failed, ${summary.pending} pending)`;
   // Issue #1077: zero checks must never read as success.
-  return summary.total === 0 ? `${head} - no checks reported, NOT a passing state` : head;
+  if (summary.total === 0) return `${head} - no checks reported, NOT a passing state`;
+  const runs = pendingRunsNote(data.pendingRuns);
+  return runs ? `${head} - ${runs}` : head;
 }
 
 /** Formats structured PR diff data into a human-readable file change summary. */
