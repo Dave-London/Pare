@@ -29,14 +29,23 @@ export function registerInitTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Migrate state to new backend configuration (-migrate-state)"),
+        backend: z
+          .boolean()
+          .optional()
+          .describe(
+            "Set false to skip backend initialization (-backend=false), for validate-only workflows that must not need state access or backend credentials. Default: true",
+          ),
         compact: compactInput,
       },
       outputSchema: TerraformInitResultSchema,
     },
-    async ({ path, upgrade, reconfigure, migrateState, compact }) => {
+    async ({ path, upgrade, reconfigure, migrateState, backend, compact }) => {
       const cwd = path || process.cwd();
       const args: string[] = ["init", "-input=false"];
 
+      // `terraform init -backend=false` then `terraform validate` checks syntax
+      // and schema without touching state or needing backend credentials (#1103).
+      if (backend === false) args.push("-backend=false");
       if (upgrade) args.push("-upgrade");
       if (reconfigure) args.push("-reconfigure");
       if (migrateState) args.push("-migrate-state");
