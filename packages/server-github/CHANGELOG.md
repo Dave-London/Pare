@@ -1,5 +1,17 @@
 # @paretools/github
 
+## 0.23.2
+
+### Patch Changes
+
+- [#1196](https://github.com/Dave-London/Pare/pull/1196) [`e4772ef`](https://github.com/Dave-London/Pare/commit/e4772ef1fd7af97534b389f69e796fed07cbeef5) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(github): `issue-close` now returns the issue `url` and, when a comment was posted, its `commentUrl`. `gh issue close` prints neither, so they used to come back as `""` and unset; they are now looked up after closing, and `url` is omitted rather than `""` if the lookup fails ([#1170](https://github.com/Dave-London/Pare/issues/1170)). A new `commentPosted` field is `false` when the issue was already closed, because gh then skips the comment without an error
+
+- [#1197](https://github.com/Dave-London/Pare/pull/1197) [`b90554c`](https://github.com/Dave-London/Pare/commit/b90554c45864da0cdd003c045a3981f1431fa933) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(github): `issue-list` and `pr-list` no longer return other repositories' results for a `search` that uses `OR`. gh adds `repo:OWNER/REPO` to the search, and a bare `OR` split the query so that qualifier only covered the first alternative. The search is now grouped in parentheses, and any result from another repository is dropped and counted in `excludedOtherRepos` ([#1173](https://github.com/Dave-London/Pare/issues/1173))
+
+- [#1198](https://github.com/Dave-London/Pare/pull/1198) [`f9d5c65`](https://github.com/Dave-London/Pare/commit/f9d5c659f9da0cb41faae931442428ec43e57d32) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(github): `pr-checks` no longer concludes `passed` while a workflow run for the PR's head commit has not completed. A run queued behind a `concurrency` group has no check run yet, so a few fast checks that had finished used to read as green. Before concluding `passed`, the tool now checks the head commit's workflow runs; any that are unfinished make the result `pending` (and keep `watch` polling), listed in the new `pendingRuns` field ([#1159](https://github.com/Dave-London/Pare/issues/1159))
+- Updated dependencies []:
+  - @paretools/shared@0.23.2
+
 ## 0.23.1
 
 ### Patch Changes

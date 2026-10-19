@@ -1,5 +1,15 @@
 # @paretools/git
 
+## 0.23.2
+
+### Patch Changes
+
+- [#1194](https://github.com/Dave-London/Pare/pull/1194) [`0c8b8b2`](https://github.com/Dave-London/Pare/commit/0c8b8b2b8b6b68cc997fe2ab764d2530063f0c35) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): `diff` and `show` take each file's status from git (`--summary`) instead of guessing it from the line counts, so a modification that only removes lines is no longer reported as `deleted`, and one that only adds lines is no longer `added` ([#1099](https://github.com/Dave-London/Pare/issues/1099)). Lines that are not numstat rows are skipped instead of becoming entries with an empty `file` ([#1152](https://github.com/Dave-London/Pare/issues/1152)). Renamed files now report the real new path in `file` (and the old one in `oldFile`) instead of the `{old => new}` notation, so `full: true` attaches their patch
+
+- [#1195](https://github.com/Dave-London/Pare/pull/1195) [`0d4dd0d`](https://github.com/Dave-London/Pare/commit/0d4dd0d9acd79004b80bbbbae2aebf9d0483e45f) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(git): `status` with `noLockIndex: true` now runs `git --no-optional-locks status`. It used to pass `--no-lock-index`, which `git status` rejects, so the option always failed ([#1167](https://github.com/Dave-London/Pare/issues/1167))
+- Updated dependencies []:
+  - @paretools/shared@0.23.2
+
 ## 0.23.1
 
 ### Patch Changes

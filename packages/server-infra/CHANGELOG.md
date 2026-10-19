@@ -1,5 +1,12 @@
 # @paretools/infra
 
+## 0.23.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.23.2
+
 ## 0.23.1
 
 ### Patch Changes
