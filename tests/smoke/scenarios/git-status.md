@@ -83,7 +83,7 @@
 | --- | ------------------------------ | ----------------------------------- | ----------------------------------------------------- | -------- | -------- |
 | 28  | showStash: true (with stashes) | `{ path, showStash: true }`         | `stashCount: N > 0` in output (if schema supports it) | P1       | complete |
 | 29  | showStash: true (no stashes)   | `{ path, showStash: true }`         | `stashCount: 0` or field absent                       | P2       | complete |
-| 30  | noLockIndex: true              | `{ path, noLockIndex: true }`       | Same output, `--no-lock-index` in args                | P2       | complete |
+| 30  | noLockIndex: true              | `{ path, noLockIndex: true }`       | Same output, `--no-optional-locks` before `status`    | P2       | complete |
 | 31  | showIgnored: true              | `{ path, showIgnored: true }`       | Ignored files included in output                      | P2       | complete |
 | 32  | renames: true                  | `{ path, renames: true }`           | `--renames` in args                                   | P2       | complete |
 | 33  | noRenames: true                | `{ path, noRenames: true }`         | `--no-renames` in args, renames not detected          | P2       | complete |

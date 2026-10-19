@@ -244,11 +244,14 @@ describe("Smoke: git.status", () => {
   });
 
   // ── Scenario 30: noLockIndex flag ──────────────────────────────────
-  it("S30 [P2] noLockIndex: true passes --no-lock-index", async () => {
+  it("S30 [P2] noLockIndex: true passes --no-optional-locks before status", async () => {
     mockGit("## main\n");
     await callAndValidate({ noLockIndex: true });
     const args = vi.mocked(git).mock.calls[0][0];
-    expect(args).toContain("--no-lock-index");
+    // A top-level git option: it must come before the subcommand (#1167).
+    expect(args[0]).toBe("--no-optional-locks");
+    expect(args[1]).toBe("status");
+    expect(args).not.toContain("--no-lock-index");
   });
 
   // ── Scenario 31: showIgnored flag ──────────────────────────────────

@@ -42,7 +42,9 @@ export function registerStatusTool(server: McpServer) {
         noLockIndex: z.coerce
           .boolean()
           .optional()
-          .describe("Do not lock the index (--no-lock-index)"),
+          .describe(
+            "Do not take optional locks such as the index refresh lock (git --no-optional-locks status), for use alongside other git processes",
+          ),
         showIgnored: z.boolean().optional().describe("Show ignored files (--ignored)"),
         porcelainVersion: z
           .enum(["v1", "v2"])
@@ -66,11 +68,17 @@ export function registerStatusTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
       const porcelain = porcelainVersion || "v1";
-      const statusArgs = ["status", `--porcelain=${porcelain}`, "--branch"];
+      // --no-optional-locks is a top-level git option, so it goes before the
+      // subcommand. `git status --no-lock-index` is not an option (#1167).
+      const statusArgs = [
+        ...(noLockIndex ? ["--no-optional-locks"] : []),
+        "status",
+        `--porcelain=${porcelain}`,
+        "--branch",
+      ];
       if (showStash) statusArgs.push("--show-stash");
       if (renames) statusArgs.push("--renames");
       if (noRenames) statusArgs.push("--no-renames");
-      if (noLockIndex) statusArgs.push("--no-lock-index");
       if (showIgnored) statusArgs.push("--ignored");
       if (untrackedFiles) statusArgs.push(`--untracked-files=${untrackedFiles}`);
       if (ignoreSubmodules) statusArgs.push(`--ignore-submodules=${ignoreSubmodules}`);
