@@ -9,28 +9,81 @@ import {
 
 const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf-8");
 
+// Fixtures are real `jest --json` output from Jest 29.7 (#1176), paths scrubbed.
 describe("parseJestJson", () => {
-  it("parses JSON output with failures", () => {
-    const result = parseJestJson(fixture("jest-json.json"));
+  it("parses a passing run", () => {
+    const result = parseJestJson(fixture("jest-json-pass.json"));
 
     expect(result.framework).toBe("jest");
-    expect(result.summary.total).toBe(8);
-    expect(result.summary.passed).toBe(6);
-    expect(result.summary.failed).toBe(2);
-    expect(result.summary.skipped).toBe(0);
-    expect(result.failures).toHaveLength(2);
-    expect((result.tests ?? []).length).toBe(8);
+    expect(result.summary).toMatchObject({ total: 3, passed: 2, failed: 0, skipped: 1 });
+    expect(result.summary.duration).toBeGreaterThanOrEqual(0);
+    expect(result.summary.duration).toBeLessThan(60);
+    expect(result.failures).toEqual([]);
+    expect(result.tests?.map((t) => [t.name, t.status])).toEqual([
+      ["math adds", "passed"],
+      ["math later", "skipped"],
+      ["top level", "passed"],
+    ]);
+    expect(result.tests?.[0].file).toContain("math.test.js");
+  });
 
-    const firstFail = result.failures[0];
-    expect(firstFail.name).toBe("api > POST /users should validate email");
-    expect(firstFail.file).toContain("api.test.ts");
-    expect(firstFail.line).toBe(15);
-    expect(firstFail.expected).toContain("valid@email.com");
-    expect(firstFail.actual).toBe("undefined");
+  it("parses a failed assertion with expected and received", () => {
+    const result = parseJestJson(fixture("jest-json-fail.json"));
 
-    const secondFail = result.failures[1];
-    expect(secondFail.name).toBe("utils > should parse config file");
-    expect(secondFail.line).toBe(42);
+    expect(result.summary).toMatchObject({ total: 5, passed: 3, failed: 1, skipped: 1 });
+    expect(result.failures).toHaveLength(1);
+    const [fail] = result.failures;
+    expect(fail.name).toBe("math subtracts");
+    expect(fail.file).toContain("math.test.js");
+    expect(fail.message).toBe("Error: expect(received).toBe(expected) // Object.is equality");
+    expect(fail.expected).toBe("1");
+    expect(fail.actual).toBe("2");
+    // Jest repeats the assertion output in the file's message; that is not a
+    // second failure.
+    expect(result.failures.some((f) => f.name.includes("suite-level"))).toBe(false);
+  });
+
+  it("reports a file that fails to run as a suite-level failure", () => {
+    const result = parseJestJson(fixture("jest-json-load.json"));
+
+    // Jest counts the broken file under numFailedTestSuites, not numFailedTests.
+    expect(result.summary).toMatchObject({ total: 3, passed: 2, failed: 0, skipped: 1 });
+    expect(result.failures).toEqual([
+      {
+        name: "broken.test.js (suite-level failure)",
+        file: expect.stringContaining("broken.test.js"),
+        message:
+          "Cannot find module './does-not-exist' from 'broken.test.js' > 1 | require(\"./does-not-exist\");",
+      },
+    ]);
+  });
+
+  it("still reads the old testFilePath / testResults keys", () => {
+    const legacy = JSON.stringify({
+      success: false,
+      numTotalTests: 1,
+      numPassedTests: 0,
+      numFailedTests: 1,
+      numPendingTests: 0,
+      startTime: 0,
+      testResults: [
+        {
+          testFilePath: "/p/a.test.ts",
+          testResults: [{ fullName: "a fails", status: "failed", failureMessages: ["boom"] }],
+        },
+      ],
+    });
+    const result = parseJestJson(legacy);
+
+    expect(result.failures).toEqual([
+      {
+        name: "a fails",
+        file: "/p/a.test.ts",
+        message: "boom",
+        expected: undefined,
+        actual: undefined,
+      },
+    ]);
   });
 });
 

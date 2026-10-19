@@ -1,7 +1,19 @@
+import { stripAnsi } from "@paretools/shared";
 import type { TestRun, Coverage } from "../../schemas/index.js";
 
+interface JestAssertion {
+  fullName: string;
+  status: "passed" | "failed" | "pending" | "todo" | "skipped" | "disabled" | "focused";
+  failureMessages: string[];
+  duration?: number | null;
+  location?: { line: number; column: number } | null;
+}
+
 /**
- * Jest JSON reporter output structure (from `jest --json`).
+ * Jest JSON reporter output structure (from `jest --json`): one entry per test
+ * file, with `name` and `assertionResults` (#1176). `testFilePath` and a nested
+ * `testResults` belong to Jest's in-process AggregatedResult, not to the JSON it
+ * writes; they are still read as a fallback.
  */
 interface JestJsonOutput {
   success: boolean;
@@ -9,16 +21,18 @@ interface JestJsonOutput {
   numPassedTests: number;
   numFailedTests: number;
   numPendingTests: number;
+  numTodoTests?: number;
   startTime: number;
   testResults: Array<{
-    testFilePath: string;
-    testResults: Array<{
-      fullName: string;
-      status: "passed" | "failed" | "pending";
-      failureMessages: string[];
-      duration?: number;
-      location?: { line: number; column: number };
-    }>;
+    name?: string;
+    testFilePath?: string;
+    /** File-level outcome. "failed" with no failed assertion means the file failed to run. */
+    status?: string;
+    /** File-level error text. Also repeats the assertion failures when a test failed. */
+    message?: string;
+    endTime?: number;
+    assertionResults?: JestAssertion[];
+    testResults?: JestAssertion[];
   }>;
   coverageMap?: Record<
     string,
@@ -34,29 +48,52 @@ interface JestJsonOutput {
   >;
 }
 
+/** Marker in a failure's `name` for a file that failed outside any test. */
+const SUITE_FAILURE_LABEL = "(suite-level failure)";
+
+/**
+ * Condenses Jest's file-level error ("  ● Test suite failed to run\n\n    Cannot
+ * find module ...") to its first meaningful lines, without ANSI codes or the
+ * "●" header.
+ */
+function summarizeSuiteMessage(message: string | undefined): string | undefined {
+  const lines = stripAnsi(message ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("●"));
+  if (lines.length === 0) return undefined;
+  const text = lines.slice(0, 2).join(" ");
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
+}
+
 /**
  * Parses Jest JSON output (`jest --json`) into structured data.
  */
 export function parseJestJson(jsonStr: string): TestRun {
   const data = JSON.parse(jsonStr) as JestJsonOutput;
 
-  const endTime = Date.now();
-  const duration = (endTime - data.startTime) / 1000;
+  // Each file reports its own endTime; fall back to "now" for older output.
+  const endTimes = data.testResults.map((s) => s.endTime ?? 0).filter((t) => t > 0);
+  const endTime = endTimes.length > 0 ? Math.max(...endTimes) : Date.now();
+  const duration = Math.max(0, endTime - data.startTime) / 1000;
 
   const failures: TestRun["failures"] = [];
   const tests: NonNullable<TestRun["tests"]> = [];
 
   for (const suite of data.testResults) {
-    for (const test of suite.testResults) {
+    const file = suite.name ?? suite.testFilePath ?? "";
+    const assertions = suite.assertionResults ?? suite.testResults ?? [];
+
+    for (const test of assertions) {
       tests.push({
         name: test.fullName,
-        file: suite.testFilePath,
+        file,
         status:
           test.status === "failed" ? "failed" : test.status === "passed" ? "passed" : "skipped",
-        ...(test.duration !== undefined ? { duration: test.duration / 1000 } : {}),
+        ...(typeof test.duration === "number" ? { duration: test.duration / 1000 } : {}),
       });
       if (test.status === "failed") {
-        const message = test.failureMessages.join("\n").trim();
+        const message = stripAnsi(test.failureMessages.join("\n")).trim();
 
         // Try to extract expected/actual from Jest's diff output
         const expectedMatch = message.match(/Expected[:\s]+(.+)/);
@@ -64,13 +101,29 @@ export function parseJestJson(jsonStr: string): TestRun {
 
         failures.push({
           name: test.fullName,
-          file: suite.testFilePath,
-          line: test.location?.line,
+          file,
+          ...(test.location?.line !== undefined ? { line: test.location.line } : {}),
           message: message.split("\n")[0] || "Test failed",
           expected: expectedMatch?.[1]?.trim(),
           actual: actualMatch?.[1]?.trim(),
         });
       }
+    }
+
+    // A file that failed with no failed test failed to run (a missing module,
+    // a syntax error). Jest counts it under numFailedTestSuites, not
+    // numFailedTests, so without this the run would read as green. Unlike
+    // Vitest, Jest also fills `message` when a test failed (it repeats the
+    // assertion output), so the message alone is not a separate failure.
+    const hasFailedTest = assertions.some((t) => t.status === "failed");
+    if (suite.status === "failed" && !hasFailedTest) {
+      const fileName = file.split(/[\\/]/).pop() || file;
+      failures.push({
+        // The compact view keeps only name and message, so the name carries the file.
+        name: `${fileName} ${SUITE_FAILURE_LABEL}`,
+        file,
+        message: summarizeSuiteMessage(suite.message) ?? "Test suite failed to run",
+      });
     }
   }
 
@@ -80,7 +133,7 @@ export function parseJestJson(jsonStr: string): TestRun {
       total: data.numTotalTests,
       passed: data.numPassedTests,
       failed: data.numFailedTests,
-      skipped: data.numPendingTests,
+      skipped: data.numPendingTests + (data.numTodoTests ?? 0),
       duration: Math.round(duration * 100) / 100,
     },
     failures,
