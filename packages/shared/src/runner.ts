@@ -635,9 +635,16 @@ export function run(cmd: string, args: string[], opts?: RunOptions): Promise<Run
 
       // Windows: cmd.exe masks ENOENT — detect via stderr message
       if (code !== 0 && stderr.includes("is not recognized")) {
+        // Name what cmd.exe could not find: for a wrapper like npm.cmd it is
+        // often the program the wrapper runs (node), not the wrapper (#1093).
+        const missing = stderr.match(/'([^']+)' is not recognized/)?.[1];
+        const what =
+          missing && missing.toLowerCase() !== cmd.toLowerCase()
+            ? `"${missing}" (needed by "${cmd}")`
+            : `"${cmd}"`;
         reject(
           new Error(
-            `Command not found: "${cmd}". Ensure it is installed and available in your PATH.\n${_diagnoseLookup(cmd)}`,
+            `Command not found: ${what}. Ensure it is installed and available in your PATH.\n${_diagnoseLookup(cmd)}`,
           ),
         );
         return;

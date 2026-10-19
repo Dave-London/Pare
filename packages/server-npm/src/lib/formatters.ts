@@ -265,7 +265,14 @@ export function formatListCompact(data: NpmListCompact): string {
 // ── Info formatters ──────────────────────────────────────────────────
 
 /** Formats structured npm info data into a human-readable package summary. */
+/** Text for a single-field query (#1164). */
+function formatInfoField(name: string, field: string, value: unknown): string {
+  if (value === undefined) return `${name} ${field}: (not set)`;
+  return `${name} ${field}: ${typeof value === "string" ? value : JSON.stringify(value, null, 2)}`;
+}
+
 export function formatInfo(data: NpmInfo, deprecationMessage?: string): string {
+  if (data.field) return formatInfoField(data.name, data.field, data.value);
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
   if (data.isDeprecated)
@@ -309,8 +316,10 @@ export function formatInfo(data: NpmInfo, deprecationMessage?: string): string {
 export interface NpmInfoCompact {
   [key: string]: unknown;
   name: string;
-  version: string;
-  description: string;
+  version?: string;
+  description?: string;
+  field?: string;
+  value?: unknown;
   license?: string;
   homepage?: string;
   isDeprecated?: boolean;
@@ -319,6 +328,13 @@ export interface NpmInfoCompact {
 }
 
 export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
+  if (data.field) {
+    return {
+      name: data.name,
+      field: data.field,
+      ...(data.value !== undefined ? { value: data.value } : {}),
+    };
+  }
   const result: NpmInfoCompact = {
     name: data.name,
     version: data.version,
@@ -333,6 +349,7 @@ export function compactInfoMap(data: NpmInfo): NpmInfoCompact {
 }
 
 export function formatInfoCompact(data: NpmInfoCompact): string {
+  if (data.field) return formatInfoField(data.name, data.field, data.value);
   const lines = [`${data.name}@${data.version}`];
   if (data.description) lines.push(data.description);
   if (data.isDeprecated) lines.push(`DEPRECATED`);

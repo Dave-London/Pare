@@ -210,8 +210,16 @@ export const NpmRepositorySchema = z.object({
 export const NpmInfoSchema = z.object({
   packageManager: packageManagerField,
   name: z.string(),
-  version: z.string(),
-  description: z.string(),
+  /** Absent when `field` was queried: the result is then `field` and `value`. */
+  version: z.string().optional(),
+  description: z.string().optional(),
+  /** The `field` input, echoed when a single field was queried (#1164). */
+  field: z.string().optional(),
+  /**
+   * That field's value as the registry returns it (a string, object or array).
+   * Absent when the package does not set the field.
+   */
+  value: z.unknown().optional(),
   homepage: z.string().optional(),
   license: z.string().optional(),
   dependencies: z.record(z.string(), z.string()).optional(),

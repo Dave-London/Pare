@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseInfoJson, parseSearchJson } from "../src/lib/parsers.js";
+import { parseInfoJson, parseInfoFieldJson, parseSearchJson } from "../src/lib/parsers.js";
 import {
   formatInfo,
   compactInfoMap,
@@ -410,5 +410,39 @@ describe("formatSearchCompact", () => {
 
   it("formats empty compact results", () => {
     expect(formatSearchCompact({ packages: [] })).toBe("No packages found.");
+  });
+});
+
+// #1164: `npm view <pkg> <field> --json` prints a bare value (real npm 11
+// output below), which used to come back as { name: "unknown", version: "0.0.0" }.
+describe("info with field", () => {
+  it("returns a scalar field's value under `value`", () => {
+    const result = parseInfoFieldJson('"2.0.8"\n', "proxy-addr", "version");
+    expect(result).toEqual({ name: "proxy-addr", field: "version", value: "2.0.8" });
+  });
+
+  it("returns an object field's value", () => {
+    const result = parseInfoFieldJson('{\n  "node": ">= 0.10"\n}\n', "proxy-addr", "engines");
+    expect(result.value).toEqual({ node: ">= 0.10" });
+  });
+
+  it("omits value when the package does not set the field (npm prints nothing)", () => {
+    const result = parseInfoFieldJson("", "proxy-addr", "nonexistentfield");
+    expect(result).toEqual({ name: "proxy-addr", field: "nonexistentfield" });
+  });
+
+  it("never fills placeholder name/version from a bare value", () => {
+    expect(() => parseInfoJson('"2.0.8"')).toThrow(/Expected package metadata/);
+    expect(() => parseInfoJson("[]")).toThrow(/Expected package metadata/);
+  });
+
+  it("formats field results in full and compact text", () => {
+    const scalar = parseInfoFieldJson('"2.0.8"', "proxy-addr", "version");
+    expect(formatInfo(scalar)).toBe("proxy-addr version: 2.0.8");
+    expect(formatInfoCompact(compactInfoMap(scalar))).toBe("proxy-addr version: 2.0.8");
+
+    const missing = parseInfoFieldJson("", "proxy-addr", "funding");
+    expect(formatInfo(missing)).toBe("proxy-addr funding: (not set)");
+    expect(compactInfoMap(missing)).toEqual({ name: "proxy-addr", field: "funding" });
   });
 });
