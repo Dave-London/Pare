@@ -1,5 +1,15 @@
 # @paretools/python
 
+## 0.23.0
+
+### Patch Changes
+
+- [#1179](https://github.com/Dave-London/Pare/pull/1179) [`5a39b61`](https://github.com/Dave-London/Pare/commit/5a39b610694076561f390c890a53893d036946e6) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(python): stop `pytest` reporting `passed: 0` on a passing run when `-q` is also given in `extraArgs` or the project's `addopts`. The tool now pins an absolute `--verbosity` after all other options, and a passing run whose summary line cannot be found is returned with `countsUnavailable: true` instead of clean zero counts
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `@modelcontextprotocol/sdk` 1.31.0 or newer, which fixes CVE-2026-104850 (OAuth client could send credentials to an authorization server chosen by the MCP server)
+- Updated dependencies [[`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724)]:
+  - @paretools/shared@0.23.0
+
 ## 0.22.2
 
 ### Patch Changes
