@@ -76,6 +76,8 @@ export const PrListItemSchema = z.object({
 /** Zod schema for structured pr-list output. */
 export const PrListResultSchema = z.object({
   prs: z.array(PrListItemSchema),
+  /** Results from other repositories dropped from a `search` (#1173). */
+  excludedOtherRepos: z.number().optional(),
 });
 
 export type PrListResult = z.infer<typeof PrListResultSchema>;
@@ -206,6 +208,8 @@ export const IssueListItemSchema = z.object({
 /** Zod schema for structured issue-list output. */
 export const IssueListResultSchema = z.object({
   issues: z.array(IssueListItemSchema),
+  /** Results from other repositories dropped from a `search` (#1173). */
+  excludedOtherRepos: z.number().optional(),
 });
 
 export type IssueListResult = z.infer<typeof IssueListResultSchema>;
