@@ -326,6 +326,14 @@ describe("Recorded: git.branch", () => {
     expect(main!.lastCommit).toMatch(/^[0-9a-f]{7,}$/);
   });
 
+  it("pattern filters the list with --list instead of creating a branch", async () => {
+    mockGit(loadFixture("branch", "s01-list.txt"));
+    await callAndValidate({ pattern: "*feature-1*", compact: false });
+    const args = vi.mocked(git).mock.calls[0][0] as string[];
+    expect(args).toContain("--list");
+    expect(args.indexOf("--list")).toBeLessThan(args.indexOf("*feature-1*"));
+  });
+
   it("S2 [recorded] create branch confirms, then a follow-up list shows it", async () => {
     // Call 1: git branch <name> (create) — returns a confirmation, no listing (#1037)
     mockGit("");
