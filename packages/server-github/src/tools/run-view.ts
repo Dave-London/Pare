@@ -39,6 +39,15 @@ export function registerRunViewTool(server: McpServer) {
           .optional()
           .describe("Retrieve logs for failed steps only (--log-failed)"),
         log: z.boolean().optional().describe("Retrieve full run logs (--log)"),
+        tailLines: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100_000)
+          .optional()
+          .describe(
+            "With log/logFailed: return only the last N log lines, where test runners print failures and tracebacks. logsTotalLines then gives the full length",
+          ),
         attempt: z.coerce
           .number()
           .optional()
@@ -64,7 +73,7 @@ export function registerRunViewTool(server: McpServer) {
       },
       outputSchema: RunViewResultSchema,
     },
-    async ({ id, logFailed, log, attempt, exitStatus, job, repo, path, compact }) => {
+    async ({ id, logFailed, log, tailLines, attempt, exitStatus, job, repo, path, compact }) => {
       const cwd = path || process.cwd();
 
       if (job) assertNoFlagInjection(job, "job");
@@ -92,6 +101,15 @@ export function registerRunViewTool(server: McpServer) {
 
       // Log mode: return raw logs as text in the logs field
       if (wantsLogs) {
+        let logs = result.stdout;
+        let logsTotalLines: number | undefined;
+        if (tailLines !== undefined) {
+          const lines = logs.replace(/\r?\n$/, "").split(/\r?\n/);
+          if (lines.length > tailLines) {
+            logsTotalLines = lines.length;
+            logs = lines.slice(-tailLines).join("\n");
+          }
+        }
         const data: import("../schemas/index.js").RunViewResult = {
           id,
           status: "completed",
@@ -99,7 +117,8 @@ export function registerRunViewTool(server: McpServer) {
           workflowName: "",
           headBranch: "",
           url: "",
-          logs: result.stdout,
+          logs,
+          ...(logsTotalLines !== undefined ? { logsTotalLines } : {}),
         };
         return dualOutput(data, formatRunViewLog);
       }

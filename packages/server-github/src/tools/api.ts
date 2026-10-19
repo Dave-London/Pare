@@ -128,6 +128,18 @@ export function registerApiTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
 
+      // gh api accepts only one of --jq, --silent, --verbose (and --template);
+      // it rejects any pair before sending the request (#1109). Say so here,
+      // naming the inputs, instead of passing on gh's usage error.
+      const outputModes = [jq ? "jq" : "", silent ? "silent" : "", verbose ? "verbose" : ""].filter(
+        Boolean,
+      );
+      if (outputModes.length > 1) {
+        throw new Error(
+          `Use only one of jq, silent and verbose: gh api accepts only one of --jq, --silent, --verbose (got ${outputModes.join(" + ")}). The request was not sent.`,
+        );
+      }
+
       assertNoFlagInjection(endpoint, "endpoint");
       if (jq) assertNoFlagInjection(jq, "jq");
       if (hostname) assertNoFlagInjection(hostname, "hostname");

@@ -364,6 +364,14 @@ describe("Smoke: github.api", () => {
     expect(args).toContain("--verbose");
   });
 
+  // ── S23b: jq/silent/verbose are exclusive in gh api (#1109) ──────────
+  it("S23b [P1] jq with silent is rejected before calling gh", async () => {
+    await expect(
+      callAndValidate({ endpoint: "repos/o/r", method: "GET", jq: ".name", silent: true }),
+    ).rejects.toThrow(/only one of jq, silent and verbose.*jq \+ silent/);
+    expect(ghCmd).not.toHaveBeenCalled();
+  });
+
   // ── S24: Cache TTL ──────────────────────────────────────────────────
   it("S24 [P2] cache TTL passes --cache flag", async () => {
     mockGh(HTTP_200_JSON("{}"));
