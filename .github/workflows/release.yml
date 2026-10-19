@@ -75,6 +75,34 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true
 
+      # A green publish step is not proof the versions are installable: the
+      # registry can take several minutes to show them (#1189). Wait up to 15
+      # minutes for every published version, and fail the run if one is missing.
+      - name: Verify published versions are on the registry
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.published-packages }}
+        run: |
+          deadline=$((SECONDS + 900))
+          pending=$(echo "$PUBLISHED" | jq -r '.[] | "\(.name)@\(.version)"')
+          while :; do
+            still=""
+            for spec in $pending; do
+              npm view "$spec" version --prefer-online >/dev/null 2>&1 || still="$still $spec"
+            done
+            pending=$(echo $still)
+            if [ -z "$pending" ]; then
+              echo "All published versions are on the registry."
+              exit 0
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::Not on the npm registry after 15 minutes: $pending"
+              exit 1
+            fi
+            echo "Waiting for the registry: $pending"
+            sleep 30
+          done
+
   canary:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
