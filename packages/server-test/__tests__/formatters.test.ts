@@ -28,6 +28,19 @@ describe("formatTestRun", () => {
     expect(output).toContain("0.47s");
   });
 
+  it("shows how many of the failures are pytest errors", () => {
+    const run: TestRun = {
+      framework: "pytest",
+      summary: { total: 2, passed: 1, failed: 1, skipped: 0, duration: 0.7, errors: 1 },
+      failures: [{ name: "test_setup_error", message: "ERROR: RuntimeError: setup exploded" }],
+    };
+    const output = formatTestRun(run);
+
+    expect(output).toContain("FAIL");
+    expect(output).toContain("1 failed (1 errors)");
+    expect(output).toContain("ERROR: RuntimeError: setup exploded");
+  });
+
   it("formats failing run with failure details", () => {
     const run: TestRun = {
       framework: "jest",

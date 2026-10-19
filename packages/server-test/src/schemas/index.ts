@@ -21,6 +21,9 @@ export const TestRunSchema = z.object({
     failed: z.number(),
     skipped: z.number(),
     duration: z.number(),
+    /** pytest only: how many of `failed` are errors (a fixture, setup or
+     *  teardown raised, or a module failed to collect) rather than failed tests. */
+    errors: z.number().optional(),
   }),
   failures: z.array(TestFailureSchema),
   tests: z
