@@ -30,7 +30,9 @@ const TSC_EMITTED_FILE_RE = /^TSFILE:\s+(.+)$/;
 /** Parses TypeScript compiler (`tsc`) output into structured diagnostics with file, line, and error code. */
 export function parseTscOutput(stdout: string, stderr: string, exitCode: number): TscResult {
   const output = stdout + "\n" + stderr;
-  const lines = output.split("\n");
+  // CRLF on Windows: a trailing \r makes TSC_DIAGNOSTIC_RE's `(.+)$` fail, so
+  // every diagnostic was missed and a failing typecheck read as 0 errors.
+  const lines = output.split(/\r?\n/);
   const diagnostics: TscDiagnostic[] = [];
   const emittedFiles: string[] = [];
   let totalFiles: number | undefined;
@@ -693,6 +695,31 @@ const TURBO_TASK_FAIL_RE = /^(.+?)#(\S+):.*(?:exited\s*\(\d+\)|ERROR)/;
 
 // Summary lines
 const TURBO_TASKS_SUMMARY_RE = /Tasks:\s+(\d+)\s+successful,\s+(\d+)\s+total/;
+
+/** A task's log line, prefixed by turbo: "@scope/pkg:build: > tsc". */
+const TURBO_TASK_LOG_RE = /^(\S+?):(\S+?):(?: (.*))?$/;
+
+/** Most log lines kept per task; the tail is kept, since errors come last. */
+const TURBO_TASK_LOG_MAX_LINES = 60;
+const TURBO_TASK_LOG_MAX_CHARS = 4000;
+
+/** Which tasks get their captured log in `output` (#1168). */
+export type TurboLogScope = "all" | "failed" | "none";
+
+/** Joins a task's log lines, trimming blank edges and keeping the tail. */
+function capTaskLog(lines: string[]): string | undefined {
+  let start = 0;
+  let end = lines.length;
+  while (start < end && !lines[start].trim()) start++;
+  while (end > start && !lines[end - 1].trim()) end--;
+  if (start === end) return undefined;
+  const kept = lines.slice(Math.max(start, end - TURBO_TASK_LOG_MAX_LINES), end);
+  const text = kept.join("\n");
+  const truncated = kept.length < end - start || text.length > TURBO_TASK_LOG_MAX_CHARS;
+  const tail =
+    text.length > TURBO_TASK_LOG_MAX_CHARS ? text.slice(-TURBO_TASK_LOG_MAX_CHARS) : text;
+  return truncated ? `… (log truncated)\n${tail}` : tail;
+}
 const TURBO_CACHED_RE = /Cached:\s+(\d+)\s+cached,\s+(\d+)\s+total/;
 
 /** Parses a duration string like "100ms", "2.5s", "1m30s" into milliseconds. */
@@ -725,8 +752,10 @@ export function parseTurboOutput(
   exitCode: number,
   duration: number,
   summaryJsonContent?: string,
+  logScope: TurboLogScope = "failed",
 ): TurboResult {
   const taskMap = new Map<string, TurboTask>();
+  const taskLogs = new Map<string, string[]>();
   const combined = stdout + "\n" + stderr;
   const lines = combined.split("\n");
 
@@ -797,6 +826,16 @@ export function parseTurboOutput(
       continue;
     }
 
+    // A task's own output, which --output-logs controls (#1168).
+    const logMatch = line.replace(/\r$/, "").match(TURBO_TASK_LOG_RE);
+    if (logMatch) {
+      const key = `${logMatch[1]}#${logMatch[2]}`;
+      const log = taskLogs.get(key) ?? [];
+      log.push(logMatch[3] ?? "");
+      taskLogs.set(key, log);
+      continue;
+    }
+
     // Summary lines
     const summaryMatch = trimmed.match(TURBO_TASKS_SUMMARY_RE);
     if (summaryMatch) {
@@ -813,6 +852,14 @@ export function parseTurboOutput(
   }
 
   const tasks = Array.from(taskMap.values());
+
+  if (logScope !== "none") {
+    for (const task of tasks) {
+      if (logScope === "failed" && task.status !== "fail") continue;
+      const output = capTaskLog(taskLogs.get(`${task.package}#${task.task}`) ?? []);
+      if (output) task.output = output;
+    }
+  }
 
   // Prefer the explicit summary line counts when available — they are the
   // ground truth from turbo and let us preserve the

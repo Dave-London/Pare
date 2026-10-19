@@ -366,6 +366,14 @@ export function formatBuildCompact(data: BuildCompact): string {
 // turbo
 // ---------------------------------------------------------------------------
 
+/** Indents a task's captured log under its status line (#1168). */
+function indentTaskOutput(output: string): string {
+  return output
+    .split("\n")
+    .map((l) => `      ${l}`)
+    .join("\n");
+}
+
 /** Formats structured Turbo run results into a human-readable summary. */
 export function formatTurbo(data: TurboResult): string {
   const tasks = data.tasks ?? [];
@@ -381,6 +389,7 @@ export function formatTurbo(data: TurboResult): string {
       const durationPart = t.duration ? ` (${t.duration})` : "";
       const msPart = t.durationMs !== undefined ? ` [${t.durationMs}ms]` : "";
       lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}${msPart}`);
+      if (t.output) lines.push(indentTaskOutput(t.output));
     }
     if (data.summary) {
       lines.push(`  summary: ${Object.keys(data.summary).length} field(s)`);
@@ -395,6 +404,7 @@ export function formatTurbo(data: TurboResult): string {
     const cachePart = t.cache ? ` [${t.cache}]` : "";
     const durationPart = t.duration ? ` (${t.duration})` : "";
     lines.push(`  ${t.package}#${t.task}: ${t.status}${cachePart}${durationPart}`);
+    if (t.output) lines.push(indentTaskOutput(t.output));
   }
   if (data.summary) {
     lines.push(`  summary: ${Object.keys(data.summary).length} field(s)`);
@@ -440,9 +450,13 @@ export interface TurboCompact {
   passed: number;
   failed: number;
   cached: number;
+  failedTasks?: Array<{ package: string; task: string; output?: string }>;
 }
 
 export function compactTurboMap(data: TurboResult): TurboCompact {
+  const failedTasks = (data.tasks ?? [])
+    .filter((t) => t.status === "fail")
+    .map((t) => ({ package: t.package, task: t.task, ...(t.output ? { output: t.output } : {}) }));
   return {
     success: data.success,
     duration: data.duration,
@@ -450,6 +464,7 @@ export function compactTurboMap(data: TurboResult): TurboCompact {
     passed: data.passed,
     failed: data.failed,
     cached: data.cached,
+    ...(failedTasks.length > 0 ? { failedTasks } : {}),
   };
 }
 
@@ -459,7 +474,14 @@ export function formatTurboCompact(data: TurboCompact): string {
     if (data.cached > 0) parts.push(`${data.cached} cached`);
     return parts.join(", ");
   }
-  return `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`;
+  const lines = [
+    `turbo: failed (${data.duration}s) — ${data.passed} passed, ${data.failed} failed`,
+  ];
+  for (const t of data.failedTasks ?? []) {
+    lines.push(`  ${t.package}#${t.task}: fail`);
+    if (t.output) lines.push(indentTaskOutput(t.output));
+  }
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

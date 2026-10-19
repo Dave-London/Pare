@@ -286,6 +286,11 @@ export const TurboTaskSchema = z.object({
   duration: z.string().optional(),
   durationMs: z.number().optional(),
   cache: z.enum(["hit", "miss"]).optional(),
+  /**
+   * The task's captured log (tail, capped). Present for failed tasks, and for
+   * every task when `outputLogs` was set to a mode that prints logs (#1168).
+   */
+  output: z.string().optional(),
 });
 
 /** Zod schema for structured Turbo run output with per-package task results and summary counts.
@@ -310,6 +315,7 @@ export interface TurboTask {
   duration?: string;
   durationMs?: number;
   cache?: "hit" | "miss";
+  output?: string;
 }
 
 /** Full turbo result -- always returned by the parser. */

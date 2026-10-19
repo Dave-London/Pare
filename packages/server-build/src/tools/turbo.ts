@@ -171,12 +171,21 @@ export function registerTurboTool(server: McpServer) {
         }
       }
 
+      // Logs are attached per task: for every task when the caller asked for a
+      // log mode explicitly, otherwise only for failed tasks (#1168).
+      const logScope =
+        outputLogs === "none" || outputLogs === "hash-only"
+          ? "none"
+          : outputLogs
+            ? "all"
+            : "failed";
       const data = parseTurboOutput(
         result.stdout,
         result.stderr,
         result.exitCode,
         duration,
         summaryJsonContent,
+        logScope,
       );
       return compactDualOutput(
         data,

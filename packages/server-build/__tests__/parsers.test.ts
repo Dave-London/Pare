@@ -11,6 +11,24 @@ import {
 } from "../src/lib/parsers.js";
 
 describe("parseTscOutput", () => {
+  // #1202: tsc on Windows prints CRLF; the trailing \r made every diagnostic
+  // line miss, so a failing typecheck read as 0 errors.
+  it("parses diagnostics from CRLF output", () => {
+    const stdout =
+      "src/lib/formatters.ts(373,13): error TS1002: Unterminated string literal.\r\n" +
+      "src/lib/formatters.ts(374,1): error TS1005: ',' expected.\r\n";
+
+    const result = parseTscOutput(stdout, "", 2);
+
+    expect(result.errors).toBe(2);
+    expect(result.diagnostics[0]).toMatchObject({
+      file: "src/lib/formatters.ts",
+      line: 373,
+      code: 1002,
+      message: "Unterminated string literal.",
+    });
+  });
+
   it("parses typical tsc errors", () => {
     const stdout = [
       "src/index.ts(5,3): error TS2322: Type 'string' is not assignable to type 'number'.",
