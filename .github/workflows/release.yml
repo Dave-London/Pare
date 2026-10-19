@@ -3,13 +3,27 @@ name: Release
 on:
   push:
     branches: [main]
+  # Canary snapshots publish from this workflow too. npm trusted publishing is
+  # tied to a workflow file name, so one file means one trust entry per package.
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to publish canary from (defaults to the branch the workflow is run on)"
+        required: false
+        type: string
 
 permissions: {}
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+# npm auth is OIDC trusted publishing (no NPM_TOKEN). Each public package has a
+# trusted publisher for Dave-London/Pare + release.yml on npmjs.com; see
+# scripts/npm-trust.sh. setup-node needs no registry-url: npm defaults to
+# registry.npmjs.org, and without a token there is no .npmrc auth to write.
+
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,7 +49,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: "https://registry.npmjs.org"
+
+      # pnpm 10 hands the packed tarball to the npm CLI on PATH; trusted
+      # publishing needs npm >= 11.5.1 (Node 22 bundles npm 10).
+      - run: npm install -g npm@11.21.1
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
@@ -56,6 +73,40 @@ jobs:
           commit-message: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+  canary:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v4
+        with:
+          version: 10.29.2
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: npm install -g npm@11.21.1
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+
+      - name: Create canary versions
+        run: pnpm changeset version --snapshot canary
+
+      - name: Publish canary to npm
+        run: pnpm changeset publish --tag canary
+        env:
           NPM_CONFIG_PROVENANCE: true
