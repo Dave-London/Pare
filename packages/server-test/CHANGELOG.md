@@ -1,5 +1,19 @@
 # @paretools/test
 
+## 0.23.1
+
+### Patch Changes
+
+- [#1192](https://github.com/Dave-London/Pare/pull/1192) [`5588bd2`](https://github.com/Dave-London/Pare/commit/5588bd2f946dc7d5b9d607597804986286279772) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): `coverage` now reports a run whose test runner exited non-zero (a failed test, a suite that failed to load, a hook that threw, or a missed `failUnder` / configured threshold) with an `error` field and the runner's output, instead of a clean-looking coverage result. A missed `failUnder` is named as the cause ([#1177](https://github.com/Dave-London/Pare/issues/1177))
+
+- [#1193](https://github.com/Dave-London/Pare/pull/1193) [`8db3ab2`](https://github.com/Dave-London/Pare/commit/8db3ab2916a8efdf98436c2d920675d01d596662) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): `run` with Jest now parses real `jest --json` output (`name` / `assertionResults` per file). It read keys Jest never writes, so a passing run returned a tool error and a failing run came back as "0 tests". A file that fails to run (for example a missing module) is reported as a suite-level failure, ANSI codes are stripped from failure messages, and the duration comes from the report instead of the parse time ([#1176](https://github.com/Dave-London/Pare/issues/1176))
+
+- [#1188](https://github.com/Dave-London/Pare/pull/1188) [`90b17e1`](https://github.com/Dave-London/Pare/commit/90b17e1ae976a591d625e64699a8767157f21146) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): `run` with pytest now reports tests that ERROR in setup or teardown, and modules that fail to collect. They are listed in `failures` and `tests` and counted in `summary.failed`, with the new optional `summary.errors` giving how many were errors, so a run with errors no longer reads as `failed: 0` ([#1178](https://github.com/Dave-London/Pare/issues/1178)). The summary-rule parsing is also linear now on long lines of `=` ([#1182](https://github.com/Dave-London/Pare/issues/1182))
+
+- [#1187](https://github.com/Dave-London/Pare/pull/1187) [`b3ad257`](https://github.com/Dave-London/Pare/commit/b3ad257d7ab226d3fc0676139eb9668f532fc6af) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): `run` with `testNamePattern` and Vitest now passes `--testNamePattern`. It used to pass `--grep`, a Mocha flag that Vitest rejects, so no tests ran ([#1172](https://github.com/Dave-London/Pare/issues/1172))
+- Updated dependencies []:
+  - @paretools/shared@0.23.1
+
 ## 0.23.0
 
 ### Patch Changes
