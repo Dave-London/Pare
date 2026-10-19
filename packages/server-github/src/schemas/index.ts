@@ -225,10 +225,16 @@ export type IssueCreateResult = z.infer<typeof IssueCreateResultSchema>;
 export const IssueCloseResultSchema = z.object({
   number: z.number(),
   state: z.string(),
-  url: z.string(),
+  /** Omitted when it could not be determined, rather than "" (#1170). */
+  url: z.string().optional(),
   // S-gap: Add reason echo, commentUrl
   reason: z.string().optional(),
   commentUrl: z.string().optional(),
+  /**
+   * Present when a comment was given. false when it was not posted: gh skips
+   * the comment on an issue that is already closed, so post it with issue-comment.
+   */
+  commentPosted: z.boolean().optional(),
   // P1-gap #144: Detect already-closed issues
   alreadyClosed: z.boolean().optional(),
   errorType: z.enum(["not-found", "permission-denied", "already-closed", "unknown"]).optional(),

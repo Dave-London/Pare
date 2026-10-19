@@ -1168,7 +1168,7 @@ describe("parseIssueClose", () => {
 
   it("handles output without GitHub URL", () => {
     const result = parseIssueClose("some random output", 10);
-    expect(result.url).toBe("some random output");
+    expect(result.url).toBeUndefined();
   });
 });
 

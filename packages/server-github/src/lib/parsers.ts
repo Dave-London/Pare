@@ -519,7 +519,8 @@ export function parseIssueClose(
 ): IssueCloseResult {
   // Robust URL extraction: find the GitHub issue URL anywhere in the output
   const urlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+\/issues\/\d+)/);
-  const url = urlMatch ? urlMatch[1] : stdout.trim();
+  // No guessed URL: real `gh issue close` prints none, and the tool looks it up (#1170).
+  const url = urlMatch ? urlMatch[1] : undefined;
   // S-gap: Extract comment URL from output if a comment was added
   const commentUrlMatch = stdout.match(/(https:\/\/github\.com\/[^\s]+#issuecomment-\d+)/);
   // P1-gap #144: Detect already-closed issues

@@ -16,6 +16,35 @@ function classifyIssueCloseError(
   return "unknown";
 }
 
+/**
+ * `gh issue close` prints only a confirmation to stderr, never the URL or the
+ * closing comment's URL (#1170), so they come from a follow-up `gh issue view`.
+ * Any failure leaves them unset rather than guessed.
+ */
+async function lookupClosedIssue(
+  selector: string,
+  repo: string | undefined,
+  cwd: string,
+  comment: string | undefined,
+): Promise<{ url?: string; commentUrl?: string }> {
+  const args = ["issue", "view", selector, "--json", comment ? "url,comments" : "url"];
+  if (repo) args.push("--repo", repo);
+  try {
+    const result = await ghCmd(args, cwd);
+    if (!result || result.exitCode !== 0) return {};
+    const data = JSON.parse(result.stdout) as {
+      url?: string;
+      comments?: Array<{ body?: string; url?: string }>;
+    };
+    const posted = comment
+      ? [...(data.comments ?? [])].reverse().find((c) => c.body?.trim() === comment.trim())
+      : undefined;
+    return { url: data.url || undefined, commentUrl: posted?.url || undefined };
+  } catch {
+    return {};
+  }
+}
+
 /** Registers the `issue-close` tool on the given MCP server. */
 export function registerIssueCloseTool(server: McpServer) {
   server.registerTool(
@@ -83,23 +112,40 @@ export function registerIssueCloseTool(server: McpServer) {
             ...parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr),
             errorType: "already-closed" as const,
             errorMessage: combined.trim(),
+            ...(comment ? { commentPosted: false } : {}),
           };
           return dualOutput(data, formatIssueClose);
         }
         const data = {
           number: issueNum,
           state: "open",
-          url: "",
           reason: reason ?? undefined,
-          commentUrl: undefined,
           errorType: classifyIssueCloseError(combined),
           errorMessage: combined.trim(),
+          ...(comment ? { commentPosted: false } : {}),
         };
         return dualOutput(data, formatIssueClose);
       }
 
       // S-gap: Pass reason, comment, and stderr for echo in output
       const data = parseIssueClose(result.stdout, issueNum, reason, comment, result.stderr);
+
+      // On an issue that was already closed, gh exits 0 and does not post the
+      // comment. Say so, so the caller can post it with issue-comment.
+      const commentSkipped = !!comment && !!data.alreadyClosed;
+      const wantCommentUrl = !!comment && !commentSkipped && !data.commentUrl;
+      if (!data.url || wantCommentUrl) {
+        const found = await lookupClosedIssue(
+          selector,
+          repo,
+          cwd,
+          wantCommentUrl ? comment : undefined,
+        );
+        data.url ??= found.url;
+        data.commentUrl ??= found.commentUrl;
+      }
+      if (comment) data.commentPosted = !commentSkipped;
+
       return dualOutput(data, formatIssueClose);
     },
   );

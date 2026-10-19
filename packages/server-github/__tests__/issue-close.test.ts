@@ -64,11 +64,11 @@ describe("parseIssueClose", () => {
     expect(result.url).toBe("https://github.com/owner/repo/issues/99");
   });
 
-  it("falls back to trimmed stdout when no URL pattern matches", () => {
+  it("leaves url unset when no URL pattern matches (#1170)", () => {
     const stdout = "operation completed\n";
     const result = parseIssueClose(stdout, 5);
 
-    expect(result.url).toBe("operation completed");
+    expect(result.url).toBeUndefined();
     expect(result.number).toBe(5);
     expect(result.state).toBe("closed");
   });
