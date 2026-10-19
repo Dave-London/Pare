@@ -388,9 +388,9 @@ describe("buildRunExtraArgs", () => {
       expect(result).toEqual(["--testNamePattern=login"]);
     });
 
-    it("adds --grep for vitest", () => {
+    it("adds --testNamePattern for vitest (vitest rejects --grep, #1172)", () => {
       const result = buildRunExtraArgs("vitest", { testNamePattern: "login" });
-      expect(result).toEqual(["--grep=login"]);
+      expect(result).toEqual(["--testNamePattern=login"]);
     });
 
     it("adds --grep for mocha", () => {
@@ -473,7 +473,7 @@ describe("buildRunExtraArgs", () => {
     expect(result).toContain("--bail=1");
     expect(result).toContain("--passWithNoTests");
     expect(result).toContain("--bail=3");
-    expect(result).toContain("--grep=should work");
+    expect(result).toContain("--testNamePattern=should work");
     expect(result).toContain("--pool.threads.maxThreads=4");
   });
 

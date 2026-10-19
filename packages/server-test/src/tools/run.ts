@@ -209,7 +209,7 @@ export function buildRunExtraArgs(
         extraArgs.push(`--testNamePattern=${opts.testNamePattern}`);
         break;
       case "vitest":
-        extraArgs.push(`--grep=${opts.testNamePattern}`);
+        extraArgs.push(`--testNamePattern=${opts.testNamePattern}`);
         break;
       case "mocha":
         extraArgs.push("--grep", opts.testNamePattern);
@@ -387,7 +387,7 @@ export function registerRunTool(server: McpServer) {
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
           .describe(
-            "Filter tests by name pattern (maps to -k for pytest, --testNamePattern for jest, --grep for vitest/mocha)",
+            "Filter tests by name pattern (maps to -k for pytest, --testNamePattern for jest/vitest, --grep for mocha)",
           ),
         workers: z.coerce
           .number()
