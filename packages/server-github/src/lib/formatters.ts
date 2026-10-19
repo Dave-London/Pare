@@ -274,7 +274,12 @@ export function formatIssueCreate(data: IssueCreateResult): string {
 export function formatIssueClose(data: IssueCloseResult): string {
   const reasonPart = data.reason ? ` (${data.reason})` : "";
   const alreadyPart = data.alreadyClosed ? " [already closed]" : "";
-  return `Closed issue #${data.number}${reasonPart}: ${data.url}${alreadyPart}`;
+  const urlPart = data.url ? `: ${data.url}` : "";
+  const commentPart =
+    data.commentPosted === false
+      ? " [comment NOT posted: the issue was already closed; use issue-comment]"
+      : "";
+  return `Closed issue #${data.number}${reasonPart}${urlPart}${alreadyPart}${commentPart}`;
 }
 
 /** Formats structured pr-close data into human-readable text. */

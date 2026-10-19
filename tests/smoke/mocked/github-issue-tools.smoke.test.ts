@@ -156,6 +156,63 @@ describe("Smoke: github.issue-close", () => {
     const args = vi.mocked(ghCmd).mock.calls[0][0];
     expect(args[2]).toBe("https://github.com/owner/repo/issues/42");
   });
+
+  // Real gh 2.79 prints nothing on stdout for `issue close`, only a stderr
+  // confirmation, so url and commentUrl come from a follow-up view (#1170).
+  it("S14 [P0] real gh output: url and comment url come from issue view", async () => {
+    mockGh("", "✓ Closed issue owner/repo#42 (Some title)");
+    mockGh(
+      JSON.stringify({
+        url: "https://github.com/owner/repo/issues/42",
+        comments: [
+          { body: "older note", url: "https://github.com/owner/repo/issues/42#issuecomment-1" },
+          { body: "Fixed in #50", url: "https://github.com/owner/repo/issues/42#issuecomment-2" },
+        ],
+      }),
+    );
+    const { parsed } = await callAndValidate({
+      number: "42",
+      comment: "Fixed in #50",
+      repo: "owner/repo",
+    });
+
+    expect(parsed.url).toBe("https://github.com/owner/repo/issues/42");
+    expect(parsed.commentUrl).toBe("https://github.com/owner/repo/issues/42#issuecomment-2");
+    expect(parsed.commentPosted).toBe(true);
+    const viewArgs = vi.mocked(ghCmd).mock.calls[1][0];
+    expect(viewArgs).toEqual([
+      "issue",
+      "view",
+      "42",
+      "--json",
+      "url,comments",
+      "--repo",
+      "owner/repo",
+    ]);
+  });
+
+  it("S15 [P0] already closed (exit 0): comment reported as not posted", async () => {
+    mockGh("", "! Issue owner/repo#42 (Some title) is already closed");
+    mockGh(JSON.stringify({ url: "https://github.com/owner/repo/issues/42" }));
+    const { parsed, result } = await callAndValidate({ number: "42", comment: "Closing note" });
+
+    expect(parsed.alreadyClosed).toBe(true);
+    expect(parsed.commentPosted).toBe(false);
+    expect(parsed.url).toBe("https://github.com/owner/repo/issues/42");
+    // Only the URL is looked up: the comment was never posted.
+    expect(vi.mocked(ghCmd).mock.calls[1][0]).toContain("url");
+    expect(JSON.stringify(result.content)).toContain("comment NOT posted");
+  });
+
+  it("S16 [P1] url omitted, not empty, when the lookup fails", async () => {
+    mockGh("", "✓ Closed issue owner/repo#42 (Some title)");
+    mockGh("", "HTTP 502", 1);
+    const { parsed } = await callAndValidate({ number: "42" });
+
+    expect(parsed.state).toBe("closed");
+    // undefined, so JSON output omits it; never "".
+    expect(parsed.url).toBeUndefined();
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════
