@@ -463,6 +463,7 @@ const PYTEST_MIXED_RESULTS = [
   "test_math.py ..F.s",
   "test_strings.py .F",
   "",
+  "================================ FAILURES =================================",
   "_____________________________ test_subtract _____________________________",
   "",
   "    def test_subtract():",

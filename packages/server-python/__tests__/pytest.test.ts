@@ -19,6 +19,7 @@ describe("parsePytestOutput", () => {
 
   it("parses mixed results with failures", () => {
     const stdout = [
+      "================================ FAILURES =================================",
       "_____________________________ test_addition _____________________________",
       "",
       "    def test_addition():",
@@ -72,6 +73,7 @@ describe("parsePytestOutput", () => {
 
   it("parses multiple failures", () => {
     const stdout = [
+      "================================ FAILURES =================================",
       "_____________________________ test_foo _____________________________",
       "",
       "    def test_foo():",
@@ -194,6 +196,7 @@ describe("parsePytestOutput", () => {
 
   it("does not attach diagnostics when tests actually failed", () => {
     const stdout = [
+      "================================ FAILURES =================================",
       "_____________________________ test_addition _____________________________",
       "E       assert 2 == 3",
       "==================== 2 passed, 1 failed in 1.23s ====================",
@@ -467,6 +470,7 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     // Reachable with an exit-code-suppressing plugin plus a replaced summary: the
     // failure text is in the output even though nothing counts it.
     const stdout = [
+      "================================ FAILURES =================================",
       "_____________________________ test_bad _____________________________",
       "    def test_bad():",
       ">       assert 1 == 2",
@@ -531,5 +535,114 @@ describe("parsePytestOutput — counts come only from the summary line (#1061)",
     expect(result.passed).toBe(120);
     expect(result.skipped).toBe(3);
     expect(result.failed).toBe(0);
+  });
+});
+
+describe("parsePytestOutput — failure blocks come only from FAILURES/ERRORS (#1181)", () => {
+  // Real pytest 8.4 + pytest-cov 7.0 output (-v --cov=calc), trimmed.
+  const COVERAGE_REPORT = [
+    "=============================== tests coverage ================================",
+    "_______________ coverage: platform win32, python 3.13.7-final-0 _______________",
+    "",
+    "Name      Stmts   Miss  Cover",
+    "-----------------------------",
+    "calc.py       4      1    75%",
+    "-----------------------------",
+    "TOTAL         4      1    75%",
+  ];
+
+  it("does not read pytest-cov's report header as a failure on a passing run", () => {
+    const stdout = [
+      "test_calc.py::test_add PASSED                                            [ 33%]",
+      "test_calc.py::test_add_neg PASSED                                        [ 66%]",
+      "test_calc.py::test_skip SKIPPED (later)                                  [100%]",
+      "",
+      ...COVERAGE_REPORT,
+      "======================== 2 passed, 1 skipped in 0.39s =========================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 0);
+
+    expect(result.success).toBe(true);
+    expect(result.passed).toBe(2);
+    expect(result.failures).toEqual([]);
+  });
+
+  it("keeps the real failure and drops the coverage header on a failing run", () => {
+    const stdout = [
+      "================================== FAILURES ===================================",
+      "________________________________ test_add_neg _________________________________",
+      "",
+      "    def test_add_neg():",
+      ">       assert add(-1, -1) == 5",
+      "E       assert -2 == 5",
+      "E        +  where -2 = add(-1, -1)",
+      "",
+      "test_calc.py:8: AssertionError",
+      ...COVERAGE_REPORT,
+      "=========================== short test summary info ===========================",
+      "FAILED test_calc.py::test_add_neg - assert -2 == 5",
+      "=================== 1 failed, 1 passed, 1 skipped in 0.39s ====================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.failed).toBe(1);
+    expect(result.failures).toEqual([
+      { test: "test_add_neg", message: "assert -2 == 5\n+  where -2 = add(-1, -1)" },
+    ]);
+  });
+
+  it("ignores ruled headers in other sections, such as -rA's PASSES", () => {
+    const stdout = [
+      "=================================== PASSES ====================================",
+      "___________________________________ test_ok ___________________________________",
+      "----------------------------- Captured stdout call -----------------------------",
+      "hello",
+      "============================== 1 passed in 0.01s ==============================",
+    ].join("\n");
+
+    expect(parsePytestOutput(stdout, "", 0).failures).toEqual([]);
+  });
+
+  it("does not split a block at pytest's '_ _ _' traceback separators", () => {
+    const stdout = [
+      "================================== FAILURES ===================================",
+      "__________________________________ test_deep __________________________________",
+      "    def test_deep():",
+      ">       helper()",
+      "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _",
+      "    def helper():",
+      ">       raise ValueError('deep')",
+      "E       ValueError: deep",
+      "=========================== short test summary info ===========================",
+      "============================== 1 failed in 0.02s ==============================",
+    ].join("\n");
+
+    expect(parsePytestOutput(stdout, "", 1).failures).toEqual([
+      { test: "test_deep", message: "ValueError: deep" },
+    ]);
+  });
+});
+
+describe("parsePytestOutput — rule and header scans are linear (#1182)", () => {
+  // Sizes chosen so the old patterns take about a second (and fail the
+  // assertion) without hanging inside the regex.
+  it("handles a long run of '=' that does not end in '='", () => {
+    // Old /^=+\s*(.*?)\s*=+$/: cubic, about 2.8 s here.
+    const line = "=".repeat(2_500) + "x";
+    const started = performance.now();
+    const result = parsePytestOutput(`${line}\n3 passed in 0.10s`, "", 0);
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(result.passed).toBe(3);
+  });
+
+  it("handles a long run of '_'", () => {
+    // Old /_{3,}\s+(.+?)\s+_{3,}/g over the whole output: quadratic.
+    const line = "_".repeat(40_000);
+    const started = performance.now();
+    const result = parsePytestOutput(`${line}\n3 passed in 0.10s`, "", 0);
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(result.failures).toEqual([]);
   });
 });

@@ -374,8 +374,24 @@ const PYTEST_SUMMARY_BODY_RE = new RegExp(
   String.raw`^${PYTEST_COUNT_TOKEN}(?:,\s*${PYTEST_COUNT_TOKEN})*\s+in\s+[\d.]+s(?:\s*\([^)]*\))?$`,
 );
 
+/** Strips a run of `ch` from both ends of `line` and trims the rest; null unless
+ *  the line starts and ends with at least `min` of them. Index scans, not a regex:
+ *  /^=+\s*(.*?)\s*=+$/ and /_{3,}\s+(.+?)\s+_{3,}/ are cubic and quadratic on long
+ *  runs of the character, and they run on whatever the tests print (#1182). */
+function stripRuleChar(line: string, ch: string, min: number): string | null {
+  const pad = ch.repeat(min);
+  if (!line.startsWith(pad) || !line.endsWith(pad)) return null;
+  let start = 0;
+  let end = line.length;
+  while (start < end && line[start] === ch) start++;
+  while (end > start && line[end - 1] === ch) end--;
+  return line.slice(start, end).trim();
+}
+
 /** Strips pytest's "=" rule padding: "==== 3 passed in 1s ====" -> "3 passed in 1s". */
-const PYTEST_RULE_RE = /^=+\s*(.*?)\s*=+$/;
+function stripPytestRule(line: string): string | null {
+  return stripRuleChar(line, "=", 1);
+}
 
 /** Finds pytest's own final summary line (the `==== N passed, M failed in Xs ====`
  *  line, also emitted undecorated under `-q`). The LAST match wins, since reruns
@@ -387,8 +403,7 @@ function findPytestSummaryLine(lines: string[]): string | null {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    const ruled = line.match(PYTEST_RULE_RE);
-    const body = ruled ? ruled[1] : line;
+    const body = stripPytestRule(line) ?? line;
     if (PYTEST_SUMMARY_BODY_RE.test(body)) summary = body;
   }
   return summary;
@@ -437,6 +452,49 @@ function attachEmptyRunDiagnostics(
   return result;
 }
 
+/** Reads the `____ test_name ____` blocks of pytest's FAILURES and ERRORS
+ *  sections. Only those sections count: plugins print the same ruled headers
+ *  elsewhere (pytest-cov's `____ coverage: platform ... ____`), and those are not
+ *  failures (#1181). Each block runs to the next header or `=` rule; its message
+ *  is the `E ` lines, or else the block's last line. */
+function parsePytestFailureBlocks(lines: string[]): { test: string; message: string }[] {
+  const failures: { test: string; message: string }[] = [];
+  let inSection = false;
+  let current: { test: string; lines: string[] } | null = null;
+
+  const flush = () => {
+    if (!current) return;
+    const blockLines = current.lines.map((l) => l.trim()).filter(Boolean);
+    let message = blockLines
+      .filter((l) => l.startsWith("E "))
+      .map((l) => l.slice(2).trim())
+      .join("\n");
+    if (!message && blockLines.length > 0) message = blockLines[blockLines.length - 1];
+    failures.push({ test: current.test, message });
+    current = null;
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const rule = stripPytestRule(line);
+    if (rule !== null) {
+      flush();
+      inSection = rule === "FAILURES" || rule === "ERRORS";
+      continue;
+    }
+    if (!inSection) continue;
+    const header = stripRuleChar(line, "_", 3);
+    if (header) {
+      flush();
+      current = { test: header, lines: [] };
+      continue;
+    }
+    current?.lines.push(line);
+  }
+  flush();
+  return failures;
+}
+
 /** Parses pytest output into structured test results with pass/fail/error/skip/warning counts and failure details. */
 export function parsePytestOutput(stdout: string, stderr: string, exitCode: number): PytestResult {
   const output = stdout + "\n" + stderr;
@@ -482,38 +540,7 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     );
   }
 
-  // Parse failure blocks from short traceback
-  const failures: { test: string; message: string }[] = [];
-  const failureBlockRe = /_{3,}\s+(.+?)\s+_{3,}/g;
-  let failMatch: RegExpExecArray | null;
-  while ((failMatch = failureBlockRe.exec(output)) !== null) {
-    const testName = failMatch[1].trim();
-    const startIdx = failMatch.index + failMatch[0].length;
-
-    // Find the end of this failure block (next FAILED marker, next separator, or end)
-    const remaining = output.slice(startIdx);
-    const endMatch = remaining.match(/(?:_{3,}|={3,})/);
-    const block = endMatch ? remaining.slice(0, endMatch.index) : remaining;
-
-    // Extract the most relevant error line
-    const blockLines = block
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    let message = "";
-
-    // Look for assertion errors, E lines, or the last meaningful line
-    for (const bLine of blockLines) {
-      if (bLine.startsWith("E ")) {
-        message = message ? message + "\n" + bLine.slice(2).trim() : bLine.slice(2).trim();
-      }
-    }
-    if (!message && blockLines.length > 0) {
-      message = blockLines[blockLines.length - 1];
-    }
-
-    failures.push({ test: testName, message });
-  }
+  const failures = parsePytestFailureBlocks(lines);
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is
