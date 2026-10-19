@@ -18,6 +18,29 @@ describe("parsePrettierWrite", () => {
     expect(result.files).toEqual(["src/index.ts", "src/utils.ts", "src/config.ts"]);
   });
 
+  // Real Prettier 3.9 --write output (ANSI stripped) mixing changed and
+  // already-formatted files (#1161).
+  it("counts '(unchanged)' lines as unchanged, not as changed or dropped", () => {
+    const stdout = ["ok1.ts 26ms (unchanged)", "ok2.ts 2ms (unchanged)", "bad.ts 2ms"].join("\n");
+
+    const result = parsePrettierWrite(stdout, "", 0);
+
+    expect(result.filesChanged).toBe(1);
+    expect(result.files).toEqual(["bad.ts"]);
+    expect(result.filesUnchanged).toBe(2);
+  });
+
+  it("gives buildPrettierWriteResult the full processed count", () => {
+    const write = parsePrettierWrite(
+      ["a.ts 3ms (unchanged)", "b.md 1ms (unchanged)", "c.ts 4ms"].join("\n"),
+      "",
+      0,
+    );
+    const total = write.files.length + (write.filesUnchanged ?? 0);
+
+    expect(buildPrettierWriteResult(["c.ts"], 0, total).filesUnchanged).toBe(2);
+  });
+
   it("returns empty files when no files were changed", () => {
     const result = parsePrettierWrite("", "", 0);
 

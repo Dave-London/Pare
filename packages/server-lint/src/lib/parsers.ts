@@ -117,11 +117,14 @@ export function parsePrettierWrite(
   const lines = output.split("\n").filter(Boolean);
 
   const files: string[] = [];
+  let unchanged = 0;
   for (const line of lines) {
     const trimmed = line.trim();
-    // Prettier --write outputs file paths for files it processes, sometimes
-    // with trailing timing info like " 24ms". Strip timing before checking.
-    const cleaned = trimmed.replace(/\s+\d+m?s$/, "");
+    // Prettier 3 --write prints "file.ts 24ms" for a rewritten file and
+    // "file.ts 24ms (unchanged)" for one already formatted (#1161). Strip the
+    // marker, then the timing, before checking for a file path.
+    const isUnchanged = /\s+\(unchanged\)$/.test(trimmed);
+    const cleaned = trimmed.replace(/\s+\(unchanged\)$/, "").replace(/\s+\d+m?s$/, "");
     // Skip lines that don't look like file paths.
     if (
       cleaned &&
@@ -130,7 +133,8 @@ export function parsePrettierWrite(
       !cleaned.startsWith("All ") &&
       /\.\w+$/.test(cleaned)
     ) {
-      files.push(cleaned);
+      if (isUnchanged) unchanged++;
+      else files.push(cleaned);
     }
   }
 
@@ -138,6 +142,7 @@ export function parsePrettierWrite(
     filesChanged: files.length,
     files,
     success: exitCode === 0,
+    ...(unchanged > 0 ? { filesUnchanged: unchanged } : {}),
   };
   if (exitCode !== 0) {
     result.errorMessage = extractErrorMessage(stderr, stdout);

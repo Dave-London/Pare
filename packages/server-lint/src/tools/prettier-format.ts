@@ -142,7 +142,8 @@ export function registerPrettierFormatTool(server: McpServer) {
       if (listDiffFiles.length > 0 || writeResult.exitCode === 0) {
         // Count total files processed from --write output for filesUnchanged calculation
         const writeData = parsePrettierWrite(writeResult.stdout, writeResult.stderr, 0);
-        const totalProcessed = writeData.files?.length ?? 0;
+        // Rewritten files plus the "(unchanged)" ones (#1161).
+        const totalProcessed = (writeData.files?.length ?? 0) + (writeData.filesUnchanged ?? 0);
         data = buildPrettierWriteResult(
           listDiffFiles,
           writeResult.exitCode,
