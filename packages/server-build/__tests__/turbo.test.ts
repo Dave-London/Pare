@@ -445,3 +445,81 @@ describe("formatTurbo", () => {
     expect(output).toContain("turbo: 0 tasks completed in 0.1s");
   });
 });
+
+// #1168: task logs are attached to their task. Real turbo 2.10 output with
+// --output-logs=full (ANSI stripped).
+const TURBO_FULL_LOGS = [
+  "• turbo 2.10.10",
+  "",
+  "@paretools/shared:build: cache bypass, force executing 83a9e41ecb4947c1",
+  "@paretools/shared:build: ",
+  "@paretools/shared:build: > @paretools/shared@0.23.2 build C:\proj\packages\shared",
+  "@paretools/shared:build: > tsc",
+  "@paretools/shared:build: ",
+  "@paretools/make:build: cache bypass, force executing 5f378ef2766759e4",
+  "@paretools/make:build: ",
+  "@paretools/make:build: > @paretools/make@0.23.2 build C:\proj\packages\server-make",
+  "@paretools/make:build: > tsc",
+  "@paretools/make:build: ",
+  "",
+  " Tasks:    2 successful, 2 total",
+  "Cached:    0 cached, 2 total",
+  "  Time:    3.382s ",
+].join("\r\n");
+
+const TURBO_ONE_FAILED_WITH_LOGS = [
+  "@paretools/shared:build: cache miss, executing 1111",
+  "@paretools/shared:build: > tsc",
+  "@paretools/git:test: cache miss, executing 2222",
+  "@paretools/git:test: FAIL __tests__/diff.test.ts > parses numstat",
+  "@paretools/git:test: AssertionError: expected 'modified' to be 'deleted'",
+  "@paretools/git:test:  Tests  1 failed | 182 passed (183)",
+  "@paretools/git#test: command (C:\proj\packages\server-git) exited (1)",
+  " ERROR  run failed: command  exited (1)",
+  "",
+  " Tasks:    1 successful, 2 total",
+  "Cached:    0 cached, 2 total",
+].join("\n");
+
+describe("parseTurboOutput task logs (#1168)", () => {
+  it("attaches every task's log, without the cache line, when asked for all", () => {
+    const result = parseTurboOutput(TURBO_FULL_LOGS, "", 0, 3.4, undefined, "all");
+    const make = result.tasks?.find((t) => t.package === "@paretools/make");
+
+    expect(make?.output).toBe("> @paretools/make@0.23.2 build C:\proj\packages\server-make\n> tsc");
+    expect(result.tasks?.every((t) => t.output)).toBe(true);
+  });
+
+  it("by default attaches logs to failed tasks only", () => {
+    const result = parseTurboOutput(TURBO_ONE_FAILED_WITH_LOGS, "", 1, 2);
+    const git = result.tasks?.find((t) => t.package === "@paretools/git");
+    const shared = result.tasks?.find((t) => t.package === "@paretools/shared");
+
+    expect(git?.status).toBe("fail");
+    expect(git?.output).toContain("AssertionError: expected 'modified' to be 'deleted'");
+    expect(git?.output).toContain("Tests  1 failed | 182 passed (183)");
+    expect(shared?.output).toBeUndefined();
+  });
+
+  it("attaches nothing for the none scope", () => {
+    const result = parseTurboOutput(TURBO_FULL_LOGS, "", 0, 3.4, undefined, "none");
+    expect(result.tasks?.some((t) => t.output)).toBe(false);
+  });
+
+  it("keeps the tail of a long log", () => {
+    const long = Array.from({ length: 200 }, (_, i) => `@paretools/git:test: line ${i}`);
+    const result = parseTurboOutput(
+      ["@paretools/git:test: cache miss, executing 1", ...long].join("\n"),
+      "",
+      0,
+      1,
+      undefined,
+      "all",
+    );
+    const output = result.tasks?.[0].output ?? "";
+
+    expect(output.startsWith("… (log truncated)")).toBe(true);
+    expect(output).toContain("line 199");
+    expect(output).not.toContain("line 10\n");
+  });
+});
