@@ -1,5 +1,13 @@
 # @paretools/init
 
+## 0.23.0
+
+### Patch Changes
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `@modelcontextprotocol/sdk` 1.31.0 or newer, which fixes CVE-2026-104850 (OAuth client could send credentials to an authorization server chosen by the MCP server)
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`8a584bb`](https://github.com/Dave-London/Pare/commit/8a584bb275403bb43a7b88761235c6a13640480d) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `smol-toml` 1.9.0 or newer, which fixes a quadratic-time `parse()` on documents with many keys (GHSA-r4xh-jqrq-34v2)
+
 ## 0.22.2
 
 ## 0.22.1

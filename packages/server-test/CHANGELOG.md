@@ -1,5 +1,15 @@
 # @paretools/test
 
+## 0.23.0
+
+### Patch Changes
+
+- [#1165](https://github.com/Dave-London/Pare/pull/1165) [`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(deps): require `@modelcontextprotocol/sdk` 1.31.0 or newer, which fixes CVE-2026-104850 (OAuth client could send credentials to an authorization server chosen by the MCP server)
+
+- [#1175](https://github.com/Dave-London/Pare/pull/1175) [`7ffc737`](https://github.com/Dave-London/Pare/commit/7ffc737d5b8465a5ab89d3909fa8bc2fb9ea056b) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(test): stop reporting a run as passing when the runner exits non-zero with no failed test. A Vitest suite whose `beforeAll`/`afterAll` throws, or a file that fails to load while others pass, now sets `error` and appears in `failures` instead of returning `failed: 0` with nothing else
+- Updated dependencies [[`2a3b643`](https://github.com/Dave-London/Pare/commit/2a3b643c082ce4a8dedd69ba31f14f321b1ec724)]:
+  - @paretools/shared@0.23.0
+
 ## 0.22.2
 
 ### Patch Changes
