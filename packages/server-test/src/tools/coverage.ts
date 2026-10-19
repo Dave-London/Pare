@@ -15,12 +15,41 @@ import { parseJestCoverage, parseJestCoverageJson } from "../lib/parsers/jest.js
 import { parseVitestCoverage, parseVitestCoverageJson } from "../lib/parsers/vitest.js";
 import { parseMochaCoverage, parseMochaCoverageJson } from "../lib/parsers/mocha.js";
 import { formatCoverage, compactCoverageMap, formatCoverageCompact } from "../lib/formatters.js";
-import { CoverageSchema } from "../schemas/index.js";
+import { CoverageSchema, type Coverage } from "../schemas/index.js";
 import { TEST_CLI_TIMEOUT_MS } from "../lib/timeouts.js";
+import { runnerDetail } from "./run.js";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+
+/**
+ * A coverage run that exits non-zero did not pass, whatever percentages it
+ * printed: a test failed, a suite failed to load, a hook threw, or `failUnder`
+ * (or a threshold in the project's config) was missed. Sets `error` naming the
+ * likely cause, with the runner's output for context (#1177).
+ *
+ * Exported for unit testing.
+ */
+export function surfaceCoverageFailure(
+  coverage: Coverage,
+  result: { exitCode: number; stdout: string; stderr: string },
+  failUnder?: number,
+): Coverage {
+  if (result.exitCode === 0) return coverage;
+
+  const below =
+    failUnder !== undefined && coverage.summary.lines < failUnder
+      ? `Line coverage ${coverage.summary.lines}% is below failUnder ${failUnder}%. `
+      : "";
+  const cause =
+    `${below}The test runner exited with code ${result.exitCode} during the coverage run: ` +
+    `a test failed, a suite failed to load, a hook threw, or a coverage threshold was missed. ` +
+    `The coverage figures may be partial. This is not a passing run.`;
+  const detail = runnerDetail(result.stderr) || runnerDetail(result.stdout);
+
+  return { ...coverage, error: cause + (detail ? `\n${detail}` : "") };
+}
 
 /** Exported for unit testing. */
 export function getCoverageCommand(
@@ -363,6 +392,8 @@ export function registerCoverageTool(server: McpServer) {
       } finally {
         await rm(tempDir, { recursive: true, force: true });
       }
+
+      coverage = surfaceCoverageFailure(coverage, result, failUnder);
 
       return compactDualOutput(
         coverage,

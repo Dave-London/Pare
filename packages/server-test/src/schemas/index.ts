@@ -69,6 +69,12 @@ export const CoverageSchema = z.object({
   }),
   files: z.array(CoverageFileSchema).optional(),
   totalFiles: z.number().optional(),
+  /**
+   * Present when the runner exited non-zero: a test failed, a suite failed to
+   * load, a hook threw, or `failUnder` / a configured threshold was missed. The
+   * percentages may then be partial, and the run MUST NOT be treated as a pass.
+   */
+  error: z.string().optional(),
 });
 
 export type Coverage = z.infer<typeof CoverageSchema>;

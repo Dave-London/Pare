@@ -309,7 +309,7 @@ const DETAIL_TAIL = 1200;
  * runners print the reason for a non-zero exit (a coverage threshold, an
  * "ERROR at setup" section) at the end, after the per-test lines.
  */
-function runnerDetail(output: string): string {
+export function runnerDetail(output: string): string {
   const text = output.replace(REPORT_PATH_LINE, "").trim();
   if (text.length <= DETAIL_HEAD + DETAIL_TAIL) return text;
   return `${text.slice(0, DETAIL_HEAD)}\n… (output truncated) …\n${text.slice(-DETAIL_TAIL)}`;

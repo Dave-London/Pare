@@ -33,6 +33,11 @@ export function formatCoverage(c: Coverage): string {
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
 
+  if (c.error) {
+    parts[0] = `ERROR ${parts[0]}`;
+    parts.push(`  ${c.error.split("\n")[0]}`);
+  }
+
   for (const f of c.files ?? []) {
     parts.push(`  ${f.file}: ${f.lines}% lines`);
   }
@@ -102,6 +107,7 @@ export interface CoverageCompact {
     functions?: number;
   };
   totalFiles: number;
+  error?: string;
 }
 
 export function compactCoverageMap(c: Coverage): CoverageCompact {
@@ -109,6 +115,7 @@ export function compactCoverageMap(c: Coverage): CoverageCompact {
     framework: c.framework,
     summary: { ...c.summary },
     totalFiles: (c.files ?? []).length,
+    ...(c.error ? { error: c.error } : {}),
   };
 }
 
@@ -119,6 +126,11 @@ export function formatCoverageCompact(c: CoverageCompact): string {
 
   if (c.summary.branches !== undefined) parts[0] += `, ${c.summary.branches}% branches`;
   if (c.summary.functions !== undefined) parts[0] += `, ${c.summary.functions}% functions`;
+
+  if (c.error) {
+    parts[0] = `ERROR ${parts[0]}`;
+    parts.push(`  ${c.error.split("\n")[0]}`);
+  }
 
   parts.push(`${c.totalFiles} file(s) analyzed`);
 
