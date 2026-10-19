@@ -1,5 +1,13 @@
 # @paretools/git
 
+## 0.23.1
+
+### Patch Changes
+
+- [#1156](https://github.com/Dave-London/Pare/pull/1156) [`e052df8`](https://github.com/Dave-London/Pare/commit/e052df8e18dfc6a203e11f04fe2ab6d601e3d9a3) Thanks [@jay23606](https://github.com/jay23606)! - fix(git): `branch` now filters the list with `--list <pattern>`. It used to pass the pattern as a bare name, which git reads as a branch to create, so filtering failed or created a branch ([#1155](https://github.com/Dave-London/Pare/issues/1155))
+- Updated dependencies []:
+  - @paretools/shared@0.23.1
+
 ## 0.23.0
 
 ### Patch Changes

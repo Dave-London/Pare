@@ -1,5 +1,13 @@
 # @paretools/python
 
+## 0.23.1
+
+### Patch Changes
+
+- [#1190](https://github.com/Dave-London/Pare/pull/1190) [`7512d09`](https://github.com/Dave-London/Pare/commit/7512d09718d740a68cb8aa5f13c7e45ed6f86101) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(python): `pytest` only reads failure blocks from pytest's FAILURES and ERRORS sections, so pytest-cov's `____ coverage: platform ... ____` header (and `-rA`'s PASSES headers) no longer show up as a failed test on a passing run ([#1181](https://github.com/Dave-London/Pare/issues/1181)). The rule and header scans are linear now on long lines of `=` or `_` ([#1182](https://github.com/Dave-London/Pare/issues/1182))
+- Updated dependencies []:
+  - @paretools/shared@0.23.1
+
 ## 0.23.0
 
 ### Patch Changes
