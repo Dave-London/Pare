@@ -905,3 +905,23 @@ describe("_unixExtraPaths", () => {
     expect(paths).toContain("/usr/local/bin");
   });
 });
+
+// #1093: when a .cmd wrapper runs, the program cmd.exe cannot find may be the
+// one the wrapper calls, not the wrapper itself. The error names it.
+describe.skipIf(process.platform !== "win32")(
+  "run — names the program cmd.exe could not find",
+  () => {
+    const wrapper = join(tmpdir(), "pare-test-missing-inner.cmd");
+
+    afterAll(() => {
+      if (existsSync(wrapper)) unlinkSync(wrapper);
+    });
+
+    it("reports the inner program, with the wrapper that needed it", async () => {
+      writeFileSync(wrapper, "@__pare_missing_inner_program__ %*\r\n");
+      await expect(run(wrapper, [])).rejects.toThrow(
+        /Command not found: "__pare_missing_inner_program__" \(needed by ".*pare-test-missing-inner\.cmd"\)/,
+      );
+    });
+  },
+);

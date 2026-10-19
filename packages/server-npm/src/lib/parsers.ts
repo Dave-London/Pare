@@ -782,8 +782,26 @@ export function parseInitOutput(
 }
 
 /** Parses `npm info <package> --json` output into structured package metadata. */
+/**
+ * Parses `npm view <pkg> <field> --json` output: a bare JSON value, or nothing
+ * when the package does not set the field (#1164). The name comes from the
+ * input, since the output does not carry it.
+ */
+export function parseInfoFieldJson(stdout: string, pkg: string, field: string): NpmInfo {
+  const text = stdout.trim();
+  if (!text) return { name: pkg, field };
+  return { name: pkg, field, value: JSON.parse(text) };
+}
+
 export function parseInfoJson(jsonStr: string): NpmInfo {
   const data = JSON.parse(jsonStr);
+  // A bare value (e.g. `"2.0.8"` from `npm view pkg version --json`) is not
+  // package metadata; never fill it with placeholder name/version (#1164).
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(
+      `Expected package metadata as a JSON object, got: ${jsonStr.trim().slice(0, 200)}`,
+    );
+  }
 
   const result: NpmInfo = {
     name: data.name ?? "unknown",

@@ -397,20 +397,17 @@ describe("Smoke: npm.info", () => {
   });
 
   it("S9 [P1] field: engines", async () => {
-    const infoJson = JSON.stringify({
-      name: "express",
-      version: "4.18.2",
-      description: "Fast web framework",
-      engines: { node: ">= 0.10.0" },
-    });
-    mockRunPm(infoJson);
+    // Real `npm view express engines --json` prints only the field's value (#1164).
+    mockRunPm(JSON.stringify({ node: ">= 0.10.0" }, null, 2));
     const { parsed } = await callAndValidate({
       package: "express",
       field: "engines",
       compact: false,
     });
-    expect(parsed.engines).toBeDefined();
-    expect(parsed.engines!.node).toBeTruthy();
+    expect(parsed.name).toBe("express");
+    expect(parsed.field).toBe("engines");
+    expect(parsed.value).toEqual({ node: ">= 0.10.0" });
+    expect(parsed.version).toBeUndefined();
   });
 
   it("S10 [P2] compact: false", async () => {

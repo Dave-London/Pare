@@ -9,7 +9,7 @@ import {
 } from "@paretools/shared";
 import { runPm } from "../lib/npm-runner.js";
 import { detectPackageManager } from "../lib/detect-pm.js";
-import { parseInfoJson } from "../lib/parsers.js";
+import { parseInfoJson, parseInfoFieldJson } from "../lib/parsers.js";
 import { formatInfo, compactInfoMap, formatInfoCompact } from "../lib/formatters.js";
 import { NpmInfoSchema } from "../schemas/index.js";
 import { packageManagerInput } from "../lib/pm-input.js";
@@ -96,7 +96,8 @@ export function registerInfoTool(server: McpServer) {
         // Not critical — deprecation message is display-only
       }
 
-      const info = parseInfoJson(jsonStr);
+      // With `field`, the output is a bare value (or nothing), not package metadata.
+      const info = field ? parseInfoFieldJson(jsonStr, pkg, field) : parseInfoJson(jsonStr);
       const infoWithPm = { ...info, packageManager: pm };
       return compactDualOutput(
         infoWithPm,
