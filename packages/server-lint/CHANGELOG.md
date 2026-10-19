@@ -1,5 +1,13 @@
 # @paretools/lint
 
+## 0.23.3
+
+### Patch Changes
+
+- [#1201](https://github.com/Dave-London/Pare/pull/1201) [`c9f5d58`](https://github.com/Dave-London/Pare/commit/c9f5d5823891f7eda92dcfd34522393fd526c3eb) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(lint): `prettier-format` now reports `filesUnchanged` correctly. Prettier 3 prints already-formatted files as `file.ts 12ms (unchanged)`, and those lines were dropped, so the count was always 0 ([#1161](https://github.com/Dave-London/Pare/issues/1161))
+- Updated dependencies [[`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b)]:
+  - @paretools/shared@0.23.3
+
 ## 0.23.2
 
 ### Patch Changes
