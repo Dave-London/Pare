@@ -87,11 +87,18 @@ export function formatPrView(data: PrViewResult): string {
 }
 
 /** Formats structured PR list data into human-readable text. */
+/** Note for a search that matched other repositories (#1173). */
+function excludedNote(excluded: unknown): string {
+  return typeof excluded === "number" && excluded > 0
+    ? ` (${excluded} result(s) from other repositories excluded)`
+    : "";
+}
+
 export function formatPrList(data: PrListResult): string {
   const total = data.prs.length;
-  if (total === 0) return "No pull requests found.";
+  if (total === 0) return `No pull requests found.${excludedNote(data.excludedOtherRepos)}`;
 
-  const lines = [`${total} pull requests:`];
+  const lines = [`${total} pull requests${excludedNote(data.excludedOtherRepos)}:`];
   for (const pr of data.prs) {
     const branch = pr.headBranch ? ` [${pr.headBranch}]` : "";
     const author = pr.author ? ` @${pr.author}` : "";
@@ -254,9 +261,9 @@ export function formatIssueView(data: IssueViewResult): string {
 /** Formats structured issue list data into human-readable text. */
 export function formatIssueList(data: IssueListResult): string {
   const total = data.issues.length;
-  if (total === 0) return "No issues found.";
+  if (total === 0) return `No issues found.${excludedNote(data.excludedOtherRepos)}`;
 
-  const lines = [`${total} issues:`];
+  const lines = [`${total} issues${excludedNote(data.excludedOtherRepos)}:`];
   for (const issue of data.issues) {
     const labels = (issue.labels ?? []).length > 0 ? ` [${(issue.labels ?? []).join(", ")}]` : "";
     const author = issue.author ? ` @${issue.author}` : "";
@@ -407,13 +414,14 @@ export function compactPrListMap(data: PrListResult): PrListCompact {
       title: pr.title,
       state: pr.state,
     })),
+    ...(data.excludedOtherRepos ? { excludedOtherRepos: data.excludedOtherRepos } : {}),
   };
 }
 
 export function formatPrListCompact(data: PrListCompact): string {
   const total = data.prs.length;
-  if (total === 0) return "No pull requests found.";
-  const lines = [`${total} PRs:`];
+  if (total === 0) return `No pull requests found.${excludedNote(data.excludedOtherRepos)}`;
+  const lines = [`${total} PRs${excludedNote(data.excludedOtherRepos)}:`];
   for (const pr of data.prs) {
     lines.push(`  #${pr.number} ${pr.title} (${pr.state})`);
   }
@@ -490,13 +498,14 @@ export function compactIssueListMap(data: IssueListResult): IssueListCompact {
       title: i.title,
       state: i.state,
     })),
+    ...(data.excludedOtherRepos ? { excludedOtherRepos: data.excludedOtherRepos } : {}),
   };
 }
 
 export function formatIssueListCompact(data: IssueListCompact): string {
   const total = data.issues.length;
-  if (total === 0) return "No issues found.";
-  const lines = [`${total} issues:`];
+  if (total === 0) return `No issues found.${excludedNote(data.excludedOtherRepos)}`;
+  const lines = [`${total} issues${excludedNote(data.excludedOtherRepos)}:`];
   for (const i of data.issues) {
     lines.push(`  #${i.number} ${i.title} (${i.state})`);
   }

@@ -9,6 +9,7 @@ import {
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parsePrList } from "../lib/parsers.js";
+import { keepTargetRepo, scopeSearch } from "../lib/search-scope.js";
 import { formatPrList, compactPrListMap, formatPrListCompact } from "../lib/formatters.js";
 import { PrListResultSchema } from "../schemas/index.js";
 
@@ -72,7 +73,9 @@ export function registerPrListTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("GitHub search syntax (-S/--search)"),
+          .describe(
+            "GitHub search syntax (-S/--search). A search using OR is grouped in parentheses so results stay in the repository",
+          ),
         // S-gap P1: Add repo for cross-repo listing
         repo: z
           .string()
@@ -135,7 +138,7 @@ export function registerPrListTool(server: McpServer) {
       if (base) args.push("--base", base);
       if (head) args.push("--head", head);
       if (assignee) args.push("--assignee", assignee);
-      if (search) args.push("--search", search);
+      if (search) args.push("--search", scopeSearch(search));
       if (repo) args.push("--repo", repo);
       if (app) args.push("--app", app);
 
@@ -146,6 +149,11 @@ export function registerPrListTool(server: McpServer) {
       }
 
       const data = parsePrList(result.stdout);
+      if (search) {
+        const scoped = await keepTargetRepo(data.prs, repo, cwd);
+        data.prs = scoped.items;
+        if (scoped.excluded > 0) data.excludedOtherRepos = scoped.excluded;
+      }
       return compactDualOutput(
         data,
         result.stdout,

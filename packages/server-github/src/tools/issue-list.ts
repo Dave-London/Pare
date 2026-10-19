@@ -9,6 +9,7 @@ import {
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseIssueList } from "../lib/parsers.js";
+import { keepTargetRepo, scopeSearch } from "../lib/search-scope.js";
 import { formatIssueList, compactIssueListMap, formatIssueListCompact } from "../lib/formatters.js";
 import { IssueListResultSchema } from "../schemas/index.js";
 
@@ -56,7 +57,9 @@ export function registerIssueListTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("GitHub search syntax (-S/--search)"),
+          .describe(
+            "GitHub search syntax (-S/--search). A search using OR is grouped in parentheses so results stay in the repository",
+          ),
         // S-gap P0: Add author filter
         author: z
           .string()
@@ -141,7 +144,7 @@ export function registerIssueListTool(server: McpServer) {
         }
       }
       if (assignee) args.push("--assignee", assignee);
-      if (search) args.push("--search", search);
+      if (search) args.push("--search", scopeSearch(search));
       if (author) args.push("--author", author);
       if (milestone) args.push("--milestone", milestone);
       if (mention) args.push("--mention", mention);
@@ -155,6 +158,11 @@ export function registerIssueListTool(server: McpServer) {
       }
 
       const data = parseIssueList(result.stdout);
+      if (search) {
+        const scoped = await keepTargetRepo(data.issues, repo, cwd);
+        data.issues = scoped.items;
+        if (scoped.excluded > 0) data.excludedOtherRepos = scoped.excluded;
+      }
       if (!paginate && data.issues.length > limit) {
         data.issues = data.issues.slice(0, limit);
       }
