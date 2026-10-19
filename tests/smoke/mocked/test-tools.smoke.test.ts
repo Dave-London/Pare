@@ -503,7 +503,7 @@ describe("Smoke: test.run", () => {
   });
 
   // ── S15: testNamePattern: "should parse" ────────────────────────────
-  it("S15 [P1] testNamePattern passes --grep to vitest", async () => {
+  it("S15 [P1] testNamePattern passes --testNamePattern to vitest", async () => {
     mockRun("", "", 0);
     mockReadFile(vitestAllPass(1));
     await callAndValidate({
@@ -512,7 +512,9 @@ describe("Smoke: test.run", () => {
       testNamePattern: "should parse",
     });
     const args = vi.mocked(run).mock.calls[0][1];
-    expect(args).toContain("--grep=should parse");
+    // Vitest rejects --grep (#1172).
+    expect(args).toContain("--testNamePattern=should parse");
+    expect(args).not.toContain("--grep=should parse");
   });
 
   // ── S16: workers: 1 ────────────────────────────────────────────────
