@@ -1,5 +1,13 @@
 # @paretools/npm
 
+## 0.23.3
+
+### Patch Changes
+
+- [#1200](https://github.com/Dave-London/Pare/pull/1200) [`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(npm): `info` with `field` now returns `{ name, field, value }` with the field's real value (or no `value` when the package does not set it). It used to return a placeholder `{ name: "unknown", version: "0.0.0" }`, because npm prints a bare value for a single field ([#1164](https://github.com/Dave-London/Pare/issues/1164)). Package metadata that is not a JSON object is now an error rather than placeholder values. Also, a "Command not found" error from a `.cmd` wrapper now names the program cmd.exe could not find when it is not the wrapper itself ([#1093](https://github.com/Dave-London/Pare/issues/1093))
+- Updated dependencies [[`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b)]:
+  - @paretools/shared@0.23.3
+
 ## 0.23.2
 
 ### Patch Changes

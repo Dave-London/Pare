@@ -1,5 +1,13 @@
 # @paretools/github
 
+## 0.23.3
+
+### Patch Changes
+
+- [#1204](https://github.com/Dave-London/Pare/pull/1204) [`0d8830c`](https://github.com/Dave-London/Pare/commit/0d8830cf3c073835446b13e9c4132d8fc6e0cc22) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(github): `api` now rejects combining `jq`, `silent` and `verbose` with a clear message before calling gh, which accepts only one of them and refused the request with a usage error ([#1109](https://github.com/Dave-London/Pare/issues/1109)). `run-view` with `log`/`logFailed` gains `tailLines` to return only the end of the log (with `logsTotalLines`), and its text preview keeps the tail of a long log, where test failures and tracebacks are, instead of only the first 2000 characters ([#1108](https://github.com/Dave-London/Pare/issues/1108))
+- Updated dependencies [[`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b)]:
+  - @paretools/shared@0.23.3
+
 ## 0.23.2
 
 ### Patch Changes

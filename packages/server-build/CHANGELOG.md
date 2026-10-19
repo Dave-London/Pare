@@ -1,5 +1,13 @@
 # @paretools/build
 
+## 0.23.3
+
+### Patch Changes
+
+- [#1203](https://github.com/Dave-London/Pare/pull/1203) [`6a1be02`](https://github.com/Dave-London/Pare/commit/6a1be02bd1739827914c9e8de5e3987304f13b06) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(build): `turbo` now returns each task's captured log as `output` (tail, capped): for every task when `outputLogs` is set to a mode that prints logs, and for failed tasks by default. `outputLogs` used to have no visible effect, and compact output now lists the failed tasks ([#1168](https://github.com/Dave-London/Pare/issues/1168)). `tsc` now reads diagnostics from Windows CRLF output; a failing typecheck used to report `errors: 0` there ([#1202](https://github.com/Dave-London/Pare/issues/1202))
+- Updated dependencies [[`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b)]:
+  - @paretools/shared@0.23.3
+
 ## 0.23.2
 
 ### Patch Changes

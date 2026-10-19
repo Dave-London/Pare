@@ -1,5 +1,13 @@
 # @paretools/infra
 
+## 0.23.3
+
+### Patch Changes
+
+- [#1205](https://github.com/Dave-London/Pare/pull/1205) [`3d0e338`](https://github.com/Dave-London/Pare/commit/3d0e338cee79e2075dd360ea4be03815088dab4b) Thanks [@Dave-London](https://github.com/Dave-London)! - feat(infra): `init` accepts `backend: false`, mapping to `terraform init -backend=false`, so a validate-only workflow (`init` then `validate`) no longer fails on backend credentials ([#1103](https://github.com/Dave-London/Pare/issues/1103))
+- Updated dependencies [[`a719387`](https://github.com/Dave-London/Pare/commit/a719387df39ed67f96e280439d66e171a86fcf8b)]:
+  - @paretools/shared@0.23.3
+
 ## 0.23.2
 
 ### Patch Changes
