@@ -198,3 +198,4 @@ HINT: pip install pytest-cov
 - Compact mode drops per-file details and `uncoveredLines`, keeping only the aggregate summary and file count
 - `branches` and `functions` are only available for JavaScript/TypeScript frameworks (jest, vitest, mocha with nyc)
 - Pytest requires `pytest-cov` package; mocha requires `nyc` (Istanbul)
+- When the runner exits non-zero (a failed test, a suite that failed to load, a hook that threw, or a missed `failUnder` / configured threshold), the result has an `error` field and must not be treated as a pass; the percentages may be partial
