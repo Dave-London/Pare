@@ -234,8 +234,8 @@ Canary releases let you test unpublished changes from any branch without affecti
 
 **How to publish a canary:**
 
-1. Go to **Actions > Canary Release** in GitHub
-2. Click **Run workflow** and select the branch you want to publish from
+1. Go to **Actions > Release** in GitHub
+2. Click **Run workflow** and select the branch you want to publish from (a manual run publishes a canary only; stable releases run on push to `main`)
 3. The workflow builds, tests, then publishes snapshot versions tagged as `canary`
 
 The published versions look like `0.10.2-canary-20260223-abc1234` and are installed with:
