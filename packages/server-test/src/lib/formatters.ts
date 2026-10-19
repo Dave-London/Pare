@@ -9,7 +9,7 @@ export function formatTestRun(r: TestRun): string {
       ? "FAIL"
       : "PASS";
   const parts = [
-    `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
+    `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed${r.summary.errors ? ` (${r.summary.errors} errors)` : ""}, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];
 
   if (r.error) {
@@ -52,6 +52,7 @@ export interface TestRunCompact {
     failed: number;
     skipped: number;
     duration: number;
+    errors?: number;
   };
   failures: Array<{ name: string; message?: string }>;
   error?: string;
@@ -76,7 +77,7 @@ export function formatTestRunCompact(r: TestRunCompact): string {
       ? "FAIL"
       : "PASS";
   const parts = [
-    `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
+    `${status} (${r.framework}) ${r.summary.total} tests: ${r.summary.passed} passed, ${r.summary.failed} failed${r.summary.errors ? ` (${r.summary.errors} errors)` : ""}, ${r.summary.skipped} skipped [${r.summary.duration}s]`,
   ];
 
   if (r.error) {

@@ -1,0 +1,48 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0 -- C:\Python313\python.exe
+hypothesis profile 'default'
+rootdir: C:\proj
+plugins: cov-7.0.0, xdist-3.8.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+Running 5 items in this shard: test_mix.py::test_ok, test_mix.py::test_fails, test_mix.py::test_setup_error, test_mix.py::test_teardown_error, test_good.py::test_a
+
+test_mix.py::test_ok PASSED                                              [ 20%]
+test_mix.py::test_fails FAILED                                           [ 40%]
+test_mix.py::test_setup_error ERROR                                      [ 60%]
+test_mix.py::test_teardown_error PASSED                                  [ 80%]
+test_mix.py::test_teardown_error ERROR                                   [ 80%]
+test_good.py::test_a PASSED                                              [100%]Running teardown with pytest sessionfinish...
+
+
+=================================== ERRORS ====================================
+_____________________ ERROR at setup of test_setup_error ______________________
+
+    @pytest.fixture
+    def broken_setup():
+>       raise RuntimeError("setup exploded")
+E       RuntimeError: setup exploded
+
+test_mix.py:5: RuntimeError
+__________________ ERROR at teardown of test_teardown_error ___________________
+
+    @pytest.fixture
+    def broken_teardown():
+        yield 1
+>       raise ValueError("teardown exploded")
+E       ValueError: teardown exploded
+
+test_mix.py:10: ValueError
+================================== FAILURES ===================================
+_________________________________ test_fails __________________________________
+
+    def test_fails():
+>       assert 1 == 2
+E       assert 1 == 2
+
+test_mix.py:16: AssertionError
+=========================== short test summary info ===========================
+FAILED test_mix.py::test_fails - assert 1 == 2
+ERROR test_mix.py::test_setup_error - RuntimeError: setup exploded
+ERROR test_mix.py::test_teardown_error - ValueError: teardown exploded
+==================== 1 failed, 3 passed, 2 errors in 0.73s ====================

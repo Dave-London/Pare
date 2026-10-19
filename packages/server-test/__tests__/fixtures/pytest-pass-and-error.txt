@@ -1,0 +1,25 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0 -- C:\Python313\python.exe
+hypothesis profile 'default'
+rootdir: C:\proj
+plugins: cov-7.0.0, xdist-3.8.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+Running 2 items in this shard: test_mix.py::test_ok, test_mix.py::test_setup_error
+
+test_mix.py::test_ok PASSED                                              [ 50%]
+test_mix.py::test_setup_error ERROR                                      [100%]Running teardown with pytest sessionfinish...
+
+
+=================================== ERRORS ====================================
+_____________________ ERROR at setup of test_setup_error ______________________
+
+    @pytest.fixture
+    def broken_setup():
+>       raise RuntimeError("setup exploded")
+E       RuntimeError: setup exploded
+
+test_mix.py:5: RuntimeError
+=========================== short test summary info ===========================
+ERROR test_mix.py::test_setup_error - RuntimeError: setup exploded
+========================= 1 passed, 1 error in 0.71s ==========================

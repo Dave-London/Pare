@@ -96,6 +96,88 @@ describe("parsePytestOutput", () => {
     expect(result.summary.failed).toBe(0);
     expect(result.summary.duration).toBe(0.9);
   });
+
+  // Fixtures below are real pytest 8.4 -v output (#1178).
+  describe("setup, teardown and collection errors", () => {
+    it("counts errors in failed and lists them alongside failed tests", () => {
+      const result = parsePytestOutput(fixture("pytest-errors-mixed.txt"));
+
+      // "1 failed, 3 passed, 2 errors"
+      expect(result.summary.passed).toBe(3);
+      expect(result.summary.failed).toBe(3);
+      expect(result.summary.errors).toBe(2);
+      expect(result.failures).toEqual([
+        { file: "test_mix.py", name: "test_fails", message: "assert 1 == 2" },
+        {
+          file: "test_mix.py",
+          name: "test_setup_error",
+          message: "ERROR: RuntimeError: setup exploded",
+        },
+        {
+          file: "test_mix.py",
+          name: "test_teardown_error",
+          message: "ERROR: ValueError: teardown exploded",
+        },
+      ]);
+    });
+
+    it("marks errored tests failed, once each, even when teardown follows a PASSED", () => {
+      const result = parsePytestOutput(fixture("pytest-errors-mixed.txt"));
+      const byName = Object.fromEntries((result.tests ?? []).map((t) => [t.name, t.status]));
+
+      expect(result.tests).toHaveLength(5);
+      expect(byName).toEqual({
+        test_ok: "passed",
+        test_fails: "failed",
+        test_setup_error: "failed",
+        test_teardown_error: "failed",
+        test_a: "passed",
+      });
+    });
+
+    it("does not report a passed-plus-error run as failed: 0", () => {
+      const result = parsePytestOutput(fixture("pytest-pass-and-error.txt"));
+
+      // "1 passed, 1 error"
+      expect(result.summary.passed).toBe(1);
+      expect(result.summary.failed).toBe(1);
+      expect(result.summary.errors).toBe(1);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0].name).toBe("test_setup_error");
+    });
+
+    it("reports a module that fails to collect, with the error from its block", () => {
+      const result = parsePytestOutput(fixture("pytest-collection-error.txt"));
+
+      // "1 error" (collection interrupted)
+      expect(result.summary.failed).toBe(1);
+      expect(result.summary.errors).toBe(1);
+      expect(result.failures).toEqual([
+        {
+          file: "test_collect_bad.py",
+          name: "test_collect_bad.py",
+          message: "ERROR: ModuleNotFoundError: No module named 'not_a_real_module_xyz'",
+        },
+      ]);
+    });
+
+    it("omits summary.errors when there are none", () => {
+      const result = parsePytestOutput(fixture("pytest-fail.txt"));
+      expect(result.summary.errors).toBeUndefined();
+    });
+  });
+
+  it("strips long '=' rules in linear time (#1182)", () => {
+    // The old /^=+\s*(.*?)\s*=+$/ is cubic on a run of "=" that does not end
+    // in "=": about a second at 2,000 characters.
+    const line = "=".repeat(2_500) + "x";
+    const start = performance.now();
+    const result = parsePytestOutput(
+      `${line}\n${"=".repeat(5)} 1 passed in 0.10s ${"=".repeat(5)}`,
+    );
+    expect(performance.now() - start).toBeLessThan(250);
+    expect(result.summary.passed).toBe(1);
+  });
 });
 
 describe("parsePytestCoverage", () => {

@@ -251,3 +251,4 @@ sh: vitest: command not found
 - On Windows, Jest and Vitest write JSON to a temp file to avoid stdout encoding issues
 - The `filter` parameter maps to framework-specific flags: `-k` (pytest), `--testPathPattern` (jest), positional arg (vitest), `--grep` (mocha)
 - Compact mode drops `file`, `line`, `expected`, `actual`, and `stack` from failures, keeping only `name` and `message`
+- pytest tests that ERROR (a fixture, setup or teardown raised, or a module failed to collect) are listed in `failures` with an `ERROR:` message and counted in `summary.failed`; `summary.errors` gives how many of those were errors
