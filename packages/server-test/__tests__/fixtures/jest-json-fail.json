@@ -1,0 +1,131 @@
+{
+  "numFailedTestSuites": 1,
+  "numFailedTests": 1,
+  "numPassedTestSuites": 1,
+  "numPassedTests": 3,
+  "numPendingTestSuites": 0,
+  "numPendingTests": 1,
+  "numRuntimeErrorTestSuites": 0,
+  "numTodoTests": 0,
+  "numTotalTestSuites": 2,
+  "numTotalTests": 5,
+  "openHandles": [],
+  "snapshot": {
+    "added": 0,
+    "didUpdate": false,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0
+  },
+  "startTime": 1792391160389,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["math"],
+          "duration": 7,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "math adds",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "adds"
+        },
+        {
+          "ancestorTitles": ["math"],
+          "duration": null,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "math later",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "pending",
+          "title": "later"
+        },
+        {
+          "ancestorTitles": [],
+          "duration": 0,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "top level",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "top level"
+        }
+      ],
+      "endTime": 1792391161142,
+      "message": "",
+      "name": "C:\\proj\\fail\\ok.test.js",
+      "startTime": 1792391160573,
+      "status": "focused",
+      "summary": ""
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["math"],
+          "duration": 6,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "math adds",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryReasons": [],
+          "status": "passed",
+          "title": "adds"
+        },
+        {
+          "ancestorTitles": ["math"],
+          "duration": 2,
+          "failureDetails": [
+            {
+              "matcherResult": {
+                "actual": 2,
+                "expected": 1,
+                "message": "expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 2",
+                "name": "toBe",
+                "pass": false
+              }
+            }
+          ],
+          "failureMessages": [
+            "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 2\n    at Object.toBe (C:\\proj\\fail\\math.test.js:3:43)\n    at Promise.then.completed (C:\\proj\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\proj\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\proj\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at _runTest (C:\\proj\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\proj\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\proj\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\proj\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\proj\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\proj\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\proj\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\proj\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\proj\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"
+          ],
+          "fullName": "math subtracts",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 0,
+          "retryReasons": [],
+          "status": "failed",
+          "title": "subtracts"
+        }
+      ],
+      "endTime": 1792391161177,
+      "message": "  ● math › subtracts\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 1\n    Received: 2\n\n    \u001b[0m \u001b[90m 1 |\u001b[39m describe(\u001b[32m\"math\"\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n     \u001b[90m 2 |\u001b[39m   test(\u001b[32m\"adds\"\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(\u001b[35m1\u001b[39m \u001b[33m+\u001b[39m \u001b[35m1\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n    \u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 3 |\u001b[39m   test(\u001b[32m\"subtracts\"\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m { expect(\u001b[35m5\u001b[39m \u001b[33m-\u001b[39m \u001b[35m3\u001b[39m)\u001b[33m.\u001b[39mtoBe(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n     \u001b[90m   |\u001b[39m                                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n     \u001b[90m 4 |\u001b[39m })\u001b[33m;\u001b[39m\n     \u001b[90m 5 |\u001b[39m\u001b[0m\n\n      at Object.toBe (math.test.js:3:43)\n",
+      "name": "C:\\proj\\fail\\math.test.js",
+      "startTime": 1792391160578,
+      "status": "failed",
+      "summary": ""
+    }
+  ],
+  "wasInterrupted": false
+}
