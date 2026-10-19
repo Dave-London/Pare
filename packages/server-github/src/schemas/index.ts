@@ -438,6 +438,8 @@ export const RunViewResultSchema = z.object({
   attempt: z.number().optional(),
   /** Raw log output when --log or --log-failed is used. */
   logs: z.string().optional(),
+  /** Full log length in lines, present when `tailLines` cut the log (#1108). */
+  logsTotalLines: z.number().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;

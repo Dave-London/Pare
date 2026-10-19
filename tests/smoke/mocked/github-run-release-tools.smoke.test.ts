@@ -505,6 +505,30 @@ describe("Smoke: github.run-view", () => {
     expect(args).not.toContain("--json");
   });
 
+  // #1108: test runners print failures last; tailLines keeps that end.
+  it("S8b [P1] tailLines keeps the end of the log and reports the full length", async () => {
+    const lines = Array.from({ length: 1000 }, (_, i) => `job\tstep\tline ${i}`);
+    lines.push("job\tstep\t=== FAILURES ===", "job\tstep\tE   AssertionError: boom");
+    mockGh(lines.join("\n") + "\n");
+    const { parsed, result } = await callAndValidate({ id: 12345, logFailed: true, tailLines: 5 });
+
+    expect(parsed.logs?.split("\n")).toHaveLength(5);
+    expect(parsed.logs).toContain("E   AssertionError: boom");
+    expect(parsed.logsTotalLines).toBe(1002);
+    // The text preview keeps the tail too.
+    expect(JSON.stringify(result.content)).toContain("AssertionError: boom");
+  });
+
+  it("S8c [P2] text preview of a long log keeps the failures at the end", async () => {
+    const lines = Array.from({ length: 2000 }, (_, i) => `job\tstep\tline ${i}`);
+    lines.push("job\tstep\tE   AssertionError: at the very end");
+    mockGh(lines.join("\n"));
+    const { parsed, result } = await callAndValidate({ id: 12345, logFailed: true });
+
+    expect(parsed.logsTotalLines).toBeUndefined();
+    expect(JSON.stringify(result.content)).toContain("AssertionError: at the very end");
+  });
+
   // S9 [P1] Full logs
   it("S9 [P1] full logs", async () => {
     const logOutput =

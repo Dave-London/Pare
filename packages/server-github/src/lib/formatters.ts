@@ -726,13 +726,19 @@ export function formatVariableMutation(data: VariableMutationResult): string {
 }
 
 /** Formats run view with log output. */
+/** Head and tail kept in the text preview of a run log. The tail is larger:
+ *  test runners print their failures and tracebacks last (#1108). */
+const RUN_LOG_PREVIEW_HEAD = 500;
+const RUN_LOG_PREVIEW_TAIL = 3500;
+
 export function formatRunViewLog(data: RunViewResult): string {
   const header = `Run #${data.id}: ${data.workflowName} (${data.status})`;
+  const logs = data.logs ?? "";
   const logsPreview =
-    data.logs && data.logs.length > 2000
-      ? data.logs.slice(0, 2000) + "\n... (truncated)"
-      : data.logs;
-  return `${header}\n\n${logsPreview ?? ""}`;
+    logs.length > RUN_LOG_PREVIEW_HEAD + RUN_LOG_PREVIEW_TAIL
+      ? `${logs.slice(0, RUN_LOG_PREVIEW_HEAD)}\n... (truncated; the full log is in the structured \`logs\` field) ...\n${logs.slice(-RUN_LOG_PREVIEW_TAIL)}`
+      : logs;
+  return `${header}\n\n${logsPreview}`;
 }
 
 // ── Repo ────────────────────────────────────────────────────────────

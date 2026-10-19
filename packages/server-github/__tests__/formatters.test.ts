@@ -1163,10 +1163,13 @@ describe("formatRunViewLog", () => {
       jobs: [],
       url: "https://url",
       createdAt: "2024-01-01T00:00:00Z",
-      logs: "x".repeat(3000),
+      logs: "head-marker " + "x".repeat(8000) + " tail-marker",
     };
     const output = formatRunViewLog(data);
-    expect(output).toContain("(truncated)");
+    expect(output).toContain("(truncated");
+    // Head and tail both survive; the tail is where test failures are (#1108).
+    expect(output).toContain("head-marker");
+    expect(output).toContain("tail-marker");
   });
 
   it("handles no logs", () => {
