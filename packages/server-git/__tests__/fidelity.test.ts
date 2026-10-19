@@ -509,7 +509,8 @@ describe("fidelity: diff edge cases (expanded)", () => {
   it("parseDiffStat handles simple rename with => notation", () => {
     const diff = parseDiffStat("5\t2\told.ts => new.ts");
     expect(diff.files).toHaveLength(1);
-    expect(diff.files[0].file).toBe("old.ts => new.ts");
+    expect(diff.files[0].file).toBe("new.ts");
+    expect(diff.files[0].oldFile).toBe("old.ts");
     expect(diff.files[0].status).toBe("renamed");
     expect(diff.files[0].additions).toBe(5);
     expect(diff.files[0].deletions).toBe(2);
@@ -518,7 +519,8 @@ describe("fidelity: diff edge cases (expanded)", () => {
   it("parseDiffStat handles brace rename {src => lib}/file.ts", () => {
     const diff = parseDiffStat("3\t1\t{src => lib}/file.ts");
     expect(diff.files).toHaveLength(1);
-    expect(diff.files[0].file).toBe("{src => lib}/file.ts");
+    expect(diff.files[0].file).toBe("lib/file.ts");
+    expect(diff.files[0].oldFile).toBe("src/file.ts");
     expect(diff.files[0].status).toBe("renamed");
     expect(diff.files[0].additions).toBe(3);
     expect(diff.files[0].deletions).toBe(1);
@@ -532,9 +534,12 @@ describe("fidelity: diff edge cases (expanded)", () => {
   });
 
   it("parseDiffStat handles very large counts (10000+)", () => {
-    const lines = ["15000\t0\tsrc/vendor/large-lib.js", "0\t12000\tsrc/vendor/old-lib.js"].join(
-      "\n",
-    );
+    const lines = [
+      "15000\t0\tsrc/vendor/large-lib.js",
+      "0\t12000\tsrc/vendor/old-lib.js",
+      " create mode 100644 src/vendor/large-lib.js",
+      " delete mode 100644 src/vendor/old-lib.js",
+    ].join("\n");
     const diff = parseDiffStat(lines);
     expect(diff.files).toHaveLength(2);
     expect(diff.files[0].additions).toBe(15000);
@@ -557,7 +562,8 @@ describe("fidelity: diff edge cases (expanded)", () => {
   it("parseDiffStat handles nested brace rename", () => {
     const diff = parseDiffStat("10\t5\tpackages/{server-old => server-new}/src/index.ts");
     expect(diff.files).toHaveLength(1);
-    expect(diff.files[0].file).toBe("packages/{server-old => server-new}/src/index.ts");
+    expect(diff.files[0].file).toBe("packages/server-new/src/index.ts");
+    expect(diff.files[0].oldFile).toBe("packages/server-old/src/index.ts");
     expect(diff.files[0].status).toBe("renamed");
     expect(diff.files[0].additions).toBe(10);
     expect(diff.files[0].deletions).toBe(5);
@@ -570,6 +576,8 @@ describe("fidelity: diff edge cases (expanded)", () => {
       "0\t50\tsrc/deprecated.ts",
       "-\t-\tassets/logo.png",
       "10\t10\tsrc/refactored.ts",
+      " create mode 100644 src/feature.ts",
+      " delete mode 100644 src/deprecated.ts",
     ].join("\n");
     const diff = parseDiffStat(lines);
     expect(diff.files).toHaveLength(5);

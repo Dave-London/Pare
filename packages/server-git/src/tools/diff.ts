@@ -120,7 +120,9 @@ export function registerDiffTool(server: McpServer) {
       compact,
     }) => {
       const cwd = path || process.cwd();
-      const args = ["diff", "--numstat"];
+      // --summary reports created/deleted/copied files, so the status comes from
+      // git rather than from the line counts (#1099).
+      const args = ["diff", "--numstat", "--summary"];
 
       // Resolve file paths casing — git pathspecs are case-sensitive even on Windows
       let resolvedFile: string | undefined;
@@ -170,13 +172,10 @@ export function registerDiffTool(server: McpServer) {
           throw new Error(`git diff failed: ${atomicResult.stderr}`);
         }
 
-        const numstatOnly = atomicResult.stdout
-          .split("\n")
-          .filter((line) => /^(-|\d+)\t(-|\d+)\t/.test(line))
-          .join("\n");
-        const diff = parseDiffStat(numstatOnly);
+        // git prints the numstat rows and --summary lines before the first patch.
+        const [statsBlock, ...filePatches] = atomicResult.stdout.split(/^diff --git /m);
+        const diff = parseDiffStat(statsBlock);
 
-        const filePatches = atomicResult.stdout.split(/^diff --git /m).filter(Boolean);
         for (const patch of filePatches) {
           // RegEx anchored to header to prevent matching `b/` within source paths
           const fileMatch = patch.match(/^a\/[^\n]*\s+b\/(.+?)\r?$/m);
@@ -235,20 +234,16 @@ export function registerDiffTool(server: McpServer) {
           patchArgs.push("--", ...pathArgs);
         }
 
-        if (atomicFull) patchArgs.push("--numstat");
+        if (atomicFull) patchArgs.push("--numstat", "--summary");
         const patchResult = await git(patchArgs, cwd);
         if (patchResult.exitCode === 0) {
+          // Split patch into per-file chunks; anything before the first patch is
+          // the numstat/summary block (present only with atomicFull).
+          const [statsBlock, ...filePatches] = patchResult.stdout.split(/^diff --git /m);
           if (atomicFull) {
-            const numstatOnly = patchResult.stdout
-              .split("\n")
-              .filter((line) => /^(-|\d+)\t(-|\d+)\t/.test(line))
-              .join("\n");
-            if (numstatOnly.trim()) {
-              diff = parseDiffStat(numstatOnly);
-            }
+            const atomicDiff = parseDiffStat(statsBlock);
+            if (atomicDiff.files.length > 0) diff = atomicDiff;
           }
-          // Split patch into per-file chunks
-          const filePatches = patchResult.stdout.split(/^diff --git /m).filter(Boolean);
           for (const patch of filePatches) {
             // RegEx anchored to header to prevent matching `b/` within source paths
             const fileMatch = patch.match(/^a\/[^\n]*\s+b\/(.+?)\r?$/m);

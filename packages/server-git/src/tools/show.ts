@@ -171,7 +171,8 @@ export function registerShowTool(server: McpServer) {
       }
 
       // Get diff stats
-      const diffArgs = ["show", "--numstat", "--format="];
+      // --summary gives created/deleted/copied files their real status (#1099).
+      const diffArgs = ["show", "--numstat", "--summary", "--format="];
       if (patch) diffArgs.push("--patch");
       if (ignoreWhitespace) diffArgs.push("-w");
       if (nameStatus) diffArgs.push("--name-status");

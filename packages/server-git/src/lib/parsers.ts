@@ -277,19 +277,67 @@ export function parseLog(stdout: string): GitLog {
   return { commits };
 }
 
-/** Parses `git diff --numstat` output into structured file-level diff statistics. */
 /** Status letters used by git --name-status output. */
 const NAME_STATUS_LETTERS = new Set(["A", "M", "D", "R", "C", "T", "U", "X"]);
 
+/** A `--numstat` row: additions, deletions ("-" for binary) and the path. */
+const NUMSTAT_ROW_RE = /^(?:-|\d+)\t(?:-|\d+)\t./;
+
+/** `--summary` lines that carry a file's real status: " create mode 100644 a.ts". */
+const SUMMARY_CREATE_DELETE_RE = /^ (create|delete) mode \d+ (.+)$/;
+
+/** `--summary` line for a copy: " copy src/a.ts => src/b.ts (90%)". */
+const SUMMARY_COPY_RE = /^ copy (.+) \(\d+%\)$/;
+
+/** Splits a numstat/summary rename path into old and new paths. Handles both
+ *  "old.ts => new.ts" and the abbreviated "src/{old => new}/x.ts" form. */
+function splitRenamePath(path: string): { oldFile: string; file: string } | null {
+  const braced = path.match(/^(.*)\{(.*) => (.*)\}(.*)$/);
+  if (braced) {
+    const [, pre, from, to, post] = braced;
+    // "dir/{ => sub}/x.ts" leaves "dir//x.ts" on the empty side.
+    const join = (mid: string) => `${pre}${mid}${post}`.replace(/\/\/+/g, "/");
+    return { oldFile: join(from), file: join(to) };
+  }
+  const plain = path.match(/^(.+) => (.+)$/);
+  return plain ? { oldFile: plain[1], file: plain[2] } : null;
+}
+
+/**
+ * Parses `git diff --numstat --summary` (or `--name-status`) output into
+ * structured file-level diff statistics.
+ *
+ * A file's status comes from git: `--summary`'s "create mode" / "delete mode" /
+ * "copy" lines, a rename path, or the `--name-status` letter. It is never
+ * guessed from the line counts: a modification that only removes lines is not a
+ * deleted file (#1099). Lines that are none of these (warnings, blank lines,
+ * other summary lines) are skipped rather than turned into entries with an
+ * empty `file` (#1152).
+ */
 export function parseDiffStat(stdout: string): GitDiff {
-  // Parse --numstat output: additions\tdeletions\tfilename
-  // Also handles --name-status output: STATUS\tfilename (when --name-status overrides --numstat)
   // Split on all common line endings so trailing \r doesn't leak into filenames on Windows.
-  const lines = stdout
-    .trim()
-    .split(/\r\n|\r|\n/)
-    .filter(Boolean);
-  const files = lines.map((line) => {
+  const lines = stdout.split(/\r\n|\r|\n/).filter(Boolean);
+
+  const summaryStatus = new Map<string, "added" | "deleted">();
+  const copied = new Set<string>();
+  for (const line of lines) {
+    const createDelete = line.match(SUMMARY_CREATE_DELETE_RE);
+    if (createDelete) {
+      summaryStatus.set(createDelete[2], createDelete[1] === "create" ? "added" : "deleted");
+      continue;
+    }
+    const copy = line.match(SUMMARY_COPY_RE);
+    const copyPaths = copy ? splitRenamePath(copy[1]) : null;
+    if (copyPaths) copied.add(copyPaths.file);
+  }
+
+  const rows = lines.filter((line) => {
+    if (NUMSTAT_ROW_RE.test(line)) return true;
+    const parts = line.split("\t");
+    return parts.length >= 2 && parts[0].length <= 4 && NAME_STATUS_LETTERS.has(parts[0][0]);
+  });
+
+  const files = rows.map((line) => {
     const parts = line.split("\t");
 
     // Detect --name-status format: first field is a single status letter (A, M, D, R, C, T, U, X)
@@ -323,32 +371,26 @@ export function parseDiffStat(stdout: string): GitDiff {
 
     const [add, del, ...fileParts] = parts;
     const filePath = fileParts.join("\t");
-    // Detect renames: "old => new" or "{old => new}/path"
-    const renameMatch =
-      filePath.match(/(.+)\{(.+) => (.+)\}(.*)/) || filePath.match(/(.+) => (.+)/);
-    const isRename = !!renameMatch;
+    const rename = splitRenamePath(filePath);
+    const file = rename ? rename.file : filePath;
     // Binary files show "-" for both additions and deletions in --numstat
     const isBinary = add === "-" && del === "-";
     const additions = add === "-" ? 0 : parseInt(add, 10);
     const deletions = del === "-" ? 0 : parseInt(del, 10);
 
-    // Guard against NaN from unexpected input formats
-    const safeAdditions = Number.isNaN(additions) ? 0 : additions;
-    const safeDeletions = Number.isNaN(deletions) ? 0 : deletions;
+    const status: GitDiff["files"][number]["status"] = rename
+      ? copied.has(file)
+        ? "copied"
+        : "renamed"
+      : (summaryStatus.get(file) ?? "modified");
 
     return {
-      file: filePath,
-      status: (safeAdditions > 0 && safeDeletions === 0 && !isRename
-        ? "added"
-        : isRename
-          ? "renamed"
-          : safeDeletions > 0 && safeAdditions === 0
-            ? "deleted"
-            : "modified") as GitDiff["files"][number]["status"],
-      additions: safeAdditions,
-      deletions: safeDeletions,
+      file,
+      status,
+      additions: Number.isNaN(additions) ? 0 : additions,
+      deletions: Number.isNaN(deletions) ? 0 : deletions,
       ...(isBinary ? { binary: true } : {}),
-      ...(isRename && renameMatch ? { oldFile: renameMatch[1] ?? renameMatch[0] } : {}),
+      ...(rename ? { oldFile: rename.oldFile } : {}),
     };
   });
 
