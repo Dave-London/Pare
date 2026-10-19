@@ -12,6 +12,7 @@ Initializes a Terraform working directory. Downloads providers, configures backe
 | `upgrade`      | boolean | --      | Upgrade provider plugins to newest acceptable versions (-upgrade) |
 | `reconfigure`  | boolean | --      | Reconfigure backend, ignoring saved configuration (-reconfigure)  |
 | `migrateState` | boolean | --      | Migrate state to new backend configuration (-migrate-state)       |
+| `backend`      | boolean | `true`  | `false` skips backend initialization (-backend=false)             |
 | `compact`      | boolean | `true`  | Auto-compact when structured output exceeds raw CLI tokens        |
 
 ## Success — Init with Providers
@@ -123,6 +124,7 @@ was recently created, verify the bucket configuration and try again.
 - Always uses `-input=false` to prevent interactive prompts
 - The `upgrade` flag adds `-upgrade` to fetch the latest provider versions within constraints
 - The `reconfigure` flag adds `-reconfigure` to reset backend configuration
+- `backend: false` adds `-backend=false`, for validate-only workflows (`init` then `validate`) that must not need state access or backend credentials
 - The `migrateState` flag adds `-migrate-state` for backend migrations
 - Providers list includes name and resolved version from the init output
 - Compact mode drops `providers`, `backendType`, and `warnings`, keeping only `success`
