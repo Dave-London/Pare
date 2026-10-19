@@ -184,10 +184,17 @@ describe("parseLog", () => {
 });
 
 describe("parseDiffStat", () => {
-  it("parses numstat output", () => {
-    const stdout = ["10\t2\tsrc/index.ts", "0\t5\told-file.ts", "25\t0\tnew-file.ts"].join("\n");
+  it("parses numstat output, with status from --summary", () => {
+    const stdout = [
+      "10\t2\tsrc/index.ts",
+      "0\t5\told-file.ts",
+      "25\t0\tnew-file.ts",
+      " delete mode 100644 old-file.ts",
+      " create mode 100644 new-file.ts",
+    ].join("\n");
 
     const result = parseDiffStat(stdout);
+    expect(result.files).toHaveLength(3);
     expect(result.files[0]).toEqual({
       file: "src/index.ts",
       status: "modified",
@@ -196,6 +203,60 @@ describe("parseDiffStat", () => {
     });
     expect(result.files[1].status).toBe("deleted");
     expect(result.files[2].status).toBe("added");
+  });
+
+  // Real `git diff --cached --numstat --summary` output (git 2.51).
+  const REAL_NUMSTAT_SUMMARY = [
+    "1\t0\tfresh.txt",
+    "0\t1\tgone.txt",
+    "2\t0\tgrow.txt",
+    "0\t0\tmoveme.txt => moved.txt",
+    "0\t0\trun.sh",
+    "0\t2\tshrink.txt",
+    " create mode 100644 fresh.txt",
+    " delete mode 100644 gone.txt",
+    " rename moveme.txt => moved.txt (100%)",
+    " mode change 100644 => 100755 run.sh",
+  ].join("\n");
+
+  it("takes status from git, not from the line counts (#1099)", () => {
+    const byFile = Object.fromEntries(
+      parseDiffStat(REAL_NUMSTAT_SUMMARY).files.map((f) => [f.file, f.status]),
+    );
+
+    expect(byFile).toEqual({
+      "fresh.txt": "added",
+      "gone.txt": "deleted",
+      // Additions only, or deletions only, is still a modification.
+      "grow.txt": "modified",
+      "moved.txt": "renamed",
+      "run.sh": "modified",
+      "shrink.txt": "modified",
+    });
+  });
+
+  it("never turns a non-row line into an entry with an empty file (#1152)", () => {
+    const stdout = [
+      "3\t1\tsrc/a.py",
+      "warning: in the working copy of 'src/a.py', LF will be replaced by CRLF",
+      "",
+      "+added line from a patch",
+      "-removed line from a patch",
+      " mode change 100644 => 100755 src/a.py",
+    ].join("\n");
+
+    const result = parseDiffStat(stdout);
+    expect(result.files).toEqual([
+      { file: "src/a.py", status: "modified", additions: 3, deletions: 1 },
+    ]);
+  });
+
+  it("marks a copy from --summary as copied", () => {
+    const stdout = ["4\t0\tsrc/{a.ts => b.ts}", " copy src/{a.ts => b.ts} (90%)"].join("\n");
+
+    expect(parseDiffStat(stdout).files).toEqual([
+      { file: "src/b.ts", oldFile: "src/a.ts", status: "copied", additions: 4, deletions: 0 },
+    ]);
   });
 
   it("handles binary files (- - markers) and sets binary flag", () => {
@@ -335,7 +396,9 @@ describe("parseShow", () => {
 
 describe("parseDiffStat — chunk scenarios for full=true", () => {
   it("parseDiffStat correctly detects status for single-file add", () => {
-    const numstat = "50\t0\tsrc/new-module.ts";
+    const numstat = ["50\t0\tsrc/new-module.ts", " create mode 100644 src/new-module.ts"].join(
+      "\n",
+    );
     const result = parseDiffStat(numstat);
     expect(result.files[0].status).toBe("added");
     expect(result.files[0].additions).toBe(50);
@@ -343,7 +406,9 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
   });
 
   it("parseDiffStat correctly detects status for single-file delete", () => {
-    const numstat = "0\t30\tsrc/old-module.ts";
+    const numstat = ["0\t30\tsrc/old-module.ts", " delete mode 100644 src/old-module.ts"].join(
+      "\n",
+    );
     const result = parseDiffStat(numstat);
 
     expect(result.files[0].status).toBe("deleted");
@@ -356,6 +421,9 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
       "0\t80\tsrc/deprecated.ts",
       "-\t-\tassets/image.png",
       "3\t1\t{src => lib}/utils.ts",
+      " create mode 100644 src/feature.ts",
+      " delete mode 100644 src/deprecated.ts",
+      " rename {src => lib}/utils.ts (80%)",
     ].join("\n");
 
     const result = parseDiffStat(numstat);
@@ -363,7 +431,11 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
     expect(result.files[1].status).toBe("added");
     expect(result.files[2].status).toBe("deleted");
     expect(result.files[3].status).toBe("modified"); // binary: 0 add, 0 del
-    expect(result.files[4].status).toBe("renamed");
+    expect(result.files[4]).toMatchObject({
+      status: "renamed",
+      file: "lib/utils.ts",
+      oldFile: "src/utils.ts",
+    });
   });
 
   it("parseDiffStat handles file path with tabs", () => {
@@ -392,9 +464,20 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
     const result = parseDiffStat(numstat);
 
     expect(result.files[0].status).toBe("renamed");
-    expect(result.files[0].file).toBe("packages/{old-name => new-name}/src/index.ts");
-    // The parser produces an oldFile from the first capture group
-    expect(result.files[0].oldFile).toBeDefined();
+    // Expanded to real paths, so `file` matches the patch's b/ path.
+    expect(result.files[0].file).toBe("packages/new-name/src/index.ts");
+    expect(result.files[0].oldFile).toBe("packages/old-name/src/index.ts");
+  });
+
+  it("parseDiffStat expands a brace rename with an empty side", () => {
+    const numstat = "1\t0\tsrc/{ => nested}/file.ts";
+    const result = parseDiffStat(numstat);
+
+    expect(result.files[0]).toMatchObject({
+      status: "renamed",
+      file: "src/nested/file.ts",
+      oldFile: "src/file.ts",
+    });
   });
 
   it("parseDiffStat preserves oldFile for simple rename", () => {
@@ -402,7 +485,8 @@ describe("parseDiffStat — chunk scenarios for full=true", () => {
     const result = parseDiffStat(numstat);
 
     expect(result.files[0].status).toBe("renamed");
-    expect(result.files[0].oldFile).toBeDefined();
+    expect(result.files[0].file).toBe("new-file.ts");
+    expect(result.files[0].oldFile).toBe("old-file.ts");
   });
 });
 
