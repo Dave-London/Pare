@@ -155,7 +155,8 @@ export function registerRebaseTool(server: McpServer) {
 
       // Handle continue
       if (cont) {
-        const result = await git(["rebase", "--continue"], cwd);
+        // Keep the prepared message: an interactive editor cannot finish over MCP.
+        const result = await git(["rebase", "--continue"], cwd, { env: { GIT_EDITOR: ":" } });
 
         // Continue can fail if there are still conflicts
         if (result.exitCode !== 0) {
