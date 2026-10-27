@@ -457,6 +457,46 @@ function attachEmptyRunDiagnostics(
  *  elsewhere (pytest-cov's `____ coverage: platform ... ____`), and those are not
  *  failures (#1181). Each block runs to the next header or `=` rule; its message
  *  is the `E ` lines, or else the block's last line. */
+/** Reads failures and errors from pytest's `short test summary info` section.
+ *  Serves as a robust fallback when plugins (e.g. `-p no:logfire`), short tracebacks,
+ *  or quiet mode omit full `____ test_name ____` failure blocks (#1222). */
+function parsePytestShortSummary(lines: string[]): { test: string; message: string }[] {
+  const failures: { test: string; message: string }[] = [];
+  let inSection = false;
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const rule = stripPytestRule(line);
+    if (rule !== null) {
+      if (rule.toLowerCase().includes("short test summary info")) {
+        inSection = true;
+        continue;
+      } else if (inSection) {
+        inSection = false;
+      }
+    }
+
+    if (inSection) {
+      const match = line.match(/^(FAILED|ERROR)\s+([^\s\-]+)(?:\s+-\s+(.+))?$/);
+      if (match) {
+        const test = match[2].trim();
+        const message = match[3] ? match[3].trim() : `${match[1]} ${test}`;
+        failures.push({ test, message });
+      }
+    } else {
+      // Loose fallback for lines with explicit node ID (path::test) outside formal section
+      const looseMatch = line.match(/^(FAILED|ERROR)\s+([^\s\-]+::[^\s\-]+)(?:\s+-\s+(.+))?$/);
+      if (looseMatch) {
+        const test = looseMatch[2].trim();
+        const message = looseMatch[3] ? looseMatch[3].trim() : `${looseMatch[1]} ${test}`;
+        failures.push({ test, message });
+      }
+    }
+  }
+
+  return failures;
+}
+
 function parsePytestFailureBlocks(lines: string[]): { test: string; message: string }[] {
   const failures: { test: string; message: string }[] = [];
   let inSection = false;
@@ -540,7 +580,9 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     );
   }
 
-  const failures = parsePytestFailureBlocks(lines);
+  const failureBlocks = parsePytestFailureBlocks(lines);
+  const failures =
+    failureBlocks.length > 0 ? failureBlocks : parsePytestShortSummary(lines);
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is
