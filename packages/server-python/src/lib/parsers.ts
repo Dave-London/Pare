@@ -126,6 +126,14 @@ function attachMypyFailure(
   stderr: string,
   exitCode: number,
 ): MypyResult {
+  const hasErrors = (data.diagnostics ?? []).some((d) => d.severity === "error");
+
+  // If there are no error diagnostics (only notes or warnings) and exitCode <= 1,
+  // the run is clean — notes and warnings do not count as errors (#1223).
+  if (!hasErrors && exitCode <= 1 && (data.diagnostics ?? []).length > 0) {
+    return { ...data, success: true };
+  }
+
   if (exitCode === 0) return data;
   if ((data.diagnostics ?? []).length === 0) {
     return surfaceEmptyFailure(data, { exitCode, stdout, stderr }, { isEmpty: () => true });
@@ -167,7 +175,9 @@ export function parseMypyJsonOutput(stdout: string, exitCode: number, stderr = "
     code: e.code || undefined,
   }));
 
-  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
+  const hasErrors = diagnostics.some((d) => d.severity === "error");
+  const isSuccess = !hasErrors && (exitCode === 0 || exitCode === 1);
+  return attachMypyFailure({ success: isSuccess, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy text output into structured diagnostics (fallback for older mypy without JSON). */
@@ -189,7 +199,9 @@ export function parseMypyTextOutput(stdout: string, exitCode: number, stderr = "
     }
   }
 
-  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
+  const hasErrors = diagnostics.some((d) => d.severity === "error");
+  const isSuccess = !hasErrors && (exitCode === 0 || exitCode === 1);
+  return attachMypyFailure({ success: isSuccess, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy output: tries JSON first, falls back to text parsing.
