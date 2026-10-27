@@ -58,6 +58,41 @@ describe("parsePytestOutput", () => {
     expect(result.skipped).toBe(1);
   });
 
+  it("extracts failures from short test summary info when failure blocks are absent (#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "FAILED tests/plumber/test_refusal_detail_6245.py::test_foo - AssertionError: assert 1 == 2",
+      "FAILED tests/plumber/test_refusal_detail_6245.py::test_bar - AssertionError: assert 3 == 4",
+      "============================== 2 failed in 0.12s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(2);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].test).toBe("tests/plumber/test_refusal_detail_6245.py::test_foo");
+    expect(result.failures[0].message).toBe("AssertionError: assert 1 == 2");
+    expect(result.failures[1].test).toBe("tests/plumber/test_refusal_detail_6245.py::test_bar");
+    expect(result.failures[1].message).toBe("AssertionError: assert 3 == 4");
+  });
+
+  it("extracts ERROR items from short test summary info (#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_setup.py::test_crash - RuntimeError: out of memory",
+      "============================== 1 error in 0.05s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toBe(1);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].test).toBe("tests/test_setup.py::test_crash");
+    expect(result.failures[0].message).toBe("RuntimeError: out of memory");
+  });
+
   it("handles no tests collected", () => {
     const stdout = [
       "========================= no tests ran in 0.01s =========================",
