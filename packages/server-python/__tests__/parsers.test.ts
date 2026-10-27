@@ -107,6 +107,20 @@ describe("parseMypyOutput", () => {
     expect(result.success).toBe(true);
     expect(result.diagnostics).toHaveLength(0);
   });
+
+  it("treats notes-only diagnostic output as successful even with exitCode 1 (#1223)", () => {
+    const stdout = [
+      "middleware/circuit_breaker.py:60: note: By default the bodies of untyped functions are not checked  [annotation-unchecked]",
+      "bots/runner_fargate.py:775: note: By default the bodies of untyped functions are not checked  [annotation-unchecked]",
+      "Success: no issues found in 940 source files",
+    ].join("\n");
+
+    const result = parseMypyTextOutput(stdout, 1);
+
+    expect(result.success).toBe(true);
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics.every((d) => d.severity === "note")).toBe(true);
+  });
 });
 
 describe("parseRuffJson", () => {
