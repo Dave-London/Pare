@@ -63,7 +63,6 @@ export function registerIssueViewTool(server: McpServer) {
 
       const jsonFields = comments ? `${ISSUE_VIEW_FIELDS},comments` : ISSUE_VIEW_FIELDS;
       const args = ["issue", "view", selector, "--json", jsonFields];
-      if (comments) args.push("--comments");
       if (repo) args.push("--repo", repo);
       const result = await ghCmd(args, cwd);
 
