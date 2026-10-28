@@ -107,6 +107,7 @@ describe("parseMypyOutput", () => {
     expect(result.success).toBe(true);
     expect(result.diagnostics).toHaveLength(0);
   });
+
 });
 
 describe("parseRuffJson", () => {
