@@ -162,6 +162,15 @@ export type PrDiffResult = z.infer<typeof PrDiffResultSchema>;
 
 // ── Issue schemas ────────────────────────────────────────────────────
 
+/** Zod schema for a comment returned as part of issue-view. */
+export const IssueCommentSchema = z.object({
+  author: z.string().optional(),
+  createdAt: z.string().optional(),
+  body: z.string().optional(),
+});
+
+export type IssueComment = z.infer<typeof IssueCommentSchema>;
+
 /** Zod schema for structured issue-view output. */
 export const IssueViewResultSchema = z.object({
   number: z.number(),
@@ -187,6 +196,7 @@ export const IssueViewResultSchema = z.object({
   closedAt: z.string().nullable().optional(),
   isPinned: z.boolean().optional(),
   projectItems: z.array(z.string()).optional(),
+  comments: z.array(IssueCommentSchema).optional(),
 });
 
 export type IssueViewResult = z.infer<typeof IssueViewResultSchema>;

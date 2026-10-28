@@ -507,6 +507,64 @@ describe("parseIssueView", () => {
     expect(result.assignees).toEqual([]);
     expect(result.createdAt).toBe("");
   });
+
+  it("parses comments array when present in issue view JSON", () => {
+    const json = JSON.stringify({
+      number: 10,
+      state: "OPEN",
+      title: "Issue with comments",
+      url: "https://github.com/owner/repo/issues/10",
+      comments: [
+        {
+          author: { login: "founder" },
+          createdAt: "2026-10-27T08:00:00Z",
+          body: "Ship this decision",
+        },
+        {
+          author: { login: "agent" },
+          createdAt: "2026-10-27T08:05:00Z",
+          body: "Acknowledged",
+        },
+      ],
+    });
+
+    const result = parseIssueView(json);
+    expect(result.comments).toHaveLength(2);
+    expect(result.comments?.[0]).toEqual({
+      author: "founder",
+      createdAt: "2026-10-27T08:00:00Z",
+      body: "Ship this decision",
+    });
+    expect(result.comments?.[1]).toEqual({
+      author: "agent",
+      createdAt: "2026-10-27T08:05:00Z",
+      body: "Acknowledged",
+    });
+  });
+
+  it("handles string author and missing fields in comments gracefully", () => {
+    const json = JSON.stringify({
+      number: 11,
+      state: "OPEN",
+      title: "Another issue",
+      url: "https://github.com/owner/repo/issues/11",
+      comments: [
+        {
+          author: "flat_author",
+          body: "Hello",
+        },
+      ],
+    });
+
+    const result = parseIssueView(json);
+    expect(result.comments).toEqual([
+      {
+        author: "flat_author",
+        createdAt: undefined,
+        body: "Hello",
+      },
+    ]);
+  });
 });
 
 describe("parseIssueList", () => {
