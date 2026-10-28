@@ -175,9 +175,7 @@ export function parseMypyJsonOutput(stdout: string, exitCode: number, stderr = "
     code: e.code || undefined,
   }));
 
-  const hasErrors = diagnostics.some((d) => d.severity === "error");
-  const isSuccess = !hasErrors && (exitCode === 0 || exitCode === 1);
-  return attachMypyFailure({ success: isSuccess, diagnostics }, stdout, stderr, exitCode);
+  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy text output into structured diagnostics (fallback for older mypy without JSON). */
@@ -199,9 +197,7 @@ export function parseMypyTextOutput(stdout: string, exitCode: number, stderr = "
     }
   }
 
-  const hasErrors = diagnostics.some((d) => d.severity === "error");
-  const isSuccess = !hasErrors && (exitCode === 0 || exitCode === 1);
-  return attachMypyFailure({ success: isSuccess, diagnostics }, stdout, stderr, exitCode);
+  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy output: tries JSON first, falls back to text parsing.
