@@ -439,17 +439,80 @@ function attachEmptyRunDiagnostics(
   // "ERROR collecting tests/test_x.py"), not test failures, so the raw tail is
   // still the only place the agent can see the underlying cause.
   const noTestsExecuted = result.passed === 0 && result.failed === 0 && result.skipped === 0;
-  if (result.success || !noTestsExecuted) return result;
+  if (result.success) return result;
 
-  result.exitCode = exitCode;
-  const detail = pickPytestErrorStream(stdout, stderr);
-  if (detail) {
-    result.errorOutput =
-      detail.length > PYTEST_ERROR_OUTPUT_MAX
-        ? `… (output truncated)\n${detail.slice(-PYTEST_ERROR_OUTPUT_MAX)}`
-        : detail;
+  // Post-run error: test summary was parsed and no test failed, but process exited non-zero (#1215).
+  const isPostRunError = !noTestsExecuted && result.failed === 0 && result.errors === 0;
+
+  if (noTestsExecuted || isPostRunError) {
+    result.exitCode = exitCode;
+    const detail = pickPytestErrorStream(stdout, stderr);
+    if (detail) {
+      result.errorOutput =
+        detail.length > PYTEST_ERROR_OUTPUT_MAX
+          ? `… (output truncated)\n${detail.slice(-PYTEST_ERROR_OUTPUT_MAX)}`
+          : detail;
+    }
   }
   return result;
+}
+
+/** Reads failures and errors from pytest's `short test summary info` section.
+ *  Serves as a robust fallback when plugins (e.g. `-p no:logfire`), short tracebacks,
+ *  or quiet mode omit full `____ test_name ____` failure blocks (#1215, #1222). */
+function parsePytestShortSummary(lines: string[]): { test: string; message: string }[] {
+  const failures: { test: string; message: string }[] = [];
+  let inSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trimEnd();
+    const rule = stripPytestRule(line);
+    if (rule !== null) {
+      if (rule.toLowerCase().includes("short test summary info")) {
+        inSection = true;
+        continue;
+      } else if (inSection) {
+        inSection = false;
+      }
+    }
+
+    if (inSection) {
+      const match = line.match(/^(FAILED|ERROR)\s+(\S+)(?:\s+-\s+(.*))?$/);
+      if (match) {
+        const status = match[1];
+        const test = match[2].trim();
+        let summaryMsg = match[3] ? match[3].trim() : undefined;
+
+        // Check if following lines are 'E   ' error details (#1213 / #1215 / #1222)
+        const eLines: string[] = [];
+        while (i + 1 < lines.length) {
+          const nextLine = lines[i + 1].trimEnd();
+          if (stripPytestRule(nextLine) !== null) break;
+          if (/^(FAILED|ERROR)\s+\S+/.test(nextLine)) break;
+          const eMatch = nextLine.match(/^E(?:\s+(.*))?$/);
+          if (eMatch) {
+            eLines.push(eMatch[1] ?? "");
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        let message: string;
+        if (eLines.length > 0) {
+          message = eLines.join("\n").trim();
+        } else if (summaryMsg) {
+          message = summaryMsg;
+        } else {
+          message = `${status} ${test}`;
+        }
+
+        failures.push({ test, message });
+      }
+    }
+  }
+
+  return failures;
 }
 
 /** Reads the `____ test_name ____` blocks of pytest's FAILURES and ERRORS
@@ -540,7 +603,29 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     );
   }
 
-  const failures = parsePytestFailureBlocks(lines);
+  let failures = parsePytestFailureBlocks(lines);
+
+  // If failure blocks are missing or incomplete (e.g. quiet mode, short tracebacks,
+  // or plugins omit '____ test_name ____' headers), fall back to short test summary info (#1215, #1222).
+  if (failed > 0 && failures.length < failed) {
+    const summaryFailures = parsePytestShortSummary(lines);
+    const seen = new Set(failures.map((f) => f.test));
+    for (const sf of summaryFailures) {
+      if (!seen.has(sf.test)) {
+        failures.push(sf);
+        seen.add(sf.test);
+      }
+    }
+  }
+
+  // Ensure failure list matches summary count (#1215).
+  // If some failures still could not be extracted by test name, backfill with placeholder.
+  while (failures.length < failed) {
+    failures.push({
+      test: `unknown_failure_${failures.length + 1}`,
+      message: "Test failure reported in summary line but details were omitted from test output",
+    });
+  }
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is
