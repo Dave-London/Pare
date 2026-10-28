@@ -126,7 +126,7 @@ function attachMypyFailure(
   stderr: string,
   exitCode: number,
 ): MypyResult {
-  if (exitCode === 0) return data;
+  if (exitCode === 0 || data.success) return data;
   if ((data.diagnostics ?? []).length === 0) {
     return surfaceEmptyFailure(data, { exitCode, stdout, stderr }, { isEmpty: () => true });
   }
@@ -146,15 +146,46 @@ function attachMypyFailure(
 
 /** Parses mypy JSON output (from `--output json`) into structured diagnostics. */
 export function parseMypyJsonOutput(stdout: string, exitCode: number, stderr = ""): MypyResult {
-  let entries: MypyJsonEntry[];
-  try {
-    entries = JSON.parse(stdout);
-  } catch {
-    // Fall back to text parsing if JSON parsing fails (older mypy without --output json)
-    return parseMypyTextOutput(stdout, exitCode, stderr);
+  let entries: MypyJsonEntry[] = [];
+  const trimmed = stdout.trim();
+
+  // Try parsing as JSON array first (fixtures or bracketed arrays)
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) entries = parsed;
+    } catch {
+      // Fall through
+    }
   }
 
-  if (!Array.isArray(entries)) {
+  // Try parsing as NDJSON (newline-delimited JSON objects streamed by mypy --output json)
+  if (entries.length === 0 && trimmed.length > 0) {
+    const lines = trimmed.split("\n");
+    const parsedEntries: MypyJsonEntry[] = [];
+    let isNdjson = false;
+    for (const line of lines) {
+      const l = line.trim();
+      if (!l) continue;
+      if (l.startsWith("{") && l.endsWith("}")) {
+        try {
+          const obj = JSON.parse(l);
+          if (obj && typeof obj === "object" && "file" in obj && "severity" in obj) {
+            parsedEntries.push(obj as MypyJsonEntry);
+            isNdjson = true;
+          }
+        } catch {
+          // not a JSON line
+        }
+      }
+    }
+    if (isNdjson) {
+      entries = parsedEntries;
+    }
+  }
+
+  if (entries.length === 0 && trimmed.length > 0) {
+    // Fall back to text parsing if JSON parsing fails (older mypy without --output json)
     return parseMypyTextOutput(stdout, exitCode, stderr);
   }
 
@@ -167,7 +198,13 @@ export function parseMypyJsonOutput(stdout: string, exitCode: number, stderr = "
     code: e.code || undefined,
   }));
 
-  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
+  const hasErrors = diagnostics.some((d) => d.severity === "error");
+  // Notes don't count as errors (#1223): mypy exits 1 with --output json even when
+  // diagnostics are notes-only. If there are no errors and exitCode <= 1 with notes, it is a success.
+  const success =
+    exitCode === 0 ? !hasErrors : !hasErrors && exitCode === 1 && diagnostics.length > 0;
+
+  return attachMypyFailure({ success, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy text output into structured diagnostics (fallback for older mypy without JSON). */
@@ -189,7 +226,12 @@ export function parseMypyTextOutput(stdout: string, exitCode: number, stderr = "
     }
   }
 
-  return attachMypyFailure({ success: exitCode === 0, diagnostics }, stdout, stderr, exitCode);
+  const hasErrors = diagnostics.some((d) => d.severity === "error");
+  // Notes don't count as errors (#1223): if all diagnostics are notes/warnings, treat as success on exit 0 or 1
+  const success =
+    exitCode === 0 ? !hasErrors : !hasErrors && exitCode === 1 && diagnostics.length > 0;
+
+  return attachMypyFailure({ success, diagnostics }, stdout, stderr, exitCode);
 }
 
 /** Parses mypy output: tries JSON first, falls back to text parsing.

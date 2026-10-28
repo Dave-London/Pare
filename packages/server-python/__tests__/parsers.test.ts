@@ -1194,6 +1194,38 @@ describe("parseMypyJsonOutput", () => {
     expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(1);
     expect(result.diagnostics).toHaveLength(3);
   });
+
+  it("treats notes-only NDJSON output as success even with exitCode 1 (#1223)", () => {
+    const ndjson = [
+      JSON.stringify({
+        file: "middleware/circuit_breaker.py",
+        line: 60,
+        column: 1,
+        message: "By default the bodies of untyped functions are not checked",
+        hint: null,
+        code: "annotation-unchecked",
+        severity: "note",
+      }),
+      JSON.stringify({
+        file: "bots/runner_fargate.py",
+        line: 775,
+        column: 1,
+        message: "By default the bodies of untyped functions are not checked",
+        hint: null,
+        code: "annotation-unchecked",
+        severity: "note",
+      }),
+    ].join("\n");
+
+    const result = parseMypyJsonOutput(ndjson, 1);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBeUndefined();
+    expect(result.error).toBeUndefined();
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics!.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(2);
+  });
 });
 
 // Gap #184: Separate notes from warnings in text parsing
@@ -1222,6 +1254,22 @@ describe("parseMypyTextOutput — notes separated from warnings", () => {
     expect(result.diagnostics.filter((d) => d.severity === "warning")).toHaveLength(0);
     expect(result.diagnostics.filter((d) => d.severity === "note")).toHaveLength(0);
     expect(result.diagnostics).toHaveLength(1);
+  });
+
+  it("treats notes-only text output as success even with exitCode 1 (#1223)", () => {
+    const stdout = [
+      "middleware/circuit_breaker.py:60: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]",
+      "bots/runner_fargate.py:775: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]",
+    ].join("\n");
+
+    const result = parseMypyTextOutput(stdout, 1);
+
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBeUndefined();
+    expect(result.error).toBeUndefined();
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics!.filter((d) => d.severity === "error")).toHaveLength(0);
+    expect(result.diagnostics!.filter((d) => d.severity === "note")).toHaveLength(2);
   });
 });
 
