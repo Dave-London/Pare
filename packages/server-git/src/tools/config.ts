@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { realpathSync, statSync } from "node:fs";
+import { isAbsolute, relative, resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
 
@@ -27,6 +29,42 @@ function assertSafeConfigKey(key: string): void {
   }
 }
 import { git } from "../lib/git-runner.js";
+
+/**
+ * Returns true when `core.hooksPath` may be set to `value` (#1094): local or
+ * worktree scope only, a relative path that resolves (symlinks included) to a
+ * directory inside the working tree, and that directory holds tracked files.
+ * The hooks are then repo-tracked code the user already runs, e.g. `.githooks`.
+ * Git resolves a relative hooksPath against the working-tree root, so we do too.
+ */
+async function isInRepoHooksPath(value: string, scope: string | undefined, cwd: string) {
+  if (scope === "global" || scope === "system") return false;
+  if (!value || isAbsolute(value) || /^[a-zA-Z]:/.test(value) || value.startsWith("~")) {
+    return false;
+  }
+
+  const top = await git(["rev-parse", "--show-toplevel"], cwd);
+  if (top.exitCode !== 0) return false;
+  const root = top.stdout.trim();
+
+  let realRoot: string;
+  let realTarget: string;
+  try {
+    realRoot = realpathSync.native(root);
+    realTarget = realpathSync.native(resolve(root, value));
+    if (!statSync(realTarget).isDirectory()) return false;
+  } catch {
+    return false;
+  }
+  const rel = relative(realRoot, realTarget);
+  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) return false;
+
+  const tracked = await git(
+    ["--literal-pathspecs", "ls-files", "--", rel.replace(/\\/g, "/")],
+    realRoot,
+  );
+  return tracked.exitCode === 0 && tracked.stdout.trim() !== "";
+}
 import { parseConfigList } from "../lib/parsers.js";
 import { formatConfig } from "../lib/formatters.js";
 import { GitConfigSchema } from "../schemas/index.js";
@@ -78,7 +116,16 @@ export function registerConfigTool(server: McpServer) {
         }
         assertNoFlagInjection(key, "key");
         assertNoFlagInjection(value, "value");
-        assertSafeConfigKey(key);
+        if (key.toLowerCase() === "core.hookspath") {
+          if (!(await isInRepoHooksPath(value, scope, cwd))) {
+            throw new Error(
+              `Setting "${key}" is blocked unless the value is a relative path to a directory of ` +
+                `tracked files inside this working tree (e.g. ".githooks"), set at local or worktree scope.`,
+            );
+          }
+        } else {
+          assertSafeConfigKey(key);
+        }
 
         const args = ["config"];
         if (scopeFlag) args.push(scopeFlag);
