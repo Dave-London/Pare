@@ -452,11 +452,6 @@ function attachEmptyRunDiagnostics(
   return result;
 }
 
-/** Reads the `____ test_name ____` blocks of pytest's FAILURES and ERRORS
- *  sections. Only those sections count: plugins print the same ruled headers
- *  elsewhere (pytest-cov's `____ coverage: platform ... ____`), and those are not
- *  failures (#1181). Each block runs to the next header or `=` rule; its message
- *  is the `E ` lines, or else the block's last line. */
 /** Reads failures and errors from pytest's `short test summary info` section.
  *  Serves as a robust fallback when plugins (e.g. `-p no:logfire`), short tracebacks,
  *  or quiet mode omit full `____ test_name ____` failure blocks (#1222). */
@@ -464,8 +459,8 @@ function parsePytestShortSummary(lines: string[]): { test: string; message: stri
   const failures: { test: string; message: string }[] = [];
   let inSection = false;
 
-  for (const raw of lines) {
-    const line = raw.trimEnd();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trimEnd();
     const rule = stripPytestRule(line);
     if (rule !== null) {
       if (rule.toLowerCase().includes("short test summary info")) {
@@ -477,18 +472,36 @@ function parsePytestShortSummary(lines: string[]): { test: string; message: stri
     }
 
     if (inSection) {
-      const match = line.match(/^(FAILED|ERROR)\s+([^\s\-]+)(?:\s+-\s+(.+))?$/);
+      const match = line.match(/^(FAILED|ERROR)\s+(\S+)(?:\s+-\s+(.*))?$/);
       if (match) {
+        const status = match[1];
         const test = match[2].trim();
-        const message = match[3] ? match[3].trim() : `${match[1]} ${test}`;
-        failures.push({ test, message });
-      }
-    } else {
-      // Loose fallback for lines with explicit node ID (path::test) outside formal section
-      const looseMatch = line.match(/^(FAILED|ERROR)\s+([^\s\-]+::[^\s\-]+)(?:\s+-\s+(.+))?$/);
-      if (looseMatch) {
-        const test = looseMatch[2].trim();
-        const message = looseMatch[3] ? looseMatch[3].trim() : `${looseMatch[1]} ${test}`;
+        let summaryMsg = match[3] ? match[3].trim() : undefined;
+
+        // Check if following lines are 'E   ' error details (#1213 / #1222)
+        const eLines: string[] = [];
+        while (i + 1 < lines.length) {
+          const nextLine = lines[i + 1].trimEnd();
+          if (stripPytestRule(nextLine) !== null) break;
+          if (/^(FAILED|ERROR)\s+\S+/.test(nextLine)) break;
+          const eMatch = nextLine.match(/^E(?:\s+(.*))?$/);
+          if (eMatch) {
+            eLines.push(eMatch[1] ?? "");
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        let message: string;
+        if (eLines.length > 0) {
+          message = eLines.join("\n").trim();
+        } else if (summaryMsg) {
+          message = summaryMsg;
+        } else {
+          message = `${status} ${test}`;
+        }
+
         failures.push({ test, message });
       }
     }
@@ -497,6 +510,11 @@ function parsePytestShortSummary(lines: string[]): { test: string; message: stri
   return failures;
 }
 
+/** Reads the `____ test_name ____` blocks of pytest's FAILURES and ERRORS
+ *  sections. Only those sections count: plugins print the same ruled headers
+ *  elsewhere (pytest-cov's `____ coverage: platform ... ____`), and those are not
+ *  failures (#1181). Each block runs to the next header or `=` rule; its message
+ *  is the `E ` lines, or else the block's last line. */
 function parsePytestFailureBlocks(lines: string[]): { test: string; message: string }[] {
   const failures: { test: string; message: string }[] = [];
   let inSection = false;
