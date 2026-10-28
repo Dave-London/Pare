@@ -1,3 +1,4 @@
+import { isAbsolute } from "node:path";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
@@ -17,8 +18,24 @@ const DANGEROUS_CONFIG_KEYS = new Set([
   "filter.lfs.process",
 ]);
 
-function assertSafeConfigKey(key: string): void {
+function isSafeInRepoPath(val: string): boolean {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  if (isAbsolute(trimmed)) return false;
+  if (trimmed.startsWith("~") || trimmed.startsWith("/") || trimmed.startsWith("\\")) return false;
+  if (/^[a-zA-Z]:/.test(trimmed)) return false;
+  // Disallow directory traversal upwards
+  const segments = trimmed.replace(/\\/g, "/").split("/");
+  if (segments.includes("..")) return false;
+  return true;
+}
+
+function assertSafeConfigKey(key: string, value?: string): void {
   const lower = key.toLowerCase();
+  // Issue #1094: allow core.hooksPath when set to an in-repo relative path (e.g. ".githooks")
+  if (lower === "core.hookspath" && value !== undefined && isSafeInRepoPath(value)) {
+    return;
+  }
   if (DANGEROUS_CONFIG_KEYS.has(lower)) {
     throw new Error(
       `Setting "${key}" is blocked because it can execute arbitrary commands. ` +
@@ -78,7 +95,7 @@ export function registerConfigTool(server: McpServer) {
         }
         assertNoFlagInjection(key, "key");
         assertNoFlagInjection(value, "value");
-        assertSafeConfigKey(key);
+        assertSafeConfigKey(key, value);
 
         const args = ["config"];
         if (scopeFlag) args.push(scopeFlag);
