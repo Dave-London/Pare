@@ -1,5 +1,13 @@
 # @paretools/git
 
+## 0.23.4
+
+### Patch Changes
+
+- [#1234](https://github.com/Dave-London/Pare/pull/1234) [`7453ae4`](https://github.com/Dave-London/Pare/commit/7453ae44d0219a799a92b19a1abfaf74e21356f7) Thanks [@Dave-London](https://github.com/Dave-London)! - `config` can now set `core.hooksPath` to a repo-tracked hooks directory such as `.githooks`: local or worktree scope only, a relative path that resolves (symlinks included) to a directory of tracked files inside the working tree. Global/system scope, absolute paths, paths outside the repo and untracked directories stay blocked.
+- Updated dependencies []:
+  - @paretools/shared@0.23.4
+
 ## 0.23.3
 
 ### Patch Changes

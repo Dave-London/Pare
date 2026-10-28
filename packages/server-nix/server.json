@@ -6,12 +6,12 @@
     "url": "https://github.com/Dave-London/Pare",
     "source": "github"
   },
-  "version": "0.23.3",
+  "version": "0.23.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@paretools/nix",
-      "version": "0.23.3",
+      "version": "0.23.4",
       "transport": {
         "type": "stdio"
       }

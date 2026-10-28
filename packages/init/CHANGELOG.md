@@ -1,5 +1,9 @@
 # @paretools/init
 
+## 0.23.4
+
+No changes in this release.
+
 ## 0.23.3
 
 No changes in this release.

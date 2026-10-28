@@ -1,5 +1,13 @@
 # @paretools/test
 
+## 0.23.4
+
+### Patch Changes
+
+- [#1233](https://github.com/Dave-London/Pare/pull/1233) [`0ed0db1`](https://github.com/Dave-London/Pare/commit/0ed0db16978350fe1dd6857430b63a704a7064e9) Thanks [@Dave-London](https://github.com/Dave-London)! - `playwright` now passes `args` through verbatim, flags included (e.g. `["--list"]`), matching the `run` tool's passthrough `args`. Only NUL and newline characters are rejected; named params such as `project` and `grep` keep their flag guard. Tests with no results (listed by `--list`, or never run after `maxFailures`/an interruption) are now counted as skipped, as in Playwright's own stats, instead of being dropped from the totals.
+- Updated dependencies []:
+  - @paretools/shared@0.23.4
+
 ## 0.23.3
 
 ### Patch Changes

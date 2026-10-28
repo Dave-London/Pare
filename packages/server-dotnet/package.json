@@ -1,6 +1,6 @@
 {
   "name": "@paretools/dotnet",
-  "version": "0.23.3",
+  "version": "0.23.4",
   "mcpName": "io.github.Dave-London/pare-dotnet",
   "description": "MCP server for .NET — structured build, test, and package data for AI agents",
   "license": "MIT",

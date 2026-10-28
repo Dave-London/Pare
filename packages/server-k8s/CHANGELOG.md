@@ -1,5 +1,12 @@
 # @paretools/k8s
 
+## 0.23.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @paretools/shared@0.23.4
+
 ## 0.23.3
 
 ### Patch Changes

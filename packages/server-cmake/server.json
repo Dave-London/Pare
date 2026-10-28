@@ -3,12 +3,12 @@
   "name": "io.github.Dave-London/pare-cmake",
   "description": "Pare CMake — Structured CMake/CTest build system operations as typed JSON.",
   "repository": { "url": "https://github.com/Dave-London/Pare", "source": "github" },
-  "version": "0.23.3",
+  "version": "0.23.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@paretools/cmake",
-      "version": "0.23.3",
+      "version": "0.23.4",
       "transport": { "type": "stdio" }
     }
   ]
