@@ -6,6 +6,20 @@ import { parsePlaywrightJson } from "../src/lib/parsers/playwright.js";
 const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf-8");
 
 describe("parsePlaywrightJson", () => {
+  // Captured from Playwright 1.56.1 `test --reporter=json --list` (#1108): listed
+  // tests carry `results: []`, and Playwright's own stats count them as skipped.
+  it("counts listed tests with no results as skipped instead of dropping them", () => {
+    const result = parsePlaywrightJson(fixture("playwright-list-json.json"));
+
+    expect(result.summary.total).toBe(2);
+    expect(result.summary.skipped).toBe(2);
+    expect(result.summary.passed).toBe(0);
+    expect(result.summary.failed).toBe(0);
+    expect(result.suites[0].tests.map((t) => t.title)).toEqual(["adds", "nested one"]);
+    expect(result.suites[0].tests.every((t) => t.status === "skipped")).toBe(true);
+    expect(result.failures).toHaveLength(0);
+  });
+
   it("parses JSON output with mixed results", () => {
     const result = parsePlaywrightJson(fixture("playwright-json.json"));
 
