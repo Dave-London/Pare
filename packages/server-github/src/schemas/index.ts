@@ -48,7 +48,6 @@ export const PrViewResultSchema = z.object({
   updatedAt: z.string().optional(),
   milestone: z.string().nullable().optional(),
   projectItems: z.array(z.string()).optional(),
-  comments: z.array(IssueCommentSchema).optional(),
   // P1-gap #147: Add multi-reviewer visibility
   reviews: z.array(PrReviewItemSchema).optional(),
   /** Summary of commits in the PR (count + latest SHA). */
