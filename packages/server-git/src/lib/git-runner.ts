@@ -2,10 +2,18 @@ import { stat } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { run, type RunOptions, type RunResult } from "@paretools/shared";
 
+/** Non-interactive editor environment to prevent MCP hang on continue prompts (#1211). */
+export const NO_EDITOR_ENV: Record<string, string> = {
+  GIT_EDITOR: "true",
+  GIT_SEQUENCE_EDITOR: "true",
+  EDITOR: "true",
+  VISUAL: "true",
+};
+
 export async function git(
   args: string[],
   cwd?: string,
-  opts?: Pick<RunOptions, "stdin">,
+  opts?: Pick<RunOptions, "stdin" | "env">,
 ): Promise<RunResult> {
   // git is a native executable — disable shell mode to prevent cmd.exe from
   // misinterpreting <> in format strings (e.g., --format="%an <%ae>").

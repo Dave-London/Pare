@@ -7,7 +7,7 @@ import {
   repoPathInput,
   coerceJsonArray,
 } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, NO_EDITOR_ENV } from "../lib/git-runner.js";
 import { parseCherryPick } from "../lib/parsers.js";
 import { formatCherryPick } from "../lib/formatters.js";
 import { GitCherryPickSchema } from "../schemas/index.js";
@@ -123,7 +123,7 @@ export function registerCherryPickTool(server: McpServer) {
 
       // Handle continue
       if (cont) {
-        const result = await git(["cherry-pick", "--continue"], cwd);
+        const result = await git(["cherry-pick", "--continue"], cwd, { env: NO_EDITOR_ENV });
         const parsed = parseCherryPick(result.stdout, result.stderr, result.exitCode, commits);
         if (result.exitCode !== 0 && parsed.conflicts.length === 0) {
           throw new Error(`git cherry-pick --continue failed: ${result.stderr}`);

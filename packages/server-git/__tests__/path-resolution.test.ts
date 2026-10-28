@@ -3,7 +3,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { normalizePath, resolveFilePath, resolveFilePaths } from "../src/lib/git-runner.js";
+import { normalizePath, resolveFilePath, resolveFilePaths, NO_EDITOR_ENV } from "../src/lib/git-runner.js";
 
 describe("normalizePath", () => {
   it("converts backslashes to forward slashes", () => {
@@ -110,5 +110,14 @@ describe("resolveFilePaths", () => {
       expect(resolved[0]).toBe("README.md");
       expect(resolved[1]).toBe("CHANGELOG.md");
     }
+  });
+});
+
+describe("NO_EDITOR_ENV", () => {
+  it("defines non-interactive editor environment variables to prevent hang (#1211)", () => {
+    expect(NO_EDITOR_ENV.GIT_EDITOR).toBe("true");
+    expect(NO_EDITOR_ENV.GIT_SEQUENCE_EDITOR).toBe("true");
+    expect(NO_EDITOR_ENV.EDITOR).toBe("true");
+    expect(NO_EDITOR_ENV.VISUAL).toBe("true");
   });
 });
