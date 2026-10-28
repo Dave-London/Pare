@@ -7,7 +7,7 @@ import {
   INPUT_LIMITS,
   repoPathInput,
 } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, NO_EDITOR_ENV } from "../lib/git-runner.js";
 import { parseRebase } from "../lib/parsers.js";
 import { formatRebase } from "../lib/formatters.js";
 import { GitRebaseSchema } from "../schemas/index.js";
@@ -155,7 +155,7 @@ export function registerRebaseTool(server: McpServer) {
 
       // Handle continue
       if (cont) {
-        const result = await git(["rebase", "--continue"], cwd);
+        const result = await git(["rebase", "--continue"], cwd, { env: NO_EDITOR_ENV });
 
         // Continue can fail if there are still conflicts
         if (result.exitCode !== 0) {

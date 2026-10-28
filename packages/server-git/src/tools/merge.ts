@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dualOutput, assertNoFlagInjection, INPUT_LIMITS, repoPathInput } from "@paretools/shared";
-import { git } from "../lib/git-runner.js";
+import { git, NO_EDITOR_ENV } from "../lib/git-runner.js";
 import { parseMerge, parseMergeAbort } from "../lib/parsers.js";
 import { formatMerge } from "../lib/formatters.js";
 import { GitMergeSchema } from "../schemas/index.js";
@@ -100,7 +100,7 @@ export function registerMergeTool(server: McpServer) {
 
       // Handle --continue
       if (cont) {
-        const result = await git(["merge", "--continue"], cwd);
+        const result = await git(["merge", "--continue"], cwd, { env: NO_EDITOR_ENV });
         const mergeResult = parseMerge(result.stdout, result.stderr, branch);
         if (result.exitCode !== 0 && mergeResult.merged) {
           throw new Error(`git merge --continue failed: ${result.stderr}`);
