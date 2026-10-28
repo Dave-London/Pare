@@ -143,7 +143,11 @@ export function formatPytest(data: PytestResult): string {
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
   if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
-  const lines = [`pytest: ${parts.join(", ")}`];
+  const isPostRunError = !data.success && data.failed === 0 && data.errors === 0;
+  const header = isPostRunError
+    ? `pytest: ${parts.join(", ")} (post-run error, exit code ${data.exitCode ?? 1})`
+    : `pytest: ${parts.join(", ")}`;
+  const lines = [header];
 
   for (const f of data.failures ?? []) {
     lines.push(`  FAILED ${f.test}: ${f.message}`);
@@ -295,7 +299,11 @@ export function formatPytestCompact(data: PytestResultCompact): string {
   if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
   if (data.warnings > 0) parts.push(`${data.warnings} warnings`);
 
-  const lines = [`pytest: ${parts.join(", ")}`];
+  const isPostRunError = !data.success && data.failed === 0 && data.errors === 0;
+  const header = isPostRunError
+    ? `pytest: ${parts.join(", ")} (post-run error, exit code ${data.exitCode ?? 1})`
+    : `pytest: ${parts.join(", ")}`;
+  const lines = [header];
   for (const t of data.failedTests) {
     lines.push(`  FAILED ${t}`);
   }
