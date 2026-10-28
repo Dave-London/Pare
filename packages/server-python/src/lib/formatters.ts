@@ -328,9 +328,8 @@ export interface MypyResultCompact {
 
 export function compactMypyMap(data: MypyResult): MypyResultCompact {
   const diagnostics = data.diagnostics ?? [];
-  const hasErrors = diagnostics.some((d) => d.severity === "error");
   const compact: MypyResultCompact = {
-    success: hasErrors ? false : (data.exitCode === undefined || data.exitCode <= 1 ? true : data.success),
+    success: data.success,
     errorCount: diagnostics.filter((d) => d.severity === "error").length,
     warningCount: diagnostics.filter((d) => d.severity === "warning").length,
   };
