@@ -12,6 +12,66 @@ import { parseAdd } from "../lib/parsers.js";
 import { formatAdd } from "../lib/formatters.js";
 import { GitAddSchema } from "../schemas/index.js";
 
+export interface BuildAddArgsOptions {
+  files?: string[];
+  all?: boolean;
+  dryRun?: boolean;
+  update?: boolean;
+  force?: boolean;
+  intentToAdd?: boolean;
+  ignoreRemoval?: boolean;
+  renormalize?: boolean;
+  ignoreErrors?: boolean;
+  pathspecFromFile?: string;
+  chmod?: "+x" | "-x";
+}
+
+/** Builds the command line argument list for `git add`, ensuring modifier flags precede the `--` pathspec separator (#1216). */
+export function buildAddArgs(options: BuildAddArgsOptions, resolvedFiles?: string[]): string[] {
+  const {
+    all,
+    update,
+    files,
+    pathspecFromFile,
+    dryRun,
+    force,
+    intentToAdd,
+    ignoreRemoval,
+    renormalize,
+    ignoreErrors,
+    chmod,
+  } = options;
+
+  const flags: string[] = [];
+  if (dryRun) flags.push("--dry-run");
+  if (force) flags.push("--force");
+  if (intentToAdd) flags.push("--intent-to-add");
+  if (ignoreRemoval) flags.push("--ignore-removal");
+  if (renormalize) flags.push("--renormalize");
+  if (ignoreErrors) flags.push("--ignore-errors");
+  if (chmod) flags.push(`--chmod=${chmod}`);
+
+  if (all) {
+    return ["add", "-A", ...flags];
+  } else if (update && (!files || files.length === 0) && !pathspecFromFile) {
+    return ["add", "-u", ...flags];
+  } else if (pathspecFromFile) {
+    const args = ["add"];
+    if (update) args.push("-u");
+    args.push(...flags, `--pathspec-from-file=${pathspecFromFile}`);
+    return args;
+  } else {
+    const args = ["add"];
+    if (update) args.push("-u");
+    args.push(...flags);
+    const targetFiles = resolvedFiles ?? files ?? [];
+    if (targetFiles.length > 0) {
+      args.push("--", ...targetFiles);
+    }
+    return args;
+  }
+}
+
 /** Registers the `add` tool on the given MCP server. */
 export function registerAddTool(server: McpServer) {
   server.registerTool(
@@ -95,36 +155,40 @@ export function registerAddTool(server: McpServer) {
         );
       }
 
-      // Build args
-      let args: string[];
-      if (all) {
-        args = ["add", "-A"];
-      } else if (update && (!files || files.length === 0) && !pathspecFromFile) {
-        args = ["add", "-u"];
-      } else if (pathspecFromFile) {
+      if (pathspecFromFile) {
         assertNoFlagInjection(pathspecFromFile, "pathspecFromFile");
-        args = ["add"];
-        if (update) args.push("-u");
-        args.push(`--pathspec-from-file=${pathspecFromFile}`);
-      } else {
+      }
+
+      let resolvedFiles: string[] | undefined;
+      if (
+        !all &&
+        !(update && (!files || files.length === 0) && !pathspecFromFile) &&
+        !pathspecFromFile
+      ) {
         // Validate each file path
         for (const file of files!) {
           assertNoFlagInjection(file, "file path");
         }
         // Resolve file path casing — git pathspecs are case-sensitive even on Windows
-        const resolvedFiles = await resolveFilePaths(files!, cwd);
-        args = ["add"];
-        if (update) args.push("-u");
-        args.push("--", ...resolvedFiles);
+        resolvedFiles = await resolveFilePaths(files!, cwd);
       }
 
-      if (dryRun) args.push("--dry-run");
-      if (force) args.push("--force");
-      if (intentToAdd) args.push("--intent-to-add");
-      if (ignoreRemoval) args.push("--ignore-removal");
-      if (renormalize) args.push("--renormalize");
-      if (ignoreErrors) args.push("--ignore-errors");
-      if (chmod) args.push(`--chmod=${chmod}`);
+      const args = buildAddArgs(
+        {
+          all,
+          update,
+          files,
+          pathspecFromFile,
+          dryRun,
+          force,
+          intentToAdd,
+          ignoreRemoval,
+          renormalize,
+          ignoreErrors,
+          chmod,
+        },
+        resolvedFiles,
+      );
 
       const result = await git(args, cwd);
 
