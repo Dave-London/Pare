@@ -452,6 +452,64 @@ function attachEmptyRunDiagnostics(
   return result;
 }
 
+/** Reads failures and errors from pytest's `short test summary info` section.
+ *  Serves as a robust fallback when plugins (e.g. `-p no:logfire`), short tracebacks,
+ *  or quiet mode omit full `____ test_name ____` failure blocks (#1222). */
+function parsePytestShortSummary(lines: string[]): { test: string; message: string }[] {
+  const failures: { test: string; message: string }[] = [];
+  let inSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trimEnd();
+    const rule = stripPytestRule(line);
+    if (rule !== null) {
+      if (rule.toLowerCase().includes("short test summary info")) {
+        inSection = true;
+        continue;
+      } else if (inSection) {
+        inSection = false;
+      }
+    }
+
+    if (inSection) {
+      const match = line.match(/^(FAILED|ERROR)\s+(\S+)(?:\s+-\s+(.*))?$/);
+      if (match) {
+        const status = match[1];
+        const test = match[2].trim();
+        let summaryMsg = match[3] ? match[3].trim() : undefined;
+
+        // Check if following lines are 'E   ' error details (#1213 / #1222)
+        const eLines: string[] = [];
+        while (i + 1 < lines.length) {
+          const nextLine = lines[i + 1].trimEnd();
+          if (stripPytestRule(nextLine) !== null) break;
+          if (/^(FAILED|ERROR)\s+\S+/.test(nextLine)) break;
+          const eMatch = nextLine.match(/^E(?:\s+(.*))?$/);
+          if (eMatch) {
+            eLines.push(eMatch[1] ?? "");
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        let message: string;
+        if (eLines.length > 0) {
+          message = eLines.join("\n").trim();
+        } else if (summaryMsg) {
+          message = summaryMsg;
+        } else {
+          message = `${status} ${test}`;
+        }
+
+        failures.push({ test, message });
+      }
+    }
+  }
+
+  return failures;
+}
+
 /** Reads the `____ test_name ____` blocks of pytest's FAILURES and ERRORS
  *  sections. Only those sections count: plugins print the same ruled headers
  *  elsewhere (pytest-cov's `____ coverage: platform ... ____`), and those are not
@@ -540,7 +598,9 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
     );
   }
 
-  const failures = parsePytestFailureBlocks(lines);
+  const failureBlocks = parsePytestFailureBlocks(lines);
+  const failures =
+    failureBlocks.length > 0 ? failureBlocks : parsePytestShortSummary(lines);
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is

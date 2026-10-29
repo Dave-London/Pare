@@ -58,6 +58,97 @@ describe("parsePytestOutput", () => {
     expect(result.skipped).toBe(1);
   });
 
+  it("extracts failures from short test summary info when failure blocks are absent (#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "FAILED tests/plumber/test_refusal_detail_6245.py::test_foo - AssertionError: assert 1 == 2",
+      "FAILED tests/plumber/test_refusal_detail_6245.py::test_bar - AssertionError: assert 3 == 4",
+      "============================== 2 failed in 0.12s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(2);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].test).toBe("tests/plumber/test_refusal_detail_6245.py::test_foo");
+    expect(result.failures[0].message).toBe("AssertionError: assert 1 == 2");
+    expect(result.failures[1].test).toBe("tests/plumber/test_refusal_detail_6245.py::test_bar");
+    expect(result.failures[1].message).toBe("AssertionError: assert 3 == 4");
+  });
+
+  it("extracts ERROR items from short test summary info (#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_setup.py::test_crash - RuntimeError: out of memory",
+      "============================== 1 error in 0.05s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toBe(1);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].test).toBe("tests/test_setup.py::test_crash");
+    expect(result.failures[0].message).toBe("RuntimeError: out of memory");
+  });
+
+  it("extracts failures with hyphens in path and parameterized IDs (#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "FAILED tests/my-pkg/test_x.py::test_a[1-2] - AssertionError: mismatch",
+      "FAILED tests/my-pkg/test_x.py::test_b[param-val] - ValueError: invalid input",
+      "============================== 2 failed in 0.12s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(2);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].test).toBe("tests/my-pkg/test_x.py::test_a[1-2]");
+    expect(result.failures[0].message).toBe("AssertionError: mismatch");
+    expect(result.failures[1].test).toBe("tests/my-pkg/test_x.py::test_b[param-val]");
+    expect(result.failures[1].message).toBe("ValueError: invalid input");
+  });
+
+  it("extracts failures without dash message and gets message from following E line (#1213/#1222)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "FAILED tests/api/test_rollback_refusal_5596.py::test_rollback_then_raise_keeps_its_documented_refusal[routes/admin_outreach.py::mint_outreach_tokens]",
+      'E   AssertionError: {"error_code":"CONFLICT_001", "msg":"conflict"}',
+      "============================== 1 failed in 0.05s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(1);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].test).toBe(
+      "tests/api/test_rollback_refusal_5596.py::test_rollback_then_raise_keeps_its_documented_refusal[routes/admin_outreach.py::mint_outreach_tokens]",
+    );
+    expect(result.failures[0].message).toBe('AssertionError: {"error_code":"CONFLICT_001", "msg":"conflict"}');
+  });
+
+  it("ignores failure-like lines outside short test summary info (#1222)", () => {
+    const stdout = [
+      "Captured stdout call:",
+      "FAILED tests/fake.py::test_fake - not a real failure",
+      "=========================== short test summary info ===========================",
+      "FAILED tests/real.py::test_real - AssertionError: real error",
+      "============================== 1 failed in 0.05s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(1);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].test).toBe("tests/real.py::test_real");
+    expect(result.failures[0].message).toBe("AssertionError: real error");
+  });
+
   it("handles no tests collected", () => {
     const stdout = [
       "========================= no tests ran in 0.01s =========================",
