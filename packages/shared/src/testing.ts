@@ -21,6 +21,13 @@ import * as z4mini from "zod/v4-mini";
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
 import type { JsonSchemaType } from "@modelcontextprotocol/sdk/validation/types.js";
 
+export {
+  connectStdioTestClient,
+  formatStdioConnectFailure,
+  type ConnectStdioTestClientOptions,
+  type StdioTestClient,
+} from "./test-client.js";
+
 /** Result of validating a tool output payload against its registered schema. */
 export interface ToolOutputValidationResult {
   valid: boolean;

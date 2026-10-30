@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { connectStdioTestClient } from "@paretools/shared/testing";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,14 +20,12 @@ describe("tool parameter handling", () => {
   let transport: StdioClientTransport;
 
   beforeAll(async () => {
-    transport = new StdioClientTransport({
+    const testClient = await connectStdioTestClient({
       command: "node",
       args: [SERVER_PATH],
-      stderr: "pipe",
     });
-
-    client = new Client({ name: "test-client", version: "1.0.0" });
-    await client.connect(transport);
+    client = testClient.client;
+    transport = testClient.transport;
   }, 300_000);
 
   afterAll(async () => {
