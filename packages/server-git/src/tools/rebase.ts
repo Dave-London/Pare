@@ -155,7 +155,7 @@ export function registerRebaseTool(server: McpServer) {
 
       // Handle continue
       if (cont) {
-        const result = await git(["rebase", "--continue"], cwd);
+        const result = await git(["-c", "core.editor=true", "rebase", "--continue"], cwd);
 
         // Continue can fail if there are still conflicts
         if (result.exitCode !== 0) {
