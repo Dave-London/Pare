@@ -24,6 +24,25 @@ describe("sanitizeErrorOutput", () => {
     );
   });
 
+  it.each([1, 2])("redacts Windows home paths through %i JSON encoding levels", (levels) => {
+    let original = "C:\\Users\\review-user\\project\\error.log";
+    let expected = "~\\project\\error.log";
+    for (let level = 0; level < levels; level++) {
+      original = JSON.stringify({ message: original });
+      expected = JSON.stringify({ message: expected });
+    }
+    expect(sanitizeErrorOutput(original)).toBe(expected);
+  });
+
+  it.each([0, 1, 2])(
+    "does not consume adjacent JSON entries after %i extra encoding levels",
+    (levels) => {
+      let original = JSON.stringify(["C:\\Users\\review-user", "\\config.json"]);
+      for (let level = 0; level < levels; level++) original = JSON.stringify(original);
+      expect(sanitizeErrorOutput(original)).toBe(original);
+    },
+  );
+
   it("leaves relative paths unchanged", () => {
     expect(sanitizeErrorOutput("./src/index.ts")).toBe("./src/index.ts");
   });
