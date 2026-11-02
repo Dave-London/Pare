@@ -24,7 +24,7 @@ const TOOL_DEFS: Array<{
   {
     name: "install",
     description:
-      "Runs npm/pnpm/yarn install and returns a structured summary of added/removed packages and vulnerabilities.",
+      "Runs npm/pnpm/yarn install and returns available package statistics; supports silent pnpm installs without output-derived statistics.",
     register: registerInstallTool,
   },
   {

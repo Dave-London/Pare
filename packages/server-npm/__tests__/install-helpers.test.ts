@@ -115,6 +115,16 @@ describe("getLockfileHash", () => {
 });
 
 describe("composeInstallFlags", () => {
+  it("places the pnpm reporter after existing registry flags", () => {
+    expect(
+      composeInstallFlags("pnpm", {
+        ignoreScripts: true,
+        registry: "https://registry.npmjs.org",
+        pnpmReporter: "silent",
+      }),
+    ).toEqual(["--ignore-scripts", "--registry=https://registry.npmjs.org", "--reporter=silent"]);
+  });
+
   it("returns no flags for an empty options object on pnpm", () => {
     expect(composeInstallFlags("pnpm", {})).toEqual([]);
   });

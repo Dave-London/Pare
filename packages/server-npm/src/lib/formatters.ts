@@ -21,9 +21,13 @@ export function formatInstall(data: NpmInstall, duration?: number): string {
   if (data.removed) parts.push(`removed ${data.removed}`);
   if (data.changed) parts.push(`changed ${data.changed}`);
   const durationSuffix = duration !== undefined ? `, ${duration}s` : "";
-  const line = parts.length
-    ? parts.join(", ") + ` (${data.added + data.removed + data.changed} packages${durationSuffix})`
-    : `up to date`;
+  const line =
+    data.added === undefined || data.removed === undefined || data.changed === undefined
+      ? "package counts unavailable"
+      : parts.length
+        ? parts.join(", ") +
+          ` (${data.added + data.removed + data.changed} packages${durationSuffix})`
+        : `up to date`;
 
   const lines = [line];
 

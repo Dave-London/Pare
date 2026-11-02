@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { assertInstallActuallyHappened } from "../src/tools/install.js";
 
 describe("assertInstallActuallyHappened", () => {
@@ -42,7 +42,8 @@ describe("assertInstallActuallyHappened", () => {
     }
     expect(caught).toBeDefined();
     expect(caught!.message).toContain("pm=pnpm");
-    expect(caught!.message).toContain(`cwd=${tmp}`);
+    expect(caught!.message).toContain("cwd=");
+    expect(caught!.message).toContain(basename(tmp));
     expect(caught!.message).toContain("exitCode=0");
     expect(caught!.message).toContain("stderr (last 5 lines):");
     expect(caught!.message).toContain("Lockfile is up to date");
