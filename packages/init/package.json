@@ -57,7 +57,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.7.4",
+    "@inquirer/prompts": "^8.7.5",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "smol-toml": "^1.9.0",
     "yaml": "^2.9.1"
