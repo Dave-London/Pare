@@ -36,6 +36,13 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Stage all changes (git add -A)"),
+        resolved: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Stage matching unmerged paths only when no conflict markers remain (--resolved; Git 2.56+). Cannot combine with all or update.",
+          ),
         dryRun: z
           .boolean()
           .optional()
@@ -77,6 +84,7 @@ export function registerAddTool(server: McpServer) {
       path,
       files,
       all,
+      resolved,
       dryRun,
       update,
       force,
@@ -89,6 +97,10 @@ export function registerAddTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
 
+      if (resolved && (all || update)) {
+        throw new Error("'resolved' cannot be combined with 'all' or 'update'");
+      }
+
       if (!all && !update && (!files || files.length === 0) && !pathspecFromFile) {
         throw new Error(
           "Either 'files' must be provided, 'all'/'update' must be true, or 'pathspecFromFile' must be set",
@@ -97,6 +109,7 @@ export function registerAddTool(server: McpServer) {
 
       // Build args
       let args: string[];
+      let filePathspecs: string[] | undefined;
       if (all) {
         args = ["add", "-A"];
       } else if (update && (!files || files.length === 0) && !pathspecFromFile) {
@@ -112,12 +125,12 @@ export function registerAddTool(server: McpServer) {
           assertNoFlagInjection(file, "file path");
         }
         // Resolve file path casing — git pathspecs are case-sensitive even on Windows
-        const resolvedFiles = await resolveFilePaths(files!, cwd);
+        filePathspecs = await resolveFilePaths(files!, cwd);
         args = ["add"];
         if (update) args.push("-u");
-        args.push("--", ...resolvedFiles);
       }
 
+      if (resolved) args.push("--resolved");
       if (dryRun) args.push("--dry-run");
       if (force) args.push("--force");
       if (intentToAdd) args.push("--intent-to-add");
@@ -125,6 +138,7 @@ export function registerAddTool(server: McpServer) {
       if (renormalize) args.push("--renormalize");
       if (ignoreErrors) args.push("--ignore-errors");
       if (chmod) args.push(`--chmod=${chmod}`);
+      if (filePathspecs) args.push("--", ...filePathspecs);
 
       const result = await git(args, cwd);
 

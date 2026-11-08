@@ -6,11 +6,13 @@ Stages files for commit. Returns structured data with count and list of staged f
 
 ## Input Parameters
 
-| Parameter | Type     | Default | Description                                 |
-| --------- | -------- | ------- | ------------------------------------------- |
-| `path`    | string   | cwd     | Repository path                             |
-| `files`   | string[] | --      | File paths to stage (required unless `all`) |
-| `all`     | boolean  | `false` | Stage all changes (`git add -A`)            |
+| Parameter  | Type     | Default | Description                                                                                          |
+| ---------- | -------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `path`     | string   | cwd     | Repository path                                                                                      |
+| `files`    | string[] | --      | File paths to stage (required unless `all`)                                                          |
+| `all`      | boolean  | `false` | Stage all changes (`git add -A`)                                                                     |
+| `update`   | boolean  | `false` | Stage only changes to tracked files (`git add -u`)                                                   |
+| `resolved` | boolean  | `false` | Stage matching unmerged paths only when no conflict markers remain (`git add --resolved`, Git 2.56+) |
 
 ## Success
 
@@ -81,6 +83,9 @@ Nothing specified, nothing added.
 
 ## Notes
 
+- With `resolved: true`, Git refuses the entire request if any matching unmerged file still contains conflict markers.
+  It cannot be combined with `all` or `update`; older Git versions return an unsupported-option error without a fallback.
+  Omitting `resolved` or setting it to `false` preserves ordinary staging behavior.
 - No compact mode; the response is already concise
 - After staging, Pare runs `git status --porcelain=v1` to determine which files are staged
 - File path resolution handles case sensitivity on Windows for single-file pathspecs;
