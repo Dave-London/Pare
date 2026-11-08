@@ -4,6 +4,15 @@ import { formatAdd } from "../src/lib/formatters.js";
 import type { GitAdd } from "../src/schemas/index.js";
 
 describe("parseAdd", () => {
+  it("excludes every unmerged status while retaining staged resolutions", () => {
+    const conflicts = ["DD", "AU", "UD", "UA", "DU", "AA", "UU"].map(
+      (status) => `${status} conflict-${status}.txt`,
+    );
+    expect(parseAdd([...conflicts, "M  resolved.txt"].join("\n")).files).toEqual([
+      { file: "resolved.txt", status: "modified" },
+    ]);
+  });
+
   it("parses staged files from porcelain status output", () => {
     const statusOutput = ["A  src/new-file.ts", "M  src/index.ts", "?? untracked.log"].join("\n");
 
