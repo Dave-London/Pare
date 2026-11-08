@@ -168,4 +168,13 @@ describe("add pathspec expansion (#1057)", () => {
     expect(await resolveFilePath("site\\public", repoDir)).toBe("site/public");
     expect(await resolveFilePath("site/public/*.html", repoDir)).toBe("site/public/*.html");
   });
+
+  it("places --chmod flag before pathspec separator -- (#1216)", async () => {
+    writeFileSync(join(repoDir, "script.sh"), "#!/bin/sh\necho ok\n");
+    await handler({ ...DEFAULTS, path: repoDir, files: ["script.sh"], chmod: "+x" });
+
+    expect(stagedPaths(repoDir)).toContain("script.sh");
+    const lsFiles = run(["ls-files", "--stage", "script.sh"], repoDir);
+    expect(lsFiles).toMatch(/^100755/);
+  });
 });
