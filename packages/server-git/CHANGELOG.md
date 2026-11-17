@@ -1,5 +1,26 @@
 # @paretools/git
 
+## 0.24.0
+
+### Minor Changes
+
+- [#1251](https://github.com/Dave-London/Pare/pull/1251) [`d2b78f4`](https://github.com/Dave-London/Pare/commit/d2b78f4a60eb9d0d1fc6e595137a1926afb022ee) Thanks [@MergingMonkey](https://github.com/MergingMonkey)! - Add an optional resolved mode to Git add for native conflict-resolution staging on Git 2.56+.
+  Preserve Git's conflict-marker refusal without a fallback, reject all/update combinations, and omit still-unmerged paths from staged-file results.
+
+### Patch Changes
+
+- [#1258](https://github.com/Dave-London/Pare/pull/1258) [`faedfad`](https://github.com/Dave-London/Pare/commit/faedfadfe78c260a74ebe1468176255d0c09d6e7) Thanks [@Dave-London](https://github.com/Dave-London)! - `commit` with `amend: true, noEdit: true` now keeps the existing commit message ([#1255](https://github.com/Dave-London/Pare/issues/1255)). `message` is optional and is rejected with a clear error when combined with `noEdit`, `reuseMessage` or `fixup`, each of which supplies the message itself; previously a passed `message` silently replaced the message `noEdit` was meant to keep. Without `message` the tool no longer sends `--file -`, so `reuseMessage` and `fixup` (which git refused alongside `-F`) now work, and `--no-edit` is always passed so git never opens an editor.
+
+- [#1234](https://github.com/Dave-London/Pare/pull/1234) [`7453ae4`](https://github.com/Dave-London/Pare/commit/7453ae44d0219a799a92b19a1abfaf74e21356f7) Thanks [@Dave-London](https://github.com/Dave-London)! - `config` can now set `core.hooksPath` to a repo-tracked hooks directory such as `.githooks`: local or worktree scope only, a relative path that resolves (symlinks included) to a directory of tracked files inside the working tree. Global/system scope, absolute paths, paths outside the repo and untracked directories stay blocked.
+
+- [#1231](https://github.com/Dave-London/Pare/pull/1231) [`a2557ac`](https://github.com/Dave-London/Pare/commit/a2557acda89053e29191682d8701d1027a777d83) Thanks [@fangjian-bit](https://github.com/fangjian-bit)! - fix(git): place `--chmod` and other flags before pathspec separator `--` in `git add` ([#1216](https://github.com/Dave-London/Pare/issues/1216))
+
+- [#1212](https://github.com/Dave-London/Pare/pull/1212) [`b52cb66`](https://github.com/Dave-London/Pare/commit/b52cb66218e06071594dfb09fbd4f359fb9e025b) Thanks [@jsdhwfmax](https://github.com/jsdhwfmax)! - Continue resolved rebases, cherry-picks, and merges without launching an interactive
+  commit-message editor. Keep the prepared commit message and override the editor
+  only in the continuing Git child process.
+- Updated dependencies [[`13e48c3`](https://github.com/Dave-London/Pare/commit/13e48c3cea0f063d991ac95f68770423ca03adb7), [`241b045`](https://github.com/Dave-London/Pare/commit/241b04510999bd2670e11ff0948ce9caea581f97)]:
+  - @paretools/shared@0.24.0
+
 ## 0.23.3
 
 ### Patch Changes

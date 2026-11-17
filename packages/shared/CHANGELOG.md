@@ -1,5 +1,13 @@
 # @paretools/shared
 
+## 0.24.0
+
+### Patch Changes
+
+- [#1244](https://github.com/Dave-London/Pare/pull/1244) [`13e48c3`](https://github.com/Dave-London/Pare/commit/13e48c3cea0f063d991ac95f68770423ca03adb7) Thanks [@MergingMonkey](https://github.com/MergingMonkey)! - Error output now redacts JSON-escaped Windows home paths such as `C:\\Users\\name\\project`, keeping the escape depth of the original text. A quote or other character that cannot occur in a Windows file name ends the profile-name match, so redaction no longer runs on into the next JSON string.
+
+- [#1241](https://github.com/Dave-London/Pare/pull/1241) [`241b045`](https://github.com/Dave-London/Pare/commit/241b04510999bd2670e11ff0948ce9caea581f97) Thanks [@fangjian-bit](https://github.com/fangjian-bit)! - Add a shared stdio integration-test client helper that captures bounded child stderr and rethrows `connect()` failures with that stderr attached, making `MCP error -32000: Connection closed` failures diagnosable ([#1085](https://github.com/Dave-London/Pare/issues/1085)).
+
 ## 0.23.3
 
 ### Patch Changes

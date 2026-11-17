@@ -1,5 +1,12 @@
 # @paretools/deno
 
+## 0.24.0
+
+### Patch Changes
+
+- Updated dependencies [[`13e48c3`](https://github.com/Dave-London/Pare/commit/13e48c3cea0f063d991ac95f68770423ca03adb7), [`241b045`](https://github.com/Dave-London/Pare/commit/241b04510999bd2670e11ff0948ce9caea581f97)]:
+  - @paretools/shared@0.24.0
+
 ## 0.23.3
 
 ### Patch Changes

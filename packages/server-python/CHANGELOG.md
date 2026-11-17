@@ -1,5 +1,15 @@
 # @paretools/python
 
+## 0.24.0
+
+### Patch Changes
+
+- [#1240](https://github.com/Dave-London/Pare/pull/1240) [`3f08104`](https://github.com/Dave-London/Pare/commit/3f08104e6a8020b7f048cb01e5d2787d3f7bdcf6) Thanks [@fangjian-bit](https://github.com/fangjian-bit)! - `mypy`: treat runs with only note diagnostics as successful passes without attaching `exitCode: 1` or error details, and support streaming NDJSON output parsing from `mypy --output json` ([#1223](https://github.com/Dave-London/Pare/issues/1223)).
+
+- [#1227](https://github.com/Dave-London/Pare/pull/1227) [`23aaee5`](https://github.com/Dave-London/Pare/commit/23aaee52d3d6cb35db6096d73b06cf7af7183f71) Thanks [@fangjian-bit](https://github.com/fangjian-bit)! - fix(python): extract test failures from `short test summary info` when failure blocks are absent, supporting hyphenated/parameterized IDs and following `E` error lines ([#1222](https://github.com/Dave-London/Pare/issues/1222))
+- Updated dependencies [[`13e48c3`](https://github.com/Dave-London/Pare/commit/13e48c3cea0f063d991ac95f68770423ca03adb7), [`241b045`](https://github.com/Dave-London/Pare/commit/241b04510999bd2670e11ff0948ce9caea581f97)]:
+  - @paretools/shared@0.24.0
+
 ## 0.23.3
 
 ### Patch Changes
