@@ -100,7 +100,8 @@ export function registerMergeTool(server: McpServer) {
 
       // Handle --continue
       if (cont) {
-        const result = await git(["merge", "--continue"], cwd);
+        // Keep the prepared message: an interactive editor cannot finish over MCP.
+        const result = await git(["merge", "--continue"], cwd, { env: { GIT_EDITOR: ":" } });
         const mergeResult = parseMerge(result.stdout, result.stderr, branch);
         if (result.exitCode !== 0 && mergeResult.merged) {
           throw new Error(`git merge --continue failed: ${result.stderr}`);

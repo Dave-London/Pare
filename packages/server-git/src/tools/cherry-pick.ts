@@ -123,7 +123,8 @@ export function registerCherryPickTool(server: McpServer) {
 
       // Handle continue
       if (cont) {
-        const result = await git(["cherry-pick", "--continue"], cwd);
+        // Keep the prepared message: an interactive editor cannot finish over MCP.
+        const result = await git(["cherry-pick", "--continue"], cwd, { env: { GIT_EDITOR: ":" } });
         const parsed = parseCherryPick(result.stdout, result.stderr, result.exitCode, commits);
         if (result.exitCode !== 0 && parsed.conflicts.length === 0) {
           throw new Error(`git cherry-pick --continue failed: ${result.stderr}`);
