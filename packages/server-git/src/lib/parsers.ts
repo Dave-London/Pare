@@ -477,6 +477,8 @@ export function parseAdd(statusStdout: string): GitAdd {
   const files: Array<{ file: string; status: "added" | "modified" | "deleted" }> = [];
 
   for (const line of lines) {
+    // Unmerged entries have no stage-0 resolution to report as staged.
+    if (/^(DD|AU|UD|UA|DU|AA|UU) /.test(line)) continue;
     const index = line[0];
     // Staged files have a non-space, non-? character in the index position
     if (index && index !== " " && index !== "?") {

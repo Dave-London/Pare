@@ -36,6 +36,13 @@ export function registerAddTool(server: McpServer) {
           .optional()
           .default(false)
           .describe("Stage all changes (git add -A)"),
+        resolved: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Stage matching unmerged paths only when no conflict markers remain (--resolved; Git 2.56+). Cannot combine with all or update.",
+          ),
         dryRun: z
           .boolean()
           .optional()
@@ -77,6 +84,7 @@ export function registerAddTool(server: McpServer) {
       path,
       files,
       all,
+      resolved,
       dryRun,
       update,
       force,
@@ -89,6 +97,10 @@ export function registerAddTool(server: McpServer) {
     }) => {
       const cwd = path || process.cwd();
 
+      if (resolved && (all || update)) {
+        throw new Error("'resolved' cannot be combined with 'all' or 'update'");
+      }
+
       if (!all && !update && (!files || files.length === 0) && !pathspecFromFile) {
         throw new Error(
           "Either 'files' must be provided, 'all'/'update' must be true, or 'pathspecFromFile' must be set",
@@ -97,6 +109,7 @@ export function registerAddTool(server: McpServer) {
 
       // Flags that must precede pathspec separator
       const flags: string[] = [];
+      if (resolved) flags.push("--resolved");
       if (dryRun) flags.push("--dry-run");
       if (force) flags.push("--force");
       if (intentToAdd) flags.push("--intent-to-add");
