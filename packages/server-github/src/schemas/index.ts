@@ -417,6 +417,8 @@ export const RunStepSchema = z.object({
 
 /** Zod schema for a single job in a workflow run. */
 export const RunJobSchema = z.object({
+  /** Job id, for run-view's `job` filter (#1257). */
+  id: z.number().optional(),
   name: z.string(),
   status: z.string(),
   conclusion: z.string().nullable(),
@@ -448,8 +450,14 @@ export const RunViewResultSchema = z.object({
   attempt: z.number().optional(),
   /** Raw log output when --log or --log-failed is used. */
   logs: z.string().optional(),
-  /** Full log length in lines, present when `tailLines` cut the log (#1108). */
+  /** Full log length in lines (#1108, #1257). */
   logsTotalLines: z.number().optional(),
+  /** Lines in `logs` (#1257). */
+  logsReturnedLines: z.number().optional(),
+  /** Lines matching `grep`, when given (#1257). */
+  logsMatchedLines: z.number().optional(),
+  /** True when `logs` is not the whole (grep-filtered) log (#1257). */
+  logsTruncated: z.boolean().optional(),
 });
 
 export type RunViewResult = z.infer<typeof RunViewResultSchema>;
@@ -570,6 +578,12 @@ export const ApiResultSchema = z.object({
   graphqlErrors: z.array(z.unknown()).optional(),
   // P1-gap #141: Preserve API error body for debugging
   errorBody: z.unknown().optional(),
+  /** Why the call failed when gh could not decode a non-JSON body (#1256). */
+  errorMessage: z.string().optional(),
+  /** True when a non-JSON error body (e.g. an HTML error page) was cut to a snippet. */
+  bodyTruncated: z.boolean().optional(),
+  /** Full length in characters of a body cut to a snippet. */
+  bodyLength: z.number().optional(),
 });
 
 export type ApiResult = z.infer<typeof ApiResultSchema>;
