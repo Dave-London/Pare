@@ -156,14 +156,16 @@ export const PytestResultSchema = z.object({
   exitCode: z
     .number()
     .optional()
-    .describe("pytest exit code; only present when the run failed with no parseable test results"),
+    .describe(
+      "pytest exit code; present when the run failed with no parseable test results, or on a post-run error after tests passed (#1215)",
+    ),
   errorOutput: z
     .string()
     .optional()
     .describe(
       "Tail of the raw pytest output when test results could not be parsed: a failed run " +
-        "with no results (e.g. collection error, ModuleNotFoundError, broken plugin), or a " +
-        "passing run whose summary line was not found (see countsUnavailable)",
+        "with no results (e.g. collection error, ModuleNotFoundError, broken plugin), a " +
+        "passing run whose summary line was not found (see countsUnavailable), or a post-run error after tests passed (#1215)",
     ),
   countsUnavailable: z
     .boolean()

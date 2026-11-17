@@ -646,3 +646,55 @@ describe("parsePytestOutput — rule and header scans are linear (#1182)", () =>
     expect(result.failures).toEqual([]);
   });
 });
+
+describe("parsePytestOutput — post-run error and failure count match (#1215)", () => {
+  it("reports post-run error with parsed counts on non-zero exit after test summary (#1215)", () => {
+    const stdout = [
+      "tests/test_bots.py ...                                                 [100%]",
+      "============================== 3 passed in 0.15s ===============================",
+    ].join("\n");
+    const stderr = [
+      "Traceback (most recent call last):",
+      '  File "/site-packages/rich/markup.py", line 12, in render',
+      "rich.errors.MarkupError: Closing tag '[/bots/create]' did not match any open tag",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, stderr, 1);
+
+    expect(result.success).toBe(false);
+    expect(result.passed).toBe(3);
+    expect(result.failed).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.failures).toEqual([]);
+    expect(result.exitCode).toBe(1);
+    expect(result.errorOutput).toContain("rich.errors.MarkupError");
+  });
+
+  it("extracts failures from short test summary info when failure blocks are absent (#1215)", () => {
+    const stdout = [
+      "=========================== short test summary info ===========================",
+      "FAILED tests/test_api.py::test_rollback - AssertionError: rollback failed",
+      "============================== 1 failed in 0.05s ===============================",
+    ].join("\n");
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(1);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].test).toBe("tests/test_api.py::test_rollback");
+    expect(result.failures[0].message).toBe("AssertionError: rollback failed");
+  });
+
+  it("backfills failures to match summary failed count when details are omitted (#1215)", () => {
+    const stdout = "============================== 2 failed in 0.05s ===============================";
+
+    const result = parsePytestOutput(stdout, "", 1);
+
+    expect(result.success).toBe(false);
+    expect(result.failed).toBe(2);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].test).toBe("unknown_failure_1");
+    expect(result.failures[1].test).toBe("unknown_failure_2");
+  });
+});

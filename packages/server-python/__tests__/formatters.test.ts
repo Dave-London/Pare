@@ -298,6 +298,23 @@ describe("formatPytest — edge cases", () => {
     expect(output).not.toContain("passed");
     expect(output).not.toContain("failed");
   });
+
+  it("formats post-run error when tests passed but process exited non-zero (#1215)", () => {
+    const data: PytestResult = {
+      success: false,
+      passed: 5,
+      failed: 0,
+      errors: 0,
+      skipped: 0,
+      warnings: 0,
+      failures: [],
+      exitCode: 1,
+      errorOutput: "rich.errors.MarkupError: Unclosed tag",
+    };
+    const output = formatPytest(data);
+    expect(output).toContain("pytest: 5 passed (post-run error, exit code 1)");
+    expect(output).toContain("rich.errors.MarkupError: Unclosed tag");
+  });
 });
 
 describe("formatBlack — edge cases", () => {
