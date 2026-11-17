@@ -70,9 +70,14 @@ export function parsePlaywrightJson(jsonStr: string): PlaywrightResult {
     // Process specs in this suite
     for (const spec of suite.specs ?? []) {
       for (const test of spec.tests) {
-        // Use the last result (final retry)
-        const lastResult = test.results[test.results.length - 1];
-        if (!lastResult) continue;
+        // Use the last result (final retry). A test with no results never ran
+        // (`--list`, or stopped by maxFailures/interruption); Playwright counts
+        // it as skipped in its stats, so do the same instead of dropping it.
+        const lastResult = test.results[test.results.length - 1] ?? {
+          status: "skipped" as const,
+          duration: 0,
+          retry: 0,
+        };
 
         total++;
         const status = lastResult.status;

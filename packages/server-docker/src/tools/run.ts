@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compactDualOutput,
   assertNoFlagInjection,
+  assertSafePassthroughArg,
   assertAllowedRoot,
   INPUT_LIMITS,
   compactInput,
@@ -79,7 +80,9 @@ export function registerRunTool(server: McpServer) {
             .max(INPUT_LIMITS.ARRAY_MAX)
             .optional()
             .default([])
-            .describe("Command to run in the container"),
+            .describe(
+              'Command and args to run in the container, one argv element each (e.g., ["nginx", "-t"]). Flags are passed through to the container',
+            ),
         ),
         workdir: z
           .string()
@@ -182,10 +185,12 @@ export function registerRunTool(server: McpServer) {
         const resolvedEnvFile = resolve(path || process.cwd(), envFile);
         assertAllowedRoot(resolvedEnvFile, "docker");
       }
-      // Validate first element of command array (the binary name) to prevent flag injection.
-      // Subsequent elements are intentionally unchecked as they are arguments to the command itself.
-      if (command && command.length > 0) {
-        assertNoFlagInjection(command[0], "command");
+      // `command` follows the image in argv, and docker stops parsing its own
+      // options at the image name, so a leading `-` here reaches the container
+      // (e.g. `nginx -t`, or `--version` for an image with an ENTRYPOINT) and
+      // cannot become a `docker run` flag (#1107). Only NUL/newline are rejected.
+      for (const arg of command ?? []) {
+        assertSafePassthroughArg(arg, "command");
       }
 
       const args = ["run"];

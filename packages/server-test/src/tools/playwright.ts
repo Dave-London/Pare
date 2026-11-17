@@ -8,6 +8,7 @@ import {
   compactDualOutput,
   run,
   assertNoFlagInjection,
+  assertSafePassthroughArg,
   INPUT_LIMITS,
   compactInput,
   projectPathInput,
@@ -198,7 +199,7 @@ export function registerPlaywrightTool(server: McpServer) {
           .optional()
           .default([])
           .describe(
-            "Additional arguments to pass to Playwright test runner. Each element is validated to prevent flag injection.",
+            'Additional arguments passed verbatim to `playwright test`, flags included (e.g., ["--list"]). Only NUL/newline characters are rejected.',
           ),
         compact: compactInput,
       },
@@ -245,8 +246,12 @@ export function registerPlaywrightTool(server: McpServer) {
         assertNoFlagInjection(config, "config");
       }
       if (args) {
+        // `args` is an explicit passthrough field: the caller intends these to
+        // reach Playwright verbatim, so leading `-`/`--` flags (e.g. `--list`)
+        // are allowed (#1108). Only NUL/newline control chars are rejected.
+        // See assertSafePassthroughArg.
         for (const arg of args) {
-          assertNoFlagInjection(arg, "args");
+          assertSafePassthroughArg(arg, "args");
         }
       }
 

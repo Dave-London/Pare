@@ -1,0 +1,74 @@
+{
+  "config": {
+    "rootDir": "/repo/tests"
+  },
+  "suites": [
+    {
+      "title": "sample.spec.ts",
+      "file": "sample.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "adds",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "b92766bcf73bd5c029a8-5f3f1b19bfe597713588",
+          "file": "sample.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "group",
+          "file": "sample.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "nested one",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b92766bcf73bd5c029a8-2a57b3ebcddcd23185ee",
+              "file": "sample.spec.ts",
+              "line": 8,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-28T00:00:00.000Z",
+    "duration": 11.331999999999994,
+    "expected": 0,
+    "skipped": 2,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
