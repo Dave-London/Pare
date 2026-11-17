@@ -49,7 +49,7 @@ export function registerApiTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.STRING_MAX)
           .optional()
-          .describe("jq filter expression to apply to the response"),
+          .describe("jq filter expression to apply to the response (JSON responses only)"),
         slurp: z
           .boolean()
           .optional()

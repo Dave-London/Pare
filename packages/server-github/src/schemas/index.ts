@@ -560,6 +560,12 @@ export const ApiResultSchema = z.object({
   graphqlErrors: z.array(z.unknown()).optional(),
   // P1-gap #141: Preserve API error body for debugging
   errorBody: z.unknown().optional(),
+  /** Why the call failed when gh could not decode a non-JSON body (#1256). */
+  errorMessage: z.string().optional(),
+  /** True when a non-JSON error body (e.g. an HTML error page) was cut to a snippet. */
+  bodyTruncated: z.boolean().optional(),
+  /** Full length in characters of a body cut to a snippet. */
+  bodyLength: z.number().optional(),
 });
 
 export type ApiResult = z.infer<typeof ApiResultSchema>;

@@ -1,0 +1,94 @@
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: x-ms-request-id,Server,x-ms-version,Content-Type,ETag,Last-Modified,x-ms-creation-time,Content-MD5,x-ms-lease-status,x-ms-lease-state,x-ms-blob-type,x-ms-server-encrypted,x-ms-access-tier,x-ms-access-tier-inferred,Accept-Ranges,x-ms-last-access-time,Content-Length,Date,Transfer-Encoding
+Content-Length: 4476
+Content-Md5: BVQDNwa46Vy8k20z1N5HIQ==
+Content-Type: text/plain
+Date: Tue, 17 Nov 2026 12:01:42 GMT
+Etag: "0x8DF445E4211685B"
+Last-Modified: Tue, 17 Nov 2026 03:52:53 GMT
+Server: Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+X-Ms-Access-Tier: Hot
+X-Ms-Access-Tier-Inferred: true
+X-Ms-Blob-Type: BlockBlob
+X-Ms-Creation-Time: Tue, 17 Nov 2026 03:52:53 GMT
+X-Ms-Last-Access-Time: Tue, 17 Nov 2026 07:46:58 GMT
+X-Ms-Lease-State: available
+X-Ms-Lease-Status: unlocked
+X-Ms-Request-Id: 2c39e956-101e-0023-3b8b-76f987000000
+X-Ms-Server-Encrypted: true
+X-Ms-Version: 2025-11-05
+
+﻿2026-11-17T03:52:51.6693632Z Current runner version: '2.338.2'
+2026-11-17T03:52:51.6713207Z ##[group]Runner Image Provisioner
+2026-11-17T03:52:51.6713750Z Hosted Compute Agent
+2026-11-17T03:52:51.6714202Z Version: 20261103.629
+2026-11-17T03:52:51.6714602Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-17T03:52:51.6715051Z Build Date: 2026-11-03T17:26:59Z
+2026-11-17T03:52:51.6715466Z Worker ID: {5baa3d5a-0a62-43e7-b412-55f337596327}
+2026-11-17T03:52:51.6715877Z Region: centralus
+2026-11-17T03:52:51.6716267Z Cloud: Azure
+2026-11-17T03:52:51.6716586Z ##[endgroup]
+2026-11-17T03:52:51.6717364Z ##[group]Operating System
+2026-11-17T03:52:51.6717768Z Ubuntu
+2026-11-17T03:52:51.6718080Z 26.04.1
+2026-11-17T03:52:51.6718402Z LTS
+2026-11-17T03:52:51.6718750Z ##[endgroup]
+2026-11-17T03:52:51.6719095Z ##[group]Runner Image
+2026-11-17T03:52:51.6719483Z Image: ubuntu-26.04
+2026-11-17T03:52:51.6719819Z Version: 20261111.196.1
+2026-11-17T03:52:51.6720639Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-17T03:52:51.6721477Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+2026-11-17T03:52:51.6722152Z ##[endgroup]
+2026-11-17T03:52:51.6722784Z ##[group]GITHUB_TOKEN Permissions
+2026-11-17T03:52:51.6724488Z Contents: read
+2026-11-17T03:52:51.6724831Z Metadata: read
+2026-11-17T03:52:51.6725194Z ##[endgroup]
+2026-11-17T03:52:51.6726760Z Secret source: Dependabot
+2026-11-17T03:52:51.6727395Z Cache mode: write
+2026-11-17T03:52:51.6727921Z Prepare workflow directory
+2026-11-17T03:52:51.7019135Z Prepare all required actions
+2026-11-17T03:52:51.7114831Z Complete job name: ci-gate
+2026-11-17T03:52:51.7952027Z ##[group]Run echo "Checking required jobs..."
+2026-11-17T03:52:51.7952484Z [36;1mecho "Checking required jobs..."[0m
+2026-11-17T03:52:51.7952820Z [36;1m[0m
+2026-11-17T03:52:51.7953181Z [36;1mif [[ "success" != "success" ]]; then[0m
+2026-11-17T03:52:51.7953529Z [36;1m  echo "lint failed: success"[0m
+2026-11-17T03:52:51.7953861Z [36;1m  exit 1[0m
+2026-11-17T03:52:51.7954116Z [36;1mfi[0m
+2026-11-17T03:52:51.7954385Z [36;1mif [[ "success" != "success" ]]; then[0m
+2026-11-17T03:52:51.7954724Z [36;1m  echo "smoke failed: success"[0m
+2026-11-17T03:52:51.7955029Z [36;1m  exit 1[0m
+2026-11-17T03:52:51.7955284Z [36;1mfi[0m
+2026-11-17T03:52:51.7955549Z [36;1mif [[ "success" != "success" ]]; then[0m
+2026-11-17T03:52:51.7955928Z [36;1m  echo "build-and-test-ubuntu failed: success"[0m
+2026-11-17T03:52:51.7956280Z [36;1m  exit 1[0m
+2026-11-17T03:52:51.7956533Z [36;1mfi[0m
+2026-11-17T03:52:51.7956800Z [36;1mif [[ "success" != "success" ]]; then[0m
+2026-11-17T03:52:51.7957193Z [36;1m  echo "build-and-test-windows failed: success"[0m
+2026-11-17T03:52:51.7957546Z [36;1m  exit 1[0m
+2026-11-17T03:52:51.7957795Z [36;1mfi[0m
+2026-11-17T03:52:51.7958059Z [36;1m[0m
+2026-11-17T03:52:51.7958470Z [36;1m# Advisory: audit is informational — npm registry outages (HTTP 500) must not block PRs[0m
+2026-11-17T03:52:51.7958979Z [36;1mif [[ "success" == "failure" ]]; then[0m
+2026-11-17T03:52:51.7959379Z [36;1m  echo "⚠ audit failed (advisory, non-blocking): success"[0m
+2026-11-17T03:52:51.7959750Z [36;1mfi[0m
+2026-11-17T03:52:51.7960014Z [36;1m[0m
+2026-11-17T03:52:51.7960312Z [36;1m# Conditional jobs: must pass if they ran, OK to skip[0m
+2026-11-17T03:52:51.7960700Z [36;1mfor result in "skipped" "skipped"; do[0m
+2026-11-17T03:52:51.7961162Z [36;1m  if [[ "$result" != "success" && "$result" != "skipped" && "$result" != "cancelled" ]]; then[0m
+2026-11-17T03:52:51.7961634Z [36;1m    echo "Conditional job failed: $result"[0m
+2026-11-17T03:52:51.7962146Z [36;1m    exit 1[0m
+2026-11-17T03:52:51.7962400Z [36;1m  fi[0m
+2026-11-17T03:52:51.7962670Z [36;1m  if [[ "$result" == "cancelled" ]]; then[0m
+2026-11-17T03:52:51.7963142Z [36;1m    echo "⚠ Conditional job was cancelled (non-blocking)"[0m
+2026-11-17T03:52:51.7963509Z [36;1m  fi[0m
+2026-11-17T03:52:51.7963749Z [36;1mdone[0m
+2026-11-17T03:52:51.7963988Z [36;1m[0m
+2026-11-17T03:52:51.7964467Z [36;1mecho "All required checks passed!"[0m
+2026-11-17T03:52:51.8718152Z shell: /usr/bin/bash -e {0}
+2026-11-17T03:52:51.8718693Z ##[endgroup]
+2026-11-17T03:52:51.8902828Z Checking required jobs...
+2026-11-17T03:52:51.8904331Z All required checks passed!
+2026-11-17T03:52:51.9009637Z Cleaning up orphan processes

@@ -854,8 +854,15 @@ export function formatApi(data: ApiResult): string {
   const bodyStr = typeof data.body === "string" ? data.body : JSON.stringify(data.body, null, 2);
   const preview = bodyStr.length > 500 ? bodyStr.slice(0, 500) + "..." : bodyStr;
   // P1-gap #141: Include error body in formatted output
-  const errorPart = data.errorBody
-    ? `\nError: ${typeof data.errorBody === "string" ? data.errorBody : JSON.stringify(data.errorBody)}`
+  const errorPart = data.errorMessage
+    ? `\nError: ${data.errorMessage}`
+    : data.errorBody
+      ? `\nError: ${typeof data.errorBody === "string" ? data.errorBody : JSON.stringify(data.errorBody)}`
+      : "";
+  const contentType = data.responseHeaders?.["content-type"];
+  const typePart = typeof data.body === "string" && contentType ? ` (${contentType})` : "";
+  const cutPart = data.bodyTruncated
+    ? `\n(non-JSON error body cut to ${bodyStr.length} of ${data.bodyLength} characters)`
     : "";
-  return `${data.method} ${data.endpoint} → ${data.statusCode}\n${preview}${errorPart}`;
+  return `${data.method} ${data.endpoint} → ${data.statusCode}${typePart}\n${preview}${cutPart}${errorPart}`;
 }

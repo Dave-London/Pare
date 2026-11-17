@@ -866,11 +866,50 @@ export function parseApi(
     }
   }
 
+  // No status line (gh failed before printing headers): gh's own error text
+  // ("gh: Not Found (HTTP 404)") still names the real status (#1256).
+  if (!responseHeaders && exitCode !== 0) {
+    const stderrStatus = stderr?.match(/\bHTTP (\d{3})\b/);
+    if (stderrStatus) statusCode = parseInt(stderrStatus[1], 10);
+  }
+
+  // Plain-text bodies such as Actions job logs start with a UTF-8 BOM.
+  bodyText = bodyText.replace(/^﻿/, "");
+
   let body: unknown;
+  let bodyIsJson = true;
   try {
     body = JSON.parse(bodyText);
   } catch {
     body = bodyText;
+    bodyIsJson = false;
+  }
+
+  const contentType = responseHeaders?.["content-type"];
+  let errorMessage: string | undefined;
+  let bodyTruncated: boolean | undefined;
+  let bodyLength: number | undefined;
+
+  // #1256: gh decodes the body itself for --jq, for graphql, and for JSON-typed
+  // error responses. On a non-JSON body (a text/plain job log, an HTML 502 page)
+  // it fails with a bare Go decoder message and prints no body. Name the status,
+  // the content type and the way out instead of returning an empty body.
+  if (exitCode !== 0 && stderr && GH_JSON_DECODE_RE.test(stderr)) {
+    const status = responseHeaders ? `HTTP ${statusCode}` : "HTTP status unknown";
+    const typePart = contentType ? `, content-type ${contentType}` : "";
+    const hint =
+      contentType && !JSON_CONTENT_TYPE_RE.test(contentType)
+        ? "The body is not JSON, so jq cannot be applied to it. Call again without jq to get the body as text."
+        : "GitHub sent a body that is not valid JSON (for example an HTML error page during an outage). Retry later.";
+    errorMessage = `gh could not parse the response as JSON (${status}${typePart}): ${stderr.trim()}. ${hint}`;
+  }
+
+  // An error status with a non-JSON body is usually an HTML error page: keep a
+  // snippet with the status rather than the whole page.
+  if (statusCode >= 400 && !bodyIsJson && bodyText.length > NON_JSON_ERROR_SNIPPET) {
+    body = bodyText.slice(0, NON_JSON_ERROR_SNIPPET);
+    bodyTruncated = true;
+    bodyLength = bodyText.length;
   }
 
   // P1-gap #141: Preserve error body for debugging when request failed
@@ -891,8 +930,17 @@ export function parseApi(
     pagination,
     graphqlErrors,
     errorBody,
+    ...(errorMessage ? { errorMessage } : {}),
+    ...(bodyTruncated ? { bodyTruncated, bodyLength } : {}),
   };
 }
+
+/** Go's encoding/json messages that gh prints when a body is not JSON. */
+const GH_JSON_DECODE_RE =
+  /invalid character .+ looking for beginning of value|unexpected end of JSON input|cannot unmarshal/;
+const JSON_CONTENT_TYPE_RE = /[/+]json(;|\s|$)/i;
+/** Characters of a non-JSON error body (HTML error page) kept in `body`. */
+const NON_JSON_ERROR_SNIPPET = 500;
 
 function parseHeaderBlock(headerBlock: string): Record<string, string> {
   const lines = headerBlock.split(/\r?\n/);
