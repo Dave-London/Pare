@@ -1,5 +1,17 @@
 # @paretools/github
 
+## 0.24.0
+
+### Patch Changes
+
+- [#1260](https://github.com/Dave-London/Pare/pull/1260) [`80327ff`](https://github.com/Dave-London/Pare/commit/80327ff9ce1bdb6ebabe931d5adbdff0a081b32d) Thanks [@Dave-London](https://github.com/Dave-London)! - `api` explains non-JSON responses instead of returning an empty body with a bare decoder message ([#1256](https://github.com/Dave-London/Pare/issues/1256)). Plain-text bodies such as Actions job logs come back as a string `body` with the BOM removed. When gh cannot decode a non-JSON body itself (`jq` on a job log, an HTML 502 page on `graphql`), the result carries an `errorMessage` naming the HTTP status, the content type and the fix. A non-JSON error body (an HTML error page) is cut to a 500-character snippet with `bodyTruncated` and `bodyLength`, and the status is read from gh's `(HTTP nnn)` text when no headers were printed.
+
+- [#1260](https://github.com/Dave-London/Pare/pull/1260) [`0a841ae`](https://github.com/Dave-London/Pare/commit/0a841aea2e988df38b64f617da55f41897df7b96) Thanks [@Dave-London](https://github.com/Dave-London)! - `run-view` no longer returns an unbounded log that MCP clients cut without a marker ([#1257](https://github.com/Dave-London/Pare/issues/1257)). With `log` or `logFailed` and no `tailLines`, logs are cut to the last 300 lines and 30,000 characters, and the result always carries `logsTotalLines`, `logsReturnedLines` and `logsTruncated`. A new `grep` input keeps only lines matching a case-insensitive regular expression (with `logsMatchedLines`), so a failure in the middle of a long log can be found. An explicit `tailLines` still returns exactly that many lines. Jobs in the run summary now include their `id`, for the `job` filter.
+
+- [#1226](https://github.com/Dave-London/Pare/pull/1226) [`ea2e50c`](https://github.com/Dave-London/Pare/commit/ea2e50cc6423a715963641213532a6d38f38f5a9) Thanks [@fangjian-bit](https://github.com/fangjian-bit)! - fix(github): `issue-view` now includes comments in structured output when `comments: true` by requesting `comments` in `--json` fields ([#1224](https://github.com/Dave-London/Pare/issues/1224))
+- Updated dependencies [[`13e48c3`](https://github.com/Dave-London/Pare/commit/13e48c3cea0f063d991ac95f68770423ca03adb7), [`241b045`](https://github.com/Dave-London/Pare/commit/241b04510999bd2670e11ff0948ce9caea581f97)]:
+  - @paretools/shared@0.24.0
+
 ## 0.23.3
 
 ### Patch Changes
