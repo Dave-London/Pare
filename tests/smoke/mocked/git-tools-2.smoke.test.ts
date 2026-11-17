@@ -1,7 +1,7 @@
 /**
  * Smoke tests: git tools Phase 2 (mocked)
  *
- * Covers: commit (16), diff (18), log (18), log-graph (14), merge (16), pull (14)
+ * Covers: commit (18), diff (18), log (18), log-graph (14), merge (16), pull (14)
  * Total: ~96 scenarios
  *
  * Tests each tool end-to-end with mocked git runner,
@@ -49,7 +49,7 @@ function mockGit(stdout: string, stderr = "", exitCode = 0) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// COMMIT (16 scenarios)
+// COMMIT (18 scenarios)
 // ════════════════════════════════════════════════════════════════════════════
 describe("Smoke: git.commit", () => {
   let handler: ToolHandler;
@@ -163,9 +163,11 @@ describe("Smoke: git.commit", () => {
   // ── S12: Fixup commit ──────────────────────────────────────────────
   it("S12 [P2] fixup commit passes --fixup flag", async () => {
     mockGit("[main 1112222] fixup! x\n 1 file changed, 1 insertion(+)");
-    await callAndValidate({ message: "x", fixup: "HEAD~1" });
+    await callAndValidate({ fixup: "HEAD~1" });
     const args = vi.mocked(git).mock.calls[0][0];
     expect(args).toContain("--fixup=HEAD~1");
+    // git rejects -F with --fixup, so no message file is sent
+    expect(args).not.toContain("--file");
   });
 
   // ── S13: Flag injection in author ──────────────────────────────────
@@ -200,6 +202,26 @@ describe("Smoke: git.commit", () => {
     expect(parsed.filesChanged).toBe(5);
     expect(parsed.insertions).toBe(20);
     expect(parsed.deletions).toBe(10);
+  });
+
+  // ── S17: amend + noEdit keeps the existing message (#1255) ─────────
+  it("S17 [P0] amend + noEdit sends --no-edit and no message file", async () => {
+    mockGit("[main 1234abc] kept subject\n Date: Mon Jan 1 00:00:00 2026 +0000\n 1 file changed");
+    const { parsed } = await callAndValidate({ amend: true, noEdit: true });
+    const args = vi.mocked(git).mock.calls[0][0];
+    expect(args).toContain("--amend");
+    expect(args).toContain("--no-edit");
+    expect(args).not.toContain("--file");
+    expect(vi.mocked(git).mock.calls[0][2]).toBeUndefined();
+    expect(parsed.message).toBe("kept subject");
+  });
+
+  // ── S18: noEdit + message is rejected before git runs (#1255) ──────
+  it("S18 [P0] noEdit combined with message is rejected", async () => {
+    await expect(
+      callAndValidate({ amend: true, noEdit: true, message: "overwrite" }),
+    ).rejects.toThrow("'message' cannot be combined with 'noEdit'");
+    expect(vi.mocked(git)).not.toHaveBeenCalled();
   });
 });
 
