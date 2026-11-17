@@ -79,6 +79,7 @@ export function formatPrView(data: PrViewResult): string {
       lines.push(`    @${r.author}: ${r.state}${bodySnippet}`);
     }
   }
+  lines.push(...formatCommentLines(data.comments));
   if (data.body) {
     lines.push(`  body: ${data.body.slice(0, 200)}${data.body.length > 200 ? "..." : ""}`);
   }
@@ -393,6 +394,8 @@ export interface PrViewCompact {
   deletions: number;
   changedFiles: number;
   checksTotal: number;
+  /** Kept in compact mode: the caller asked for them explicitly (#1259). */
+  comments?: PrViewResult["comments"];
 }
 
 export function compactPrViewMap(data: PrViewResult): PrViewCompact {
@@ -406,11 +409,26 @@ export function compactPrViewMap(data: PrViewResult): PrViewCompact {
     deletions: data.deletions,
     changedFiles: data.changedFiles,
     checksTotal: (data.checks ?? []).length,
+    ...(data.comments ? { comments: data.comments } : {}),
   };
 }
 
 export function formatPrViewCompact(data: PrViewCompact): string {
-  return `PR #${data.number}: ${data.title} (${data.state}) +${data.additions} -${data.deletions} (${data.changedFiles} files), ${data.checksTotal} checks`;
+  const head = `PR #${data.number}: ${data.title} (${data.state}) +${data.additions} -${data.deletions} (${data.changedFiles} files), ${data.checksTotal} checks`;
+  return [head, ...formatCommentLines(data.comments)].join("\n");
+}
+
+/** One line per comment: `@author: first 80 chars of body`. */
+function formatCommentLines(comments: PrViewResult["comments"]): string[] {
+  if (!comments) return [];
+  if (comments.length === 0) return ["  comments: none"];
+  return [
+    `  comments (${comments.length}):`,
+    ...comments.map((c) => {
+      const body = (c.body ?? "").replace(/\s+/g, " ").trim();
+      return `    @${c.author ?? "unknown"}: ${body.slice(0, 80)}${body.length > 80 ? "..." : ""}`;
+    }),
+  ];
 }
 
 /** Compact PR list: number, title, state only. */

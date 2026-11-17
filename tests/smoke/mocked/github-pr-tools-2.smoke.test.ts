@@ -762,10 +762,31 @@ describe("Smoke: github.pr-view", () => {
   });
 
   it("S7 [P1] include comments", async () => {
-    mockGh(JSON.stringify(PR_VIEW_JSON));
-    await callAndValidate({ number: "123", comments: true });
+    mockGh(
+      JSON.stringify({
+        ...PR_VIEW_JSON,
+        comments: [
+          { author: { login: "reviewer" }, createdAt: "2026-11-17T10:00:00Z", body: "LGTM" },
+        ],
+      }),
+    );
+    const { parsed } = await callAndValidate({ number: "123", comments: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0] as string[];
-    expect(args).toContain("--comments");
+    // #1259: comments come back through the --json field list; gh ignores
+    // --comments for JSON output.
+    expect(args).not.toContain("--comments");
+    expect(args[args.indexOf("--json") + 1].split(",")).toContain("comments");
+    expect(parsed.comments).toEqual([
+      { author: "reviewer", createdAt: "2026-11-17T10:00:00Z", body: "LGTM" },
+    ]);
+  });
+
+  it("S7b [P1] comments not requested: field not fetched, not in output", async () => {
+    mockGh(JSON.stringify(PR_VIEW_JSON));
+    const { parsed } = await callAndValidate({ number: "123" });
+    const args = vi.mocked(ghCmd).mock.calls[0][0] as string[];
+    expect(args[args.indexOf("--json") + 1].split(",")).not.toContain("comments");
+    expect(parsed.comments).toBeUndefined();
   });
 
   it("S8 [P1] PR with checks", async () => {

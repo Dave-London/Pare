@@ -139,6 +139,28 @@ describe("compactPrView", () => {
     const text = formatPrViewCompact(compact);
     expect(text).toContain("PR #1");
     expect(text).toContain("1 checks");
+    expect(compact).not.toHaveProperty("comments");
+    expect(text).not.toContain("comments");
+  });
+
+  it("keeps requested comments in compact mode (#1259)", () => {
+    const data: PrViewResult = {
+      number: 1,
+      state: "OPEN",
+      title: "Test",
+      mergeable: "MERGEABLE",
+      reviewDecision: "",
+      additions: 0,
+      deletions: 0,
+      changedFiles: 0,
+      comments: [{ author: "alice", createdAt: "2026-11-17T09:00:00Z", body: "Please\nrebase" }],
+    };
+    const compact = compactPrViewMap(data);
+    expect(compact.comments).toEqual(data.comments);
+    const text = formatPrViewCompact(compact);
+    expect(text).toContain("comments (1):");
+    expect(text).toContain("@alice: Please rebase");
+    expect(formatPrView(data)).toContain("@alice: Please rebase");
   });
 });
 

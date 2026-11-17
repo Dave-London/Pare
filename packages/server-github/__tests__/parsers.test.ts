@@ -66,6 +66,37 @@ describe("resolveNumber", () => {
 });
 
 describe("parsePrView", () => {
+  it("parses conversation comments when present (#1259)", () => {
+    const json = JSON.stringify({
+      number: 7,
+      state: "OPEN",
+      title: "t",
+      comments: [
+        {
+          id: "IC_x",
+          author: { login: "alice" },
+          authorAssociation: "OWNER",
+          body: "Please rebase",
+          createdAt: "2026-11-17T09:00:00Z",
+          includesCreatedEdit: false,
+          isMinimized: false,
+          minimizedReason: "",
+          reactionGroups: [],
+          url: "https://github.com/o/r/pull/7#issuecomment-1",
+          viewerDidAuthor: false,
+        },
+      ],
+    });
+    expect(parsePrView(json).comments).toEqual([
+      { author: "alice", createdAt: "2026-11-17T09:00:00Z", body: "Please rebase" },
+    ]);
+  });
+
+  it("leaves comments undefined when the field was not requested (#1259)", () => {
+    const json = JSON.stringify({ number: 7, state: "OPEN", title: "t" });
+    expect(parsePrView(json).comments).toBeUndefined();
+  });
+
   it("parses full PR view JSON", () => {
     const json = JSON.stringify({
       number: 42,
