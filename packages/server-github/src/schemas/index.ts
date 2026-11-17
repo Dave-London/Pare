@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+/** Zod schema for a comment returned by issue-view and pr-view (`comments: true`). */
+export const IssueCommentSchema = z.object({
+  author: z.string().optional(),
+  createdAt: z.string().optional(),
+  body: z.string().optional(),
+  /** True when this comment body was collapsed/capped (see `maxBodyLength`). */
+  bodyTruncated: z.boolean().optional(),
+});
+
+export type IssueComment = z.infer<typeof IssueCommentSchema>;
+
 // ── PR schemas ───────────────────────────────────────────────────────
 
 /** Zod schema for a single status check on a PR. */
@@ -50,6 +61,8 @@ export const PrViewResultSchema = z.object({
   projectItems: z.array(z.string()).optional(),
   // P1-gap #147: Add multi-reviewer visibility
   reviews: z.array(PrReviewItemSchema).optional(),
+  /** Conversation comments, present when requested with `comments: true` (#1259). */
+  comments: z.array(IssueCommentSchema).optional(),
   /** Summary of commits in the PR (count + latest SHA). */
   commitCount: z.number().optional(),
   latestCommitSha: z.string().optional(),
@@ -161,15 +174,6 @@ export const PrDiffResultSchema = z.object({
 export type PrDiffResult = z.infer<typeof PrDiffResultSchema>;
 
 // ── Issue schemas ────────────────────────────────────────────────────
-
-/** Zod schema for a comment returned as part of issue-view. */
-export const IssueCommentSchema = z.object({
-  author: z.string().optional(),
-  createdAt: z.string().optional(),
-  body: z.string().optional(),
-});
-
-export type IssueComment = z.infer<typeof IssueCommentSchema>;
 
 /** Zod schema for structured issue-view output. */
 export const IssueViewResultSchema = z.object({

@@ -36,7 +36,9 @@ export function registerPrViewTool(server: McpServer) {
         comments: z.coerce
           .boolean()
           .optional()
-          .describe("Include PR comments in output (-c/--comments)"),
+          .describe(
+            "Include the PR's conversation comments in output as comments[] (author, createdAt, body). Review comments are in reviews[]",
+          ),
         // S-gap P1: Add repo for cross-repo inspection
         repo: z
           .string()
@@ -65,8 +67,10 @@ export function registerPrViewTool(server: McpServer) {
 
       const selector = String(number);
 
-      const args = ["pr", "view", selector, "--json", PR_VIEW_FIELDS];
-      if (comments) args.push("--comments");
+      // #1259: gh only serialises the fields named in --json; its --comments flag
+      // affects the human-readable view only, so comments go in the field list.
+      const jsonFields = comments ? `${PR_VIEW_FIELDS},comments` : PR_VIEW_FIELDS;
+      const args = ["pr", "view", selector, "--json", jsonFields];
       if (repo) args.push("--repo", repo);
       const result = await ghCmd(args, cwd);
 
@@ -82,6 +86,13 @@ export function registerPrViewTool(server: McpServer) {
           if (!r.body) return r;
           const { body, bodyTruncated } = truncateBody(r.body, maxBodyLength);
           return bodyTruncated ? { ...r, body, bodyTruncated } : r;
+        });
+      }
+      if (data.comments) {
+        data.comments = data.comments.map((c) => {
+          if (!c.body) return c;
+          const { body, bodyTruncated } = truncateBody(c.body, maxBodyLength);
+          return bodyTruncated ? { ...c, body, bodyTruncated } : c;
         });
       }
       return compactDualOutput(

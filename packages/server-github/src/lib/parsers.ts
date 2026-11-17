@@ -12,6 +12,7 @@ import type {
   PrReopenResult,
   PrReadyResult,
   IssueViewResult,
+  IssueComment,
   IssueListResult,
   IssueCreateResult,
   IssueCloseResult,
@@ -153,6 +154,8 @@ export function parsePrView(json: string): PrViewResult {
       : undefined,
     // P1-gap #147
     reviews,
+    // #1259: only present when the caller asked for comments
+    comments: parseComments(raw.comments),
     commitCount,
     latestCommitSha,
   };
@@ -450,14 +453,20 @@ export function parseIssueView(json: string): IssueViewResult {
     projectItems: raw.projectItems
       ? (raw.projectItems as { title: string }[]).map((p) => p.title)
       : undefined,
-    comments: Array.isArray(raw.comments)
-      ? (raw.comments as any[]).map((c) => ({
-          author: c.author?.login ?? (typeof c.author === "string" ? c.author : undefined),
-          createdAt: c.createdAt ?? undefined,
-          body: c.body ?? undefined,
-        }))
-      : undefined,
+    comments: parseComments(raw.comments),
   };
+}
+
+/** Maps gh's `comments` JSON field (issue-view / pr-view) to `{author, createdAt, body}`. */
+function parseComments(raw: unknown): IssueComment[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return (raw as { author?: { login?: string } | string; createdAt?: string; body?: string }[]).map(
+    (c) => ({
+      author: typeof c.author === "string" ? c.author : (c.author?.login ?? undefined),
+      createdAt: c.createdAt ?? undefined,
+      body: c.body ?? undefined,
+    }),
+  );
 }
 
 /**
