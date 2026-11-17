@@ -1,6 +1,6 @@
 # npm > install
 
-Runs npm/pnpm/yarn install and returns a structured summary of added/removed packages and vulnerabilities. Auto-detects package manager via lock files.
+Runs npm/pnpm/yarn install and returns available package counts and vulnerability information. Auto-detects package manager via lock files. Supports quiet pnpm installs through a typed reporter option.
 
 **Command**: `npm install --ignore-scripts` / `pnpm install --ignore-scripts` / `yarn install`
 
@@ -13,6 +13,37 @@ Runs npm/pnpm/yarn install and returns a structured summary of added/removed pac
 | `ignoreScripts`  | boolean                         | `true`      | Skip lifecycle scripts (preinstall/postinstall). Set to false if packages need postinstall scripts (e.g., esbuild, sharp) |
 | `packageManager` | `"npm"` \| `"pnpm"` \| `"yarn"` | auto-detect | Package manager to use. Auto-detected from lock files if not specified                                                    |
 | `filter`         | string                          | —           | pnpm workspace filter pattern (e.g., `@scope/pkg`). Only used with pnpm                                                   |
+| `pnpmReporter`   | `"silent"`                      | —           | Maps to `--reporter=silent`; rejected for npm/yarn. Omits output-derived statistics                                       |
+
+## Silent pnpm install
+
+Call `install` with:
+
+```json
+{
+  "path": "/path/to/project",
+  "packageManager": "pnpm",
+  "pnpmReporter": "silent",
+  "ignoreScripts": false
+}
+```
+
+Successful structured output contains independently measured information:
+
+```json
+{
+  "packageManager": "pnpm",
+  "lockfileChanged": true
+}
+```
+
+`lockfileChanged` compares the package manager's lockfile directly in `path`. A workspace-root lockfile outside that directory is not observed; `false` does not rule out changes to that workspace-root lockfile.
+
+`added`, `removed`, `changed`, `packageDetails`, `funding`, and `vulnerabilities` are omitted because silent output cannot establish them. The count fields are optional in the output schema; clients must distinguish missing counts from zero. The readable summary says `package counts unavailable`. Calls without `pnpmReporter` keep their existing summary behavior.
+
+Lifecycle scripts remain disabled by default. `ignoreScripts: false` removes the tool's `--ignore-scripts` flag; pnpm and project policy still govern which scripts may run. Package operands in `args` retain flag-injection protection; reporter flags must use the typed option.
+
+A nonzero install exit code produces an MCP error even if output is empty or `node_modules` already exists. Launch failures and timeouts also remain errors. Failure diagnostics compact stderr and stdout separately, reserve the budget for stderr first, preserve both ends when a stream exceeds the character budget, and are sanitized and bounded using the shared compact-output limits, with truncation explicitly indicated. The silent reporter may suppress cause details; the exit code is still reported. Omit `pnpmReporter` when detailed package-manager output is needed for diagnosis.
 
 ## Success — Clean Install
 
@@ -44,8 +75,6 @@ found 0 vulnerabilities
   "added": 152,
   "removed": 0,
   "changed": 0,
-  "duration": 8.0,
-  "packages": 153,
   "funding": 24
 }
 ```
@@ -96,8 +125,6 @@ To address all issues, run:
   "added": 87,
   "removed": 0,
   "changed": 0,
-  "duration": 5.0,
-  "packages": 88,
   "funding": 12,
   "vulnerabilities": {
     "total": 3,
@@ -133,16 +160,9 @@ npm ERR! 404 'nonexistent-pkg-xyz' is not in this registry.
 </td>
 <td>
 
-~20 tokens
-
 ```json
 {
-  "packageManager": "npm",
-  "added": 0,
-  "removed": 0,
-  "changed": 0,
-  "duration": 1.2,
-  "packages": 0
+  "error": "npm install failed (exit code 1):\nnpm ERR! code E404"
 }
 ```
 
@@ -156,7 +176,6 @@ npm ERR! 404 'nonexistent-pkg-xyz' is not in this registry.
 | ------------------------ | ---------- | --------- | ------- |
 | Clean install (152 pkgs) | ~60        | ~30       | 50%     |
 | Install with vulns       | ~80        | ~50       | 38%     |
-| Install failure          | ~50        | ~20       | 60%     |
 
 ## Notes
 

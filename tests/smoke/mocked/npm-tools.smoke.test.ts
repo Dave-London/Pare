@@ -5,7 +5,7 @@
  * validating argument construction, output schema compliance,
  * flag injection blocking, and edge case handling.
  *
- * Covers 114 scenarios from tests/smoke/scenarios/npm-tools.md.
+ * Scenarios are inventoried in tests/smoke/scenarios/npm-tools.md.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
@@ -630,10 +630,9 @@ describe("Smoke: npm.install", () => {
 
   it("S3 [P0] no package.json", async () => {
     mockRunPm("", "ENOENT: no such file or directory", 1);
-    // parseInstallOutput parses stdout+stderr, so it will still return something
-    // The tool itself doesn't throw on error exit codes for install
-    const { parsed } = await callAndValidate({ path: "/tmp/empty-dir" });
-    expect(parsed.added).toBe(0);
+    await expect(callAndValidate({ path: "/tmp/empty-dir" })).rejects.toThrow(
+      /npm install failed \(exit code 1\):[\s\S]*ENOENT/,
+    );
   });
 
   it("S4 [P0] flag injection via args", async () => {
@@ -728,6 +727,38 @@ describe("Smoke: npm.install", () => {
     expect(parsed.removed).toBe(2);
     expect(parsed.changed).toBe(1);
     expect(parsed.vulnerabilities).toBeDefined();
+  });
+
+  it("S15 [P0] silent pnpm install omits output-derived statistics", async () => {
+    vi.mocked(detectPackageManager).mockResolvedValue("pnpm");
+    mockRunPm("added 99 packages\n1 vulnerability (1 high)");
+    const { parsed } = await callAndValidate({
+      path: "/tmp/project",
+      args: [],
+      packageManager: "pnpm",
+      ignoreScripts: true,
+      pnpmReporter: "silent",
+    });
+    expect(parsed).toEqual({ packageManager: "pnpm", lockfileChanged: false });
+    expect(runPm).toHaveBeenCalledWith(
+      "pnpm",
+      ["install", "--ignore-scripts", "--reporter=silent"],
+      "/tmp/project",
+    );
+  });
+
+  it.each(["npm", "yarn"] as const)("S16 [P0] rejects pnpmReporter for %s", async (pm) => {
+    vi.mocked(detectPackageManager).mockResolvedValue(pm);
+    await expect(
+      callAndValidate({
+        path: "/tmp/project",
+        args: [],
+        packageManager: pm,
+        ignoreScripts: true,
+        pnpmReporter: "silent",
+      }),
+    ).rejects.toThrow(new RegExp(`pnpmReporter.*${pm}`));
+    expect(runPm).not.toHaveBeenCalled();
   });
 });
 

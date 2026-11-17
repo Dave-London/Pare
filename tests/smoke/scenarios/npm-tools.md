@@ -149,25 +149,28 @@
 | `registry`       | string                    | no       | Registry URL                           |
 | `packageManager` | "npm" \| "pnpm" \| "yarn" | no       | Override PM detection                  |
 | `filter`         | string                    | no       | pnpm filter                            |
+| `pnpmReporter`   | "silent"                  | no       | pnpm-only; omits parsed statistics     |
 
 ### Scenarios
 
-| #   | Scenario                           | Params                                      | Expected Output                              | Priority | Status   |
-| --- | ---------------------------------- | ------------------------------------------- | -------------------------------------------- | -------- | -------- |
-| 1   | Install from existing lockfile     | `{ path }`                                  | `added >= 0`, `packages > 0`, `duration > 0` | P0       | complete |
-| 2   | Install specific package           | `{ path, args: ["lodash"] }`                | `added >= 1`                                 | P0       | complete |
-| 3   | No package.json                    | `{ path: "/tmp/empty-dir" }`                | Error thrown                                 | P0       | complete |
-| 4   | Flag injection via args            | `{ path, args: ["--exec=evil"] }`           | `assertNoFlagInjection` throws               | P0       | complete |
-| 5   | Flag injection via filter          | `{ path, filter: "--exec=evil" }`           | `assertNoFlagInjection` throws               | P0       | complete |
-| 6   | Flag injection via registry        | `{ path, registry: "--exec=evil" }`         | `assertNoFlagInjection` throws               | P0       | complete |
-| 7   | saveDev: true                      | `{ path, args: ["lodash"], saveDev: true }` | Package in devDependencies                   | P1       | complete |
-| 8   | frozenLockfile: true (npm uses ci) | `{ path, frozenLockfile: true }`            | Runs `npm ci`                                | P1       | complete |
-| 9   | dryRun: true                       | `{ path, dryRun: true }`                    | No actual install, preview output            | P1       | complete |
-| 10  | production: true                   | `{ path, production: true }`                | Omits devDeps                                | P1       | complete |
-| 11  | lockfileChanged detection          | `{ path, args: ["new-pkg"] }`               | `lockfileChanged: true`                      | P1       | complete |
-| 12  | ignoreScripts: false               | `{ path, ignoreScripts: false }`            | Lifecycle scripts run                        | P2       | complete |
-| 13  | exact: true                        | `{ path, args: ["lodash"], exact: true }`   | Exact version in package.json                | P2       | complete |
-| 14  | Schema validation                  | all                                         | Zod parse succeeds                           | P0       | complete |
+| #   | Scenario                           | Params                                                              | Expected Output                                     | Priority | Status   |
+| --- | ---------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- | -------- | -------- |
+| 1   | Install from existing lockfile     | `{ path }`                                                          | `added >= 0`, `removed >= 0`, `changed >= 0`        | P0       | complete |
+| 2   | Install specific package           | `{ path, args: ["lodash"] }`                                        | `added >= 1`                                        | P0       | complete |
+| 3   | No package.json                    | `{ path: "/tmp/empty-dir" }`                                        | Error thrown                                        | P0       | complete |
+| 4   | Flag injection via args            | `{ path, args: ["--exec=evil"] }`                                   | `assertNoFlagInjection` throws                      | P0       | complete |
+| 5   | Flag injection via filter          | `{ path, filter: "--exec=evil" }`                                   | `assertNoFlagInjection` throws                      | P0       | complete |
+| 6   | Flag injection via registry        | `{ path, registry: "--exec=evil" }`                                 | `assertNoFlagInjection` throws                      | P0       | complete |
+| 7   | saveDev: true                      | `{ path, args: ["lodash"], saveDev: true }`                         | Package in devDependencies                          | P1       | complete |
+| 8   | frozenLockfile: true (npm uses ci) | `{ path, frozenLockfile: true }`                                    | Runs `npm ci`                                       | P1       | complete |
+| 9   | dryRun: true                       | `{ path, dryRun: true }`                                            | No actual install, preview output                   | P1       | complete |
+| 10  | production: true                   | `{ path, production: true }`                                        | Omits devDeps                                       | P1       | complete |
+| 11  | lockfileChanged detection          | `{ path, args: ["new-pkg"] }`                                       | `lockfileChanged: true`                             | P1       | complete |
+| 12  | ignoreScripts: false               | `{ path, ignoreScripts: false }`                                    | Lifecycle scripts run                               | P2       | complete |
+| 13  | exact: true                        | `{ path, args: ["lodash"], exact: true }`                           | Exact version in package.json                       | P2       | complete |
+| 14  | Schema validation                  | all                                                                 | Zod parse succeeds                                  | P0       | complete |
+| 15  | Silent pnpm install                | `{ path, packageManager: "pnpm", pnpmReporter: "silent" }`          | No output-derived statistics; correct reporter flag | P0       | mocked   |
+| 16  | Reporter with npm/yarn             | `{ path, packageManager: "npm" or "yarn", pnpmReporter: "silent" }` | Rejected before process launch                      | P0       | mocked   |
 
 ---
 
