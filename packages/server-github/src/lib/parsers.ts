@@ -876,7 +876,7 @@ export function parseApi(
   }
 
   // Plain-text bodies such as Actions job logs start with a UTF-8 BOM.
-  bodyText = bodyText.replace(/^﻿/, "");
+  bodyText = bodyText.replace(/^\uFEFF/, "");
 
   let body: unknown;
   let bodyIsJson = true;
