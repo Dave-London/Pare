@@ -252,6 +252,29 @@ describe("compactMypyMap", () => {
     expect(compact.error).toBe("mypy: error: Cannot find config file 'missing.ini'");
     expect(compact.exitCode).toBe(2);
   });
+
+  it("keeps success: true and errorCount: 0 when only notes exist (#1223)", () => {
+    const data: MypyResult = {
+      success: true,
+      diagnostics: [
+        {
+          file: "middleware/circuit_breaker.py",
+          line: 60,
+          severity: "note",
+          message: "By default the bodies of untyped functions are not checked",
+          code: "annotation-unchecked",
+        },
+      ],
+    };
+
+    const compact = compactMypyMap(data);
+
+    expect(compact.success).toBe(true);
+    expect(compact.errorCount).toBe(0);
+    expect(compact.warningCount).toBe(0);
+    expect(compact.exitCode).toBeUndefined();
+    expect(compact.diagnostics).toHaveLength(1);
+  });
 });
 
 describe("formatMypyCompact", () => {
