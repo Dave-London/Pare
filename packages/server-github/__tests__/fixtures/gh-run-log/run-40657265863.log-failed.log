@@ -1,0 +1,72 @@
+build-and-test-windows	Run pnpm format:check	﻿2026-11-17T12:00:43.0690899Z ##[group]Run pnpm format:check
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.0691257Z [36;1mpnpm format:check[0m
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.0747079Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.0747384Z env:
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.0747611Z   PNPM_HOME: C:\Users\runneradmin\setup-pnpm\node_modules\.bin
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.0747882Z ##[endgroup]
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.6581406Z 
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.6582069Z > pare@0.0.0 format:check D:\a\Pare\Pare
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.6582550Z > prettier --check .
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.6582747Z 
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:43.7768873Z Checking formatting...
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:00:59.4875317Z [[33mwarn[39m] packages/server-python/__tests__/pytest.test.ts
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:01:05.7518055Z [[33mwarn[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:01:05.8054092Z  ELIFECYCLE  Command failed with exit code 1.
+build-and-test-windows	Run pnpm format:check	2026-11-17T12:01:05.9069757Z ##[error]Process completed with exit code 1.
+build-and-test-ubuntu	Run pnpm format:check	﻿2026-11-17T12:00:48.1040465Z ##[group]Run pnpm format:check
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.1040735Z [36;1mpnpm format:check[0m
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.1085976Z shell: /usr/bin/bash -e {0}
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.1086410Z env:
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.1086627Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.1086896Z ##[endgroup]
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.3295399Z 
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.3296402Z > pare@0.0.0 format:check /home/runner/work/Pare/Pare
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.3297008Z > prettier --check .
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.3297262Z 
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:00:48.4014566Z Checking formatting...
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:01:01.1756407Z [[33mwarn[39m] packages/server-python/__tests__/pytest.test.ts
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:01:06.3582918Z [[33mwarn[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:01:06.4061716Z  ELIFECYCLE  Command failed with exit code 1.
+build-and-test-ubuntu	Run pnpm format:check	2026-11-17T12:01:06.4963058Z ##[error]Process completed with exit code 1.
+ci-gate	Check required jobs	﻿2026-11-17T12:01:23.5188450Z ##[group]Run echo "Checking required jobs..."
+ci-gate	Check required jobs	2026-11-17T12:01:23.5189539Z [36;1mecho "Checking required jobs..."[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5190250Z [36;1m[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5191011Z [36;1mif [[ "success" != "success" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5191722Z [36;1m  echo "lint failed: success"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5192406Z [36;1m  exit 1[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5192964Z [36;1mfi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5193505Z [36;1mif [[ "success" != "success" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5194251Z [36;1m  echo "smoke failed: success"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5194927Z [36;1m  exit 1[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5195734Z [36;1mfi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5196324Z [36;1mif [[ "failure" != "success" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5197135Z [36;1m  echo "build-and-test-ubuntu failed: failure"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5197864Z [36;1m  exit 1[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5198360Z [36;1mfi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5198912Z [36;1mif [[ "failure" != "success" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5199717Z [36;1m  echo "build-and-test-windows failed: failure"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5200582Z [36;1m  exit 1[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5201080Z [36;1mfi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5201599Z [36;1m[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5202492Z [36;1m# Advisory: audit is informational — npm registry outages (HTTP 500) must not block PRs[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5203569Z [36;1mif [[ "success" == "failure" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5204411Z [36;1m  echo "⚠ audit failed (advisory, non-blocking): success"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5205414Z [36;1mfi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5205931Z [36;1m[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5206583Z [36;1m# Conditional jobs: must pass if they ran, OK to skip[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5207411Z [36;1mfor result in "skipped" "skipped"; do[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5208412Z [36;1m  if [[ "$result" != "success" && "$result" != "skipped" && "$result" != "cancelled" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5209390Z [36;1m    echo "Conditional job failed: $result"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5210067Z [36;1m    exit 1[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5210673Z [36;1m  fi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5211229Z [36;1m  if [[ "$result" == "cancelled" ]]; then[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5212099Z [36;1m    echo "⚠ Conditional job was cancelled (non-blocking)"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5212865Z [36;1m  fi[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5213340Z [36;1mdone[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5213921Z [36;1m[0m
+ci-gate	Check required jobs	2026-11-17T12:01:23.5214801Z [36;1mecho "All required checks passed!"[0m
+ci-gate	Check required jobs	2026-11-17T12:01:25.7682241Z shell: /usr/bin/bash -e {0}
+ci-gate	Check required jobs	2026-11-17T12:01:25.7683189Z ##[endgroup]
+ci-gate	Check required jobs	2026-11-17T12:01:25.7830987Z Checking required jobs...
+ci-gate	Check required jobs	2026-11-17T12:01:25.7831484Z build-and-test-ubuntu failed: failure
+ci-gate	Check required jobs	2026-11-17T12:01:25.7843315Z ##[error]Process completed with exit code 1.

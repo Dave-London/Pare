@@ -10,6 +10,7 @@ import {
 } from "@paretools/shared";
 import { ghCmd } from "../lib/gh-runner.js";
 import { parseRunView } from "../lib/parsers.js";
+import { windowLog, DEFAULT_LOG_TAIL_LINES, DEFAULT_LOG_MAX_CHARS } from "../lib/log-window.js";
 import {
   formatRunView,
   formatRunViewLog,
@@ -46,7 +47,14 @@ export function registerRunViewTool(server: McpServer) {
           .max(100_000)
           .optional()
           .describe(
-            "With log/logFailed: return only the last N log lines, where test runners print failures and tracebacks. logsTotalLines then gives the full length",
+            `With log/logFailed: return exactly the last N log lines, where test runners print failures and tracebacks. Without it, logs are cut to the last ${DEFAULT_LOG_TAIL_LINES} lines and ${DEFAULT_LOG_MAX_CHARS} characters; logsTruncated and logsTotalLines say when`,
+          ),
+        grep: z
+          .string()
+          .max(INPUT_LIMITS.SHORT_STRING_MAX)
+          .optional()
+          .describe(
+            "With log/logFailed: keep only log lines matching this case-insensitive regular expression (e.g. '##\\[error\\]|FAIL') before the tail is taken. logsMatchedLines gives the match count",
           ),
         attempt: z.coerce
           .number()
@@ -61,7 +69,7 @@ export function registerRunViewTool(server: McpServer) {
           .string()
           .max(INPUT_LIMITS.SHORT_STRING_MAX)
           .optional()
-          .describe("View a specific job by ID (-j/--job)"),
+          .describe("View a specific job by ID (-j/--job); ids are in jobs[].id"),
         // S-gap P0: Add repo for cross-repo inspection
         repo: z
           .string()
@@ -73,13 +81,28 @@ export function registerRunViewTool(server: McpServer) {
       },
       outputSchema: RunViewResultSchema,
     },
-    async ({ id, logFailed, log, tailLines, attempt, exitStatus, job, repo, path, compact }) => {
+    async ({
+      id,
+      logFailed,
+      log,
+      tailLines,
+      grep,
+      attempt,
+      exitStatus,
+      job,
+      repo,
+      path,
+      compact,
+    }) => {
       const cwd = path || process.cwd();
 
       if (job) assertNoFlagInjection(job, "job");
       if (repo) assertNoFlagInjection(repo, "repo");
 
       const wantsLogs = logFailed || log;
+      if (grep !== undefined && !wantsLogs) {
+        throw new Error("grep filters log output: set log or logFailed with it.");
+      }
 
       // --log and --log-failed are mutually exclusive with --json in gh CLI.
       // When requesting logs, skip --json and return raw log text.
@@ -101,15 +124,9 @@ export function registerRunViewTool(server: McpServer) {
 
       // Log mode: return raw logs as text in the logs field
       if (wantsLogs) {
-        let logs = result.stdout;
-        let logsTotalLines: number | undefined;
-        if (tailLines !== undefined) {
-          const lines = logs.replace(/\r?\n$/, "").split(/\r?\n/);
-          if (lines.length > tailLines) {
-            logsTotalLines = lines.length;
-            logs = lines.slice(-tailLines).join("\n");
-          }
-        }
+        // #1257: never hand back an unbounded log. A full run log overflows the
+        // client's tool-result limit and the agent sees an unmarked fragment.
+        const win = windowLog(result.stdout, { tailLines, grep });
         const data: import("../schemas/index.js").RunViewResult = {
           id,
           status: "completed",
@@ -117,8 +134,11 @@ export function registerRunViewTool(server: McpServer) {
           workflowName: "",
           headBranch: "",
           url: "",
-          logs,
-          ...(logsTotalLines !== undefined ? { logsTotalLines } : {}),
+          logs: win.logs,
+          logsTotalLines: win.totalLines,
+          logsReturnedLines: win.returnedLines,
+          ...(win.matchedLines !== undefined ? { logsMatchedLines: win.matchedLines } : {}),
+          logsTruncated: win.truncated,
         };
         return dualOutput(data, formatRunViewLog);
       }

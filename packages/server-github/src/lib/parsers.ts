@@ -640,11 +640,13 @@ export function parseRunView(json: string): RunViewResult {
 
   const jobs = (raw.jobs ?? []).map(
     (j: {
+      databaseId?: number;
       name: string;
       status: string;
       conclusion: string | null;
       steps?: { name: string; status: string; conclusion: string | null }[];
     }) => ({
+      ...(j.databaseId !== undefined ? { id: j.databaseId } : {}),
       name: j.name,
       status: j.status,
       conclusion: j.conclusion ?? null,

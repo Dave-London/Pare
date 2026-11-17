@@ -732,8 +732,16 @@ const RUN_LOG_PREVIEW_HEAD = 500;
 const RUN_LOG_PREVIEW_TAIL = 3500;
 
 export function formatRunViewLog(data: RunViewResult): string {
-  const header = `Run #${data.id}: ${data.workflowName} (${data.status})`;
   const logs = data.logs ?? "";
+  let header = `Run #${data.id}: ${data.workflowName} (${data.status})`;
+  if (data.logsTotalLines !== undefined) {
+    const matched =
+      data.logsMatchedLines !== undefined ? `, ${data.logsMatchedLines} matching grep` : "";
+    header += `\nLog: ${data.logsReturnedLines ?? "?"} of ${data.logsTotalLines} lines${matched}`;
+    if (data.logsTruncated) {
+      header += " (truncated: narrow with job, grep or logFailed, or set tailLines)";
+    }
+  }
   const logsPreview =
     logs.length > RUN_LOG_PREVIEW_HEAD + RUN_LOG_PREVIEW_TAIL
       ? `${logs.slice(0, RUN_LOG_PREVIEW_HEAD)}\n... (truncated; the full log is in the structured \`logs\` field) ...\n${logs.slice(-RUN_LOG_PREVIEW_TAIL)}`
