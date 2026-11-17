@@ -128,7 +128,9 @@ describe("parsePytestOutput", () => {
     expect(result.failures[0].test).toBe(
       "tests/api/test_rollback_refusal_5596.py::test_rollback_then_raise_keeps_its_documented_refusal[routes/admin_outreach.py::mint_outreach_tokens]",
     );
-    expect(result.failures[0].message).toBe('AssertionError: {"error_code":"CONFLICT_001", "msg":"conflict"}');
+    expect(result.failures[0].message).toBe(
+      'AssertionError: {"error_code":"CONFLICT_001", "msg":"conflict"}',
+    );
   });
 
   it("ignores failure-like lines outside short test summary info (#1222)", () => {

@@ -599,8 +599,7 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
   }
 
   const failureBlocks = parsePytestFailureBlocks(lines);
-  const failures =
-    failureBlocks.length > 0 ? failureBlocks : parsePytestShortSummary(lines);
+  const failures = failureBlocks.length > 0 ? failureBlocks : parsePytestShortSummary(lines);
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is
