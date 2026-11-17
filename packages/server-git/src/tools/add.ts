@@ -107,38 +107,39 @@ export function registerAddTool(server: McpServer) {
         );
       }
 
+      // Flags that must precede pathspec separator
+      const flags: string[] = [];
+      if (resolved) flags.push("--resolved");
+      if (dryRun) flags.push("--dry-run");
+      if (force) flags.push("--force");
+      if (intentToAdd) flags.push("--intent-to-add");
+      if (ignoreRemoval) flags.push("--ignore-removal");
+      if (renormalize) flags.push("--renormalize");
+      if (ignoreErrors) flags.push("--ignore-errors");
+      if (chmod) flags.push(`--chmod=${chmod}`);
+
       // Build args
       let args: string[];
-      let filePathspecs: string[] | undefined;
       if (all) {
-        args = ["add", "-A"];
+        args = ["add", "-A", ...flags];
       } else if (update && (!files || files.length === 0) && !pathspecFromFile) {
-        args = ["add", "-u"];
+        args = ["add", "-u", ...flags];
       } else if (pathspecFromFile) {
         assertNoFlagInjection(pathspecFromFile, "pathspecFromFile");
         args = ["add"];
         if (update) args.push("-u");
-        args.push(`--pathspec-from-file=${pathspecFromFile}`);
+        args.push(...flags, `--pathspec-from-file=${pathspecFromFile}`);
       } else {
         // Validate each file path
         for (const file of files!) {
           assertNoFlagInjection(file, "file path");
         }
         // Resolve file path casing — git pathspecs are case-sensitive even on Windows
-        filePathspecs = await resolveFilePaths(files!, cwd);
+        const resolvedFiles = await resolveFilePaths(files!, cwd);
         args = ["add"];
         if (update) args.push("-u");
+        args.push(...flags, "--", ...resolvedFiles);
       }
-
-      if (resolved) args.push("--resolved");
-      if (dryRun) args.push("--dry-run");
-      if (force) args.push("--force");
-      if (intentToAdd) args.push("--intent-to-add");
-      if (ignoreRemoval) args.push("--ignore-removal");
-      if (renormalize) args.push("--renormalize");
-      if (ignoreErrors) args.push("--ignore-errors");
-      if (chmod) args.push(`--chmod=${chmod}`);
-      if (filePathspecs) args.push("--", ...filePathspecs);
 
       const result = await git(args, cwd);
 
