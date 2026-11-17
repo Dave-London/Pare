@@ -998,7 +998,11 @@ describe("Smoke: github.issue-view", () => {
     mockGh(sampleIssueJson());
     await callAndValidate({ number: "42", comments: true });
     const args = vi.mocked(ghCmd).mock.calls[0][0];
-    expect(args).toContain("--comments");
+    // Comments come back through the --json field list (#1224); --comments only
+    // affects gh's human-readable output and is ignored alongside --json.
+    expect(args).not.toContain("--comments");
+    const fields = args[args.indexOf("--json") + 1];
+    expect(fields.split(",")).toContain("comments");
   });
 
   it("S8 [P1] compact vs full output", async () => {

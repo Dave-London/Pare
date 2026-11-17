@@ -450,6 +450,13 @@ export function parseIssueView(json: string): IssueViewResult {
     projectItems: raw.projectItems
       ? (raw.projectItems as { title: string }[]).map((p) => p.title)
       : undefined,
+    comments: Array.isArray(raw.comments)
+      ? (raw.comments as any[]).map((c) => ({
+          author: c.author?.login ?? (typeof c.author === "string" ? c.author : undefined),
+          createdAt: c.createdAt ?? undefined,
+          body: c.body ?? undefined,
+        }))
+      : undefined,
   };
 }
 
