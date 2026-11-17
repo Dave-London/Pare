@@ -525,7 +525,11 @@ describe("Smoke: github.run-view", () => {
     mockGh(lines.join("\n"));
     const { parsed, result } = await callAndValidate({ id: 12345, logFailed: true });
 
-    expect(parsed.logsTotalLines).toBeUndefined();
+    // #1257: without tailLines the log is cut to its tail, and the result says so.
+    expect(parsed.logsTotalLines).toBe(2001);
+    expect(parsed.logsReturnedLines).toBe(300);
+    expect(parsed.logsTruncated).toBe(true);
+    expect(parsed.logs?.endsWith("E   AssertionError: at the very end")).toBe(true);
     expect(JSON.stringify(result.content)).toContain("AssertionError: at the very end");
   });
 
