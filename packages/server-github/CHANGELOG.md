@@ -1,5 +1,13 @@
 # @paretools/github
 
+## 0.24.1
+
+### Patch Changes
+
+- [#1261](https://github.com/Dave-London/Pare/pull/1261) [`57b2363`](https://github.com/Dave-London/Pare/commit/57b2363c0e226b8aa2ed1a662b6924ba6466a011) Thanks [@Dave-London](https://github.com/Dave-London)! - fix(github): `pr-view` with `comments: true` now returns the PR's conversation comments as `comments[]` (author, createdAt, body), including in compact mode. gh only serialises fields named in `--json`, so the old `--comments` flag returned nothing ([#1259](https://github.com/Dave-London/Pare/issues/1259)). Comment bodies follow `maxBodyLength` like review bodies.
+- Updated dependencies []:
+  - @paretools/shared@0.24.1
+
 ## 0.24.0
 
 ### Patch Changes
