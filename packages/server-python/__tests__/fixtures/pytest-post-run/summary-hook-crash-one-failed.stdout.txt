@@ -1,0 +1,9 @@
+..F                                                                      [100%]
+================================== FAILURES ===================================
+__________________________________ test_bad ___________________________________
+test_x.py:8: in test_bad
+    assert 2 + 2 == 5, "math is broken"
+E   AssertionError: math is broken
+E   assert (2 + 2) == 5
+=========================== short test summary info ===========================
+FAILED test_x.py::test_bad - AssertionError: math is broken
