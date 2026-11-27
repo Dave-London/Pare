@@ -156,22 +156,37 @@ export const PytestResultSchema = z.object({
   exitCode: z
     .number()
     .optional()
-    .describe("pytest exit code; only present when the run failed with no parseable test results"),
+    .describe(
+      "pytest exit code; present when the run failed with no parseable test results, or " +
+        "when it failed after the tests ran (see postRunError and countsUnavailable)",
+    ),
   errorOutput: z
     .string()
     .optional()
     .describe(
-      "Tail of the raw pytest output when test results could not be parsed: a failed run " +
-        "with no results (e.g. collection error, ModuleNotFoundError, broken plugin), or a " +
-        "passing run whose summary line was not found (see countsUnavailable)",
+      "Tail of the raw pytest output when the structured fields do not explain the result: " +
+        "a failed run with no results (e.g. collection error, ModuleNotFoundError, broken " +
+        "plugin), a run whose summary line was not found (see countsUnavailable), or a " +
+        "post-run error (see postRunError). Prefers the error stream (a traceback on stderr, " +
+        "INTERNALERROR lines) when there is one",
     ),
   countsUnavailable: z
     .boolean()
     .optional()
     .describe(
-      "true when pytest exited 0 but its summary line was not found, so passed/failed/errors/" +
-        "skipped are unknown and reported as 0. success then reflects the exit code only; " +
-        "do not read the zero counts as 'no tests ran'",
+      "true when tests ran but pytest's summary line was not found, so passed/failed/errors/" +
+        "skipped are unknown and reported as 0: either pytest exited 0 (a reporter plugin " +
+        "replaced the summary) or it crashed after the tests, before printing it. failures " +
+        "still lists any failures pytest printed. Do not read the zero counts as 'no tests ran'",
+    ),
+  postRunError: z
+    .boolean()
+    .optional()
+    .describe(
+      "true when pytest printed a summary with no failures or errors but still exited " +
+        "non-zero: something failed after the tests, e.g. a plugin or hook raised during " +
+        "reporting or teardown, or a post-run check such as --cov-fail-under. The counts " +
+        "are pytest's own; errorOutput and exitCode show what failed",
     ),
 });
 

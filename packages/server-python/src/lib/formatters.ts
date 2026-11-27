@@ -118,15 +118,39 @@ export function formatPipAudit(data: PipAuditResult): string {
   return lines.join("\n");
 }
 
-const PYTEST_COUNTS_UNAVAILABLE =
-  "pytest: exited 0, but its summary line was not found, so test counts are unknown.";
+/** Text for a run whose summary line was not found (countsUnavailable). */
+function formatPytestCountsUnavailable(data: {
+  success: boolean;
+  exitCode?: number;
+  errorOutput?: string;
+  failedTests: string[];
+}): string {
+  const lines = [
+    data.success
+      ? "pytest: exited 0, but its summary line was not found, so test counts are unknown."
+      : `pytest: tests ran, but pytest exited ${data.exitCode ?? "non-zero"} before printing ` +
+        "its summary line, so test counts are unknown.",
+  ];
+  for (const t of data.failedTests) lines.push(`  FAILED ${t}`);
+  if (data.errorOutput) lines.push(data.errorOutput);
+  return lines.join("\n");
+}
+
+/** Header line for a post-run error: the tests finished, then pytest exited non-zero. */
+function formatPostRunErrorLine(exitCode: number | undefined): string {
+  return (
+    `pytest exited ${exitCode ?? "non-zero"} after the tests finished ` +
+    "(post-run error, e.g. a plugin or hook raised):"
+  );
+}
 
 /** Formats structured pytest results into a human-readable test summary. */
 export function formatPytest(data: PytestResult): string {
   if (data.countsUnavailable) {
-    return data.errorOutput
-      ? `${PYTEST_COUNTS_UNAVAILABLE}\n${data.errorOutput}`
-      : PYTEST_COUNTS_UNAVAILABLE;
+    return formatPytestCountsUnavailable({
+      ...data,
+      failedTests: (data.failures ?? []).map((f) => `${f.test}: ${f.message}`),
+    });
   }
   const total = data.passed + data.failed + data.errors + data.skipped;
   if (total === 0) {
@@ -148,6 +172,7 @@ export function formatPytest(data: PytestResult): string {
   for (const f of data.failures ?? []) {
     lines.push(`  FAILED ${f.test}: ${f.message}`);
   }
+  if (data.postRunError) lines.push(formatPostRunErrorLine(data.exitCode));
   if (data.errorOutput) {
     lines.push(data.errorOutput);
   }
@@ -242,8 +267,9 @@ export function formatBlack(data: BlackResult): string {
 // ── Compact types, mappers, and formatters ───────────────────────────
 
 /** Compact pytest: counts + failure test names only (no stack traces).
- *  Diagnostics (exitCode/errorOutput/countsUnavailable) are kept: they only appear
- *  when results could not be parsed, where they are the sole actionable signal. */
+ *  Diagnostics (exitCode/errorOutput/countsUnavailable/postRunError) are kept: they
+ *  only appear when the counts alone do not explain the result, where they are the
+ *  sole actionable signal. */
 export interface PytestResultCompact {
   [key: string]: unknown;
   success: boolean;
@@ -256,6 +282,7 @@ export interface PytestResultCompact {
   exitCode?: number;
   errorOutput?: string;
   countsUnavailable?: boolean;
+  postRunError?: boolean;
 }
 
 export function compactPytestMap(data: PytestResult): PytestResultCompact {
@@ -271,15 +298,12 @@ export function compactPytestMap(data: PytestResult): PytestResultCompact {
   if (data.exitCode !== undefined) compact.exitCode = data.exitCode;
   if (data.errorOutput !== undefined) compact.errorOutput = data.errorOutput;
   if (data.countsUnavailable) compact.countsUnavailable = true;
+  if (data.postRunError) compact.postRunError = true;
   return compact;
 }
 
 export function formatPytestCompact(data: PytestResultCompact): string {
-  if (data.countsUnavailable) {
-    return data.errorOutput
-      ? `${PYTEST_COUNTS_UNAVAILABLE}\n${data.errorOutput}`
-      : PYTEST_COUNTS_UNAVAILABLE;
-  }
+  if (data.countsUnavailable) return formatPytestCountsUnavailable(data);
   const total = data.passed + data.failed + data.errors + data.skipped;
   if (total === 0) {
     if (data.success) return "pytest: no tests collected.";
@@ -299,6 +323,7 @@ export function formatPytestCompact(data: PytestResultCompact): string {
   for (const t of data.failedTests) {
     lines.push(`  FAILED ${t}`);
   }
+  if (data.postRunError) lines.push(formatPostRunErrorLine(data.exitCode));
   if (data.errorOutput) {
     lines.push(data.errorOutput);
   }

@@ -466,6 +466,36 @@ function pickPytestErrorStream(stdout: string, stderr: string): string {
   return out;
 }
 
+/** True when pytest printed a progress line, i.e. tests actually ran: `..F  [100%]`
+ *  at the tool's default -q, `test_x.py::test_a PASSED  [ 50%]` under -v, or
+ *  `test_x.py ..F  [100%]` at default verbosity. Text can follow the percentage on
+ *  the same line (a plugin printing at session end). Linear regexes only: this runs
+ *  on every line of test output (#1182). */
+function hasPytestProgressLine(lines: string[]): boolean {
+  return lines.some((raw) => {
+    const line = raw.trimStart();
+    if (!/\[\s*\d{1,3}%\]/.test(line)) return false;
+    return line.includes("::") || line.includes(".py") || /^[.FEsxXR]+\s/.test(line);
+  });
+}
+
+/** The output that explains a failure after the tests ran (#1215): pytest's
+ *  INTERNALERROR lines if any, else stderr (a hook's uncaught traceback lands there),
+ *  else stdout (e.g. pytest-cov's "Required test coverage ... not reached"). Capped
+ *  to the tail, where the exception message is. */
+function postRunErrorDetail(stdout: string, stderr: string): string | undefined {
+  const internal = stdout
+    .split("\n")
+    .filter((l) => l.startsWith("INTERNALERROR>"))
+    .join("\n")
+    .trim();
+  const detail = internal || stderr.trim() || stdout.trim();
+  if (!detail) return undefined;
+  return detail.length > PYTEST_ERROR_OUTPUT_MAX
+    ? `… (output truncated)\n${detail.slice(-PYTEST_ERROR_OUTPUT_MAX)}`
+    : detail;
+}
+
 /** When a pytest run failed but produced no parseable test results (e.g. collection
  *  error from a missing PYTHONPATH, or a broken plugin crashing at startup), attaches
  *  the exit code and a capped tail of the raw output so agents can see WHY instead of
@@ -642,6 +672,45 @@ export function parsePytestOutput(stdout: string, stderr: string, exitCode: numb
 
   const failureBlocks = parsePytestFailureBlocks(lines);
   const failures = failureBlocks.length > 0 ? failureBlocks : parsePytestShortSummary(lines);
+
+  // Non-zero exit (other than 5, "no tests collected") after the tests ran (#1215).
+  // A plugin or hook that raises during reporting or teardown makes pytest exit 1
+  // with its own traceback, even when every test passed.
+  if (exitCode !== 0 && exitCode !== 5) {
+    const errorOutput = postRunErrorDetail(stdout, stderr);
+    // The summary printed with nothing failing, so the failure came afterwards.
+    // Keep pytest's counts and say what failed.
+    if (summaryLine && failed === 0 && errors === 0) {
+      return {
+        success: false,
+        passed,
+        failed,
+        errors,
+        skipped,
+        warnings,
+        failures,
+        exitCode,
+        postRunError: true,
+        ...(errorOutput ? { errorOutput } : {}),
+      };
+    }
+    // Tests ran, but pytest crashed before printing the summary: the counts are
+    // unknown, not zero. Failures pytest printed before the crash are kept.
+    if (!summaryLine && hasPytestProgressLine(lines)) {
+      return {
+        success: false,
+        passed: 0,
+        failed: 0,
+        errors: 0,
+        skipped: 0,
+        warnings: 0,
+        failures,
+        exitCode,
+        countsUnavailable: true,
+        ...(errorOutput ? { errorOutput } : {}),
+      };
+    }
+  }
 
   // Exit 0 with no summary line: the counts could not be read. A test run only
   // exits 0 when tests were collected and none failed (collecting nothing is
