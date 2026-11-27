@@ -80,31 +80,32 @@ export function registerPrDiffTool(server: McpServer) {
         diff.truncated = true;
       }
 
-      // If full patch requested, attach chunk data
+      // If full patch requested, attach chunk data. parsePrDiffFromPatch maps
+      // each `diff --git` section to exactly one entry, in order, so pair them
+      // by index. Re-deriving the filename here with /b\/(.+)\n/ matched the
+      // first "b/" on the header line, which breaks on any path containing
+      // "b/" (".github/", "lib/", "web/") and silently dropped the chunks.
       if (full && !nameOnly && diff.files.length > 0) {
-        const filePatches = result.stdout.split(/^diff --git /m).filter(Boolean);
-        for (const patch of filePatches) {
-          const fileMatch = patch.match(/b\/(.+)\n/);
-          if (fileMatch) {
-            const matchedFile = diff.files.find((f) => f.file === fileMatch[1]);
-            if (matchedFile) {
-              // S-gap: Extract file mode if present
-              const modeMatch = patch.match(/(?:new|old|index|diff) (?:file )?mode (\d+)/);
-              if (modeMatch) {
-                matchedFile.mode = modeMatch[1];
-              }
+        const filePatches = splitFilePatches(result.stdout);
+        filePatches.forEach((patch, i) => {
+          const matchedFile = diff.files[i];
+          if (!matchedFile) return;
 
-              const chunks = patch.split(/^@@/m).slice(1);
-              matchedFile.chunks = chunks.map((chunk) => {
-                const headerEnd = chunk.indexOf("\n");
-                return {
-                  header: `@@${chunk.slice(0, headerEnd)}`,
-                  lines: chunk.slice(headerEnd + 1),
-                };
-              });
-            }
+          // S-gap: Extract file mode if present
+          const modeMatch = patch.match(/(?:new|old|index|diff) (?:file )?mode (\d+)/);
+          if (modeMatch) {
+            matchedFile.mode = modeMatch[1];
           }
-        }
+
+          const chunks = patch.split(/^@@/m).slice(1);
+          matchedFile.chunks = chunks.map((chunk) => {
+            const headerEnd = chunk.indexOf("\n");
+            return {
+              header: `@@${chunk.slice(0, headerEnd)}`,
+              lines: chunk.slice(headerEnd + 1),
+            };
+          });
+        });
       }
 
       // When full patch content is requested, force the full (non-compact) schema
@@ -124,12 +125,17 @@ export function registerPrDiffTool(server: McpServer) {
   );
 }
 
+/** Splits unified diff output into one section per file (header line first). */
+function splitFilePatches(patchOutput: string): string[] {
+  return patchOutput.split(/^diff --git /m).filter(Boolean);
+}
+
 /**
  * Parses unified diff output from `gh pr diff` into structured file stats.
  * Counts additions (+) and deletions (-) from diff hunks.
  */
 function parsePrDiffFromPatch(patchOutput: string): PrDiffResult {
-  const filePatches = patchOutput.split(/^diff --git /m).filter(Boolean);
+  const filePatches = splitFilePatches(patchOutput);
   const files = filePatches.map((patch) => {
     // Extract file paths from the diff header, handling quoted paths with spaces.
     const headerLine = patch.split("\n", 1)[0] ?? "";

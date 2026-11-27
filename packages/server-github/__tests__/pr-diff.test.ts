@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { parsePrDiffNumstat } from "../src/lib/parsers.js";
 import { formatPrDiff, compactPrDiffMap, formatPrDiffCompact } from "../src/lib/formatters.js";
 import { PrDiffResultSchema, type PrDiffResult } from "../src/schemas/index.js";
@@ -169,6 +171,8 @@ class FakeServer {
   }
 }
 
+const FIXTURES = join(import.meta.dirname, "fixtures", "gh-pr-diff");
+
 function mockGh(stdout: string, stderr = "", exitCode = 0) {
   vi.mocked(ghCmd).mockResolvedValueOnce({ stdout, stderr, exitCode });
 }
@@ -230,5 +234,49 @@ describe("pr-diff tool: full / nameOnly modes", () => {
     const result = await handler({ number: "123", nameOnly: true });
     const parsed = PrDiffResultSchema.parse(result.structuredContent);
     expect(parsed.files).toEqual([]);
+  });
+
+  // Real `gh pr diff` output (Dave-London/Pare#1264). Both paths sit under
+  // ".github/", whose "b/" made the old filename regex miss every file, so
+  // full=true returned stats with no chunks.
+  it("full: true attaches chunks for paths containing 'b/' (real gh output)", async () => {
+    mockGh(readFileSync(join(FIXTURES, "github-dir-paths.diff"), "utf8"));
+    const result = await handler({ number: "1264", full: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files.map((f) => f.file)).toEqual([
+      ".github/workflows/codeql.yml",
+      ".github/workflows/scorecard.yml",
+    ]);
+    const [codeql, scorecard] = parsed.files;
+    expect(codeql.chunks).toHaveLength(1);
+    expect(codeql.chunks![0].header).toMatch(/^@@ -21,12 \+21,12 @@/);
+    expect(codeql.chunks![0].lines).toContain("+      - uses: github/codeql-action/init@1bd86f2");
+    expect(scorecard.chunks).toHaveLength(1);
+    expect(scorecard.chunks![0].lines).toContain("codeql-action/upload-sarif@1bd86f2");
+  });
+
+  it("full: true pairs chunks with the right file when a path has 'b/' mid-name", async () => {
+    const diff = `diff --git a/web/lib/a.ts b/web/lib/a.ts
+index 1111111..2222222 100644
+--- a/web/lib/a.ts
++++ b/web/lib/a.ts
+@@ -1 +1 @@
+-old a
++new a
+diff --git a/src/b.ts b/src/b.ts
+index 3333333..4444444 100644
+--- a/src/b.ts
++++ b/src/b.ts
+@@ -1 +1 @@
+-old b
++new b
+`;
+    mockGh(diff);
+    const result = await handler({ number: "1", full: true });
+    const parsed = PrDiffResultSchema.parse(result.structuredContent);
+    expect(parsed.files[0].file).toBe("web/lib/a.ts");
+    expect(parsed.files[0].chunks![0].lines).toContain("+new a");
+    expect(parsed.files[1].file).toBe("src/b.ts");
+    expect(parsed.files[1].chunks![0].lines).toContain("+new b");
   });
 });
