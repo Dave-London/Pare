@@ -31,7 +31,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v2
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         id: app-token
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
