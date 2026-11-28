@@ -1,6 +1,6 @@
 {
   "name": "@paretools/shared",
-  "version": "0.24.1",
+  "version": "0.24.2",
   "description": "Shared utilities for Pare MCP servers",
   "license": "MIT",
   "keywords": [

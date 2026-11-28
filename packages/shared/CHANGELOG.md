@@ -1,5 +1,9 @@
 # @paretools/shared
 
+## 0.24.2
+
+No changes in this release.
+
 ## 0.24.1
 
 No changes in this release.
